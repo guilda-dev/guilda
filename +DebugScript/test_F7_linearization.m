@@ -2,11 +2,11 @@
 %
 % 平衡点 (または指定した点) まわりの線形モデルを求める。
 %   res = net.linearize("Algorithm", ..., "Point", 点);
-%   sys = res.get_ss("Kron" | "Feedback" | "DAE");
-%   sys = net.get_sys("Algorithm", ...);          % linearize + get_ss の近道
-%   sys = net.get_sys("Output", ["V","I","y"], "Input", 入力名);   % 入出力の選択 (既定は不変)
+%   sys = res.get_ss("Kron" | "Feedback" | "DAE");   % ss (Format="struct" で構造体)
+%   res = net.get_sys("Algorithm", ...);          % linearize + get_ss の近道 (既定は ResultLIN)
+%   res = net.get_sys("Output", ["V","I","y"], "Input", 入力名);   % 入出力の選択 (既定は不変)
 %   tab = net.get_variable_map();                 % 変数の順 (res.rm_Axx などの行と列)
-% sys は記述子形式の状態空間モデル (dss: E dx = A x + B u)。
+% モデルは記述子形式 (E dx = A x + B u)。ResultLIN の A, B, C, D, E と名前、構造体、ss のどれでも同じ。
 % 3 方式の有限固有値が一致すること、IEEE14 の平衡点が安定であること、v3 の行列と同じであること、
 % Point (平衡点 / ベクトル / {シミュレーション結果, 時刻}) と Hessian の契約を確認する。
 %
@@ -24,7 +24,7 @@ same_eigs  = @DebugScript.helper.same_eigs;      % 固有値の集合が一致�
 
 %% Get sys Kron
 sys = net.get_sys("Algorithm", "Kron");
-assert(isa(sys, "ss"))
+assert(isa(sys, "ResultLIN"))
 assert(size(sys.A,1) == n_x)
 assert(numel(sys.StateName) == size(sys.A,1))
 
@@ -32,14 +32,14 @@ assert(numel(sys.StateName) == size(sys.A,1))
 %% Get sys Feedback
 % 既定の方式は Feedback
 sys = net.get_sys();
-assert(isa(sys, "ss"))
+assert(isa(sys, "ResultLIN"))
 assert(size(sys.A,1) == n_x)
 
 
 %% Get sys DAE
 % DAE 方式は母線電圧・電流などの代数変数も状態に含む (E が特異)
 sys = net.get_sys("Algorithm", "DAE");
-assert(isa(sys, "ss"))
+assert(isa(sys, "ResultLIN"))
 assert(size(sys.A,1) > n_x)
 assert(rank(sys.E) < size(sys.E,1))
 
@@ -193,7 +193,7 @@ end
 assert(size(res.get_ss("Kron").A,1) == n_x)
 assert(size(res.get_ss("DAE").A,1) > n_x)
 % 指定は呼び出しの間だけで、残らない
-assert(isequal(net.get_sys("Algorithm","Feedback"), net.linearize().get_ss("Feedback")))
+assert(isequal(net.get_sys("Algorithm","Feedback","Format","ss"), net.linearize().get_ss("Feedback")))
 
 
 %% Deprecated NonUnit naming a missing bus is rejected
@@ -300,7 +300,7 @@ catch ME
     assert(contains(ME.message, bus.a_Component{1}.s_tag))
 end
 % V2I は従来どおり使え、3 方式の線形化もこれらの母線を含む系統で動く (既存の内部呼び出しは I2V を通らない)
-assert(isa(n9.a_Bus{4}.get_sys(), "ss"))
+assert(isa(n9.a_Bus{4}.get_sys(), "ResultLIN") && isa(n9.a_Bus{4}.get_sys(Format="ss"), "ss"))
 assert(same_eigs(eig_finite(n14.get_sys("Algorithm","Feedback")), eig_finite(n14.get_sys("Algorithm","Kron")), 1e-6))
 % D が正則なら I2V の D は V2I の D の逆行列
 for obj = {n14.a_Bus{1}, n14.a_Bus{1}.a_Component{1}}
@@ -494,14 +494,14 @@ assert(isequal(string(c3.OutputName), tg(net.a_Bus{3}.a_Component{1}, ["Ire";"Ii
 
 
 %% Index a model of each layer by full channel name
-% sys(出力名, 入力名) は sys(行, 列) と同じ。同名のグループがあると曖昧でエラーになる (Issue #79)
+% Format="ss" のモデルでは sys(出力名, 入力名) は sys(行, 列) と同じ。同名のグループがあると曖昧でエラーになる (Issue #79)
 net = new_net();
 gen = net.a_Bus{1}.a_Component{1};
 avr = gen.add_local_controller("avr-ST1");
 pss = gen.add_local_controller("pss-PSS1");
 DebugScript.helper.quiet(@() net.initialize);
-c_sys = {avr.get_sys(), pss.get_sys(), gen.get_sys(), gen.get_sys("port","I2V"), gen.get_sys("tag",false), ...
-         net.a_Bus{3}.a_Component{1}.get_sys(), net.a_Bus{1}.get_sys()};
+c_sys = {avr.get_sys(Format="ss"), pss.get_sys(Format="ss"), gen.get_sys(Format="ss"), gen.get_sys("port","I2V",Format="ss"), ...
+         gen.get_sys("tag",false,Format="ss"), net.a_Bus{3}.a_Component{1}.get_sys(Format="ss"), net.a_Bus{1}.get_sys(Format="ss")};
 for k = 1:numel(c_sys)
     s = c_sys{k};
     for iy = 1:numel(s.OutputName)
@@ -522,8 +522,8 @@ agc = net.add_global_controller("agc-PI", {gen, net.a_Bus{2}.a_Component{1}}, pa
 DebugScript.helper.quiet(@() net.initialize);
 
 % 無視すると文書にある引数はモデルを変えず、rec は公開の引数ではない
-s0 = gen.get_sys();
-assert(isequal(gen.get_sys("con",false), s0) && isequal(gen.get_sys("full",true), s0))
+s0 = gen.get_sys(Format="struct");
+assert(isequal(gen.get_sys("con",false,Format="struct"), s0) && isequal(gen.get_sys("full",true,Format="struct"), s0))
 l_accepted = true;
 try
     gen.get_sys("rec",false);
@@ -538,9 +538,9 @@ c_call = {@() gen.get_sys(), @() gen.get_sys("port","I2V"), @() gen.get_sys("tag
           @() net.a_Bus{1}.get_sys("port","I2V"), @() avr.get_sys(), @() avr.get_sys("full",true), @() avr.get_sys("tag",false), @() agc.get_sys()};
 for k = 1:numel(c_call)
     [s, c_x, c_u, c_y] = c_call{k}();
-    assert(iscellstr(c_x) && isequal(c_x(:), s.StateName(:)), "call %d: states", k) %#ok<ISCLSTR>
-    assert(iscellstr(c_u) && isequal(c_u(:), s.InputName(:)), "call %d: inputs", k) %#ok<ISCLSTR>
-    assert(iscellstr(c_y) && isequal(c_y(:), s.OutputName(:)), "call %d: outputs", k) %#ok<ISCLSTR>
+    assert(iscellstr(c_x) && isequal(string(c_x(:)), s.StateName), "call %d: states", k) %#ok<ISCLSTR>
+    assert(iscellstr(c_u) && isequal(string(c_u(:)), s.InputName), "call %d: inputs", k) %#ok<ISCLSTR>
+    assert(iscellstr(c_y) && isequal(string(c_y(:)), s.OutputName), "call %d: outputs", k) %#ok<ISCLSTR>
 end
 
 % 制御器のモデルは 1 回の gen.get_sys() で 1 個につき 1 回だけ計算する
@@ -593,7 +593,7 @@ for k = 1:numel(nets)
         assert(isequal(sys_new.StateName, sys_old.StateName) && isequal(sys_new.InputName, sys_old.InputName) && ...
                isequal(sys_new.OutputName, sys_old.OutputName), str + ": names")
         % net.get_sys は linearize + get_ss と同じ
-        assert(isequal(nets{k}.get_sys("Algorithm", alg), sys_ful), str + ": get_sys")
+        assert(isequal(nets{k}.get_sys("Algorithm", alg, "Format", "ss"), sys_ful), str + ": get_sys")
     end
 end
 
@@ -944,9 +944,18 @@ end
 %% Get sys returns sys, flag and output
 % v4: [sys, flag, output] = net.get_sys(...) (v3 の 2 番目の出力 lin は flag になった)。
 [sys, flag, output] = net.get_sys("Algorithm", "Kron");
-assert(isa(sys, "ss") && islogical(flag) && flag)
-assert(isa(output.result, "ResultLIN") && isequal(output.result.get_ss(), sys))
+assert(isa(sys, "ResultLIN") && islogical(flag) && flag)
+assert(sys == output.result)
 assert(isstring(output.message))
+% Format で形を選ぶ: 構造体と ss はどれも同じ行列と名前
+sct = net.get_sys("Algorithm", "Kron", "Format", "struct");
+assert(isstruct(sct) && isequal(string(fieldnames(sct))', ["A","B","C","D","E","StateName","InputName","OutputName"]))
+sss = net.get_sys("Algorithm", "Kron", "Format", "ss");
+assert(isa(sss, "ss") && isequal(output.result.get_ss(), sss))
+for str = ["A","B","C","D","E","StateName","InputName","OutputName"]
+    assert(isequal(sct.(str), sys.(str)), str)
+end
+assert(isequal(sss.A, sys.A) && isequal(string(sss.StateName), sys.StateName))
 
 
 %% Flag reports a singular Avv
@@ -973,7 +982,10 @@ for alg = ["Kron", "Feedback"]
 end
 % DAE は電圧を消去しないので取り出せる
 [sys, flag, output] = net_s.get_sys("Algorithm", "DAE");
-assert(isa(sys, "ss") && ~flag && output.s_issue == "SingularAvv")
+assert(isa(sys, "ResultLIN") && ~flag && output.s_issue == "SingularAvv" && ~isempty(sys.A))
+% Kron は使えないので linearize の結果の A などは空
+res = net_s.linearize("Algorithm", "Kron");
+assert(isempty(res.A) && isempty(res.StateName))
 % 使える結果は flag が true で s_issue は空
 [~, flag, output] = net.linearize();
 assert(flag && output.s_issue == "" && output.rcond_Avv > 1e-14)
@@ -1235,8 +1247,8 @@ sD0 = net.get_sys(Algorithm="DAE");
 assert(any(string(sD0.StateName) == "rho1"))
 sD = net.get_sys(Algorithm="DAE", Coordinate="theta&V");
 assert(any(string(sD.StateName) == "V1") && net.solver_LIN.Coordinate == "theta&rho")
-assert(isequal(sD, net.linearize(Coordinate="theta&V").get_ss("DAE")))
-assert(isequal(sD0, net.linearize(Coordinate="theta&V").get_ss("DAE", Coordinate="theta&rho")))
+assert(isequal(net.get_sys(Algorithm="DAE", Coordinate="theta&V", Format="ss"), net.linearize(Coordinate="theta&V").get_ss("DAE")))
+assert(isequal(net.get_sys(Algorithm="DAE", Format="struct"), net.linearize(Coordinate="theta&V").get_ss("DAE", Coordinate="theta&rho", Format="struct")))
 net.solver_LIN.Coordinate = "Vre&Vim";
 assert(any(string(net.get_sys(Algorithm="DAE").StateName) == "Vre1"))
 net.solver_LIN.Coordinate = "theta&rho";
@@ -1254,9 +1266,10 @@ net = new_net();
 DebugScript.helper.quiet(@() net.initialize);
 res = net.linearize();
 sK = net.get_sys(Algorithm="Kron");
-assert(all(cellfun(@isempty, sK.OutputName)) && isequal(sK.C, eye(size(sK.A,1))))
+assert(all(sK.OutputName == "") && numel(sK.OutputName) == size(sK.A,1) && isequal(sK.C, eye(size(sK.A,1))))
 for alg = ["Kron","Feedback","DAE"]
-    assert(isequal(net.get_sys(Algorithm=alg), res.get_ss(alg)), alg)
+    assert(isequal(net.get_sys(Algorithm=alg, Format="ss"), res.get_ss(alg)), alg)
+    assert(isequal(net.get_sys(Algorithm=alg, Format="struct"), res.get_ss(alg, Format="struct")), alg)
 end
 
 
@@ -1413,6 +1426,44 @@ try
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:HessianNotSupported" && contains(ME.message, "Hessian_I"), DebugScript.helper.msg_id(ME))
 end
+
+
+%% Format ss and the LQR controllers stop without Control System Toolbox
+% Toolbox が無い環境を license の代わりで再現する。ResultLIN と struct はそのまま使える
+net = DebugScript.helper.build_9bus();
+DebugScript.helper.quiet(@() net.initialize);
+s_tmp = tempname;  mkdir(s_tmp);
+writelines(["function varargout = license(varargin)", ...
+    "if nargin >= 2 && strcmpi(varargin{1}, 'test') && strcmpi(varargin{2}, 'Control_Toolbox')", ...
+    "    varargout = {false};  return", "end", ...
+    "[varargout{1:max(nargout,1)}] = builtin('license', varargin{:});", "end"], ...
+    fullfile(s_tmp, "license.m"));
+w = warning("off", "MATLAB:dispatcher:nameConflict");
+addpath(s_tmp);
+c_tmp = onCleanup(@() cellfun(@feval, {@() rmpath(s_tmp), @() rmdir(s_tmp, "s"), ...
+    @() clear("license"), @() warning(w)}));
+assert(~license("test", "Control_Toolbox"))
+res = net.linearize();
+assert(isa(net.get_sys(), "ResultLIN") && ~isempty(res.A))
+sct = res.get_ss(res.options.Algorithm, Format="struct");
+assert(isequal(sct.A, res.A))
+c_call = {@() res.get_ss("Kron"), @() net.get_sys(Format="ss"), ...
+    @() net.a_Bus{1}.a_Component{1}.get_sys(Format="ss"), ...
+    @() controller.local_LQR("1"), ...
+    @() controller.modeling.get_environment(net, 1)};
+sv_feature = ["ResultLIN.get_ss", "ResultLIN.get_ss", "ResultLIN.get_ss", ...
+    "controller.local_LQR", "controller.modeling.get_environment"];
+% controller.local_LQR_retrofit は v2 の抽象メソッドを実装していないため生成できず、ここでは確認しない
+for k = 1:numel(c_call)
+    try
+        c_call{k}();
+        error("DebugScript:NoError", "エラーにならない: %s", sv_feature(k))
+    catch ME
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:require_toolbox:Unavailable", ME.message)
+        assert(contains(ME.message, "Control System Toolbox") && contains(ME.message, sv_feature(k)), ME.message)
+    end
+end
+clear c_tmp
 
 
 % ローカル関数

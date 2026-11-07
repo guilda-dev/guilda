@@ -1,7 +1,9 @@
 function sys = get_sys_alone(obj, x, V, I, u, opt)
 % Linearize the controller without the edit checks (inner step of get_sys).
 %
-% The caller checks the edit flags. Arguments and model as LocalController.get_sys.
+% The caller checks the edit flags. Arguments as LocalController.get_sys; the model is
+% a struct with the fields A, B, C, D, E, StateName, InputName, OutputName (string
+% columns), as LocalController.get_sys with Format "struct".
 %
 % See also LocalController.get_sys, Component.get_sys
 %
@@ -16,7 +18,7 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
         opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the controller tag.
     end
     arguments (Output)
-        sys   % State-space model of the controller, as LocalController.get_sys.
+        sys   % Struct A, B, C, D, E, StateName, InputName, OutputName of the controller.
     end
 
     % I is not a port of a controller (c_Iequilibrium is the parent's, [] without a parent)
@@ -54,21 +56,10 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
     C =[eye(opt.full*nx,nx); Cyx];
     D =[zeros(opt.full*nx,nu+2); [Dyv, Dyu]];
 
-    sys = dss(A, B, C, D, Mass);
-
-    sys.StateName = sv_xNames{opt.tag+1};
-    sys.InputName = [Vport{opt.tag+1}; sv_uNames{opt.tag+1}];
-    sys.OutputName = OutputNames{opt.full+1};
-
-    % Component.get_sys connects the untagged model by these groups. A group with the name
-    % of a channel makes sys(outputName, inputName) ambiguous, so the tagged model has none.
-    if ~opt.tag
-        rv_ue = numel(sys.InputName);
-        rv_oe = numel(sys.OutputName);
-
-        sys.InputGroup  = cell2struct(arrayfun(@(n) {n}, (1:rv_ue)'), sys.InputName);
-        sys.OutputGroup = cell2struct(arrayfun(@(n) {n}, (1:rv_oe)'), sys.OutputName);
-    end
+    sys = struct("A", A, "B", B, "C", C, "D", D, "E", Mass, ...
+                 "StateName", reshape(string(sv_xNames{opt.tag+1}), [], 1), ...
+                 "InputName", reshape(string([Vport{opt.tag+1}; sv_uNames{opt.tag+1}]), [], 1), ...
+                 "OutputName", reshape(string(OutputNames{opt.full+1}), [], 1));
 
 end
 

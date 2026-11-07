@@ -10,6 +10,8 @@ classdef local_LQR_retrofit <  LocalController
 % This class uses the GUILDA v2 controller interface (`connected_index_*`,
 % `get_dx_u`, `get_linear_matrix`); it does not implement the abstract methods
 % of LocalController (`fcn_dx`, `fcn_y`, `fcn_Mass`, `Jacobi_dx`, `Jacobi_Y`).
+% It needs the Control System Toolbox; without it, the constructor stops with
+% GUILDA:require_toolbox:Unavailable.
 %
 % See also controller.modeling.get_environment, controller.local_LQR
 
@@ -49,6 +51,7 @@ classdef local_LQR_retrofit <  LocalController
             arguments (Output)
                 obj % local_LQR_retrofit object.
             end
+            tools.require_toolbox("control", "controller.local_LQR_retrofit");
             obj@LocalController(net, idx, idx);
             if nargin<5
                 model = [];

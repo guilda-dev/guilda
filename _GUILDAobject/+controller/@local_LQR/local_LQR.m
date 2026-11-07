@@ -16,7 +16,8 @@ classdef local_LQR < LocalController
 % equilibrium, so `net.initialize` only redesigns `K` at that equilibrium.
 %
 % Attach it with `comp.add_local_controller("local-LQR")`; it takes the place of an AVR
-% (and of the PSS attached to that AVR). The output of a global controller (e.g. an
+% (and of the PSS attached to that AVR). It needs the Control System Toolbox (`lqr`);
+% without it, the constructor stops with GUILDA:require_toolbox:Unavailable. The output of a global controller (e.g. an
 % AGC) on a driven input adds to its output, and the design of `K` does not take it
 % into account (use `Input="Vfield"` with an AGC on Pmech to keep them apart).
 %
@@ -84,6 +85,7 @@ classdef local_LQR < LocalController
             arguments (Output)
                 obj % local_LQR object.
             end
+            tools.require_toolbox("control", "controller.local_LQR");
             obj@LocalController("CL"+tag)
             obj.sv_input = opt.Input;
             obj.sv_y     = opt.Input;

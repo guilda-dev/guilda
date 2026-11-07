@@ -27,6 +27,14 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % fcn_I at the point and the inputs of the controllers are the outputs they are
 % connected to (as in the simulation). The model is not changed.
 %
+% Format chooses the form of the model: "ResultLIN" (default) returns a ResultLIN whose
+% properties A, B, C, D, E, StateName, InputName and OutputName hold the model
+% (E dx/dt = A x + B u, y = C x + D u), with tab_variable (comp.get_variable_map()),
+% rv_point and the Jacobian blocks rm_Axx, rm_Axv, rm_Bx (the inputs of the component)
+% and rm_E in the order of tab_variable for port "V2I" (rm_E only for "I2V"); "struct"
+% returns a struct with the same eight fields; "ss" returns a descriptor state-space model
+% (dss) and needs the Control System Toolbox.
+%
 % Without Point, a component on a network stops with the error GUILDA:Component:Stale
 % when net.initialize() is needed (a stale tag of the network, the component or its
 % controllers); a component without a network builds its stale handles and those of its
@@ -46,13 +54,15 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the component tag.
         opt.con  (1,1) logical = false     % Ignored; kept for old calls (the local controllers are always included).
         opt.Point = []   % Point of the linearization; overrides x, V, I, u.
+        opt.Format (1,1) string {mustBeMember(opt.Format, ["ResultLIN","struct","ss"])} = "ResultLIN"   % Form of the model: ResultLIN, struct or ss (dss; needs the Control System Toolbox).
     end
     arguments (Output)
-        sys   % Descriptor state-space model with state, input and output names.
+        sys   % Linear model in the form of Format, with state, input and output names.
     end
     arguments (Output, Repeating)
-        varargout   % sys.StateName, sys.InputName and sys.OutputName, kept for old calls.
+        varargout   % StateName, InputName and OutputName (cellstr), kept for old calls.
     end
+    t0 = tic;
 
     l_equilibrium = isempty(opt.Point) && ~iscell(opt.Point);
 
@@ -79,8 +89,10 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     end
     if l_equilibrium
         sysCON = tools.cellfun(@(d) d.get_sys_alone("tag",false), a_LC);
+        rv_point = [x; tools.vcellfun(@(d) reshape(d.rv_Xequilibrium, [], 1), a_LC); V; u];
     else
-        [x, V, I, u, c_con] = point_values(obj, a_LC, SolverLIN.point_vector(obj, opt.Point));
+        rv_point = SolverLIN.point_vector(obj, opt.Point);
+        [x, V, I, u, c_con] = point_values(obj, a_LC, rv_point);
         sysCON = tools.cellfun(@(d,p) d.get_sys_alone(p{:},"tag",false), a_LC, c_con);
     end
 
@@ -105,18 +117,8 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         n_out  = n_out + numel(sysCON{k}.OutputName);
     end
 
-    if isempty(sysCON)
-        sys = SYS(iv_out, iv_in);
-    else
-        blksys = append(SYS,sysCON{:});            
-
-        blkConnect = connectCondition(blksys.InputGroup,blksys.OutputGroup);
-        sysConnect = connectCondition(SYS.InputGroup,SYS.OutputGroup);
-
-        lv_connect = ismember(blkConnect,sysConnect,"rows");                        
-
-        sys = connect(blksys,blkConnect(~lv_connect,:),iv_in,iv_out,connectOptions("Simplify",false));
-    end
+    % The controllers are connected to the component and to each other by name
+    sys = connect_blocks([{SYS}; sysCON(:)], iv_in, iv_out);
 
     % Names
     if opt.port == "V2I"
@@ -128,29 +130,51 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     c_x    = cellfun(@(o) label(o, o.sv_x, opt.tag), a_all, 'UniformOutput', false);
     c_u    = cellfun(@(o) label(o, o.sv_u, opt.tag), a_all, 'UniformOutput', false);
     c_y    = cellfun(@(o) label(o, output_name(o), opt.tag), a_all, 'UniformOutput', false);
-    sv_x   = vertcat(strings(0,1), c_x{:});
-    sv_in  = [label(obj, sv_portIn, opt.tag);  vertcat(strings(0,1), c_u{:})];
-    sv_out = [label(obj, sv_portOut, opt.tag); vertcat(strings(0,1), c_y{:})];
+    sys.StateName  = vertcat(strings(0,1), c_x{:});
+    sys.InputName  = [label(obj, sv_portIn, opt.tag);  vertcat(strings(0,1), c_u{:})];
+    sys.OutputName = [label(obj, sv_portOut, opt.tag); vertcat(strings(0,1), c_y{:})];
 
-    sys.StateName  = cellstr(sv_x);
-    sys.InputName  = cellstr(sv_in);
-    sys.OutputName = cellstr(sv_out);
-    sys.InputGroup  = struct();     % no groups, so that sys(outputName, inputName) works
-    sys.OutputGroup = struct();
+    varargout{1} = cellstr(sys.StateName);
+    varargout{2} = cellstr(sys.InputName);
+    varargout{3} = cellstr(sys.OutputName);
 
-    varargout{1} = cellstr(sv_x);
-    varargout{2} = cellstr(sv_in);
-    varargout{3} = cellstr(sv_out);
+    if opt.Format ~= "struct"
+        l_eq = l_equilibrium && ~isempty(obj.a_Bus) && isequal(rv_point, SolverLIN.point_vector(obj, []));
+        sys  = object_result(sys, rv_point, l_eq, t0);
+        if opt.Format == "ss"
+            sys = sys.get_ss(Format="ss");
+        end
+    end
+
+    function result = object_result(sct_sys, rv_point, l_eq, t0)
+        % ResultLIN holding the port model, the variable map and the Jacobian blocks
+        nu = numel(obj.sv_u);
+        sct_block = struct("E", sct_sys.E);
+        if opt.port == "V2I"
+            sct_block.Axx = sct_sys.A;
+            sct_block.Axv = sct_sys.B(:,1:2);
+            sct_block.Bx  = sct_sys.B(:,2+(1:nu));
+        end
+        sct_output = struct("message", "Linearized the component " + obj.s_tag + " at the equilibrium.", ...
+                            "s_issue", "", "l_equilibrium", l_eq, "s_layer", "Component");
+        if ~l_eq
+            sct_output.message = "Linearized the component " + obj.s_tag + " at the given point.";
+        end
+        net = [];
+        if ~isempty(obj.a_Bus)
+            net = obj.a_Bus.a_PowerNetwork;
+        end
+        result = ResultLIN(net, "", struct("Port", opt.port, "Point", {opt.Point}), true, sct_output, t0, ...
+                           obj.get_variable_map(), rv_point, sct_block, struct("sct_sys", sct_sys), zeros(0,1));
+    end
 
     function [SYS, sysCON] = connect_states(SYS, sysCON, a_LC)
         iv_x = zeros(0,1);
         for k = 1:numel(a_LC)
             lv = a_LC{k}.iv_obsX > 0;
             if any(lv)
-                sv_in = string(sysCON{k}.InputName);
-                iv_in = numel(sv_in) - numel(lv) + find(lv);    % the inputs sv_u come after Vre, Vim
-                sv_in(iv_in) = "X__" + obj.sv_x(a_LC{k}.iv_obsX(lv));
-                sysCON{k} = set_names(sysCON{k}, sv_in, string(sysCON{k}.OutputName));
+                iv_in = numel(sysCON{k}.InputName) - numel(lv) + find(lv);    % the inputs sv_u come after Vre, Vim
+                sysCON{k}.InputName(iv_in) = "X__" + obj.sv_x(a_LC{k}.iv_obsX(lv));
                 iv_x = [iv_x; a_LC{k}.iv_obsX(lv)]; %#ok<AGROW>
             end
         end
@@ -159,18 +183,9 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         end
         iv_x = unique(iv_x);
         Ex   = eye(size(SYS.A,1));
-        Cx   = Ex(iv_x,:);
-        sv_y = [string(SYS.OutputName); "X__" + obj.sv_x(iv_x)];
-        SYS2 = dss(SYS.A, SYS.B, [SYS.C; Cx], [SYS.D; zeros(numel(iv_x), size(SYS.B,2))], SYS.E);
-        SYS2.StateName = SYS.StateName;
-        SYS = set_names(SYS2, string(SYS.InputName), sv_y);
-    end
-
-    function sys = set_names(sys, sv_in, sv_out)
-        sys.InputName   = cellstr(sv_in);
-        sys.OutputName  = cellstr(sv_out);
-        sys.InputGroup  = cell2struct(arrayfun(@(n) {n}, (1:numel(sv_in))'), cellstr(sv_in));
-        sys.OutputGroup = cell2struct(arrayfun(@(n) {n}, (1:numel(sv_out))'), cellstr(sv_out));
+        SYS.C = [SYS.C; Ex(iv_x,:)];
+        SYS.D = [SYS.D; zeros(numel(iv_x), size(SYS.B,2))];
+        SYS.OutputName = [SYS.OutputName; "X__" + reshape(obj.sv_x(iv_x), [], 1)];
     end
 
     function sv = label(owner, sv_name, l_tag)
@@ -206,28 +221,30 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         end
     end
 
-    function Connect = connectCondition(in,out)
-        Connect = zeros(0,2);
+end
 
-        fi = fieldnames(in);
-        fo = fieldnames(out);
-    
-        idx = 1;
-        nv_all = 0;
-        while idx<=numel(fo)
-            lv = strcmp(fi,fo(idx));
-            if any(lv)
-                s_i = fi{lv};
-                rv_val = in.(s_i);
-                nv = numel(rv_val);                
-    
-                Connect(nv_all+(1:nv), :) = [rv_val', repmat(out.(fo{idx}), [nv,1])];
-                
-                nv_all = nv_all + nv;            
-            end
-            
-            idx = idx + 1;
-        end
-    end
-    
+
+function sys = connect_blocks(c_blk, iv_in, iv_out)
+% Connects the blocks by name, keeping all states in the order of the blocks: an input
+% takes the sum of the outputs of the same name (outputs of the first block do not feed
+% its own inputs) plus the external input. iv_in and iv_out pick the external inputs and
+% the outputs among the inputs and outputs of all blocks.
+    A = tools.cellfun(@(S) S.A, c_blk);  B = tools.cellfun(@(S) S.B, c_blk);
+    C = tools.cellfun(@(S) S.C, c_blk);  D = tools.cellfun(@(S) S.D, c_blk);
+    E = tools.cellfun(@(S) S.E, c_blk);
+    A = blkdiag(A{:});  B = blkdiag(B{:});  C = blkdiag(C{:});  D = blkdiag(D{:});  E = blkdiag(E{:});
+    sv_in  = tools.cellfun(@(S) S.InputName,  c_blk);   sv_in  = vertcat(strings(0,1), sv_in{:});
+    sv_out = tools.cellfun(@(S) S.OutputName, c_blk);   sv_out = vertcat(strings(0,1), sv_out{:});
+
+    K = double(sv_in == sv_out.');      % K(i,j) = 1: output j feeds input i
+    K(1:numel(c_blk{1}.InputName), 1:numel(c_blk{1}.OutputName)) = 0;
+    P = eye(numel(sv_in));
+    P = P(:, iv_in);                    % external inputs
+
+    % u = P w + K y,  y = C x + D u  =>  y = (I - D K) \ (C x + D P w)
+    M  = eye(numel(sv_out)) - D*K;
+    Cy = M \ C;
+    Dy = M \ (D*P);
+    sys = struct("A", A + B*K*Cy, "B", B*(P + K*Dy), "C", Cy(iv_out,:), "D", Dy(iv_out,:), "E", E, ...
+                 "StateName", strings(0,1), "InputName", sv_in(iv_in), "OutputName", sv_out(iv_out));
 end

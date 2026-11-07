@@ -17,7 +17,7 @@ function design_gain(obj, V, u)
     end
     y_inf = tools.complex2matrix(I0 / (V - obj.V0));
     sys   = comp.get_sys_alone(x0, [real(V); imag(V)], [real(I0); imag(I0)], u);
-    [A, B, C, D, E] = dssdata(sys);
+    [A, B, C, D, E] = deal(sys.A, sys.B, sys.C, sys.D, sys.E);   % struct of get_sys_alone
     Bv = B(:,1:2);   Bu = B(:,2+iv_u);
     Dv = D(:,1:2);   Du = D(:,2+iv_u);
     M  = y_inf - Dv;            % (y - Dv) dV = C dx + Du du

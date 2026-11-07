@@ -6,6 +6,13 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % is labelled "Y_" + name). The point is x, V, u (default: the equilibrium).
 % Component.get_sys connects it to the component. The model is not changed.
 %
+% Format chooses the form of the model: "ResultLIN" (default) returns a ResultLIN whose
+% properties A, B, C, D, E, StateName, InputName and OutputName hold the model
+% (E dx/dt = A x + B u, y = C x + D u), with rv_point = [x; V; u] and the Jacobian
+% blocks rm_Axx, rm_Axv, rm_Bx and rm_E in the order of the model (tab_variable is
+% empty); "struct" returns a struct with the same eight fields; "ss" returns a
+% descriptor state-space model (dss) and needs the Control System Toolbox.
+%
 % A controller on a network stops with the error GUILDA:LocalController:Stale
 % when net.initialize() is needed (a stale tag of the network or the controller); a controller without a network builds its stale
 % handles first.
@@ -21,13 +28,15 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
         opt.full (1,1) logical = false     % Also output the states.
         opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the controller tag.
+        opt.Format (1,1) string {mustBeMember(opt.Format, ["ResultLIN","struct","ss"])} = "ResultLIN"   % Form of the model: ResultLIN, struct or ss (dss; needs the Control System Toolbox).
     end
     arguments (Output)
-        sys   % State-space model of the controller with state, input and output names.
+        sys   % Linear model of the controller in the form of Format, with state, input and output names.
     end
     arguments (Output, Repeating)
-        varargout   % sys.StateName, sys.InputName and sys.OutputName, kept for old calls.
+        varargout   % StateName, InputName and OutputName (cellstr), kept for old calls.
     end
+    t0 = tic;
 
     owner = obj.a_Component;
     while isa(owner, "LocalController")   % a controller may be attached under another one
@@ -50,8 +59,29 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 
     sys = obj.get_sys_alone(x, V, I, u, "full", opt.full, "tag", opt.tag);
 
-    varargout{1} = sys.StateName;
-    varargout{2} = sys.InputName;
-    varargout{3} = sys.OutputName;
+    varargout{1} = cellstr(sys.StateName);
+    varargout{2} = cellstr(sys.InputName);
+    varargout{3} = cellstr(sys.OutputName);
 
+    if opt.Format ~= "struct"
+        sct_block = struct("Axx", sys.A, "Axv", sys.B(:,1:2), "Bx", sys.B(:,3:end), "E", sys.E);
+        l_eq = isequal(x, reshape(obj.rv_Xequilibrium, [], 1)) && isequal(u, reshape(obj.rv_Uequilibrium, [], 1)) ...
+               && isequal(V, [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]);
+        sct_output = struct("message", "Linearized the local controller " + obj.s_tag + ".", ...
+                            "s_issue", "", "l_equilibrium", l_eq, "s_layer", "LocalController");
+        sys = ResultLIN(net_of(owner), "", struct(), true, sct_output, t0, ...
+                        table(), [x; V; u], sct_block, struct("sct_sys", sys), zeros(0,1));
+        if opt.Format == "ss"
+            sys = sys.get_ss(Format="ss");
+        end
+    end
+end
+
+
+function net = net_of(owner)
+% Network of the component that the controller belongs to, or []
+    net = [];
+    if ~isempty(owner) && ~isempty(owner.a_Bus)
+        net = owner.a_Bus.a_PowerNetwork;
+    end
 end
