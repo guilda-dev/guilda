@@ -12,7 +12,7 @@ function sct_page = gui_content(obj)
         obj
     end
     arguments (Output)
-        sct_page (:,1) struct  % Pages: fields s_title, s_type, content, s_label.
+        sct_page (:,1) struct  % Pages: fields s_title, s_type and content.
     end
     rv_X = obj.rv_Xequilibrium(:);
     rv_U = obj.rv_Uequilibrium(:);
@@ -28,6 +28,6 @@ function sct_page = gui_content(obj)
     sv_name  = [sv_x; sv_u];
     sv_value = compose("%.6g", [rv_X; rv_U]);
     tab_eq   = table(sv_kind, sv_name, sv_value, 'VariableNames', ["Kind","Name","Value"]);
-    sct_page = struct("s_title","Equilibrium", "s_type","table", "content",tab_eq, "s_label","");
+    sct_page = struct("s_title","Equilibrium", "s_type","table", "content",tab_eq);
     sct_page = [sct_page; gui_content@PowerSystemModel(obj)];
 end
