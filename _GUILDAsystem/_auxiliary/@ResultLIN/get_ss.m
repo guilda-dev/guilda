@@ -117,6 +117,7 @@ function sys = to_format(sct_sys, s_format)
 % The model as a struct or as a dss with the names
     sys = sct_sys;
     if s_format == "ss"
+        tools.require_toolbox("control", "ResultLIN.get_ss(Format=""ss"")");
         sys = dss(sct_sys.A, sct_sys.B, sct_sys.C, sct_sys.D, sct_sys.E);
         sys.StateName  = cellstr(sct_sys.StateName);
         sys.InputName  = cellstr(sct_sys.InputName);

@@ -4,7 +4,8 @@ function [environment, subsystem] = get_environment(net, idx, do_check)
 % as a model from its rotor angle and internal voltage `(delta, E)` to its
 % terminal voltage in polar coordinates `(angleV, absV)`. It is the `model` input
 % of controller.local_LQR_retrofit. This function uses the GUILDA v2 network
-% interface (`a_bus`, `get_sys_area`).
+% interface (`a_bus`, `get_sys_area`). It needs the Control System Toolbox;
+% without it, it stops with GUILDA:require_toolbox:Unavailable.
 %
 % See also controller.local_LQR_retrofit
 arguments (Input)
@@ -17,6 +18,7 @@ arguments (Output)
     subsystem   % Generator model `(Vin_polar, u) -> (delta, omega, E)` (ss).
 end
 
+tools.require_toolbox("control", "controller.modeling.get_environment");
 if nargin<3
     do_check = false;
 end

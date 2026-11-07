@@ -1428,6 +1428,44 @@ catch ME
 end
 
 
+%% Format ss and the LQR controllers stop without Control System Toolbox
+% Toolbox が無い環境を license の代わりで再現する。ResultLIN と struct はそのまま使える
+net = DebugScript.helper.build_9bus();
+DebugScript.helper.quiet(@() net.initialize);
+s_tmp = tempname;  mkdir(s_tmp);
+writelines(["function varargout = license(varargin)", ...
+    "if nargin >= 2 && strcmpi(varargin{1}, 'test') && strcmpi(varargin{2}, 'Control_Toolbox')", ...
+    "    varargout = {false};  return", "end", ...
+    "[varargout{1:max(nargout,1)}] = builtin('license', varargin{:});", "end"], ...
+    fullfile(s_tmp, "license.m"));
+w = warning("off", "MATLAB:dispatcher:nameConflict");
+addpath(s_tmp);
+c_tmp = onCleanup(@() cellfun(@feval, {@() rmpath(s_tmp), @() rmdir(s_tmp, "s"), ...
+    @() clear("license"), @() warning(w)}));
+assert(~license("test", "Control_Toolbox"))
+res = net.linearize();
+assert(isa(net.get_sys(), "ResultLIN") && ~isempty(res.A))
+sct = res.get_ss(res.options.Algorithm, Format="struct");
+assert(isequal(sct.A, res.A))
+c_call = {@() res.get_ss("Kron"), @() net.get_sys(Format="ss"), ...
+    @() net.a_Bus{1}.a_Component{1}.get_sys(Format="ss"), ...
+    @() controller.local_LQR("1"), ...
+    @() controller.modeling.get_environment(net, 1)};
+sv_feature = ["ResultLIN.get_ss", "ResultLIN.get_ss", "ResultLIN.get_ss", ...
+    "controller.local_LQR", "controller.modeling.get_environment"];
+% controller.local_LQR_retrofit は v2 の抽象メソッドを実装していないため生成できず、ここでは確認しない
+for k = 1:numel(c_call)
+    try
+        c_call{k}();
+        error("DebugScript:NoError", "エラーにならない: %s", sv_feature(k))
+    catch ME
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:require_toolbox:Unavailable", ME.message)
+        assert(contains(ME.message, "Control System Toolbox") && contains(ME.message, sv_feature(k)), ME.message)
+    end
+end
+clear c_tmp
+
+
 % ローカル関数
 function run_task_linearization()
 % スクリプトの変数がテストの変数と混ざらないように関数の中で実行する
