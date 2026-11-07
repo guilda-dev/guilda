@@ -6,7 +6,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % is labelled "Y_" + name). The point is x, V, u (default: the equilibrium).
 % Component.get_sys connects it to the component. The model is not changed.
 %
-% Format chooses the form of the model: "ResultLIN" (default) returns a ResultLIN whose
+% Format chooses the form of the model: "GUILDAorigin" (default) returns a ResultLIN whose
 % properties A, B, C, D, E, StateName, InputName and OutputName hold the model
 % (E dx/dt = A x + B u, y = C x + D u), with rv_point = [x; V; u] and the Jacobian
 % blocks rm_Axx, rm_Axv, rm_Bx and rm_E in the order of the model (tab_variable is
@@ -28,7 +28,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
         opt.full (1,1) logical = false     % Also output the states.
         opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the controller tag.
-        opt.Format (1,1) string {mustBeMember(opt.Format, ["ResultLIN","struct","ss"])} = "ResultLIN"   % Form of the model: ResultLIN, struct or ss (dss; needs the Control System Toolbox).
+        opt.Format (1,1) string {mustBeMember(opt.Format, ["GUILDAorigin","struct","ss"])} = "GUILDAorigin"   % Form of the model: GUILDAorigin (a ResultLIN), struct or ss (dss; needs the Control System Toolbox).
     end
     arguments (Output)
         sys   % Linear model of the controller in the form of Format, with state, input and output names.

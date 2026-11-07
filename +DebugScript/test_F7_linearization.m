@@ -947,8 +947,15 @@ end
 assert(isa(sys, "ResultLIN") && islogical(flag) && flag)
 assert(sys == output.result)
 assert(isstring(output.message))
-% Format で形を選ぶ: 構造体と ss はどれも同じ行列と名前
-sct = net.get_sys("Algorithm", "Kron", "Format", "struct");
+% Format で形を選ぶ: 既定 "GUILDAorigin" は ResultLIN。構造体と ss はどれも同じ行列と名前
+assert(isa(net.get_sys("Algorithm", "Kron", "Format", "GUILDAorigin"), "ResultLIN"))
+try
+    net.get_sys(Format="ResultLIN");
+    error("DebugScript:NoError", "Format=""ResultLIN"" should stop")
+catch ME
+    assert(ME.identifier == "MATLAB:validators:mustBeMember", ME.identifier)
+end
+sct =net.get_sys("Algorithm", "Kron", "Format", "struct");
 assert(isstruct(sct) && isequal(string(fieldnames(sct))', ["A","B","C","D","E","StateName","InputName","OutputName"]))
 sss = net.get_sys("Algorithm", "Kron", "Format", "ss");
 assert(isa(sss, "ss") && isequal(output.result.get_ss(), sss))

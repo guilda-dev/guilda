@@ -36,7 +36,7 @@
 >   `flag` is a logical (all Jacobian entries finite and `Avv` invertible) and
 >   `output.result` is the `ResultLIN`. `[sys, lin] = net.get_sys()`
 >   gives no error; using `lin` as an `odeLinearizer` fails later (1.12).
-> - **`get_sys` は既定で `ss` ではなく `ResultLIN` を返します。** すべての層の `get_sys` の既定は `Format="ResultLIN"` です。`eig(sys)`、`pole`、`step`、`sys(出力名, 入力名)` など `ss` の関数を使うスクリプトは `Format="ss"` を渡す(Control System Toolbox が必要)か、`res.A`、`res.E` と名前のプロパティを読むように直してください(1.12)。
+> - **`get_sys` は既定で `ss` ではなく `ResultLIN` を返します。** すべての層の `get_sys` の既定は `Format="GUILDAorigin"`(`ResultLIN` を返却)です。`eig(sys)`、`pole`、`step`、`sys(出力名, 入力名)` など `ss` の関数を使うスクリプトは `Format="ss"` を渡す(Control System Toolbox が必要)か、`res.A`、`res.E` と名前のプロパティを読むように直してください(1.12)。
 > - **`optimize_powerflow` with 1–3 outputs has the v4 meaning.**
 >   `[bus, cub, flag] = net.optimize_powerflow()` now gives
 >   `bus = ResultOPF`, `cub = flag`, `flag = output`. Only the 6-output form
@@ -764,7 +764,7 @@ Option names:
 
   | `Format` | `sys` | Toolbox |
   |----------|-------|---------|
-  | `"ResultLIN"`(既定) | `ResultLIN`。`A`、`B`、`C`、`D`、`E`(`E dx/dt = A x + B u`、`y = C x + D u`)、`StateName`、`InputName`、`OutputName` にモデル | 不要 |
+  | `"GUILDAorigin"`(既定) | `ResultLIN`。`A`、`B`、`C`、`D`、`E`(`E dx/dt = A x + B u`、`y = C x + D u`)、`StateName`、`InputName`、`OutputName` にモデル | 不要 |
   | `"struct"` | 同じ 8 フィールドの構造体(名前は string の列) | 不要 |
   | `"ss"` | 記述子形式の状態空間モデル(`dss`、v3 と同じ) | Control System Toolbox |
 

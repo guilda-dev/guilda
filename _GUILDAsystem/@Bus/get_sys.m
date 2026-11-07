@@ -16,7 +16,7 @@ function [sys, varargout] = get_sys(obj, opt)
 % the equilibrium, a vector in the order of bus.get_variable_map(), or {sim, t}.
 % The model is not changed.
 %
-% Format chooses the form of the model: "ResultLIN" (default) returns a ResultLIN whose
+% Format chooses the form of the model: "GUILDAorigin" (default) returns a ResultLIN whose
 % properties A, B, C, D, E, StateName, InputName and OutputName hold the model
 % (E dx/dt = A x + B u, y = C x + D u), with tab_variable (bus.get_variable_map()),
 % rv_point and the Jacobian blocks rm_Axx, rm_Axv, rm_Bx (the inputs of the components)
@@ -36,7 +36,7 @@ function [sys, varargout] = get_sys(obj, opt)
         opt.full (1,1) logical = false     % Ignored; kept for old calls (the states are not outputs).
         opt.con  (1,1) logical = false     % Ignored; kept for old calls.
         opt.Point = []   % Point of the linearization: [] (the equilibrium), a vector in the order of bus.get_variable_map(), or {sim, t}.
-        opt.Format (1,1) string {mustBeMember(opt.Format, ["ResultLIN","struct","ss"])} = "ResultLIN"   % Form of the model: ResultLIN, struct or ss (dss; needs the Control System Toolbox).
+        opt.Format (1,1) string {mustBeMember(opt.Format, ["GUILDAorigin","struct","ss"])} = "GUILDAorigin"   % Form of the model: GUILDAorigin (a ResultLIN), struct or ss (dss; needs the Control System Toolbox).
     end
     arguments (Output)
         sys   % Linear model in the form of Format, with state, input and output names.
