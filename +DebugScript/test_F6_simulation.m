@@ -193,7 +193,7 @@ clear Deprecated
 lastwarn("");
 evalc('net.solver_ODE.Reporter = "disp";');
 id = DebugScript.helper.msg_id();
-assert(id == "GUILDA:Deprecated:SimulatorReporter", "%s", id)
+assert(id == "GUILDA:Deprecated:SimulatorReporter", id)
 assert(net.solver_ODE.Progress == "disp" && net.solver_ODE.Reporter == "disp")
 net.solver_ODE.Progress = "none";
 
@@ -201,7 +201,7 @@ lastwarn("");
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 evalc('sol = net.simulate([0,2], ev, Reporter="none", RelativeTolerance=1e-5);');
 id = DebugScript.helper.msg_id();
-assert(id == "GUILDA:Deprecated:SimulateOptionName", "%s", id)
+assert(id == "GUILDA:Deprecated:SimulateOptionName", id)
 assert(sol.options.Progress == "none" && sol.options.RelativeTolerance == 1e-5)
 assert(net.solver_ODE.RelativeTolerance ~= 1e-5)
 
@@ -212,7 +212,7 @@ try
     net.simulate([0,1], ev, Tolerence=1e-6);
     error("DebugScript:noError", "未知の名前でエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", "%s", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "Tolerence") && contains(ME.message, "TimeLimit"))   % 使える名前を示す
 end
 % 不正な値
@@ -227,13 +227,13 @@ try
     net.simulate([0,1], "Verbose", false, ev);
     error("DebugScript:noError", "Name-Value の後のイベントでエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:SimulateArguments", "%s", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:SimulateArguments", DebugScript.helper.msg_id(ME))
 end
 try
     net.simulate([0,1], ev, 3);
     error("DebugScript:noError", "イベントでも名前でもない引数でエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:SimulateArguments", "%s", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:SimulateArguments", DebugScript.helper.msg_id(ME))
 end
 
 
@@ -251,13 +251,13 @@ try
     sol.Plot(Quantity="nosuchstate");
     error("DebugScript:noError", "未知の量でエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:UnknownQuantity", "%s", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:UnknownQuantity", DebugScript.helper.msg_id(ME))
 end
 try
     sol.Plot(Bus="B999");
     error("DebugScript:noError", "未知の母線でエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:UnknownBus", "%s", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:UnknownBus", DebugScript.helper.msg_id(ME))
 end
 
 s_dir = tempname;  mkdir(s_dir);
@@ -275,7 +275,7 @@ try
     sol.Export(fullfile(s_dir, "sim.json"));
     error("DebugScript:noError", "未対応の拡張子でエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:ExportFormat", "%s", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:ExportFormat", DebugScript.helper.msg_id(ME))
 end
 % simulate(..., Plot=true, Export=file) は結果のメソッドを呼ぶ
 n_fig = numel(findall(0, "Type", "figure"));

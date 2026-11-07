@@ -518,7 +518,7 @@ try
     DebugScript.helper.quiet(@() net.optimize_powerflow(Methd="ELD"));
     error("DebugScript:noError", "未知のオプションでエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", "%s", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "Methd") && contains(ME.message, "Method, Solver, Tolerance, MaxIteration, Verbose"))
 end
 % 共通名以外 (ソルバー固有の名前) も受け付けない

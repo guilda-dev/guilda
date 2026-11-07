@@ -64,14 +64,14 @@ assert(max(abs(tab_Y{sv_Bus,sv_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium)) 
 %% A network without buses names the cause
 net = PowerNetwork("NoBuses");
 ME = powerflow_error(net);
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:NoBus", "%s", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:NoBus", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "NoBuses") && ~contains(ME.message, "BUS001"), ME.message)
 
 
 %% A network without components names the cause
 net = three_bus();
 ME = powerflow_error(net);
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:NoSlackCandidate", "%s", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:NoSlackCandidate", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "add_component") && ~contains(ME.message, "BUS001"), ME.message)
 assert(isempty(slack_index(net)))
 

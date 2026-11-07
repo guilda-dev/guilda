@@ -257,7 +257,7 @@ net.a_Bus{1}.a_Component{1}.tab_parameter.operation.Pmax = 1;    % 平衡点を�
 
 % MaxIteration=2 では AC OPF は解けない
 ME = error_of(@() net.initialize(Method="OPF", MaxIteration=2));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", "%s", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "Relax the constraints") && contains(ME.message, 'Method="powerflow"'))
 assert_unchanged(net, V0, I0, X0, log0, flag0)
 
@@ -267,7 +267,7 @@ for i = [1,2,3]
 end
 [V0, I0, X0, log0, flag0] = snapshot(net);
 ME = error_of(@() net.initialize(Method="OPF"));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", "%s", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", DebugScript.helper.msg_id(ME))
 assert_unchanged(net, V0, I0, X0, log0, flag0)
 
 
@@ -276,7 +276,7 @@ net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);
 [V0, I0, X0, log0, flag0] = snapshot(net);
 ME = error_of(@() net.initialize(Method="powerflow", MaxIteration=1, Tolerance=1e-14));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializePowerflowFailed", "%s", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializePowerflowFailed", DebugScript.helper.msg_id(ME))
 assert_unchanged(net, V0, I0, X0, log0, flag0)
 
 

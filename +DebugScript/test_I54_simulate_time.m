@@ -32,7 +32,7 @@ for k = 1:height(c_case)
         net.simulate(c_case{k,1});
         error("DebugScript:noError", "エラーにならない: %s", s_case)
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == s_id, "%s: %s", s_case, "%s", DebugScript.helper.msg_id(ME))
+        assert(DebugScript.helper.msg_id(ME) == s_id, "%s: %s", s_case, DebugScript.helper.msg_id(ME))
         assert(contains(ME.message, c_case{k,2}), "%s: %s", s_case, ME.message)
     end
 end
@@ -51,7 +51,7 @@ try
     net.simulate("fault");
     error("DebugScript:noError", "文字列を time に渡してもエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == s_id, "%s", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "class string"), ME.message)
 end
 
@@ -62,7 +62,7 @@ try
     net.simulate([0,0.5,1,2,3], ev);
     error("DebugScript:noError", "3 要素以上の time でエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == s_id, "%s", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME))
 end
 
 

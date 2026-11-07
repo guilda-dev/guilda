@@ -15,7 +15,7 @@ c_stub = register_stub();
 % 残差は警告で、タグと値を示し、系統は使える
 net = network_with("equilibrium");
 [s_id, s_msg] = warning_of(@() net.initialize);
-assert(s_id == s_warn, "%s", s_id)
+assert(s_id == s_warn, s_id)
 assert(contains(s_msg, "|dx| = 0.1") && contains(s_msg, "'" + string(stub(net)) + "'"), s_msg)
 assert(~DebugScript.helper.is_stale(net))
 DebugScript.helper.quiet(@() net.simulate([0 0.1]));
@@ -71,7 +71,7 @@ c_case = ["residual","|dx| = 0.1"; "input","|dx| = 0.2"];
 for k = 1:height(c_case)
     [net, comp] = network_with_controller(c_case(k,1));
     [s_id, s_msg] = warning_of(@() net.initialize);
-    assert(s_id == s_warn, "%s", s_id)
+    assert(s_id == s_warn, s_id)
     assert(contains(s_msg, "'" + comp.a_LocalController{1}.s_tag + "': " + c_case(k,2)), s_msg)
 end
 
@@ -80,7 +80,7 @@ end
 c_stub = register_stub();
 [net, comp] = network_with_controller("output");
 [s_id, s_msg] = warning_of(@() net.initialize);
-assert(s_id == s_warn, "%s", s_id)
+assert(s_id == s_warn, s_id)
 assert(contains(s_msg, "'" + comp.s_tag + "'") && contains(s_msg, "|u - source| = 0.1"), s_msg)
 
 
@@ -103,7 +103,7 @@ c_stub = register_stub();
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
 agc = net.add_global_controller("test-bad-agc", {comp}, parameter=struct(bad="output"));
 [s_id, s_msg] = warning_of(@() net.initialize);
-assert(s_id == s_warn, "%s", s_id)
+assert(s_id == s_warn, s_id)
 assert(contains(s_msg, "'" + agc.s_tag + "'"), s_msg)
 
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
@@ -163,7 +163,7 @@ function check_stop(net, s_id, sv_text)
     catch ME
     end
     assert(~isempty(ME), "initialize did not stop")
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:" + s_id, "%s", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:" + s_id, DebugScript.helper.msg_id(ME))
     assert(all(contains(ME.message, sv_text)), ME.message)
     assert(DebugScript.helper.is_stale(net))
 end

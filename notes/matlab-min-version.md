@@ -19,34 +19,6 @@
   - R2022a: `writelines`、`clim`、`fileread` の `Encoding`、`writetable` の `QuoteStrings="minimal"`、グリッドレイアウトの `"fit"` で表を合わせる挙動。
 - 走査のやり直しでは、`a29b51e1` 以降に入った変更(`get_sys` の整理、モデル GUI など)で増えた組み込みの項目は `repmat`/`rmfield` への文字列引数と `pi` だけで、どれも古いものです。下限を上げる項目はありませんでした。
 - 表記(`check_requirement.m`、README、`_GUILDAdoc`)の「R2025a 以降」は、CI で R2023b の動作を確かめてから改めます。
-- CI(下記)で、静的調査で見落としていた 3 点が見つかり、直しました。直した後の CI はまだ流していません。
-
-## CI の結果(GitHub Actions run 42351404631)
-
-> `guilda-dev/guilda` のブランチ `test/matlab-release-matrix`、`fix/matlab-r2023b-compat` の最初の修正(`58bd238d`)を含む状態。MATLAB 本体だけの構成(ツールボックスなし)で、`DebugScript.run_all` の small を実行。ログは `gh run download 42351404631 --repo guilda-dev/guilda -n logs-<release>-matlab`(`2-load.log`、`3-tests-results.csv` など)。
-
-| リリース | 件数 | PASS | FAIL | 判定 | 主な失敗 |
-|---|---|---|---|---|---|
-| R2022b | 469 | 7 | 460 | 起動で失敗 | `readstruct` が `.json` を読めない(`get_config`)。以降 `PowerNetwork` などが使えない。下限未満なので想定どおり |
-| R2023a | 469 | 7 | 460 | 起動で失敗 | R2022b と同じ |
-| R2023b | 469 | 19 | 448 | 失敗 | 445 件が `Unknown table property: VariableTypes.`(下記 1)。ほか `Assertion failed.` 2 件(F19、F8) |
-| R2024a | 469 | 19 | 448 | 失敗 | R2023b と同じ |
-| R2024b | 469 | 346 | 121 | 失敗 | 87+2 件が `MATLAB:UNIQUE:SetOrderOccurrence`(下記 2)、7 件が「message identifier ... must specify the message text」(下記 3)、`Assertion failed.` 2 件(F21、I56)。残りはツールボックスがないための失敗 |
-| R2025a | 462 | 439 | 21 | 成功 | 21 件はすべてツールボックスがないための失敗(想定どおり) |
-| R2025b | 462 | 439 | 21 | 成功 | 同上 |
-| R2026a | 462 | 439 | 21 | 成功 | 同上 |
-| R2026b | 462 | 439 | 21 | 成功 | 同上 |
-
-- 件数は KNOWN 1 件と SKIP 1 件を含みます。R2024b 以前で件数が 7 件多いのは、失敗したテストの扱いの違い([未確認])です。
-- 見つかった点と直し方(`fix/matlab-r2023b-compat` の 2 つ目の修正)
-  1. **表の `Properties.VariableTypes`(R2024b)**。`_GUILDAsystem/_auxiliary/@Parameter/Parameter.m:66,84,99` で列のクラスを読んでいました。すべての部品の作成で通るので、R2023b・R2024a ではほぼ全テストが失敗しました。`string(varfun(@class, tab, "OutputFormat", "cell"))` に置き換えました。`table('Size',…,'VariableTypes',…)` の作成側(`Parameter.m:59`)は R2018a からあるので変えていません。
-  2. **`unique` の順序指定と出現位置の併用**。`@Scenario/private/getTimeSpan.m:20` の `unique(…, "sorted", "first")` は R2024b では `MATLAB:UNIQUE:SetOrderOccurrence` のエラーです(R2025a から併用できる。R2023b・R2024a は 1 の失敗に隠れて未確認)。値だけを使っているので `"first"` を外しました。時間応答シミュレーションの全体で通ります。
-  3. **`assert` のメッセージにエラー ID を渡すテスト**。`assert(cond, DebugScript.helper.msg_id(ME))` のように第 2 引数が ID の形(`GUILDA:X:Y`)の文字列だと、アサーションが失敗したときに R2024b の `assert` はそれを ID とみなし、本文がないとしてエラーにしました(R2025a 以降はアサーションが失敗しないので通らず、挙動は未確認)。実行時コードではなくテスト(`+DebugScript`、23 ファイル 109 か所)の問題で、本当の失敗(2 の `unique`)を隠していました。`assert(cond, "%s", id)` に直しました。
-- `Assertion failed.` の 4 件
-  - R2023b・R2024a の F19(`AModelColumnAbsentFromParameter_csv…`)と F8(`MATPOWERImportRejectsUnsupportedGencost`): どちらもエラー ID を確かめるテストで、途中で部品を作るので 1 のエラーに置き換わったと見込まれます([推測])。
-  - R2024b の I56(`APointThatViolatesKCL…`): 後半の `net.simulate` が 2 のエラーで止まり、期待した `GUILDA:SolverODE:Stale` にならなかったと見込まれます([推測])。
-  - R2024b の F21(`AnLQRDrivingAnUnknownInput…`): R2025a 以降でも同じ失敗があり、ツールボックスがないための失敗として扱われています。リリースには依存しません。
-- 走査スクリプト(`scan_matlab_features`)に、1〜3 を正規表現で拾う項目(`syntax` の `table Properties.VariableTypes`、`unique order + occurrence`、`assert message is an identifier`)を足しました。直す前のコードでは 3 件・1 件・108 件を拾い、直した後は 0 件です。
 
 ## 方法
 
@@ -164,7 +136,7 @@
 ## 未決の点
 
 1. CI で確かめたい点
-   - 「CI の結果」の 1〜3 を直した後に、R2023b・R2024a・R2024b で全テストが通るか。F19、F8、I56 の `Assertion failed.` が消えるか。
+   - R2023b・R2024a・R2024b で、ネットワークの作成と時間応答シミュレーションが通るか。
    - R2024b 以前で `SeparateComplexParts` が `makeODE` で黙って無視されるか(上記の [推測] の確認)。黙って無視される場合、その旨の説明をどこに書くか。
    - 「未確認」の項目のうち、下限 R2023b に関わるもの: `matlab.ode.SolverID`/`matlab.ode.Options`(`ode` と同時の R2023b と推定)。`Repeating` と名前-値引数の併用、`opt.?Class`、最適化変数への `sin`/`cos` は R2020b 前後と見込まれ、R2023b より古いので結論には影響しない見込みです。
    - R2022b で何が失敗するか(`ode` オブジェクトがないので時間応答シミュレーションは動かない見込み)。
