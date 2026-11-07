@@ -10,8 +10,9 @@ function h_tab = build_page(h_tabs, sct_page)
         h_tab  % The tab.
     end
     sct_color = gui_palette();
+    % The title keeps the color of the theme: the tab strip of uitabgroup has no color property.
     h_tab  = uitab(h_tabs, "Title", string(sct_page.s_title), "Tag", string(sct_page.s_type), ...
-        "BackgroundColor", sct_color.rv_background, "ForegroundColor", sct_color.rv_text);
+        "BackgroundColor", sct_color.rv_background);
     h_grid = uigridlayout(h_tab, [1 1], "Padding", [8 8 8 8], "BackgroundColor", sct_color.rv_background);
     if string(sct_page.s_type) == "table"
         uitable(h_grid, "Data", sct_page.content, "ColumnEditable", false, "ColumnWidth", "fit", ...

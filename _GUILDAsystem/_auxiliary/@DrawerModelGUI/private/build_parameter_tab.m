@@ -14,14 +14,14 @@ function h_tab = build_parameter_tab(h_tabs, a_target, h_header)
         h_tab  % The Parameter tab.
     end
     sct_color = gui_palette();
-    h_tab = uitab(h_tabs, "Title", "Parameter", "BackgroundColor", sct_color.rv_background, ...
-        "ForegroundColor", sct_color.rv_text);
+    % The title keeps the color of the theme: the tab strip of uitabgroup has no color property.
+    h_tab = uitab(h_tabs, "Title", "Parameter", "BackgroundColor", sct_color.rv_background);
     a_para = a_target.a_Parameter;
     n_para = numel(a_para);
     h_grid = uigridlayout(h_tab, [n_para+1 1], "RowHeight", repmat({"fit"}, 1, n_para+1), ...
         "Padding", [8 8 8 8], "Scrollable", "on", "BackgroundColor", sct_color.rv_background);
     uilabel(h_grid, "Text", "See Docs for the meaning of each parameter and the model.", "Tag", "note", ...
-        "FontAngle", "italic", "FontColor", sct_color.rv_subtext, "BackgroundColor", sct_color.rv_background);
+        "WordWrap", "on", "FontAngle", "italic", "FontColor", sct_color.rv_subtext, "BackgroundColor", sct_color.rv_background);
     if n_para == 0
         h_grid.RowHeight{end+1} = "fit";
         uilabel(h_grid, "Text", "No parameters.", "FontColor", sct_color.rv_text, ...
