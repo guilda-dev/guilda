@@ -59,7 +59,7 @@ function [sv_id, c_pat] = catalog()
             a_ent = sct_xml.message.entry;
             for k = 1:numel(a_ent)
                 [s_pat, n_len] = to_pattern(a_ent(k).Text);
-                if n_len > 0   % "{0}" だけの entry は何にでも一致するので調べない
+                if n_len > 0   % "{0}" や "{0}: {1}" のように文字のない entry は何にでも一致するので調べない
                     sv_cache(end+1,1) = "GUILDA:" + erase(a_xml(i).name, ".xml") + ":" + a_ent(k).keyAttribute; %#ok<AGROW>
                     c_cache{end+1,1}  = s_pat; %#ok<AGROW>
                     rv_len(end+1,1)   = n_len; %#ok<AGROW>
@@ -82,7 +82,7 @@ function [s_pat, n_len] = to_pattern(s_text)
     end
     arguments (Output)
         s_pat    % 文章に一致する正規表現
-        n_len    % プレースホルダを除いた文字数
+        n_len    % プレースホルダを除いた部分の英字の数
     end
     str = char(s_text);
     c_lit = regexp(str, '\{\d+(,.*?)?\}', "split");
@@ -93,5 +93,5 @@ function [s_pat, n_len] = to_pattern(s_text)
         c_esc = cellfun(@(s) regexptranslate("escape", s), c_lit, "UniformOutput", false);
     end
     s_pat   = [strjoin(c_esc, '.*'), '$'];   % 先頭は固定しない (arguments の検証関数のエラーには MATLAB が文を前置する)
-    n_len   = sum(cellfun(@numel, c_lit));
+    n_len   = nnz(isletter([c_lit{:}]));
 end
