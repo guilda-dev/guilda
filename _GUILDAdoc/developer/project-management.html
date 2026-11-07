@@ -289,26 +289,26 @@
 
     <!-- ===================== Update Log ===================== -->
     <h2 id="update-log"><span lang="en">Update Log entries</span><span lang="ja">Update Log の項目</span></h2>
-    <p lang="en">Each entry in <code>_GUILDAdoc/database/list_UpdateLog.js</code> is one object. The Home tab shows entries newest first, each card coloured by its type.</p>
-    <p lang="ja"><code>_GUILDAdoc/database/list_UpdateLog.js</code> の各項目は 1 つのオブジェクト。Home タブは新しい順に表示し、種類ごとにカードを色分け。</p>
+    <p lang="en">The Update Log is for users of GUILDA, not for developers. It lists what a user can see: new models, new features or analyses, and bug fixes that change results or behaviour. The Home tab shows the newest four entries; <a href="../updatelog.html">updatelog.html</a> lists all, newest first.</p>
+    <p lang="ja">Update Log は GUILDA の利用者向け（開発者向けではない）。対象は利用者から見える変更: 新しいモデル、新しい機能・解析、結果や動作が変わるバグ修正。Home タブに最新 4 件、<a href="../updatelog.html">updatelog.html</a> に全件（新しい順）。</p>
+    <p lang="en">Each entry in <code>_GUILDAdoc/database/list_UpdateLog.js</code> is one object, written in English in user language: what a user can do now, or what they must change.</p>
+    <p lang="ja"><code>_GUILDAdoc/database/list_UpdateLog.js</code> の各項目は 1 つのオブジェクト。英語で、利用者の言葉で記述: 何ができるようになったか、利用者が何を変える必要があるか。</p>
 <pre><code>{
-  "title": "Add grid-forming inverter model",
+  "title": "New grid-forming inverter model",
   "date": "YYYY-MM-DD",
-  "type": "added",
+  "type": "model",
   "content": "One or two sentences on what changed for users."
 }</code></pre>
-    <p lang="en">The <code>type</code> field uses the <a href="https://keepachangelog.com/" target="_blank">Keep a Changelog</a> categories:</p>
-    <p lang="ja"><code>type</code> フィールドは <a href="https://keepachangelog.com/" target="_blank">Keep a Changelog</a> の分類:</p>
     <table class="dg-table">
-      <thead><tr><th><span lang="en">Type</span><span lang="ja">種類</span></th><th><span lang="en">Use it for</span><span lang="ja">用途</span></th></tr></thead>
+      <thead><tr><th><code>type</code></th><th><span lang="en">Label</span><span lang="ja">表示</span></th><th><span lang="en">Use it for</span><span lang="ja">用途</span></th></tr></thead>
       <tbody>
-        <tr><td><span class="dg-badge is-ok">added</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">A new feature, class, method or option.</span><span lang="ja">新しい機能、クラス、メソッド、オプション。</span></td></tr>
-        <tr><td><span class="dg-badge">changed</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">A change in the behaviour or interface of something that already exists.</span><span lang="ja">既存のものの動作やインターフェースの変更。</span></td></tr>
-        <tr><td><span class="dg-badge is-warn">deprecated</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">Something that still works but will be removed; name its replacement.</span><span lang="ja">まだ動くが今後削除されるもの。代わりを明記。</span></td></tr>
-        <tr><td><span class="dg-badge is-err">removed</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">Something removed.</span><span lang="ja">削除されたもの。</span></td></tr>
-        <tr><td><span class="dg-badge is-muted">fixed</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">A bug fix.</span><span lang="ja">バグの修正。</span></td></tr>
+        <tr><td><span class="dg-badge is-ok">model</span></td><td data-label="Label" data-label-ja="表示"><span lang="en">Model</span><span lang="ja">モデル</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">A new or changed bundled model: network, component or controller.</span><span lang="ja">同梱モデル（系統モデル、機器、制御器）の追加・変更。</span></td></tr>
+        <tr><td><span class="dg-badge">feature</span></td><td data-label="Label" data-label-ja="表示"><span lang="en">Feature</span><span lang="ja">機能</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">A new feature, analysis or option. Also a user-visible breaking change, such as a removed or renamed public method: say what users must change.</span><span lang="ja">新しい機能・解析・オプション。公開メソッドの削除・名前変更など、利用者に影響する互換性のない変更もこれ。利用者が変えるべき点を明記。</span></td></tr>
+        <tr><td><span class="dg-badge is-warn">fix</span></td><td data-label="Label" data-label-ja="表示"><span lang="en">Fix</span><span lang="ja">バグ修正</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">A bug fix a user can notice.</span><span lang="ja">利用者が気付くバグの修正。</span></td></tr>
       </tbody>
     </table>
+    <p lang="en">Not in the Update Log: internal structure and refactoring, renames of internal classes or files, naming rules, edit tracking and other internals, developer documentation. Those go in the commit history and <code>notes/</code>.</p>
+    <p lang="ja">Update Log に載せないもの: 内部構造やリファクタリング、内部のクラス・ファイルの名前変更、命名規則、編集追跡などの内部の仕組み、開発者向けドキュメント。これらはコミット履歴と <code>notes/</code> へ。</p>
     <p lang="en">No <code>type</code>: neutral grey, no label. An unknown value: shown the same way, with a warning in the browser console.</p>
     <p lang="ja"><code>type</code> なし: ラベルなしの灰色で表示。未知の値: 同様に表示し、ブラウザのコンソールに警告。</p>
 
