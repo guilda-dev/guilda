@@ -8,7 +8,7 @@ function [sys, flag, output] = get_sys(obj, varargin)
 % (default net.solver_LIN.Algorithm, "Feedback"). Use net.linearize to keep the unreduced
 % Jacobian blocks and the variable map.
 %
-% Format chooses the form of sys: "ResultLIN" (default) is the result of the
+% Format chooses the form of sys: "GUILDAorigin" (default) is the ResultLIN of the
 % linearization, whose properties A, B, C, D, E, StateName, InputName and OutputName hold
 % the model of Algorithm with the selected Input and Output (kept in result.options);
 % "struct" is a struct with these eight fields; "ss" is a descriptor state-space model (dss)
@@ -28,7 +28,7 @@ function [sys, flag, output] = get_sys(obj, varargin)
 % - `Plot` — Plot the eigenvalue map. Default: false.
 % - `Input` — Inputs of the model: "u" or Labels (see ResultLIN.get_ss). Default: all inputs.
 % - `Output` — Outputs of the model: "x", "V", "I", "y" or names (see ResultLIN.get_ss). Default: as in get_ss, so the outputs follow the states and "Kron" has no output names.
-% - `Format` — Form of sys: "ResultLIN", "struct" or "ss". Default: "ResultLIN".
+% - `Format` — Form of sys: "GUILDAorigin", "struct" or "ss". Default: "GUILDAorigin".
 %
 % <@Examples>
 % ```matlab
@@ -68,7 +68,7 @@ function [sys, flag, output] = get_sys(obj, varargin)
         result.Plot();
     end
 
-    if opt.Format == "ResultLIN"
+    if opt.Format == "GUILDAorigin"
         sys = result;
         if isempty(result.StateName)
             result.get_ss(result.options.Algorithm, c_channel{:}, Format="struct");   % stops with the reason, if any
@@ -100,7 +100,7 @@ function opt = call_options(opt)
     arguments (Input)
         opt.Input (1,:) string
         opt.Output (1,:) string
-        opt.Format (1,1) string {mustBeMember(opt.Format, ["ResultLIN","struct","ss"])} = "ResultLIN"
+        opt.Format (1,1) string {mustBeMember(opt.Format, ["GUILDAorigin","struct","ss"])} = "GUILDAorigin"
         opt.Plot (1,1) logical = false
     end
 end

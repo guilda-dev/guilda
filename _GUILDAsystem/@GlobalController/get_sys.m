@@ -10,7 +10,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % A controlled unit without the states sv_u or the inputs sv_y stops with the
 % error GUILDA:GlobalController:GlobalControllerPort.
 %
-% Format chooses the form of the model: "ResultLIN" (default) returns a ResultLIN whose
+% Format chooses the form of the model: "GUILDAorigin" (default) returns a ResultLIN whose
 % properties A, B, C, D, E, StateName, InputName and OutputName hold the model
 % (E dx/dt = A x + B u, y = C x + D u), with rv_point = [x; u] and the Jacobian blocks
 % rm_Axx, rm_Bx and rm_E in the order of the model (tab_variable is empty); "struct"
@@ -27,7 +27,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         I        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
         u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
         opt.full (1,1) logical = false  % Ignored; kept for old calls.
-        opt.Format (1,1) string {mustBeMember(opt.Format, ["ResultLIN","struct","ss"])} = "ResultLIN"   % Form of the model: ResultLIN, struct or ss (dss; needs the Control System Toolbox).
+        opt.Format (1,1) string {mustBeMember(opt.Format, ["GUILDAorigin","struct","ss"])} = "GUILDAorigin"   % Form of the model: GUILDAorigin (a ResultLIN), struct or ss (dss; needs the Control System Toolbox).
     end
     arguments (Output)
         sys   % Linear model in the form of Format, with state, input and output names.

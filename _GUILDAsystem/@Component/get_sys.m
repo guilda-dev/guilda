@@ -27,7 +27,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % fcn_I at the point and the inputs of the controllers are the outputs they are
 % connected to (as in the simulation). The model is not changed.
 %
-% Format chooses the form of the model: "ResultLIN" (default) returns a ResultLIN whose
+% Format chooses the form of the model: "GUILDAorigin" (default) returns a ResultLIN whose
 % properties A, B, C, D, E, StateName, InputName and OutputName hold the model
 % (E dx/dt = A x + B u, y = C x + D u), with tab_variable (comp.get_variable_map()),
 % rv_point and the Jacobian blocks rm_Axx, rm_Axv, rm_Bx (the inputs of the component)
@@ -54,7 +54,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the component tag.
         opt.con  (1,1) logical = false     % Ignored; kept for old calls (the local controllers are always included).
         opt.Point = []   % Point of the linearization; overrides x, V, I, u.
-        opt.Format (1,1) string {mustBeMember(opt.Format, ["ResultLIN","struct","ss"])} = "ResultLIN"   % Form of the model: ResultLIN, struct or ss (dss; needs the Control System Toolbox).
+        opt.Format (1,1) string {mustBeMember(opt.Format, ["GUILDAorigin","struct","ss"])} = "GUILDAorigin"   % Form of the model: GUILDAorigin (a ResultLIN), struct or ss (dss; needs the Control System Toolbox).
     end
     arguments (Output)
         sys   % Linear model in the form of Format, with state, input and output names.
