@@ -21,7 +21,8 @@ h = net.a_Bus{1}.gui();
 assert(isa(h, "DrawerModelGUI") && h.a_target == net.a_Bus{1})
 assert(isa(h.h_container, "matlab.ui.Figure") && isprop(h.h_container, "isUIFigure"))
 assert(contains(header_text(h), "B001") && contains(header_text(h), "Bus"))
-assert(isequal(tab_titles(h), ["Parameter","Image"]))
+assert(isequal(tab_titles(h), ["Parameter","Image"]))   % no Equations: the help of Bus has no math block
+assert(isempty(findobj(h.h_container, "Type", "uihtml")))
 h_img = findobj(h.h_container, "Type", "uiimage");
 assert(endsWith(string(h_img.ImageSource), fullfile("@Bus","image.svg")))
 
@@ -143,17 +144,17 @@ assert(isscalar(h_label) && contains(h_label.Text, "deleted"))
 %% Every page type of gui_content is drawn
 s = DebugScript.helper.GuiContentStub();
 h = s.gui();
-assert(isequal(tab_titles(h), ["Parameter","Image","Equation","ASCII","Table","Action","Custom"]))
+assert(isequal(tab_titles(h), ["Parameter","Image","Equation","Table","Action"]))
 f = h.h_container;
 h_img = findobj(f, "Type", "uiimage");
 assert(endsWith(string(h_img.ImageSource), fullfile("@PowerNetwork","image.svg")))
-h_lbl = findobj(f, "Type", "uilabel", "Interpreter", "latex");
-assert(isscalar(h_lbl) && h_lbl.Text == "$\dot{x} = f(x,u)$")
-h_txt = findobj(f, "Type", "uitextarea");
-assert(isequal(string(h_txt.Value), ["+--+"; "|SG|"; "+--+"]) && ~h_txt.Editable)
+h_html = findobj(f, "Type", "uihtml");
+assert(isscalar(h_html) && ancestor(h_html, "uitab").Title == "Equation")
+assert(isequal(h_html.Data.sv_math, ["\dot{x} = f(x,u)"; "y = h(x)"]))
+assert(isfile(h_html.HTMLSource) && contains(h_html.Data.s_js, "katex") && contains(h_html.Data.s_css, "data:font/woff2;base64,"))
+assert(~contains(h_html.Data.s_css, "url(fonts/"))
 h_tab = findobj(findobj(f, "Type", "uitab", "Tag", "table"), "Type", "uitable");
 assert(height(h_tab.Data) == 2 && ~any(h_tab.ColumnEditable))
-assert(isvalid(s.h_custom) && ancestor(s.h_custom, "uitab").Title == "Custom")
 % The action runs and the GUI is drawn again
 h_btn = findobj(f, "Type", "uibutton");
 assert(h_btn.Text == "Run")
@@ -166,6 +167,20 @@ lastwarn("");
 DebugScript.helper.quiet(@() h_btn.ButtonPushedFcn(h_btn, []));
 assert(contains(lastwarn(), "action failed"))
 assert(s.n_action == 1 && isvalid(h_btn))
+
+
+%% The Equations page shows the math blocks of the help of the class, before the Image page
+[~, gen] = DebugScript.helper.build_3bus("gen-1axis");
+h = gen.gui();
+sv_title = tab_titles(h);
+assert(sv_title(1) == "Parameter" && sv_title(2) == "Equations")
+assert(~any(sv_title == "Image") || find(sv_title == "Image") > 2)
+h_html = findobj(h.h_container, "Type", "uihtml");
+assert(isscalar(h_html) && ancestor(h_html, "uitab").Title == "Equations")
+sv_math = h_html.Data.sv_math;
+assert(numel(sv_math) == count(string(help(class(gen))), "```math"))   % 2 blocks in one_axis
+assert(startsWith(sv_math(1), "\left\{") && contains(sv_math(1), "\begin{aligned}") && endsWith(sv_math(1), "\right."))
+assert(contains(sv_math(2), "\frac{E_q - V_q}{X_d'}") && ~any(contains(sv_math, "```")))
 
 
 function close_new_figures(a_before)

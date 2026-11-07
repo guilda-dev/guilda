@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<!--
+  "latex" page of DrawerModelGUI (build_page.m), shown in a uihtml.
+  uihtml reads files only in the folder of this page and its subfolders, so the bundled KaTeX
+  (_GUILDAdoc/vendor/katex) comes through Data: htmlComponent.Data has fields
+  sv_math (display equations, one per element), s_js (katex.min.js) and
+  s_css (katex.min.css with the fonts as data URIs).
+-->
+<style>
+  html, body { margin: 0; padding: 0; background: #ffffff; color: #1a1a1a; }
+  body { padding: 12px 16px; overflow: auto; }
+  .equation { margin: 0 0 14px 0; overflow-x: auto; overflow-y: hidden; }
+  .equation .katex-display { margin: 0; }
+  .katex { font-size: 1.25em; }
+  .error { color: #b00020; font-family: monospace; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<div id="equations"></div>
+<script>
+  var l_loaded = false;
+
+  function load_katex(sct_data) {
+    if (l_loaded || typeof katex !== "undefined") { l_loaded = true; return; }
+    var h_style = document.createElement("style");
+    h_style.textContent = sct_data.s_css;
+    document.head.appendChild(h_style);
+    var h_script = document.createElement("script");
+    h_script.textContent = sct_data.s_js;
+    document.head.appendChild(h_script);
+    l_loaded = true;
+  }
+
+  function draw(sct_data) {
+    if (!sct_data || !sct_data.s_js) { return; }
+    load_katex(sct_data);
+    var h_root = document.getElementById("equations");
+    h_root.innerHTML = "";
+    var sv_math = [].concat(sct_data.sv_math);
+    sv_math.forEach(function (s_math) {
+      var h_eq = document.createElement("div");
+      h_eq.className = "equation";
+      try {
+        katex.render(String(s_math), h_eq, { displayMode: true, throwOnError: true });
+      } catch (err) {
+        h_eq.className = "equation error";
+        h_eq.textContent = String(s_math) + "\n" + err.message;
+      }
+      h_root.appendChild(h_eq);
+    });
+  }
+
+  function setup(htmlComponent) {
+    htmlComponent.addEventListener("DataChanged", function () { draw(htmlComponent.Data); });
+    draw(htmlComponent.Data);
+  }
+</script>
+</body>
+</html>
