@@ -3,8 +3,8 @@
   "Bus.replace_component": {
     "inputs": [
       {"name": "obj", "kind": "required", "type": "Bus", "purpose": "Bus"},
-      {"name": "s_tag", "kind": "required", "type": ["string", "choices=cellstr(string(obj.a_Component))"], "purpose": "Tag of the component to replace"},
-      {"name": "Key", "kind": "required", "type": ["char", "choices={'gen-classical','gen-droop','gen-1axis','gen-park','gen-2axis','load-impedance','load-power'}"], "purpose": "Component model key"},
+      {"name": "s_tag", "kind": "required", "type": [["string", "choices=cellstr(string(obj.a_Component))"], ["string"]], "purpose": "Tag of the component to replace"},
+      {"name": "Key", "kind": "required", "type": ["char", "choices=cellstr(DebugScript.helper.proto_keymap(\"Component\").key)"], "purpose": "Component model key"},
       {"name": "parameter", "kind": "ordered", "purpose": "Dynamic parameters (table or string); NaN uses the class defaults"},
       {"name": "Controllers", "kind": "namevalue", "type": ["char", "choices={'drop','keep'}"], "purpose": "Local controllers of the replaced component"}
     ],
