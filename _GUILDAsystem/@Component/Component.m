@@ -220,6 +220,7 @@ classdef Component < PowerSystemModel
 
         build_odefcn(obj)
         handle_edit(obj, a_layer, tag, log)
+        sct_page = gui_content(obj)
 
         % Raise a constructor message of Component.xml for a subclass in another folder.
         parameter_error(obj, s_key, varargin)

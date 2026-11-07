@@ -166,6 +166,7 @@ classdef GlobalController < PowerSystemModel
     methods (Access=protected)
         build_odefcn(obj)
         handle_edit(obj, a_layer, tag, log)
+        sct_page = gui_content(obj)
     end
     methods (Access={?PowerNetwork})
         initialize(obj, l_equilibrium)

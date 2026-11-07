@@ -17,18 +17,18 @@ function sct_page = gui_content(obj)
 %   the order they appear; none when the help has no such block.
 % - "Image" ("image"): the image.svg of the class folder, searched from the class of the
 %   model up through its superclasses; none when no folder has one.
+% - "Initialize" ("action"): runs `initialize` of the network the model belongs to (found
+%   through the parents, as in get_Hz); none when the model is not in a network.
 %
-% A subclass appends its pages to those of its superclass. Declare the override in the
-% classdef as `methods(Access=protected) sct_page = gui_content(obj) end`.
+% A subclass puts its own pages first, followed by those of its superclass. Declare the
+% override in the classdef as `methods(Access=protected) sct_page = gui_content(obj) end`.
 %
 % <@Examples>
 % ```matlab
 % function sct_page = gui_content(obj)
-%     sct_page = gui_content@component.generator.abstract(obj);
-%     sct_page(end+1,1) = struct("s_title","Swing", "s_type","latex", ...
+%     sct_page = struct("s_title","Swing", "s_type","latex", ...
 %         "content","M\ddot{\delta} = P_m - P_e", "s_label","");
-%     sct_page(end+1,1) = struct("s_title","Recompute", "s_type","action", ...
-%         "content",@() obj.a_PowerNetwork.initialize(), "s_label","initialize");
+%     sct_page = [sct_page; gui_content@component.generator.abstract(obj)];
 % end
 % ```
     arguments (Input)
@@ -52,12 +52,20 @@ function sct_page = gui_content(obj)
         s_image = fullfile(s_folder, "image.svg");
         if startsWith(s_name, "@") && isfile(s_image)
             sct_page(end+1,1) = struct("s_title","Image", "s_type","image", "content",string(s_image), "s_label","");
-            return
+            break
         end
         mc = meta.class.fromName(s_class);
         if ~isempty(mc) && ~isempty(mc.SuperclassList)
             sv_class = [sv_class, string({mc.SuperclassList.Name})]; %#ok<AGROW>
         end
+    end
+    % The network the model belongs to, through the parents (as in get_Hz).
+    p = obj;
+    while isa(p,"PowerSystemModel") && ~isa(p,"PowerNetwork")
+        p = p.parent;
+    end
+    if isa(p,"PowerNetwork")
+        sct_page(end+1,1) = struct("s_title","Initialize", "s_type","action", "content",@() p.initialize(), "s_label","initialize");
     end
 end
 

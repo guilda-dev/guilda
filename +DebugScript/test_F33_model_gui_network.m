@@ -19,11 +19,11 @@ c_fig = onCleanup(@() delete(fig));
 %% The tabs of each class come before the pages of PowerSystemModel
 h = net.gui(fig);
 sv_title = tab_titles(h);
-assert(isequal(sv_title(1:3), ["Parameter","Summary","Equilibrium"]) && sv_title(end) == "Image")
+assert(isequal(sv_title(1:3), ["Parameter","Summary","Equilibrium"]) && isequal(sv_title(end-1:end), ["Image","Initialize"]))
 h.render(net.a_Bus{1});
-assert(isequal(tab_titles(h), ["Parameter","Equilibrium","Image"]))
+assert(isequal(tab_titles(h), ["Parameter","Equilibrium","Image","Initialize"]))
 h.render(net.a_Branch{1});
-assert(isequal(tab_titles(h), ["Parameter","Equilibrium","Image"]))
+assert(isequal(tab_titles(h), ["Parameter","Equilibrium","Image","Initialize"]))
 
 
 %% PowerNetwork: Summary counts the buses, branches, components and global controllers
