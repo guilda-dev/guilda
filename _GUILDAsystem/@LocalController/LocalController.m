@@ -201,6 +201,7 @@ classdef LocalController < PowerSystemModel
 
     methods (Access=protected)
         handle_edit(obj, a_layer, tag, log)
+        sct_page = gui_content(obj)
     end
     methods (Access=private)
         val = parent_equilibrium(obj, s_prop)
