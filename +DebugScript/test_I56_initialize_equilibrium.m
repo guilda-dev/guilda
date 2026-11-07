@@ -122,7 +122,7 @@ lqr.Q = ones(1, numel(gen.sv_x) + 1);           % 重みのサイズが違うの
 error_of(@() net.initialize());
 assert(DebugScript.helper.is_stale(net))
 ME = error_of(@() net.simulate([0 1]));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:Stale", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:Stale", "%s", DebugScript.helper.msg_id(ME))
 
 
 %% A failure without a stale edit is reported as an unfinished initialize
@@ -139,7 +139,7 @@ assert(~DebugScript.helper.is_stale(net))
 error_of(@() net.initialize(Method="powerflow"));
 assert(DebugScript.helper.is_stale(net))
 ME = error_of(@() net.simulate([0 1]));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:Stale", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:Stale", "%s", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "stopped before it finished"), ME.message)
 
 
@@ -148,7 +148,7 @@ net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);
 V = net.cv_Vequilibrium;
 ME = error_of(@() net.initialize(Method="OPF", MaxIteration=2));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", "%s", DebugScript.helper.msg_id(ME))
 assert(~DebugScript.helper.is_stale(net) && isequal(net.cv_Vequilibrium, V))
 
 
@@ -157,7 +157,7 @@ assert(~DebugScript.helper.is_stale(net) && isequal(net.cv_Vequilibrium, V))
 DebugScript.helper.quiet(@() net.initialize);    % B001 がスラックになる
 net.a_Bus{1}.remove_component(string(net.a_Bus{1}.a_Component{1}));
 ME = error_of(@() net.initialize());
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", "%s", DebugScript.helper.msg_id(ME))
 assert(DebugScript.helper.is_stale(net))
 
 
@@ -165,7 +165,7 @@ assert(DebugScript.helper.is_stale(net))
 % 許容値を極端に緩めると潮流計算は反復せずに成功を返し、平衡でない点を渡す
 net = DebugScript.helper.build_9bus();
 ME  = error_of(@() net.initialize(Tolerance=1e3));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", "%s", DebugScript.helper.msg_id(ME))
 assert(DebugScript.helper.is_stale(net))
 assert(DebugScript.helper.msg_id(error_of(@() net.simulate([0 1]))) == "GUILDA:SolverODE:Stale")
 DebugScript.helper.quiet(@() net.initialize);
@@ -227,7 +227,7 @@ function assert_edit_stops(net, s_id, s_log)
     V   = net.cv_Vequilibrium;
     sv  = DebugScript.helper.stale(net);
     ME  = error_of(@() net.initialize(Method="equilibrium"));
-    assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == s_id, "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, s_log))
     assert(isequal(net.cv_Vequilibrium, V) && DebugScript.helper.is_stale(net) && isequal(DebugScript.helper.stale(net), sv))
 end

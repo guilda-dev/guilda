@@ -234,7 +234,7 @@ clear Deprecated
 lastwarn("");
 s_path = DebugScript.helper.quiet(@() CsvNetHandler.export(net, "Old14", "savepath", s_dir, "version", 3));
 id = DebugScript.helper.msg_id();
-assert(id == "GUILDA:Deprecated:CsvNetHandlerExport", id)
+assert(id == "GUILDA:Deprecated:CsvNetHandlerExport", "%s", id)
 assert(s_path == fullfile(s_dir, "@Old14") && isfile(fullfile(s_path, "Old14.m")))
 assert(contains(fileread(fullfile(s_path, "Old14.m")), "ver = 3"))
 assert(isfile(fullfile(s_path, "network", "parameter.csv")))
@@ -244,7 +244,7 @@ assert(error_id(@() CsvNetHandler.export(net, "Old14", "savepath", s_dir)) == "G
 lastwarn("");
 net2 = DebugScript.helper.quiet(@() CsvNetHandler.import(s_path));
 id = DebugScript.helper.msg_id();
-assert(id == "GUILDA:Deprecated:CsvNetHandlerImport", id)
+assert(id == "GUILDA:Deprecated:CsvNetHandlerImport", "%s", id)
 assert(norm(net2.cv_Vequilibrium - net.cv_Vequilibrium) < 1e-8)
 % 既存の系統へ読み込む v3 の形 (系統クラスのコンストラクタで使っていた形)
 net3 = PowerNetwork();
@@ -479,7 +479,7 @@ mpc_c0.gencost(1,7) = 10;
 lastwarn("");
 net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc_c0, Initialize=false));
 id = DebugScript.helper.msg_id();
-assert(id == "GUILDA:import_matpower:ConstantCost", id)
+assert(id == "GUILDA:import_matpower:ConstantCost", "%s", id)
 assert(net.a_Bus{1}.a_Component{1}.tab_parameter.OPF.fP == 2000)
 % 1 次の費用 (NCOST = 2) と Q の費用の行 (2*ng 行)
 mpc_q = mpc;

@@ -49,7 +49,7 @@ for s_key = ["gen-droop","load-impedance"]
     catch ME
     end
     assert(~isempty(ME), s_key + " did not stop")
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:build_layout:MissingGetCompPQ", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:build_layout:MissingGetCompPQ", "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, s_tag), ME.message)
 end
 
@@ -84,7 +84,7 @@ function check_mass_error(net, s_tag)
     catch ME
     end
     assert(~isempty(ME), "simulate did not stop")
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:read_mass:NotConstant", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:read_mass:NotConstant", "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, s_tag), ME.message)
 end
 
