@@ -1,4 +1,4 @@
-% F5 連続型潮流計算 (calculate_continuation_powerflow)
+% F5 連続潮流計算 (calculate_continuation_powerflow)
 %
 % 負荷を (1 + λ) 倍で増やしたときの潮流解を予測子・修正子法でたどり、PV 曲線 (ノーズカーブ) を求める。
 %   [res, flag, output] = net.calculate_continuation_powerflow(LoadBus=負荷母線のタグ);

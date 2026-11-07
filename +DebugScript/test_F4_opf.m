@@ -979,6 +979,33 @@ assert(error_id(@() net.build_opf_problem(Tolerance=1e-6)) == "GUILDA:resolve_op
 assert(error_id(@() net.optimize_powerflow(Method="DC OPF", Solver="linprog")) == "GUILDA:SolverOPF:UnsupportedSolver")
 
 
+%% OPF stops without Optimization Toolbox
+% Toolbox が無い環境を license の代わりで再現する。optimize_powerflow と initialize(Method="OPF") は
+% 解析の開始時に GUILDA のメッセージで止まり、潮流計算 (既定の newton) はそのまま動く
+net = DebugScript.helper.build_9bus();
+s_tmp = tempname;  mkdir(s_tmp);
+writelines(["function varargout = license(varargin)", ...
+    "if nargin >= 2 && strcmpi(varargin{1}, 'test') && strcmpi(varargin{2}, 'Optimization_Toolbox')", ...
+    "    varargout = {false};  return", "end", ...
+    "[varargout{1:max(nargout,1)}] = builtin('license', varargin{:});", "end"], ...
+    fullfile(s_tmp, "license.m"));
+w = warning("off", "MATLAB:dispatcher:nameConflict");
+addpath(s_tmp);
+c_tmp = onCleanup(@() cellfun(@feval, {@() rmpath(s_tmp), @() rmdir(s_tmp, "s"), ...
+    @() clear("license"), @() warning(w)}));
+assert(~license("test", "Optimization_Toolbox"))
+try
+    net.optimize_powerflow(Method="DC OPF");
+    error("DebugScript:NoError", "エラーにならない")
+catch ME
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:require_toolbox:Unavailable", ME.message)
+    assert(contains(ME.message, "OPF") && contains(ME.message, "Optimization Toolbox"), ME.message)
+end
+assert(error_id(@() net.initialize(Method="OPF")) == "GUILDA:require_toolbox:Unavailable")
+[~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+assert(flag == 1)
+
+
 % ---- local functions ----
 function net = build_loop3()
 % 3 母線ループ: 送電線 B001-B002, B002-B003, B001-B003 (R = 0, X = 0.1)。

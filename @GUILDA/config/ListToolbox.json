@@ -1,0 +1,17 @@
+{
+  "optim": {
+    "Name": "Optimization Toolbox",
+    "License": "Optimization_Toolbox",
+    "Warning": "Not installed. The power flow with Method=\"fsolve\" and the OPF (optimize_powerflow, initialize(Method=\"OPF\")) are unavailable."
+  },
+  "control": {
+    "Name": "Control System Toolbox",
+    "License": "Control_Toolbox",
+    "Warning": "Not installed. The linearization output as ss (get_sys/get_ss with Format=\"ss\") and the LQR controllers (controller.local_LQR, controller.local_LQR_retrofit, +controller/+modeling/get_environment) are unavailable."
+  },
+  "symbolic": {
+    "Name": "Symbolic Math Toolbox",
+    "License": "Symbolic_Toolbox",
+    "Warning": "Not installed. A symbolic NRMFcn in MethodNewtonRaphson and the development validate scripts are unavailable."
+  }
+}

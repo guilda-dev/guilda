@@ -1,4 +1,4 @@
-<!--This is an XML file containing error messages related to the class "Newton Raphson Method".-->
+<!--This is an XML file containing error messages related to the class "MethodNewtonRaphson".-->
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>        
         <entry key="InvalidInput">Invalid input argument. Input argument must be of type `double`, a function handle, or a symbolic expression.</entry> 

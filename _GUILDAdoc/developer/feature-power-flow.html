@@ -83,30 +83,36 @@
     <table class="dg-table fpf-opts">
       <thead><tr><th><span lang="en">Option</span><span lang="ja">オプション</span></th><th><span lang="en">Default (source)</span><span lang="ja">既定値（出所）</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th></tr></thead>
       <tbody>
-        <tr><td><code>Method</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>"algebraic"</code><small><code>net.solver_PF.Method</code> ← <code>GUILDA.config("PowerFlowCalculation")</code></small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
-          <li><code>"algebraic"</code>: <code>fsolve</code> on the power equations</li>
-          <li><code>"dynamic"</code>: virtual bus dynamics integrated by <code>ode15s</code> until the mismatch is below the tolerance</li>
+        <tr><td><code>Method</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>"newton"</code><small><code>net.solver_PF.Method</code> ← <code>GUILDA.config("PowerFlowCalculation")</code></small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
+          <li><code>"newton"</code>: Newton-Raphson method (<code>MethodNewtonRaphson</code>) with the analytic Jacobian</li>
+          <li><code>"gradient"</code>: discrete gradient steps <code>θ += α·ΔP</code>, <code>V += α·ΔQ/V</code> (<code>MethodGradient</code>)</li>
+          <li><code>"levenberg-marquardt"</code>: damped Gauss-Newton steps with the analytic Jacobian (<code>MethodLevenbergMarquardt</code>)</li>
+          <li><code>"fsolve"</code>: <code>fsolve</code> on the power equations (<code>MethodFsolve</code>; Optimization Toolbox)</li>
+          <li><code>"dynamic"</code>: virtual bus dynamics integrated by <code>ode15s</code> until the mismatch is below the tolerance (<code>MethodDynamic</code>)</li>
         </ul><ul lang="ja">
-          <li><code>"algebraic"</code>: 電力方程式を <code>fsolve</code> で求解</li>
-          <li><code>"dynamic"</code>: 仮想的な母線ダイナミクスを <code>ode15s</code> で積分。不平衡量が許容値を下回るまで継続</li>
+          <li><code>"newton"</code>: 解析的なヤコビ行列によるニュートン・ラフソン法（<code>MethodNewtonRaphson</code>）</li>
+          <li><code>"gradient"</code>: 離散的な勾配ステップ <code>θ += α·ΔP</code>、<code>V += α·ΔQ/V</code>（<code>MethodGradient</code>）</li>
+          <li><code>"levenberg-marquardt"</code>: 解析的なヤコビ行列による減衰付きガウス・ニュートン法（<code>MethodLevenbergMarquardt</code>）</li>
+          <li><code>"fsolve"</code>: 電力方程式を <code>fsolve</code> で求解（<code>MethodFsolve</code>。Optimization Toolbox）</li>
+          <li><code>"dynamic"</code>: 仮想的な母線ダイナミクスを <code>ode15s</code> で積分。不平衡量が許容値を下回るまで継続（<code>MethodDynamic</code>）</li>
         </ul></td></tr>
         <tr><td><code>Tolerance</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>0</code><small><code>net.solver_PF.Tolerance</code> ← config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
-          <li><code>FunctionTolerance</code> of <code>fsolve</code>, or the largest P/Q mismatch [pu] of <code>"dynamic"</code></li>
-          <li><code>0</code>: solver default (fsolve: 1e-6; dynamic: 1e-5)</li>
+          <li>newton: largest element of the Newton step [pu]; gradient, dynamic: largest P/Q mismatch [pu]; levenberg-marquardt: largest residual; fsolve: <code>FunctionTolerance</code></li>
+          <li><code>0</code>: method default (newton, gradient, levenberg-marquardt: 1e-8; fsolve: 1e-6; dynamic: 1e-5)</li>
         </ul><ul lang="ja">
-          <li><code>fsolve</code> の <code>FunctionTolerance</code>、または <code>"dynamic"</code> での P/Q 不平衡量の最大値 [pu]</li>
-          <li><code>0</code>: ソルバーの既定値（fsolve: 1e-6、dynamic: 1e-5）</li>
+          <li>newton: ニュートン・ステップの要素の最大値 [pu]。gradient・dynamic: P/Q 不平衡量の最大値 [pu]。levenberg-marquardt: 残差の最大値。fsolve: <code>FunctionTolerance</code></li>
+          <li><code>0</code>: 計算方法の既定値（newton・gradient・levenberg-marquardt: 1e-8、fsolve: 1e-6、dynamic: 1e-5）</li>
         </ul></td></tr>
         <tr><td><code>MaxIteration</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>0</code><small><code>net.solver_PF.MaxIterations</code> ← config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
-          <li><code>MaxIterations</code> of <code>fsolve</code></li>
-          <li><code>0</code>: fsolve default (400)</li>
+          <li>Maximum number of iterations</li>
+          <li><code>0</code>: method default (newton: 50; gradient: 1e6; levenberg-marquardt: 100; fsolve: 400)</li>
           <li>Unused by <code>"dynamic"</code></li>
         </ul><ul lang="ja">
-          <li><code>fsolve</code> の <code>MaxIterations</code></li>
-          <li><code>0</code>: fsolve の既定値（400）</li>
+          <li>反復回数の上限</li>
+          <li><code>0</code>: 計算方法の既定値（newton: 50、gradient: 1e6、levenberg-marquardt: 100、fsolve: 400）</li>
           <li><code>"dynamic"</code> では未使用</li>
         </ul></td></tr>
-        <tr><td><code>Verbose</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small><code>net.solver_PF.Display ~= "none"</code></small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>Display</code> for this call: <code>"iter"</code> (true) or <code>"none"</code> (false)</span><span lang="ja">この呼び出しの <code>Display</code>: <code>"iter"</code>（true）または <code>"none"</code>（false）</span></td></tr>
+        <tr><td><code>Verbose</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small><code>net.solver_PF.Display ~= "none"</code></small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>Display</code> for this call: <code>"iter"</code> (true, one line per iteration) or <code>"none"</code> (false)</span><span lang="ja">この呼び出しの <code>Display</code>: <code>"iter"</code>（true、反復ごとに 1 行）または <code>"none"</code>（false）</span></td></tr>
         <tr><td><code>Plot</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small><span lang="en">call option</span><span lang="ja">呼び出しオプション</span></small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Calls <code>result.Plot()</code> after the calculation</span><span lang="ja">計算後に <code>result.Plot()</code> を呼び出し</span></td></tr>
         <tr><td><code>Export</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small><span lang="en">call option</span><span lang="ja">呼び出しオプション</span></small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li><code>true</code>: calls <code>result.Export()</code> with the default file name</li>
@@ -121,7 +127,8 @@
       <li>Name-Value names: those of <code>SolverPF.OptionMap</code>, plus <code>Plot</code> and <code>Export</code></li>
       <li>Other settings: no Name-Value option; changed on the stored solver
         <ul>
-          <li><code>MaxFunEvals</code>, <code>UseParallel</code>, <code>PlotFcn</code> (config)</li>
+          <li><code>MaxFunEvals</code>, <code>UseParallel</code>, <code>PlotFcn</code> (config; fsolve only)</li>
+          <li><code>gradient</code> (class default <code>struct("StepSize",0)</code>; <code>0</code>: <code>α = 0.5/(max|Y_ii|·Vmax²)</code>)</li>
           <li><code>WhenFailed</code> (config: <code>"WARN"</code>)</li>
           <li><code>dynamic</code> (class default <code>struct("Mass",0,"Damper",0.1,"foh_PQ",0,"t_span",0:1/120:50)</code>)</li>
         </ul>
@@ -132,7 +139,8 @@
       <li>Name-Value の名前: <code>SolverPF.OptionMap</code> にあるものと <code>Plot</code>、<code>Export</code></li>
       <li>その他の設定: Name-Value なし。保存されたソルバー上で変更
         <ul>
-          <li><code>MaxFunEvals</code>、<code>UseParallel</code>、<code>PlotFcn</code>（config）</li>
+          <li><code>MaxFunEvals</code>、<code>UseParallel</code>、<code>PlotFcn</code>（config。fsolve のみ）</li>
+          <li><code>gradient</code>（クラスの既定値 <code>struct("StepSize",0)</code>。<code>0</code>: <code>α = 0.5/(max|Y_ii|·Vmax²)</code>）</li>
           <li><code>WhenFailed</code>（config: <code>"WARN"</code>）</li>
           <li><code>dynamic</code>（クラスの既定値 <code>struct("Mass",0,"Damper",0.1,"foh_PQ",0,"t_span",0:1/120:50)</code>）</li>
         </ul>
@@ -144,13 +152,15 @@
     <ul lang="en">
       <li>At least one bus, and a slack bus or at least one bus with a component</li>
       <li><code>net.initialize()</code> not needed</li>
-      <li><code>"algebraic"</code> needs <code>fsolve</code> (Optimization Toolbox)</li>
+      <li>MATLAB alone: every method except <code>"fsolve"</code></li>
+      <li><code>"fsolve"</code> needs Optimization Toolbox; without it the call stops with <code>GUILDA:require_toolbox:Unavailable</code></li>
       <li><code>calculate_powerflow("dynamic")</code> and the options <code>"export"</code> / <code>"filename"</code> are deprecated: <code>v3_powerflow_args</code> converts them with a warning</li>
     </ul>
     <ul lang="ja">
       <li>母線が 1 つ以上あり、slack 母線があるか、機器を持つ母線が 1 つ以上あること</li>
       <li><code>net.initialize()</code> は不要</li>
-      <li><code>"algebraic"</code> には <code>fsolve</code>（Optimization Toolbox）が必要</li>
+      <li>MATLAB 本体だけで実行可能: <code>"fsolve"</code> 以外のすべての計算方法</li>
+      <li><code>"fsolve"</code> には Optimization Toolbox が必要。ない場合は <code>GUILDA:require_toolbox:Unavailable</code> で停止</li>
       <li><code>calculate_powerflow("dynamic")</code> とオプション <code>"export"</code> / <code>"filename"</code> は非推奨: <code>v3_powerflow_args</code> が警告を出して変換</li>
     </ul>
     <!-- ============================== 2. SEQUENCE ============================== -->
@@ -230,12 +240,12 @@
           <path class="dg-sv-line is-muted" d="M34 340H296" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="332" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="344" text-anchor="middle" style="font-size:10px">07</text>
-          <text class="dg-mono is-sm fpf-l" x="310" y="334" text-anchor="start">solve_algebraic → fsolve</text>
+          <text class="dg-mono is-sm fpf-l" x="310" y="334" text-anchor="start">MethodNewtonRaphson | Gradient | LM | Fsolve</text>
           <path class="dg-sv-line" d="M306 372H623" marker-end="url(#fpf-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 372H296" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="364" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="376" text-anchor="middle" style="font-size:10px">08</text>
-          <text class="dg-mono is-sm fpf-l" x="310" y="366" text-anchor="start">solve_dynamic → ode15s</text>
+          <text class="dg-mono is-sm fpf-l" x="310" y="366" text-anchor="start">MethodDynamic → ode15s</text>
           <path class="dg-sv-line is-muted" d="M622 404H305" marker-end="url(#fpf-ah-m)"/>
           <text class="dg-mono is-sm fpf-l" x="618" y="398" text-anchor="end">cv_Vbus, flag, output</text>
           <path class="dg-sv-line" d="M306 436H515" marker-end="url(#fpf-ah)"/>
@@ -271,8 +281,8 @@
         <li><b>PF-04</b> <code>PowerNetwork</code> → <code>SolverPF.solve</code></li>
         <li><b>PF-05</b> <code>SolverPF</code> → <code>PowerNetwork.get_admittance_matrix</code> → <code>Branch.get_admittance_matrix</code></li>
         <li><b>PF-06</b> <code>SolverPF</code> → <code>Bus.get_pf_condition</code></li>
-        <li><b>PF-07</b> <code>SolverPF.solve_algebraic</code> → <code>fsolve</code></li>
-        <li><b>PF-08</b> <code>SolverPF.solve_dynamic</code> → <code>ode15s</code></li>
+        <li><b>PF-07</b> <code>SolverPF</code> → <code>MethodNewtonRaphson</code> / <code>MethodGradient</code> / <code>MethodLevenbergMarquardt</code> / <code>MethodFsolve</code></li>
+        <li><b>PF-08</b> <code>SolverPF</code> → <code>MethodDynamic</code> → <code>ode15s</code></li>
         <li><b>PF-09</b> <code>SolverPF</code> → <code>branch_flow</code> → <code>Branch.get_admittance_matrix</code></li>
         <li><b>PF-10</b> <code>SolverPF</code> → <code>ResultPF</code></li>
         <li><b>PF-11</b> <code>SolverPF</code>: <code>WhenFailed</code></li>
@@ -396,30 +406,42 @@
         </dl>
       </li>
       <li class="fs-step" id="PF-07">
-        <p class="fs-head"><b class="fs-id">PF-07</b> <span class="fs-call"><code>SolverPF.solve_algebraic</code> → <code>fsolve</code></span></p>
+        <p class="fs-head"><b class="fs-id">PF-07</b> <span class="fs-call"><code>SolverPF</code> → <code>MethodNewtonRaphson</code> / <code>MethodGradient</code> / <code>MethodLevenbergMarquardt</code> / <code>MethodFsolve</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Two equations per bus: <code>private/PFconst_slack</code> (angle, |V|), <code>PFconst_PV</code> (P, |V|) or <code>PFconst_PQ</code> (P, Q)</li>
-            <li>Each returns the residual and its 2×2 Jacobians in V and I</li>
-            <li>Full Jacobian: <code>J_V + J_I*Y</code> (<code>SpecifyObjectiveGradient</code>)</li>
-            <li>Starts from <code>V0</code>, <code>Varg0</code> (slack bus: <code>V</code>, <code>Varg</code>)</li>
-            <li>Output function records every iterate</li>
+            <li><code>private/power_equation</code>: residual F(x) and sparse Jacobian of the power equations; x = real and imaginary parts of the bus voltages</li>
+            <li>Two residuals per bus: slack (angle, |V|), PV (P, |V|), PQ (P, Q)</li>
+            <li>Jacobian: <code>J_V + J_I*Y</code></li>
+            <li>Starts from <code>V0</code>, <code>Varg0</code></li>
+            <li><code>SolverPF.solve</code> creates the Method object from the settings (0 → the method default) and maps its results to <code>cv_Vbus</code>, <code>flag</code>, <code>output</code>, <code>cm_Vhistory</code>, <code>rv_step</code></li>
+            <li>newton: <code>MethodNewtonRaphson</code> with <code>NRMFcn</code> = F, <code>NRMJac</code> = Jacobian; stops when every element of the step is below <code>Tolerance</code>; converged only when the largest |F| is also at most max(1e-6, <code>Tolerance</code>); a singular Jacobian (island without a slack bus) gives minimum norm steps (<code>lsqminnorm</code>)</li>
+            <li>A non-slack bus without branches: flag −2 (dynamic: false) before any method runs, as its voltage is not determined</li>
+            <li>gradient: <code>MethodGradient</code> with the direction <code>[ΔP; ΔQ/V]</code> of <code>power_equation</code>; polar coordinates; slack angle and voltage and PV voltages fixed at their set values; <code>θ += α·ΔP</code> (non-slack), <code>V += α·ΔQ/V</code> (PQ); stops when the largest |ΔP|, |ΔQ| is at most <code>Tolerance</code></li>
+            <li>levenberg-marquardt: <code>MethodLevenbergMarquardt</code>; <code>(JᵀJ + μI) dx = −JᵀF</code>; μ ÷ 3 after a step that reduces |F|, μ × 4 and a retry otherwise; stops when the largest |F| is at most <code>Tolerance</code></li>
+            <li>fsolve: <code>tools.require_toolbox("optim", ...)</code>, then <code>fsolve</code> with <code>SpecifyObjectiveGradient</code> (<code>MethodFsolve</code>)</li>
+            <li>Every iterate is recorded (gradient: every iterate up to 1000, then every 1000th and the last)</li>
           </ul><ul lang="ja">
-            <li>母線ごとに 2 本の方程式: <code>private/PFconst_slack</code>（角度、|V|）、<code>PFconst_PV</code>（P、|V|）、<code>PFconst_PQ</code>（P、Q）</li>
-            <li>それぞれ残差と、V・I についての 2×2 ヤコビ行列を返却</li>
-            <li>全体のヤコビ行列: <code>J_V + J_I*Y</code>（<code>SpecifyObjectiveGradient</code>）</li>
-            <li>初期値: <code>V0</code>, <code>Varg0</code>（slack 母線は <code>V</code>, <code>Varg</code>）</li>
-            <li>出力関数が各反復の値を記録</li>
+            <li><code>private/power_equation</code>: 電力方程式の残差 F(x) と疎なヤコビ行列。x は母線電圧の実部と虚部</li>
+            <li>母線ごとに 2 つの残差: slack（角度、|V|）、PV（P、|V|）、PQ（P、Q）</li>
+            <li>ヤコビ行列: <code>J_V + J_I*Y</code></li>
+            <li>初期値: <code>V0</code>, <code>Varg0</code></li>
+            <li><code>SolverPF.solve</code> が設定から Method オブジェクトを作成（0 → 計算方法の既定値）し、その結果を <code>cv_Vbus</code>、<code>flag</code>、<code>output</code>、<code>cm_Vhistory</code>、<code>rv_step</code> に変換</li>
+            <li>newton: <code>NRMFcn</code> = F、<code>NRMJac</code> = ヤコビ行列とした <code>MethodNewtonRaphson</code>。ステップの全要素が <code>Tolerance</code> 未満で停止。|F| の最大値も max(1e-6, <code>Tolerance</code>) 以下のときだけ収束。ヤコビ行列が特異（slack 母線のない島）なら最小ノルムのステップ（<code>lsqminnorm</code>）</li>
+            <li>ブランチのない slack 以外の母線: 電圧が定まらないため、計算方法を実行せずに flag −2（dynamic: false）</li>
+            <li>gradient: <code>power_equation</code> の方向 <code>[ΔP; ΔQ/V]</code> を使う <code>MethodGradient</code>。極座標。slack の角度・電圧と PV の電圧は指定値に固定。<code>θ += α·ΔP</code>（slack 以外）、<code>V += α·ΔQ/V</code>（PQ）。|ΔP|、|ΔQ| の最大値が <code>Tolerance</code> 以下で停止</li>
+            <li>levenberg-marquardt: <code>MethodLevenbergMarquardt</code>。<code>(JᵀJ + μI) dx = −JᵀF</code>。|F| が減るステップの後は μ ÷ 3、減らなければ μ × 4 で再試行。|F| の最大値が <code>Tolerance</code> 以下で停止</li>
+            <li>fsolve: <code>tools.require_toolbox("optim", ...)</code> の後、<code>SpecifyObjectiveGradient</code> を指定した <code>fsolve</code>（<code>MethodFsolve</code>）</li>
+            <li>各反復の値を記録（gradient: 1000 回目までは毎回、以降は 1000 回ごとと最後）</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options</code> → <code>SolverPF.optimoption</code></dd>
+          <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options</code> (<code>Tolerance</code>, <code>MaxIterations</code>, <code>Display</code>, <code>gradient.StepSize</code>, <code>MaxFunEvals</code>, <code>UseParallel</code>, <code>PlotFcn</code>)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>cv_Vbus</code> <span lang="en">(n_bus×1 complex [pu])</span><span lang="ja">（n_bus×1 の複素数 [pu]）</span>, <code>flag</code> = <span lang="en">fsolve exitflag</span><span lang="ja">fsolve の exitflag</span>, <code>output</code> = <span lang="en">fsolve output</span><span lang="ja">fsolve の output</span>, <code>cm_Vhistory</code> (n_bus×n_iter), <code>rv_step = 0:n_iter-1</code></dd>
+          <dd><code>cv_Vbus</code> <span lang="en">(n_bus×1 complex [pu])</span><span lang="ja">（n_bus×1 の複素数 [pu]）</span>, <code>flag</code> <span lang="en">(1 converged, 0 MaxIterations reached, −2 diverged or no solution; fsolve: its exitflag)</span><span lang="ja">（1 収束、0 反復回数の上限、−2 発散または解なし。fsolve: その exitflag）</span>, <code>output</code> <span lang="en">(iterations, algorithm, residual, message; fsolve: its output)</span><span lang="ja">（iterations, algorithm, residual, message。fsolve: その output）</span>, <code>cm_Vhistory</code> (n_bus×n_step), <code>rv_step</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-08">
-        <p class="fs-head"><b class="fs-id">PF-08</b> <span class="fs-call"><code>SolverPF.solve_dynamic</code> → <code>ode15s</code></span></p>
+        <p class="fs-head"><b class="fs-id">PF-08</b> <span class="fs-call"><code>SolverPF</code> → <code>MethodDynamic</code> → <code>ode15s</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -436,7 +458,7 @@
             <li>最後の点を解として採用</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options.dynamic</code> (Mass, Damper, foh_PQ, t_span), <code>Tolerance</code></dd>
+          <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options.dynamic</code> (Mass, Damper, foh_PQ, t_span), <code>Tolerance</code> → <span lang="en">properties of</span><span lang="ja">のプロパティ</span> <code>MethodDynamic</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>cv_Vbus</code> (n_bus×1), <code>flag</code> <span lang="en">(logical)</span><span lang="ja">（logical）</span>, <code>output.message</code>, <code>cm_Vhistory</code> (n_bus×n_t), <code>rv_step</code> = <span lang="en">times [s]</span><span lang="ja">時刻 [s]</span></dd>
         </dl>
@@ -528,12 +550,12 @@
     <ul lang="en">
       <li><code>result</code>: a <code>ResultPF</code> (subclass of <code>ResultBase</code>)</li>
       <li>Rows follow the order of <code>net.a_Bus</code> and <code>net.a_Branch</code>; row names are the tags</li>
-      <li>Sizes for <code>network.IEEE9bus</code>: <code>tab_bus</code> 9×6, <code>tab_branch</code> 9×8, <code>cm_Vhistory</code> 9×5 (algebraic) or 9×106 (dynamic)</li>
+      <li>Sizes for <code>network.IEEE9bus</code>: <code>tab_bus</code> 9×6, <code>tab_branch</code> 9×8, <code>cm_Vhistory</code> 9×n_iter (one column per iteration) or 9×n_time (dynamic)</li>
     </ul>
     <ul lang="ja">
       <li><code>result</code>: <code>ResultPF</code>（<code>ResultBase</code> のサブクラス）</li>
       <li>行は <code>net.a_Bus</code> と <code>net.a_Branch</code> の順。行名はタグ</li>
-      <li><code>network.IEEE9bus</code> でのサイズ: <code>tab_bus</code> 9×6、<code>tab_branch</code> 9×8、<code>cm_Vhistory</code> 9×5（algebraic）または 9×106（dynamic）</li>
+      <li><code>network.IEEE9bus</code> でのサイズ: <code>tab_bus</code> 9×6、<code>tab_branch</code> 9×8、<code>cm_Vhistory</code> 9×n_iter（反復ごとに 1 列）または 9×n_time（dynamic）</li>
     </ul>
     <table class="dg-table fpf-data">
       <thead><tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Size, unit</span><span lang="ja">サイズ・単位</span></th><th><span lang="en">Content</span><span lang="ja">内容</span></th></tr></thead>
@@ -541,14 +563,16 @@
         <tr><td><code>tab_bus</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">n_bus×6 table</td><td data-label="Content" data-label-ja="内容"><code>Varg</code> [rad], <code>V</code> [pu], <code>P</code>, <code>Q</code> [pu] <span lang="en">(injection into the network)</span><span lang="ja">（ネットワークへの注入）</span>, <code>Vphasor</code>, <code>Iphasor</code> <span lang="en">(complex [pu])</span><span lang="ja">（複素数 [pu]）</span></td></tr>
         <tr><td><code>tab_branch</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">n_branch×8 table</td><td data-label="Content" data-label-ja="内容"><code>Pfrom</code>, <code>Qfrom</code>, <code>Pto</code>, <code>Qto</code> [pu] <span lang="en">(into the branch)</span><span lang="ja">（ブランチへ流れ込む向き）</span>, <code>Ifrom</code>, <code>Ito</code> <span lang="en">(complex [pu])</span><span lang="ja">（複素数 [pu]）</span>, <code>Ploss</code>, <code>Qloss</code> [pu]</td></tr>
         <tr><td><code>cm_Vhistory</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">n_bus×n_step, <span lang="en">complex</span><span lang="ja">複素数</span> [pu]</td><td data-label="Content" data-label-ja="内容"><span lang="en">Bus voltages at each iteration or output time</span><span lang="ja">各反復または各出力時刻の母線電圧</span></td></tr>
-        <tr><td><code>rv_step</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">1×n_step</td><td data-label="Content" data-label-ja="内容"><span lang="en">Iteration numbers (algebraic) or times [s] (dynamic)</span><span lang="ja">反復番号（algebraic）または時刻 [s]（dynamic）</span></td></tr>
+        <tr><td><code>rv_step</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">1×n_step</td><td data-label="Content" data-label-ja="内容"><span lang="en">Iteration numbers, or times [s] (dynamic)</span><span lang="ja">反復番号、または時刻 [s]（dynamic）</span></td></tr>
         <tr><td><code>flag</code>, <code>output</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位"><span lang="en">scalar, struct</span><span lang="ja">スカラー、構造体</span></td><td data-label="Content" data-label-ja="内容"><ul lang="en">
           <li>Same as the 2nd and 3rd outputs</li>
-          <li>algebraic: fsolve exitflag and output (iterations, funcCount, algorithm, firstorderopt, message)</li>
+          <li>newton, gradient, levenberg-marquardt: 1 / 0 / −2 and a struct with iterations, algorithm, residual, message</li>
+          <li>fsolve: fsolve exitflag and output (iterations, funcCount, algorithm, firstorderopt, message)</li>
           <li>dynamic: logical and a struct with <code>message</code> only</li>
         </ul><ul lang="ja">
           <li>2 番目・3 番目の出力と同じ</li>
-          <li>algebraic: fsolve の exitflag と output（iterations, funcCount, algorithm, firstorderopt, message）</li>
+          <li>newton・gradient・levenberg-marquardt: 1 / 0 / −2 と、iterations, algorithm, residual, message を持つ構造体</li>
+          <li>fsolve: fsolve の exitflag と output（iterations, funcCount, algorithm, firstorderopt, message）</li>
           <li>dynamic: logical と、<code>message</code> だけを持つ構造体</li>
         </ul></td></tr>
         <tr><td><code>l_success</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">logical</td><td data-label="Content" data-label-ja="内容"><span lang="en">Dependent: true for a logical true or a numeric flag &gt; 0</span><span lang="ja">Dependent: logical の true、または数値の flag &gt; 0 のとき true</span></td></tr>
@@ -599,15 +623,16 @@
       <thead><tr><th><span lang="en">Condition</span><span lang="ja">条件</span></th><th><span lang="en">What the caller sees</span><span lang="ja">呼び出し側に見えるもの</span></th></tr></thead>
       <tbody>
         <tr><td><span lang="en">Not converged</span><span lang="ja">収束しない</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><ul lang="en">
-          <li><code>flag &lt;= 0</code> (algebraic) or <code>false</code> (dynamic)</li>
+          <li><code>flag &lt;= 0</code>, or <code>false</code> (dynamic)</li>
           <li><code>result</code> still returned, with the last iterate and <code>l_success = false</code></li>
           <li>PF-11 adds a warning (default <code>"WARN"</code>), an error, a printed message or nothing</li>
         </ul><ul lang="ja">
-          <li><code>flag &lt;= 0</code>（algebraic）または <code>false</code>（dynamic）</li>
+          <li><code>flag &lt;= 0</code>、または <code>false</code>（dynamic）</li>
           <li><code>result</code> は最後の反復値で返却。<code>l_success = false</code></li>
           <li>PF-11 により警告（既定値 <code>"WARN"</code>）、エラー、メッセージ表示、何もしない、のいずれか</li>
         </ul></td></tr>
         <tr><td><span lang="en">dynamic stop reasons</span><span lang="ja">dynamic の停止理由</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en"><code>output.message</code>: converged, voltage collapse, phase angle instability, or the end of <code>t_span</code> without convergence</span><span lang="ja"><code>output.message</code>: 収束、電圧崩壊、位相角の不安定、または収束せずに <code>t_span</code> の終わりに到達</span></td></tr>
+        <tr><td><span lang="en"><code>Method="fsolve"</code> without Optimization Toolbox</span><span lang="ja">Optimization Toolbox なしの <code>Method="fsolve"</code></span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:require_toolbox:Unavailable</code></td></tr>
         <tr><td><span lang="en">Unknown option name / odd argument list</span><span lang="ja">未知のオプション名・引数が対にならない</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><ul lang="en">
           <li><code>GUILDA:resolve_options:UnknownName</code> (lists the accepted names) / <code>GUILDA:resolve_options:InvalidPairs</code></li>
           <li>Invalid value: stops with the MATLAB validation error of <code>validate_options</code></li>
@@ -654,15 +679,15 @@
       <li><b>Bus type</b>: a new type needs
         <ul>
           <li>a <code>Type</code> in <code>Bus.get_pf_condition</code></li>
-          <li>a <code>private/PFconst_*</code> function returning <code>[con, jacobi_V, jacobi_I]</code> (2×1, 2×2, 2×2)</li>
-          <li>a case in <code>solve_algebraic</code> and <code>solve_dynamic</code></li>
+          <li>its two residuals and their Jacobian rows in <code>private/power_equation</code></li>
+          <li>its fixed and updated values in the gradient direction of <code>power_equation</code> and in <code>MethodDynamic</code></li>
         </ul>
       </li>
       <li><b>Method</b>: add
         <ul>
           <li>the name to the validators of <code>SolverPF.Method</code> and <code>validate_options</code></li>
-          <li>a case in <code>SolverPF.solve</code></li>
-          <li>a method returning <code>[cv_Vbus, flag, output, cm_Vhistory, rv_step]</code></li>
+          <li>a <code>Method*</code> class in <code>_auxiliary/</code> (settings as public properties set by Name-Value in the constructor, then <code>solve</code>)</li>
+          <li>a case in <code>run_method</code> of <code>SolverPF.solve</code> that creates it and maps its results to <code>[cv_Vbus, flag, output, cm_Vhistory, rv_step]</code></li>
         </ul>
       </li>
       <li><b>Controllers</b>: no part in the power flow</li>
@@ -685,15 +710,15 @@
       <li><b>母線の種類</b>: 新しい種類に必要なもの
         <ul>
           <li><code>Bus.get_pf_condition</code> の <code>Type</code></li>
-          <li><code>[con, jacobi_V, jacobi_I]</code>（2×1、2×2、2×2）を返す <code>private/PFconst_*</code> 関数</li>
-          <li><code>solve_algebraic</code> と <code>solve_dynamic</code> の分岐</li>
+          <li><code>private/power_equation</code> での 2 つの残差とそのヤコビ行列の行</li>
+          <li><code>power_equation</code> の勾配方向と <code>MethodDynamic</code> での固定する値と更新する値</li>
         </ul>
       </li>
       <li><b>計算方法</b>: 追加するもの
         <ul>
           <li><code>SolverPF.Method</code> と <code>validate_options</code> の検証への名前</li>
-          <li><code>SolverPF.solve</code> の分岐</li>
-          <li><code>[cv_Vbus, flag, output, cm_Vhistory, rv_step]</code> を返すメソッド</li>
+          <li><code>_auxiliary/</code> の <code>Method*</code> クラス（設定はコンストラクタの Name-Value で与える public プロパティ、その後 <code>solve</code>）</li>
+          <li>それを作成し、結果を <code>[cv_Vbus, flag, output, cm_Vhistory, rv_step]</code> に変換する <code>SolverPF.solve</code> の <code>run_method</code> の分岐</li>
         </ul>
       </li>
       <li><b>制御器</b>: 潮流計算に関与しない</li>

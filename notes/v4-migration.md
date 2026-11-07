@@ -378,10 +378,12 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 | `net.calculate_powerflow("dynamic", "export", true, "filename", f)` | `net.calculate_powerflow(Method="dynamic", Export=f)` or `res.Export(f)` (`.json`) |
 | `net.solver_PF.rm_response`, `rr_step`, `i_iteration` | `res.cm_Vhistory`, `res.rv_step` |
 
-- Options: `Method` (`"algebraic"` | `"dynamic"`), `Tolerance`,
-  `MaxIteration` (solver property `MaxIterations`), `Verbose` (sets
-  `Display`), `Plot`, `Export`. New solver properties `solver_PF.Method`
-  (default `"algebraic"`) and `solver_PF.Tolerance` (0 = fsolve default).
+- Options: `Method` (`"newton"` | `"gradient"` | `"levenberg-marquardt"` |
+  `"fsolve"` | `"dynamic"`), `Tolerance`, `MaxIteration` (solver property
+  `MaxIterations`), `Verbose` (sets `Display`), `Plot`, `Export`. New solver
+  properties `solver_PF.Method` (default `"newton"`, no toolbox needed) and
+  `solver_PF.Tolerance` (0 = method default). The v3 power flow (fsolve) is
+  `Method="fsolve"` and needs Optimization Toolbox.
 - `ResultPF`: `tab_bus` (Varg, V, P, Q, Vphasor, Iphasor per bus;
   the old output table), `tab_branch` (branch flows), `cm_Vhistory`,
   `rv_step`; `Plot` draws the voltage profile, `Export` writes the bus or
@@ -808,17 +810,25 @@ Option names:
   classes call `PowerNetwork.import_csv(..., Network=obj)`; your own
   network classes that call `CsvNetHandler.import` warn once.
 
-### 1.14 Required toolboxes
+### 1.14 Toolbox はすべて任意
 
-- Required: MATLAB, Control System Toolbox, Optimization Toolbox.
-- **Symbolic Math Toolbox is optional.** No runtime code uses it
-  (`ListToolbox.txt` no longer lists it; a test checks it).
-  `NewtonRaphsonMethod` still accepts a symbolic `NRMFcn` when the toolbox
-  is installed; without it this stops with
-  `GUILDA:NewtonRaphsonMethod:SymbolicUnavailable` (pass a function handle,
-  optionally `NRMJac`). A few developer scripts that check hand-written
-  Jacobians (`validate.m` of loads and controllers, the unreleased
-  `vsm1axis`) still need it.
+- 必須は MATLAB のみ。潮流計算の既定 `Method="newton"` は Toolbox なしで動きます。
+- 起動時の確認(`check_requirement`)は `@GUILDA/config/ListToolbox.json` の
+  Toolbox ごとに「ok」か、無いときに使えない機能(`Warning`)を 1 行ずつ表示します。
+  `ListToolbox.txt` は廃止し、「Required Toolbox components ... missing」の文も出しません。
+  キーは `tools.require_toolbox` の短縮名(`optim`/`control`/`symbolic`)で、
+  `tools.require_toolbox` も Toolbox 名とライセンス名をこのファイルから読みます。
+- Optimization Toolbox: 潮流計算の `Method="fsolve"` と OPF(`optimize_powerflow`、
+  `initialize(Method="OPF")`)。無いと `tools.require_toolbox` が
+  `GUILDA:require_toolbox:Unavailable` で止めます。
+- Control System Toolbox: 線形化の `ss` 出力(`Format="ss"`)と LQR 制御器
+  (`controller.local_LQR`、`local_LQR_retrofit`、`+controller/+modeling/get_environment`)。
+- Symbolic Math Toolbox: 実行時のコードは使いません(テストで確認)。
+  `MethodNewtonRaphson`(`NewtonRaphsonMethod` から改名、別名なし)は Toolbox があれば
+  シンボリックの `NRMFcn` も受け付け、無ければ
+  `GUILDA:MethodNewtonRaphson:SymbolicUnavailable` で止まります(関数ハンドルを渡し、
+  必要なら `NRMJac` も渡す)。手書きヤコビアンを確かめる開発用スクリプト(負荷・制御器の
+  `validate.m`、未公開の `vsm1axis`)は引き続き必要です。
 
 ### 1.15 Bundled networks
 
@@ -1159,7 +1169,7 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 |----------|----|----------|
 | `net.add_bus(..., "baseMVA", x)` with x = system base | `GUILDA:Deprecated:BusBaseMVA` | warning; ignored |
 | `net.add_bus(..., "baseMVA", x)` with x ≠ system base | `GUILDA:Deprecated:BusBaseMVAMismatch` | warning; ignored, system base used |
-| `calculate_powerflow(mode, ...)` (positional `"algebraic"` / `"dynamic"`) | `GUILDA:Deprecated:CalculatePowerflowMode` | warning; becomes `Method=mode` |
+| `calculate_powerflow(mode, ...)` (positional `"algebraic"` / `"dynamic"`) | `GUILDA:Deprecated:CalculatePowerflowMode` | warning; becomes `Method=mode` (`"algebraic"` → `Method="fsolve"`) |
 | `calculate_powerflow(..., "export", l, "filename", f)` | `GUILDA:Deprecated:CalculatePowerflowExport` | warning; becomes `Export=fullfile(GUILDA.pwd, f)` |
 | `optimize_powerflow("methods", m)` | `GUILDA:Deprecated:OptimizePowerflowMethods` | warning; becomes `Method=m` |
 | `build_opf_problem("methods", m)` | `GUILDA:Deprecated:BuildOpfProblemMethods` | warning; becomes `Method=m` |

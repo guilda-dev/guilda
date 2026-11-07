@@ -1,12 +1,14 @@
 function check_requirement()
-% Verification of Toolbox Installation Required for GUILDA Execution
-% show >> ./@GUILDA/config/ListToolbox.txt
+% Check the MATLAB version and the optional toolboxes listed in ./@GUILDA/config/ListToolbox.json.
+%
+% Prints "ok" for each installed toolbox and its Warning (what is unavailable without it)
+% for each missing one. A toolbox counts as installed when it is licensed (license test)
+% and installed (ver), the same check as tools.require_toolbox.
 
-    product_info = ver;
-    ToolboxInstalled = arrayfun(@(s) s.Name, product_info, 'UniformOutput', false);
-    ToolboxRequired  = readlines(fullfile(GUILDA.pwd,"@GUILDA","config","ListToolbox.txt"));
-    flag_warning = false;
-    maxchar      = max(cellfun(@(c) numel(c), ToolboxRequired)) + 1;
+    sct_toolbox = jsondecode(fileread(fullfile(GUILDA.pwd,"@GUILDA","config","ListToolbox.json")));
+    sv_key  = string(fieldnames(sct_toolbox));
+    sv_name = arrayfun(@(s) string(sct_toolbox.(s).Name), sv_key);
+    maxchar = max(strlength(sv_name)) + 1;
 
     fprintf('\n === Check Requirement === \n')
     
@@ -19,23 +21,17 @@ function check_requirement()
         disp('ok')
     else
         disp('update your MATLAB version.')
-        flag_warning = true;
     end
 
-
-    for i = 1:numel(ToolboxRequired)
-        tr = char(ToolboxRequired(i));
-        nc = max(1,maxchar-numel(tr));
-        fprintf(['︎   toolbox : ',tr,repmat(' ',1,nc),'... '])
-        if ismember(tr,ToolboxInstalled)
+    for i = 1:numel(sv_key)
+        sct = sct_toolbox.(sv_key(i));
+        nc  = max(1,maxchar-strlength(sv_name(i)));
+        fprintf(['︎   toolbox : ',char(sv_name(i)),repmat(' ',1,nc),'... '])
+        if license('test', sct.License) && ~isempty(ver(char(sv_key(i))))
             disp('ok')
         else
-            disp('Not installed!!')
-            flag_warning = true;
+            disp(sct.Warning)
         end
-    end
-    if flag_warning
-        disp('Required Toolbox components for GUILDA specifications are currently missing installation. Execution of some analyses may result in errors.')
     end
     disp(" ")
 end

@@ -140,18 +140,22 @@ txt = fileread(fullfile(s_root, "_GUILDAsystem", "@Bus", "add_component.m"));
 assert(~contains(txt, "test-hessian-stub"))
 
 
-%% Symbolic Math Toolbox is not a required toolbox
-% 必須は Control System / Optimization のみ。Symbolic Math は開発用スクリプト専用の任意 Toolbox
-sv_req = strtrim(readlines(fullfile(s_root, "@GUILDA", "config", "ListToolbox.txt")));
-sv_req = sv_req(sv_req ~= "");
-assert(isequal(sort(sv_req), ["Control System Toolbox"; "Optimization Toolbox"]))
+%% Every listed toolbox is optional and has a warning
+% ListToolbox.json の Toolbox はすべて任意。キーは tools.require_toolbox の短縮名と同じ
+sct_tb = jsondecode(fileread(fullfile(s_root, "@GUILDA", "config", "ListToolbox.json")));
+assert(isequal(string(fieldnames(sct_tb)), ["optim"; "control"; "symbolic"]))
+for s_key = ["optim", "control", "symbolic"]
+    assert(isequal(string(fieldnames(sct_tb.(s_key))), ["Name"; "License"; "Warning"]))
+    assert(strlength(string(sct_tb.(s_key).Warning)) > 0)
+end
+assert(~isfile(fullfile(s_root, "@GUILDA", "config", "ListToolbox.txt")))
 
 
 %% Runtime code makes no symbolic calls
 % 実行時のコードは Symbolic Math Toolbox を使わない。使ってよいのは次のファイルだけ:
-%   NewtonRaphsonMethod.m (sym 入力のときだけ。Toolbox が無ければエラーで代替手段を示す)
+%   MethodNewtonRaphson.m (sym 入力のときだけ。Toolbox が無ければエラーで代替手段を示す)
 %   validate.m (開発用スクリプト), 未+GFM (未完成モデル, パス外)
-sv_allowed = [fullfile("_GUILDAsystem", "_auxiliary", "@NewtonRaphsonMethod", "NewtonRaphsonMethod.m")
+sv_allowed = [fullfile("_GUILDAsystem", "_auxiliary", "@MethodNewtonRaphson", "MethodNewtonRaphson.m")
               fullfile("_GUILDAobject", "+component", "+load", "validate.m")
               fullfile("_GUILDAobject", "+controller", "validate.m")];
 s_pat = "(\<(sym|syms|symvar|jacobian|hessian|matlabFunction|vpa|subs|simplify)\s*\()|(^\s*syms\s)|(isa\s*\(.*'sym')";
@@ -175,7 +179,7 @@ end
 assert(isempty(sv_hit), "Symbolic Math の呼び出しがある: " + strjoin(sv_hit, ", "))
 
 
-%% NewtonRaphsonMethod rejects symbolic input without Symbolic Math Toolbox
+%% MethodNewtonRaphson rejects symbolic input without Symbolic Math Toolbox
 % Toolbox が無い環境を、偽の sym クラスと license の代わりで再現する
 s_tmp = tempname;  mkdir(s_tmp);
 writelines(["classdef sym", "methods", "function obj = sym(varargin), end", "end", "end"], ...
@@ -191,16 +195,16 @@ c_tmp = onCleanup(@() cellfun(@feval, {@() rmpath(s_tmp), @() rmdir(s_tmp, "s"),
     @() clear("sym", "license"), @() warning(w)}));
 assert(isa(sym(), "sym") && ~license("test", "Symbolic_Toolbox"))
 try
-    NewtonRaphsonMethod(NRMFcn=sym(), InitVal=1);
+    MethodNewtonRaphson(NRMFcn=sym(), InitVal=1);
     error("DebugScript:NoError", "エラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:NewtonRaphsonMethod:SymbolicUnavailable", ME.message)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:MethodNewtonRaphson:SymbolicUnavailable", ME.message)
     assert(contains(ME.message, "function handle") && contains(ME.message, "NRMJac"))
 end
 clear c_tmp
 
 % 数値の関数ハンドルなら Toolbox 無しで解ける
-nrm = NewtonRaphsonMethod(NRMFcn=@(x) x.^2 - 4, InitVal=1);
+nrm = MethodNewtonRaphson(NRMFcn=@(x) x.^2 - 4, InitVal=1);
 assert(abs(nrm.solve() - 2) < 1e-6)
 
 
