@@ -343,49 +343,41 @@ sys = net.get_sys();                  % linearized model</code></pre>
         <table class="req-table">
           <thead>
             <tr>
-              <th rowspan="2" scope="col"><span lang="en">Product</span><span lang="ja">製品</span></th>
-              <th colspan="5" scope="colgroup"><span lang="en">Power flow</span><span lang="ja">潮流計算</span></th>
-              <th rowspan="2" scope="col">CPF</th>
-              <th rowspan="2" scope="col">OPF</th>
-              <th rowspan="2" scope="col"><code>simulate</code></th>
-              <th colspan="3" scope="colgroup"><span lang="en">Linearization</span><span lang="ja">近似線形化</span></th>
-              <th scope="col"><span lang="en">Controllers</span><span lang="ja">制御器</span></th>
-              <th colspan="2" scope="colgroup"><span lang="en">Developer tools</span><span lang="ja">開発者向け</span></th>
-            </tr>
-            <tr class="req-opt">
-              <th scope="col"><code>newton</code></th>
-              <th scope="col"><code>gradient</code></th>
-              <th scope="col"><code>levenberg-marquardt</code></th>
-              <th scope="col"><code>dynamic</code></th>
-              <th scope="col"><code>fsolve</code></th>
-              <th scope="col"><code>ResultLIN</code></th>
-              <th scope="col"><code>struct</code></th>
-              <th scope="col"><code>ss</code></th>
-              <th scope="col">LQR</th>
-              <th scope="col"><span lang="en">Symbolic <code>NRMFcn</code></span><span lang="ja">記号式の <code>NRMFcn</code></span></th>
-              <th scope="col"><code>validate.m</code></th>
+              <th scope="col"><span lang="en">Analysis</span><span lang="ja">解析</span></th>
+              <th scope="col">MATLAB<span class="req-sub"><span lang="en">R2025a or later</span><span lang="ja">R2025a 以降</span></span></th>
+              <th scope="col">Optimization Toolbox</th>
+              <th scope="col">Control System Toolbox</th>
+              <th scope="col">Symbolic Math Toolbox</th>
             </tr>
           </thead>
           <tbody>
-              <tr><th scope="row">MATLAB <span class="req-ver"><span lang="en">R2025a or later</span><span lang="ja">R2025a 以降</span></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td></tr>
-              <tr><th scope="row">Optimization Toolbox</th><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
-              <tr><th scope="row">Control System Toolbox</th><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td></tr>
-              <tr><th scope="row">Symbolic Math Toolbox</th><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td></tr>
+            <tr class="req-group"><th colspan="5" scope="rowgroup"><span class="req-group-label"><span lang="en">Power flow</span><span lang="ja">潮流計算</span><span class="req-sub"><span lang="en"><code>Method</code></span><span lang="ja"><code>Method</code></span></span></span></th></tr>
+            <tr class="req-opt"><th scope="row"><code>newton</code></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-opt"><th scope="row"><code>gradient</code></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-opt"><th scope="row"><code>levenberg-marquardt</code></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-opt"><th scope="row"><code>dynamic</code></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-opt"><th scope="row"><code>fsolve</code></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-single"><th scope="row"><span lang="en">Continuation power flow (CPF)</span><span lang="ja">連続型潮流計算（CPF）</span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-single"><th scope="row"><span lang="en">Optimal power flow (OPF)</span><span lang="ja">最適潮流計算（OPF）</span><span class="req-sub"><code>optimize_powerflow</code>, <code>initialize(<wbr>Method="OPF")</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-single"><th scope="row"><span lang="en">Time simulation</span><span lang="ja">時間応答シミュレーション</span><span class="req-sub"><code>simulate</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-group"><th colspan="5" scope="rowgroup"><span class="req-group-label"><span lang="en">Linearization</span><span lang="ja">近似線形化</span><span class="req-sub"><span lang="en"><code>Format</code> of <code>get_sys</code> / <code>get_ss</code></span><span lang="ja"><code>get_sys</code> / <code>get_ss</code> の <code>Format</code></span></span></span></th></tr>
+            <tr class="req-opt"><th scope="row"><code>ResultLIN</code></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-opt"><th scope="row"><code>struct</code></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-opt"><th scope="row"><code>ss</code></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td></tr>
+            <tr class="req-group"><th colspan="5" scope="rowgroup"><span class="req-group-label"><span lang="en">Controllers</span><span lang="ja">制御器</span></span></th></tr>
+            <tr class="req-opt"><th scope="row">LQR<span class="req-sub"><code>controller.<wbr>local_LQR</code>, <code>controller.<wbr>local_LQR_retrofit</code>, <code>+controller/<wbr>+modeling/<wbr>get_environment</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td></tr>
+            <tr class="req-group"><th colspan="5" scope="rowgroup"><span class="req-group-label"><span lang="en">Developer tools</span><span lang="ja">開発者向け</span></span></th></tr>
+            <tr class="req-opt"><th scope="row"><span lang="en">Symbolic <code>NRMFcn</code></span><span lang="ja">記号式の <code>NRMFcn</code></span><span class="req-sub"><code>Method<wbr>NewtonRaphson</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td></tr>
+            <tr class="req-opt"><th scope="row"><code>validate.m</code><span class="req-sub"><span lang="en">checks of hand-written Jacobians</span><span lang="ja">手書きのヤコビ行列の検証</span></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td></tr>
           </tbody>
         </table>
       </div>
       <ul class="req-legend" lang="en">
         <li><span class="mark-yes">✓</span> required, – not needed.</li>
-        <li>Power flow: the values of <code>Method</code>. CPF: continuation power flow. <code>simulate</code>: time simulation. Linearization: the <code>Format</code> of <code>get_sys</code> / <code>get_ss</code>.</li>
-        <li>LQR: <code>controller.local_LQR</code>, <code>controller.local_LQR_retrofit</code> and <code>+controller/+modeling/get_environment</code>.</li>
-        <li>Developer tools: a symbolic <code>NRMFcn</code> of <code>MethodNewtonRaphson</code>, and the <code>validate.m</code> scripts that check hand-written Jacobians.</li>
         <li><code>GUILDA</code> prints the same check at startup from <code>@GUILDA/config/ListToolbox.json</code>: <code>ok</code> or the features unavailable without each toolbox.</li>
       </ul>
       <ul class="req-legend" lang="ja">
         <li><span class="mark-yes">✓</span> 必要、– 不要</li>
-        <li>潮流計算: <code>Method</code> の値。CPF: 連続型潮流計算。<code>simulate</code>: 時間応答シミュレーション。近似線形化: <code>get_sys</code> / <code>get_ss</code> の <code>Format</code></li>
-        <li>LQR: <code>controller.local_LQR</code>、<code>controller.local_LQR_retrofit</code>、<code>+controller/+modeling/get_environment</code></li>
-        <li>開発者向け: <code>MethodNewtonRaphson</code> の記号式の <code>NRMFcn</code>、手書きのヤコビ行列を検証する <code>validate.m</code></li>
         <li><code>GUILDA</code> の起動時にも <code>@GUILDA/config/ListToolbox.json</code> に基づき同じ確認を表示。各 Toolbox について <code>ok</code>、または無い場合に使えない機能</li>
       </ul>
 
