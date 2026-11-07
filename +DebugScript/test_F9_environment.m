@@ -140,11 +140,15 @@ txt = fileread(fullfile(s_root, "_GUILDAsystem", "@Bus", "add_component.m"));
 assert(~contains(txt, "test-hessian-stub"))
 
 
-%% Symbolic Math Toolbox is not a required toolbox
-% 必須は Control System / Optimization のみ。Symbolic Math は開発用スクリプト専用の任意 Toolbox
-sv_req = strtrim(readlines(fullfile(s_root, "@GUILDA", "config", "ListToolbox.txt")));
-sv_req = sv_req(sv_req ~= "");
-assert(isequal(sort(sv_req), ["Control System Toolbox"; "Optimization Toolbox"]))
+%% Every listed toolbox is optional and has a warning
+% ListToolbox.json の Toolbox はすべて任意。キーは tools.require_toolbox の短縮名と同じ
+sct_tb = jsondecode(fileread(fullfile(s_root, "@GUILDA", "config", "ListToolbox.json")));
+assert(isequal(string(fieldnames(sct_tb)), ["optim"; "control"; "symbolic"]))
+for s_key = ["optim", "control", "symbolic"]
+    assert(isequal(string(fieldnames(sct_tb.(s_key))), ["Name"; "License"; "Warning"]))
+    assert(strlength(string(sct_tb.(s_key).Warning)) > 0)
+end
+assert(~isfile(fullfile(s_root, "@GUILDA", "config", "ListToolbox.txt")))
 
 
 %% Runtime code makes no symbolic calls

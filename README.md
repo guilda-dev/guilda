@@ -30,7 +30,7 @@ First, run `GUILDA` to set up the environment and add necessary paths.
 In this process, the following steps are automatically executed:
 - If cloned from Git, the latest version is pulled.
 - Paths for functions and class files necessary for analysis are added.
-- The installation of toolboxes that support functions used in GUILDA is checked.
+- The optional toolboxes are checked; for each missing one, the features unavailable without it are shown.
 - A live editor for tutorials is opened.
 If you do not want to pull every time you start, or if you do not want the tutorial to open every time, you can change the settings from the environment settings.
 ```matlab
@@ -154,7 +154,7 @@ GUILDAは、本研究室と川口助教（群馬大）を中心に開発を進�
 これにより、GUILDAが起動されます。起動時に以下の処理が自動的に実行されます。
 - Gitからcloneしている場合、最新バージョンをpull
 - 解析に必要な関数・クラスファイルのパスを追加
-- GUILDA内で使用する関数をサポートするtoolboxのインストールの確認
+- 任意のtoolboxのインストールの確認(無いものは、使えない機能を表示)
 - Tutorial用のライブエディタを開く
 
 ※起動するたびにpullをしたくない場合、またTutorialが毎回開くのが不要である場合は環境設定から変更できます。

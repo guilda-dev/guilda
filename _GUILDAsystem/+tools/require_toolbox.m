@@ -4,7 +4,8 @@ function require_toolbox(s_toolbox, s_feature)
 % Checks that the toolbox is installed (ver) and licensed (license test). Call it at the
 % start of a feature that needs an optional toolbox; it returns nothing when the toolbox
 % is available and otherwise stops with GUILDA:require_toolbox:Unavailable, naming the
-% toolbox and the feature.
+% toolbox and the feature. The toolbox names and license features are read from
+% ./@GUILDA/config/ListToolbox.json.
 %
 % - "optim": Optimization Toolbox
 % - "control": Control System Toolbox
@@ -18,11 +19,9 @@ function require_toolbox(s_toolbox, s_feature)
         s_toolbox (1,1) string {mustBeMember(s_toolbox,["optim","control","symbolic"])}  % Short name of the toolbox.
         s_feature (1,1) string                                                         % Feature that needs it (shown in the message).
     end
-    switch s_toolbox
-        case "optim";    s_license = "Optimization_Toolbox"; s_name = "Optimization Toolbox";
-        case "control";  s_license = "Control_Toolbox";      s_name = "Control System Toolbox";
-        case "symbolic"; s_license = "Symbolic_Toolbox";     s_name = "Symbolic Math Toolbox";
-    end
+    sct = jsondecode(fileread(fullfile(GUILDA.pwd, "@GUILDA", "config", "ListToolbox.json")));
+    s_license = sct.(s_toolbox).License;
+    s_name    = sct.(s_toolbox).Name;
     if ~(license('test', s_license) && ~isempty(ver(s_toolbox)))
         error(msg("GUILDA:require_toolbox:Unavailable", s_feature, s_name))
     end
