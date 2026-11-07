@@ -202,10 +202,7 @@ body.home-layout main { max-width: 1050px; width: 95%; margin: 32px auto; backgr
 .about-eyebrow, .about-step { margin: 0 0 6px; color: var(--muted); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
 .about-step span { display: inline-block; margin-right: 6px; padding: 1px 7px; border-radius: 999px; background: var(--accent); color: var(--ink); font-family: var(--font-mono); letter-spacing: 0; }
 .about-title { max-width: 820px; margin: 0 0 16px; padding: 0; border: 0; color: var(--ink); font-size: clamp(1.7rem, 4.2vw, 2.6rem); line-height: 1.18; letter-spacing: -0.015em; }
-.about-lead { max-width: 760px; font-size: 1.05rem; }
-.about-demo { margin: 22px 0 0; }
-.about-demo .demo-gif { max-width: 420px; }
-.about-demo figcaption, .about-figure figcaption { margin-top: 10px; color: var(--muted); font-size: 0.88rem; max-width: 760px; }
+.about-figure figcaption { margin-top: 10px; color: var(--muted); font-size: 0.88rem; max-width: 760px; }
 
 .about-section { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 20px 40px; align-items: center; padding: 44px 0; border-top: 1px solid var(--line); }
 .about-section:nth-of-type(even) .about-text { order: 2; }
@@ -377,7 +374,6 @@ html[data-lang="ja"] body [lang="en"] { display: none !important; }
   .analysis-link { grid-column: 2; }
 }
 
-.demo-gif { display: block; width: 100%; max-width: 560px; height: auto; border: 1px solid var(--line); border-radius: var(--radius); }
 
 /* License Box */
 .license-box pre {

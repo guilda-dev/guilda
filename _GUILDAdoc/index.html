@@ -145,12 +145,6 @@
       <div class="about-hero">
         <p class="about-eyebrow"><span lang="en">About GUILDA</span><span lang="ja">GUILDA について</span></p>
         <h1 class="about-title"><span lang="en">Power-system knowledge, in the language of systems and control.</span><span lang="ja">電力系統の知識を、システム制御の言葉で。</span></h1>
-        <p class="about-lead" lang="en">Why GUILDA exists and the ideas behind its design. Developed by the Ishizaki Laboratory with Takahiro Kawaguchi (Gunma University).</p>
-        <p class="about-lead" lang="ja">GUILDA が生まれた理由と設計の考え方。開発は石崎研究室と川口貴弘氏（群馬大学）の共同。</p>
-        <figure class="about-demo">
-          <img src="./images/movie.gif" data-alt-ja="GUILDA のアニメーション: ノードの高さと色がシミュレーション結果に合わせて変わる系統グラフ" alt="GUILDA animation: a network graph whose node heights and colours follow the simulated response" class="demo-gif">
-          <figcaption><span lang="en">A simulated fault spreading through a network, drawn by GUILDA's animation tools.</span><span lang="ja">系統に広がる地絡の影響。GUILDA のアニメーション機能で描画。</span></figcaption>
-        </figure>
       </div>
 
       <section class="about-section index-stacked">
@@ -443,6 +437,10 @@ sys = net.get_sys();                  % linearized model</code></pre>
       <p lang="ja">典型的な解析の流れ: 系統モデルの構築 → 動作点の初期化 → 時間応答シミュレーション・近似線形化・制御器の評価。以下の例は <code>+DebugScript</code> の検証の流れに準拠。前提は <a href="#tab-getting-started" onclick="openTab('tab-getting-started'); return false;">はじめに</a> の手順による GUILDA の起動。</p>
       <p lang="en">To learn hands-on, see the <a href="#hands-on-tutorial" onclick="openTab('tab-tutorial', 'hands-on-tutorial'); return false;" style="font-weight: bold;">Hands-on Tutorial</a> below.</p>
       <p lang="ja">手を動かしながら学ぶには、下の <a href="#hands-on-tutorial" onclick="openTab('tab-tutorial', 'hands-on-tutorial'); return false;" style="font-weight: bold;">ハンズオンチュートリアル</a> へ。</p>
+      <figure class="tutorial-flow">
+        <img lang="ja" src="./images/tutorial/basic-workflow.ja.svg" alt="GUILDA での作業の流れ: 系統モデルの定義、制御器の付加、シミュレーションまたは状態空間表現の取得" onerror="this.style.display = 'none';">
+        <img lang="en" src="./images/tutorial/basic-workflow.en.svg" alt="GUILDA workflow: define the network model, add controllers, then simulate or obtain a state-space model" onerror="this.style.display = 'none';">
+      </figure>
 
       <h2><span lang="en">1. Build or Load a Network</span><span lang="ja">1. 系統モデルの構築・読み込み</span></h2>
       <p lang="en">For a quick analysis, load a packaged network. To build a model by hand, create a <code>PowerNetwork</code> and add buses, branches and components in that order.</p>
