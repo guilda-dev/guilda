@@ -20,7 +20,7 @@ tol = 1e-6;
 % Task2 と同じ潮流設定の 9 母線系統
 net = DebugScript.helper.build_9bus();
 
-% 潮流計算 (既定は "algebraic" = fsolve による代数方程式の求解)
+% 潮流計算 (既定は "newton" = ニュートン・ラフソン法による電力方程式の求解)
 [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow);
 tab = res.tab_bus;
 
@@ -221,7 +221,7 @@ assert(~isprop(net.solver_PF, "rm_response"))
 %% Dynamic method reaches the algebraic solution
 % dynamic でも代数方程式の解 (指定電圧を含む) と同じ解になるべき
 net = DebugScript.helper.build_ieee14();
-tab_alg = DebugScript.helper.quiet(@() net.calculate_powerflow(Method="algebraic")).tab_bus;
+tab_alg = DebugScript.helper.quiet(@() net.calculate_powerflow(Method="newton")).tab_bus;
 tab_dyn = DebugScript.helper.quiet(@() net.calculate_powerflow(Method="dynamic")).tab_bus;
 
 % PV 母線の電圧は指定値
@@ -240,7 +240,7 @@ net = DebugScript.helper.build_9bus();
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
 assert(flag > 0)
 assert(res.s_solver == "SolverPF" && res.a_PowerNetwork == net && res.r_elapsed >= 0)
-assert(res.options.Method == "algebraic" && isequal(res.options.dynamic, net.solver_PF.dynamic))
+assert(res.options.Method == "newton" && isequal(res.options.dynamic, net.solver_PF.dynamic))
 % 反復ごとの母線電圧 (最後が解)
 assert(size(res.cm_Vhistory,1) == numel(net.a_Bus) && isequal(res.rv_step, 0:size(res.cm_Vhistory,2)-1))
 assert(norm(res.cm_Vhistory(:,end) - res.tab_bus.Vphasor) < 1e-12)
@@ -273,12 +273,12 @@ solver = net.solver_PF;
 sct_before = struct("Method", solver.Method, "MaxIterations", solver.MaxIterations, ...
                   "Display", solver.Display, "Tolerance", solver.Tolerance);
 
-% MaxIteration=1 では収束しない (fsolve の exitflag = 0)
+% MaxIteration=1 では収束しない (flag = 0)
 w = warning("off"); c = onCleanup(@() warning(w));
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(MaxIteration=1, Tolerance=1e-10));
 assert(flag == 0 && ~res.l_success)
 assert(res.options.MaxIterations == 1 && res.options.Tolerance == 1e-10)
-% Verbose=true は fsolve の表示 ("iter")
+% Verbose=true は反復ごとの表示 ("iter")
 s_log = evalc("res = net.calculate_powerflow(Verbose=true);");
 assert(res.options.Display == "iter" && strlength(s_log) > strlength(evalc("net.calculate_powerflow();")))
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(verbose=false, method="dynamic"));   % 名前の大文字小文字は区別しない
@@ -307,11 +307,109 @@ end
 % 共通名以外 (ソルバー固有の名前) も受け付けない
 assert(error_id(@() net.calculate_powerflow("MaxIterations", 5)) == "GUILDA:resolve_options:UnknownName")
 % 値の検証
-assert(error_id(@() net.calculate_powerflow(Method="newton")) == "MATLAB:validators:mustBeMember")
+assert(error_id(@() net.calculate_powerflow(Method="algebraic")) == "MATLAB:validators:mustBeMember")
 assert(error_id(@() net.calculate_powerflow(MaxIteration=-1)) ~= "")
 assert(error_id(@() net.calculate_powerflow(Plot="yes")) ~= "")
 % Name-Value の組になっていない
 assert(error_id(@() net.calculate_powerflow("Method")) == "GUILDA:resolve_options:InvalidPairs")
+
+
+%% Every method reaches the same solution
+% newton / gradient / levenberg-marquardt は fsolve と同じ解に収束し、同じ形の出力を返す
+net = DebugScript.helper.build_ieee14();
+tab_ref = DebugScript.helper.quiet(@() net.calculate_powerflow(Method="fsolve")).tab_bus;
+for s_method = ["newton", "gradient", "levenberg-marquardt"]
+    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Method=s_method));
+    assert(flag == 1 && res.l_success, s_method + ": " + output.message)
+    assert(max(abs(res.tab_bus.Vphasor - tab_ref.Vphasor)) < 1e-6, s_method)
+    assert(output.algorithm == s_method && output.residual <= 1e-8 && contains(output.message, "converged"))
+    assert(size(res.cm_Vhistory,1) == numel(net.a_Bus) && size(res.cm_Vhistory,2) == numel(res.rv_step))
+    assert(res.rv_step(1) == 0 && res.rv_step(end) == output.iterations && all(diff(res.rv_step) > 0))
+    assert(norm(res.cm_Vhistory(:,end) - res.tab_bus.Vphasor) < 1e-12)
+    % 反復回数の上限に達すると flag = 0
+    w = warning("off"); c = onCleanup(@() warning(w));
+    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Method=s_method, MaxIteration=1));
+    assert(flag == 0 && ~res.l_success && output.iterations == 1 && contains(output.message, "MaxIterations"), s_method)
+    clear c
+    % Verbose=true は反復ごとに 1 行
+    s_log = evalc("net.calculate_powerflow(Method=s_method, Verbose=true);");
+    assert(count(s_log, "iter ") >= 2 && contains(s_log, "converged"), s_method)
+end
+% gradient の刻み幅は solver の gradient.StepSize で変えられる (大きすぎると発散)
+net.solver_PF.gradient.StepSize = 1;
+w = warning("off"); c = onCleanup(@() warning(w));
+[~, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Method="gradient"));
+assert(flag == -2 && output.StepSize == 1 && contains(output.message, "diverged"))
+
+
+%% Infeasible case is reported by every method
+net = DebugScript.helper.build_9bus("Feasible", false);
+w = warning("off"); c = onCleanup(@() warning(w));
+for s_method = ["newton", "levenberg-marquardt", "gradient"]
+    [~, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Method=s_method, MaxIteration=2000));
+    assert(flag <= 0 && startsWith(output.message, "✘"), s_method)
+end
+
+
+%% Newton-Raphson solver reports convergence without a warning
+% 収束フラグを受け取る呼び出しは MaxIter の警告を出さず、反復の履歴を返す
+nrm = MethodNewtonRaphson(NRMFcn=@(x) x.^2 - 4, NRMJac=@(x) 2*x, InitVal=1, MaxIter=2);
+lastwarn("");
+[x, n_iter, l_conv, rm_hist] = nrm.solve();
+assert(~l_conv && n_iter == 3 && isequal(size(rm_hist), [1 3]) && rm_hist(1) == 1 && rm_hist(end) == x)
+assert(isempty(lastwarn()))
+nrm.MaxIter = 50;
+[x, ~, l_conv] = nrm.solve();
+assert(l_conv && abs(x - 2) < 1e-6)
+% 出力が 2 つまでなら従来どおり警告する (連続潮流計算の補正子)
+nrm.MaxIter = 2;
+w = warning("off", "all"); c = onCleanup(@() warning(w));
+lastwarn("");
+[~, ~] = nrm.solve();
+assert(DebugScript.helper.msg_id() == "GUILDA:MethodNewtonRaphson:MaxIteration")
+
+
+%% Method classes solve a generic equation
+% MethodLevenbergMarquardt / MethodFsolve / MethodGradient は潮流計算以外の方程式も解ける
+f_F = @(x) [x(1)^2 - 4; x(1) + x(2) - 3];
+f_J = @(x) [2*x(1), 0; 1, 1];
+[x, flag, output, rm_hist, rv_step] = MethodLevenbergMarquardt(Fcn=f_F, Jac=f_J, InitVal=[1; 1]).solve();
+assert(flag == 1 && norm(x - [2; 1]) < 1e-8 && isequal(rm_hist(:,end), x) && rv_step(end) == output.iterations)
+[x, flag] = MethodFsolve(Fcn=f_F, Jac=f_J, InitVal=[1; 1], Display="none").solve();
+assert(flag > 0 && norm(x - [2; 1]) < 1e-6)
+[x, flag] = MethodFsolve(Fcn=f_F, InitVal=[1; 1], Display="none").solve();     % Jacobian なし (差分)
+assert(flag > 0 && norm(x - [2; 1]) < 1e-6)
+[x, flag, output] = MethodGradient(Fcn=@(x) [1; 2] - x, InitVal=[0; 0], StepSize=0.5).solve();
+assert(flag == 1 && norm(x - [1; 2]) < 1e-8 && output.iterations > 10)
+[~, flag] = MethodGradient(Fcn=@(x) x, InitVal=1, StepSize=1).solve();           % x が増え続けて発散
+assert(flag == -2)
+
+
+%% fsolve stops without Optimization Toolbox
+% Toolbox が無い環境を license の代わりで再現する。既定の newton はそのまま動く
+net = DebugScript.helper.build_9bus();
+s_tmp = tempname;  mkdir(s_tmp);
+writelines(["function varargout = license(varargin)", ...
+    "if nargin >= 2 && strcmpi(varargin{1}, 'test') && strcmpi(varargin{2}, 'Optimization_Toolbox')", ...
+    "    varargout = {false};  return", "end", ...
+    "[varargout{1:max(nargout,1)}] = builtin('license', varargin{:});", "end"], ...
+    fullfile(s_tmp, "license.m"));
+w = warning("off", "MATLAB:dispatcher:nameConflict");
+addpath(s_tmp);
+c_tmp = onCleanup(@() cellfun(@feval, {@() rmpath(s_tmp), @() rmdir(s_tmp, "s"), ...
+    @() clear("license"), @() warning(w)}));
+assert(~license("test", "Optimization_Toolbox"))
+try
+    net.calculate_powerflow(Method="fsolve");
+    error("DebugScript:NoError", "エラーにならない")
+catch ME
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:require_toolbox:Unavailable", ME.message)
+    assert(contains(ME.message, "Optimization Toolbox") && contains(ME.message, 'Method="fsolve"'), ME.message)
+end
+[~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+assert(flag == 1)
+assert(error_id(@() tools.require_toolbox("optim", "X")) == "GUILDA:require_toolbox:Unavailable")
+assert(error_id(@() tools.require_toolbox("optimization", "X")) == "MATLAB:validators:mustBeMember")
 
 
 %% Plot and Export of the result
@@ -372,15 +470,16 @@ w = warning("off", "GUILDA:Deprecated:CalculatePowerflowMode"); c = onCleanup(@(
 assert(isa(res, "ResultPF") && logical(flag) && res.options.Method == "dynamic")
 id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:CalculatePowerflowExport")
-assert(net.solver_PF.Method == "algebraic")       % 既定値は変わらない
+assert(net.solver_PF.Method == "newton")          % 既定値は変わらない
 warning(w);
 
-% 位置引数の mode だけ
+% 位置引数の mode だけ (v3 の "algebraic" は fsolve)
 clear Deprecated
 lastwarn("");
 res = DebugScript.helper.quiet(@() net.calculate_powerflow("algebraic"));
-id = DebugScript.helper.msg_id();
-assert(string(id) == "GUILDA:Deprecated:CalculatePowerflowMode" && res.options.Method == "algebraic")
+[s_msg, id] = lastwarn(); id = DebugScript.helper.msg_id(s_msg, id);
+assert(string(id) == "GUILDA:Deprecated:CalculatePowerflowMode" && res.options.Method == "fsolve")
+assert(contains(s_msg, 'Method="fsolve"'), s_msg)
 
 % export=true の JSON は v3 と同じく GUILDA.pwd に書く
 filename = "DebugScript_test_F2_" + string(feature("getpid")) + ".json";

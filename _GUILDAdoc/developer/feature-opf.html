@@ -116,7 +116,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
     </table>
     <p lang="en">Preconditions:</p>
     <ul lang="en">
-      <li>the Optimization Toolbox;</li>
+      <li>the Optimization Toolbox (checked when the analysis starts; also for <code>net.initialize(Method="OPF")</code>);</li>
       <li>components: <code>tab_parameter.OPF</code> (cost <code>HP·P² + fP·P + HQ·Q² + fQ·Q</code>, initial point <code>P0</code>, <code>Q0</code>) and <code>tab_parameter.operation</code> (limits);</li>
       <li>buses: <code>operation</code> (<code>Vmin</code>, <code>Vmax</code>) and <code>powerflow</code> (<code>V0</code>, <code>Varg0</code>, <code>Varg</code>);</li>
       <li>branches: <code>operation</code> (<code>Pmax</code>, <code>Qmax</code>, <code>Imax</code>, <code>Smax</code>, <code>Vargmax</code>).</li>
@@ -125,7 +125,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
     <p lang="en">No <code>initialize</code> needed; the stale state is not checked. User terms: <code>Cost</code>, <code>Constraint</code>, <code>Problem</code> (see <a href="class-design.html#opf">Class Design: OPF customization</a>).</p>
     <p lang="ja">前提条件:</p>
     <ul lang="ja">
-      <li>Optimization Toolbox</li>
+      <li>Optimization Toolbox（解析の開始時に確認。<code>net.initialize(Method="OPF")</code> も同様）</li>
       <li>機器: <code>tab_parameter.OPF</code>（コスト <code>HP·P² + fP·P + HQ·Q² + fQ·Q</code>、初期点 <code>P0</code>、<code>Q0</code>）と <code>tab_parameter.operation</code>（制約）</li>
       <li>母線: <code>operation</code>（<code>Vmin</code>、<code>Vmax</code>）と <code>powerflow</code>（<code>V0</code>、<code>Varg0</code>、<code>Varg</code>）</li>
       <li>ブランチ: <code>operation</code>（<code>Pmax</code>、<code>Qmax</code>、<code>Imax</code>、<code>Smax</code>、<code>Vargmax</code>）</li>
@@ -234,7 +234,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         <p class="fs-head"><b class="fs-id">OPF-03</b> <span class="fs-call"><code>optimize_powerflow</code> → <code>SolverOPF.solve(net, sct_options, sct_input)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Starts the timer; runs OPF-04 to OPF-15.</span><span lang="ja">タイマー開始。OPF-04〜OPF-15 を実行</span></dd>
+          <dd><span lang="en">Checks Optimization Toolbox (<code>tools.require_toolbox("optim", "OPF")</code>); starts the timer; runs OPF-04 to OPF-15.</span><span lang="ja">Optimization Toolbox を確認（<code>tools.require_toolbox("optim", "OPF")</code>）。タイマー開始。OPF-04〜OPF-15 を実行</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>sct_options.Method</code>; <code>sct_input</code>: <code>Problem</code>, <code>InitialPoint</code> when given</span><span lang="ja"><code>sct_options.Method</code>、<code>sct_input</code>: 指定された <code>Problem</code>、<code>InitialPoint</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -550,11 +550,12 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
       <thead><tr><th lang="en">When</th><th lang="ja">発生する時点</th><th lang="en">Error</th><th lang="ja">エラー</th></tr></thead>
       <tbody>
         <tr><td>OPF-02</td><td lang="en" data-label="Error"><code>GUILDA:resolve_options:UnknownName</code>; validation errors of <code>validate_options</code> (e.g. <code>Tolerance</code> not positive); <code>GUILDA:SolverOPF:InvalidHandle</code> when <code>Cost</code> or <code>Constraint</code> is not a function handle or <code>[]</code></td><td lang="ja" data-label="エラー"><code>GUILDA:resolve_options:UnknownName</code>、<code>validate_options</code> の検査エラー（例: 正でない <code>Tolerance</code>）。<code>Cost</code> や <code>Constraint</code> が関数ハンドルでも <code>[]</code> でもなければ <code>GUILDA:SolverOPF:InvalidHandle</code></td></tr>
+        <tr><td>OPF-03</td><td lang="en" data-label="Error"><code>GUILDA:require_toolbox:Unavailable</code>: Optimization Toolbox is not installed or not licensed</td><td lang="ja" data-label="エラー"><code>GUILDA:require_toolbox:Unavailable</code>: Optimization Toolbox がインストールされていない、またはライセンスがない</td></tr>
         <tr><td>OPF-07</td><td lang="en" data-label="Error"><code>GUILDA:SolverOPF:UnknownReferenceBus</code>: no bus has the tag of <code>ReferenceBus</code></td><td lang="ja" data-label="エラー"><code>GUILDA:SolverOPF:UnknownReferenceBus</code>: <code>ReferenceBus</code> のタグの母線がない</td></tr>
         <tr><td>OPF-10</td><td lang="en" data-label="Error"><code>GUILDA:SolverOPF:InvalidCost</code>, <code>InvalidConstraint</code>, <code>InvalidConstraintField</code>, <code>DuplicateName</code>; <code>GUILDA:SolverOPF:HandleError</code> (a real <code>MException</code> identifier) when a user handle fails, with the original error as its cause</td><td lang="ja" data-label="エラー"><code>GUILDA:SolverOPF:InvalidCost</code>、<code>InvalidConstraint</code>、<code>InvalidConstraintField</code>、<code>DuplicateName</code>。ユーザーのハンドルの失敗時は <code>GUILDA:SolverOPF:HandleError</code>（実際の <code>MException</code> 識別子）。元のエラーを原因として保持</td></tr>
         <tr><td>OPF-11</td><td lang="en" data-label="Error"><code>GUILDA:SolverOPF:InvalidProblem</code> (not an <code>optimproblem</code>), <code>GUILDA:SolverOPF:ProblemMismatch</code> (variables missing or resized, e.g. built for another <code>Method</code>)</td><td lang="ja" data-label="エラー"><code>GUILDA:SolverOPF:InvalidProblem</code>（<code>optimproblem</code> でない）、<code>GUILDA:SolverOPF:ProblemMismatch</code>（変数の不足やサイズ違い。例: 別の <code>Method</code> で構築）</td></tr>
         <tr><td>OPF-12</td><td lang="en" data-label="Error"><code>GUILDA:SolverOPF:UnsupportedSolver</code>: the named <code>Solver</code> cannot express the problem (e.g. <code>linprog</code> with a quadratic cost); the message lists the usable names</td><td lang="ja" data-label="エラー"><code>GUILDA:SolverOPF:UnsupportedSolver</code>: 指定した <code>Solver</code> では表せない問題（例: 二次のコストに <code>linprog</code>）。メッセージに使用可能な名前を表示</td></tr>
-        <tr><td>OPF-13</td><td lang="en" data-label="Error">errors of the Optimization Toolbox itself (for example, when it is not installed)</td><td lang="ja" data-label="エラー">Optimization Toolbox 自体のエラー（例: インストールされていない場合）</td></tr>
+        <tr><td>OPF-13</td><td lang="en" data-label="Error">errors of the Optimization Toolbox itself</td><td lang="ja" data-label="エラー">Optimization Toolbox 自体のエラー</td></tr>
       </tbody>
     </table>
     <ul lang="en">

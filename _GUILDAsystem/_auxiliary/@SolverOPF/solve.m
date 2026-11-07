@@ -4,7 +4,8 @@ function [result,flag,output] = solve(obj, net, sct_options, sct_input)
 % Builds the optimal power flow problem of net with build_problem for the effective
 % settings sct_options, solves it and returns the solution as a ResultOPF. The solver is
 % only read: nothing is written back into it. Called by net.optimize_powerflow; calling it
-% directly is for advanced use.
+% directly is for advanced use. Without Optimization Toolbox it stops with
+% GUILDA:require_toolbox:Unavailable before anything is built.
 % sct_input carries the call-only options Problem and InitialPoint of optimize_powerflow:
 % with Problem, that problem is solved as it is instead of a built one (Cost, Constraint,
 % DefaultCost and ReferenceBus are not applied to it). It must have the variables of the
@@ -21,6 +22,7 @@ function [result,flag,output] = solve(obj, net, sct_options, sct_input)
         flag % exitflag of solve (positive = solved).
         output % Solver details; output.message describes the outcome.
     end
+    tools.require_toolbox("optim", "OPF");
     t0 = tic;
     s_method = sct_options.Method;
 

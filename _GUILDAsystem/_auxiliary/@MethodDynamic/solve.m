@@ -1,29 +1,26 @@
-function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_dynamic(~, cm_Y, tab_PFcondition, sct_options)
-% Settle virtual bus dynamics at the power flow solution (ode15s). cm_Vhistory holds the
-% bus voltages at each output time (n_bus x n_step), rv_step the times [s].
+function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve(obj)
+% Integrate the virtual bus dynamics until they settle at the power flow solution (see the
+% class help). cm_Vhistory holds the bus voltages at each output time (n_bus x n_step),
+% rv_step the times [s].
     arguments (Input)
-        ~
-        cm_Y        (:,:) double  % [pu] Bus admittance matrix (complex, in the bus order of tab_PFcondition).
-        tab_PFcondition   table         % Power flow conditions of the buses (rows of get_pf_condition).
-        sct_options (1,1) struct  % Effective settings (output of get_options).
+        obj
     end
     arguments (Output)
-        cv_Vbus     (:,1) double  % [pu] Complex bus voltages of the solution.
+        cv_Vbus     (:,1) double  % [pu] Complex bus voltages at the end of the integration.
         flag                      % True when the bus dynamics converged within the tolerance.
         output                    % Details; output.message describes the outcome.
         cm_Vhistory               % [pu] Complex bus voltages at each output time (n_bus x n_step).
         rv_step                   % [s] Output times.
     end
 
+    cm_Y = obj.Y;
+    tab_PFcondition = obj.PFcondition;
     N   = size(tab_PFcondition,1);
-    M   = sct_options.dynamic.Mass;
-    D   = sct_options.dynamic.Damper;
-    foh = sct_options.dynamic.foh_PQ;
-    t_span = sct_options.dynamic.t_span;
-    tol = sct_options.Tolerance;
-    if tol == 0
-        tol = 1e-5;
-    end
+    M   = obj.Mass;
+    D   = obj.Damper;
+    foh = obj.foh_PQ;
+    t_span = obj.t_span;
+    tol = obj.Tolerance;
     
     idx_slack = (tab_PFcondition.Type == "slack");
     idx_PV    = (tab_PFcondition.Type == "PV");

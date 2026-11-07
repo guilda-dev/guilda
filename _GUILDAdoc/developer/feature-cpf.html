@@ -110,13 +110,13 @@
       <li>a successful <code>net.initialize()</code>, with no edit since that makes a layer stale;</li>
       <li>bus types from <code>Bus.get_pf_condition</code>: the slack bus is the one <code>l_isSlack</code> marks.</li>
     </ul>
-    <p lang="en">Other settings of the corrector: <code>GUILDA.config("NewtonRaphsonMethod")</code> (<code>MaxIter = 1000</code>, <code>Increment = 1e-4</code> of the numerical Jacobian, <code>StepSize = 1</code>).</p>
+    <p lang="en">Other settings of the corrector: <code>GUILDA.config("MethodNewtonRaphson")</code> (<code>MaxIter = 1000</code>, <code>Increment = 1e-4</code> of the numerical Jacobian, <code>StepSize = 1</code>).</p>
     <p lang="ja">前提条件:</p>
     <ul lang="ja">
       <li><code>net.initialize()</code> が成功済みで、その後に層を古くする編集なし</li>
       <li>母線の種別は <code>Bus.get_pf_condition</code> で決定: スラック母線は <code>l_isSlack</code> が示す母線</li>
     </ul>
-    <p lang="ja">修正子のその他の設定: <code>GUILDA.config("NewtonRaphsonMethod")</code>（<code>MaxIter = 1000</code>、数値ヤコビアンの <code>Increment = 1e-4</code>、<code>StepSize = 1</code>）。</p>
+    <p lang="ja">修正子のその他の設定: <code>GUILDA.config("MethodNewtonRaphson")</code>（<code>MaxIter = 1000</code>、数値ヤコビアンの <code>Increment = 1e-4</code>、<code>StepSize = 1</code>）。</p>
 
     <!-- ============================== SEQUENCE ============================== -->
     <h2 id="sequence"><span lang="en">Call sequence between classes</span><span lang="ja">クラス間の呼び出し順</span></h2>
@@ -142,7 +142,7 @@
         <rect class="dg-sv-box" x="550" y="10" width="100" height="44" rx="6"/>
         <text class="dg-mono cpf-box" x="600" y="37" text-anchor="middle">Component</text>
         <rect class="dg-sv-box" x="655" y="10" width="140" height="44" rx="6"/>
-        <text class="dg-mono cpf-box" x="725" y="37" text-anchor="middle">NewtonRaphsonMethod</text>
+        <text class="dg-mono cpf-box" x="725" y="37" text-anchor="middle">MethodNewtonRaphson</text>
         <rect class="dg-sv-box" x="806" y="10" width="90" height="44" rx="6"/>
         <text class="dg-mono cpf-box" x="851" y="37" text-anchor="middle">ResultCPF</text>
 
@@ -163,7 +163,7 @@
         <path class="dg-sv-line is-muted" d="M385 348H274" marker-end="url(#cpf-ah-m)"/>
         <text class="is-muted dg-mono" x="300" y="342">w</text>
         <path class="dg-sv-line" d="M270 380H721" marker-end="url(#cpf-ah)"/>
-        <text x="420" y="374"><tspan class="cpf-num">08</tspan> <tspan class="dg-mono">NewtonRaphsonMethod(f_PF)</tspan></text>
+        <text x="420" y="374"><tspan class="cpf-num">08</tspan> <tspan class="dg-mono">MethodNewtonRaphson(f_PF)</tspan></text>
 
         <rect class="cpf-loop" x="232" y="398" width="580" height="166" rx="6"/>
         <text class="is-muted" x="240" y="416" lang="en">loop: Iteration ≤ MaxIterations</text>
@@ -295,7 +295,7 @@
         </dl>
       </li>
       <li class="fs-step" id="CPF-08">
-        <p class="fs-head"><b class="fs-id">CPF-08</b> <span class="fs-call"><code>SolverCPF.solve</code> → <code>NewtonRaphsonMethod(NRMFcn=f_PF, NRMJac=[], NRMVal=0)</code></span></p>
+        <p class="fs-head"><b class="fs-id">CPF-08</b> <span class="fs-call"><code>SolverCPF.solve</code> → <code>MethodNewtonRaphson(NRMFcn=f_PF, NRMJac=[], NRMVal=0)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Creates the corrector.</span><ul lang="en">
@@ -331,7 +331,7 @@
         </dl>
       </li>
       <li class="fs-step cpf-loop" id="CPF-10">
-        <p class="fs-head"><b class="fs-id">CPF-10</b> <span class="fs-call"><code>SolverCPF.solve</code> → <code>correct</code> → <code>NewtonRaphsonMethod.solve</code></span><small>→ <code>pf_equation</code></small></p>
+        <p class="fs-head"><b class="fs-id">CPF-10</b> <span class="fs-call"><code>SolverCPF.solve</code> → <code>correct</code> → <code>MethodNewtonRaphson.solve</code></span><small>→ <code>pf_equation</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">From <code>x_pred</code>, solves the power-flow equations plus the arc-length condition <code>|x − x_current|² − ArcLength = 0</code>. <code>pf_equation</code>:</span><ul lang="en">
@@ -491,7 +491,7 @@
         <tr><td>CPF-02</td><td lang="en" data-label="ID"><code>GUILDA:resolve_options:UnknownName</code>; validation errors of <code>validate_options</code></td><td lang="ja" data-label="ID"><code>GUILDA:resolve_options:UnknownName</code>、<code>validate_options</code> の検査エラー</td></tr>
         <tr><td>CPF-04</td><td lang="en" data-label="ID"><code>GUILDA:SolverCPF:NoEquilibrium</code> (a component has no equilibrium: run <code>net.initialize</code>), <code>GUILDA:SolverCPF:Stale</code>, <code>EmptyLoadBus</code>, <code>UnknownLoadBus</code></td><td lang="ja" data-label="ID"><code>GUILDA:SolverCPF:NoEquilibrium</code>（平衡点のない機器がある。<code>net.initialize</code> を実行）、<code>GUILDA:SolverCPF:Stale</code>、<code>EmptyLoadBus</code>、<code>UnknownLoadBus</code></td></tr>
         <tr><td>CPF-07</td><td lang="en" data-label="ID"><code>GUILDA:build_layout:MissingGetCompPQ</code>: <code>UseInternalState=true</code> and a component without <code>getCompPQ</code></td><td lang="ja" data-label="ID"><code>GUILDA:build_layout:MissingGetCompPQ</code>: <code>UseInternalState=true</code> で <code>getCompPQ</code> のない機器がある</td></tr>
-        <tr><td>CPF-10</td><td lang="en" data-label="ID">warning <code>GUILDA:NewtonRaphsonMethod:MaxIteration</code> after <code>MaxIter</code> Newton iterations</td><td lang="ja" data-label="ID"><code>MaxIter</code> 回のニュートン反復の後に警告 <code>GUILDA:NewtonRaphsonMethod:MaxIteration</code></td></tr>
+        <tr><td>CPF-10</td><td lang="en" data-label="ID">warning <code>GUILDA:MethodNewtonRaphson:MaxIteration</code> after <code>MaxIter</code> Newton iterations</td><td lang="ja" data-label="ID"><code>MaxIter</code> 回のニュートン反復の後に警告 <code>GUILDA:MethodNewtonRaphson:MaxIteration</code></td></tr>
       </tbody>
     </table>
 

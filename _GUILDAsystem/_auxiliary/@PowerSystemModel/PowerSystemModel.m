@@ -23,6 +23,10 @@ classdef PowerSystemModel < LayerPackage
 
     methods
         Hz = get_Hz(obj)
+        h = gui(obj, h_container)
+    end
+    methods(Access=protected)
+        sct_page = gui_content(obj)
     end
 
     methods

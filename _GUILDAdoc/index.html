@@ -337,15 +337,49 @@ sys = net.get_sys();                  % linearized model</code></pre>
       <h1><span lang="en">Getting Started</span><span lang="ja">はじめに</span></h1>
 
       <h2><span lang="en">Requirements</span><span lang="ja">動作環境</span></h2>
-      <p lang="en">GUILDA runs on MATLAB and needs these products:</p>
-      <p lang="ja">MATLAB 上で動作。必要な製品:</p>
-      <ul>
-        <li>MATLAB</li>
-        <li>Control System Toolbox</li>
-        <li>Optimization Toolbox</li>
+      <p lang="en">GUILDA runs on MATLAB alone; each toolbox is needed only by the features marked below.</p>
+      <p lang="ja">MATLAB のみで動作。各 Toolbox は、下表で印の付いた機能でのみ必要。</p>
+      <div class="req-scroll">
+        <table class="req-table">
+          <thead>
+            <tr>
+              <th scope="col"><span lang="en">Feature</span><span lang="ja">機能</span></th>
+              <th scope="col">MATLAB<span class="req-sub"><span lang="en">R2025a or later</span><span lang="ja">R2025a 以降</span></span></th>
+              <th scope="col">Optimization Toolbox</th>
+              <th scope="col">Control System Toolbox</th>
+              <th scope="col">Symbolic Math Toolbox</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="req-group"><th colspan="5" scope="rowgroup"><span class="req-group-label"><span lang="en">Power flow</span><span lang="ja">潮流計算</span><span class="req-desc"><span lang="en">Steady-state voltages and power flows</span><span lang="ja">定常状態の電圧・電力潮流</span></span><span class="req-sub"><code>net.<wbr>calculate_<wbr>powerflow(<wbr>Method=…)</code></span></span></th></tr>
+            <tr class="req-opt"><th scope="row"><span lang="en">Newton-Raphson method (default)</span><span lang="ja">ニュートン・ラフソン法（既定）</span><span class="req-sub"><code>Method="newton"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-opt"><th scope="row"><span lang="en">Gradient method</span><span lang="ja">勾配法</span><span class="req-sub"><code>Method="gradient"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-opt"><th scope="row"><span lang="en">Levenberg-Marquardt method</span><span lang="ja">レーベンバーグ・マーカート法</span><span class="req-sub"><code>Method=<wbr>"levenberg-marquardt"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-opt"><th scope="row"><span lang="en">Virtual bus dynamics (time integration)</span><span lang="ja">仮想母線ダイナミクス（時間積分）</span><span class="req-sub"><code>Method="dynamic"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-opt"><th scope="row"><span lang="en">MATLAB fsolve</span><span lang="ja">MATLAB の fsolve</span><span class="req-sub"><code>Method="fsolve"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-single"><th scope="row"><span lang="en">Continuation power flow (CPF)</span><span lang="ja">連続潮流計算（CPF）</span><span class="req-desc"><span lang="en">Voltage stability: the nose (PV) curve</span><span lang="ja">電圧安定性・PV 曲線</span></span><span class="req-sub"><code>net.<wbr>calculate_<wbr>continuation_<wbr>powerflow</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-single"><th scope="row"><span lang="en">Optimal power flow (OPF)</span><span lang="ja">最適潮流計算（OPF）</span><span class="req-desc"><span lang="en">Generation dispatch that minimizes cost under constraints</span><span lang="ja">制約下でコスト最小の発電配分</span></span><span class="req-sub"><code>net.<wbr>optimize_<wbr>powerflow</code>, <code>net.initialize(<wbr>Method="OPF")</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-single"><th scope="row"><span lang="en">Time simulation</span><span lang="ja">時間応答シミュレーション</span><span class="req-desc"><span lang="en">Response to faults and disturbances</span><span lang="ja">事故・外乱に対する時間応答</span></span><span class="req-sub"><code>net.simulate</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-group"><th colspan="5" scope="rowgroup"><span class="req-group-label"><span lang="en">Linearization</span><span lang="ja">近似線形化</span><span class="req-desc"><span lang="en">Linear model around an operating point (eigenvalues, controller design)</span><span lang="ja">動作点まわりの線形モデル（固有値解析・制御器設計）</span></span><span class="req-sub"><code>net.<wbr>get_sys(<wbr>Format=…)</code>, <code>ResultLIN.<wbr>get_ss(<wbr>Format=…)</code></span></span></th></tr>
+            <tr class="req-opt"><th scope="row"><span lang="en">Result object with system matrices (default)</span><span lang="ja">システム行列を持つ結果オブジェクト（既定）</span><span class="req-sub"><code>Format="ResultLIN"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-opt"><th scope="row"><span lang="en">Plain MATLAB struct of matrices</span><span lang="ja">行列の構造体</span><span class="req-sub"><code>Format="struct"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-opt"><th scope="row"><span lang="en">Control System Toolbox state-space model (ss)</span><span lang="ja">Control System Toolbox の状態空間モデル（ss）</span><span class="req-sub"><code>Format="ss"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td></tr>
+            <tr class="req-group"><th colspan="5" scope="rowgroup"><span class="req-group-label"><span lang="en">Controllers</span><span lang="ja">制御器</span><span class="req-desc"><span lang="en">Controllers bundled with GUILDA</span><span lang="ja">GUILDA 同梱の制御器</span></span></span></th></tr>
+            <tr class="req-opt"><th scope="row"><span lang="en">LQR (optimal state-feedback) controllers</span><span lang="ja">LQR（最適状態フィードバック）制御器</span><span class="req-sub"><code>controller.<wbr>local_LQR</code>, <code>controller.<wbr>local_LQR_retrofit</code>, <code>+controller/<wbr>+modeling/<wbr>get_environment</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td></tr>
+            <tr class="req-group"><th colspan="5" scope="rowgroup"><span class="req-group-label"><span lang="en">Developer tools</span><span lang="ja">開発者向け</span><span class="req-desc"><span lang="en">For writing and checking models</span><span lang="ja">モデルの作成・検証用</span></span></span></th></tr>
+            <tr class="req-opt"><th scope="row"><span lang="en">Symbolic equations in the Newton-Raphson solver</span><span lang="ja">ニュートン・ラフソン法ソルバーでの記号式</span><span class="req-sub"><code>Method<wbr>NewtonRaphson</code> (<code>NRMFcn</code>)</span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td></tr>
+            <tr class="req-opt"><th scope="row"><span lang="en">Validation scripts for hand-written Jacobians</span><span lang="ja">手書きのヤコビ行列の検証スクリプト</span><span class="req-sub"><code>validate.m</code> (<code>+component/<wbr>+load</code>, <code>+controller</code>)</span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="req-legend" lang="en">
+        <li><span class="mark-yes">✓</span> required, – not needed.</li>
+        <li><code>GUILDA</code> prints the same check at startup from <code>@GUILDA/config/ListToolbox.json</code>: <code>ok</code> or the features unavailable without each toolbox.</li>
       </ul>
-      <p lang="en">Symbolic Math Toolbox is optional: GUILDA never uses symbolic derivatives at run time. Only a few developer scripts that check hand-written Jacobians need it.</p>
-      <p lang="ja">Symbolic Math Toolbox は任意。実行時の記号微分は不使用。必要とするのは、手書きのヤコビ行列を検証する一部の開発者向けスクリプトのみ。</p>
+      <ul class="req-legend" lang="ja">
+        <li><span class="mark-yes">✓</span> 必要、– 不要</li>
+        <li><code>GUILDA</code> の起動時にも <code>@GUILDA/config/ListToolbox.json</code> に基づき同じ確認を表示。各 Toolbox について <code>ok</code>、または無い場合に使えない機能</li>
+      </ul>
 
       <h2><span lang="en">Install GUILDA</span><span lang="ja">GUILDA のインストール</span></h2>
       <p lang="en">Clone or download the repository from GitHub, or open it directly in MATLAB Online.</p>
@@ -365,7 +399,7 @@ sys = net.get_sys();                  % linearized model</code></pre>
         <li><span lang="en">Print the GUILDA logo.</span><span lang="ja">GUILDA のロゴの表示。</span></li>
         <li><span lang="en">Pull the latest revision when Git update is enabled.</span><span lang="ja">Git による更新が有効なとき、最新のリビジョンの取得。</span></li>
         <li><span lang="en">Add the required GUILDA folders to the MATLAB path (always performed).</span><span lang="ja">必要な GUILDA のフォルダの MATLAB パスへの追加（常に実行）。</span></li>
-        <li><span lang="en">Check the required MATLAB products.</span><span lang="ja">必要な MATLAB 製品の確認。</span></li>
+        <li><span lang="en">Check the MATLAB version and the toolboxes in the table above.</span><span lang="ja">MATLAB のバージョンと上表の Toolbox の確認。</span></li>
         <li><span lang="en">Update the generated documentation database and class signature map when enabled.</span><span lang="ja">有効なとき、生成されるドキュメントのデータベースとクラスのシグネチャマップの更新。</span></li>
         <li><span lang="en">Display the update log and open the tutorial when enabled.</span><span lang="ja">有効なとき、更新履歴の表示とチュートリアルの起動。</span></li>
       </ul>

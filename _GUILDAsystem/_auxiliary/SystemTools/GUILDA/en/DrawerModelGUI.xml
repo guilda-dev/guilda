@@ -1,0 +1,7 @@
+<!--This is an XML file containing error messages related to the class "DrawerModelGUI".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="HiddenAlert">{0}: {1}</entry>
+        <entry key="NotUIContainer">The GUI needs a uifigure, uipanel, uitab or uigridlayout of a uifigure, not a {0} (a figure made by figure() is not supported).</entry>
+    </message>
+</rsccat>
