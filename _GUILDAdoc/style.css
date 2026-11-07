@@ -386,39 +386,32 @@ html[data-lang="ja"] body [lang="en"] { display: none !important; }
   line-height: 1.4;
 }
 
-/* アップデートログ: horizontal cards that drift slowly (JS), scrollable and draggable */
-.ulog {
-  overflow-x: auto; overflow-y: hidden; padding: 6px 0 14px; margin: 0 0 8px; cursor: grab;
-  scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
-  -webkit-mask-image: linear-gradient(90deg, transparent, var(--ink) 20px, var(--ink) calc(100% - 20px), transparent);
-  mask-image: linear-gradient(90deg, transparent, var(--ink) 20px, var(--ink) calc(100% - 20px), transparent);
+/* Update log (doc-updatelog.js): a dated list, newest first. Home (.is-compact) shows the
+   latest entries with the text clamped; updatelog.html shows every entry in full. */
+.ulog { margin: 8px 0 0; }
+.ulog-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.ulog-item {
+  display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: 4px 18px; padding: 12px 0 12px 12px;
+  border-bottom: 1px solid var(--line); border-left: 3px solid var(--ulog-rule, var(--line-strong));
 }
-.ulog:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.ulog.is-dragging { cursor: grabbing; user-select: none; }
-.ulog::-webkit-scrollbar { height: 6px; }
-.ulog::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
-.ulog-track { display: flex; width: max-content; }
-.ulog-card {
-  flex: none; width: 260px; margin-right: 16px; padding: 14px 16px 16px; box-sizing: border-box;
-  background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--line-strong); border-radius: var(--radius);
-}
-/* Keep a Changelog types; an untyped card keeps the neutral rule and shows no label */
-.ulog .is-added, .ulog-legend .is-added { --ulog-c: var(--ok); --ulog-rule: var(--ok); }
-.ulog .is-changed, .ulog-legend .is-changed { --ulog-c: var(--brand); --ulog-rule: var(--brand); }
-.ulog .is-deprecated, .ulog-legend .is-deprecated { --ulog-c: var(--warn); --ulog-rule: var(--warn-line); }
-.ulog .is-removed, .ulog-legend .is-removed { --ulog-c: var(--err); --ulog-rule: var(--err); }
-.ulog .is-fixed, .ulog-legend .is-fixed { --ulog-c: var(--ink-2); --ulog-rule: var(--muted); }
-.ulog-card[class*="is-"] { border-top-color: var(--ulog-rule); }
+.ulog .is-model, .ulog-legend .is-model { --ulog-c: var(--ok); --ulog-rule: var(--ok); }
+.ulog .is-feature, .ulog-legend .is-feature { --ulog-c: var(--brand); --ulog-rule: var(--brand); }
+.ulog .is-fix, .ulog-legend .is-fix { --ulog-c: var(--warn); --ulog-rule: var(--warn-line); }
+.ulog-meta { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.ulog-date { display: block; color: var(--muted); font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600; }
 .ulog-type { flex: none; padding: 0 6px; border: 1px solid var(--ulog-rule); border-radius: var(--radius); color: var(--ulog-c); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; line-height: 1.6; text-transform: uppercase; }
-.ulog-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 12px 0 6px; padding: 0; color: var(--muted); font-size: 0.82rem; }
+.ulog-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 10px; padding: 0; color: var(--muted); font-size: 0.82rem; }
 .ulog-legend li { display: inline-flex; align-items: center; gap: 7px; }
 .ulog-legend li::before { content: ""; width: 14px; height: 3px; background: var(--ulog-rule); }
-.ulog-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.ulog-date { display: block; color: var(--muted); font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600; }
-.ulog-title { margin: 4px 0 6px; font-size: 1rem; line-height: 1.3; color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
-.ulog-text { margin: 0; color: var(--ink-2); font-size: 0.88rem; line-height: 1.5; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; overflow-wrap: anywhere; }
-@media (max-width: 480px) { .ulog-card { width: 230px; } }
-@media (prefers-reduced-motion: reduce) { .ulog { cursor: auto; } }
+.ulog-title { margin: 0 0 4px; font-size: 1rem; line-height: 1.35; color: var(--ink); border: none; padding: 0; }
+.ulog-text { margin: 0; color: var(--ink-2); font-size: 0.88rem; line-height: 1.55; overflow-wrap: anywhere; }
+.ulog.is-compact .ulog-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.ulog-empty { color: var(--muted); }
+.ulog-more { margin: 14px 0 0; }
+@media (max-width: 560px) {
+  .ulog-item { grid-template-columns: minmax(0, 1fr); padding-left: 10px; }
+  .ulog-meta { flex-direction: row; align-items: center; gap: 10px; }
+}
 
 
 /* --- Referenceタブ：セクションごとのカード背景 --- */

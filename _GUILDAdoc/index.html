@@ -15,6 +15,7 @@
   </style>
   
   <script src="./database/list_UpdateLog.js"></script>
+  <script src="./doc-updatelog.js"></script>
   <script src="./database/list_Classes.js"></script>
   <script src="./doc-loader.js"></script>
   <script src="./doc-tree.js"></script>
@@ -126,14 +127,8 @@
       </ol>
 
       <h2><span lang="en">Update Log</span><span lang="ja">更新履歴</span></h2>
-      <ul class="ulog-legend" aria-label="Update types" data-aria-label-ja="更新の種類">
-        <li class="is-added"><span lang="en">Added</span><span lang="ja">追加</span></li>
-        <li class="is-changed"><span lang="en">Changed</span><span lang="ja">変更</span></li>
-        <li class="is-deprecated"><span lang="en">Deprecated</span><span lang="ja">非推奨</span></li>
-        <li class="is-removed"><span lang="en">Removed</span><span lang="ja">削除</span></li>
-        <li class="is-fixed"><span lang="en">Fixed</span><span lang="ja">修正</span></li>
-      </ul>
-      <div id="update-log-container" class="ulog" tabindex="0" role="region" aria-label="Update log, newest first. Scroll sideways to see more." data-aria-label-ja="更新履歴（新しい順）。横にスクロールすると続きを表示します。"></div>
+      <div id="update-log-container" class="ulog is-compact"></div>
+      <p class="ulog-more"><a class="btn" href="updatelog.html"><span lang="en">Show more</span><span lang="ja">もっと見る</span> <span aria-hidden="true">→</span></a></p>
 
       <h2><span lang="en">License</span><span lang="ja">ライセンス</span></h2>
       <p lang="en">GUILDA is released under the MIT License. Details: the <a href="../LICENSE" target="_blank"><code>LICENSE</code></a> file at the repository root.</p>
@@ -649,96 +644,9 @@ sol = net.simulate([0, 50], sc);</code></pre>
       });
     }
 
+    // Home shows the newest entries; updatelog.html lists all (doc-updatelog.js).
     function renderUpdateLog() {
-      const container = document.getElementById('update-log-container');
-      if (!container) return;
-
-      const data = typeof updateLogData !== 'undefined' ? updateLogData : (typeof update_log !== 'undefined' ? update_log : null);
-      if (!Array.isArray(data) || data.length === 0) {
-        container.innerHTML = `<p style="color: var(--muted);">${bilingual('No update log data found.', '更新履歴のデータなし。')}</p>`;
-        return;
-      }
-
-      const esc = (value) => String(value ?? '')
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      // Newest first
-      const items = [...data].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-      // Keep a Changelog types; anything else renders neutral with no label
-      const types = {
-        added: bilingual('Added', '追加'), changed: bilingual('Changed', '変更'), deprecated: bilingual('Deprecated', '非推奨'),
-        removed: bilingual('Removed', '削除'), fixed: bilingual('Fixed', '修正')
-      };
-      items.forEach(u => {
-        if (u.type !== undefined && !Object.hasOwn(types, u.type)) console.warn(`Update log: unknown type "${u.type}" in "${u.title}"`);
-      });
-      const cards = (copy) => items.map(u => {
-        const type = Object.hasOwn(types, u.type) ? u.type : null;
-        return `
-        <article class="ulog-card${type ? ` is-${type}` : ''}"${copy ? ' aria-hidden="true"' : ''} title="${esc(u.content)}">
-          <div class="ulog-meta">
-            <time class="ulog-date" datetime="${esc(u.date)}">${esc(u.date)}</time>
-            ${type ? `<span class="ulog-type">${types[type]}</span>` : ''}
-          </div>
-          <h3 class="ulog-title">${esc(u.title)}</h3>
-          <p class="ulog-text">${esc(u.content)}</p>
-        </article>`;
-      }).join('');
-
-      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      container.innerHTML = `<div class="ulog-track">${cards(false)}${reduceMotion ? '' : cards(true)}</div>`;
-      if (!reduceMotion) startUpdateLogMarquee(container);
-    }
-
-    // Slow, seamless marquee: the track holds the cards twice, and scrollLeft wraps
-    // by one copy's width. Hover, focus and drag pause it; manual scroll is kept.
-    function startUpdateLogMarquee(container) {
-      const track = container.querySelector('.ulog-track');
-      const speed = 28; // px per second
-      let pos = container.scrollLeft;
-      let paused = false;
-      let dragging = false;
-      let last = null;
-
-      const loopWidth = () => track.scrollWidth / 2;
-      const pause = (value) => { paused = value; };
-      container.addEventListener('mouseenter', () => pause(true));
-      container.addEventListener('mouseleave', () => { if (!dragging) pause(false); });
-      container.addEventListener('focusin', () => pause(true));
-      container.addEventListener('focusout', () => pause(false));
-      container.addEventListener('touchstart', () => pause(true), { passive: true });
-      container.addEventListener('touchend', () => setTimeout(() => pause(false), 1500), { passive: true });
-
-      // Mouse drag to scroll
-      let dragX = 0, dragStart = 0;
-      container.addEventListener('pointerdown', (e) => {
-        if (e.pointerType !== 'mouse') return;
-        dragging = true; dragX = e.clientX; dragStart = container.scrollLeft;
-        container.classList.add('is-dragging');
-        container.setPointerCapture(e.pointerId);
-      });
-      container.addEventListener('pointermove', (e) => {
-        if (!dragging) return;
-        container.scrollLeft = dragStart - (e.clientX - dragX);
-      });
-      const endDrag = () => { dragging = false; container.classList.remove('is-dragging'); };
-      container.addEventListener('pointerup', endDrag);
-      container.addEventListener('pointercancel', endDrag);
-
-      const step = (now) => {
-        const dt = last === null ? 0 : Math.min((now - last) / 1000, 0.1);
-        last = now;
-        const width = loopWidth();
-        const visible = container.offsetParent !== null && width > container.clientWidth;
-        if (Math.abs(container.scrollLeft - pos) > 1) pos = container.scrollLeft; // user scrolled
-        if (visible && !paused && !dragging && !document.hidden) pos += speed * dt;
-        if (width > 0) {
-          if (pos >= width) pos -= width;
-          if (pos < 0) pos += width;
-        }
-        container.scrollLeft = pos;
-        requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
+      window.GuildaUpdateLog?.render(document.getElementById('update-log-container'), { limit: 4 });
     }
 
     function renderTutorials() {
