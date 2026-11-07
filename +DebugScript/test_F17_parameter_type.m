@@ -137,7 +137,7 @@ try
     bus.tab_parameter = tp;
 catch ME
 end
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerSystemModel:UnknownParameterGroup", "%s", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerSystemModel:UnknownParameterGroup", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "'unknown'"), ME.message)
 assert(bus.tab_parameter.powerflow.V == V && isempty(DebugScript.helper.stale(net)))
 

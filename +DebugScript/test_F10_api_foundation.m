@@ -68,7 +68,7 @@ try
     tools.resolve_options(solver, sct_mapPF, {"Tolerence", 1e-6});
     error("DebugScript:noError", "未知の名前でエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", "%s", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "Tolerence") && contains(ME.message, "SolverPF"))
     assert(contains(ME.message, "MaxIteration, Verbose, TimeSpan, WhenFailed"))   % 使える名前を示す
 end
@@ -113,7 +113,7 @@ try
     res.Export("result.csv");
     error("DebugScript:noError", "未対応の Export でエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultBase:Unsupported", "%s", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultBase:Unsupported", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "Export") && contains(ME.message, "DebugScript.helper.DummyResult"))
 end
 

@@ -63,7 +63,7 @@ classdef Parameter < auxiliary & LayerPackage
             if isa(a_parent, "GlobalController") && height(tab) == numel(a_parent.controlledUnits) && height(tab) > 0
                 tab.Properties.RowNames = string(a_parent.controlledUnits);
             end
-            obj.sv_class = string(varfun(@class, tab, "OutputFormat", "cell"));
+            obj.sv_class = string(tab.Properties.VariableTypes);
             obj.tab_parameter = tab;                 % the first assignment logs nothing (set.tab_parameter)
         end
     end
@@ -81,7 +81,7 @@ classdef Parameter < auxiliary & LayerPackage
             end
             % Nothing changed: table isequaln compares the names and their order, the row
             % names, the height and the values, but not the classes.
-            if isequaln(tab_old, tab) && isequal(string(varfun(@class, tab, "OutputFormat", "cell")), obj.sv_class)
+            if isequaln(tab_old, tab) && isequal(string(tab.Properties.VariableTypes), obj.sv_class)
                 return
             end
             sv_name = string(tab_old.Properties.VariableNames);
@@ -96,7 +96,7 @@ classdef Parameter < auxiliary & LayerPackage
                 end
                 tab = tab(:, sv_name);
             end
-            sv_class_new = string(varfun(@class, tab, "OutputFormat", "cell"));
+            sv_class_new = string(tab.Properties.VariableTypes);
             i_bad = find(sv_class_new ~= obj.sv_class, 1);
             if ~isempty(i_bad)
                 error(msg("GUILDA:Parameter:ClassNameMismatch", char(sv_name(i_bad)), char(obj.sv_class(i_bad)), char(sv_class_new(i_bad))))

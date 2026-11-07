@@ -91,12 +91,9 @@ function results = run_all(opt)
     tab_level = DebugScript.test_levels();
     sr_key    = sr_file + "/" + string(extractAfter({suite.Name}, "/"));
     sr_level  = repmat("small", size(sr_key));
-    % R2024b 以前はテスト名を 63 文字 (当時の namelengthmax) で切るので、一覧の名前も切って照合する
-    cut_name  = @(sr) extractBefore(sr, "/") + "/" + extractBefore(extractAfter(sr, "/"), min(strlength(extractAfter(sr, "/")), 63) + 1);
-    sr_listed = cut_name(tab_level.Test);
-    [lv_listed, i_level] = ismember(cut_name(sr_key), sr_listed);
+    [lv_listed, i_level] = ismember(sr_key, tab_level.Test);
     sr_level(lv_listed)  = tab_level.Level(i_level(lv_listed));
-    sr_missing = tab_level.Test(~ismember(sr_listed, cut_name(sr_key)));
+    sr_missing = setdiff(tab_level.Test, sr_key);
     if ~isempty(sr_missing)
         warning("DebugScript:UnknownLevelTest", "test_levels.m に存在しないテストがあります: %s", join(sr_missing, ", "));
     end

@@ -41,7 +41,7 @@ classdef SolverOPF < auxiliary
     properties(Access=public) % Settings
         Method (1,1) string {mustBeMember(Method,["ELD","DC OPF","AC OPF"])} = "AC OPF"                                                                         % Formulation of the problem: "ELD", "DC OPF" or "AC OPF" (see the class help).
         Solver (1,1) string {mustBeMember(Solver,["auto","linprog","quadprog","fmincon"])} = "auto"                                                             % Optimization solver; "auto" uses the one that solve (Optimization Toolbox) chooses.
-        Algorithm_linprog (1,1) string = "dual-simplex"                                                                                                         % Algorithm option of linprog.
+        Algorithm_linprog (1,1) string = "dual-simplex-highs"                                                                                                   % Algorithm option of linprog.
         Algorithm_quadprog (1,1) string = "interior-point-convex"                                                                                               % Algorithm option of quadprog.
         Algorithm_fmincon (1,1) string = "interior-point"                                                                                                       % Algorithm option of fmincon.
         Display (1,1) string {mustBeMember(Display,["default","none","iter","iter-detailed","final","final-detailed","notify","notify-detailed"])} = "default"  % Display option of the solver; "default" keeps the default of the solver.

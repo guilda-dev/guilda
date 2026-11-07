@@ -9,7 +9,7 @@
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 bus = net.a_Bus{3};
 [s_id, s_msg] = set_slack(bus);
-assert(s_id == "GUILDA:Bus:SlackWithoutQnan", "%s", s_id)
+assert(s_id == "GUILDA:Bus:SlackWithoutQnan", s_id)
 assert(contains(s_msg, string(bus)) && contains(s_msg, "Q = NaN"), s_msg)
 assert(bus.l_isSlack && ~net.a_Bus{1}.l_isSlack)
 
@@ -17,7 +17,7 @@ assert(bus.l_isSlack && ~net.a_Bus{1}.l_isSlack)
 %% A load-only network still initializes and passes KCL
 net = load_only_network();
 [s_id, ~] = set_slack(net.a_Bus{1});
-assert(s_id == "GUILDA:Bus:SlackWithoutQnan", "%s", s_id)
+assert(s_id == "GUILDA:Bus:SlackWithoutQnan", s_id)
 DebugScript.helper.quiet(@() net.initialize);
 assert(~DebugScript.helper.is_stale(net) && kcl_residual(net) < 1e-8)
 

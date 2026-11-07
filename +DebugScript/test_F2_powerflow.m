@@ -301,7 +301,7 @@ try
     DebugScript.helper.quiet(@() net.calculate_powerflow(Tolerence=1e-8));
     error("DebugScript:noError", "未知のオプションでエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", "%s", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "Tolerence") && contains(ME.message, "Method, Tolerance, MaxIteration, Verbose"))
 end
 % 共通名以外 (ソルバー固有の名前) も受け付けない
