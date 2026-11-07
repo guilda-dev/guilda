@@ -21,12 +21,12 @@
         "Description": "Optimization solver ('auto': the solver that 'solve' chooses for the problem)"
     },
     "Algorithm_linprog":{
-        "Value": "dual-simplex",
+        "Value": "dual-simplex-highs",
         "Type": "select",
         "options":[
             "interior-point-legacy",
             "interior-point",
-            "dual-simplex"
+            "dual-simplex-highs"
         ],
         "Description": "algorithm option @linprog"
     },
