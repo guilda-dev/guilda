@@ -337,15 +337,57 @@ sys = net.get_sys();                  % linearized model</code></pre>
       <h1><span lang="en">Getting Started</span><span lang="ja">はじめに</span></h1>
 
       <h2><span lang="en">Requirements</span><span lang="ja">動作環境</span></h2>
-      <p lang="en">GUILDA runs on MATLAB and needs these products:</p>
-      <p lang="ja">MATLAB 上で動作。必要な製品:</p>
-      <ul>
-        <li>MATLAB</li>
-        <li>Control System Toolbox</li>
-        <li>Optimization Toolbox</li>
+      <p lang="en">GUILDA runs on MATLAB alone; each toolbox is needed only by the features marked below.</p>
+      <p lang="ja">MATLAB のみで動作。各 Toolbox は、下表で印の付いた機能でのみ必要。</p>
+      <div class="req-scroll">
+        <table class="req-table">
+          <thead>
+            <tr>
+              <th rowspan="2" scope="col"><span lang="en">Product</span><span lang="ja">製品</span></th>
+              <th colspan="5" scope="colgroup"><span lang="en">Power flow</span><span lang="ja">潮流計算</span></th>
+              <th rowspan="2" scope="col">CPF</th>
+              <th rowspan="2" scope="col">OPF</th>
+              <th rowspan="2" scope="col"><code>simulate</code></th>
+              <th colspan="3" scope="colgroup"><span lang="en">Linearization</span><span lang="ja">近似線形化</span></th>
+              <th scope="col"><span lang="en">Controllers</span><span lang="ja">制御器</span></th>
+              <th colspan="2" scope="colgroup"><span lang="en">Developer tools</span><span lang="ja">開発者向け</span></th>
+            </tr>
+            <tr class="req-opt">
+              <th scope="col"><code>newton</code></th>
+              <th scope="col"><code>gradient</code></th>
+              <th scope="col"><code>levenberg-marquardt</code></th>
+              <th scope="col"><code>dynamic</code></th>
+              <th scope="col"><code>fsolve</code></th>
+              <th scope="col"><code>ResultLIN</code></th>
+              <th scope="col"><code>struct</code></th>
+              <th scope="col"><code>ss</code></th>
+              <th scope="col">LQR</th>
+              <th scope="col"><span lang="en">Symbolic <code>NRMFcn</code></span><span lang="ja">記号式の <code>NRMFcn</code></span></th>
+              <th scope="col"><code>validate.m</code></th>
+            </tr>
+          </thead>
+          <tbody>
+              <tr><th scope="row">MATLAB <span class="req-ver"><span lang="en">R2025a or later</span><span lang="ja">R2025a 以降</span></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td></tr>
+              <tr><th scope="row">Optimization Toolbox</th><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+              <tr><th scope="row">Control System Toolbox</th><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td></tr>
+              <tr><th scope="row">Symbolic Math Toolbox</th><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="req-legend" lang="en">
+        <li><span class="mark-yes">✓</span> required, – not needed.</li>
+        <li>Power flow: the values of <code>Method</code>. CPF: continuation power flow. <code>simulate</code>: time simulation. Linearization: the <code>Format</code> of <code>get_sys</code> / <code>get_ss</code>.</li>
+        <li>LQR: <code>controller.local_LQR</code>, <code>controller.local_LQR_retrofit</code> and <code>+controller/+modeling/get_environment</code>.</li>
+        <li>Developer tools: a symbolic <code>NRMFcn</code> of <code>MethodNewtonRaphson</code>, and the <code>validate.m</code> scripts that check hand-written Jacobians.</li>
+        <li><code>GUILDA</code> prints the same check at startup from <code>@GUILDA/config/ListToolbox.json</code>: <code>ok</code> or the features unavailable without each toolbox.</li>
       </ul>
-      <p lang="en">Symbolic Math Toolbox is optional: GUILDA never uses symbolic derivatives at run time. Only a few developer scripts that check hand-written Jacobians need it.</p>
-      <p lang="ja">Symbolic Math Toolbox は任意。実行時の記号微分は不使用。必要とするのは、手書きのヤコビ行列を検証する一部の開発者向けスクリプトのみ。</p>
+      <ul class="req-legend" lang="ja">
+        <li><span class="mark-yes">✓</span> 必要、– 不要</li>
+        <li>潮流計算: <code>Method</code> の値。CPF: 連続型潮流計算。<code>simulate</code>: 時間応答シミュレーション。近似線形化: <code>get_sys</code> / <code>get_ss</code> の <code>Format</code></li>
+        <li>LQR: <code>controller.local_LQR</code>、<code>controller.local_LQR_retrofit</code>、<code>+controller/+modeling/get_environment</code></li>
+        <li>開発者向け: <code>MethodNewtonRaphson</code> の記号式の <code>NRMFcn</code>、手書きのヤコビ行列を検証する <code>validate.m</code></li>
+        <li><code>GUILDA</code> の起動時にも <code>@GUILDA/config/ListToolbox.json</code> に基づき同じ確認を表示。各 Toolbox について <code>ok</code>、または無い場合に使えない機能</li>
+      </ul>
 
       <h2><span lang="en">Install GUILDA</span><span lang="ja">GUILDA のインストール</span></h2>
       <p lang="en">Clone or download the repository from GitHub, or open it directly in MATLAB Online.</p>
@@ -365,7 +407,7 @@ sys = net.get_sys();                  % linearized model</code></pre>
         <li><span lang="en">Print the GUILDA logo.</span><span lang="ja">GUILDA のロゴの表示。</span></li>
         <li><span lang="en">Pull the latest revision when Git update is enabled.</span><span lang="ja">Git による更新が有効なとき、最新のリビジョンの取得。</span></li>
         <li><span lang="en">Add the required GUILDA folders to the MATLAB path (always performed).</span><span lang="ja">必要な GUILDA のフォルダの MATLAB パスへの追加（常に実行）。</span></li>
-        <li><span lang="en">Check the required MATLAB products.</span><span lang="ja">必要な MATLAB 製品の確認。</span></li>
+        <li><span lang="en">Check the MATLAB version and the toolboxes in the table above.</span><span lang="ja">MATLAB のバージョンと上表の Toolbox の確認。</span></li>
         <li><span lang="en">Update the generated documentation database and class signature map when enabled.</span><span lang="ja">有効なとき、生成されるドキュメントのデータベースとクラスのシグネチャマップの更新。</span></li>
         <li><span lang="en">Display the update log and open the tutorial when enabled.</span><span lang="ja">有効なとき、更新履歴の表示とチュートリアルの起動。</span></li>
       </ul>
