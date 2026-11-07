@@ -1,11 +1,12 @@
 function h = gui(obj, h_container)
-% Show the model in a GUI: class, tag, stale state, parameter tables and layer tree.
+% Show the model in a GUI: breadcrumb, class, tag, Docs button, stale state, child cards and tables.
 %
 % With no container it opens a new uifigure; with a container (uifigure, uipanel, uitab or
-% uigridlayout) it fills it, so that the GUI can be embedded in another app. The parameter
-% tables are editable; the tree shows the parent, this model and its children, and a click
-% on a node shows that model in the same container. Subclasses add pages through
-% gui_content. See DrawerModelGUI.
+% uigridlayout) it fills it, so that the GUI can be embedded in another app. The breadcrumb
+% runs from the root to this model, and the cards show its children by kind; a click on
+% either shows that model in the same container. The Docs button opens the reference page
+% of the class. The parameter tables are editable; the abstract classes provide the other
+% tables (gui_content), so a model class needs no GUI code. See DrawerModelGUI.
 %
 % <@Examples>
 % ```matlab
