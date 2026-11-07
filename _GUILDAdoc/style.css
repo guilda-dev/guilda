@@ -1520,32 +1520,52 @@ body.doc-layout .meta-box table th {
   .dg *, .dg *::before, .dg *::after { transition-duration: 0.001ms !important; }
 }
 
-/* Toolbox requirements table (index.html, Getting Started). Rows are analyses grouped
-   by category; on narrow screens it scrolls sideways inside its own box. */
+/* Toolbox requirements table (index.html, Getting Started). Every analysis is a category
+   row (.req-cat): shaded, bold, with a strong rule above. A category with options has a
+   heading row and indented, lighter option rows (.req-opt) with thin rules; a category
+   without options shows its marks on its own row. On narrow screens the table scrolls
+   sideways inside its own box. */
 .req-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 8px 0 6px; border: 1px solid var(--line); border-radius: var(--radius); }
-.req-table { display: table; width: 100%; margin: 0; border-top: none; overflow: visible; font-size: 0.9rem; }
-.req-table th, .req-table td { padding: 7px 10px; vertical-align: middle; min-width: 0; }
-.req-table td { text-align: center; width: 15%; }
-.req-table thead th { text-align: center; line-height: 1.3; }
+.req-table { display: table; width: 100%; margin: 0; border-top: none; border-collapse: collapse; overflow: visible; font-size: 0.86rem; line-height: 1.35; }
+.req-table th, .req-table td { padding: 5px 10px; vertical-align: middle; min-width: 0; }
+.req-table td { text-align: center; width: 14%; }
+.req-table thead th { text-align: center; line-height: 1.3; font-size: 0.82rem; }
 .req-table thead th:first-child { text-align: left; }
 .req-table tbody th { text-align: left; font-weight: 400; background: var(--surface); }
-.req-table .req-group th { background: var(--surface-subtle); font-weight: 600; color: var(--ink); padding-top: 6px; padding-bottom: 6px; }
-.req-group-label { position: sticky; left: 10px; display: inline-block; }
-.req-desc { display: block; color: var(--ink-2); font-size: 0.82rem; font-weight: 400; }
-.req-table .req-single th { font-weight: 600; color: var(--ink); }
-.req-table .req-opt th { padding-left: 26px; }
-.req-table tbody tr:hover, .req-table tbody tr:hover th { background: var(--surface-subtle); }
+.req-table tbody tr:hover { background: none; }
+/* Category rows */
+.req-table .req-cat > th, .req-table .req-cat > td { background: var(--surface-subtle); border-top: 2px solid var(--line-strong); border-bottom: 1px solid var(--line); padding-top: 7px; padding-bottom: 7px; }
+.req-table tbody .req-cat:first-child > th, .req-table tbody .req-cat:first-child > td { border-top: none; }
+.req-table .req-cat > th { font-weight: 700; color: var(--ink); font-size: 0.92rem; }
+.req-cat-label { position: sticky; left: 10px; display: inline-block; }
+.req-desc { display: block; color: var(--ink-2); font-size: 0.78rem; font-weight: 400; }
+/* Option rows under a category */
+.req-table .req-opt > th, .req-table .req-opt > td { border-bottom: 1px dotted var(--line); padding-top: 3px; padding-bottom: 3px; }
+.req-table .req-opt > th { padding-left: 30px; color: var(--ink-2); font-size: 0.82rem; }
+.req-table .req-opt > th::before { content: "└"; margin: 0 6px 0 -16px; color: var(--muted); }
+.req-table .req-opt:hover > th, .req-table .req-opt:hover > td { background: var(--brand-tint); }
 .req-table thead th:first-child, .req-table tbody th[scope="row"] { position: sticky; left: 0; z-index: 1; box-shadow: 1px 0 0 var(--line); }
 .req-table thead th:first-child { background: var(--surface-subtle); }
-.req-sub { display: block; margin-top: 2px; color: var(--muted); font-size: 0.78rem; font-weight: 400; }
+.req-sub { display: block; margin-top: 1px; color: var(--muted); font-size: 0.74rem; font-weight: 400; }
 .req-no { color: var(--muted); }
-.req-legend { margin-top: 6px; padding-left: 1.2em; color: var(--muted); font-size: 0.9rem; }
+.req-legend { margin-top: 6px; padding-left: 1.2em; color: var(--muted); font-size: 0.86rem; }
 @media (max-width: 600px) {
-  .req-table { font-size: 0.8rem; }
-  .req-table th, .req-table td { padding: 6px 4px; }
+  .req-table { font-size: 0.78rem; }
+  .req-table th, .req-table td { padding: 4px 4px; }
   .req-table tbody th { padding-left: 8px; }
-  .req-table .req-opt th { padding-left: 16px; }
+  .req-table .req-opt > th { padding-left: 22px; font-size: 0.76rem; }
+  .req-table .req-opt > th::before { margin-left: -13px; margin-right: 4px; }
+  .req-table .req-cat > th { font-size: 0.84rem; }
   .req-table td { width: auto; min-width: 4.6em; }
   .req-table tbody th[scope="row"] { min-width: 10em; width: 11.5em; max-width: 11.5em; }
-  .req-group-label { max-width: calc(100vw - 72px); }
+  .req-cat-label { max-width: calc(100vw - 72px); }
 }
+
+/* Getting Started: startup GIF and settings screenshot */
+.gs-demo { margin: 14px 0 18px; }
+.gs-demo img { display: block; width: 100%; max-width: 720px; height: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+.gs-settings-img { display: block; width: 100%; max-width: 420px; height: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: var(--radius); }
+
+/* Tutorial: Basic Workflow flowchart */
+.tutorial-flow { margin: 16px 0 8px; }
+.tutorial-flow img { display: block; width: 100%; max-width: 720px; height: auto; }
