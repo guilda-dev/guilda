@@ -1530,8 +1530,8 @@ body.doc-layout .meta-box table th {
 .req-table thead th:first-child { text-align: left; }
 .req-table tbody th { text-align: left; font-weight: 400; background: var(--surface); }
 .req-table .req-group th { background: var(--surface-subtle); font-weight: 600; color: var(--ink); padding-top: 6px; padding-bottom: 6px; }
-.req-table .req-group .req-sub { display: inline; margin-left: 8px; }
 .req-group-label { position: sticky; left: 10px; display: inline-block; }
+.req-desc { display: block; color: var(--ink-2); font-size: 0.82rem; font-weight: 400; }
 .req-table .req-single th { font-weight: 600; color: var(--ink); }
 .req-table .req-opt th { padding-left: 26px; }
 .req-table tbody tr:hover, .req-table tbody tr:hover th { background: var(--surface-subtle); }
@@ -1546,6 +1546,6 @@ body.doc-layout .meta-box table th {
   .req-table tbody th { padding-left: 8px; }
   .req-table .req-opt th { padding-left: 16px; }
   .req-table td { width: auto; min-width: 4.6em; }
-  .req-table tbody th[scope="row"] { min-width: 10em; }
-  .req-table .req-group .req-sub { display: block; margin-left: 0; }
+  .req-table tbody th[scope="row"] { min-width: 10em; width: 11.5em; max-width: 11.5em; }
+  .req-group-label { max-width: calc(100vw - 72px); }
 }
