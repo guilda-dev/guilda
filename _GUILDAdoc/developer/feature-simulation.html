@@ -745,12 +745,12 @@ verdict = sc.judge(result)</code></pre>
     <ul lang="en">
       <li>IDs: the entries of <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>.</li>
       <li><code>MException</code> objects of <code>SolverODE</code> (<code>PhaseFailed</code>, <code>UnfeasibleDAE</code>, <code>InitialConditionFailed</code>, <code>AlgebraicNotSolved</code>): the ID as identifier.</li>
-      <li><code>error(msg(ID))</code>, <code>warning(msg(ID))</code>: the message text only.</li>
+      <li><code>error(msg(ID))</code>: the message text only. Warnings (<code>show_msg("warning", ID, ...)</code>): the ID as identifier.</li>
     </ul>
     <ul lang="ja">
       <li>ID: <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> の項目名</li>
       <li><code>SolverODE</code> が作る <code>MException</code> (<code>PhaseFailed</code>、<code>UnfeasibleDAE</code>、<code>InitialConditionFailed</code>、<code>AlgebraicNotSolved</code>): ID を identifier に保持</li>
-      <li><code>error(msg(ID))</code> と <code>warning(msg(ID))</code>: メッセージ本文のみ</li>
+      <li><code>error(msg(ID))</code>: メッセージ本文のみ。警告 (<code>show_msg("warning", ID, ...)</code>): ID を identifier に保持</li>
     </ul>
 
     <!-- ============================== EXTENSION ============================== -->

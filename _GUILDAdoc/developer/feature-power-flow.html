@@ -653,8 +653,8 @@
       </tbody>
     </table>
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
-      <p lang="en">The IDs above: entry names in <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>, read by <code>msg</code>. <code>error(msg(...))</code> and <code>warning(msg(...))</code> pass only the text, so the MATLAB exception and <code>lastwarn</code> have an empty identifier. Check <code>flag</code> or <code>result.l_success</code> instead of catching by identifier.</p>
-      <p lang="ja">上の ID: <code>msg</code> が読む <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のエントリ名。<code>error(msg(...))</code> と <code>warning(msg(...))</code> は本文だけを渡すため、MATLAB の例外と <code>lastwarn</code> の識別子は空。識別子での catch ではなく、<code>flag</code> または <code>result.l_success</code> で確認。</p>
+      <p lang="en">The IDs above: entry names in <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>, read by <code>msg</code>. <code>error(msg(...))</code> passes only the text, so the MATLAB exception has an empty identifier; a warning (<code>show_msg("warning", ...)</code>) has the ID as identifier in <code>lastwarn</code>. Check <code>flag</code> or <code>result.l_success</code> instead of catching by identifier.</p>
+      <p lang="ja">上の ID: <code>msg</code> が読む <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のエントリ名。<code>error(msg(...))</code> は本文だけを渡すため、MATLAB の例外の識別子は空。警告 (<code>show_msg("warning", ...)</code>) は <code>lastwarn</code> の識別子に ID を保持。識別子での catch ではなく、<code>flag</code> または <code>result.l_success</code> で確認。</p>
     </div>
     <p lang="en">The slack equation compares <code>atan(Vim/Vre)</code> with <code>Varg</code>: the slack angle must lie between −90° and 90°.</p>
     <p lang="ja">slack の方程式は <code>atan(Vim/Vre)</code> を <code>Varg</code> と比較。このため slack 母線の角度は −90° から 90° の範囲に限定。</p>
