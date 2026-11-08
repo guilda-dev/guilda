@@ -367,6 +367,7 @@ end
 - `local_LQR.m:138` と `@Component/get_sys.m:55` の呼び出しを置き換えます。これで PF2(二重計算)と SH5 の一部が同時に解決します。
 - `Component.full`, `con` は `Bus` と同様に「無視」のまま残します。**`rec` は公開の説明がなく内部用なので、削除します。** `con` を無視する動作は `notes/v4-migration.md:27-29` の方針と同じです。互換フックを足す場合は `test_F10_api_foundation.m` の個数も更新します。
 - **別案:** 引数を残して文書化するだけなら変更は不要ですが、「効かない公開引数」が残ります。
+- **その後の決定(2026-11-08):** `get_sys_alone` はメソッドとしても廃止し、`@Component/get_sys.m` と `@LocalController/get_sys.m` のローカル関数 `linearize_alone` にしました。機器単体のモデルは `comp.get_sys(Controllers=false)` で得ます。`Component.get_sys` の `full`, `con` は互換を残さず削除しました(`con` は名前の部分一致で `Controllers` と解釈されます)。stale の確認は x, V, I, u, Point をすべて省略した既定の点のときだけです(`LocalController.get_sys` も同じ)。`local_LQR.design_gain` は `comp.get_sys(x0, V, I, u, Controllers=false, Format="struct", tag=false)` を呼びます。
 
 #### AR2, AR3
 
