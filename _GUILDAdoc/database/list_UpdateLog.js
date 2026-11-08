@@ -255,6 +255,6 @@ const updateLogData = [
     "title": "Show a model in a GUI",
     "date": "2026-11-07",
     "type": "feature",
-    "content": "obj.gui() opens a window for a network, bus, branch, component or controller: its parameters, editable in place, the parent and children as a tree, the equilibrium, the equations and figure of the class, and an initialize button. obj.gui(h) puts it in a panel or tab of your own app. A new model class shows its help equations and image.svg with no extra code."
+    "content": "obj.gui() opens a window for a network, bus, branch, component or controller with its parameters (editable in place), its equilibrium, a breadcrumb and cards of the children to move between models, and a Docs button for the reference page of the class. obj.gui(h) puts it in a panel or tab of your own app, and a new model class needs no extra code."
   }
 ];
