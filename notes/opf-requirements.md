@@ -51,6 +51,14 @@ the end as open questions.
 - オブジェクトごとの既定の制約の解除: フラグではなく `tab_parameter.operation` の値を
   ±Inf にする（ブランチの制約値は NaN も制約なし）。上下限がともに無限大の負荷は
   潮流計算の P / Q に固定のまま。母線の需給式は常に残る。
+- `operation` グループは OPF 専用ではなく運転制約（2026-11-08 にメンテナーが確認）。
+  機器の Pmin/Pmax/Qmin/Qmax、母線の Vmin/Vmax、ブランチの Smax/Imax/Pmax/Qmax/Vargmax
+  は、いまは OPF が制約として使うが、今後は時間応答シミュレーションと連続潮流計算でも
+  使う予定。OPF 専用は `OPF` グループ（P0、Q0、コスト係数、startup/shutdown）のみ。
+  - コメントと開発者ページの説明は「OPF の制約」ではなく「運転制約」と記述（OPF の
+    ページでは OPF が制約として使うと記述してよい）。
+  - 未決: シミュレーションと連続潮流計算での使い方（制約違反の検出・警告・停止、
+    リミッターとして動特性に入れるか、連続潮流計算の終了条件にするか）。
 - 変更した問題の求解: `[prob, x0] = net.build_opf_problem(...)` の `prob` を変更し、
   `net.optimize_powerflow(Problem=prob, InitialPoint=x0)` で求解（呼び出しのみの
   オプション、保存しない）。結果の表は通常どおり。

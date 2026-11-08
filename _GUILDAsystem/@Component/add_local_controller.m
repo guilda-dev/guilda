@@ -1,8 +1,8 @@
 function con = add_local_controller(obj, Key, opt)
 % Build a local controller (AVR, PSS, governor, LQR, ...) from its model key, attach it to the component and return it.
 %
-% `Key` is the model key of a local controller class (the list is generated from the
-% classes on the path). `parameter` gives the parameters of the constructor as a struct
+% `Key` is the model key of a local controller class (`keys(GUILDA.keymap("LocalController"))`
+% lists them). `parameter` gives the parameters of the constructor as a struct
 % (or a one-row table) of Name=Value; omitted fields keep the class defaults. The
 % controller tag is the class header, a number and the component tag, e.g. "CA1SG1B001".
 % One controller is added per call.
@@ -49,7 +49,7 @@ function con = add_local_controller(obj, Key, opt)
 % <@Group> Construction and editing
     arguments (Input)
         obj
-        Key           (1,:) char {mustBeMember(Key,{___KEY_LIST___})}   % Local controller model key, e.g. "avr-ST1" or "pss-PSS1".
+        Key           (1,:) char {tools.mustBeKeyOf(Key, "LocalController")}   % Local controller model key, e.g. "avr-ST1" or "pss-PSS1".
         opt.parameter {mustBeA(opt.parameter, ["struct","table"])} = struct()   % Constructor parameters (struct or one-row table of Name=Value); omitted ones use the class defaults.
     end
     arguments (Output)
@@ -70,9 +70,8 @@ function con = add_local_controller(obj, Key, opt)
     c_para = namedargs2cell(sct_para);
 
     % get controller function
-    switch Key
-___KEY_CASES___
-    end
+    dic    = GUILDA.keymap("LocalController");
+    mkInst = str2func(dic(string(Key)));
     new_con = mkInst(s_index, c_para{:});
 
     % Checked before anything changes, so a rejected call leaves the component as it was

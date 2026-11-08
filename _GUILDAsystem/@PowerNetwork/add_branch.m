@@ -17,18 +17,18 @@ function bra = add_branch(obj, Key, from_to, opt)
 % See also PowerNetwork.remove_branch, PowerNetwork.add_bus, Branch
     arguments (Input)
         obj 
-        Key          (1,:) char {mustBeMember(Key,{___KEY_LIST___})}   % Branch model key, e.g. "pi" or "pi_transformer".
+        Key          (1,:) char {tools.mustBeKeyOf(Key, "Branch")}   % Branch model key, e.g. "pi" or "pi_transformer".
         from_to      (1,2) {string,double}   = [1,2]   % End buses [from, to], as indices of a_Bus or as bus tags.
         opt.R        (1,1) double = 0;   % [pu] Series resistance.
         opt.X        (1,1) double = 1;   % [pu] Series reactance.
         opt.C        (1,1) double = 0;   % [pu] Shunt susceptance at each end (half of the line charging).
         opt.Tap      (1,1) double = 1;   % Off-nominal tap ratio (1 for a line).
         opt.Phase    (1,1) double = 0 /180*pi;   % [rad] Phase shift of the transformer.
-        opt.Smax     (1,1) double = inf;   % [pu] Apparent power limit for the OPF.
-        opt.Imax     (1,1) double = inf;   % [pu] Current limit for the OPF.
-        opt.Pmax     (1,1) double = inf;   % [pu] Active power limit for the OPF.
-        opt.Qmax     (1,1) double = inf;   % [pu] Reactive power limit for the OPF.
-        opt.Vargmax  (1,1) double = 90/180*pi;   % [rad] Limit of the angle difference between the end buses for the OPF.
+        opt.Smax     (1,1) double = inf;   % [pu] Limit of the apparent power at both ends (Inf: none).
+        opt.Imax     (1,1) double = inf;   % [pu] Limit of the current at both ends (Inf: none).
+        opt.Pmax     (1,1) double = inf;   % [pu] Limit of the active power at both ends (Inf: none).
+        opt.Qmax     (1,1) double = inf;   % [pu] Limit of the reactive power at both ends (Inf: none).
+        opt.Vargmax  (1,1) double = 90/180*pi;   % [rad] Limit of the angle difference between the end buses (Inf: none).
         opt.MidXaxis     (1,:) string = [];   % x coordinates of intermediate points in network diagrams.
         opt.MidYaxis     (1,:) string = [];   % y coordinates of intermediate points in network diagrams.
         opt.Marker       (1,1) string = "-";   % Line style of the branch in network diagrams.
@@ -64,9 +64,8 @@ function bra = add_branch(obj, Key, from_to, opt)
     s_Index = num2str(tools.next_tag_number(string(obj.a_Branch)),"%.3d");
 
     % Build Instance
-    switch Key
-___KEY_CASES___
-    end
+    dic    = GUILDA.keymap("Branch");
+    mkInst = str2func(dic(string(Key)));
     bra = mkInst(s_Index, opt);
 
     % register

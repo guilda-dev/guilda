@@ -89,7 +89,7 @@ classdef Bus < PowerSystemModel
             obj.s_tag          = tag;
             % tab_parameter columns:
             % - dynamics: shunt admittance Gshunt, Bshunt [pu], added to the diagonal of the network admittance matrix
-            % - operation: Vmin, Vmax [pu]: OPF voltage bounds (-Inf/Inf: none); baseKV [kV]: base voltage, stored but used in no calculation
+            % - operation: operating limits: Vmin, Vmax [pu]: limits of the voltage magnitude (-Inf/Inf: none); baseKV [kV]: base voltage, stored and exported to MATPOWER but used in no calculation
             % - powerflow: V [pu], Varg [rad]: voltage settings of a slack bus (V also of a PV bus); V0 [pu], Varg0 [rad]: solver initial values
             % - graph: Xaxis, Yaxis: drawing position (NaN: automatic layout); Marker: marker of the bus
 

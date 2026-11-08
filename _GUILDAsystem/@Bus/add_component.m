@@ -1,8 +1,8 @@
 function comp = add_component(obj,Key,opt)
 % Add a component to the bus and return it.
 %
-% `Key` is the model key of a component class (the list is generated from the classes on
-% the path). The component tag is the class header, a number and the bus tag, e.g.
+% `Key` is the model key of a component class (`keys(GUILDA.keymap("Component"))` lists
+% them). The component tag is the class header, a number and the bus tag, e.g.
 % "SG1B001". The addition is a "Topology" edit, which makes the power flow of the network stale.
 %
 % <@Examples>
@@ -14,15 +14,15 @@ function comp = add_component(obj,Key,opt)
 % See also Bus.remove_component, Bus.replace_component, Component
     arguments (Input)
         obj
-        Key                  (1,:) char {mustBeMember(Key,{___KEY_LIST___})}   % Component model key, e.g. "gen-park" or "load-power".
+        Key                  (1,:) char {tools.mustBeKeyOf(Key, "Component")}   % Component model key, e.g. "gen-park" or "load-power".
         opt.parameter                     = nan;   % Dynamic parameters (table or string); NaN uses the class defaults.
         opt.P                (1,1) double = 0;   % [pu] Active power injection setting for the power flow (negative for a load).
         opt.Q                (1,1) double = 0;   % [pu] Reactive power injection setting; NaN makes the bus a PV bus.
-        opt.baseMVA          (1,1) double = 100;   % [MVA] Rating of the component; distributes Q among the components of a bus.
-        opt.Pmin             (1,1) double = -inf;   % [pu] Lower active power limit for the OPF.
-        opt.Pmax             (1,1) double =  inf;   % [pu] Upper active power limit for the OPF.
-        opt.Qmin             (1,1) double = -inf;   % [pu] Lower reactive power limit for the OPF.
-        opt.Qmax             (1,1) double =  inf;   % [pu] Upper reactive power limit for the OPF.
+        opt.baseMVA          (1,1) double = 100;   % [MVA] Rating of the component; shares Q among the components of a bus (not the system base).
+        opt.Pmin             (1,1) double = -inf;   % [pu] Lower limit of the active power output (-Inf: none).
+        opt.Pmax             (1,1) double =  inf;   % [pu] Upper limit of the active power output (Inf: none).
+        opt.Qmin             (1,1) double = -inf;   % [pu] Lower limit of the reactive power output (-Inf: none).
+        opt.Qmax             (1,1) double =  inf;   % [pu] Upper limit of the reactive power output (Inf: none).
         opt.OPFinit_P0       (1,1) double = 0;   % [pu] Initial active power of the OPF solver.
         opt.OPFinit_Q0       (1,1) double = 0;   % [pu] Initial reactive power of the OPF solver.
         opt.OPFcost_HP       (1,1) double = nan;   % Quadratic cost coefficient of P; NaN: class default (0 for loads, 1 otherwise).
@@ -48,9 +48,8 @@ function comp = add_component(obj,Key,opt)
     opt       = rmfield( opt, "parameter");
 
     % get component function
-    switch Key
-___KEY_CASES___
-    end
+    dic    = GUILDA.keymap("Component");
+    mkInst = str2func(dic(string(Key)));
     comp = mkInst(s_index,para,opt);
 
     % register

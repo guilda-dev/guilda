@@ -9,16 +9,12 @@ import re
 
 from gitcmd import block, git, read_input
 
-TEMPLATE_FIX = "Edit template/<name>.template in the class folder instead, then run GUILDA.update_keymap in MATLAB; the .m file is generated from it."
+SIGNATURE_FIX = "Edit the arguments blocks of the methods instead, then run GUILDA.update_keymap(Signature=true) in MATLAB; the file is generated from them."
 DOC_FIX = 'Regenerate it in MATLAB with GUILDA.doc("update", true) instead.'
 USER_FIX = "@GUILDA/user/ holds per-user generated settings; change them through GUILDA, not by editing files."
 
 GENERATED = [
-    (r"_GUILDAsystem/@Bus/add_component\.m", TEMPLATE_FIX),
-    (r"_GUILDAsystem/@Bus/replace_component\.m", TEMPLATE_FIX),
-    (r"_GUILDAsystem/@PowerNetwork/add_branch\.m", TEMPLATE_FIX),
-    (r"_GUILDAsystem/@Component/add_local_controller\.m", TEMPLATE_FIX),
-    (r"_GUILDAsystem/@PowerNetwork/add_global_controller\.m", TEMPLATE_FIX),
+    (r"_GUILDAsystem/resources/functionSignatures\.json", SIGNATURE_FIX),
     (r"_GUILDAdoc/database/list_Classes\.js", DOC_FIX),
     (r"_GUILDAdoc/database/GUILDAsystem/.*", DOC_FIX),
     (r"_GUILDAdoc/database/GUILDAobject/.*", DOC_FIX),

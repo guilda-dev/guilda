@@ -343,7 +343,7 @@ tab.Type(2) = "nosuch";
 writetable(tab, s_file);
 net = PowerNetwork("Host");
 ME = import_error(s_path, net);
-assert(DebugScript.helper.msg_id(ME) == "MATLAB:validators:mustBeMember")
+assert(contains(ME.message, "Branch model key"), ME.message)    % tools.mustBeKeyOf in add_branch
 assert(numel(net.a_Bus) == 3 && numel(net.a_Branch) == 1)
 
 
