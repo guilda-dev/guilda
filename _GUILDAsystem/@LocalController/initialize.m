@@ -15,9 +15,7 @@ function initialize(obj, l_equilibrium)
     if l_equilibrium
         obj.sct_stale.equilibrium = strings(0,1);
     end
-    if ~isempty(obj.sct_stale.odefcn) || ~isequal(obj.r_odefcnHz, obj.get_Hz())
-        obj.set_odefcn();
-    end
+    obj.set_odefcn();
     for k = 1:numel(obj.a_LocalController)
         obj.a_LocalController{k}.initialize(l_equilibrium);
     end

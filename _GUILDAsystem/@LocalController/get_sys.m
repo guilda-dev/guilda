@@ -53,8 +53,8 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
             end
             error(msg("GUILDA:LocalController:Stale", char(obj.s_tag), char(s_reason), "get_sys"))
         end
-    elseif ~isempty(obj.sct_stale.odefcn) || ~isequal(obj.r_odefcnHz, obj.get_Hz())
-        obj.set_odefcn();    % no network to initialize: the handles are built here
+    else
+        obj.set_odefcn();    % no network to initialize: stale handles are rebuilt here
     end
 
     sys = obj.get_sys_alone(x, V, I, u, "full", opt.full, "tag", opt.tag);

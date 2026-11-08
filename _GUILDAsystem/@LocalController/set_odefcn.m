@@ -1,14 +1,18 @@
 function set_odefcn(obj)
 % Bind the parameters and the network frequency into the f_* function handles.
-% Called by initialize when the stale tag odefcn is not empty or the network frequency
-% differs from r_odefcnHz, and by get_dx_algebraic when the handles were never built.
-% Clears odefcn and stores the frequency in r_odefcnHz.
+% Does nothing when they are up to date: the stale tag odefcn is empty and the network
+% frequency equals r_odefcnHz. Otherwise builds them, clears odefcn and stores the
+% frequency in r_odefcnHz. Called by initialize, and by get_dx_algebraic when the
+% handles were never built.
 %
 % <@Group> Called by analyses
     arguments (Input)
         obj
     end
     omega0 = obj.get_Hz();
+    if isempty(obj.sct_stale.odefcn) && isequal(obj.r_odefcnHz, omega0)
+        return    % up to date
+    end
     param = obj.tab_parameter.dynamics{:,obj.sv_para}.';
 
     obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, param, omega0);

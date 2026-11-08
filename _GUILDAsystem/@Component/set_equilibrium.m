@@ -14,9 +14,7 @@ function set_equilibrium(obj,c_V,c_I,r_P,r_Q)
         r_P = real( c_V*conj(c_I) );   % [pu] Active power injected by the component.
         r_Q = imag( c_V*conj(c_I) );   % [pu] Reactive power injected by the component.
     end
-    if ~isempty(obj.sct_stale.odefcn) || ~isequal(obj.r_odefcnHz, obj.get_Hz())
-        obj.set_odefcn();
-    end
+    obj.set_odefcn();
     [cv_Xst,cv_Ust] = obj.get_equilibrium(c_V,c_I,r_P,r_Q);
     
     % c_V is the voltage of the bus (its owner); c_Vequilibrium reads it from there.
