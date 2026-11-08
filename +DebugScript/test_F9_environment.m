@@ -194,6 +194,75 @@ end
 assert(isempty(sv_hit), "Symbolic Math の呼び出しがある: " + strjoin(sv_hit, ", "))
 
 
+%% GUILDA config reads the Message settings from the cache
+assert(GUILDA.config("Message", "ShowWarning") == true && GUILDA.config("Message", "ShowInfo") == true)
+c_set = set_message(false, false, false);   % 書き込むだけ: キャッシュは古い値のまま
+assert(GUILDA.config("Message", "ShowWarning") == true && GUILDA.config("Message", "ShowInfo") == true)
+GUILDA.config([], [], "reset", true);       % 保存時 (set_config) と同じ再読込
+assert(GUILDA.config("Message", "ShowWarning") == false && GUILDA.config("Message", "ShowInfo") == false)
+clear c_set
+assert(GUILDA.config("Message", "ShowWarning") == true && GUILDA.config("Message", "ShowInfo") == true)
+
+
+%% A GUILDA warning carries its message ID
+bus = PowerNetwork().add_bus();
+lastwarn("", "");
+gen = bus.add_component("gen-park", P=0.5, Q=0.3);
+[s_warn, s_id] = lastwarn();
+assert(string(s_id) == "GUILDA:Component:GeneratorQIgnored", s_id)
+assert(contains(s_warn, gen.s_tag) && contains(s_warn, "0.3"), s_warn)
+
+
+%% ShowWarning=false hides the GUILDA warnings
+c_set = set_message(false, true); %#ok<NASGU>
+bus = PowerNetwork().add_bus();
+lastwarn("", "");
+s_out = string(evalc('bus.add_component("gen-park", P=0.5, Q=0.3);'));
+[s_warn, s_id] = lastwarn();
+assert(s_warn == "" && s_id == "" && ~contains(s_out, "Warning"), s_out)
+% MATLAB の警告やエラーは設定に関係しない
+assert(isnan(bus.a_Component{1}.tab_parameter.powerflow.Q))
+try
+    bus.add_component("gen-park", parameter="NGT9");
+    error("DebugScript:NoError", "エラーにならない")
+catch ME
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:UnknownParameter", ME.message)
+end
+
+
+%% ShowInfo=false hides the INFO messages
+net = PowerNetwork();
+bus = net.add_bus();
+bus.add_component("gen-park", P=0.5);
+s_out = string(evalc("bus.l_isSlack = true;"));
+assert(startsWith(strtrim(s_out), "INFO: ") && contains(s_out, "set as slack bus"), s_out)
+evalc("bus.l_isSlack = false;");
+c_set = set_message(true, false); %#ok<NASGU>
+s_out = string(evalc("bus.l_isSlack = true;"));
+assert(s_out == "", s_out)
+
+
+%% msg accepts a subclass of the class in the ID and rejects other callers
+% component.generator.abstract (+component の外) が Component.xml の ID を使える
+bus = PowerNetwork().add_bus();
+try
+    bus.add_component("gen-park", parameter="NGT9");
+    error("DebugScript:NoError", "エラーにならない")
+catch ME
+    assert(contains(ME.message, "NGT9") && ~contains(ME.message, "ID specification"), ME.message)
+end
+% サブクラスでない呼び出し元 (このテスト) は Component の ID を使えない
+for c_call = {@() msg("GUILDA:Component:GeneratorQIgnored", "a", "b"), ...
+              @() show_msg("warning", "GUILDA:Component:GeneratorQIgnored", "a", "b")}
+    try
+        c_call{1}();
+        error("DebugScript:NoError", "エラーにならない")
+    catch ME
+        assert(contains(ME.message, "ID specification"), ME.message)
+    end
+end
+
+
 %% MethodNewtonRaphson rejects symbolic input without Symbolic Math Toolbox
 % Toolbox が無い環境を、偽の sym クラスと license の代わりで再現する
 s_tmp = tempname;  mkdir(s_tmp);
@@ -226,4 +295,38 @@ assert(abs(nrm.solve() - 2) < 1e-6)
 function delete_and_rehash(s_file)
     delete(s_file)
     rehash path
+end
+
+
+function c_restore = set_message(l_warning, l_info, l_reset)
+% Message の設定をユーザー設定ファイルへ書き、終了時 (c_restore の削除) に元へ戻す
+    arguments (Input)
+        l_warning (1,1) logical  % ShowWarning
+        l_info    (1,1) logical  % ShowInfo
+        l_reset   (1,1) logical = true  % 書いたあとに設定を読み直す
+    end
+    arguments (Output)
+        c_restore  % onCleanup: 元のファイルに戻して設定を読み直す
+    end
+    s_file = fullfile(GUILDA.pwd, "@GUILDA", "user", "DefaultMessage.json");
+    if isfile(s_file)
+        s_old = fileread(s_file);
+    else
+        s_old = string(missing);
+    end
+    c_restore = onCleanup(@() restore_message(s_file, s_old));
+    writelines(jsonencode(struct("ShowWarning", l_warning, "ShowInfo", l_info)), s_file);
+    if l_reset
+        GUILDA.config([], [], "reset", true);
+    end
+end
+
+
+function restore_message(s_file, s_old)
+    if ismissing(s_old)
+        delete(s_file)
+    else
+        fid = fopen(s_file, "w");  fwrite(fid, s_old);  fclose(fid);
+    end
+    GUILDA.config([], [], "reset", true);
 end
