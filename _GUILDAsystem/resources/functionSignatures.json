@@ -1,15 +1,121 @@
 {
   "_schemaVersion": "1.0.0",
-  "Bus.replace_component": {
+  "Bus.add_component": {
     "inputs": [
-      {"name": "obj", "kind": "required", "type": "Bus", "purpose": "Bus"},
-      {"name": "s_tag", "kind": "required", "type": [["string", "choices=cellstr(string(obj.a_Component))"], ["string"]], "purpose": "Tag of the component to replace"},
-      {"name": "Key", "kind": "required", "type": ["char", "choices=cellstr(DebugScript.helper.proto_keymap(\"Component\").key)"], "purpose": "Component model key"},
-      {"name": "parameter", "kind": "ordered", "purpose": "Dynamic parameters (table or string); NaN uses the class defaults"},
-      {"name": "Controllers", "kind": "namevalue", "type": ["char", "choices={'drop','keep'}"], "purpose": "Local controllers of the replaced component"}
+      {"name":"obj","kind":"required","type":"Bus"},
+      {"name":"Key","kind":"required","type":["char","choices=cellstr(keys(GUILDA.keymap(\"Component\")))"],"purpose":"Component model key, e.g. \"gen-park\" or \"load-power\"."},
+      {"name":"parameter","kind":"namevalue","purpose":"Dynamic parameters (table or string); NaN uses the class defaults. Default: nan."},
+      {"name":"P","kind":"namevalue","type":["double"],"purpose":"[pu] Active power injection setting for the power flow (negative for a load). Default: 0."},
+      {"name":"Q","kind":"namevalue","type":["double"],"purpose":"[pu] Reactive power injection setting; NaN makes the bus a PV bus. Default: 0."},
+      {"name":"baseMVA","kind":"namevalue","type":["double"],"purpose":"[MVA] Rating of the component; distributes Q among the components of a bus. Default: 100."},
+      {"name":"Pmin","kind":"namevalue","type":["double"],"purpose":"[pu] Lower active power limit for the OPF. Default: -inf."},
+      {"name":"Pmax","kind":"namevalue","type":["double"],"purpose":"[pu] Upper active power limit for the OPF. Default: inf."},
+      {"name":"Qmin","kind":"namevalue","type":["double"],"purpose":"[pu] Lower reactive power limit for the OPF. Default: -inf."},
+      {"name":"Qmax","kind":"namevalue","type":["double"],"purpose":"[pu] Upper reactive power limit for the OPF. Default: inf."},
+      {"name":"OPFinit_P0","kind":"namevalue","type":["double"],"purpose":"[pu] Initial active power of the OPF solver. Default: 0."},
+      {"name":"OPFinit_Q0","kind":"namevalue","type":["double"],"purpose":"[pu] Initial reactive power of the OPF solver. Default: 0."},
+      {"name":"OPFcost_HP","kind":"namevalue","type":["double"],"purpose":"Quadratic cost coefficient of P; NaN: class default (0 for loads, 1 otherwise). Default: nan."},
+      {"name":"OPFcost_HQ","kind":"namevalue","type":["double"],"purpose":"Quadratic cost coefficient of Q (AC OPF). Default: 0."},
+      {"name":"OPFcost_fP","kind":"namevalue","type":["double"],"purpose":"Linear cost coefficient of P; NaN: class default (0 for loads, 1 otherwise). Default: nan."},
+      {"name":"OPFcost_fQ","kind":"namevalue","type":["double"],"purpose":"Linear cost coefficient of Q (AC OPF). Default: 0."},
+      {"name":"OPFcost_startup","kind":"namevalue","type":["double"],"purpose":"Startup cost (reserved; unit commitment is not part of the OPF). Default: 0."},
+      {"name":"OPFcost_shutdown","kind":"namevalue","type":["double"],"purpose":"Shutdown cost (reserved; unit commitment is not part of the OPF). Default: 0."},
+      {"name":"Xaxis","kind":"namevalue","type":["double"],"purpose":"x coordinate in network diagrams (NaN = automatic layout). Default: nan."},
+      {"name":"Yaxis","kind":"namevalue","type":["double"],"purpose":"y coordinate in network diagrams (NaN = automatic layout). Default: nan."},
+      {"name":"Marker","kind":"namevalue","type":["string"],"purpose":"Marker of the component in network diagrams. Default: \"o\"."},
+      {"name":"MidXaxis","kind":"namevalue","type":["string"],"purpose":"x coordinates of intermediate points of the connection line in network diagrams. Default: \"\"."},
+      {"name":"MidYaxis","kind":"namevalue","type":["string"],"purpose":"y coordinates of intermediate points of the connection line in network diagrams. Default: \"\"."}
     ],
     "outputs": [
-      {"name": "comp", "type": "Component"}
+      {"name":"comp","purpose":"Added Component object."}
+    ]
+  },
+  "Bus.replace_component": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"Bus"},
+      {"name":"s_tag","kind":"required","type":[["string","choices=cellstr(string(obj.a_Component))"],["string"]],"purpose":"Tag of the component to replace."},
+      {"name":"Key","kind":"required","type":["char","choices=cellstr(keys(GUILDA.keymap(\"Component\")))"],"purpose":"Component model key, e.g. \"gen-park\" or \"load-power\"."},
+      {"name":"parameter","kind":"ordered","purpose":"Dynamic parameters (table or string); NaN uses the class defaults. Default: nan."},
+      {"name":"Controllers","kind":"namevalue","type":["string","choices=cellstr([\"drop\",\"keep\"])"],"purpose":"Local controllers of the replaced component: \"drop\" leaves them on it with a warning, \"keep\" moves them to the new one. Default: \"drop\"."}
+    ],
+    "outputs": [
+      {"name":"comp","purpose":"New Component object."}
+    ]
+  },
+  "Bus.remove_component": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"Bus"},
+      {"name":"s_tag","kind":"required","type":[["string","choices=cellstr(string(obj.a_Component))"],["string"]],"purpose":"Tag of the component to remove."}
+    ]
+  },
+  "Component.add_local_controller": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"Component"},
+      {"name":"Key","kind":"required","type":["char","choices=cellstr(keys(GUILDA.keymap(\"LocalController\")))"],"purpose":"Local controller model key, e.g. \"avr-ST1\" or \"pss-PSS1\"."},
+      {"name":"parameter","kind":"namevalue","purpose":"Constructor parameters (struct or one-row table of Name=Value); omitted ones use the class defaults. Default: struct()."}
+    ],
+    "outputs": [
+      {"name":"con","purpose":"Added LocalController object."}
+    ]
+  },
+  "Component.remove_local_controller": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"Component"},
+      {"name":"s_tag","kind":"required","type":[["string","choices=cellstr([string(obj.a_LocalController); string(cellfun(@(c) strjoin([string(c.a_LocalController); \"\"], \"\"), obj.a_LocalController, \"UniformOutput\", false))])"],["string"]],"purpose":"Tag (s_tag) of the local controller to remove."},
+      {"name":"RemoveNested","kind":"namevalue","type":["logical"],"purpose":"Also remove the controller nested in the removed one (the PSS under an AVR). Default: false."}
+    ]
+  },
+  "PowerNetwork.add_branch": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"PowerNetwork"},
+      {"name":"Key","kind":"required","type":["char","choices=cellstr(keys(GUILDA.keymap(\"Branch\")))"],"purpose":"Branch model key, e.g. \"pi\" or \"pi_transformer\"."},
+      {"name":"from_to","kind":"ordered","type":[["string","choices=cellstr(string(obj.a_Bus))"],["string"],["numeric"]],"purpose":"End buses [from, to], as indices of a_Bus or as bus tags. Default: [1,2]."},
+      {"name":"R","kind":"namevalue","type":["double"],"purpose":"[pu] Series resistance. Default: 0."},
+      {"name":"X","kind":"namevalue","type":["double"],"purpose":"[pu] Series reactance. Default: 1."},
+      {"name":"C","kind":"namevalue","type":["double"],"purpose":"[pu] Shunt susceptance at each end (half of the line charging). Default: 0."},
+      {"name":"Tap","kind":"namevalue","type":["double"],"purpose":"Off-nominal tap ratio (1 for a line). Default: 1."},
+      {"name":"Phase","kind":"namevalue","type":["double"],"purpose":"[rad] Phase shift of the transformer. Default: 0/180*pi."},
+      {"name":"Smax","kind":"namevalue","type":["double"],"purpose":"[pu] Apparent power limit for the OPF. Default: inf."},
+      {"name":"Imax","kind":"namevalue","type":["double"],"purpose":"[pu] Current limit for the OPF. Default: inf."},
+      {"name":"Pmax","kind":"namevalue","type":["double"],"purpose":"[pu] Active power limit for the OPF. Default: inf."},
+      {"name":"Qmax","kind":"namevalue","type":["double"],"purpose":"[pu] Reactive power limit for the OPF. Default: inf."},
+      {"name":"Vargmax","kind":"namevalue","type":["double"],"purpose":"[rad] Limit of the angle difference between the end buses for the OPF. Default: 90/180*pi."},
+      {"name":"MidXaxis","kind":"namevalue","type":["string"],"purpose":"x coordinates of intermediate points in network diagrams. Default: []."},
+      {"name":"MidYaxis","kind":"namevalue","type":["string"],"purpose":"y coordinates of intermediate points in network diagrams. Default: []."},
+      {"name":"Marker","kind":"namevalue","type":["string"],"purpose":"Line style of the branch in network diagrams. Default: \"-\"."}
+    ],
+    "outputs": [
+      {"name":"bra","purpose":"Added Branch object."}
+    ]
+  },
+  "PowerNetwork.add_global_controller": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"PowerNetwork"},
+      {"name":"Key","kind":"required","type":["char","choices=cellstr(keys(GUILDA.keymap(\"GlobalController\")))"],"purpose":"Global controller model key, e.g. \"agc-PI\"."},
+      {"name":"a_Unit","kind":"required","purpose":"Controlled components of this network: Component objects (cell array or one object) or tags."},
+      {"name":"parameter","kind":"namevalue","purpose":"Constructor parameters (struct or one-row table of Name=Value); omitted ones use the class defaults. Default: struct()."}
+    ],
+    "outputs": [
+      {"name":"con","purpose":"Added GlobalController object."}
+    ]
+  },
+  "PowerNetwork.remove_branch": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"PowerNetwork"},
+      {"name":"tag","kind":"required","type":[["string","choices=cellstr(string(obj.a_Branch))"],["string"]],"purpose":"Tags of the branches to remove."}
+    ]
+  },
+  "PowerNetwork.remove_bus": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"PowerNetwork"},
+      {"name":"sr_BusTag","kind":"required","type":[["string","choices=cellstr(string(obj.a_Bus))"],["string"]],"purpose":"Tags of the buses to remove."},
+      {"name":"RemoveBranches","kind":"namevalue","type":["logical"],"purpose":"Also remove the branches connected to the removed buses. Default: false."}
+    ]
+  },
+  "PowerNetwork.remove_global_controller": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"PowerNetwork"},
+      {"name":"sr_GconTag","kind":"required","type":[["string","choices=cellstr(string(obj.a_GlobalController))"],["string"]],"purpose":"Tags of the global controllers to remove."}
     ]
   }
 }
