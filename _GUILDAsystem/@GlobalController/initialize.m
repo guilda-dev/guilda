@@ -12,9 +12,7 @@ function initialize(obj, l_equilibrium)
         obj
         l_equilibrium (1,1) logical = false  % Compute the equilibrium even when it is not stale.
     end
-    if ~isempty(obj.sct_stale.odefcn) || ~isequal(obj.r_odefcnHz, obj.get_Hz())
-        obj.build_odefcn();
-    end
+    obj.set_odefcn();
     if l_equilibrium || ~isempty(obj.sct_stale.equilibrium)
         [obj.rv_Xequilibrium, obj.rv_Uequilibrium] = obj.get_equilibrium();
         obj.sct_stale.equilibrium = strings(0,1);

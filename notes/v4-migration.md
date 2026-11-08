@@ -1111,15 +1111,15 @@ there.
 - **Frequency inside a model:** read `obj.get_Hz()`, never a fixed `60`.
 - **`set_odefcn` は廃止。** `f_*` ハンドルは `net.initialize()` が作ります。
   古いとき(`sct_stale.odefcn` が空でない、またはハンドルを作った周波数
-  `r_odefcnHz` が系統の Hz と違う)だけ、各層の `initialize` から protected メソッド `build_odefcn` を呼び、
+  `r_odefcnHz` が系統の Hz と違う)だけ、各層の `initialize` から protected メソッド `set_odefcn` を呼び、
   現在のパラメータと系統の周波数から作り直し、`odefcn` を空にします。解析は
   作り直さず検査だけです。`s_odefcn`、`set_odefcn`、`mark_odefcn` はありません。
   - コンストラクタで `obj.set_odefcn()` を呼んでいたモデルは、その行を削除します
     (残すと未定義のメソッドでエラーになります)。
   - 自分でハンドルを作っていたモデル(`set_odefcn` をオーバーライドしていたクラス)は、
-    `build_odefcn` をオーバーライドし、最後に `r_odefcnHz` を設定して
+    `set_odefcn` をオーバーライドし、最後に `r_odefcnHz` を設定して
     `obj.sct_stale.odefcn = strings(0,1);` とします(例: `controller.local_LQR`)。
-  - `get_dx_algebraic` はハンドルが空のときだけ `build_odefcn` を呼びます。
+  - `get_dx_algebraic` はハンドルが空のときだけ `set_odefcn` を呼びます。
 - **Equilibrium:** `get_equilibrium(obj, c_V, c_I, r_P, r_Q)`; do not store
   copies of V or I (see 1.2).
 - **Controllers:** local controllers receive their parent through

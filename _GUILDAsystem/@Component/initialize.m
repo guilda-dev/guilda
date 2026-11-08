@@ -12,9 +12,7 @@ function initialize(obj)
     arguments (Input)
         obj
     end
-    if ~isempty(obj.sct_stale.odefcn) || ~isequal(obj.r_odefcnHz, obj.get_Hz())
-        obj.build_odefcn();
-    end
+    obj.set_odefcn();
     if equilibrium_stale(obj)
         obj.set_equilibrium(obj.c_Vequilibrium, obj.c_Iequilibrium);
     else

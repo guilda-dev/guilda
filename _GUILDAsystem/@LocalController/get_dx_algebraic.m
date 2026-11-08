@@ -24,7 +24,7 @@ function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
     % A controller attached after its component's handles were built (see
     % Component.get_dx_algebraic)
     if isempty(obj.f_dx)
-        obj.build_odefcn();
+        obj.set_odefcn();
     end
 
     rv_U = obj.rv_Uequilibrium;

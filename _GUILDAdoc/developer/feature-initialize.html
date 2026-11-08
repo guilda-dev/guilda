@@ -190,7 +190,7 @@
         <text x="330" y="398"><tspan class="init-num">09</tspan> <tspan class="dg-mono">initialize()</tspan></text>
         <path class="dg-sv-line" d="M585 424H711" marker-end="url(#init-ah)"/>
         <path class="dg-sv-line" d="M715 444H836" marker-end="url(#init-ah)"/>
-        <text class="is-muted dg-mono" x="721" y="438">build_odefcn</text>
+        <text class="is-muted dg-mono" x="721" y="438">set_odefcn</text>
         <!-- 10 -->
         <path class="dg-sv-line" d="M185 474H446" marker-end="url(#init-ah)"/>
         <text x="218" y="468"><tspan class="init-num">10</tspan> <tspan class="dg-mono">initialize(true)</tspan></text>
@@ -375,11 +375,11 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Rebuilds the handles first when they are stale (<code>build_odefcn</code>): a controller may design from them (<code>controller.local_LQR</code>)</li>
+            <li>Rebuilds the handles first when they are stale (<code>set_odefcn</code>): a controller may design from them (<code>controller.local_LQR</code>)</li>
             <li>Calls the model's <code>get_equilibrium</code> with all four arguments and stores the result</li>
             <li>Clears its own stale tag <code>equilibrium</code>; then, for each local controller, INIT-08 and <code>initialize(true)</code>, with which the controller clears its own <code>equilibrium</code> and rebuilds its stale handles</li>
           </ul><ul lang="ja">
-            <li>ハンドルが古ければ先に再構築（<code>build_odefcn</code>）。制御器がそれを使って設計する場合があるため（<code>controller.local_LQR</code>）</li>
+            <li>ハンドルが古ければ先に再構築（<code>set_odefcn</code>）。制御器がそれを使って設計する場合があるため（<code>controller.local_LQR</code>）</li>
             <li>モデルの <code>get_equilibrium</code> を 4 つの引数すべてで呼び出し、結果を保存</li>
             <li>自分の stale タグ <code>equilibrium</code> を消去。続いて各局所制御器に INIT-08 と <code>initialize(true)</code>。制御器は自分の <code>equilibrium</code> を消去し、古いハンドルを再構築</li>
           </ul></dd>
@@ -414,12 +414,12 @@
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Each bus initializes its components; then each branch (nothing to do)</li>
-            <li>Component: rebuilds its handles when <code>odefcn</code> is not empty or <code>r_odefcnHz</code> differs from <code>get_Hz()</code> (<code>build_odefcn</code>)</li>
+            <li>Component: rebuilds its handles when <code>odefcn</code> is not empty or <code>r_odefcnHz</code> differs from <code>get_Hz()</code> (<code>set_odefcn</code>)</li>
             <li>Component: when the equilibrium of the component or of one of its local controllers is still stale (a dynamics or controller edit), recomputes it from the held V and I (INIT-07, INIT-08); otherwise calls <code>initialize(false)</code> of its local controllers</li>
             <li>Local controller (<code>initialize(l_equilibrium)</code>): with <code>true</code> clears its own <code>equilibrium</code>; rebuilds its stale handles in the same way, then initializes its nested controller with the same <code>l_equilibrium</code>; <code>controller.local_LQR</code> redesigns its gain when the network frequency differs from the one it was designed for</li>
           </ul><ul lang="ja">
             <li>各母線がその機器を初期化。続いて各ブランチ（処理なし）</li>
-            <li>機器: <code>odefcn</code> が空でないか、<code>r_odefcnHz</code> が <code>get_Hz()</code> と異なればハンドルを再構築（<code>build_odefcn</code>）</li>
+            <li>機器: <code>odefcn</code> が空でないか、<code>r_odefcnHz</code> が <code>get_Hz()</code> と異なればハンドルを再構築（<code>set_odefcn</code>）</li>
             <li>機器: 機器またはその局所制御器の平衡点がまだ古い場合（動特性や制御器の編集）、保持中の V と I から再計算（INIT-07、INIT-08）。それ以外は局所制御器の <code>initialize(false)</code> を呼び出し</li>
             <li>局所制御器（<code>initialize(l_equilibrium)</code>）: <code>true</code> なら自分の <code>equilibrium</code> を消去。古いハンドルを同様に再構築し、入れ子の制御器を同じ <code>l_equilibrium</code> で初期化。<code>controller.local_LQR</code> は設計時と異なるネットワークの周波数でゲインを再設計</li>
           </ul></dd>

@@ -117,7 +117,7 @@ classdef local_LQR < LocalController
         set_inputs(obj, sv_name)
     end
     methods (Access={?Component,?LocalController})
-        build_odefcn(obj)
+        set_odefcn(obj)
     end
 
     methods (Access=private)
