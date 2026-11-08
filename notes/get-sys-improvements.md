@@ -293,6 +293,7 @@ P=Q=0 の負荷も同じ処理で入力が残ります(Ishizaki6Bus: 8 → 12 �
 
 - **PT2 [a]:** NaN を含む点は、`dss` に届く前に `GUILDA:odeLinearizer:PointNotFinite` で止め、変数のラベルを示します(トリップ中の `{sim,t}` が該当)。故障中の `{sim,t}` は `Y` が反映されないので(LN R2)、`output.phases` と照合して INFO を出します。**故障を `Y` に反映する案は採りません。** 「`Point` は変数の点で、網はモデルのもの」と定義するほうが単純です。テスト: `test_F7_linearization.m`。
 - **PT1 [b]:** `result.rv_residual`(点での `dx` と母線の電流収支)を保存し、平衡点でなければ `output.message` に示します。`get_ss` は変えません。アフィン項を使うエネルギー解析にも使えます。別案の「`get_ss` にアフィン項を返す」は `ss` で表せないので採りません。
+  - **廃止(2026-11-08):** 不要と判断し、`ResultLIN.rv_residual`、`output.r_residual`、平衡点でない旨のメッセージ、`Component.point_residual` を削除しました。平衡点かどうかは `output.l_equilibrium` で分かります。
 
 ### 5.4 `flag` と診断
 

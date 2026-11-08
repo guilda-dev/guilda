@@ -245,11 +245,6 @@ classdef Component < PowerSystemModel
         flag = validate(obj)
     end
 
-    methods(Access={?SolverLIN})
-        [rv_dx, rv_I] = point_residual(obj, rv_point)
-    end
-
-
     methods(Access={?Bus})
         initialize(obj)
         set_equilibrium(obj,c_V,c_I,r_P,r_Q)

@@ -709,7 +709,7 @@ Option names:
   model now equals that of Kron.
 - `flag` is true when all Jacobian entries are finite and `Avv` is
   invertible; `output` has `message`, `s_issue`, `l_equilibrium`, `n_x`,
-  `n_v`, `n_u`, `rcond_Avv`, `r_residual`, `sv_faultBus`. A `Point` or a model
+  `n_v`, `n_u`, `rcond_Avv`, `sv_faultBus`. A `Point` or a model
   that is not finite stops with `GUILDA:SolverLIN:PointNotFinite` or
   `JacobianNotFinite`.
 - Default outputs of `get_ss` (as v3): `"Kron"` the states, without output

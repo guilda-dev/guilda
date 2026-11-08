@@ -72,7 +72,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         sct_output = struct("message", "Linearized the local controller " + obj.s_tag + ".", ...
                             "s_issue", "", "l_equilibrium", l_eq, "s_layer", "LocalController");
         sys = ResultLIN(net_of(owner), "", struct(), true, sct_output, t0, ...
-                        table(), [x; V; u], sct_block, struct("sct_sys", sys), zeros(0,1));
+                        table(), [x; V; u], sct_block, struct("sct_sys", sys));
         if opt.Format == "ss"
             sys = sys.get_ss(Format="ss");
         end

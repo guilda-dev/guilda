@@ -12,9 +12,7 @@ classdef ResultLIN < ResultBase
 % all in the order of the variable map tab_variable (= net.get_variable_map() at the time
 % of the analysis). The algebraic equations are the current balance of each bus,
 % 0 = (Y v - I of the components), in the order of v. The values are deviations from the
-% point rv_point. Away from an equilibrium the tangent of the nonlinear system also has the
-% constant rv_residual: its rows add to the right-hand sides above, and get_ss leaves it out.
-% Y is the admittance matrix of the model, also at a point inside a fault.
+% point rv_point. Y is the admittance matrix of the model, also at a point inside a fault.
 % get_ss returns a reduced model (Kron / Feedback / DAE); Plot draws the eigenvalue map.
 %
 % The properties A, B, C, D, E, StateName, InputName and OutputName hold one linear model
@@ -34,8 +32,6 @@ classdef ResultLIN < ResultBase
 %
 % - `tab_variable` has one row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"),
 %   Owner, Name, Label and Bus (see PowerNetwork.get_variable_map).
-% - `rv_residual` holds the right-hand sides of the state equations, then Y v - I of each
-%   bus, with the inputs at their values in rv_point.
 % - `sct_model` holds the bus models (V2I, at the point), the global controller models, the
 %   admittance matrix, the non-unit buses and the bus voltages at the point: used by
 %   get_ss("Feedback") and the coordinates of get_ss("DAE"). The Output option of get_ss
@@ -66,7 +62,6 @@ classdef ResultLIN < ResultBase
         rm_Avv double = zeros(0,0)             % Jacobian of the bus current balance (Y v - I) with respect to the bus voltages: Y minus the component terms.
         rm_Bv double = zeros(0,0)              % Jacobian of the bus current balance (Y v - I) with respect to the inputs.
         rm_E double = zeros(0,0)               % Mass matrix of the state equations (the algebraic equations have none).
-        rv_residual (:,1) double = zeros(0,1)  % Residual of the nonlinear DAE at rv_point, rows x and v of tab_variable; zero at an equilibrium.
     end
     properties (SetAccess=private) % Model
         A double = zeros(0,0)                  % State matrix of the model (E dx/dt = A x + B u, y = C x + D u): get_ss(options.Algorithm), or the port model of an object-level result.
@@ -83,7 +78,7 @@ classdef ResultLIN < ResultBase
     end
 
     methods
-        function obj = ResultLIN(net, solver, options, flag, output, elapsed, tab_variable, rv_point, sct_block, sct_model, rv_residual)
+        function obj = ResultLIN(net, solver, options, flag, output, elapsed, tab_variable, rv_point, sct_block, sct_model)
         % Create a linearization result.
         %
         % Stores the computed values of a linearization.
@@ -98,7 +93,6 @@ classdef ResultLIN < ResultBase
                 rv_point     double = zeros(0,1) % Point in the order of tab_variable.
                 sct_block    struct = struct() % Fields Axx, Axv, Bx, Avx, Avv, Bv, E.
                 sct_model    struct = struct() % Data for get_ss (bus and controller models, Y, non-unit buses, V), or the port model (field sct_sys) of an object-level result.
-                rv_residual  double = zeros(0,1) % Residual at the point (rows x and v of tab_variable).
             end
             arguments (Output)
                 obj % The result object.
@@ -106,7 +100,6 @@ classdef ResultLIN < ResultBase
             obj@ResultBase(net, solver, options, flag, output, elapsed);
             obj.tab_variable = tab_variable;
             obj.rv_point     = rv_point(:);
-            obj.rv_residual  = rv_residual(:);
             for str = ["Axx","Axv","Bx","Avx","Avv","Bv","E"]
                 if isfield(sct_block, str)
                     obj.("rm_" + str) = sct_block.(str);

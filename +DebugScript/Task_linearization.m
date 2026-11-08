@@ -32,12 +32,12 @@ sv_u = tab.Label(tab.Kind == "u");
 sys_io = net.get_sys("Output", ["V", "I"], "Input", sv_u(1:2));
 assert(numel(sys_io.InputName) == 2 && numel(sys_io.OutputName) == 4*numel(net.a_Bus))
 
-% 5. シミュレーションの途中の点で線形化する。平衡点でない点は output.message と result.rv_residual に現れる
+% 5. シミュレーションの途中の点で線形化する
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
 sim = net.simulate([0,1.5], ev, Progress="none");
 [res_t, flag, output] = net.linearize("Point", {sim, 1});
 disp(output.message)
-assert(flag && output.r_residual == max(abs(res_t.rv_residual)))
+assert(flag && ~output.l_equilibrium)
 
 % 6. パラメータを編集すると平衡点が古くなり、initialize し直すまで線形化はエラーになる
 gen = net.a_Bus{1}.a_Component{1};
