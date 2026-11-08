@@ -15,7 +15,7 @@ function set_equilibrium(obj,c_V,c_I,r_P,r_Q)
         r_Q = imag( c_V*conj(c_I) );   % [pu] Reactive power injected by the component.
     end
     if ~isempty(obj.sct_stale.odefcn) || ~isequal(obj.r_odefcnHz, obj.get_Hz())
-        obj.build_odefcn();
+        obj.set_odefcn();
     end
     [cv_Xst,cv_Ust] = obj.get_equilibrium(c_V,c_I,r_P,r_Q);
     

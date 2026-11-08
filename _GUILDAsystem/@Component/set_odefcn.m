@@ -1,4 +1,4 @@
-function build_odefcn(obj)
+function set_odefcn(obj)
 % Bind the parameters and the network frequency into the f_* function handles.
 % Called by initialize when the stale tag odefcn is not empty or the network frequency
 % differs from r_odefcnHz, and by get_dx_algebraic when the handles were never built.

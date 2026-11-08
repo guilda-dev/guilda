@@ -28,7 +28,7 @@ classdef Component < PowerSystemModel
 % - The base class turns the static model functions into the cached handles `f_*`, adds its
 %   local controllers to the DAE and the linear model, and computes Jacobians numerically
 %   when the subclass gives none. The handles @(t,x,V,I,u) bind the parameters and omega0;
-%   `build_odefcn` builds them, called by `PowerNetwork.initialize` when they are stale
+%   `set_odefcn` builds them, called by `PowerNetwork.initialize` when they are stale
 %   (`sct_stale.odefcn`, or a network frequency other than `r_odefcnHz`).
 % - Stale tags (`sct_stale`): `equilibrium` (its dynamics, its local controllers, its
 %   attachment) and `odefcn` (its dynamics). `initialize`, called by
@@ -218,7 +218,7 @@ classdef Component < PowerSystemModel
             obj.a_Parameter = {a_Pd; a_Po; a_Pp; a_PO; a_Pg};
         end        
 
-        build_odefcn(obj)
+        set_odefcn(obj)
         handle_edit(obj, a_layer, tag, log)
         sct_page = gui_content(obj)
 

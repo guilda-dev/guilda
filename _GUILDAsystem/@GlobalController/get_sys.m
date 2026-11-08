@@ -57,7 +57,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
             error(msg("GUILDA:GlobalController:Stale", char(obj.s_tag), char(s_reason)))
         end
     elseif ~isempty(obj.sct_stale.odefcn) || ~isequal(obj.r_odefcnHz, obj.get_Hz())
-        obj.build_odefcn();    % no network to initialize: the handles are built here
+        obj.set_odefcn();    % no network to initialize: the handles are built here
     end
 
     % Same Jacobian contract as SolverODE: f_JacobiDx/Y(t,x,V,I,u).

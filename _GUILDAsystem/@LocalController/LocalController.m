@@ -31,7 +31,7 @@ classdef LocalController < PowerSystemModel
 %   index in sv_y, iv_obsX(k) its index in sv_x, and both are 0 for an input that is not
 %   observed (its equilibrium value, or the output of a nested controller of the same name).
 % - The handles `f_*` @(t,x,V,I,u) bind param and omega0 (there is no f_I);
-%   `build_odefcn` builds them, called by `initialize` when they are stale
+%   `set_odefcn` builds them, called by `initialize` when they are stale
 %   (`sct_stale.odefcn`, or a network frequency other than `r_odefcnHz`).
 % - Stale tags (`sct_stale`): `equilibrium` (its dynamics, a nested controller, its
 %   attachment) and `odefcn` (its dynamics, its attachment). The component recomputes the
@@ -181,7 +181,7 @@ classdef LocalController < PowerSystemModel
         remove_local_controller(obj)
 
         initialize(obj, l_equilibrium)
-        build_odefcn(obj)
+        set_odefcn(obj)
 
         resolve_observe(obj)
 

@@ -22,7 +22,7 @@ classdef GlobalController < PowerSystemModel
 %   does not own its units and is not a child of any bus.
 % - Only the network sets and clears `a_PowerNetwork` (`SetAccess`;
 %   `PowerNetwork.add_global_controller` logs the attachment as a "Topology" edit).
-% - The handles `f_*` @(t,x,V,I,u) bind param and omega0; `build_odefcn` builds them,
+% - The handles `f_*` @(t,x,V,I,u) bind param and omega0; `set_odefcn` builds them,
 %   called by `initialize` when they are stale (`sct_stale.odefcn`, or a network
 %   frequency other than `r_odefcnHz`).
 % - Stale tags (`sct_stale`): `equilibrium` (its dynamics, its addition to the network)
@@ -164,7 +164,7 @@ classdef GlobalController < PowerSystemModel
         [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     end
     methods (Access=protected)
-        build_odefcn(obj)
+        set_odefcn(obj)
         handle_edit(obj, a_layer, tag, log)
         sct_page = gui_content(obj)
     end

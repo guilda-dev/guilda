@@ -206,7 +206,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 
     function build_stale(layer)
         if ~isempty(layer.sct_stale.odefcn) || ~isequal(layer.r_odefcnHz, layer.get_Hz())
-            layer.build_odefcn();
+            layer.set_odefcn();
         end
         for k = 1:numel(layer.a_LocalController)
             build_stale(layer.a_LocalController{k});

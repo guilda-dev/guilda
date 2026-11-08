@@ -1,4 +1,4 @@
-function build_odefcn(obj)
+function set_odefcn(obj)
 % Build the f_* handles from the gain K (initialize when they are stale, and
 % get_equilibrium after the design).
 % A Hz edit leaves the equilibrium up to date, so K is redesigned here when the design
