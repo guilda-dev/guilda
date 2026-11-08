@@ -18,5 +18,7 @@ function get_equilibrium(obj, V, u)
     obj.rv_Uequilibrium = comp.rv_Xequilibrium;
     obj.rv_u0 = u(iv_u);
     obj.design_gain(V, u);
+    % the handles bind K: mark them stale so that set_odefcn rebuilds them
+    obj.sct_stale.odefcn(end+1,1) = obj.s_tag + ": K redesigned";
     obj.set_odefcn();
 end
