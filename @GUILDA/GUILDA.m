@@ -15,7 +15,8 @@ classdef GUILDA < handle
 % >> GUILDA.publish_doc(): publish documentation to GitHub Pages (gh-pages)
 % >> GUILDA.newclass()   : Create a new class (GUI launches)
 % >> GUILDA.dictionary() : Search classes implemented in this software
-% >> GUILDA.update_keymap(): Regenerate the methods that take a model key (add_component, ...)
+% >> GUILDA.keymap()    : Model keys of a category and the names of their classes
+% >> GUILDA.update_keymap(): Rebuild the model key map from the classes on the path
 %
 % Major Folders within the @GUILDA Directory
 % <WARNING> DO NOT modify the files inside the following folders, as they are read and written by the system
@@ -106,6 +107,7 @@ classdef GUILDA < handle
         rmpath() 
         doc(option)
         publish_doc(option)
-        update_keymap()
+        dic        = keymap(category)
+        update_keymap(opt)
     end
 end

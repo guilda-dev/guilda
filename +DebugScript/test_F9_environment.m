@@ -42,32 +42,47 @@ assert(isequal(sct_both, struct("Progress", "none")))
 assert(isequal(v3_user_config("Model", struct("Reporter", 1)), struct("Reporter", 1)))
 
 
-%% Component key map is generated at startup
-% 起動時に add_component.m / replace_component.m が template/ の .template から生成される
-assert(isfile(fullfile(s_root, "_GUILDAsystem", "@Bus", "add_component.m")))
-assert(isfile(fullfile(s_root, "_GUILDAsystem", "@Bus", "replace_component.m")))
-txt = fileread(fullfile(s_root, "_GUILDAsystem", "@Bus", "add_component.m"));
-for key = DebugScript.helper.model_classes("Component").Key'
-    assert(contains(txt, "'" + key + "'"), key)
+%% Model key map lists the keys of the classes
+% GUILDA.keymap はクラスの Constant key からキーとコンストラクターの対応を作る
+for s_cat = ["Component", "LocalController", "GlobalController", "Branch"]
+    dic = GUILDA.keymap(s_cat);
+    assert(isa(dic, "dictionary"))
+    if s_cat ~= "Branch"
+        sv_key = DebugScript.helper.model_classes(s_cat).Key;
+        assert(isempty(setxor(keys(dic), sv_key)), s_cat)
+    end
+end
+dic = GUILDA.keymap("Component");
+assert(dic("gen-park") == "component.generator.park")
+assert(all(ismember(["pi","pi_transformer"], keys(GUILDA.keymap("Branch")))))
+
+% 未知のキーは検証関数がキーの一覧付きで止める
+try
+    tools.mustBeKeyOf("gen-unknown", "Component");
+    error("DebugScript:NoError", "no error")
+catch err
+    assert(string(DebugScript.helper.msg_id(err)) == "GUILDA:mustBeKeyOf:UnknownKey", err.message)
+    assert(contains(err.message, "gen-park") && contains(err.message, "load-power"), err.message)
+end
+net = network.IEEE9bus;
+try
+    net.a_Bus{4}.add_component("gen-unknown");
+    error("DebugScript:NoError", "no error")
+catch err
+    % the arguments block puts its own text before the message of the validator
+    assert(contains(err.message, "Component model key") && contains(err.message, "load-power"), err.message)
 end
 
-% 制御器の追加メソッドも template/ から生成される
-txt = fileread(fullfile(s_root, "_GUILDAsystem", "@Component", "add_local_controller.m"));
-for key = DebugScript.helper.model_classes("LocalController").Key'
-    assert(contains(txt, "'" + key + "'"), key)
-end
-txt = fileread(fullfile(s_root, "_GUILDAsystem", "@PowerNetwork", "add_global_controller.m"));
-assert(contains(txt, "'agc-PI'"))
-
-% 内容が同じなら書き直さない (起動のたびに add_branch.m などを更新しない)
-sv_file = fullfile(s_root, "_GUILDAsystem", ["@PowerNetwork","@Bus","@Bus","@Component","@PowerNetwork"], ...
-                   ["add_branch.m","add_component.m","replace_component.m","add_local_controller.m","add_global_controller.m"]);
+% 起動はメソッドのファイルも functionSignatures.json も書き直さない
+sv_file = [fullfile(s_root, "_GUILDAsystem", ["@PowerNetwork","@Bus","@Bus","@Component","@PowerNetwork"], ...
+                   ["add_branch.m","add_component.m","replace_component.m","add_local_controller.m","add_global_controller.m"]), ...
+           fullfile(s_root, "_GUILDAsystem", "resources", "functionSignatures.json")];
 evalc("GUILDA;");
 d0 = arrayfun(@(f) dir(f).datenum, sv_file);
 pause(1.1)
 evalc("GUILDA;");
 d1 = arrayfun(@(f) dir(f).datenum, sv_file);
-assert(isequal(d0, d1), "起動で生成ファイルが書き直された")
+assert(isequal(d0, d1), "起動でファイルが書き直された")
 
 
 %% GUILDA dictionary lists classes

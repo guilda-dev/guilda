@@ -10,25 +10,24 @@
 tol_jacobi = 1e-5;
 
 
-%% The model list matches the generated key lists and has the known models
+%% The model list matches the key map and has the known models
 % 手書きの一覧は下限の確認にだけ使う。試験の対象は GUILDA.dictionary から決まる
 tab = DebugScript.helper.model_classes("Component");
 assert(all(ismember(["gen-classical","gen-1axis","gen-2axis","gen-park","gen-droop","load-power","load-impedance"], tab.Key)))
-assert(isequal(sort(tab.Key), sort(generated_keys("@Bus", "add_component.m"))), "add_component")
-assert(isequal(sort(tab.Key), sort(generated_keys("@Bus", "replace_component.m"))), "replace_component")
+assert(isequal(sort(tab.Key), sort(keymap_keys("Component"))), "GUILDA.keymap(Component)")
 assert(numel(unique(tab.Key)) == height(tab) && all(tab.Key ~= ""), "機器のキーが重複または空")
 tab = DebugScript.helper.model_classes("Branch");
 assert(all(ismember(["pi","T","pi_transformer","two_winding_transformer"], tab.Key)))
-assert(isequal(sort(tab.Key), sort(generated_keys("@PowerNetwork", "add_branch.m"))), "add_branch")
+assert(isequal(sort(tab.Key), sort(keymap_keys("Branch"))), "GUILDA.keymap(Branch)")
 assert(numel(unique(tab.Key)) == height(tab) && all(tab.Key ~= ""), "ブランチのキーが重複または空")
 tab = DebugScript.helper.model_classes("LocalController");
 assert(all(ismember(["controller.avr.AVR_ST1","controller.avr.AVR_DC1","controller.pss.PSS1","controller.local_LQR"], tab.Class)))
 assert(all(ismember(["avr-ST1","avr-DC1","pss-PSS1","gov-LPT1","gov-LPT3","gov-LPT4","local-LQR"], tab.Key)))
-assert(isequal(sort(tab.Key), sort(generated_keys("@Component", "add_local_controller.m"))), "add_local_controller")
+assert(isequal(sort(tab.Key), sort(keymap_keys("LocalController"))), "GUILDA.keymap(LocalController)")
 assert(numel(unique(tab.Key)) == height(tab) && all(tab.Key ~= ""), "局所制御器のキーが重複または空")
 tab = DebugScript.helper.model_classes("GlobalController");
 assert(any(tab.Class == "controller.agc.broadcast_PI_AGC") && any(tab.Key == "agc-PI"))
-assert(isequal(sort(tab.Key), sort(generated_keys("@PowerNetwork", "add_global_controller.m"))), "add_global_controller")
+assert(isequal(sort(tab.Key), sort(keymap_keys("GlobalController"))), "GUILDA.keymap(GlobalController)")
 assert(numel(unique(tab.Key)) == height(tab) && all(tab.Key ~= ""), "大域制御器のキーが重複または空")
 
 
@@ -386,10 +385,9 @@ function sv_key = generator_keys()
     sv_key = tab.Key(arrayfun(@(c) ismember("component.generator.abstract", superclasses(c)), tab.Class))';
 end
 
-function sv_key = generated_keys(s_class, s_file)
-    % 生成された switch の case ('key'; mkInst = ...) を読む
-    str = fileread(fullfile(GUILDA.pwd, "_GUILDAsystem", s_class, s_file), "Encoding", "UTF-8");
-    sv_key = reshape(string(extractBetween(str, "case '", "';")), [], 1);
+function sv_key = keymap_keys(s_category)
+    % GUILDA.keymap のキー (add_component などが受け付けるキー)
+    sv_key = reshape(keys(GUILDA.keymap(s_category)), [], 1);
 end
 
 function assert_no_fail(flag, s_name)

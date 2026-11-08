@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the function "tools.mustBeKeyOf".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="UnknownKey">Value must be a {0} model key: {1}.</entry>
+    </message>
+</rsccat>

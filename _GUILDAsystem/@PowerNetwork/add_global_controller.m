@@ -1,8 +1,8 @@
 function con = add_global_controller(obj, Key, a_Unit, opt)
 % Build a global controller from its model key, add it to the network and return it.
 %
-% `Key` is the model key of a global controller class (the list is generated from the
-% classes on the path). `a_Unit` gives the controlled components of this network, as
+% `Key` is the model key of a global controller class (`keys(GUILDA.keymap("GlobalController"))`
+% lists them). `a_Unit` gives the controlled components of this network, as
 % Component objects (a cell array) or as tags. `parameter` gives the parameters of the
 % constructor as a struct (or a one-row table) of Name=Value; omitted fields keep the
 % class defaults. The controller tag is the class header, a number and the network tag,
@@ -24,7 +24,7 @@ function con = add_global_controller(obj, Key, a_Unit, opt)
 % <@Group> Model building
     arguments (Input)
         obj
-        Key           (1,:) char {mustBeMember(Key,{___KEY_LIST___})}   % Global controller model key, e.g. "agc-PI".
+        Key           (1,:) char {tools.mustBeKeyOf(Key, "GlobalController")}   % Global controller model key, e.g. "agc-PI".
         a_Unit                                                          % Controlled components of this network: Component objects (cell array or one object) or tags.
         opt.parameter {mustBeA(opt.parameter, ["struct","table"])} = struct()   % Constructor parameters (struct or one-row table of Name=Value); omitted ones use the class defaults.
     end
@@ -49,9 +49,8 @@ function con = add_global_controller(obj, Key, a_Unit, opt)
     c_para = namedargs2cell(sct_para);
 
     % get controller function
-    switch Key
-___KEY_CASES___
-    end
+    dic    = GUILDA.keymap("GlobalController");
+    mkInst = str2func(dic(string(Key)));
     con = mkInst(obj, s_index, c_unit{:}, c_para{:});
 
     if ismember(con.s_tag, string(obj.a_GlobalController))

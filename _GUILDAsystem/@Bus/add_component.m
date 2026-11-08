@@ -1,8 +1,8 @@
 function comp = add_component(obj,Key,opt)
 % Add a component to the bus and return it.
 %
-% `Key` is the model key of a component class (the list is generated from the classes on
-% the path). The component tag is the class header, a number and the bus tag, e.g.
+% `Key` is the model key of a component class (`keys(GUILDA.keymap("Component"))` lists
+% them). The component tag is the class header, a number and the bus tag, e.g.
 % "SG1B001". The addition is a "Topology" edit, which makes the power flow of the network stale.
 %
 % <@Examples>
@@ -14,7 +14,7 @@ function comp = add_component(obj,Key,opt)
 % See also Bus.remove_component, Bus.replace_component, Component
     arguments (Input)
         obj
-        Key                  (1,:) char {mustBeMember(Key,{___KEY_LIST___})}   % Component model key, e.g. "gen-park" or "load-power".
+        Key                  (1,:) char {tools.mustBeKeyOf(Key, "Component")}   % Component model key, e.g. "gen-park" or "load-power".
         opt.parameter                     = nan;   % Dynamic parameters (table or string); NaN uses the class defaults.
         opt.P                (1,1) double = 0;   % [pu] Active power injection setting for the power flow (negative for a load).
         opt.Q                (1,1) double = 0;   % [pu] Reactive power injection setting; NaN makes the bus a PV bus.
@@ -48,9 +48,8 @@ function comp = add_component(obj,Key,opt)
     opt       = rmfield( opt, "parameter");
 
     % get component function
-    switch Key
-___KEY_CASES___
-    end
+    dic    = GUILDA.keymap("Component");
+    mkInst = str2func(dic(string(Key)));
     comp = mkInst(s_index,para,opt);
 
     % register

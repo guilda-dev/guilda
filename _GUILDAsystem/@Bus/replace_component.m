@@ -26,7 +26,7 @@ function comp = replace_component(obj, s_tag, Key, parameter, opt)
     arguments (Input)
         obj
         s_tag                (1,1) string   % Tag of the component to replace.
-        Key                  (1,:) char {mustBeMember(Key,{___KEY_LIST___})}   % Component model key, e.g. "gen-park" or "load-power".
+        Key                  (1,:) char {tools.mustBeKeyOf(Key, "Component")}   % Component model key, e.g. "gen-park" or "load-power".
         parameter             = nan;   % Dynamic parameters (table or string); NaN uses the class defaults.
         opt.Controllers      (1,1) string {mustBeMember(opt.Controllers,["drop","keep"])} = "drop";   % Local controllers of the replaced component: "drop" leaves them on it with a warning, "keep" moves them to the new one.
     end
@@ -65,9 +65,8 @@ function comp = replace_component(obj, s_tag, Key, parameter, opt)
 
     
     % get component function
-    switch Key
-___KEY_CASES___
-    end
+    dic    = GUILDA.keymap("Component");
+    mkInst = str2func(dic(string(Key)));
     s_controllers = opt.Controllers;
     comp = mkInst(s_index, parameter, opt_comp);
     a_con = controllers_of(comp_pre);

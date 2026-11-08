@@ -17,7 +17,7 @@ function bra = add_branch(obj, Key, from_to, opt)
 % See also PowerNetwork.remove_branch, PowerNetwork.add_bus, Branch
     arguments (Input)
         obj 
-        Key          (1,:) char {mustBeMember(Key,{___KEY_LIST___})}   % Branch model key, e.g. "pi" or "pi_transformer".
+        Key          (1,:) char {tools.mustBeKeyOf(Key, "Branch")}   % Branch model key, e.g. "pi" or "pi_transformer".
         from_to      (1,2) {string,double}   = [1,2]   % End buses [from, to], as indices of a_Bus or as bus tags.
         opt.R        (1,1) double = 0;   % [pu] Series resistance.
         opt.X        (1,1) double = 1;   % [pu] Series reactance.
@@ -64,9 +64,8 @@ function bra = add_branch(obj, Key, from_to, opt)
     s_Index = num2str(tools.next_tag_number(string(obj.a_Branch)),"%.3d");
 
     % Build Instance
-    switch Key
-___KEY_CASES___
-    end
+    dic    = GUILDA.keymap("Branch");
+    mkInst = str2func(dic(string(Key)));
     bra = mkInst(s_Index, opt);
 
     % register
