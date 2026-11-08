@@ -236,7 +236,7 @@ net.add_branch(Type, ["B001","B002"], ...)       % buses may be given by tag
 
   同梱の系統はすべて通ります。
 - **`add_bus` の `FullTag`。** `net.add_bus(FullTag="Sub7")` は自動の番号を付けずにそのタグを使います。使用中のタグなら番号を付けて改名します。
-- `_GUILDAsystem/@PowerNetwork/add_branch.m` は `GUILDA` の起動時に生成する追跡対象外のファイルです。変更するときは `add_branch.template` を編集します。
+- `_GUILDAsystem/@PowerNetwork/add_branch.m` は通常の追跡対象のファイルです(1.22)。
 
 ### 1.5 Single slack bus
 
@@ -1055,8 +1055,19 @@ there.
 - 両メソッドは作った制御器を返します。タグは自動で付きます。局所: 種類の頭文字・番号・機器のタグ(例: `CA1SG1B001`、`CP2SG1B001`)。大域: `AGC`・番号・系統のタグ。番号は使用中の最大 + 1 です。同梱の系統(`network.IEEE9bus` など)の制御器のタグも変わりました。
 - 制御器クラスの `key` はモデルのキー(機器の `"gen-park"` と同じ)になり、付ける場所を表していた役割(`"avr"`, `"pss"`, `"local"`, `"governor"`, `"agc"`)は定数プロパティ `s_role` に移りました。新しい制御器クラスは具象クラスに `key`、自身か基底クラスに `s_role` を定義し、コンストラクタを `(tag, Name=Value)`(大域は `(net, tag, 機器..., Name=Value)`)にします。追加後に `GUILDA` を実行するとキーの一覧に載ります。
 - `GUILDA:Component:SharedController` はなくなりました。呼び出しのたびに新しい制御器を作るので、別の機器に付いた制御器を付け直すことは起きません。外した制御器を付け直すこともできません(同じキーでもう一度追加します)。`InvalidControllerKey` と `PssParentKey` は `s_role` を調べます。
-- `add_local_controller.m` と `add_global_controller.m` は起動時に生成されるファイルになりました(`.gitignore` 済み)。テンプレートは各クラスフォルダの `template/` にあります(`@Component/template/add_local_controller.template` など。`add_component` ・ `replace_component` ・ `add_branch` のテンプレートも `template/` に移動)。
-- キーの一覧からこれらのファイルを作り直す処理は静的メソッド `GUILDA.update_keymap` になりました(以前は `@GUILDA/private/update_class_signature.m`)。起動時に呼ばれるほか、モデルクラスを追加・削除した後やテンプレートを編集した後に、GUILDA を再起動せずに `>> GUILDA.update_keymap` で作り直せます。
+- `add_local_controller.m` と `add_global_controller.m` は、ほかのキーで作るメソッドと同じく通常の追跡対象のファイルです(1.22)。
+
+### 1.22 キーの一覧は生成しない(`GUILDA.keymap`、テンプレートの廃止)
+
+キーで作るメソッド(`Bus.add_component`、`Bus.replace_component`、`PowerNetwork.add_branch`、`Component.add_local_controller`、`PowerNetwork.add_global_controller`)は、テンプレートから生成するファイルではなく、通常の追跡対象の `.m` ファイルになりました(2026-11-08)。`template/` フォルダと `.gitignore` の 5 行はなくなりました。
+
+- **キーの出所は各クラスの定数 `key` だけ。** 静的メソッド `GUILDA.keymap(category)`(`"Component"`、`"Branch"`、`"LocalController"`、`"GlobalController"`)が、キー(string)からクラス名(string)への `dictionary` を返します。初回の呼び出しで `GUILDA.dictionary` から作り、persistent 変数に保持します。
+- **検証。** `Key` は検証関数 `tools.mustBeKeyOf(Key, category)` で確かめます。未知のキーのエラーは `GUILDA:mustBeKeyOf:UnknownKey` で、使えるキーの一覧を示します(以前は MATLAB の `mustBeMember` のエラー)。
+- **振り分け。** `switch` の代わりに、`GUILDA.keymap(category)` で引いたクラス名を `str2func` でハンドルにしてコンストラクタを呼びます。関数ハンドルではなくクラス名を保持するのは、モデルのコンストラクタが `Access={?Bus}` などで、呼び出すクラスの中でハンドルを作る必要があるためです。
+- **`GUILDA.update_keymap`** はファイルを書かず、`GUILDA.keymap` のキャッシュを作り直してキーの一覧を表示します。起動時(設定 UpdateKeyMap)に呼ばれるほか、モデルクラスを追加・削除した後に再起動せずに呼べます。
+- **コード補完。** `_GUILDAsystem/resources/functionSignatures.json`(追跡対象)が、キーで作るメソッドと `remove_component`・`remove_branch`・`remove_bus`・`remove_global_controller`・`remove_local_controller` の補完候補を与えます。`Key` にはそのカテゴリのキー、タグの引数にはそのオブジェクトの今のタグ(例: `bus.replace_component(` で、その母線の機器のタグ)が出ます。JSON の項目は `arguments` ブロックの候補を置き換えるため、全引数を含みます。
+- **開発者向け。** これらのメソッドの `arguments` ブロックを変えたら `GUILDA.update_keymap(Signature=true)` で JSON を作り直します(内容が変わったときだけ書きます)。名前・種類・クラス・既定値は `?Class` のメタデータから、説明は各引数の行末のコメントから取ります。テスト `test_F34_signatures` が JSON と `arguments` ブロックの一致を確かめます。
+- タグの候補は、変数がワークスペースにあるときだけ出ます(エディターでコードを実行する前は出ません)。キーの候補は常に出ます。
 
 ---
 

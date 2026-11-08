@@ -102,12 +102,12 @@ b1.l_isSlack = true;</code></pre>
     </table>
     <ul lang="en">
       <li>Solver settings: no <code>solver_*</code> setting used</li>
-      <li>Precondition: <code>GUILDA</code> has been run, so that <code>add_branch.m</code>, <code>add_component.m</code>, <code>replace_component.m</code>, <code>add_local_controller.m</code> and <code>add_global_controller.m</code> have been generated from the <code>.template</code> files in the <code>template/</code> folder of their class with the list of model keys (<code>GUILDA.update_keymap</code>, also callable without restarting after adding a model class or editing a template)</li>
+      <li>Precondition: the GUILDA paths are on the MATLAB path. The model keys come from <code>GUILDA.keymap</code>, read from the constant <code>key</code> of the model classes on its first call; after adding a model class, <code>GUILDA.update_keymap</code> reads them again without restarting (also run at startup)</li>
       <li><code>net.initialize()</code>: not needed to build; needed after building, before the dynamic analyses</li>
     </ul>
     <ul lang="ja">
       <li>ソルバー設定: <code>solver_*</code> の設定は不使用</li>
-      <li>前提条件: <code>GUILDA</code> を実行済みで、<code>add_branch.m</code>・<code>add_component.m</code>・<code>replace_component.m</code>・<code>add_local_controller.m</code>・<code>add_global_controller.m</code> が各クラスの <code>template/</code> フォルダの <code>.template</code> からモデルのキー一覧付きで生成済み（<code>GUILDA.update_keymap</code>。モデルクラスの追加やテンプレートの編集の後は、再起動せずに直接呼び出しても可）</li>
+      <li>前提条件: GUILDA のフォルダが MATLAB のパスに追加済み。モデルのキーは <code>GUILDA.keymap</code> から。初回の呼び出しでモデルクラスの定数 <code>key</code> から読む。モデルクラスの追加後は、<code>GUILDA.update_keymap</code> で再起動せずに読み直し（起動時にも実行）</li>
       <li><code>net.initialize()</code>: 構築には不要。構築後、動的な解析の前に必要</li>
     </ul>
 
