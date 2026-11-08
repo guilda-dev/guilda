@@ -4,7 +4,7 @@ classdef Branch < PowerSystemModel
 % The network sums the matrices of its branches into the bus admittance matrix used by the
 % power flow, the OPF and the simulation.
 %
-% - Owns R, X, C, tap, phase (`tab_parameter.dynamics`), its OPF flow limits
+% - Owns R, X, C, tap, phase (`tab_parameter.dynamics`), its operating limits
 %   (`tab_parameter.operation`: Smax, Imax, Pmax, Qmax, Vargmax) and drawing data, and
 %   decides how they form an admittance matrix (the subclass contract
 %   `get_admittance_matrix`).
@@ -29,7 +29,7 @@ classdef Branch < PowerSystemModel
 % br  = net.a_Branch{1};               % or net.add_branch("pi", [1,2], R=0.01, X=0.085)
 % br.tab_parameter.dynamics            % R, X, C, tap, phase
 % Y   = br.get_admittance_matrix();    % 2x2 admittance matrix
-% br.tab_parameter.operation.Smax = Inf;   % no apparent-power limit in the OPF
+% br.tab_parameter.operation.Smax = Inf;   % no apparent-power limit
 % ```
 %
 % See also PowerNetwork.add_branch, branch.pi, Bus
@@ -80,7 +80,7 @@ classdef Branch < PowerSystemModel
             
             % tab_parameter columns:
             % - dynamics: R, X [pu]: series impedance; C [pu]: shunt susceptance (meaning set by the subclass); tap: off-nominal ratio; phase [rad]
-            % - operation: OPF limits at both ends: Smax, Imax, Pmax, Qmax [pu] (default Inf); Vargmax [rad]: end-bus angle difference (default pi/2); Inf or NaN: no limit
+            % - operation: operating limits at both ends: Smax, Imax, Pmax, Qmax [pu] (default Inf); Vargmax [rad]: end-bus angle difference (default pi/2); Inf or NaN: no limit
             % - graph: MidXaxis, MidYaxis: intermediate points of the line in the diagram; Marker: line style
 
             assert( isreal(opt.R), "ERROR: R must be a real number.")

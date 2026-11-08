@@ -181,7 +181,7 @@ classdef Component < PowerSystemModel
             obj.sct_stale      = struct("equilibrium", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
             % tab_parameter columns:
             % - dynamics: model parameters, per unit on the system base; the sv_para columns are passed to the model functions
-            % - operation: baseMVA [MVA]: rating, only to share Q on a bus (not the system base); Pmin, Pmax, Qmin, Qmax [pu]: OPF bounds (-Inf/Inf: none) and "Qmax" rule
+            % - operation: operating limits and rating: Pmin, Pmax, Qmin, Qmax [pu]: output limits (-Inf/Inf: none), also used by the "Qmax" rule of set_equilibrium; baseMVA [MVA]: rating, to share Q on a bus and exported to MATPOWER (not the system base)
             % - powerflow: P, Q [pu]: injection settings of the power flow (negative for a load); Q = NaN makes the bus a PV bus
             % - OPF: P0, Q0 [pu]: OPF initial values; HP, fP, HQ, fQ: cost coefficients (default 1, 1, 0, 0; 0 for a load); startup, shutdown: reserved
             % - graph: Xaxis, Yaxis, Marker, MidXaxis, MidYaxis: drawing data
