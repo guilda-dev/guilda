@@ -3,7 +3,8 @@
 % comp / bus / con / gc の get_sys と net.calculate_continuation_powerflow は、古いハンドルで結果を返さない。
 %   - 系統に属する層は、平衡点を使うとき系統と自分 (と使う下の層) の sct_stale を確認し、古いもの
 %     (平衡点・ハンドル・周波数) があれば net.initialize() を促す層ごとのエラーにする。何も作り直さない
-%   - Point を指定した comp / bus の get_sys は平衡点を使わないので確認しない
+%   - Point を指定した comp / bus の get_sys と、x, V, I, u を与えた comp / con の get_sys は
+%     平衡点を使わないので確認しない (与えた点で今のハンドルを使って線形化する)
 %   - net に接続されていない層は確認を省略し、古いハンドルだけを作る
 %
 % 実行: runtests("DebugScript.test_I71_layer_get_sys")  または  DebugScript.run_all("Features","I71")
@@ -34,10 +35,12 @@ assert_stale_error(@() bus.get_sys(), "GUILDA:Bus:Stale")
 avr.get_sys();
 pss.get_sys();
 
-% 位置引数で点を与えても制御器は平衡点で線形化するのでエラーのまま
+% 位置引数で点を与えると古さを確認せず、与えた点で線形化する (Controllers=false も同じ)
 x = gen.rv_Xequilibrium;  V = [real(gen.c_Vequilibrium); imag(gen.c_Vequilibrium)];
 I = [real(gen.c_Iequilibrium); imag(gen.c_Iequilibrium)];  u = gen.rv_Uequilibrium;
-assert_stale_error(@() gen.get_sys(x, V, I, u), "GUILDA:Component:Stale")
+assert(isa(gen.get_sys(x, V, I, u), "ResultLIN"))
+assert(isa(gen.get_sys(x, V, I, u, Controllers=false), "ResultLIN"))
+assert_stale_error(@() gen.get_sys(Controllers=false), "GUILDA:Component:Stale")
 
 % 失敗した net.get_sys の後も下位層の答えは変わらない (エラーのまま)
 assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
@@ -75,6 +78,10 @@ assert(DebugScript.helper.is_stale(net) && isempty(net.sct_stale.powerflow) && D
 assert_stale_error(@() gen.get_sys(), "GUILDA:Component:Stale")
 assert_stale_error(@() bus.get_sys(), "GUILDA:Bus:Stale")
 assert_stale_error(@() avr.get_sys(), "GUILDA:LocalController:Stale")
+% 点を与えた制御器の get_sys は古さを確認しない
+xa = avr.rv_Xequilibrium;  Va = [real(avr.c_Vequilibrium); imag(avr.c_Vequilibrium)];
+Ia = [real(avr.c_Iequilibrium); imag(avr.c_Iequilibrium)];  ua = avr.rv_Uequilibrium;
+assert(isa(avr.get_sys(xa, Va, Ia, ua), "ResultLIN"))
 assert(DebugScript.helper.handle_Hz(gen) == Hz0)
 
 res = DebugScript.helper.quiet(@() net.initialize);

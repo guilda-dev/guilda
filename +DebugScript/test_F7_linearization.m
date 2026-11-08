@@ -513,7 +513,7 @@ for k = 1:numel(c_sys)
 end
 
 
-%% Layer get_sys: ignored arguments, no internal arguments, names and single computation (#83)
+%% Layer get_sys: removed arguments, no internal arguments, names and single computation (#83)
 net = network.IEEE9bus();
 gen = net.a_Bus{1}.a_Component{1};
 avr = gen.add_local_controller("avr-ST1");
@@ -521,20 +521,20 @@ pss = gen.add_local_controller("pss-PSS1");
 agc = net.add_global_controller("agc-PI", {gen, net.a_Bus{2}.a_Component{1}}, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
 
-% 無視すると文書にある引数はモデルを変えず、rec は公開の引数ではない
-s0 = gen.get_sys(Format="struct");
-assert(isequal(gen.get_sys("con",false,Format="struct"), s0) && isequal(gen.get_sys("full",true,Format="struct"), s0))
-l_accepted = true;
-try
-    gen.get_sys("rec",false);
-catch
-    l_accepted = false;
+% full, rec, controllerPorts は機器の get_sys の引数ではない ("con" は名前の部分一致で Controllers になる)
+for s_arg = ["full","rec","controllerPorts"]
+    l_accepted = true;
+    try
+        gen.get_sys(s_arg,false);
+    catch
+        l_accepted = false;
+    end
+    assert(~l_accepted, "%s が受け付けられた", s_arg)
 end
-assert(~l_accepted, "rec が受け付けられた")
 assert(~ismember("get_sys_alone", methods(gen)) && ~ismember("get_sys_alone", methods(avr)))
 
 % どの層でも 2 番目以降の出力は sys の名前と同じ
-c_call = {@() gen.get_sys(), @() gen.get_sys("port","I2V"), @() gen.get_sys("tag",false), @() net.a_Bus{1}.get_sys(), ...
+c_call = {@() gen.get_sys(), @() gen.get_sys("port","I2V"), @() gen.get_sys("tag",false), @() gen.get_sys(Controllers=false), @() net.a_Bus{1}.get_sys(), ...
           @() net.a_Bus{1}.get_sys("port","I2V"), @() avr.get_sys(), @() avr.get_sys("full",true), @() avr.get_sys("tag",false), @() agc.get_sys()};
 for k = 1:numel(c_call)
     [s, c_x, c_u, c_y] = c_call{k}();
@@ -548,8 +548,51 @@ profile("on");
 gen.get_sys();
 profile("off");
 tab = struct2table(profile("info").FunctionTable);
-lv  = contains(string(tab.FunctionName), "LocalController") & endsWith(string(tab.FunctionName), "get_sys_alone");
+lv  = contains(string(tab.FileName), "@LocalController") & endsWith(string(tab.FunctionName), "linearize_alone");
 assert(sum(tab.NumCalls(lv)) == 2, "制御器 2 個に %d 回", sum(tab.NumCalls(lv)))
+
+
+%% Component get_sys without controllers is the component alone
+% Controllers=false: 入力はポートと sv_u、状態は sv_x、出力は他方のポート (制御器を含まない)
+net = network.IEEE9bus();
+gen = net.a_Bus{1}.a_Component{1};
+gen.add_local_controller("avr-ST1");
+gen.add_local_controller("pss-PSS1");
+DebugScript.helper.quiet(@() net.initialize);
+x = gen.rv_Xequilibrium;  V = [real(gen.c_Vequilibrium); imag(gen.c_Vequilibrium)];
+I = [real(gen.c_Iequilibrium); imag(gen.c_Iequilibrium)];  u = gen.rv_Uequilibrium;
+nx = numel(gen.sv_x);  nu = numel(gen.sv_u);
+[Axx, Bxv, ~, Bxu] = gen.f_JacobiDx(0, x, V, I, u);
+[Cix, Div, ~, Diu] = gen.f_JacobiI(0, x, V, I, u);
+Axx = reshape(full(Axx), nx, nx);  Bxv = reshape(full(Bxv), nx, 2);  Bxu = reshape(full(Bxu), nx, nu);
+Cix = reshape(full(Cix), 2, nx);   Div = reshape(full(Div), 2, 2);   Diu = reshape(full(Diu), 2, nu);
+E   = reshape(full(gen.f_Mass(0, x, V, I, u)), nx, nx);
+
+s = gen.get_sys(Controllers=false, Format="struct", tag=false);
+assert(isequal(s.A, Axx) && isequal(s.B, [Bxv, Bxu]) && isequal(s.C, Cix) && isequal(s.D, [Div, Diu]) && isequal(s.E, E))
+assert(isequal(s.StateName, reshape(gen.sv_x, [], 1)) && isequal(s.InputName, ["Vre";"Vim";reshape(gen.sv_u, [], 1)]) ...
+       && isequal(s.OutputName, ["Ire";"Iim"]))
+assert(isequal(gen.get_sys(x, V, I, u, Controllers=false, Format="struct", tag=false), s))   % 平衡点を与えても同じ
+
+% I2V は V2I の D の電圧の列を解いた形
+s2 = gen.get_sys(Controllers=false, Format="struct", tag=false, port="I2V");
+assert(norm(s2.A - (Axx - Bxv/Div*Cix)) < 1e-12 && norm(s2.D - [inv(Div), -Div\Diu]) < 1e-12)
+assert(isequal(s2.InputName, ["Ire";"Iim";reshape(gen.sv_u, [], 1)]) && isequal(s2.OutputName, ["Vre";"Vim"]))
+
+% 名前は tag で機器のタグを付け、ResultLIN は機器自身の変数だけを持つ
+res = gen.get_sys(Controllers=false);
+assert(isa(res, "ResultLIN") && isequal(res.A, s.A) && isequal(res.D, s.D) && res.output.l_equilibrium)
+assert(isequal(res.StateName, reshape(string(gen.attach_tag(gen.sv_x)), [], 1)))
+assert(isequal(res.rv_point, [x; V; u]) && height(res.tab_variable) == nx + 2 + nu)
+assert(all(res.tab_variable.Kind(1:nx) == "x" & res.tab_variable.Owner(1:nx) == gen.s_tag))
+assert(isequal(res.rm_Axx, s.A) && isequal(res.rm_Axv, s.B(:,1:2)) && isequal(res.rm_Bx, s.B(:,3:end)))
+
+% 制御器のない機器では get_sys と同じ
+load1 = net.a_Bus{5}.a_Component{1};
+sa = load1.get_sys(Controllers=false, Format="struct");
+sb = load1.get_sys(Format="struct");
+assert(isequal(sa.A, sb.A) && isequal(sa.B, sb.B) && isequal(sa.C, sb.C) && isequal(sa.D, sb.D) && isequal(sa.E, sb.E) ...
+       && isequal(sa.InputName, sb.InputName) && isequal(sa.OutputName, sb.OutputName))
 
 
 %% Linearize matches v3 get_sys matrices for every algorithm

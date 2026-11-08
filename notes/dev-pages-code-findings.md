@@ -53,7 +53,7 @@
 | SIM-3 | 解列(トリップ) | 機器を解列しても局所制御器の状態は残る | 仕様・コメント不一致 |
 | SIM-4 | `SolverODE.getNextPhase` | 平衡点からの再開が発電機だけ | 仕様・コメント不一致 |
 | LIN-1 | 質量行列 | シミュレーションと線形化で呼び方が違う | 整理 |
-| LIN-2 | `Component.get_sys_alone` | 線形化は `I` 依存を拒否、シミュレーションは対応 | 仕様・コメント不一致 |
+| LIN-2 | `Component.get_sys` (`linearize_alone`) | 線形化は `I` 依存を拒否、シミュレーションは対応 | 仕様・コメント不一致 |
 | DEAD-1 | `SolverODE` ほか | 使われていないコード | 整理 |
 | DBG-1 | `DebugScript.helper.build_ieee14` | コメントが実際と違う | 仕様・コメント不一致 |
 | WEB-1 | `_GUILDAdoc/images/about/*.svg` | 英語の文字だけ | 整理 |
@@ -326,7 +326,7 @@
 
 ### LIN-1 質量行列の呼び方
 
-- **対象:** `+tools/read_mass.m`、`@Component/get_sys_alone.m` 24 行、`@LocalController/get_sys_alone.m` 26 行、`@GlobalController/GlobalController.m` 184 行
+- **対象:** `+tools/read_mass.m`、`@Component/get_sys.m` のローカル関数 `linearize_alone`、`@LocalController/get_sys.m` のローカル関数 `linearize_alone`(旧 `get_sys_alone.m`)、`@GlobalController/GlobalController.m` 184 行
 - **内容:** シミュレーションは `tools.read_mass` で `f_Mass([],[],[],[],[])` を読み、定数でなければ止めます。線形化は `f_Mass(0,x,V,I,u)` を呼びます。
 - **再現・根拠:** [事実]
 - **影響:** 定数の質量行列なら同じ値です。引数に依存する質量行列は、シミュレーションでは止まり、線形化では通ります。
@@ -334,7 +334,7 @@
 
 ### LIN-2 `I` に依存するモデル
 
-- **対象:** `@Component/get_sys_alone.m` 37 行
+- **対象:** `@Component/get_sys.m` のローカル関数 `linearize_alone`(旧 `get_sys_alone.m` 37 行)
 - **内容:** 線形化は電流 `I` に依存するモデルを `GUILDA:Component:CurrentDependence` で拒否します。シミュレーションは `I` を引数に渡して対応します。
 - **再現・根拠:** [事実]
 - **影響:** シミュレーションできるモデルを線形化できません。

@@ -160,9 +160,9 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
           <path class="dg-sv-line" d="M425 330H543" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="431" y="324"><tspan style="fill:var(--dg-accent)">08</tspan> get_sys(Format="struct")</text>
           <path class="dg-sv-line" d="M545 356H663" marker-end="url(#lin-ah)"/>
-          <text class="is-sm" x="551" y="350"><tspan style="fill:var(--dg-accent)">09</tspan> get_sys_alone</text>
+          <text class="is-sm" x="551" y="350"><tspan style="fill:var(--dg-accent)">09</tspan> get_sys(x, V, I, u)</text>
           <path class="dg-sv-line" d="M545 366h26v14h-24" marker-end="url(#lin-ah)"/>
-          <text class="is-sm" x="579" y="377"><tspan style="fill:var(--dg-accent)">10</tspan> get_sys_alone + connect_blocks</text>
+          <text class="is-sm" x="579" y="377"><tspan style="fill:var(--dg-accent)">10</tspan> linearize_alone + connect_blocks</text>
           <path class="dg-sv-line" d="M300 432H793" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="306" y="428"><tspan style="fill:var(--dg-accent)">11</tspan> get_sys(Format="struct")</text>
           <path class="dg-sv-line" d="M300 470H172" marker-end="url(#lin-ah)"/>
@@ -195,8 +195,8 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
           <li><span class="lin-id">LIN-06</span> <code>SolverLIN.point_vector</code></li>
           <li class="lin-loop"><span class="lin-id">LIN-07</span> <code>SolverLIN</code> → <code>Bus.get_sys</code></li>
           <li class="lin-loop"><span class="lin-id">LIN-08</span> <code>Bus</code> → <code>Component.get_sys</code></li>
-          <li class="lin-loop"><span class="lin-id">LIN-09</span> <code>Component</code> → <code>LocalController.get_sys_alone</code></li>
-          <li class="lin-loop"><span class="lin-id">LIN-10</span> <code>Component.get_sys_alone</code>, <code>connect_blocks</code></li>
+          <li class="lin-loop"><span class="lin-id">LIN-09</span> <code>Component</code> → <code>LocalController.get_sys</code></li>
+          <li class="lin-loop"><span class="lin-id">LIN-10</span> <code>linearize_alone</code>, <code>connect_blocks</code></li>
           <li class="lin-loop"><span class="lin-id">LIN-11</span> <code>SolverLIN</code> → <code>GlobalController.get_sys</code></li>
           <li><span class="lin-id">LIN-12</span> <code>SolverLIN</code> → <code>PowerNetwork.get_admittance_matrix</code></li>
           <li><span class="lin-id">LIN-13</span> <code>SolverLIN</code>: <span lang="en">blocks</span><span lang="ja">ブロック</span>, <code>add_global_controllers</code></li>
@@ -343,10 +343,10 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         </dl>
       </li>
       <li class="fs-step lin-loop" id="LIN-09">
-        <p class="fs-head"><b class="fs-id">LIN-09</b> <span class="fs-call"><code>Component.get_sys</code> → <code>LocalController.get_sys_alone("tag", false)</code></span></p>
+        <p class="fs-head"><b class="fs-id">LIN-09</b> <span class="fs-call"><code>Component.get_sys</code> → <code>LocalController.get_sys(x, V, I, u, Format="struct", tag=false)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Model of one controller, inputs <code>[Vre; Vim; sv_u]</code>, outputs <code>sv_y</code>, from <code>f_JacobiDx</code>, <code>f_JacobiY</code> and <code>f_Mass</code> at its point.</span><span lang="ja">1 つの制御器のモデル。入力 <code>[Vre; Vim; sv_u]</code>、出力 <code>sv_y</code>。点における <code>f_JacobiDx</code>、<code>f_JacobiY</code>、<code>f_Mass</code> から作成</span></dd>
+          <dd><span lang="en">Model of one controller, inputs <code>[Vre; Vim; sv_u]</code>, outputs <code>sv_y</code>, from <code>f_JacobiDx</code>, <code>f_JacobiY</code> and <code>f_Mass</code> at its point. The point is given explicitly (the controller's equilibrium, or its values at <code>Point</code>), so the controller does not check its stale tags again.</span><span lang="ja">1 つの制御器のモデル。入力 <code>[Vre; Vim; sv_u]</code>、出力 <code>sv_y</code>。点における <code>f_JacobiDx</code>、<code>f_JacobiY</code>、<code>f_Mass</code> から作成。点は明示して渡す（制御器の平衡点、または <code>Point</code> での値）ので、制御器は stale タグを再確認しない</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>f_JacobiDx</code>, <code>f_JacobiY</code>, <code>f_Mass</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -354,14 +354,14 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         </dl>
       </li>
       <li class="fs-step lin-loop" id="LIN-10">
-        <p class="fs-head"><b class="fs-id">LIN-10</b> <span class="fs-call"><code>Component.get_sys</code> → <code>Component.get_sys_alone(x, V, I, u, controllerPorts=true)</code></span></p>
+        <p class="fs-head"><b class="fs-id">LIN-10</b> <span class="fs-call"><code>Component.get_sys</code> → <code>linearize_alone(obj, x, V, I, u, port, true)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Model of the component alone:</span><ul lang="en">
+          <dd><span lang="en">Model of the component alone (local function of <code>@Component/get_sys.m</code>; <code>comp.get_sys(Controllers=false)</code> returns it without the controller rows):</span><ul lang="en">
               <li><code>A = Axx</code>, <code>B = [Bxv, Bxu]</code>, <code>C = Cix</code>, <code>D = [Div, Diu]</code>; for the controllers, the rows <code>Cyx, [Dyv, Dyu]</code> and <code>V</code>.</li>
               <li>Empty blocks filled with zeros (<code>shape</code>).</li>
               <li>Stops when a block of <code>I</code> (<code>Bxi</code>, <code>Dii</code>, <code>Dyi</code>) is not zero.</li>
-            </ul><span lang="ja">機器単体のモデル:</span><ul lang="ja">
+            </ul><span lang="ja">機器単体のモデル（<code>@Component/get_sys.m</code> のローカル関数。<code>comp.get_sys(Controllers=false)</code> は制御器用の行を除いて返す）:</span><ul lang="ja">
               <li><code>A = Axx</code>、<code>B = [Bxv, Bxu]</code>、<code>C = Cix</code>、<code>D = [Div, Diu]</code>。制御器のために <code>Cyx, [Dyv, Dyu]</code> と <code>V</code> の行を追加</li>
               <li>空のブロックは 0 で補完 (<code>shape</code>)</li>
               <li><code>I</code> のブロック (<code>Bxi</code>、<code>Dii</code>、<code>Dyi</code>) が 0 でなければ停止</li>
@@ -545,9 +545,9 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
       </tbody>
     </table>
     <p lang="en"><code>output</code>: <code>message</code>, <code>s_issue</code> (<code>""</code>, <code>"NotFinite"</code>, <code>"SingularAvv"</code>), <code>rcond_Avv</code>, <code>r_residual</code> (largest absolute residual), <code>sv_faultBus</code>, <code>l_equilibrium</code>, <code>n_x</code>, <code>n_v</code>, <code>n_u</code>, <code>s_layer = "PowerNetwork"</code>; <code>net.get_sys</code> adds <code>result</code>.</p>
-    <p lang="en">Object-level result: <code>comp.get_sys</code>, <code>bus.get_sys</code>, <code>con.get_sys</code> and <code>gc.get_sys</code> with <code>Format="GUILDAorigin"</code> return a <code>ResultLIN</code> holding the port model of the layer in <code>A</code> … <code>OutputName</code> (and in <code>sct_model.sct_sys</code>), <code>rv_point</code>, <code>tab_variable</code> (component and bus) and the blocks that apply (<code>rm_Axx</code>, <code>rm_Axv</code>, <code>rm_Bx</code> for port <code>"V2I"</code>, <code>rm_E</code>); <code>output.s_layer</code> names the layer. With <code>Format="struct"</code> no result object is made: the solver uses this form.</p>
+    <p lang="en">Object-level result: <code>comp.get_sys</code>, <code>bus.get_sys</code>, <code>con.get_sys</code> and <code>gc.get_sys</code> with <code>Format="GUILDAorigin"</code> return a <code>ResultLIN</code> holding the port model of the layer in <code>A</code> … <code>OutputName</code> (and in <code>sct_model.sct_sys</code>), <code>rv_point</code>, <code>tab_variable</code> (component and bus) and the blocks that apply (<code>rm_Axx</code>, <code>rm_Axv</code>, <code>rm_Bx</code> for port <code>"V2I"</code>, <code>rm_E</code>); <code>output.s_layer</code> names the layer. With <code>Format="struct"</code> no result object is made: the solver uses this form. <code>comp.get_sys(Controllers=false)</code> is the component alone (inputs: the port and <code>sv_u</code>; states <code>sv_x</code>; outputs: the other port), with <code>tab_variable</code> holding the rows of the component itself. <code>comp.get_sys</code> and <code>con.get_sys</code> check the stale tags only at the default point (no <code>x</code>, <code>V</code>, <code>I</code>, <code>u</code> and, for the component, no <code>Point</code>); at a given point they use the current handles.</p>
     <p lang="ja"><code>output</code> のフィールド: <code>message</code>、<code>s_issue</code> (<code>""</code>、<code>"NotFinite"</code>、<code>"SingularAvv"</code>)、<code>rcond_Avv</code>、<code>r_residual</code> (残差の絶対値の最大)、<code>sv_faultBus</code>、<code>l_equilibrium</code>、<code>n_x</code>、<code>n_v</code>、<code>n_u</code>、<code>s_layer = "PowerNetwork"</code>。<code>net.get_sys</code> が <code>result</code> を追加。</p>
-    <p lang="ja">層の結果: <code>comp.get_sys</code>、<code>bus.get_sys</code>、<code>con.get_sys</code>、<code>gc.get_sys</code> は <code>Format="GUILDAorigin"</code> のとき、層のポートのモデルを <code>A</code> … <code>OutputName</code> (と <code>sct_model.sct_sys</code>) に持つ <code>ResultLIN</code> を返却。<code>rv_point</code>、<code>tab_variable</code> (機器と母線)、該当するブロック (ポート <code>"V2I"</code> の <code>rm_Axx</code>、<code>rm_Axv</code>、<code>rm_Bx</code>、および <code>rm_E</code>) も保持。<code>output.s_layer</code> が層を表す。<code>Format="struct"</code> では結果オブジェクトを作らない (ソルバーが使う形)。</p>
+    <p lang="ja">層の結果: <code>comp.get_sys</code>、<code>bus.get_sys</code>、<code>con.get_sys</code>、<code>gc.get_sys</code> は <code>Format="GUILDAorigin"</code> のとき、層のポートのモデルを <code>A</code> … <code>OutputName</code> (と <code>sct_model.sct_sys</code>) に持つ <code>ResultLIN</code> を返却。<code>rv_point</code>、<code>tab_variable</code> (機器と母線)、該当するブロック (ポート <code>"V2I"</code> の <code>rm_Axx</code>、<code>rm_Axv</code>、<code>rm_Bx</code>、および <code>rm_E</code>) も保持。<code>output.s_layer</code> が層を表す。<code>Format="struct"</code> では結果オブジェクトを作らない (ソルバーが使う形)。<code>comp.get_sys(Controllers=false)</code> は機器単体 (入力: ポートと <code>sv_u</code>、状態 <code>sv_x</code>、出力: 他方のポート) で、<code>tab_variable</code> は機器自身の行。<code>comp.get_sys</code> と <code>con.get_sys</code> が stale タグを確認するのは既定の点 (<code>x</code>、<code>V</code>、<code>I</code>、<code>u</code> なし、機器では <code>Point</code> もなし) のときだけ。与えた点では今のハンドルを使用。</p>
 
     <h3><span lang="en">Models of <code>get_ss</code></span><span lang="ja"><code>get_ss</code> のモデル</span></h3>
     <ul lang="en">
@@ -630,7 +630,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
       <thead><tr><th><span lang="en">Model</span><span lang="ja">モデル</span></th><th><span lang="en">Used by the linearization</span><span lang="ja">近似線形化が使うもの</span></th></tr></thead>
       <tbody>
         <tr><td><code>Component</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_I</code>, <code>Jacobi_Y</code> returning <code>[∂/∂x, ∂/∂V, ∂/∂I, ∂/∂u]</code> (numerical differentiation without them); the blocks of <code>I</code> must be zero. <code>fcn_Mass</code> is <code>E</code>. <code>fcn_dx</code> and <code>fcn_I</code> give the residual (LIN-14). <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code> name the states, inputs and outputs; an output with a state's name becomes <code>Y_&lt;name&gt;</code>.</span><span lang="ja"><code>[∂/∂x, ∂/∂V, ∂/∂I, ∂/∂u]</code> を返す <code>Jacobi_dx</code>、<code>Jacobi_I</code>、<code>Jacobi_Y</code> (なければ数値微分)。<code>I</code> のブロックは 0 が必須。<code>fcn_Mass</code> が <code>E</code>。<code>fcn_dx</code> と <code>fcn_I</code> は残差に使用 (LIN-14)。<code>sv_x</code>、<code>sv_u</code>、<code>sv_y</code>: 状態・入力・出力の名前。状態と同名の出力は <code>Y_&lt;name&gt;</code></span></td></tr>
-        <tr><td><code>LocalController</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code>, <code>fcn_Mass</code>; connected to the component by the names of <code>sv_u</code> and <code>sv_y</code>, as in the simulation. A controller that keeps its own model (such as <code>controller.local_LQR</code>) can call <code>Component.get_sys_alone</code>.</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code>、<code>fcn_Mass</code>。シミュレーションと同じく <code>sv_u</code> と <code>sv_y</code> の名前で機器に接続。独自のモデルを持つ制御器 (<code>controller.local_LQR</code> など) は <code>Component.get_sys_alone</code> を呼び出し可能</span></td></tr>
+        <tr><td><code>LocalController</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code>, <code>fcn_Mass</code>; connected to the component by the names of <code>sv_u</code> and <code>sv_y</code>, as in the simulation. A controller that keeps its own model (such as <code>controller.local_LQR</code>) can call <code>comp.get_sys(x, V, I, u, Controllers=false, Format="struct")</code>, which does not check the stale tags at an explicit point.</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code>、<code>fcn_Mass</code>。シミュレーションと同じく <code>sv_u</code> と <code>sv_y</code> の名前で機器に接続。独自のモデルを持つ制御器 (<code>controller.local_LQR</code> など) は <code>comp.get_sys(x, V, I, u, Controllers=false, Format="struct")</code> を呼び出し可能。明示した点では stale タグを確認しない</span></td></tr>
         <tr><td><code>GlobalController</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code> (only the <code>u</code> columns are used), <code>fcn_Mass</code>; every controlled unit has the states <code>sv_u</code> and the inputs <code>sv_y</code>.</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code> (<code>u</code> の列だけを使う)、<code>fcn_Mass</code>。すべての制御対象が状態 <code>sv_u</code> と入力 <code>sv_y</code> を保持</span></td></tr>
         <tr><td><span lang="en">New reduced form</span><span lang="ja">新しい縮約形</span></td><td><span lang="en">Add a case to <code>ResultLIN.get_ss</code> and to the <code>Algorithm</code> validators of <code>SolverLIN</code>; build it from <code>rm_*</code> and <code>sct_model</code> so that no new linearization is needed.</span><span lang="ja"><code>ResultLIN.get_ss</code> と <code>SolverLIN</code> の <code>Algorithm</code> の検査に場合を追加。新たな線形化が不要なよう、<code>rm_*</code> と <code>sct_model</code> から構築</span></td></tr>
       </tbody>
