@@ -5,8 +5,9 @@ function s_id = msg_id(x, id)
 %   s_id = DebugScript.helper.msg_id()          % lastwarn の警告
 %   s_id = DebugScript.helper.msg_id(str, id)   % 文章と identifier
 %
-% error(msg(...)) / warning(msg(...)) には identifier が付かないので、文章が
-% SystemTools/GUILDA/en/*.xml のどの entry から作られたかで判定する。プレースホルダは任意の
+% error(msg(...)) には identifier が付かないので、文章が
+% SystemTools/GUILDA/en/*.xml のどの entry から作られたかで判定する (show_msg の警告は ID を
+% identifier に持つ)。プレースホルダは任意の
 % 文字列に一致する。identifier があるとき (MATLAB 自身、テスト、MException) はそれを返し、
 % どの entry にも一致しないときは空を返す。ME.identifier と同じく char を返す。
 

@@ -418,6 +418,20 @@ sys = net.get_sys();                  % linearized model</code></pre>
 <pre><code>&gt;&gt; GUILDA.setting();</code></pre>
       <img src="./images/setting_startup.png" data-alt-ja="GUILDA の環境設定" alt="GUILDA Environment Settings" class="gs-settings-img">
 
+      <h3 id="gs-messages"><span lang="en">Warnings and INFO Messages</span><span lang="ja">警告と INFO メッセージ</span></h3>
+      <p lang="en">The <code>Message</code> category of <code>GUILDA.setting()</code> shows or hides the messages of GUILDA. Errors are always shown.</p>
+      <p lang="ja"><code>GUILDA.setting()</code> の <code>Message</code> カテゴリで、GUILDA のメッセージの表示・非表示を切り替え。エラーは常に表示。</p>
+      <table>
+        <thead><tr><th><span lang="en">Setting</span><span lang="ja">設定</span></th><th><span lang="en">Default</span><span lang="ja">既定値</span></th><th><span lang="en">Shows</span><span lang="ja">表示するもの</span></th></tr></thead>
+        <tbody>
+          <tr><td><code>ShowWarning</code></td><td><code>true</code></td><td><span lang="en">The warnings of GUILDA (identifier <code>GUILDA:&lt;Object&gt;:&lt;Key&gt;</code>)</span><span lang="ja">GUILDA の警告（識別子 <code>GUILDA:&lt;Object&gt;:&lt;Key&gt;</code>）</span></td></tr>
+          <tr><td><code>ShowInfo</code></td><td><code>true</code></td><td><span lang="en">The lines that start with <code>INFO:</code>, e.g. the automatic choice of the slack bus</span><span lang="ja"><code>INFO:</code> で始まる行（例: スラック母線の自動選択）</span></td></tr>
+        </tbody>
+      </table>
+      <p lang="en">The warnings of MATLAB itself (e.g. of <code>ode15s</code>) do not follow these settings; turn them off with <code>warning</code>. A single GUILDA warning can also be turned off by its identifier, which <code>[~, id] = lastwarn</code> returns:</p>
+      <p lang="ja">MATLAB 自体の警告（例: <code>ode15s</code> の警告）はこの設定の対象外。<code>warning</code> で切り替え。GUILDA の個々の警告も識別子で無効化可能。識別子は <code>[~, id] = lastwarn</code> で取得:</p>
+<pre><code>&gt;&gt; warning("off", "GUILDA:Component:GeneratorQIgnored")</code></pre>
+
       <h3 id="gs-utility"><span lang="en">Utility Functions</span><span lang="ja">ユーティリティ関数</span></h3>
 <pre><code>&gt;&gt; GUILDA.pwd()         % Get the GUILDA repository path
 &gt;&gt; GUILDA.rmpath()      % Remove GUILDA folders from the MATLAB path

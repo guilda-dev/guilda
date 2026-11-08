@@ -89,7 +89,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
     [result, flag, output] = obj.solver_ODE.solve(obj, time, c_events, sct_options);
 
     if flag ~= 1
-        warning(msg("GUILDA:PowerNetwork:SimulationIncomplete", string(flag), output.message));
+        show_msg("warning", "GUILDA:PowerNetwork:SimulationIncomplete", string(flag), output.message);
     end
 
     if sct_options.Plot

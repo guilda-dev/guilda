@@ -81,7 +81,7 @@ classdef GUILDA < handle
                 if has_desktop
                     obj.tutorial;
                 else
-                    disp("INFO: no MATLAB desktop, skipped opening the tutorial (>> GUILDA.tutorial)")
+                    show_msg("info", "GUILDA:GUILDA:NoDesktopTutorial")
                 end
             end
    

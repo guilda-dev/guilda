@@ -102,8 +102,8 @@ function [tab_phase, c_dist] = phase_table(c_dist, time)
             if ts(1) == ts(2)
                 ts = ts(1);
             end
-            warning(msg("GUILDA:Scenario:OutsideTimeSpan", char(c_dist{k}.Tag), char(c_dist{k}.Scenario), ...
-                    mat2str(ts), mat2str(time([1,end]).')));
+            show_msg("warning", "GUILDA:Scenario:OutsideTimeSpan", char(c_dist{k}.Tag), char(c_dist{k}.Scenario), ...
+                    mat2str(ts), mat2str(time([1,end]).'));
         end
     end
 

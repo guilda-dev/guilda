@@ -61,6 +61,6 @@ function [xi,iteration,flag,rm_history] = solve(obj)
     flag = isConvergence;
 
     if nargout < 3 && iteration >= MaxIt
-        warning(msg("GUILDA:MethodNewtonRaphson:MaxIteration"))
+        show_msg("warning", "GUILDA:MethodNewtonRaphson:MaxIteration")
     end
 end

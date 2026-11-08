@@ -1,0 +1,12 @@
+{
+    "ShowWarning":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Show the warnings of GUILDA"
+    },
+    "ShowInfo":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Show the INFO messages of GUILDA"
+    }
+}

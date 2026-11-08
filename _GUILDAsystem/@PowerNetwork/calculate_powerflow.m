@@ -49,7 +49,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
     lv_isSlack = tools.vcellfun(@(b) b.l_isSlack, obj.a_Bus);
     if ~any(lv_isSlack)
         bus = select_slack_bus(obj);
-        disp("INFO: Slack bus not found. Setting the bus '"+string(bus)+"' as the slack bus.")
+        show_msg("info", "GUILDA:PowerNetwork:SlackSelected", string(bus))
         bus.l_isSlack = true;
     end
 

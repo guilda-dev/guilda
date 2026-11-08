@@ -88,7 +88,7 @@ function con = add_local_controller(obj, Key, opt)
                 new_con.log_edit("attached to " + obj.s_tag, "Topology");
                 obj.log_edit(obj.s_tag+" <<-Add--- "+new_con.s_tag, "Topology");
             else
-                warning(msg("GUILDA:Component:ReplaceController", label(new_con), char(new_con.s_tag), char(old_avr.s_tag), char(obj.s_tag)))
+                show_msg("warning", "GUILDA:Component:ReplaceController", label(new_con), char(new_con.s_tag), char(old_avr.s_tag), char(obj.s_tag))
                 a_pss = old_avr.a_LocalController;
                 old_avr.remove_local_controller();
                 old_avr.a_Component = [];
@@ -115,7 +115,7 @@ function con = add_local_controller(obj, Key, opt)
             if isempty(old_gov)
                 obj.log_edit(obj.s_tag+" <<-Add--- "+new_con.s_tag, "Topology");
             else
-                warning(msg("GUILDA:Component:ReplaceController", label(new_con), char(new_con.s_tag), char(old_gov.s_tag), char(obj.s_tag)))
+                show_msg("warning", "GUILDA:Component:ReplaceController", label(new_con), char(new_con.s_tag), char(old_gov.s_tag), char(obj.s_tag))
                 old_gov.a_Component = [];
                 obj.log_edit(obj.s_tag+" <<-replace--- "+new_con.s_tag+" (was "+old_gov.s_tag+")", "Topology");
             end
@@ -135,7 +135,7 @@ function con = add_local_controller(obj, Key, opt)
                 obj.log_edit(obj.s_tag+" <<-Add--- "+new_con.s_tag, "Topology");
             else
                 old_pss = avr.a_LocalController{1};
-                warning(msg("GUILDA:Component:ReplaceController", "PSS", char(new_con.s_tag), char(old_pss.s_tag), char(avr.s_tag)))
+                show_msg("warning", "GUILDA:Component:ReplaceController", "PSS", char(new_con.s_tag), char(old_pss.s_tag), char(avr.s_tag))
                 old_pss.a_Component = [];
                 obj.log_edit(obj.s_tag+" <<-replace--- "+new_con.s_tag+" (was "+old_pss.s_tag+")", "Topology");
             end

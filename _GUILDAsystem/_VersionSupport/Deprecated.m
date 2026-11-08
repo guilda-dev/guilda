@@ -35,6 +35,6 @@ function Deprecated(key, varargin)
     args = cellfun(@(a) char(string(a)), varargin, "UniformOutput", false);
     if ~any(sv_shown == id)
         sv_shown(end+1,1) = id;
-        warning(msg(id, args{:}));
+        show_msg("warning", id, args{:});
     end
 end

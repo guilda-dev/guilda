@@ -237,6 +237,6 @@ function rm_cost = gen_costs(rm_gc, n_gen, base)
         rm_cost(k, j:j+1) = [rv_c(1)*base^2, rv_c(2)*base];
     end
     if l_const
-        warning(msg("GUILDA:import_matpower:ConstantCost"));
+        show_msg("warning", "GUILDA:import_matpower:ConstantCost");
     end
 end

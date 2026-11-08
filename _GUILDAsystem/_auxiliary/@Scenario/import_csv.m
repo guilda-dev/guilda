@@ -60,7 +60,7 @@ function c_scenario = import_csv(path, opt)
     end
     sv_unknown = setdiff(sv_in, sr_col, "stable");
     if ~isempty(sv_unknown)
-        warning(msg("GUILDA:Scenario:CsvUnknownColumn", char(path), char(join(sv_unknown, ", "))));
+        show_msg("warning", "GUILDA:Scenario:CsvUnknownColumn", char(path), char(join(sv_unknown, ", ")));
     end
     n_row = height(tab);
     for s_col = sr_col

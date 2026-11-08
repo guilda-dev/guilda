@@ -57,7 +57,7 @@ classdef abstract < Component
             tp  = obj.tab_parameter;
             r_Q = tp.powerflow.Q;
             if ~isnan(r_Q) && r_Q ~= 0
-                obj.parameter_error("GeneratorQIgnored", char(obj.s_tag), char(string(r_Q)))
+                show_msg("warning", "GUILDA:Component:GeneratorQIgnored", char(obj.s_tag), char(string(r_Q)))
             end
             obj.tab_parameter.powerflow.Q = nan;
             
@@ -72,8 +72,8 @@ classdef abstract < Component
                     sv_name = ["NGT2";"NGT6";"NGT8"];
                     s_name = string(parameter);
                     if ~isscalar(s_name) || ~ismember(s_name, sv_name)
-                        obj.parameter_error("UnknownParameter", char(strjoin(s_name(:)', ", ")), ...
-                                            char(obj.s_tag), char(strjoin(sv_name', ", ")))
+                        error(msg("GUILDA:Component:UnknownParameter", char(strjoin(s_name(:)', ", ")), ...
+                              char(obj.s_tag), char(strjoin(sv_name', ", "))))
                     end
                     mp = dataset(s_name==sv_name,:);
                 else
@@ -83,8 +83,8 @@ classdef abstract < Component
 
             sv_miss = setdiff(string(obj.sv_para), string(mp.Properties.VariableNames), "stable");
             if ~isempty(sv_miss)
-                obj.parameter_error("MissingParameter", char(strjoin(sv_miss(:)', ", ")), ...
-                                    char(obj.s_tag), char(s_source))
+                error(msg("GUILDA:Component:MissingParameter", char(strjoin(sv_miss(:)', ", ")), ...
+                          char(obj.s_tag), char(s_source)))
             end
             mp = mp(:,obj.sv_para);
             

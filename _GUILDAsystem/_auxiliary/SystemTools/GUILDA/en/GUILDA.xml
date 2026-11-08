@@ -1,0 +1,6 @@
+<!--This is an XML file containing messages related to the class "GUILDA".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NoDesktopTutorial">no MATLAB desktop, skipped opening the tutorial (&gt;&gt; GUILDA.tutorial)</entry>
+    </message>
+</rsccat>

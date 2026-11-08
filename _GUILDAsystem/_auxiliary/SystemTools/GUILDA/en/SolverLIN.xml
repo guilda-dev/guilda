@@ -11,5 +11,6 @@
         <entry key="JacobianNotFinite">The Jacobian of {0} is not finite at the point, so it cannot be linearized there. Check the voltage and states of the point.</entry>
         <entry key="GlobalControllerPort">The ports of the global controller ''{0}'' are not found in the linearized system.</entry>
         <entry key="Stale">net.linearize / net.get_sys stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
+        <entry key="GroundFault">The voltage of {0} is zero at the point, as in a ground fault: the admittance matrix does not include the fault, and get_ss("DAE") needs Coordinate="Vre&amp;Vim" there.</entry>
     </message>
 </rsccat>

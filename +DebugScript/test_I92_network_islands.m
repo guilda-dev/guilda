@@ -141,7 +141,8 @@ assert(s_id == "" && res.l_success)
 net = connected_network();
 net.add_bus();
 [s_id, ~, res] = warning_of(@() net.calculate_powerflow);
-assert(s_id == "" && ~res.l_success)
+% 収束しない警告 (SolverPF:NotConverged) だけで、島の警告はない
+assert(s_id == "GUILDA:SolverPF:NotConverged" && ~res.l_success, s_id)
 
 
 %% The built-in networks do not warn

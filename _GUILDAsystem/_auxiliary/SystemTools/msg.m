@@ -5,7 +5,8 @@ function txt = msg(ID, varargin)
 % placeholders {0}, {1}, ... replaced by the additional inputs.
 %
 % The caller must be the object named in the ID (a function in @Class/private counts as
-% Class); otherwise msg stops with an error.
+% Class) or a method of a subclass of that class; otherwise msg stops with an error. When
+% show_msg calls msg, the caller is the function that called show_msg.
 %
 % <@Examples>
 % Inside a method of ResultCPF:
@@ -37,15 +38,21 @@ function txt = msg(ID, varargin)
     
     ST      = dbstack("-completenames");
     splitST = arrayfun(@(s) strsplit(s.file,filesep), ST, 'UniformOutput', false);
+    % show_msg passes the message on: the caller is the function that called show_msg.
+    i_caller = 2;
+    while i_caller < numel(splitST) && isequal(splitST{i_caller}{end}, 'show_msg.m')
+        i_caller = i_caller + 1;
+    end
+    c_path = splitST{i_caller};
     % A function in @Class/private belongs to Class.
-    s_folder = splitST{2}{end-1};
-    if strcmp(s_folder,'private') && startsWith(splitST{2}{end-2},'@')
-        s_folder = splitST{2}{end-2};
+    s_folder = c_path{end-1};
+    if strcmp(s_folder,'private') && startsWith(c_path{end-2},'@')
+        s_folder = c_path{end-2};
     end
 
     if ~isequal(msg{2},replace(s_folder,'@','')) || ~isequal(msg{1},'GUILDA')
         mfile = append(msg{2}, '.m');
-        if ~isequal(mfile, splitST{2}{end})
+        if ~isequal(mfile, c_path{end}) && ~(isequal(msg{1},'GUILDA') && is_subclass(c_path, msg{2}))
             error("The ID specification is invalid.")
         end
     end    
@@ -78,6 +85,27 @@ function txt = msg(ID, varargin)
             error("There are " + num2str(en) + " more arguments than specified.")
         end
     end
+end
+
+function l_sub = is_subclass(c_path, s_class)
+    % True when the class of the file at c_path (split into folders) is a subclass of s_class.
+    % The class is @Class (with the +package folders before it) or, outside an @ folder, the
+    % classdef file itself.
+    i_at = find(startsWith(c_path(1:end-1), '@'), 1, 'last');
+    if isempty(i_at)
+        i_end   = numel(c_path);
+        s_name  = regexprep(c_path{end}, '\.m$', '');
+    else
+        i_end   = i_at;
+        s_name  = c_path{i_at}(2:end);
+    end
+    i_pkg = i_end - 1;
+    while i_pkg >= 1 && startsWith(c_path{i_pkg}, '+')
+        s_name = [c_path{i_pkg}(2:end), '.', s_name]; %#ok<AGROW>
+        i_pkg  = i_pkg - 1;
+    end
+    mc    = meta.class.fromName(s_name);
+    l_sub = ~isempty(mc) && ismember(s_class, superclasses(s_name));
 end
 
 function txt = format_message(message, args)
