@@ -202,7 +202,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
             net = obj.a_Bus.a_PowerNetwork;
         end
         result = ResultLIN(net, "", struct("Port", opt.port, "Point", {opt.Point}), true, sct_output, t0, ...
-                           tab, rv_point, sct_block, struct("sct_sys", sct_sys), zeros(0,1));
+                           tab, rv_point, sct_block, struct("sct_sys", sct_sys));
     end
 
     function [SYS, sysCON] = connect_states(SYS, sysCON, a_LC)

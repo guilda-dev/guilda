@@ -97,7 +97,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         sct_output = struct("message", "Linearized the global controller " + obj.s_tag + ".", ...
                             "s_issue", "", "l_equilibrium", l_eq, "s_layer", "GlobalController");
         sys = ResultLIN(obj.a_PowerNetwork, "", struct(), true, sct_output, t0, ...
-                        table(), [x; u], sct_block, struct("sct_sys", sys), zeros(0,1));
+                        table(), [x; u], sct_block, struct("sct_sys", sys));
         if opt.Format == "ss"
             sys = sys.get_ss(Format="ss");
         end

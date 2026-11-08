@@ -201,7 +201,7 @@ function tab = test_levels()
     "test_F7_linearization/PointThatIsNotFiniteNamesTheVariables", "medium"
     "test_F7_linearization/PointAroundATrip", "medium"
     "test_F7_linearization/PointInsideAFaultIsReportedAndKeepsTheModelNetwork", "medium"
-    "test_F7_linearization/ResidualAtThePoint", "medium"
+    "test_F7_linearization/MessageTellsTheEquilibriumFromAGivenPoint", "medium"
     "test_F7_linearization/PlotDrawsTheAlgorithmOfTheOptions", "medium"
     "test_F7_linearization/ConfigurationsThatCannotBeLinearizedStopWithAGUILDAError", "medium"
     "test_F7_linearization/CoordinateIsAnOptionOfLinearizeAndGet_sys", "medium"

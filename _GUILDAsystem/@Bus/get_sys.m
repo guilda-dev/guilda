@@ -172,5 +172,5 @@ function result = object_result(obj, sct_sys, opt, rv_point, l_eq, t0)
         sct_output.message = "Linearized the bus " + obj.s_tag + " at the given point.";
     end
     result = ResultLIN(obj.a_PowerNetwork, "", struct("Port", opt.port, "Point", {opt.Point}), true, sct_output, t0, ...
-                       tab, rv_point, sct_block, struct("sct_sys", sct_sys), zeros(0,1));
+                       tab, rv_point, sct_block, struct("sct_sys", sct_sys));
 end
