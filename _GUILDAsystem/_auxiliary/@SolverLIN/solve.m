@@ -159,10 +159,9 @@ function [result, flag, output] = solve(obj, net, sct_options)
     output.sv_faultBus = reshape(string(tools.vcellfun(@(b) string(b.s_tag), a_bus)), [], 1);
     output.sv_faultBus = output.sv_faultBus(abs(cv_V) < r_voltageMin);
     if ~isempty(output.sv_faultBus)
-        s_fault = sprintf("The voltage of %s is zero at the point, as in a ground fault: the admittance matrix does not include the fault, and get_ss(""DAE"") needs Coordinate=""Vre&Vim"" there.", ...
-                            list_labels(output.sv_faultBus));
-        output.message = output.message + " " + s_fault;
-        disp("INFO: " + s_fault)
+        s_list  = char(list_labels(output.sv_faultBus));
+        output.message = output.message + " " + msg("GUILDA:SolverLIN:GroundFault", s_list);
+        show_msg("info", "GUILDA:SolverLIN:GroundFault", s_list)
     end
     output.l_equilibrium = l_eq;
     output.s_layer = "PowerNetwork";

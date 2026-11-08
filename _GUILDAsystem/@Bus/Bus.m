@@ -172,9 +172,9 @@ classdef Bus < PowerSystemModel
                 else
                     % the component that takes the remaining P (Bus.set_equilibrium)
                     i_rest = find(cellfun(@(c) isnan(c.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", c.a_Parameter)}.tab_parameter.Q), a_com), 1);
-                    disp(msg('GUILDA:Bus:SetSlack' ,string(obj),string(a_com{max([i_rest,1])})))
+                    show_msg("info", "GUILDA:Bus:SetSlack", string(obj), string(a_com{max([i_rest,1])}))
                     if isempty(i_rest)
-                        warning(msg("GUILDA:Bus:SlackWithoutQnan", string(obj), string(a_com{1})))
+                        show_msg("warning", "GUILDA:Bus:SlackWithoutQnan", string(obj), string(a_com{1}))
                     end
                 end
             end

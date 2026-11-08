@@ -44,10 +44,10 @@ function path = export_csv(path, scenarios, opt)
     for i = 1:numel(scenarios)
         sc = scenarios{i};
         if ~isempty(fieldnames(sc.Options))
-            warning(msg("GUILDA:Scenario:CsvNotSaved", char(sc.s_tag), "Options"));
+            show_msg("warning", "GUILDA:Scenario:CsvNotSaved", char(sc.s_tag), "Options");
         end
         if ~strcmp(func2str(sc.Judge), "Scenario.out_of_step")
-            warning(msg("GUILDA:Scenario:CsvNotSaved", char(sc.s_tag), "Judge"));
+            show_msg("warning", "GUILDA:Scenario:CsvNotSaved", char(sc.s_tag), "Judge");
         end
         rv_head = [sc.s_tag, sc.Description, strings(1,2)];
         if ~isempty(sc.Time)

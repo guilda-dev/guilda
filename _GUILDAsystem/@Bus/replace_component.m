@@ -92,7 +92,7 @@ function comp = replace_component(obj, s_tag, Key, parameter, opt)
             % After the placeholder equilibrium, on which a controller must not be designed
             comp_pre.move_local_controllers(comp);
         else
-            warning(msg("GUILDA:Bus:ControllersDropped", tag_list(a_con), char(comp_pre.s_tag), char(comp.s_tag)))
+            show_msg("warning", "GUILDA:Bus:ControllersDropped", tag_list(a_con), char(comp_pre.s_tag), char(comp.s_tag))
         end
     end
     comp_pre.a_Bus = [];    % the replaced component no longer reads this bus

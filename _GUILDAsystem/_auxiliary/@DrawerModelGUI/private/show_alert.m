@@ -13,6 +13,6 @@ function show_alert(h, s_message, s_title)
     if h_fig.Visible
         uialert(h_fig, s_message, s_title);
     else
-        warning(msg("GUILDA:DrawerModelGUI:HiddenAlert", s_title, s_message))
+        show_msg("warning", "GUILDA:DrawerModelGUI:HiddenAlert", s_title, s_message)
     end
 end

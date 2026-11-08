@@ -41,7 +41,7 @@ function [result,flag,output] = solve(obj, net, sct_options)
     % Notify
     if flag<=0
         switch sct_options.WhenFailed
-        case "WARN" ; warning(msg("GUILDA:SolverPF:NotConverged", output.message))
+        case "WARN" ; show_msg("warning", "GUILDA:SolverPF:NotConverged", output.message)
         case "ERROR"; error(msg("GUILDA:SolverPF:NotConverged", output.message))
         case "DISP" ; disp(output.message)
         end

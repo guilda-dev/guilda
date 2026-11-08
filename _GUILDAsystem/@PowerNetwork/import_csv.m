@@ -213,7 +213,7 @@ function c_Comp = read_components(path, n_Bus, sr_CompOPF)
     s_CompPath   = fullfile(path, "component");
     c_Comp       = {};
     if ~isfolder(s_CompPath)
-        warning(msg("GUILDA:import_csv:NoComponentFolder", s_CompPath));
+        show_msg("warning", "GUILDA:import_csv:NoComponentFolder", s_CompPath);
         return
     end
     sct_CompDir = dir(s_CompPath);
@@ -351,7 +351,7 @@ function optional_cols = check_cols(tab, required_cols, optional_cols, relpath, 
         if ~isempty(tab.Properties.VariableDescriptions)
             sr_written = string(tab.Properties.VariableDescriptions);
         end
-        warning(msg("GUILDA:import_csv:UnknownColumn", relpath, strjoin(sr_written(lv_unknown), ", "), strjoin(known, ", ")));
+        show_msg("warning", "GUILDA:import_csv:UnknownColumn", relpath, strjoin(sr_written(lv_unknown), ", "), strjoin(known, ", "));
     end
     if ~isempty(optional_cols)
         optional_cols = optional_cols(ismember(optional_cols, names));

@@ -18,7 +18,7 @@ function set_odefcn(obj)
         catch ME
             % K stays for the old frequency: the equilibrium is stale, so the analyses ask
             % for net.initialize, which designs K again in get_equilibrium
-            warning(msg("GUILDA:local_LQR:RedesignFailed", obj.s_tag, sprintf("%g", omega0), ME.message))
+            show_msg("warning", "GUILDA:local_LQR:RedesignFailed", obj.s_tag, sprintf("%g", omega0), ME.message)
             obj.sct_stale.equilibrium(end+1,1) = obj.s_tag + ": redesign failed at " + omega0 + " Hz";
         end
     end

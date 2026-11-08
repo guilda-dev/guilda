@@ -105,9 +105,9 @@ function warn_controllers_not_saved(net, a_Comp)
     if isempty(sv_local) && isempty(sv_global)
         return
     end
-    warning(msg("GUILDA:PowerNetwork:ControllersNotSaved", char(net.s_tag), ...
+    show_msg("warning", "GUILDA:PowerNetwork:ControllersNotSaved", char(net.s_tag), ...
                 char(string(numel(sv_local))), char(tag_list(sv_local)), ...
-                char(string(numel(sv_global))), char(tag_list(sv_global))))
+                char(string(numel(sv_global))), char(tag_list(sv_global)))
 end
 
 function sv_path = local_controller_paths(layer)

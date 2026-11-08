@@ -85,7 +85,7 @@ function sct_ctx = build_context(sct_scan, s_root)
         s_name = sct_classes(i_class).Name;
         meta_class = meta.class.fromName(s_name);
         if isempty(meta_class)
-            warning(msg("GUILDA:collect_call_graph:NoClass", s_name));
+            show_msg("warning", "GUILDA:collect_call_graph:NoClass", s_name);
             continue
         end
         sct_info = read_members(s_name, meta_class, cell_guilda);
@@ -237,7 +237,7 @@ function sct_found = read_file_units(s_file, s_class, s_classdef_file, sct_ctx, 
         'Scope', {}, 'Calls', {}, 'ArgTypes', {}, 'Env', {});
     T = mtree(s_file, '-file');
     if T.count == 0 || any(strcmp(T.kinds, 'ERR'))
-        warning(msg("GUILDA:collect_call_graph:ParseFailed", s_file));
+        show_msg("warning", "GUILDA:collect_call_graph:ParseFailed", s_file);
         return
     end
     sct_info = sct_ctx.info(s_class);

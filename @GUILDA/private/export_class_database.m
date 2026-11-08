@@ -241,7 +241,7 @@ function sct_summary = export_class_database(sct_scan, option)
     cell_class_info = cellfun(@normalize_references, cell_class_info, 'UniformOutput', false);
     cell_class_info = sync_images(cell_class_info, sct_scan, s_db_path);
     if isempty(cell_class_info)
-        warning(msg("GUILDA:export_class_database:NoClassExported"));
+        show_msg("warning", "GUILDA:export_class_database:NoClassExported");
     end
 
     sct_coverage = struct('Classes', [0 0], 'Properties', [0 0], 'Methods', [0 0]);
@@ -320,7 +320,7 @@ function write_call_graph(sct_scan, s_file_name)
         write_text_file(s_file_name, sprintf('window.GUILDA_DOC_CALLGRAPH = %s;\n', s_json));
         fprintf("  Call graph: %d edges between %d members.\n", numel(sct_graph.Edges), numel(sct_graph.Nodes));
     catch ME
-        warning(msg("GUILDA:export_class_database:CallGraphFailed", ME.message));
+        show_msg("warning", "GUILDA:export_class_database:CallGraphFailed", ME.message);
     end
 end
 
@@ -497,7 +497,7 @@ function cell_class_info = sync_images(cell_class_info, sct_scan, s_db_path)
         end
         [bln_ok, s_message] = copyfile(sct_images(i_image).Path, s_target, 'f');
         if ~bln_ok
-            warning(msg("GUILDA:export_class_database:ImageCopyFailed", sct_images(i_image).Path, s_message));
+            show_msg("warning", "GUILDA:export_class_database:ImageCopyFailed", sct_images(i_image).Path, s_message);
             continue
         end
         map_image(s_class) = ['./database/', s_rel];

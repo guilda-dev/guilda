@@ -146,12 +146,12 @@ function [result, flag, output] = initialize(obj, varargin)
     obj.sct_stale.odefcn    = strings(0,1);
 
     if s_residual ~= ""
-        warning(msg("GUILDA:PowerNetwork:EquilibriumResidual", char(string(equilibrium_tolerance())), char(s_residual)))
+        show_msg("warning", "GUILDA:PowerNetwork:EquilibriumResidual", char(string(equilibrium_tolerance())), char(s_residual))
     end
 
     [n_island, s_island] = network_islands(obj);
     if n_island > 1
-        warning(msg("GUILDA:PowerNetwork:NetworkIsland", string(obj), char(string(n_island)), char(s_island)))
+        show_msg("warning", "GUILDA:PowerNetwork:NetworkIsland", string(obj), char(string(n_island)), char(s_island))
     end
 end
 
