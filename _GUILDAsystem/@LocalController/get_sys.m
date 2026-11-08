@@ -13,9 +13,10 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % empty); "struct" returns a struct with the same eight fields; "ss" returns a
 % descriptor state-space model (dss) and needs the Control System Toolbox.
 %
-% A controller on a network stops with the error GUILDA:LocalController:Stale
-% when net.initialize() is needed (a stale tag of the network or the controller); a controller without a network builds its stale
-% handles first.
+% At the default point (x, V, I, u all omitted), a controller on a network stops with the
+% error GUILDA:LocalController:Stale when net.initialize() is needed (a stale tag of the
+% network or the controller). A call with x, V, I, u does not check the stale tags (as
+% in Component.get_sys). A controller without a network builds its stale handles first.
 %
 % See also Component.get_sys
 %
@@ -42,7 +43,8 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     while isa(owner, "LocalController")   % a controller may be attached under another one
         owner = owner.a_Component;
     end
-    if ~isempty(owner) && ~isempty(owner.a_Bus) && ~isempty(owner.a_Bus.a_PowerNetwork)
+    if nargin <= 1 && ~isempty(owner) && ~isempty(owner.a_Bus) && ~isempty(owner.a_Bus.a_PowerNetwork)
+        % default point (nargin does not count the name-value arguments): check the stale tags
         net = owner.a_Bus.a_PowerNetwork;
         sv  = [net.sct_stale.powerflow; net.sct_stale.odefcn; obj.sct_stale.equilibrium; obj.sct_stale.odefcn];
         if ~isempty(sv)
@@ -53,11 +55,11 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
             end
             error(msg("GUILDA:LocalController:Stale", char(obj.s_tag), char(s_reason), "get_sys"))
         end
-    else
+    elseif isempty(owner) || isempty(owner.a_Bus) || isempty(owner.a_Bus.a_PowerNetwork)
         obj.set_odefcn();    % no network to initialize: stale handles are rebuilt here
     end
 
-    sys = obj.get_sys_alone(x, V, I, u, "full", opt.full, "tag", opt.tag);
+    sys = linearize_alone(obj, x, V, I, u, opt.full, opt.tag);
 
     varargout{1} = cellstr(sys.StateName);
     varargout{2} = cellstr(sys.InputName);
@@ -83,5 +85,73 @@ function net = net_of(owner)
     net = [];
     if ~isempty(owner) && ~isempty(owner.a_Bus)
         net = owner.a_Bus.a_PowerNetwork;
+    end
+end
+
+
+function sys = linearize_alone(obj, x, V, I, u, l_full, l_tag)
+% Linear model of the controller at x, V, I, u: a struct with the fields A, B, C, D, E,
+% StateName, InputName, OutputName (string columns), as get_sys with Format "struct".
+    arguments (Input)
+        obj
+        x     (:,1) double    % States.
+        V     (:,1) double    % [pu] Voltage [Vre; Vim] of the parent.
+        I     (:,1) double    % [pu] Current [Ire; Iim] of the parent (unused; not a port).
+        u     (:,1) double    % Inputs.
+        l_full (1,1) logical  % Also output the states.
+        l_tag  (1,1) logical  % Name the states, inputs and outputs with the controller tag.
+    end
+    arguments (Output)
+        sys   % Struct A, B, C, D, E, StateName, InputName, OutputName of the controller.
+    end
+    % I is not a port of a controller (c_Iequilibrium is the parent's, [] without a parent)
+    if isempty(I)
+        I = zeros(2,1);
+    end
+
+    nx = numel(obj.sv_x);
+    nu = numel(obj.sv_u);
+    ny = numel(obj.sv_y);
+
+    Mass = shape(obj.f_Mass(0,x,V,I,u), nx, nx);
+
+    % Same Jacobian contract as SolverODE: f_JacobiDx/Y(t,x,V,I,u)
+    [Axx,Bxv,~,Bxu] = obj.f_JacobiDx(0,x,V,I,u);
+    [Cyx,Dyv,~,Dyu] = obj.f_JacobiY( 0,x,V,I,u);
+
+    Axx = shape(Axx, nx, nx);  Bxv = shape(Bxv, nx, 2);  Bxu = shape(Bxu, nx, nu);
+    Cyx = shape(Cyx, ny, nx);  Dyv = shape(Dyv, ny, 2);  Dyu = shape(Dyu, ny, nu);
+
+    sv_xNames = {obj.sv_x; obj.attach_tag(obj.sv_x)};
+    sv_uNames = {obj.sv_u; obj.attach_tag(obj.sv_u)};
+    sv_yLabel = obj.sv_y;
+    lv_yx     = ismember(sv_yLabel, obj.sv_x);
+    sv_yLabel(lv_yx) = "Y_" + sv_yLabel(lv_yx);       % unique names (for tagged labels)
+    sv_yNames = {obj.sv_y; obj.attach_tag(sv_yLabel)};
+
+    Vport = {["Vre";"Vim"]; obj.attach_tag(["Vre";"Vim"])};
+
+    OutputNames = {sv_yNames{l_tag+1}; [sv_xNames{l_tag+1};sv_yNames{l_tag+1}]};
+
+    A = Axx;
+    B = [Bxv, Bxu];
+
+    C =[eye(l_full*nx,nx); Cyx];
+    D =[zeros(l_full*nx,nu+2); [Dyv, Dyu]];
+
+    sys = struct("A", A, "B", B, "C", C, "D", D, "E", Mass, ...
+                 "StateName", reshape(string(sv_xNames{l_tag+1}), [], 1), ...
+                 "InputName", reshape(string([Vport{l_tag+1}; sv_uNames{l_tag+1}]), [], 1), ...
+                 "OutputName", reshape(string(OutputNames{l_full+1}), [], 1));
+
+end
+
+
+function M = shape(M,r,c)
+    % Models may return [] for an empty or all-zero block
+    if isempty(M)
+        M = zeros(r,c);
+    else
+        M = reshape(full(M),r,c);
     end
 end

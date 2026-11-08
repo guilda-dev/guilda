@@ -213,10 +213,6 @@ classdef LocalController < PowerSystemModel
         % get sys (public: the linear model of the controller alone)
         [sys, varargout] = get_sys(obj,x,V,I,u,opt)
     end
-    methods (Hidden)
-        % get_sys without the edit checks (inner step of Component.get_sys)
-        sys = get_sys_alone(obj,x,V,I,u,opt)
-    end
 
 %% Get Methods    
     methods        

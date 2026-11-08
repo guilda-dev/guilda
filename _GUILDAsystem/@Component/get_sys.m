@@ -1,7 +1,7 @@
 function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % Linearize the component with its local controllers (V to I, or I to V).
 %
-% Linear model of the component with its local controllers.
+% Linear model of the component with its local controllers (Controllers true, default).
 %
 % - inputs: the port (bus voltage [Vre; Vim] for port "V2I", current [Ire; Iim] for
 %   "I2V"), the inputs u of the component, then the inputs of its controllers (depth
@@ -9,6 +9,9 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % - states: the states of the component, then the states of its controllers
 % - outputs: the other port (current for "V2I", voltage for "I2V"), the outputs of the
 %   component, then the outputs of its controllers
+%
+% With Controllers false the model is the component alone: inputs the port and the
+% inputs u, states the states of the component, outputs the other port.
 %
 % Port "I2V" stops with the error GUILDA:Component:NoI2V when D of the "V2I" model is
 % singular.
@@ -35,10 +38,12 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % returns a struct with the same eight fields; "ss" returns a descriptor state-space model
 % (dss) and needs the Control System Toolbox.
 %
-% Without Point, a component on a network stops with the error GUILDA:Component:Stale
-% when net.initialize() is needed (a stale tag of the network, the component or its
-% controllers); a component without a network builds its stale handles and those of its
-% controllers first.
+% At the default point (x, V, I, u and Point all omitted), a component on a network
+% stops with the error GUILDA:Component:Stale when net.initialize() is needed (a stale
+% tag of the network, the component or its controllers). A call with x, V, I, u or
+% Point does not check the stale tags: the model is linearized at the given point with
+% the current handles. A component without a network builds its stale handles (and
+% those of its controllers, with Controllers true) first.
 %
 % See also Component.get_variable_map, Bus.get_sys, PowerNetwork.get_sys
 %
@@ -50,9 +55,8 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         I        (:,1) double = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)]   % [pu] Current [Ire; Iim] (default: the equilibrium).
         u        (:,1) double = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"   % Input and output ports.
-        opt.full (1,1) logical = false     % Ignored; kept for old calls (the states are not outputs).
         opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the component tag.
-        opt.con  (1,1) logical = false     % Ignored; kept for old calls (the local controllers are always included).
+        opt.Controllers (1,1) logical = true   % Include the local controllers; false: the component alone.
         opt.Point = []   % Point of the linearization; overrides x, V, I, u.
         opt.Format (1,1) string {mustBeMember(opt.Format, ["GUILDAorigin","struct","ss"])} = "GUILDAorigin"   % Form of the model: GUILDAorigin (a ResultLIN), struct or ss (dss; needs the Control System Toolbox).
     end
@@ -65,13 +69,19 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     t0 = tic;
 
     l_equilibrium = isempty(opt.Point) && ~iscell(opt.Point);
+    l_default     = nargin <= 1 && l_equilibrium;   % nargin does not count the name-value arguments
 
     % All controllers in the tree (e.g. PSS attached under AVR) are separate blocks connected by signal names
     a_LC = all_controllers(obj);
 
     if isempty(obj.a_Bus) || isempty(obj.a_Bus.a_PowerNetwork)
-        build_stale(obj);    % no network to initialize: the handles are built here
-    elseif l_equilibrium
+        % no network to initialize: the handles are built here
+        if opt.Controllers
+            build_stale(obj);
+        else
+            obj.set_odefcn();
+        end
+    elseif l_default
         % stale tags of the network, the component and its controllers
         net = obj.a_Bus.a_PowerNetwork;
         sv  = [net.sct_stale.powerflow; net.sct_stale.odefcn; obj.sct_stale.equilibrium; obj.sct_stale.odefcn];
@@ -87,17 +97,48 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
             error(msg("GUILDA:Component:Stale", char(obj.s_tag), char(s_reason)))
         end
     end
-    if l_equilibrium
-        sysCON = tools.cellfun(@(d) d.get_sys_alone("tag",false), a_LC);
-        rv_point = [x; tools.vcellfun(@(d) reshape(d.rv_Xequilibrium, [], 1), a_LC); V; u];
-    else
+    if ~l_equilibrium
         rv_point = SolverLIN.point_vector(obj, opt.Point);
         [x, V, I, u, c_con] = point_values(obj, a_LC, rv_point);
-        sysCON = tools.cellfun(@(d,p) d.get_sys_alone(p{:},"tag",false), a_LC, c_con);
+    end
+
+    if opt.Controllers
+        if l_equilibrium
+            % each controller at its own equilibrium (explicit point: no stale check)
+            sysCON = tools.cellfun(@(d) d.get_sys(d.rv_Xequilibrium, ri(d.c_Vequilibrium), ri(d.c_Iequilibrium), ...
+                                                  d.rv_Uequilibrium, Format="struct", tag=false), a_LC);
+            rv_point = [x; tools.vcellfun(@(d) reshape(d.rv_Xequilibrium, [], 1), a_LC); V; u];
+        else
+            sysCON = tools.cellfun(@(d,p) d.get_sys(p{:}, Format="struct", tag=false), a_LC, c_con);
+        end
+    else
+        sys = linearize_alone(obj, x, V, I, u, opt.port, false);
+        [sv_portIn, sv_portOut] = port_names(opt.port);
+        sys.StateName  = label(obj, obj.sv_x, opt.tag);
+        sys.InputName  = [label(obj, sv_portIn, opt.tag); label(obj, obj.sv_u, opt.tag)];
+        sys.OutputName = label(obj, sv_portOut, opt.tag);
+        varargout{1} = cellstr(sys.StateName);
+        varargout{2} = cellstr(sys.InputName);
+        varargout{3} = cellstr(sys.OutputName);
+        if opt.Format ~= "struct"
+            % the rows of the variable map of the component itself (not its controllers)
+            tab = obj.get_variable_map();
+            nx  = numel(obj.sv_x);
+            tab = tab([1:nx, height(tab)-numel(obj.sv_u)-1:height(tab)], :);
+            tab.Index = (1:height(tab))';
+            rv_point = [x; V; u];
+            l_eq = ~isempty(obj.a_Bus) && isequal(rv_point, [reshape(obj.rv_Xequilibrium, [], 1); ...
+                       ri(obj.c_Vequilibrium); reshape(obj.rv_Uequilibrium, [], 1)]);
+            sys = object_result(sys, tab, rv_point, l_eq, t0);
+            if opt.Format == "ss"
+                sys = sys.get_ss(Format="ss");
+            end
+        end
+        return
     end
 
     % The component with the outputs and the voltage its controllers read
-    SYS = obj.get_sys_alone(x,V,I,u,"port",opt.port,"controllerPorts",true);
+    SYS = linearize_alone(obj, x, V, I, u, opt.port, true);
 
     % Inputs of the controllers that read states of the component (iv_obsX) connect
     % to extra state outputs of SYS, named apart from the outputs of the same name
@@ -121,11 +162,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     sys = connect_blocks([{SYS}; sysCON(:)], iv_in, iv_out);
 
     % Names
-    if opt.port == "V2I"
-        sv_portIn = ["Vre";"Vim"];  sv_portOut = ["Ire";"Iim"];
-    else
-        sv_portIn = ["Ire";"Iim"];  sv_portOut = ["Vre";"Vim"];
-    end
+    [sv_portIn, sv_portOut] = port_names(opt.port);
     a_all  = [{obj}; a_LC];
     c_x    = cellfun(@(o) label(o, o.sv_x, opt.tag), a_all, 'UniformOutput', false);
     c_u    = cellfun(@(o) label(o, o.sv_u, opt.tag), a_all, 'UniformOutput', false);
@@ -140,13 +177,13 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 
     if opt.Format ~= "struct"
         l_eq = l_equilibrium && ~isempty(obj.a_Bus) && isequal(rv_point, SolverLIN.point_vector(obj, []));
-        sys  = object_result(sys, rv_point, l_eq, t0);
+        sys  = object_result(sys, obj.get_variable_map(), rv_point, l_eq, t0);
         if opt.Format == "ss"
             sys = sys.get_ss(Format="ss");
         end
     end
 
-    function result = object_result(sct_sys, rv_point, l_eq, t0)
+    function result = object_result(sct_sys, tab, rv_point, l_eq, t0)
         % ResultLIN holding the port model, the variable map and the Jacobian blocks
         nu = numel(obj.sv_u);
         sct_block = struct("E", sct_sys.E);
@@ -165,7 +202,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
             net = obj.a_Bus.a_PowerNetwork;
         end
         result = ResultLIN(net, "", struct("Port", opt.port, "Point", {opt.Point}), true, sct_output, t0, ...
-                           obj.get_variable_map(), rv_point, sct_block, struct("sct_sys", sct_sys), zeros(0,1));
+                           tab, rv_point, sct_block, struct("sct_sys", sct_sys), zeros(0,1));
     end
 
     function [SYS, sysCON] = connect_states(SYS, sysCON, a_LC)
@@ -245,4 +282,131 @@ function sys = connect_blocks(c_blk, iv_in, iv_out)
     Dy = M \ (D*P);
     sys = struct("A", A + B*K*Cy, "B", B*(P + K*Dy), "C", Cy(iv_out,:), "D", Dy(iv_out,:), "E", E, ...
                  "StateName", strings(0,1), "InputName", sv_in(iv_in), "OutputName", sv_out(iv_out));
+end
+
+
+function sys = linearize_alone(obj, x, V, I, u, s_port, l_controllerPorts)
+% Linear model of the component without its controllers at x, V, I, u.
+%
+% Inputs: the port and sv_u. States: sv_x. Outputs: the other port; with
+% l_controllerPorts also sv_y and, for port "V2I", the voltage that the controllers read.
+% The model is a struct with the fields A, B, C, D, E (E dx/dt = A x + B u,
+% y = C x + D u) and StateName, InputName, OutputName (string columns, not tagged), so
+% that get_sys can connect the controllers by name.
+    arguments (Input)
+        obj
+        x                 (:,1) double    % States.
+        V                 (:,1) double    % [pu] Bus voltage [Vre; Vim].
+        I                 (:,1) double    % [pu] Current [Ire; Iim].
+        u                 (:,1) double    % Inputs.
+        s_port            (1,1) string    % Input and output ports: "V2I" or "I2V".
+        l_controllerPorts (1,1) logical   % Also output what the controllers read.
+    end
+    arguments (Output)
+        sys   % Struct A, B, C, D, E, StateName, InputName, OutputName with untagged names.
+    end
+    nx = numel(obj.sv_x);
+    nu = numel(obj.sv_u);
+    ny = numel(obj.sv_y);
+
+    Mass = shape(obj.f_Mass(0,x,V,I,u), nx, nx);
+
+    % Same Jacobian contract as SolverODE: f_JacobiDx/I/Y(t,x,V,I,u)
+    [Axx,Bxv,Bxi,Bxu] = obj.f_JacobiDx(0,x,V,I,u);
+    [Cix,Div,Dii,Diu] = obj.f_JacobiI( 0,x,V,I,u);
+    [Cyx,Dyv,Dyi,Dyu] = obj.f_JacobiY( 0,x,V,I,u);
+
+    Axx = shape(Axx, nx, nx);  Bxv = shape(Bxv, nx, 2);  Bxi = shape(Bxi, nx, 2);  Bxu = shape(Bxu, nx, nu);
+    Cix = shape(Cix,  2, nx);  Div = shape(Div,  2, 2);  Dii = shape(Dii,  2, 2);  Diu = shape(Diu,  2, nu);
+    Cyx = shape(Cyx, ny, nx);  Dyv = shape(Dyv, ny, 2);  Dyi = shape(Dyi, ny, 2);  Dyu = shape(Dyu, ny, nu);
+
+    % The ports are V (input) and I (output), so a model whose equations depend on I cannot be linearized here
+    if any([Bxi(:); Dii(:); Dyi(:)] ~= 0)
+        error(msg("GUILDA:Component:CurrentDependence", obj.s_tag))
+    end
+
+    sv_V = ["Vre";"Vim"];
+    sv_I = ["Ire";"Iim"];
+
+    switch s_port
+        case "V2I"
+            A = Axx;
+            B = [Bxv, Bxu];
+            C = Cix;
+            D = [Div, Diu];
+            sv_in  = [sv_V; obj.sv_u];
+            sv_out = sv_I;
+            if l_controllerPorts
+                C = [C; Cyx; zeros(2,nx)];
+                D = [D; Dyv, Dyu; eye(2), zeros(2,nu)];
+                sv_out = [sv_out; obj.sv_y; sv_V];
+            end
+
+        case "I2V"
+            if ~(rcond(Div) > 1e-12)
+                error(msg("GUILDA:Component:NoI2V", obj.s_tag))
+            end
+            inv_Div = Div^-1;
+
+            inv_Cix = -inv_Div * Cix;
+            inv_Diu = -inv_Div * Diu;
+
+            A = Axx - Bxv * inv_Div * Cix;
+            B = [Bxv * inv_Div, Bxu - Bxv * inv_Div * Diu];
+            C = inv_Cix;
+            D = [inv_Div, inv_Diu];
+            sv_in  = [sv_I; obj.sv_u];
+            sv_out = sv_V;
+            if l_controllerPorts
+                % y = Cyx x + Dyv V + Dyu u with V the output: V = inv_Cix x + inv_Div I + inv_Diu u
+                C = [C; Cyx + Dyv*inv_Cix];
+                D = [D; Dyv*inv_Div, Dyu + Dyv*inv_Diu];
+                sv_out = [sv_out; obj.sv_y];
+            end
+    end
+
+    sys = struct("A", A, "B", B, "C", C, "D", D, "E", Mass, ...
+                 "StateName", reshape(string(obj.sv_x), [], 1), ...
+                 "InputName", reshape(string(sv_in), [], 1), ...
+                 "OutputName", reshape(string(sv_out), [], 1));
+
+end
+
+
+function [sv_in, sv_out] = port_names(s_port)
+% Names of the input and output ports
+    arguments (Input)
+        s_port (1,1) string   % "V2I" or "I2V".
+    end
+    arguments (Output)
+        sv_in    % Names of the input port.
+        sv_out   % Names of the output port.
+    end
+    if s_port == "V2I"
+        sv_in = ["Vre";"Vim"];  sv_out = ["Ire";"Iim"];
+    else
+        sv_in = ["Ire";"Iim"];  sv_out = ["Vre";"Vim"];
+    end
+end
+
+
+function rv = ri(c)
+% [real; imag] of a complex value ([] stays empty)
+    arguments (Input)
+        c   % Complex value or [].
+    end
+    arguments (Output)
+        rv  % [real(c); imag(c)].
+    end
+    rv = [real(c); imag(c)];
+end
+
+
+function M = shape(M,r,c)
+    % Models may return [] for an empty or all-zero block
+    if isempty(M)
+        M = zeros(r,c);
+    else
+        M = reshape(full(M),r,c);
+    end
 end
