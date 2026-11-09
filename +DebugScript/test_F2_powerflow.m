@@ -2,7 +2,7 @@
 %
 % 9母線系統 (旧 Task1/Task2) と IEEE14 母線系統で潮流計算を行い、
 %   - v4 の呼び出し形式 [result, flag, output] と結果クラス ResultPF
-%   - Name-Value による一時的な設定の上書き (net.solver_PF は変わらない)
+%   - Name-Value による一時的な設定の上書き (GUILDA.setting は変わらない)
 %   - v3 の呼び出し形式 (位置引数 mode, export/filename) の互換
 %   - 収束フラグ / 出力の形式
 %   - スラック母線の自動選択と母線種別 (slack / PV / PQ)
@@ -240,7 +240,7 @@ net = DebugScript.helper.build_9bus();
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
 assert(flag > 0)
 assert(res.s_solver == "SolverPF" && res.a_PowerNetwork == net && res.r_elapsed >= 0)
-assert(res.options.Method == "newton" && isequal(res.options.dynamic, net.solver_PF.dynamic))
+assert(res.options.Method == "newton" && res.options.Tolerance == 1e-8 && res.options.MaxIteration == 0)
 % 反復ごとの母線電圧 (最後が解)
 assert(size(res.cm_Vhistory,1) == numel(net.a_Bus) && isequal(res.rv_step, 0:size(res.cm_Vhistory,2)-1))
 assert(norm(res.cm_Vhistory(:,end) - res.tab_bus.Vphasor) < 1e-12)
@@ -267,32 +267,31 @@ for s_bus = string(net.a_Bus)'
 end
 
 
-%% Name-Value options override solver defaults for one call only
+%% Name-Value options override the settings for one call only
 net = DebugScript.helper.build_9bus();
-solver = net.solver_PF;
-sct_before = struct("Method", solver.Method, "MaxIterations", solver.MaxIterations, ...
-                  "Display", solver.Display, "Tolerance", solver.Tolerance);
+sct_before = GUILDA.config("PowerFlowCalculation");
 
 % MaxIteration=1 では収束しない (flag = 0)
 w = warning("off"); c = onCleanup(@() warning(w));
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(MaxIteration=1, Tolerance=1e-10));
 assert(flag == 0 && ~res.l_success)
-assert(res.options.MaxIterations == 1 && res.options.Tolerance == 1e-10)
+assert(res.options.MaxIteration == 1 && res.options.Tolerance == 1e-10)
 % Verbose=true は反復ごとの表示 ("iter")
 s_log = evalc("res = net.calculate_powerflow(Verbose=true);");
 assert(res.options.Display == "iter" && strlength(s_log) > strlength(evalc("net.calculate_powerflow();")))
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(verbose=false, method="dynamic"));   % 名前の大文字小文字は区別しない
 assert(res.options.Display == "none" && res.options.Method == "dynamic")
 
-% 保存されている既定値は変わらない
-sct_after = struct("Method", solver.Method, "MaxIterations", solver.MaxIterations, ...
-                 "Display", solver.Display, "Tolerance", solver.Tolerance);
-assert(isequal(sct_before, sct_after) && net.solver_PF == solver)
+% GUILDA.setting は変わらない。ソルバーは数値の設定を持たない
+assert(isequal(GUILDA.config("PowerFlowCalculation"), sct_before))
+assert(~isprop(net.solver_PF, "Method") && ~isprop(net.solver_PF, "Tolerance") && ~isprop(net.solver_PF, "WhenFailed"))
 
-% 既定値を変えると以後の呼び出しすべてに効く
-net.solver_PF.Method = "dynamic";
+% GUILDA.setting を変えると以後の呼び出しすべてに効く
+c_cfg = DebugScript.helper.user_config("PowerFlowCalculation", struct("Method", "dynamic", "Tolerance", 1e-6));
 res = DebugScript.helper.quiet(@() net.calculate_powerflow);
-assert(res.options.Method == "dynamic" && islogical(res.flag))
+assert(res.options.Method == "dynamic" && res.options.Tolerance == 1e-6 && res.l_success)
+clear c_cfg
+assert(GUILDA.config("PowerFlowCalculation", "Method") == "newton")
 
 
 %% Unknown or invalid options stop with an error
@@ -335,11 +334,12 @@ for s_method = ["newton", "gradient", "levenberg-marquardt"]
     s_log = evalc("net.calculate_powerflow(Method=s_method, Verbose=true);");
     assert(count(s_log, "iter ") >= 2 && contains(s_log, "converged"), s_method)
 end
-% gradient の刻み幅は solver の gradient.StepSize で変えられる (大きすぎると発散)
-net.solver_PF.gradient.StepSize = 1;
+% gradient の刻み幅は GUILDA.setting の GradientStepSize で変えられる (大きすぎると発散)
+c_cfg = DebugScript.helper.user_config("PowerFlowCalculation", struct("GradientStepSize", 1));
 w = warning("off"); c = onCleanup(@() warning(w));
 [~, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Method="gradient"));
 assert(flag == -2 && output.StepSize == 1 && contains(output.message, "diverged"))
+clear c_cfg
 
 
 %% Infeasible case is reported by every method
@@ -481,7 +481,7 @@ w = warning("off", "GUILDA:Deprecated:CalculatePowerflowMode"); c = onCleanup(@(
 assert(isa(res, "ResultPF") && logical(flag) && res.options.Method == "dynamic")
 id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:CalculatePowerflowExport")
-assert(net.solver_PF.Method == "newton")          % 既定値は変わらない
+assert(GUILDA.config("PowerFlowCalculation", "Method") == "newton")          % 既定値は変わらない
 warning(w);
 
 % 位置引数の mode だけ (v3 の "algebraic" は fsolve)

@@ -12,43 +12,47 @@ sct_mapPF = struct("MaxIteration", "MaxIterations", ...
                  "Verbose",      {{"Display", @(l) replace(string(l), ["true","false"], ["iter","none"])}}, ...
                  "TimeSpan",     "dynamic.t_span", ...
                  "WhenFailed",   "WhenFailed");
+sct_holdPF = struct("MaxIterations", 50, "Display", "none", "WhenFailed", "NONE", ...
+                    "dynamic", struct("Damper", 1, "t_span", 0:1/120:50));
 sct_mapODE = struct("Tolerance", ["AbsoluteTolerance","RelativeTolerance"], ...
                   "TimeLimit", "TimeLimit", ...
                   "Progress",  "Progress");
 
 
 %% Resolve options returns stored defaults without overrides
-solver = SolverPF();
-solver.MaxIterations = 42;
+% 既定値の持ち主は構造体でもよい (SolverPF は GUILDA.setting の値の構造体を渡す)
+sct_hold = sct_holdPF;
+sct_hold.MaxIterations = 42;
 for nv = {{}, struct()}
-    [opt, sv_given] = tools.resolve_options(solver, sct_mapPF, nv{1});
-    assert(opt.MaxIterations == 42 && opt.Display == solver.Display && opt.WhenFailed == solver.WhenFailed)
-    assert(isequal(opt.dynamic, solver.dynamic))
+    [opt, sv_given] = tools.resolve_options(sct_hold, sct_mapPF, nv{1});
+    assert(opt.MaxIterations == 42 && opt.Display == sct_hold.Display && opt.WhenFailed == sct_hold.WhenFailed)
+    assert(isequal(opt.dynamic, sct_hold.dynamic))
     assert(isempty(sv_given))
 end
-% 結果のフィールドは対応表が参照するソルバーのフィールドだけ (入れ子は最上位のプロパティ)
+% 結果のフィールドは対応表が参照するフィールドだけ (入れ子は最上位のフィールド)
 assert(isequal(sort(string(fieldnames(opt))), sort(["MaxIterations";"Display";"dynamic";"WhenFailed"])))
 
 
 %% Resolve options applies overrides and leaves the stored solver unchanged
-net = PowerNetwork();
-solver   = net.solver_PF;
+solver   = SolverCPF();
 r_iter   = solver.MaxIterations;
-s_disp   = solver.Display;
-sct_dyn  = solver.dynamic;
-[opt, sv_given] = tools.resolve_options(solver, sct_mapPF, {"maxiteration", 7, "Verbose", true, "TimeSpan", 0:0.5:1});
-assert(opt.MaxIterations == 7)                       % 名前の大文字小文字は区別しない
-assert(opt.Display == "iter")                        % 変換関数 (Verbose -> Display)
-assert(isequal(opt.dynamic.t_span, 0:0.5:1) && opt.dynamic.Damper == sct_dyn.Damper)  % 入れ子のパス
-assert(isequal(sv_given, ["MaxIteration","Verbose","TimeSpan"]))
+r_step   = solver.StepSize;
+[opt, sv_given] = tools.resolve_options(solver, struct("MaxIteration", "MaxIterations", "StepSize", "StepSize"), ...
+                                        {"maxiteration", 7, "StepSize", 0.1});
+assert(opt.MaxIterations == 7 && opt.StepSize == 0.1)   % 名前の大文字小文字は区別しない
+assert(isequal(sv_given, ["MaxIteration","StepSize"]))
 % 保存されているソルバーは変わらない
-assert(net.solver_PF.MaxIterations == r_iter && net.solver_PF.Display == s_disp)
-assert(isequal(net.solver_PF.dynamic, sct_dyn))
+assert(solver.MaxIterations == r_iter && solver.StepSize == r_step)
+% 変換関数 (Verbose -> Display) と入れ子のパス
+[opt, sv_given] = tools.resolve_options(sct_holdPF, sct_mapPF, {"Verbose", true, "TimeSpan", 0:0.5:1});
+assert(opt.Display == "iter")
+assert(isequal(opt.dynamic.t_span, 0:0.5:1) && opt.dynamic.Damper == sct_holdPF.dynamic.Damper)
+assert(isequal(sv_given, ["Verbose","TimeSpan"]))
 
 % arguments ブロックの構造体でも渡せる。同じ名前が2回なら後が優先
-opt = tools.resolve_options(solver, sct_mapPF, struct("WhenFailed", "ERROR"));
-assert(opt.WhenFailed == "ERROR" && solver.WhenFailed ~= "ERROR")
-opt = tools.resolve_options(solver, sct_mapPF, {"MaxIteration", 3, "MaxIteration", 5});
+opt = tools.resolve_options(sct_holdPF, sct_mapPF, struct("WhenFailed", "ERROR"));
+assert(opt.WhenFailed == "ERROR" && sct_holdPF.WhenFailed ~= "ERROR")
+opt = tools.resolve_options(sct_holdPF, sct_mapPF, {"MaxIteration", 3, "MaxIteration", 5});
 assert(opt.MaxIterations == 5)
 
 
@@ -63,13 +67,13 @@ assert(solver.AbsoluteTolerance == r_abs && solver.RelativeTolerance == r_rel)
 
 
 %% Resolve options rejects an unknown name
-solver = SolverPF();
+solver = sct_holdPF;
 try
     tools.resolve_options(solver, sct_mapPF, {"Tolerence", 1e-6});
     error("DebugScript:noError", "未知の名前でエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "Tolerence") && contains(ME.message, "SolverPF"))
+    assert(contains(ME.message, "Tolerence") && contains(ME.message, "struct"))
     assert(contains(ME.message, "MaxIteration, Verbose, TimeSpan, WhenFailed"))   % 使える名前を示す
 end
 % 名前と値の組になっていない
@@ -82,7 +86,7 @@ assert(error_id(@() tools.resolve_options(solver, struct("TimeSpan", "dynamic.ts
 %% Analysis result base holds the shared parts
 net = PowerNetwork("Grid");
 solver = net.solver_PF;
-opt = tools.resolve_options(solver, sct_mapPF, {"MaxIteration", 9});
+opt = tools.resolve_options(sct_holdPF, sct_mapPF, {"MaxIteration", 9});
 t0  = tic;
 res = DebugScript.helper.DummyResult(net, solver, opt, 1, struct("iterations", 4), t0, 1:3);
 assert(isa(res, "ResultBase") && isa(res, "auxiliary"))

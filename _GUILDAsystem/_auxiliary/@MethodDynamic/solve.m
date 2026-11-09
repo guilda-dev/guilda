@@ -1,16 +1,16 @@
 function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve(obj)
 % Integrate the virtual bus dynamics until they settle at the power flow solution (see the
-% class help). cm_Vhistory holds the bus voltages at each output time (n_bus x n_step),
-% rv_step the times [s].
+% class help). cm_Vhistory holds the bus voltages at each ODE step (n_bus x n_step),
+% rv_step the virtual times.
     arguments (Input)
         obj
     end
     arguments (Output)
         cv_Vbus     (:,1) double  % [pu] Complex bus voltages at the end of the integration.
-        flag                      % True when the bus dynamics converged within the tolerance.
-        output                    % Details; output.message describes the outcome.
-        cm_Vhistory               % [pu] Complex bus voltages at each output time (n_bus x n_step).
-        rv_step                   % [s] Output times.
+        flag                      % 1 converged, 0 virtual time limit reached, -2 voltage collapse, angle instability or integration failure.
+        output                    % Details: iterations, algorithm, residual, message.
+        cm_Vhistory               % [pu] Complex bus voltages at each ODE step (n_bus x n_step).
+        rv_step                   % Virtual times of the ODE steps.
     end
 
     cm_Y = obj.Y;
@@ -19,16 +19,22 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve(obj)
     M   = obj.Mass;
     D   = obj.Damper;
     foh = obj.foh_PQ;
-    t_span = obj.t_span;
     tol = obj.Tolerance;
+    r_tEnd = 1e4;      % safety limit of the virtual time
     
     idx_slack = (tab_PFcondition.Type == "slack");
     idx_PV    = (tab_PFcondition.Type == "PV");
     
-    % Initial State
-    Tinit = tab_PFcondition.Varg0;
-    Vinit = tab_PFcondition.V0;
-    Vinit(idx_PV) = tab_PFcondition.V(idx_PV); % PV bus voltage is fixed at the specified value
+    % Initial State: the columns Varg0, V0 when given, the flat start otherwise
+    if all(ismember(["Varg0","V0"], tab_PFcondition.Properties.VariableNames))
+        Tinit = tab_PFcondition.Varg0;
+        Vinit = tab_PFcondition.V0;
+    else
+        Tinit = zeros(N, 1);
+        Vinit = ones(N, 1);
+    end
+    Tinit(idx_slack) = tab_PFcondition.Varg(idx_slack);
+    Vinit(idx_slack | idx_PV) = tab_PFcondition.V(idx_slack | idx_PV); % fixed at the specified values
 
     if M == 0
         Vc_0  = Vinit .* exp(1j * Tinit);
@@ -70,28 +76,35 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve(obj)
     % solve ODE
     ode_func   = @(t, Y) bus_dynamics(t, Y, cm_Y, tab_PFcondition, D, N, foh);
     event_func = @(t, Y) convergence_events(t, Y, cm_Y, tab_PFcondition, N, tol);
-    options = odeset('RelTol', 1e-4, 'AbsTol', 1e-5, ...
+    options = odeset('RelTol', max(min(100*tol, 1e-4), 100*eps), 'AbsTol', min(tol, 1e-5), ...
                      'Mass', MassMat, ...
                      'Events', event_func, ...
                      'JPattern', J_pattern);
-    [t_out, Y_out, ~, ~, ie] = ode15s(ode_func, t_span, Y0, options);
+    s_warn = lastwarn();
+    w = warning("off", "MATLAB:ode15s:IntegrationTolNotMet");
+    [t_out, Y_out, ~, ~, ie] = ode15s(ode_func, [0, r_tEnd], Y0, options);
+    warning(w);
+    lastwarn(s_warn);
 
     % Convergence Test
-    flag = false;
-    if ~isempty(ie)
-        if any(ie == 1)
-            output.message = '✔ The power flow calculation has converged within the tolerance limit.';
-            flag = true;
-        elseif any(ie == 2)
-            output.message = '✘ The process was terminated: Voltage collapse detected.';
-        elseif any(ie == 3)
-            output.message = '✘ The process was terminated: Phase angle instability detected.';
-        end
-    elseif t_out(end) >= t_span(end)
-        output.message = '✘ The simulation did not converge within the specified time limit.';
+    r_res = max_mismatch(Y_out(end,:).', cm_Y, tab_PFcondition, N);
+    if any(ie == 1)
+        flag = 1;
+        s_msg = sprintf('✔ The virtual bus dynamics have converged within the tolerance limit (virtual time %.4g).', t_out(end));
+    elseif any(ie == 2)
+        flag = -2;
+        s_msg = '✘ The process was terminated: Voltage collapse detected.';
+    elseif any(ie == 3)
+        flag = -2;
+        s_msg = '✘ The process was terminated: Phase angle instability detected.';
+    elseif t_out(end) >= r_tEnd
+        flag = 0;
+        s_msg = sprintf('✘ The virtual bus dynamics did not converge within the virtual time %g (largest mismatch %.3e).', r_tEnd, r_res);
     else
-        output.message = 'undefined error';
+        flag = -2;
+        s_msg = sprintf('✘ The integration of the virtual bus dynamics stopped at the virtual time %.4g (largest mismatch %.3e).', t_out(end), r_res);
     end
+    output = struct("iterations", numel(t_out)-1, "algorithm", "dynamic", "residual", r_res, "message", s_msg);
 
     % step data
     cm_Vhistory = Y_out(:,(1:N)+2*N).' .* exp(1j*Y_out(:,1:N).');
@@ -160,6 +173,15 @@ function dY = bus_dynamics(t, Y, cm_Y, tab, D, N, foh_PQ)
 
     % 状態微分の列ベクトル化
     dY = [dtheta; domega; dV; du];
+end
+
+
+function r = max_mismatch(Y, cm_Y, tab, N)
+% Largest |dP| (non-slack) and |dQ| (PQ) at the state Y
+    Vc = Y(2*N+1:3*N) .* exp(1j * Y(1:N));
+    S  = Vc .* conj(cm_Y * Vc);
+    r  = max([abs(tab.P(tab.Type ~= "slack") - real(S(tab.Type ~= "slack")));
+              abs(tab.Q(tab.Type == "PQ") - imag(S(tab.Type == "PQ"))); 0]);
 end
 
 

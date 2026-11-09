@@ -29,6 +29,21 @@
         "Type": "double",
         "Description": "Convergence tolerance of the Newton-Raphson corrector"
     },
+    "CorrectorMaxIteration":{
+        "Value": 1000,
+        "Type": "double",
+        "Description": "Maximum number of iterations of the Newton-Raphson corrector"
+    },
+    "CorrectorStepSize":{
+        "Value": 1,
+        "Type": "double",
+        "Description": "Factor of the update of the Newton-Raphson corrector"
+    },
+    "Increment":{
+        "Value": 1e-4,
+        "Type": "double",
+        "Description": "Step of the numerical Jacobian of the predictor and the corrector"
+    },
     "UseInternalState":{
         "Value": false,
         "Type": "logical",

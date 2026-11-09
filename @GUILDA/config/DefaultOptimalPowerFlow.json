@@ -91,5 +91,10 @@
         "Value": false,
         "Type": "logical",
         "Description": "'UseParallel' option of solver"
+    },
+    "WarmStart":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Start 'AC OPF' from the last AC OPF solution of the network (false: flat start)"
     }
 }
