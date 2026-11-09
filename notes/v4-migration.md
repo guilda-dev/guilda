@@ -840,9 +840,9 @@ Option names:
   (`controller.local_LQR`、`local_LQR_retrofit`、`+controller/+modeling/get_environment`)。
 - Symbolic Math Toolbox: 実行時のコードは使いません(テストで確認)。
   `MethodNewtonRaphson`(`NewtonRaphsonMethod` から改名、別名なし)は Toolbox があれば
-  シンボリックの `NRMFcn` も受け付け、無ければ
+  シンボリックの `Fcn`(v3 の `NRMFcn`)も受け付け、無ければ
   `GUILDA:MethodNewtonRaphson:SymbolicUnavailable` で止まります(関数ハンドルを渡し、
-  必要なら `NRMJac` も渡す)。手書きヤコビアンを確かめる開発用スクリプト(負荷・制御器の
+  必要なら `Jac`(v3 の `NRMJac`)も渡す)。手書きヤコビアンを確かめる開発用スクリプト(負荷・制御器の
   `validate.m`、未公開の `vsm1axis`)は引き続き必要です。
 
 ### 1.15 Bundled networks
