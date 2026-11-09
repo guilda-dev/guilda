@@ -117,6 +117,14 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **WEST10:** ピークの不一致の原因は特定していません(13 件中 2 件の一致)。夜間の調速機ありでは、周期 1.97 s のモードがわずかに不安定です(実部 +0.0013。クラスの説明では約 2.0 s と記載)。
 - 条件、モデルの違い、事例ごとの結果は `_GUILDAverification/<network>/README.md` にあります。比較関数は、GUILDA を起動したあと `run(fullfile(GUILDA.pwd, "_GUILDAverification", "<network>", "<compare_...>.m"))` で既定の全件を、またはそのフォルダへ `cd` してオプションつきで呼び出します。4 つとも同じ方法で動きます(2026-11-04 に両方の方法で確認)。
 
+## 潮流計算のオプション(手順 B、2026-11-10)
+
+仕様と実装の記録は [powerflow-options.md](powerflow-options.md) にあります(「手順 B の実装」節)。
+
+- 設定は GUILDA.setting の PowerFlowCalculation セクション、`Tolerance` の既定は全手法で 1e-8、`WarmStart` の既定は true、母線の `V0` / `Varg0` は廃止、`ResultPF.tab_violation` を追加。
+- **数値の変化:** フラットスタート・既定の設定で、変更前の解との差は newton で最大 1.4e-10、levenberg-marquardt で 1.1e-8(EAST10 夜間)、dynamic で 3.1e-7(以前の既定 `Tolerance` 1e-5 よりは代数解に近い)。連続潮流計算は変わらない(IEEE14 で λ の差 4e-12)。
+- **要判断:** powerflow-options.md の「要判断」1〜6。
+
 ## 未決事項
 
 状態は `a9afe24` のコードと履歴で確認しました(`301b5d0` までの統合はコードを変えていません)(下で日付や基準を別に示した項目を除く)。
@@ -150,7 +158,7 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **完了:** 段階 1(正しさの修正)と段階 2(カスタマイズ。2026-11-07 にオブジェクトごとの `set_opffcn` から `SolverOPF` の `Cost` / `Constraint` などのオプションへ変更)です。変更点は [v4-migration.md](v4-migration.md) 1.9 にあります。
 - **未着手:** 段階 3 の外部バックエンド(`prob2struct` 経由の CPLEX / Gurobi、`tools.network_to_mpc` 経由の MATPOWER)です。
 - **先送り:** 多期間 OPF です。設計上の問いは opf-requirements.md にあります。
-- 記録: 開始点は母線の `V0` / `Varg0` です。潮流による開始点は測定して採用しませんでした。反復が減らず(9 母線 43 → 43、IEEE14 59 → 72)、`calculate_powerflow` がスラック母線を設定して系統を編集することがあるためです。
+- 記録: AC OPF の開始点は、フラットスタート、または同じ系統で最後に解けた AC OPF の母線電圧(`WarmStart`、既定 true)です。母線の `V0` / `Varg0` は廃止しました。潮流解からの開始点は以前に測定して採用しませんでした(反復が減らず、9 母線 43 → 43、IEEE14 59 → 72)。前回の AC OPF の解からの開始も、内点法では反復が減るとは限りません(IEEE14 17 → 22、IEEE68 80 → 55。[powerflow-options.md](powerflow-options.md) の要判断 3)。
 
 ### `Scenario` の未確認の既定
 

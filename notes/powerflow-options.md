@@ -7,7 +7,8 @@
 - 基準コミット: `0af04ad3`(`refactor/design-alignment`)。「現状」はこのコミットのコード。
 - 状態: 手順 A(`MethodBase` と数値微分の共有、1 節・12 節)は `refactor/method-base` で実装。
   手順 B(SolverPF のオプション、GUILDA.setting のセクション、ウォームスタート、キャッシュ、
-  母線の `V0`/`Varg0` の廃止)と手順 C(連続潮流計算の `Limits`)は未実装。実装の指示書はこのノートを引用する。
+  母線の `V0`/`Varg0` の廃止、`tab_violation`)は `refactor/powerflow-options` で実装(「手順 B の実装」節)。
+  手順 C(連続潮流計算の `Limits`)は未実装。実装の指示書はこのノートを引用する。
 - 区別: **決定**(メンテナーの決定)、**現状**(コードで確認済み)、**未決**(末尾の一覧)。
 
 ## 1. Method クラス
@@ -124,9 +125,10 @@
 
 - `Tolerance` は全手法で最大 P/Q 不平衡 [pu]。
 - fsolve には `FunctionTolerance` として渡し、解いた後に SolverPF が不平衡を確認。
-- 既定値は、`V0`/`Varg0` なし(フラットスタート)でも IEEJ_WEST30 / IEEJ_EAST30 夜間断面の平衡点の残差が小さく保てる値。
-  - 参照: `_GUILDAobject/+network/@IEEJ_WEST30/IEEJ_WEST30.m` のヘルプ。保存した初期値ではドリフト 1e-13、フラットスタートでは夜間に 10 s で 1e-9〜1e-8。
-  - 正確な値は実装時に検証(未決)。
+- 既定値は 1e-8(2026-11-10 決定、コーディネーターの数値実験)。
+  - フラットスタートの NR は全系統 4〜7 反復で 1e-8 を下回る。
+  - 1e-8 で止めた初期化後の 10 s シミュレーション(イベントなし)のドリフトは全系統 1e-12 以下。1e-6 では WEST30 夜間で 7e-7。
+  - 1e-12 以下は大規模系統の丸め誤差の下限(約 1e-13)に近く不可。
 
 **現状**: 意味が手法ごとに異なる(1 節の表)。NR はステップ幅で判定し、不平衡は `max(1e-6, Tolerance)` で追加確認。fsolve の `FunctionTolerance` は不平衡の最大値ではない。
 
@@ -137,8 +139,13 @@
 - `Mass`、`Damper`、`foh_PQ` は GUILDA.setting に置かず、自動。
   - `Mass` 0。
   - `Damper` 1(`Mass` 0 では時間の尺度を変えるだけのため)。
-  - `foh_PQ` 0。電圧崩壊または位相角不安定で止まったときは、ランプ付き(`foh_PQ` > 0)で再試行。
-- `t_span` は廃止。収束で停止し、内部に安全上限を持つ。
+  - `foh_PQ` 0 固定。再試行しない(2026-11-10、コーディネーターの実験: 解がない負荷では foh 0/1/5/20 のすべてが同じく失敗し、
+    解がある限界近くでは foh 0 で全部収束。foh で解けるようになった例はない)。
+- `t_span` は廃止。収束で停止し、内部の安全上限は仮想時間 1e4
+  (Damper 1 で収束までの仮想時間はふだん 1000 以下、負荷限界近くで最大約 3500。実時間は常に 0.5 s 未満)。
+- ODE の許容誤差は `Tolerance` に合わせる: AbsTol = min(Tolerance, 1e-5)、RelTol = min(100·Tolerance, 1e-4)
+  (Tolerance 1e-10 で RelTol 1e-6 / AbsTol 1e-8 では上限まで収束しないケースがあり、1e-8 / 1e-10 で収束)。
+- flag は他の Method と同じ 1 収束 / 0 安全上限 / -2 電圧崩壊・位相角不安定・積分の失敗。
 
 **現状**: `SolverPF.dynamic` の既定は `Mass` 0、`Damper` 0.1、`foh_PQ` 0、`t_span` 0:1/120:50。`MethodDynamic` の `Damper` 既定も 0.1。終了は `t_span` の終わりかイベント(収束、電圧崩壊、位相角不安定)。
 
@@ -294,10 +301,47 @@
   - `@Component/validate.m`(上の `Jacobi_*_num` を使用)、`@LocalController/validate.m`(同じ 1e-5)。
   - 連続潮流計算の予測子・修正子: `Increment`(`@SolverCPF/solve.m`)。
 
+## 手順 B の実装(`refactor/powerflow-options`、2026-11-10)
+
+**現状**(実装後のコード)
+
+- 設定: `SolverPF` は設定のプロパティを持たない。`get_options` が PowerFlowCalculation セクションの値の構造体を `tools.resolve_options` に渡し、
+  Name-Value を適用。`OptionMap` は `Method`、`Tolerance`、`MaxIteration`、`Verbose`(→ `Display`)、`WarmStart`。
+  旧ユーザー設定のキーは `v3_user_config` が変換(`MaxIterations`、`MaxFunEvals`、`UseParallel` は改名、`Display`、`PlotFcn` は削除、`Tolerance` 0 は削除)。
+- `Tolerance` は Name-Value で `mustBePositive`(0 の「手法の既定」は廃止)。
+- `MethodDynamic`: 初期値は `PFcondition` の列 `Varg0`、`V0`(SolverPF が初期電圧を渡すための列。なければフラットスタート)。
+  初期値で収束済みなら積分せずに flag 1(ウォームスタートでイベントが交差しないため)。
+- ウォームスタートの既定は PowerFlowCalculation、OptimalPowerFlow とも true。`initialize` は自身の既定を持たず、`WarmStart` を潮流計算 / OPF に渡す。
+  `optimize_powerflow` の `WarmStart` は呼び出しのオプション(`SolverOPF` に設定のプロパティを足さないため)。
+- フラットスタートのスラック母線の位相は設定値 `Varg`(2 節の「位相 0」は PQ・PV 母線。旧コードもスラックは `Varg` から開始)。
+- キャッシュ: `SolverPF` はアドミタンス行列(n_revY)と潮流条件・方程式(n_revPF)を保持。母線の並びがオブジェクトとして同じで n_revTopology が同じときだけ使う。
+  結果の行名は毎回の母線のタグ(タグの編集はカウンタを増やさない)。収束した解(flag 1)だけをウォームスタートに保存。
+- OPF: `SolverOPF` は最後に解けた AC OPF の母線の [Varg, V] を保持。`build_opf_problem` の x0 は常にフラットスタート。OPF の問題はキャッシュしない(下の要判断)。
+- `tab_violation` の列: `Class`("Bus" / "Component" / "Branch")、`Object`(タグ)、`Limit`(例 "Vmax"、"Qmin"、"Smax")、`Value`、`Bound`、`Excess`(|Value − Bound|)。
+  違反が `Tolerance` を超えるものだけ。機器の P、Q は `initialize` が与える値(`Bus.set_equilibrium` の "baseMVA" 規則と同じ配分を `@SolverPF/private/violation_table.m` で再計算)。
+  ブランチは両端の大きい方の |P|、|Q|、|S|、|I| と |Varg_from − Varg_to|。収束しなければ 0 行。
+- 確認(MATLAB R2026a): フラットスタート・既定の `Tolerance` 1e-8 で、変更前(`313dc8d1`、保存した初期値、`Tolerance` 1e-10)の NR 解との差は
+  IEEE9 / IEEE68 / IEEJ 10・30 機(ピーク・夜間)で最大 1.4e-10(newton)、1.1e-8(levenberg-marquardt、EAST10 夜間)、1.1e-10(fsolve)。
+  `Tolerance` 1e-10 では newton・LM・fsolve とも 1.1e-10 以下。dynamic は 1e-8 で最大 3.1e-7、1e-10 で 3.1e-9。
+- fsolve: `Tolerance` 1e-8 では上の全系統で flag 1。1e-10 では EAST30 ピーク、WEST10 夜間、WEST30 夜間で fsolve が最大不平衡 1.5e-10〜1.5e-9 で止まり flag -2。
+- 連続潮流計算(IEEE14、LoadBus B009・B014): 変更前と同じ 362 点、λ の差 4e-12、電圧の差 1e-12(初期の平衡点の差による)。
+- ウォームスタートの効果: 負荷を 1 % ずつ増やす掃引で newton の反復は 4〜6 → 2〜4、dynamic の ODE ステップは 25〜45 % 減。同じ条件の再計算は 0 反復。
+  1 回の実時間は方程式と結果の表の作成が大半で、差は 1 割前後。AC OPF(fmincon 内点法)では反復が減るとは限らない(IEEE14 17 → 22、IEEE68 80 → 55)。
+- IEEJ 30 機のフラットスタートからの `initialize` 後、イベントなし 10 s のドリフト: WEST30 ピーク 1.9e-12、夜間 5.4e-14、EAST30 ピーク 8.2e-14、夜間 3.5e-12。
+
+**要判断**(実装では決めていない)
+
+1. `net.solver_OPF` / `solver_CPF` / `solver_ODE` / `solver_LIN` は今も数値の設定を保存する(6 節の「一般の数値設定は保存しない」は手順 B では `SolverPF` だけ)。
+2. `initialize(Method="powerflow")` で潮流計算の手法を選ぶ手段は GUILDA.setting だけ(`Method` は initialize 自身の名前)。旧 `net.solver_PF.Method = ...` の代わりが必要か。
+3. AC OPF の `WarmStart` の既定(true)。内点法では反復が減るとは限らない(上の記録、status.md の OPF の記録も同様)。
+4. OPF の問題のキャッシュ: `operation` / `OPF` の編集を数えるカウンタがないため実装していない。
+5. fsolve で `Tolerance` を 1e-10 程度まで下げると flag -2 になる系統がある。対処案(未検証): `FunctionTolerance` を `Tolerance^2` にする、または fsolve の後に NR で仕上げる。
+6. 機器の違反の判定は `Bus.set_equilibrium` の配分を複製している(`QdistributionRule` "Qmax" の系統では initialize の値と異なりうる)。
+
 ## 未決
 
-2. `Tolerance` の既定値(IEEJ_WEST30 / EAST30 夜間で検証)。
-3. `MethodDynamic` の再試行時の `foh_PQ` の値と、内部の安全上限。
+なし(手順 B の実装で出た判断事項は「手順 B の実装」節の末尾)。
 
 決定済み(2026-11-09、番号は旧一覧): 1 `MethodBase` のメンバーと NR の改名(1 節)、4 ルール 7 への `WarmStart` / `Limits` の追加(7 節)、
 5 違反の表 `tab_violation`(10 節)、6 GUILDA.setting のセクション(2 節)、7 改訂カウンタ(8 節)。
+決定済み(2026-11-10): 2 `Tolerance` の既定値 1e-8(3 節)、3 `MethodDynamic` は再試行せず、安全上限は仮想時間 1e4(4 節)。

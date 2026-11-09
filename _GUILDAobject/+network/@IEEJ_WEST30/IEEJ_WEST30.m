@@ -70,7 +70,7 @@ classdef IEEJ_WEST30 < PowerNetwork
 %
 % - The data has no initial voltages: the power flow starts from the flat start (or the
 %   last solution, WarmStart). With the default Tolerance (1e-8) the equilibrium of both
-%   sections drifts by less than 1e-12 in 10 s of simulate without events.
+%   sections drifts by at most a few 1e-12 in 10 s of simulate without events.
 %
 % The power flow gives the generation and load totals of table 4.10 of the report and
 % agrees with its flow diagrams within their rounding, in both sections.
