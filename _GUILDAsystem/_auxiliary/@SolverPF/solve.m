@@ -38,8 +38,13 @@ function [result,flag,output] = solve(obj, net, sct_options)
         "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"],"RowNames",sv_bus);
     tab_branch = branch_flow(net, sv_bus, cv_Vbus);
 
+    tab_violation = violation_table(net, tab_bus, tab_branch, sct_options.Tolerance);
+    if flag ~= 1
+        tab_violation = tab_violation([], :);     % no solution: nothing to check
+    end
+
     result = ResultPF(net, obj, sct_options, flag, output, t0, ...
-                             tab_bus, tab_branch, cm_Vhistory, rv_step);
+                             tab_bus, tab_branch, cm_Vhistory, rv_step, tab_violation);
 
     % Notify
     if flag<=0

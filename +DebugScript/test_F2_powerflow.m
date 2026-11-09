@@ -350,6 +350,44 @@ net3 = DebugScript.helper.build_ieee14();
 assert(out3.iterations == out0.iterations)
 
 
+%% Violated operating limits are recorded and not applied
+% 潮流計算は operation の制約を課さず、違反を tab_violation に記録するだけ (警告もエラーもなし)
+net = DebugScript.helper.build_ieee14();
+res = DebugScript.helper.quiet(@() net.calculate_powerflow());
+% IEEE14 のデータ自体が違反を含む: B006, B007, B008 の V > Vmax = 1.06、スラックの発電機の Q < Qmin = 0
+tab0 = res.tab_violation;
+assert(isequal(sort(tab0.Object + ":" + tab0.Limit), sort(["B006:Vmax";"B007:Vmax";"B008:Vmax";"SG1B001:Qmin"])))
+assert(isequal(string(res.tab_violation.Properties.VariableNames), ["Class","Object","Limit","Value","Bound","Excess"]))
+tab_ref = res.tab_bus;
+s_bus = string(net.a_Bus{14});  s_br = string(net.a_Branch{1});  com = net.a_Bus{2}.a_Component{1};
+net.a_Bus{14}.tab_parameter.operation.Vmin = 1.05;            % V(B014) は約 1.036
+net.a_Branch{1}.tab_parameter.operation.Smax = 1;             % 枝 1 の |S| は 1.5 以上
+net.a_Branch{1}.tab_parameter.operation.Vargmax = 0.01;
+com.tab_parameter.operation.Qmax = 0.1;                       % 発電機 B002 の Q は約 0.42
+lastwarn("");
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+assert(flag == 1 && isempty(lastwarn()) && max(abs(res.tab_bus.Vphasor - tab_ref.Vphasor)) < 1e-10)
+tab = res.tab_violation;
+assert(height(tab) == height(tab0) + 4, string(height(tab)))
+r = tab(tab.Object == s_bus, :);
+assert(r.Class == "Bus" && r.Limit == "Vmin" && abs(r.Value - res.tab_bus{s_bus,"V"}) < 1e-12 && r.Bound == 1.05 && abs(r.Excess - (1.05 - r.Value)) < 1e-12)
+r = tab(tab.Object == s_br & tab.Limit == "Smax", :);
+S = [res.tab_branch{s_br,"Pfrom"} + 1j*res.tab_branch{s_br,"Qfrom"}, res.tab_branch{s_br,"Pto"} + 1j*res.tab_branch{s_br,"Qto"}];
+assert(r.Class == "Branch" && abs(r.Value - max(abs(S))) < 1e-12 && r.Bound == 1)
+assert(any(tab.Object == s_br & tab.Limit == "Vargmax"))
+r = tab(tab.Object == string(com), :);
+Q_other = sum(cellfun(@(c) c.tab_parameter.powerflow.Q, net.a_Bus{2}.a_Component(2:end)));   % 負荷
+assert(r.Class == "Component" && r.Limit == "Qmax" && abs(r.Value - (res.tab_bus{string(net.a_Bus{2}),"Q"} - Q_other)) < 1e-12)
+% initialize が機器に与える Q と同じ
+DebugScript.helper.quiet(@() net.initialize());
+c_S = com.a_Bus.c_Vequilibrium * conj(com.c_Iequilibrium);
+assert(abs(imag(c_S) - r.Value) < 1e-8)
+% 収束しなければ 0 行
+w = warning("off"); c = onCleanup(@() warning(w));
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(MaxIteration=1, WarmStart=false, Tolerance=1e-14));
+assert(~res.l_success && height(res.tab_violation) == 0)
+
+
 %% Unknown or invalid options stop with an error
 net = DebugScript.helper.build_9bus();
 try
