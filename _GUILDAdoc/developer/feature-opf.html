@@ -107,8 +107,11 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
           <td lang="en" data-label="Property and default"><code>false</code>: call <code>result.Plot()</code> / <code>result.Export(...)</code> afterwards</td>
           <td lang="ja" data-label="プロパティと既定値"><code>false</code>: 実行後に <code>result.Plot()</code> / <code>result.Export(...)</code> を呼び出し</td></tr>
         <tr><td><code>Problem</code>, <code>InitialPoint</code></td>
-          <td lang="en" data-label="Property and default">call only, not stored: an <code>optimproblem</code> from <code>net.build_opf_problem</code> (same <code>Method</code>, possibly modified) to solve as it is; the initial point (default: the <code>x0</code> of <code>build_opf_problem</code>)</td>
-          <td lang="ja" data-label="プロパティと既定値">呼び出しのみ（保存しない）: そのまま解く <code>net.build_opf_problem</code> の <code>optimproblem</code>（同じ <code>Method</code>、変更可）、初期点（既定: <code>build_opf_problem</code> の <code>x0</code>）</td></tr>
+          <td lang="en" data-label="Property and default">call only, not stored: an <code>optimproblem</code> from <code>net.build_opf_problem</code> (same <code>Method</code>, possibly modified) to solve as it is; the initial point (default: the <code>x0</code> of OPF-04, with <code>WarmStart</code> applied)</td>
+          <td lang="ja" data-label="プロパティと既定値">呼び出しのみ（保存しない）: そのまま解く <code>net.build_opf_problem</code> の <code>optimproblem</code>（同じ <code>Method</code>、変更可）、初期点（既定: <code>WarmStart</code> を反映した OPF-04 の <code>x0</code>）</td></tr>
+        <tr><td><code>WarmStart</code></td>
+          <td lang="en" data-label="Property and default">call only, not stored; default <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>true</code>: <code>"AC OPF"</code> starts from the bus voltages of the last solved <code>"AC OPF"</code> of this network (kept by <code>net.solver_OPF</code>); <code>false</code>, or none kept: flat start (angle 0, magnitude 1; set <code>V</code> at PV and slack buses, set <code>Varg</code> at the slack bus)</td>
+          <td lang="ja" data-label="プロパティと既定値">呼び出しのみ（保存しない）。既定値 <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>true</code>: このネットワークで最後に解いた <code>"AC OPF"</code> の母線電圧（<code>net.solver_OPF</code> が保持）から <code>"AC OPF"</code> を開始。<code>false</code>、または保持なし: フラットスタート（角度 0、大きさ 1。PV・slack 母線は指定 <code>V</code>、slack 母線は指定 <code>Varg</code>）</td></tr>
         <tr><td><span lang="en">properties only</span><span lang="ja">プロパティのみ</span></td>
           <td lang="en" data-label="Property and default"><code>Algorithm_linprog = "dual-simplex-highs"</code>, <code>Algorithm_quadprog = "interior-point-convex"</code>, <code>Algorithm_fmincon = "interior-point"</code>, <code>StepTolerance = NaN</code>, <code>MaxFunctionEvaluations = NaN</code>, <code>UseParallel = false</code> (fmincon only)</td>
           <td lang="ja" data-label="プロパティと既定値"><code>Algorithm_linprog = "dual-simplex-highs"</code>、<code>Algorithm_quadprog = "interior-point-convex"</code>、<code>Algorithm_fmincon = "interior-point"</code>、<code>StepTolerance = NaN</code>、<code>MaxFunctionEvaluations = NaN</code>、<code>UseParallel = false</code>（fmincon のみ）</td></tr>
@@ -118,7 +121,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
     <ul lang="en">
       <li>the Optimization Toolbox (checked when the analysis starts; also for <code>net.initialize(Method="OPF")</code>);</li>
       <li>components: <code>tab_parameter.OPF</code> (cost <code>HP·P² + fP·P + HQ·Q² + fQ·Q</code>, initial point <code>P0</code>, <code>Q0</code>) and <code>tab_parameter.operation</code> (limits);</li>
-      <li>buses: <code>operation</code> (<code>Vmin</code>, <code>Vmax</code>) and <code>powerflow</code> (<code>V0</code>, <code>Varg0</code>, <code>Varg</code>);</li>
+      <li>buses: <code>operation</code> (<code>Vmin</code>, <code>Vmax</code>) and <code>powerflow</code> (<code>Varg</code>, <code>V</code>: reference angle and flat start);</li>
       <li>branches: <code>operation</code> (<code>Pmax</code>, <code>Qmax</code>, <code>Imax</code>, <code>Smax</code>, <code>Vargmax</code>).</li>
       <li>an infinite bound (<code>-Inf</code> / <code>Inf</code>; NaN for the branch limits) adds no limit.</li>
     </ul>
@@ -127,7 +130,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
     <ul lang="ja">
       <li>Optimization Toolbox（解析の開始時に確認。<code>net.initialize(Method="OPF")</code> も同様）</li>
       <li>機器: <code>tab_parameter.OPF</code>（コスト <code>HP·P² + fP·P + HQ·Q² + fQ·Q</code>、初期点 <code>P0</code>、<code>Q0</code>）と <code>tab_parameter.operation</code>（制約）</li>
-      <li>母線: <code>operation</code>（<code>Vmin</code>、<code>Vmax</code>）と <code>powerflow</code>（<code>V0</code>、<code>Varg0</code>、<code>Varg</code>）</li>
+      <li>母線: <code>operation</code>（<code>Vmin</code>、<code>Vmax</code>）と <code>powerflow</code>（<code>Varg</code>、<code>V</code>: 基準位相角とフラットスタート）</li>
       <li>ブランチ: <code>operation</code>（<code>Pmax</code>、<code>Qmax</code>、<code>Imax</code>、<code>Smax</code>、<code>Vargmax</code>）</li>
       <li>無限大の上下限（<code>-Inf</code> / <code>Inf</code>、ブランチの制約値は NaN も）は制約なし</li>
     </ul>
@@ -212,11 +215,11 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         <p class="fs-head"><b class="fs-id">OPF-01</b> <span class="fs-call">user → <code>PowerNetwork.optimize_powerflow</code></span><small><code>v3_opf_args</code>, <code>take_call_options</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Maps the deprecated option <code>methods</code> to <code>Method</code>; separates the call-only options <code>Plot</code>, <code>Export</code>, <code>Problem</code>, <code>InitialPoint</code> from the solver options.</span><span lang="ja">非推奨オプション <code>methods</code> を <code>Method</code> に変換。呼び出しのみのオプション <code>Plot</code>、<code>Export</code>、<code>Problem</code>、<code>InitialPoint</code> をソルバーのオプションから分離</span></dd>
+          <dd><span lang="en">Maps the deprecated option <code>methods</code> to <code>Method</code>; separates the call-only options <code>Plot</code>, <code>Export</code>, <code>Problem</code>, <code>InitialPoint</code>, <code>WarmStart</code> from the solver options; <code>WarmStart</code> is added to <code>sct_options</code> after OPF-02.</span><span lang="ja">非推奨オプション <code>methods</code> を <code>Method</code> に変換。呼び出しのみのオプション <code>Plot</code>、<code>Export</code>、<code>Problem</code>、<code>InitialPoint</code>、<code>WarmStart</code> をソルバーのオプションから分離。<code>WarmStart</code> は OPF-02 の後に <code>sct_options</code> へ追加</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>varargin</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>c_nv</code>, <code>opt</code> (<code>Plot</code>, <code>Export</code>, <code>Problem</code>, <code>InitialPoint</code>)</dd>
+          <dd><code>c_nv</code>, <code>opt</code> (<code>Plot</code>, <code>Export</code>, <code>Problem</code>, <code>InitialPoint</code>, <code>WarmStart</code>)</dd>
         </dl>
       </li>
       <li class="fs-step" id="OPF-02">
@@ -250,11 +253,13 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
               <li>Creates <code>optimproblem</code> (minimize, <code>Objective.GenCost = 0</code>).</li>
               <li><code>"ELD"</code>: starts the single balance <code>const.P = 0</code>.</li>
               <li>With <code>Problem</code>: builds without <code>Cost</code> and <code>Constraint</code>, only for <code>x0</code> and the check of OPF-11.</li>
+              <li>Initial bus voltages (local <code>initial_voltage</code>): with <code>sct_options.WarmStart</code> true and the same buses (by object) and <code>n_revTopology</code>, the kept <code>"AC OPF"</code> solution; otherwise the flat start. <code>net.build_opf_problem</code> gives no <code>WarmStart</code>: its <code>x0</code> is the flat start.</li>
             </ul><ul lang="ja">
               <li>OPF の設定とネットワークの木構造を問題の <code>Description</code> に記録</li>
               <li><code>optimproblem</code> を作成（最小化、<code>Objective.GenCost = 0</code>）</li>
               <li><code>"ELD"</code>: 単一の需給式 <code>const.P = 0</code> を用意</li>
               <li><code>Problem</code> の指定時: <code>Cost</code> と <code>Constraint</code> なしで構築。<code>x0</code> と OPF-11 の確認のみに使用</li>
+              <li>母線の初期電圧（内部関数 <code>initial_voltage</code>）: <code>sct_options.WarmStart</code> が true で、母線（オブジェクトで照合）と <code>n_revTopology</code> が同じなら保持した <code>"AC OPF"</code> の解。それ以外はフラットスタート。<code>net.build_opf_problem</code> は <code>WarmStart</code> を渡さないため、その <code>x0</code> はフラットスタート</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>tab_parameter</code> (<code>operation</code>, <code>powerflow</code>, <code>OPF</code>) of buses, components, branches; <code>disp_tree</code></span><span lang="ja">母線・機器・ブランチの <code>tab_parameter</code>（<code>operation</code>、<code>powerflow</code>、<code>OPF</code>）、<code>disp_tree</code></span></dd>
@@ -268,7 +273,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">For each bus in <code>net.a_Bus</code> order: the bus variable and the shunt terms of its power balance (see the table below); then its components (OPF-06).</span><span lang="ja"><code>net.a_Bus</code> の順に母線ごとに、母線の変数と需給式のシャント項を追加（下の表を参照）。続いて接続する機器（OPF-06）</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>tab_parameter.powerflow</code> (<code>Varg0</code>, <code>V0</code>), <code>tab_parameter.operation</code> (<code>Vmin</code>, <code>Vmax</code>), <code>tab_parameter.dynamics</code> (<code>Gshunt</code>, <code>Bshunt</code>)</dd>
+          <dd><span lang="en">initial voltage of the bus (OPF-04)</span><span lang="ja">母線の初期電圧（OPF-04）</span>, <code>tab_parameter.operation</code> (<code>Vmin</code>, <code>Vmax</code>), <code>tab_parameter.dynamics</code> (<code>Gshunt</code>, <code>Bshunt</code>)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en">variable <code>&lt;bus&gt;</code>; <code>x0.&lt;bus&gt;</code>; <code>const.P_&lt;bus&gt;</code>, <code>const.Q_&lt;bus&gt;</code>; <code>sct_var.&lt;bus&gt;</code></span><span lang="ja">変数 <code>&lt;bus&gt;</code>、<code>x0.&lt;bus&gt;</code>、<code>const.P_&lt;bus&gt;</code>、<code>const.Q_&lt;bus&gt;</code>、<code>sct_var.&lt;bus&gt;</code></span></dd>
         </dl>
@@ -422,7 +427,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         <p class="fs-head"><b class="fs-id">OPF-15</b> <span class="fs-call"><code>SolverOPF.solve</code> → <code>ResultOPF(...)</code></span><small>→ <code>ResultBase</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Stores the result, the effective settings, the outcome, and the elapsed time.</span><span lang="ja">結果、実際に使った設定、成否、経過時間を保存</span></dd>
+          <dd><span lang="en">Stores the result, the effective settings, the outcome, and the elapsed time. A solved <code>"AC OPF"</code> (<code>flag &gt; 0</code>): <code>net.solver_OPF</code> keeps <code>[Varg, V]</code> of <code>tab_bus</code> for the next <code>WarmStart</code>.</span><span lang="ja">結果、実際に使った設定、成否、経過時間を保存。解けた <code>"AC OPF"</code>（<code>flag &gt; 0</code>）: 次の <code>WarmStart</code> 用に <code>net.solver_OPF</code> が <code>tab_bus</code> の <code>[Varg, V]</code> を保持</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">the outputs of OPF-13 and OPF-14; <code>net</code>; the <code>tic</code> of OPF-03</span><span lang="ja">OPF-13 と OPF-14 の出力、<code>net</code>、OPF-03 の <code>tic</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -456,8 +461,8 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
       <tbody>
         <tr><td><code>Bus</code></td>
           <td data-label='"ELD"'>—</td>
-          <td data-label='"DC OPF"'><code>Varg</code>; <code>x0 = Varg0</code>; <span lang="en">balance term</span><span lang="ja">需給式の項</span> <code>−Gshunt</code></td>
-          <td data-label='"AC OPF"'><code>[Varg; V]</code>, <code>Vmin ≤ V ≤ Vmax</code>; <code>x0 = [Varg0; V0]</code>; <code>−V²·Gshunt</code> (P), <code>V²·Bshunt</code> (Q)</td></tr>
+          <td data-label='"DC OPF"'><code>Varg</code>; <code>x0</code> = <span lang="en">initial angle</span><span lang="ja">初期位相角</span>; <span lang="en">balance term</span><span lang="ja">需給式の項</span> <code>−Gshunt</code></td>
+          <td data-label='"AC OPF"'><code>[Varg; V]</code>, <code>Vmin ≤ V ≤ Vmax</code>; <code>x0</code> = <span lang="en">initial</span><span lang="ja">初期値</span> <code>[Varg; V]</code>; <code>−V²·Gshunt</code> (P), <code>V²·Bshunt</code> (Q)</td></tr>
         <tr><td><code>Component</code></td>
           <td data-label='"ELD"'><code>P</code> ∈ <code>[Pmin, Pmax]</code>; <code>HP·P² + fP·P</code></td>
           <td data-label='"DC OPF"'><code>P</code> ∈ <code>[Pmin, Pmax]</code>; <code>HP·P² + fP·P</code></td>
@@ -518,13 +523,15 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
     <!-- ============================== SIDE EFFECTS ============================== -->
     <h2 id="side-effects"><span lang="en">Side effects on the model and caches</span><span lang="ja">モデルへの副作用とキャッシュ</span></h2>
     <ul lang="en">
-      <li>Network, solver, and stale state unchanged; no cache: the problem is built from the current parameters on every call.</li>
+      <li>Network and stale state unchanged; no cache: the problem is built from the current parameters on every call.</li>
+      <li><code>net.solver_OPF</code> keeps (private) the bus voltages of the last solved <code>"AC OPF"</code> (<code>flag &gt; 0</code>) for <code>WarmStart</code>, with the buses and <code>n_revTopology</code> they belong to; not used after a <code>Topology</code> edit; its settings are unchanged.</li>
       <li>No stale tag is read, no equilibrium needed: runs on a network never initialized or edited since.</li>
       <li>User terms live in <code>net.solver_OPF</code> (<code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code>), not in the model. Edits of <code>operation</code> and <code>OPF</code> parameters are reported with their group tags and make nothing stale (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>).</li>
       <li>The result keeps a reference to the network, not a copy. Record of the settings of the run: <code>OPFprob.Description</code>.</li>
     </ul>
     <ul lang="ja">
-      <li>ネットワーク、ソルバー、stale 状態は不変。キャッシュも不使用。問題は呼び出しごとに現在のパラメータから構築</li>
+      <li>ネットワーク、stale 状態は不変。キャッシュも不使用。問題は呼び出しごとに現在のパラメータから構築</li>
+      <li><code>net.solver_OPF</code> は <code>WarmStart</code> 用に、最後に解いた <code>"AC OPF"</code>（<code>flag &gt; 0</code>）の母線電圧を、対応する母線と <code>n_revTopology</code> とともに保持（private）。<code>Topology</code> の編集後は不使用。設定は不変</li>
       <li>stale タグの読み取りなし、平衡点も不要。未初期化のネットワークや初期化後に編集したネットワークでも実行可能</li>
       <li>ユーザー定義の項はモデルではなく <code>net.solver_OPF</code>（<code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code>）に保持。<code>operation</code> と <code>OPF</code> のパラメータの編集は区分のタグで編集として報告し、何も古くしない（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照）</li>
       <li>結果が持つのはネットワークのコピーではなく参照。実行時の設定の記録は <code>OPFprob.Description</code></li>

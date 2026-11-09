@@ -27,7 +27,8 @@ classdef SolverOPF < auxiliary
 %   network when the call option WarmStart of optimize_powerflow is true (kept until
 %   buses or branches are added, removed or replaced; buses are matched by object), and
 %   from the flat start otherwise: angle 0 and magnitude 1, with the set V at PV and slack
-%   buses and the set angle at the slack bus. "DC OPF" starts from the flat angles.
+%   buses and the set angle at the slack bus. "DC OPF" starts from the angles of the same
+%   start.
 % - A default limit of one object is removed by setting it to Inf (-Inf for a lower
 %   bound) in its tab_parameter.operation: Vmin, Vmax (bus); Pmin, Pmax, Qmin, Qmax
 %   (component); Pmax, Qmax, Vargmax, Imax, Smax (branch, where NaN also means none).

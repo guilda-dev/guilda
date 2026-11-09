@@ -102,15 +102,16 @@
     <h3 id="entry-point"><span lang="en">1 · Entry point: a PowerNetwork method</span><span lang="ja">1 · 入口: PowerNetwork のメソッド</span></h3>
     <ul>
       <li><span lang="en">The solver classes implement these methods: <code>SolverPF</code>, <code>SolverOPF</code>, <code>SolverCPF</code>, <code>SolverODE</code>, <code>SolverLIN</code>, held as <code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code>.</span><span lang="ja">メソッドの処理はソルバークラス <code>SolverPF</code>、<code>SolverOPF</code>、<code>SolverCPF</code>、<code>SolverODE</code>、<code>SolverLIN</code> が実装。<code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code> として保持。</span></li>
-      <li><span lang="en">A solver holds defaults only, never a network or a result.</span><span lang="ja">ソルバーが保持するのは既定値だけ。ネットワークや結果は保持しない。</span></li>
+      <li><span lang="en">A solver holds stored defaults, never a result; <code>SolverPF</code> holds no settings (they are in <code>GUILDA.setting</code>).</span><span lang="ja">ソルバーが保持するのは既定値。結果は保持しない。<code>SolverPF</code> は設定を持たない（設定は <code>GUILDA.setting</code>）。</span></li>
+      <li><span lang="en"><code>SolverPF</code> and <code>SolverOPF</code> also keep the last solution of the network for <code>WarmStart</code>; <code>SolverPF</code> also a cache of its equations.</span><span lang="ja"><code>SolverPF</code> と <code>SolverOPF</code> は <code>WarmStart</code> 用にネットワークの最後の解も保持。<code>SolverPF</code> は方程式のキャッシュも保持。</span></li>
       <li><span lang="en">Calling its <code>solve</code> directly: advanced users only.</span><span lang="ja"><code>solve</code> の直接呼び出しは上級者向け。</span></li>
     </ul>
 
     <h3 id="inputs"><span lang="en">2 · Inputs: defaults and overrides</span><span lang="ja">2 · 入力: 既定値と上書き</span></h3>
     <figure class="dg-figure" aria-labelledby="ad-in-title">
       <svg class="dg-svg dg-sv dg-only-wide" viewBox="0 0 760 248" role="img" aria-labelledby="ad-in-title">
-        <title id="ad-in-title" lang="en">Inputs of a call: system data set beforehand, defaults in net.solver_*, and Name-Value options that override the defaults for one call</title>
-        <title lang="ja">呼び出しの入力: 事前に設定する系統データ、net.solver_* の既定値、その呼び出しに限り既定値を上書きする Name-Value オプション</title>
+        <title id="ad-in-title" lang="en">Inputs of a call: system data set beforehand, defaults in GUILDA.setting (power flow) or net.solver_*, and Name-Value options that override the defaults for one call</title>
+        <title lang="ja">呼び出しの入力: 事前に設定する系統データ、GUILDA.setting（潮流計算）または net.solver_* の既定値、その呼び出しに限り既定値を上書きする Name-Value オプション</title>
         <defs>
           <marker id="ad-ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
         </defs>
@@ -122,7 +123,7 @@
         <!-- defaults -->
         <rect class="dg-sv-box is-soft" x="1" y="88" width="318" height="68" rx="10"/>
         <text class="is-k" x="15" y="109" lang="en">ANALYSIS SETTINGS · DEFAULTS</text><text class="is-k" x="15" y="109" lang="ja">解析設定 · 既定値</text>
-        <text class="dg-mono is-sm" x="15" y="128">net.solver_PF / _OPF / _CPF / _ODE / _LIN</text>
+        <text class="dg-mono is-sm" x="15" y="128">GUILDA.setting · net.solver_*</text>
         <text class="is-sm is-muted" x="15" y="145" lang="en">method · tolerance · time span</text><text class="is-sm is-muted" x="15" y="145" lang="ja">手法 · 許容誤差 · 時間範囲</text>
         <text class="is-sm is-muted" x="15" y="172" lang="en">kept between runs; a call never changes them</text><text class="is-sm is-muted" x="15" y="172" lang="ja">実行をまたいで保持、呼び出しでは不変</text>
         <!-- name-value -->
@@ -150,17 +151,17 @@
         <table class="dg-table">
           <tbody>
             <tr><td><span lang="en">System data</span><span lang="ja">系統データ</span></td><td data-label="Set in" data-label-ja="設定場所"><span lang="en">properties, <code>tab_parameter</code>, before the call</span><span lang="ja">呼び出しの前に、プロパティと <code>tab_parameter</code> で設定</span></td><td data-label="Examples" data-label-ja="例"><span lang="en">line constants, V/P/Q specs, operating limits</span><span lang="ja">線路定数、V/P/Q の指定値、運転制約</span></td></tr>
-            <tr><td><span lang="en">Analysis settings</span><span lang="ja">解析設定</span></td><td data-label="Defaults in" data-label-ja="既定値の場所"><code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code><span lang="en">; kept between runs</span><span lang="ja">。実行をまたいで保持</span></td><td data-label="Examples" data-label-ja="例"><span lang="en">method, tolerance, time span</span><span lang="ja">手法、許容誤差、時間範囲</span></td></tr>
+            <tr><td><span lang="en">Analysis settings</span><span lang="ja">解析設定</span></td><td data-label="Defaults in" data-label-ja="既定値の場所"><code>GUILDA.setting</code> <span lang="en">(power flow);</span><span lang="ja">（潮流計算）。</span> <code>net.solver_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code><span lang="en">; kept between runs</span><span lang="ja">。実行をまたいで保持</span></td><td data-label="Examples" data-label-ja="例"><span lang="en">method, tolerance, time span</span><span lang="ja">手法、許容誤差、時間範囲</span></td></tr>
             <tr><td><span lang="en">Name-Value options</span><span lang="ja">Name-Value オプション</span></td><td data-label="Set in" data-label-ja="設定場所"><span lang="en">the call; this call only</span><span lang="ja">呼び出し。その呼び出しのみ</span></td><td data-label="Effect" data-label-ja="効果"><span lang="en">replaces the default for this call</span><span lang="ja">この呼び出しに限り既定値を置き換え</span></td></tr>
           </tbody>
         </table>
       </div>
-      <figcaption><span lang="en">A Name-Value option changes a setting for one call; the default in <code>net.solver_*</code> stays.</span><span lang="ja">Name-Value オプションはその呼び出しに限り設定を変更。<code>net.solver_*</code> の既定値はそのまま。</span></figcaption>
+      <figcaption><span lang="en">A Name-Value option changes a setting for one call; the default in <code>GUILDA.setting</code> or <code>net.solver_*</code> stays.</span><span lang="ja">Name-Value オプションはその呼び出しに限り設定を変更。<code>GUILDA.setting</code> または <code>net.solver_*</code> の既定値はそのまま。</span></figcaption>
     </figure>
     <ul>
       <li><span lang="en">System data describes the system itself; set it before the call.</span><span lang="ja">系統データは系統そのもの。呼び出しの前に設定。</span></li>
       <li><span lang="en">Defaults persist, so repeated runs keep the last settings.</span><span lang="ja">既定値は保持。繰り返し実行では最後の設定を使用。</span></li>
-      <li><span lang="en">Each solver class has a constant <code>OptionMap</code>: the Name-Value names it accepts and the solver property each one sets (e.g. <code>MaxIteration</code> → <code>MaxIterations</code>).</span><span lang="ja">各ソルバークラスに定数 <code>OptionMap</code>。受け付ける Name-Value の名前と、それぞれが設定するソルバーのプロパティの対応（例: <code>MaxIteration</code> → <code>MaxIterations</code>）。</span></li>
+      <li><span lang="en">Each solver class has a constant <code>OptionMap</code>: the Name-Value names it accepts and the solver property (for <code>SolverPF</code>, the setting) each one sets (e.g. <code>MaxIteration</code> → <code>MaxIterations</code> of <code>SolverCPF</code>).</span><span lang="ja">各ソルバークラスに定数 <code>OptionMap</code>。受け付ける Name-Value の名前と、それぞれが設定するソルバーのプロパティ（<code>SolverPF</code> では設定）の対応（例: <code>SolverCPF</code> の <code>MaxIteration</code> → <code>MaxIterations</code>）。</span></li>
       <li><span lang="en">A name that is not in <code>OptionMap</code> stops with <code>GUILDA:resolve_options:UnknownName</code>, which lists the accepted names.</span><span lang="ja"><code>OptionMap</code> にない名前を渡すと <code>GUILDA:resolve_options:UnknownName</code> で停止し、受け付ける名前の一覧を表示。</span></li>
       <li><span lang="en">See <a href="class-design.html#solvers">Class Design: Solver settings of analyses</a>.</span><span lang="ja"><a href="class-design.html#solvers">クラス設計: 解析のソルバー設定</a> を参照。</span></li>
     </ul>
@@ -231,6 +232,8 @@
         <tr><td><code>Solver</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Numerical solver</span><span lang="ja">数値ソルバー</span></td></tr>
         <tr><td><code>TimeLimit</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Limit on computation time</span><span lang="ja">計算時間の上限</span></td></tr>
         <tr><td><code>Verbose</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Print progress messages</span><span lang="ja">進行状況のメッセージを表示</span></td></tr>
+        <tr><td><code>WarmStart</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en"><code>true</code>: start from the last solution of the network; <code>false</code>: flat start. Default: the analysis section of <code>GUILDA.setting</code>. Power flow, OPF, <code>initialize</code>; not the continuation power flow</span><span lang="ja"><code>true</code>: ネットワークの最後の解から開始。<code>false</code>: フラットスタート。既定値: <code>GUILDA.setting</code> の解析ごとのセクション。潮流計算、OPF、<code>initialize</code> が対象。連続潮流計算は対象外</span></td></tr>
+        <tr><td><code>Limits</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Operating limits applied by the continuation power flow: string array of <code>"Q"</code>, <code>"V"</code>, <code>"S"</code>, or <code>"all"</code> / <code>"none"</code>. Default <code>"none"</code> in <code>GUILDA.setting</code></span><span lang="ja">連続潮流計算が適用する運転制約: <code>"Q"</code>、<code>"V"</code>、<code>"S"</code> の string 配列、または <code>"all"</code> / <code>"none"</code>。既定値は <code>GUILDA.setting</code> の <code>"none"</code></span></td></tr>
         <tr><td><code>Progress</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Show a progress display</span><span lang="ja">進行状況の表示を出す</span></td></tr>
         <tr><td><code>Plot</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Plot the result</span><span lang="ja">結果を描画</span></td></tr>
         <tr><td><code>Export</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Write the result to a file</span><span lang="ja">結果をファイルに書き出す</span></td></tr>

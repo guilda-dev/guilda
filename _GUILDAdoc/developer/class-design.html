@@ -329,9 +329,21 @@
     <!-- ============================== SOLVERS ============================== -->
     <h2 id="solvers"><span lang="en">Solver settings of analyses</span><span lang="ja">解析のソルバー設定</span></h2>
     <div class="cd-split">
-      <div><span class="dg-kicker"><span lang="en">Persistent defaults: <code>net.solver_*</code></span><span lang="ja">永続的な既定値: <code>net.solver_*</code></span></span><p lang="en">The solver objects hold the default settings of each analysis. A change made there stays, so repeated runs keep the last settings.</p><p lang="ja">ソルバーオブジェクトが各解析の既定の設定を保持。ここでの変更は残るため、繰り返し実行しても最後の設定を維持。</p></div>
+      <div><span class="dg-kicker"><span lang="en">Persistent defaults: <code>net.solver_*</code>, <code>GUILDA.setting</code></span><span lang="ja">永続的な既定値: <code>net.solver_*</code>、<code>GUILDA.setting</code></span></span><p lang="en">The solver objects hold the default settings of each analysis; the power flow takes its settings from the PowerFlowCalculation section of <code>GUILDA.setting</code> instead. A change made there stays, so repeated runs keep the last settings.</p><p lang="ja">ソルバーオブジェクトが各解析の既定の設定を保持。潮流計算の設定は代わりに <code>GUILDA.setting</code> の PowerFlowCalculation セクション。ここでの変更は残るため、繰り返し実行しても最後の設定を維持。</p></div>
       <div class="is-muted"><span class="dg-kicker"><span lang="en">Run-time Name-Value options</span><span lang="ja">実行時の Name-Value オプション</span></span><p lang="en">Override the defaults for that call only. The stored defaults do not change.</p><p lang="ja">その呼び出しに限り既定値を上書き。保存されている既定値は不変。</p></div>
     </div>
+    <ul lang="en">
+      <li><code>solver_*</code> properties: class-validated (<code>solver_PF SolverPF {mustBeScalarOrEmpty}</code>, ...); a subclass of the network may replace a solver with a subclass of it</li>
+      <li><code>net.solver_PF</code>: no settings; keeps the last converged solution (<code>WarmStart</code>) and a cache of the admittance matrix and the power equations, checked against the revision counters <code>n_revY</code>, <code>n_revPF</code>, <code>n_revTopology</code> of the network (increased by <code>handle_edit</code>)</li>
+      <li><code>net.solver_OPF</code>: also keeps the bus voltages of the last solved AC OPF (<code>WarmStart</code>)</li>
+      <li>Both discard the kept solution only on a <code>Topology</code> edit of the network; <code>net.reset_solver()</code> replaces every solver</li>
+    </ul>
+    <ul lang="ja">
+      <li><code>solver_*</code> プロパティ: クラス検証あり（<code>solver_PF SolverPF {mustBeScalarOrEmpty}</code> など）。ネットワークのサブクラスはソルバーをそのサブクラスに置き換え可能</li>
+      <li><code>net.solver_PF</code>: 設定なし。最後の収束解（<code>WarmStart</code>）と、アドミタンス行列・電力方程式のキャッシュを保持。ネットワークの版番号 <code>n_revY</code>、<code>n_revPF</code>、<code>n_revTopology</code>（<code>handle_edit</code> が増加）で照合</li>
+      <li><code>net.solver_OPF</code>: 最後に解いた AC OPF の母線電圧も保持（<code>WarmStart</code>）</li>
+      <li>どちらも保持した解を破棄するのはネットワークの <code>Topology</code> の編集のときのみ。<code>net.reset_solver()</code> はすべてのソルバーを置き換え</li>
+    </ul>
     <p lang="en">System data (line constants, power-flow specifications, limits) is not a solver setting: set it beforehand on the model objects through properties and <code>tab_parameter</code> (see <a href="api-design.html#rules">API Design, rule 2</a>).</p>
     <p lang="ja">系統データ（線路定数、潮流計算の指定値、制限値）はソルバーの設定ではない。プロパティと <code>tab_parameter</code> を通じて、事前にモデルオブジェクトに設定（<a href="api-design.html#rules">API 設計のルール 2</a> を参照）。</p>
 
@@ -455,7 +467,7 @@
         </tr>
         <tr>
           <td><span lang="en">Angles</span><span lang="ja">角度</span></td>
-          <td><span lang="en">Radians: bus angle <code>Varg</code> / <code>Varg0</code>, branch <code>phase</code>, rotor angle. Degrees appear only in labels of the network diagram.</span><span lang="ja">ラジアン: 母線の位相角 <code>Varg</code> / <code>Varg0</code>、ブランチの <code>phase</code>、回転子角。度はネットワーク図のラベルのみ。</span></td>
+          <td><span lang="en">Radians: bus angle <code>Varg</code>, branch <code>phase</code>, rotor angle. Degrees appear only in labels of the network diagram.</span><span lang="ja">ラジアン: 母線の位相角 <code>Varg</code>、ブランチの <code>phase</code>、回転子角。度はネットワーク図のラベルのみ。</span></td>
         </tr>
         <tr>
           <td><span lang="en">Time and frequency</span><span lang="ja">時間と周波数</span></td>

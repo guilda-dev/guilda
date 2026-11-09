@@ -324,12 +324,14 @@
             <li>Reads <code>network/parameter.csv</code> (optional), <code>bus/parameter.csv</code> and <code>branch/parameter.csv</code></li>
             <li>Maps the branch columns <code>tap</code>/<code>phase</code> to <code>Tap</code>/<code>Phase</code></li>
             <li>Checks the required columns; warns about unknown columns</li>
+            <li>Old bus columns <code>V0</code>, <code>Varg0</code>: ignored with the INFO message <code>GUILDA:import_csv:RemovedColumn</code></li>
             <li>Checks that <code>From</code>/<code>To</code> are bus row numbers</li>
             <li>Reads <code>FullTag</code> as text</li>
           </ul><ul lang="ja">
             <li><code>network/parameter.csv</code>（任意）、<code>bus/parameter.csv</code>、<code>branch/parameter.csv</code> を読み込み</li>
             <li>ブランチの列 <code>tap</code>/<code>phase</code> を <code>Tap</code>/<code>Phase</code> に対応付け</li>
             <li>必須列を検査、未知の列は警告</li>
+            <li>母線の旧列 <code>V0</code>、<code>Varg0</code>: INFO メッセージ <code>GUILDA:import_csv:RemovedColumn</code> を出して無視</li>
             <li><code>From</code>/<code>To</code> が母線の行番号であることを確認</li>
             <li><code>FullTag</code> を文字列として読み込み</li>
           </ul></dd>
@@ -614,13 +616,13 @@
           <dd><ul lang="en">
             <li>One bus per <code>mpc.bus</code> row, in row order</li>
             <li><code>V</code> = VG of the first in-service generator of the bus (VM without one)</li>
-            <li><code>Varg</code> = <code>Varg0</code> = VA in rad, <code>V0</code> = VM</li>
+            <li><code>Varg</code> = VA in rad</li>
             <li><code>Gshunt</code>/<code>Bshunt</code> = GS/BS ÷ baseMVA; <code>Vmin</code>, <code>Vmax</code>, <code>baseKV</code></li>
             <li>Bus numbers serve only to resolve gen and branch rows</li>
           </ul><ul lang="ja">
             <li><code>mpc.bus</code> の行ごとに行の順で母線を作成</li>
             <li><code>V</code> = その母線で最初に運転中の発電機の VG（なければ VM）</li>
-            <li><code>Varg</code> = <code>Varg0</code> = VA [rad]、<code>V0</code> = VM</li>
+            <li><code>Varg</code> = VA [rad]</li>
             <li><code>Gshunt</code>/<code>Bshunt</code> = GS/BS ÷ baseMVA、<code>Vmin</code>、<code>Vmax</code>、<code>baseKV</code></li>
             <li>母線番号は gen と branch の行の解決にだけ使用</li>
           </ul></dd>
@@ -693,16 +695,16 @@
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Bus row <em>i</em> = <code>a_Bus{i}</code>: type PQ, PV when it has a non-load component, REF at <code>tools.slack_bus_index</code> (VA = its <code>Varg</code>)</li>
-            <li>VM/VA = <code>V0</code>/<code>Varg0</code></li>
+            <li>VM/VA = <code>|c_Vequilibrium|</code>/<code>angle(c_Vequilibrium)</code> of the bus (1/0 before <code>initialize</code>)</li>
             <li>Loads (<code>component.load.abstract</code>) add −P, −Q to PD/QD</li>
-            <li>Every other component: a gen row with PG/QG = OPF <code>P0</code>/<code>Q0</code>, VG = bus <code>V</code>, limits and polynomial costs (<code>c2 = HP/baseMVA^2</code>, <code>c1 = fP/baseMVA</code>)</li>
+            <li>Every other component: a gen row with PG/QG = OPF <code>P0</code>/<code>Q0</code>, VG = bus <code>V</code> (1 when NaN), limits and polynomial costs (<code>c2 = HP/baseMVA^2</code>, <code>c1 = fP/baseMVA</code>)</li>
             <li>Each branch fitted from its 2×2 matrix to R, X, B, TAP, SHIFT</li>
             <li>Asymmetric shunts moved to the bus GS/BS</li>
           </ul><ul lang="ja">
             <li>母線の行 <em>i</em> = <code>a_Bus{i}</code>: 種類は PQ、負荷以外の機器があれば PV、<code>tools.slack_bus_index</code> の母線は REF（VA = その <code>Varg</code>）</li>
-            <li>VM/VA = <code>V0</code>/<code>Varg0</code></li>
+            <li>VM/VA = 母線の <code>|c_Vequilibrium|</code>/<code>angle(c_Vequilibrium)</code>（<code>initialize</code> の前は 1/0）</li>
             <li>負荷（<code>component.load.abstract</code>）は −P、−Q を PD/QD に加算</li>
-            <li>それ以外の機器: gen の行（PG/QG = OPF の <code>P0</code>/<code>Q0</code>、VG = 母線の <code>V</code>、上下限と多項式コスト（<code>c2 = HP/baseMVA^2</code>、<code>c1 = fP/baseMVA</code>））</li>
+            <li>それ以外の機器: gen の行（PG/QG = OPF の <code>P0</code>/<code>Q0</code>、VG = 母線の <code>V</code>（NaN なら 1）、上下限と多項式コスト（<code>c2 = HP/baseMVA^2</code>、<code>c1 = fP/baseMVA</code>））</li>
             <li>各ブランチは 2×2 行列から R・X・B・TAP・SHIFT に当てはめ</li>
             <li>非対称なシャントは母線の GS/BS に移動</li>
           </ul></dd>
@@ -733,7 +735,7 @@
       <thead><tr><th><span lang="en">File</span><span lang="ja">ファイル</span></th><th><span lang="en">One row per</span><span lang="ja">1 行が表すもの</span></th><th><span lang="en">Columns</span><span lang="ja">列</span></th></tr></thead>
       <tbody>
         <tr><td><code>network/parameter.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">network (optional file)</span><span lang="ja">ネットワーク（任意のファイル）</span></td><td data-label="Columns" data-label-ja="列"><code>Hz</code>, <code>baseMVA</code></td></tr>
-        <tr><td><code>bus/parameter.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">bus</span><span lang="ja">母線</span></td><td data-label="Columns" data-label-ja="列"><code>V</code>*, <code>Varg</code>*, <code>Tag</code>, <code>FullTag</code>, <code>V0</code>, <code>Varg0</code>, <code>baseKV</code>, <code>Vmin</code>, <code>Vmax</code>, <code>Gshunt</code>, <code>Bshunt</code>, <code>Xaxis</code>, <code>Yaxis</code>, <code>Marker</code>, <code>Slack</code> <span lang="en">(a column <code>baseMVA</code> is accepted and ignored)</span><span lang="ja">（列 <code>baseMVA</code> は受け付けて無視）</span></td></tr>
+        <tr><td><code>bus/parameter.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">bus</span><span lang="ja">母線</span></td><td data-label="Columns" data-label-ja="列"><code>V</code>*, <code>Varg</code>*, <code>Tag</code>, <code>FullTag</code>, <code>baseKV</code>, <code>Vmin</code>, <code>Vmax</code>, <code>Gshunt</code>, <code>Bshunt</code>, <code>Xaxis</code>, <code>Yaxis</code>, <code>Marker</code>, <code>Slack</code> <span lang="en">(a column <code>baseMVA</code> is accepted and ignored; old columns <code>V0</code>, <code>Varg0</code> are ignored with an INFO message)</span><span lang="ja">（列 <code>baseMVA</code> は受け付けて無視。旧列 <code>V0</code>、<code>Varg0</code> は INFO メッセージを出して無視）</span></td></tr>
         <tr><td><code>branch/parameter.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">branch</span><span lang="ja">ブランチ</span></td><td data-label="Columns" data-label-ja="列"><code>Type</code>*, <code>From</code>*, <code>To</code>*, <code>FullTag</code>, <code>R</code>, <code>X</code>, <code>C</code>, <code>tap</code> | <code>Tap</code>, <code>phase</code> | <code>Phase</code>, <code>Smax</code>, <code>Imax</code>, <code>Pmax</code>, <code>Qmax</code>, <code>Vargmax</code>, <code>MidXaxis</code>, <code>MidYaxis</code>, <code>Marker</code></td></tr>
         <tr><td><code>component/&lt;key&gt;/main.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">component of type <code>&lt;key&gt;</code></span><span lang="ja">種類 <code>&lt;key&gt;</code> の機器</span></td><td data-label="Columns" data-label-ja="列"><code>Bus</code>*, <code>P</code>*, <code>Q</code>*, <code>FullTag</code>, <code>baseMVA</code>, <code>Pmin</code>, <code>Pmax</code>, <code>Qmin</code>, <code>Qmax</code>, <code>Xaxis</code>, <code>Yaxis</code>, <code>Marker</code>, <code>MidXaxis</code>, <code>MidYaxis</code>, <code>ParameterID</code>, <code>OpfID</code></td></tr>
         <tr><td><code>component/&lt;key&gt;/dynamics.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">distinct parameter set</span><span lang="ja">異なるパラメータの組</span></td><td data-label="Columns" data-label-ja="列"><code>ParameterID</code>*, <span lang="en">the <code>sv_para</code> of the class (not checked by the importer)</span><span lang="ja">クラスの <code>sv_para</code>（読み込み側では検査しない）</span></td></tr>

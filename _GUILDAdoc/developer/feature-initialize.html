@@ -82,12 +82,12 @@
         <tr>
           <td><code>Method</code></td>
           <td lang="en" data-label="Values and default"><ul>
-            <li><code>"powerflow"</code> (default): <code>net.calculate_powerflow</code> with the settings of <code>net.solver_PF</code>; when not given, only if <code>net.sct_stale.powerflow</code> is not empty</li>
+            <li><code>"powerflow"</code> (default): <code>net.calculate_powerflow</code> with the settings of <code>GUILDA.setting</code> (PowerFlowCalculation); when not given, only if <code>net.sct_stale.powerflow</code> is not empty</li>
             <li><code>"OPF"</code>: <code>net.optimize_powerflow</code> with <code>Method="AC OPF"</code> and the settings of <code>net.solver_OPF</code>; always solved</li>
             <li><code>"equilibrium"</code>: never solved; the equilibria the components already hold are kept, stale ones recomputed from the held <code>V</code> and <code>I</code></li>
           </ul><small>Default fixed in <code>initialize</code>; no <code>solver_*</code> property or <code>GUILDA.config</code> entry for it</small></td>
           <td lang="ja" data-label="値と既定値"><ul>
-            <li><code>"powerflow"</code>（既定）: <code>net.solver_PF</code> の設定で <code>net.calculate_powerflow</code> を実行。指定がなければ <code>net.sct_stale.powerflow</code> が空でないときのみ</li>
+            <li><code>"powerflow"</code>（既定）: <code>GUILDA.setting</code>（PowerFlowCalculation）の設定で <code>net.calculate_powerflow</code> を実行。指定がなければ <code>net.sct_stale.powerflow</code> が空でないときのみ</li>
             <li><code>"OPF"</code>: <code>net.solver_OPF</code> の設定で <code>Method="AC OPF"</code> の <code>net.optimize_powerflow</code> を実行。常に求解</li>
             <li><code>"equilibrium"</code>: 求解なし。機器が保持済みの平衡点を維持し、古いものは保持された <code>V</code> と <code>I</code> から再計算</li>
           </ul><small>既定値は <code>initialize</code> 内で固定。対応する <code>solver_*</code> のプロパティや <code>GUILDA.config</code> の項目はなし</small></td>
@@ -97,16 +97,18 @@
           <td lang="en" data-label="Values and default"><ul>
             <li>Passed unchanged to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>optimize_powerflow</code> (<code>"OPF"</code>)</li>
             <li>Validated there against <code>SolverPF.OptionMap</code> / <code>SolverOPF.OptionMap</code> plus <code>Plot</code> and <code>Export</code></li>
-            <li>Defaults: the properties of <code>net.solver_PF</code> / <code>net.solver_OPF</code>, which a new solver reads from <code>GUILDA.config</code></li>
+            <li>Defaults: the PowerFlowCalculation section of <code>GUILDA.setting</code> / the properties of <code>net.solver_OPF</code>, which a new solver reads from <code>GUILDA.config</code></li>
+            <li><code>WarmStart</code>: passed the same way; <code>true</code> starts the power flow or the AC OPF from the last solution of the network (kept by <code>net.solver_PF</code> / <code>net.solver_OPF</code>), <code>false</code> from the flat start; default: <code>WarmStart</code> of the PowerFlowCalculation / OptimalPowerFlow section of <code>GUILDA.setting</code></li>
             <li><code>"equilibrium"</code>: no other option</li>
-            <li>Formulation of the analysis: not an option of <code>initialize</code>; set <code>net.solver_PF.Method</code></li>
+            <li>Formulation of the analysis: not an option of <code>initialize</code>; for the power flow, the <code>Method</code> of the PowerFlowCalculation section of <code>GUILDA.setting</code></li>
           </ul></td>
           <td lang="ja" data-label="値と既定値"><ul>
             <li>そのまま <code>calculate_powerflow</code>（<code>"powerflow"</code>）または <code>optimize_powerflow</code>（<code>"OPF"</code>）へ受け渡し</li>
             <li>渡し先で <code>SolverPF.OptionMap</code> / <code>SolverOPF.OptionMap</code> と <code>Plot</code>、<code>Export</code> により検査</li>
-            <li>既定値: <code>net.solver_PF</code> / <code>net.solver_OPF</code> のプロパティ。ソルバーは生成時に <code>GUILDA.config</code> から読み込み</li>
+            <li>既定値: <code>GUILDA.setting</code> の PowerFlowCalculation セクション / <code>net.solver_OPF</code> のプロパティ。ソルバーは生成時に <code>GUILDA.config</code> から読み込み</li>
+            <li><code>WarmStart</code>: 同様に受け渡し。<code>true</code> でネットワークの最後の解（<code>net.solver_PF</code> / <code>net.solver_OPF</code> が保持）から潮流計算または AC OPF を開始、<code>false</code> でフラットスタート。既定値: <code>GUILDA.setting</code> の PowerFlowCalculation / OptimalPowerFlow セクションの <code>WarmStart</code></li>
             <li><code>"equilibrium"</code>: 他のオプションは不可</li>
-            <li>解析の定式化: <code>initialize</code> のオプションではない。<code>net.solver_PF.Method</code> で設定</li>
+            <li>解析の定式化: <code>initialize</code> のオプションではない。潮流計算では <code>GUILDA.setting</code> の PowerFlowCalculation セクションの <code>Method</code></li>
           </ul></td>
         </tr>
       </tbody>
@@ -262,7 +264,7 @@
             <li>失敗時、呼び出し前にスラック母線がなければ <code>release_slack</code> が選ばれたスラック母線を解除</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>net.solver_PF</code>, <code>c_nv</code>, <code>Bus.l_isSlack</code>, <code>tab_parameter.powerflow</code></span><span lang="ja"><code>net.solver_PF</code>、<code>c_nv</code>、<code>Bus.l_isSlack</code>、<code>tab_parameter.powerflow</code></span></dd>
+          <dd><span lang="en"><code>GUILDA.config("PowerFlowCalculation")</code>, <code>net.solver_PF</code> (warm start, cache), <code>c_nv</code>, <code>Bus.l_isSlack</code>, <code>tab_parameter.powerflow</code></span><span lang="ja"><code>GUILDA.config("PowerFlowCalculation")</code>、<code>net.solver_PF</code>（ウォームスタート、キャッシュ）、<code>c_nv</code>、<code>Bus.l_isSlack</code>、<code>tab_parameter.powerflow</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>ResultPF</code>; <code>result.tab_bus</code> n_bus × 6 (<code>Varg</code> [rad], <code>V</code>, <code>P</code>, <code>Q</code>, <code>Vphasor</code>, <code>Iphasor</code> [pu]); may set <code>l_isSlack</code> of one bus</span><span lang="ja"><code>ResultPF</code>。<code>result.tab_bus</code> は n_bus × 6（<code>Varg</code> [rad]、<code>V</code>、<code>P</code>、<code>Q</code>、<code>Vphasor</code>、<code>Iphasor</code> [pu]）。1 つの母線の <code>l_isSlack</code> を設定する場合あり</span></dd>
         </dl>
