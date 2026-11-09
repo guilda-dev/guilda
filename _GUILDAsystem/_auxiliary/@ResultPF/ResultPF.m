@@ -13,7 +13,17 @@ classdef ResultPF < ResultBase
 %   br.a_Bus{2}. Pfrom, Qfrom, Pto, Qto: power flowing into the branch at each end; Ifrom,
 %   Ito: current phasors into the branch; Ploss, Qloss: losses of the branch (sum of both
 %   ends).
-% - `cm_Vhistory` has one column per iteration, or per output time ("dynamic").
+% - `cm_Vhistory` has one column per iteration, or per ODE step ("dynamic").
+% - `tab_violation` records the operating limits (tab_parameter.operation) that the
+%   solution violates by more than Tolerance; the power flow itself never applies them,
+%   and a violation gives no warning or error. One row per violated limit, 0 rows when
+%   none (or when the calculation did not converge):
+%   - Class: "Bus", "Component" or "Branch"; Object: its tag.
+%   - Limit: the violated limit, e.g. "Vmin", "Vmax" (bus), "Pmin", "Pmax", "Qmin",
+%     "Qmax" (component), "Pmax", "Qmax", "Smax", "Imax", "Vargmax" (branch).
+%   - Value: the solution value (bus V; component P, Q as initialize gives them; for a
+%     branch the larger of its two ends of |P|, |Q|, |S|, |I|, and |Varg_from - Varg_to|).
+%   - Bound: the limit; Excess: |Value - Bound|.
 %
 % <@Examples>
 % ```matlab
@@ -21,6 +31,7 @@ classdef ResultPF < ResultBase
 % [result, flag, output] = net.calculate_powerflow();
 % result.tab_bus           % Varg, V, P, Q, Vphasor, Iphasor of each bus
 % result.tab_branch        % flows and losses of each branch
+% result.tab_violation     % violated operating limits (0 rows when none)
 % result.Plot();           % voltage profile
 % result.Export("pf.csv", Table="branch");
 % ```
@@ -30,12 +41,13 @@ classdef ResultPF < ResultBase
     properties (SetAccess=private) % Result
         tab_bus table = table()          % Bus values, one row per bus: Varg [rad], V [pu], P, Q (injections into the network) [pu], Vphasor, Iphasor [pu].
         tab_branch table = table()       % Branch flows, one row per branch: Pfrom, Qfrom, Pto, Qto, Ifrom, Ito, Ploss, Qloss [pu] (see the class help).
-        cm_Vhistory double = zeros(0,0)  % [pu] Bus voltage phasors, one row per bus (tab_bus order), one column per iteration or output time.
-        rv_step double = zeros(1,0)      % Iteration numbers, or times [s] ("dynamic"), of cm_Vhistory.
+        cm_Vhistory double = zeros(0,0)  % [pu] Bus voltage phasors, one row per bus (tab_bus order), one column per iteration or ODE step ("dynamic").
+        rv_step double = zeros(1,0)      % Iteration numbers, or virtual times ("dynamic"), of cm_Vhistory.
+        tab_violation table = table()    % Violated operating limits, one row per limit: Class, Object, Limit, Value, Bound, Excess (see the class help).
     end
 
     methods
-        function obj = ResultPF(net, solver, options, flag, output, elapsed, tab_bus, tab_branch, cm_Vhistory, rv_step)
+        function obj = ResultPF(net, solver, options, flag, output, elapsed, tab_bus, tab_branch, cm_Vhistory, rv_step, tab_violation)
         % Create a power flow result.
         %
         % Stores the computed values of a power flow calculation.
@@ -50,6 +62,7 @@ classdef ResultPF < ResultBase
                 tab_branch table  = table() % Branch flows (see tab_branch).
                 cm_Vhistory double = zeros(0,0) % [pu] Bus voltages at each step.
                 rv_step    double = zeros(1,0) % Iteration numbers or times of cm_Vhistory.
+                tab_violation table = table() % Violated operating limits (see tab_violation).
             end
             arguments (Output)
                 obj % The result object.
@@ -59,6 +72,7 @@ classdef ResultPF < ResultBase
             obj.tab_branch  = tab_branch;
             obj.cm_Vhistory = cm_Vhistory;
             obj.rv_step     = reshape(rv_step, 1, []);
+            obj.tab_violation = tab_violation;
         end
 
         fig = Plot(obj, opt)

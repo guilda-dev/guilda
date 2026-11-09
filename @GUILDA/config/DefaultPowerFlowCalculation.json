@@ -12,49 +12,34 @@
         "Description": "Calculation method: 'newton', 'gradient', 'levenberg-marquardt', 'fsolve' (needs Optimization Toolbox) or 'dynamic' (virtual bus dynamics)"
     },
     "Tolerance":{
+        "Value": 1e-8,
+        "Type": "double",
+        "Description": "[pu] Largest P/Q mismatch of a converged solution (every method)"
+    },
+    "MaxIteration":{
         "Value": 0,
         "Type": "double",
-        "Description": "Convergence tolerance of the method (see SolverPF). 0 uses the method default"
+        "Description": "Maximum number of iterations. 0: automatic (newton 50, gradient 1e6, levenberg-marquardt 100, fsolve 400)"
     },
-    "MaxIterations":{
+    "NewtonStepSize":{
+        "Value": 1,
+        "Type": "double",
+        "Description": "Factor of the Newton-Raphson update ('newton')"
+    },
+    "GradientStepSize":{
         "Value": 0,
         "Type": "double",
-        "Description": "Maximum number of iterations (see SolverPF). 0 uses the method default"
+        "Description": "Step size alpha of 'gradient'. 0: automatic"
     },
-    "Display":{
-        "Value": "none",
-        "Type": "select",
-        "options": [
-            "none",
-            "iter",
-            "iter-detailed",
-            "final",
-            "final-detailed"
-        ],
-        "Description": "Progress display ('iter': one line per iteration; 'Display' option @fsolve)"
-    },
-    "MaxFunEvals"  :{
-        "Value": 0,
-        "Type": "double",
-        "Description": "'MaxFunEvals' option @fsolve (If NaN, use default)"
-    }, 
-    "UseParallel":{
+    "FsolveUseParallel":{
         "Value": false,
         "Type": "logical",
         "Description": "'UseParallel' option @fsolve"
     },
-    "PlotFcn":{
-        "Value": "none",
-        "Type": "select",
-        "options":[
-            "none",
-            "optimplotx",
-            "optimplotfunccount",
-            "optimplotfval",
-            "optimplotstepsize",
-            "optimplotfirstorderopt"
-        ],
-        "Description": "'PlotFcn' option @fsolve"
+    "FsolveMaxFunEvals":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "'MaxFunctionEvaluations' option @fsolve. 0: the fsolve default"
     },
     "WhenFailed":{
         "Value": "WARN",
@@ -66,5 +51,10 @@
             "NONE"
         ],
         "Description": "Behavior if the power flow calculation does not converge"
+    },
+    "WarmStart":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Start from the last power flow solution of the network (false: flat start)"
     }
 }

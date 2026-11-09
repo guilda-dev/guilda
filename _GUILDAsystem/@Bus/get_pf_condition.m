@@ -11,14 +11,14 @@ function tab_PFcondition = get_pf_condition(obj)
         obj
     end
     arguments (Output)
-        tab_PFcondition   % One-row table: Type, Varg, V, P, Q, Varg0, V0 (NaN where the type does not set the value).
+        tab_PFcondition   % One-row table: Type, Varg, V, P, Q (NaN where the type does not set the value).
     end
 
     tab_V = obj.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", obj.a_Parameter)}.tab_parameter;
     a_com = obj.a_Component;
     if obj.l_isSlack
         Type     = "slack";
-        rr_PFcondition = [tab_V.Varg,tab_V.V,nan(1,2),  tab_V.Varg, tab_V.V];
+        rr_PFcondition = [tab_V.Varg,tab_V.V,nan(1,2)];
     else
         P = 0;
         Q = 0;
@@ -29,12 +29,12 @@ function tab_PFcondition = get_pf_condition(obj)
         end
         if isnan(Q)
             Type     = "PV";
-            rr_PFcondition = [ nan, tab_V.V, P, nan, tab_V.Varg0, tab_V.V0];
+            rr_PFcondition = [ nan, tab_V.V, P, nan];
         else
             Type     = "PQ";
-            rr_PFcondition = [ nan,     nan, P,   Q, tab_V.Varg0, tab_V.V0];
+            rr_PFcondition = [ nan,     nan, P,   Q];
         end
     end
-    tab_PFcondition = [table(Type), array2table(rr_PFcondition,"VariableNames",["Varg","V","P","Q","Varg0","V0"])];
+    tab_PFcondition = [table(Type), array2table(rr_PFcondition,"VariableNames",["Varg","V","P","Q"])];
     tab_PFcondition.Properties.RowNames = string(obj);
 end

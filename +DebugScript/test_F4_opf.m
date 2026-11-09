@@ -153,6 +153,21 @@ assert(all(tab_PF.V >= 0.95 & tab_PF.V <= 1.05))   % 潮流解が OPF の制約�
 assert(J_AC <= DebugScript.helper.opf_cost(net, DebugScript.helper.pf_component_power(net, tab_PF)) + 1e-6)
 
 
+%% AC OPF warm start starts from the last solution
+% WarmStart=true (既定) は前回の AC OPF の解から、false はフラットスタート。同じ解に収束する
+net = DebugScript.helper.build_ieee14();
+[res0, flag0, out0] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", WarmStart=false));
+[res1, flag1, out1] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+assert(flag0 > 0 && flag1 > 0 && res1.options.WarmStart && ~res0.options.WarmStart)
+assert(out1.iterations ~= out0.iterations)     % 初期値が違う (内点法なので反復回数は減るとは限らない)
+assert(abs(res1.r_cost - res0.r_cost) < 1e-9*res0.r_cost && max(abs(res1.tab_bus.Vphasor - res0.tab_bus.Vphasor)) < 1e-4)
+% build_opf_problem の初期値はフラットスタート (母線の位相 0、PV・スラックは設定値 V)
+[~, x0] = DebugScript.helper.quiet(@() net.build_opf_problem(Method="AC OPF"));
+s_bus = string(net.a_Bus{14});
+assert(isequal(x0.(s_bus), [0; 1]))
+assert(error_id(@() net.optimize_powerflow(WarmStart="on")) ~= "")
+
+
 %% AC OPF respects generator limits
 % 発電機の出力上限・無効電力の範囲が守られ、上限に達する
 net = DebugScript.helper.build_9bus();

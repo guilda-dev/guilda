@@ -28,8 +28,6 @@ function bus = add_bus(obj, opt)
         opt.Vmax              (1,1) double = 1.5;   % [pu] Upper limit of the bus voltage magnitude (Inf: none).
         opt.baseKV            (1,1) double = 230;   % [kV] Base voltage; stored and exported to MATPOWER, used in no calculation.
         opt.baseMVA           (1,1) double = nan;   % [MVA] COMPAT(v3) Ignored; the system base is net.tab_parameter.base.baseMVA.
-        opt.Varg0             (1,1) double = 0/180*pi;   % [rad] Initial voltage angle of the power-flow and OPF solvers.
-        opt.V0                (1,1) double = 1;   % [pu] Initial voltage magnitude of the power-flow and OPF solvers.
         opt.Tag               (1,1) string = 'B';   % Prefix of the bus tag.
         opt.FullTag           (1,1) string = "";   % Complete bus tag, used instead of Tag and the automatic number ("" = automatic).
         opt.Xaxis             (1,1) double = nan;   % x coordinate in network diagrams (NaN = automatic layout).

@@ -32,7 +32,7 @@ classdef Bus < PowerSystemModel
 % ```matlab
 % net = network.IEEE9bus();
 % bus = net.a_Bus{1};
-% bus.tab_parameter.powerflow          % V, Varg, V0, Varg0
+% bus.tab_parameter.powerflow          % V, Varg
 % bus.s_bustype                        % "slack", "PV" or "PQ"
 % gen = bus.add_component("gen-park", P=0.5);
 % bus.remove_component(gen.s_tag);
@@ -90,7 +90,7 @@ classdef Bus < PowerSystemModel
             % tab_parameter columns:
             % - dynamics: shunt admittance Gshunt, Bshunt [pu], added to the diagonal of the network admittance matrix
             % - operation: operating limits: Vmin, Vmax [pu]: limits of the voltage magnitude (-Inf/Inf: none); baseKV [kV]: base voltage, stored and exported to MATPOWER but used in no calculation
-            % - powerflow: V [pu], Varg [rad]: voltage settings of a slack bus (V also of a PV bus); V0 [pu], Varg0 [rad]: solver initial values
+            % - powerflow: V [pu], Varg [rad]: voltage settings of a slack bus (V also of a PV bus)
             % - graph: Xaxis, Yaxis: drawing position (NaN: automatic layout); Marker: marker of the bus
 
             a_Pd = Parameter(obj, "dynamics", struct( ...
@@ -102,9 +102,7 @@ classdef Bus < PowerSystemModel
                   "Vmax", opt.Vmax));
             a_Pp = Parameter(obj, "powerflow", struct( ...
                     "V", opt.V, ...
-                 "Varg", opt.Varg, ...
-                   "V0", opt.V0, ...
-                "Varg0", opt.Varg0));
+                 "Varg", opt.Varg));
             a_Pg = Parameter(obj, "graph", struct( ...
                  "Xaxis", opt.Xaxis, ...
                  "Yaxis", opt.Yaxis, ...

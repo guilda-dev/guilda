@@ -275,7 +275,7 @@ assert_unchanged(net, V0, I0, X0, log0, flag0)
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);
 [V0, I0, X0, log0, flag0] = snapshot(net);
-ME = error_of(@() net.initialize(Method="powerflow", MaxIteration=1, Tolerance=1e-14));
+ME = error_of(@() net.initialize(Method="powerflow", MaxIteration=1, Tolerance=1e-14, WarmStart=false));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializePowerflowFailed", DebugScript.helper.msg_id(ME))
 assert_unchanged(net, V0, I0, X0, log0, flag0)
 

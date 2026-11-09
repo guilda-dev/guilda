@@ -7,6 +7,7 @@
         <entry key="MissingFile">File not found: {0}. Export the model again or add {1}.</entry>
         <entry key="BusRow">{0} row {1}: {2} = {3} is not a bus number. bus/parameter.csv has {4} rows, so give an integer from 1 to {5}.</entry>
         <entry key="UnknownID">{0} row {1}: {2} = {3} is not in {4}.</entry>
+        <entry key="RemovedColumn">Ignored the columns {1} of {0}: the bus initial values V0 and Varg0 were removed. The power flow starts from the flat start or the last solution (WarmStart).</entry>
         <entry key="UnknownColumn">Ignored unknown columns in {0}: {1}. Known columns: {2}.</entry>
     </message>
 </rsccat>

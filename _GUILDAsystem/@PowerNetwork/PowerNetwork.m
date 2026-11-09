@@ -37,10 +37,12 @@ classdef PowerNetwork < PowerSystemModel
 % - linearization and eigenvalue analysis (`linearize`, `get_sys`)
 % - network diagrams (`draw_diagram`) and CSV / MATPOWER import and export
 %
-% Each analysis runs a solver object stored in a `solver_*` property. The properties of
-% that solver are the stored defaults, kept between runs; Name-Value options of a call
-% override them for that call only. Results are returned as result objects and never
-% stored in the network or the solver.
+% Each analysis runs a solver object stored in a `solver_*` property; a subclass of the
+% network may replace it with a subclass of the solver. `solver_PF` keeps no settings
+% (they are in GUILDA.setting), only the warm start solution and the cache of the
+% network; the other solvers hold stored defaults, kept between runs. Name-Value options
+% of a call override the settings for that call only. Results are returned as result
+% objects and never stored in the network or the solver.
 %
 % The scenarios (`a_Scenario`) are added by `add_scenario` and removed by
 % `remove_scenario`; they are not model data and do not make the equilibrium stale.
@@ -96,11 +98,16 @@ classdef PowerNetwork < PowerSystemModel
         a_Scenario (:,1) cell = cell(0,1);          % Simulation scenarios (Scenario), in the order added by add_scenario; not model data. <@Stale> nothing
     end
     properties(SetAccess=protected) % Solvers
-        solver_PF                                   % Solver of calculate_powerflow (returns a ResultPF); stored defaults: Method, Tolerance, MaxIterations, ... <@Type> SolverPF <@Stale> nothing
-        solver_OPF                                  % Solver of optimize_powerflow (returns a ResultOPF); stored defaults: Method, Solver, Display, MaxIteration, ... <@Type> SolverOPF <@Stale> nothing
-        solver_CPF                                  % Solver of calculate_continuation_powerflow (returns a ResultCPF); stored defaults: LoadBus, MaxIterations, StepSize, ... <@Type> SolverCPF <@Stale> nothing
-        solver_ODE                                  % Solver of simulate (returns a ResultODE); stored defaults: Solver, RelativeTolerance, AbsoluteTolerance, Progress, TimeLimit, ... <@Type> SolverODE <@Stale> nothing
-        solver_LIN                                  % Solver of linearize and get_sys (returns a ResultLIN); stored defaults: Algorithm, Point, Coordinate. <@Type> SolverLIN <@Stale> nothing
+        solver_PF SolverPF {mustBeScalarOrEmpty}    % Solver of calculate_powerflow (returns a ResultPF); keeps the warm start solution and the cache, no settings (GUILDA.setting). <@Type> SolverPF <@Stale> nothing
+        solver_OPF SolverOPF {mustBeScalarOrEmpty}  % Solver of optimize_powerflow (returns a ResultOPF); stored defaults: Method, Solver, Display, MaxIteration, ... <@Type> SolverOPF <@Stale> nothing
+        solver_CPF SolverCPF {mustBeScalarOrEmpty}  % Solver of calculate_continuation_powerflow (returns a ResultCPF); stored defaults: LoadBus, MaxIterations, StepSize, ... <@Type> SolverCPF <@Stale> nothing
+        solver_ODE SolverODE {mustBeScalarOrEmpty}  % Solver of simulate (returns a ResultODE); stored defaults: Solver, RelativeTolerance, AbsoluteTolerance, Progress, TimeLimit, ... <@Type> SolverODE <@Stale> nothing
+        solver_LIN SolverLIN {mustBeScalarOrEmpty}  % Solver of linearize and get_sys (returns a ResultLIN); stored defaults: Algorithm, Point, Coordinate. <@Type> SolverLIN <@Stale> nothing
+    end
+    properties(SetAccess=private, GetAccess={?PowerNetwork,?SolverPF,?SolverOPF}) % Revisions
+        n_revY (1,1) double = 0                     % Revision of the bus admittance matrix, increased by handle_edit (see there); compared by the caches of the solvers.
+        n_revPF (1,1) double = 0                    % Revision of the power flow equations (every n_revY edit and the power flow settings), increased by handle_edit.
+        n_revTopology (1,1) double = 0              % Revision of the topology (buses and branches added, removed or replaced), increased by handle_edit; discards the warm start.
     end
     properties(Dependent) % Steady State
         cv_Vequilibrium                             % [pu] Bus voltage phasors at the equilibrium, one per bus.

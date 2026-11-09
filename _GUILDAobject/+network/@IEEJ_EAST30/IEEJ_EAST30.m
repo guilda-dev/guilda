@@ -35,7 +35,7 @@ classdef IEEJ_EAST30 < PowerNetwork
 %   transformer rule does not apply to this model.
 % - Shunts: `YC` of the N card is `Bshunt` (capacitors at peak, a reactor at night).
 % - Loads: `P = -PL`, `Q = -QL`; negative `PL` of the data is kept.
-% - Night section: nodes 3016 and 3020 pump with `PG`, `QG` given and no `V0`. gen-park
+% - Night section: nodes 3016 and 3020 pump with `PG`, `QG` given and no voltage. gen-park
 %   buses are PV buses, so their `V` is the voltage at which the power flow gives `QG`.
 % - Night section: the node data's `PG` of node 3015 is -0.65, and the slack and `QG`
 %   values on the same cards fit -0.75. The report's pumping total (9,270 MW) and its

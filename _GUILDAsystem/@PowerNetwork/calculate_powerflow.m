@@ -1,22 +1,25 @@
 function [result, flag, output] = calculate_powerflow(obj, varargin)
 % Calculate the power flow of the network and return a ResultPF.
 %
-% Calculates the power flow of the network. The settings are the stored defaults of
-% net.solver_PF; Name-Value options override them for this call only (net.solver_PF is
-% not changed). The network is not changed either, except that a slack bus is selected
-% when none is set (with an INFO message): the first bus that has a component with
-% Q = NaN, otherwise the first bus that has a component (GUILDA:Bus:SlackWithoutQnan).
-% A network without buses stops with GUILDA:PowerNetwork:NoBus, and a network whose
-% buses have no components with GUILDA:PowerNetwork:NoSlackCandidate.
+% Calculates the power flow of the network. The settings are the PowerFlowCalculation
+% section of GUILDA.setting; Name-Value options override them for this call only (the
+% settings file is not changed). net.solver_PF keeps the solution for the next warm start
+% and the cache of the equations. The network is not changed, except that a slack
+% bus is selected when none is set (with an INFO message): the first bus that has a
+% component with Q = NaN, otherwise the first bus that has a component
+% (GUILDA:Bus:SlackWithoutQnan). A network without buses stops with
+% GUILDA:PowerNetwork:NoBus, and a network whose buses have no components with
+% GUILDA:PowerNetwork:NoSlackCandidate.
 % Accepted options are the names in SolverPF.OptionMap plus Plot and Export;
 % any other name stops with GUILDA:resolve_options:UnknownName.
 %
 % Name-Value options:
 %
-% - `Method` — Calculation method (net.solver_PF.Method).
-% - `Tolerance` — Convergence tolerance; 0 for the solver default (net.solver_PF.Tolerance).
-% - `MaxIteration` — Maximum number of iterations; 0 for the method default (net.solver_PF.MaxIterations).
-% - `Verbose` — Print the progress of each iteration (sets Display to "iter" or "none"). Default: net.solver_PF.Display ~= "none".
+% - `Method` — Calculation method: "newton", "gradient", "levenberg-marquardt", "fsolve" or "dynamic" (see SolverPF). Default: GUILDA.setting.
+% - `Tolerance` — [pu] Largest P/Q mismatch of a converged solution, for every method. Default: GUILDA.setting (1e-8).
+% - `MaxIteration` — Maximum number of iterations; 0 for the automatic value of the method (see SolverPF). Default: GUILDA.setting (0).
+% - `Verbose` — Print the progress of each iteration. Default: false.
+% - `WarmStart` — true starts from the last converged solution of this network (kept by net.solver_PF); false from the flat start (see SolverPF). Default: GUILDA.setting (true).
 % - `Plot` — Call result.Plot after the calculation. Default: false.
 % - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
 %
@@ -24,7 +27,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 % ```matlab
 % [res, flag] = net.calculate_powerflow();
 % res.tab_bus            % Varg, V, P, Q, Vphasor, Iphasor of each bus
-% res = net.calculate_powerflow(Method="dynamic", Tolerance=1e-8, Plot=true);
+% res = net.calculate_powerflow(Method="dynamic", Tolerance=1e-10, Plot=true);
 % ```
 %
 % See also ResultPF, SolverPF, PowerNetwork.initialize
@@ -38,7 +41,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
     end
     arguments (Output)
         result   % Bus voltages, injections and branch flows of the solution.
-        flag     % Positive or true = converged (see SolverPF for the values of each Method).
+        flag     % 1 converged, 0 MaxIteration reached, -2 diverged or no solution (see SolverPF).
         output   % Solver details; output.message describes the outcome.
     end
 

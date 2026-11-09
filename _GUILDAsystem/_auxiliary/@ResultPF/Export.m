@@ -74,9 +74,6 @@ function export_json(obj, s_file)
     rr_Pflow = -real(cr_Sbus);
     rr_Iflow = -imag(cr_Sbus) ./ rr_Vabs;
 
-    l_foh = isfield(obj.options, "Method") && obj.options.Method == "dynamic" ...
-            && obj.options.dynamic.foh_PQ ~= 0;
-
     for i_bus = 1:n_Bus
         tab_i = tab_PFcondition(i_bus,:);
 
@@ -101,12 +98,6 @@ function export_json(obj, s_file)
                 c = [0,0,0,1];
         end
         l = num2str(i_bus);
-
-        if l_foh
-            scale = min( obj.rv_step/obj.options.dynamic.foh_PQ, 1);
-            if iscell(p); p = p{1}*scale; end
-            if iscell(q); q = q{1}*scale; end
-        end
 
         out.nodes(i_bus).Color = c;
         out.nodes(i_bus).Label = l;

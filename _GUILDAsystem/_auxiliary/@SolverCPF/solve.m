@@ -27,12 +27,13 @@ function [result,flag,output] = solve(obj, net, sct_options)
     Ymat   = net.get_admittance_matrix.Variables;
     f_PF   = @(x) pf_equation(net, w, sct_options.LoadBus, useInt, x, Ymat);
 
-    % The corrector solves with this Newton-Raphson object (Tolerance: largest residual);
-    % the numerical Jacobian of f_PF with its Increment is also used by the predictor.
+    % The corrector solves with this Newton-Raphson object (Tolerance: largest residual;
+    % CorrectorMaxIteration, CorrectorStepSize and Increment of GUILDA.setting); the
+    % numerical Jacobian of f_PF with its Increment is also used by the predictor.
     NRM = MethodNewtonRaphson(Fcn=f_PF, ConvTol=sct_options.Tolerance, ...
-        MaxIter=GUILDA.config("MethodNewtonRaphson","MaxIter"), ...
-        StepSize=GUILDA.config("MethodNewtonRaphson","StepSize"), ...
-        Increment=GUILDA.config("MethodNewtonRaphson","Increment"));
+        MaxIter=GUILDA.config("ContinuationPowerFlow","CorrectorMaxIteration"), ...
+        StepSize=GUILDA.config("ContinuationPowerFlow","CorrectorStepSize"), ...
+        Increment=GUILDA.config("ContinuationPowerFlow","Increment"));
     r_inc = NRM.Increment;
     f_Jac = @(x) tools.fd_jacobian(f_PF, x, Step=r_inc);
 

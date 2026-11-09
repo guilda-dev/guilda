@@ -1,27 +1,28 @@
 function [sct_options, sv_given] = resolve_options(solver, sct_map, nv)
 % Merge the stored solver defaults with the call-time overrides into the effective settings.
 %
-% Merges the stored defaults of a solver object (net.solver_*) with the Name-Value
-% overrides of one call and returns the effective settings. The solver object is only
-% read: the overrides apply to this call and never change the stored defaults.
+% Merges the defaults held by a solver object (net.solver_*) or a struct (SolverPF passes
+% the values of its GUILDA.setting section) with the Name-Value overrides of one call and
+% returns the effective settings. The holder is only read: the overrides apply to this
+% call and never change the defaults.
 % sct_map lists the Name-Value names an analysis accepts (UpperCamelCase common names
 % such as Method, Tolerance, MaxIteration, Solver, TimeLimit, Verbose) and the solver
 % field each one sets. A name that is not in sct_map stops with the error
 % GUILDA:resolve_options:UnknownName, which lists the accepted names.
-% sct_options has one field per solver field named in sct_map (the top-level property for
-% a nested path such as "dynamic.t_span"); the stored value when the name was not
+% sct_options has one field per solver field named in sct_map (the top-level field for
+% a nested path such as "sct_ode.Events"); the stored value when the name was not
 % given, the override otherwise. Name matching is case-insensitive.
 %
 % <@Examples>
 % ```matlab
 % sct_map = struct("MaxIteration", "MaxIterations", ...
-%                "Verbose",      {{"Display", @(l) replace(string(l), ["true","false"], ["iter","none"])}});
-% opt = tools.resolve_options(net.solver_PF, sct_map, {"MaxIteration", 50});
-% opt.MaxIterations   % 50; net.solver_PF.MaxIterations is unchanged
+%                "Verbose",      {{"Verbose", @logical}});
+% opt = tools.resolve_options(net.solver_CPF, sct_map, {"MaxIteration", 50});
+% opt.MaxIterations   % 50; net.solver_CPF.MaxIterations is unchanged
 % ```
     arguments (Input)
-        solver % Holder of the stored defaults, e.g. net.solver_PF. Only read.
-        sct_map (1,1) struct % One field per accepted Name-Value name. The value is the solver field it sets: a string ("MaxIterations"), a string array to set several fields, a dotted path into a struct property ("dynamic.t_span"), or a cell {field, fcn} where fcn converts the given value (e.g. Verbose=true -> Display="iter").
+        solver % Holder of the defaults: a solver object (e.g. net.solver_CPF) or a struct. Only read.
+        sct_map (1,1) struct % One field per accepted Name-Value name. The value is the solver field it sets: a string ("MaxIterations"), a string array to set several fields, a dotted path into a struct property ("sct_ode.Events"), or a cell {field, fcn} where fcn converts the given value (e.g. Verbose=true -> Display="iter").
         nv          = struct() % Overrides of this call: the struct of an arguments block (opt.Name with no default, so only given names are fields) or a cell {Name1, Value1, ...}.
     end
     arguments (Output)

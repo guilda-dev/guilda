@@ -68,6 +68,7 @@
 >   `add_component` number the new object after the largest number in use,
 >   not `numel + 1`; scripts that build tags by counting may name another
 >   object (1.4).
+> - **潮流計算の解の数値。** `Tolerance` の既定は全手法で最大 P/Q 不平衡 1e-8 [pu] です(以前は手法ごとに意味と既定値が異なり、`"dynamic"` は 1e-5、`"fsolve"` は fsolve の既定)。また既定の `WarmStart=true` では、2 回目以降の計算は同じ系統の前回の収束解から始まります。解は `Tolerance` の範囲で変わり、`"dynamic"` では以前より代数解に近くなります。初期値を固定したい計算は `WarmStart=false`(フラットスタート)を渡してください(1.8)。
 > - **`local_LQR` のゲインは系統の Hz の編集に追従します。** Hz の編集後の `get_sys` や `simulate` で、保持している平衡点から `K` を設計し直します。以前は古い Hz の `K` のままだったので、Hz を編集するスクリプトでは数値が変わります(1.6)。
 
 ---
@@ -379,12 +380,28 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 | `net.calculate_powerflow("dynamic", "export", true, "filename", f)` | `net.calculate_powerflow(Method="dynamic", Export=f)` or `res.Export(f)` (`.json`) |
 | `net.solver_PF.rm_response`, `rr_step`, `i_iteration` | `res.cm_Vhistory`, `res.rv_step` |
 
-- Options: `Method` (`"newton"` | `"gradient"` | `"levenberg-marquardt"` |
-  `"fsolve"` | `"dynamic"`), `Tolerance`, `MaxIteration` (solver property
-  `MaxIterations`), `Verbose` (sets `Display`), `Plot`, `Export`. New solver
-  properties `solver_PF.Method` (default `"newton"`, no toolbox needed) and
-  `solver_PF.Tolerance` (0 = method default). The v3 power flow (fsolve) is
-  `Method="fsolve"` and needs Optimization Toolbox.
+- オプション: `Method`(`"newton"` | `"gradient"` | `"levenberg-marquardt"` | `"fsolve"` | `"dynamic"`)、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`、`Plot`、`Export`。v3 の潮流計算(fsolve)は `Method="fsolve"` で、Optimization Toolbox が必要です。
+- **設定は GUILDA.setting に置きます。** 既定値は PowerFlowCalculation セクション(`@GUILDA/config/DefaultPowerFlowCalculation.json`)にあり、Name-Value はその呼び出しだけを上書きします(JSON には書きません)。`net.solver_PF` は数値の設定を持ちません。`net.solver_PF.Method = ...`、`.Tolerance`、`.MaxIterations`、`.Display`、`.WhenFailed`、`.gradient`、`.dynamic` などは存在しないプロパティへの代入としてエラーになります。
+
+  | 旧(`net.solver_PF` / JSON キー) | 新(PowerFlowCalculation のキー / Name-Value) |
+  |----|----|
+  | `Method` | `Method` |
+  | `Tolerance`(0 = 手法の既定) | `Tolerance`(全手法で最大 P/Q 不平衡 [pu]、既定 1e-8) |
+  | `MaxIterations` | `MaxIteration`(0 = 自動: newton 50、gradient 1e6、levenberg-marquardt 100、fsolve 400) |
+  | `Display` | なし(Name-Value `Verbose`) |
+  | `MaxFunEvals`、`UseParallel` | `FsolveMaxFunEvals`、`FsolveUseParallel` |
+  | `PlotFcn` | なし |
+  | `gradient.StepSize` | `GradientStepSize`(0 = 自動) |
+  | JSON MethodNewtonRaphson `StepSize` | `NewtonStepSize` |
+  | `dynamic.Mass`、`Damper`、`foh_PQ`、`t_span` | なし(`MethodDynamic` が自動で決める) |
+  | `WhenFailed` | `WhenFailed` |
+  | なし | `WarmStart`(既定 true) |
+
+  `@GUILDA/user/DefaultPowerFlowCalculation.json` の旧キーは読み込み時に変換します(`MaxIterations`、`MaxFunEvals`、`UseParallel` は改名、`Display`、`PlotFcn` は削除、`Tolerance` 0 は削除して既定値)。MethodNewtonRaphson セクションは廃止しました。連続潮流計算の修正子の設定は ContinuationPowerFlow セクションの `CorrectorMaxIteration`、`CorrectorStepSize`、`Increment` です(値は旧セクションと同じ 1000、1、1e-4)。`@GUILDA/user/DefaultMethodNewtonRaphson.json` は読みません。
+- **ウォームスタート。** `WarmStart=true`(既定)は同じ系統の前回の収束解から、`false` はフラットスタート(位相 0、大きさ 1。PV・スラック母線の大きさは設定値 `V`、スラックの位相は設定値 `Varg`)から解きます。解は `net.solver_PF` が保持し、母線・ブランチの追加、削除、置換のときだけ捨てます(パラメータの掃引では保持)。`net.reset_solver()` でも捨てます。`optimize_powerflow` と `initialize` も `WarmStart` を受け付けます(OPF は OptimalPowerFlow セクションの既定。連続潮流計算は対象外)。
+- **`"dynamic"`。** 仮想ダイナミクスの `Damper` は 1、`Mass` 0、`foh_PQ` 0 で固定し、`t_span` はありません。収束で止まり、内部の安全上限は仮想時間 1e4 です。flag は他の手法と同じ 1/0/-2(0 は仮想時間の上限)で、以前の logical ではありません。`res.rv_step` は ODE のステップの仮想時刻です。
+- **初期値 `V0`、`Varg0` の廃止。** 母線の `tab_parameter.powerflow` は `V`、`Varg` だけです。`add_bus(V0=..., Varg0=...)` はエラーになります。初期値は潮流計算・OPF のソルバーが決めます(上のウォームスタート)。
+- **`ResultPF.tab_violation`。** 潮流計算は `operation` の制約を課しません。解が違反する制約(母線の `Vmin`/`Vmax`、機器の `Pmin`/`Pmax`/`Qmin`/`Qmax`、ブランチの `Pmax`/`Qmax`/`Smax`/`Imax`/`Vargmax`)を `tab_violation`(列 `Class`、`Object`、`Limit`、`Value`、`Bound`、`Excess`)に記録するだけで、警告もエラーも出しません。
 - `ResultPF`: `tab_bus` (Varg, V, P, Q, Vphasor, Iphasor per bus;
   the old output table), `tab_branch` (branch flows), `cm_Vhistory`,
   `rv_step`; `Plot` draws the voltage profile, `Export` writes the bus or
@@ -792,6 +809,7 @@ Option names:
   `network/parameter.csv`) import with the defaults
   (`GUILDA.config("Model","Hz")`, 100 MVA); a bus column `baseMVA` is
   ignored. Equilibria and controllers are not saved.
+- **母線の列 `V0`、`Varg0` は読みません。** 古いフォルダの `bus/parameter.csv` にあれば、INFO `GUILDA:import_csv:RemovedColumn` を表示して無視します。`import_matpower` は VM を初期値として使いません(発電機のない母線の `V` には使います)。`tools.network_to_mpc` の VM/VA は母線の平衡点の電圧(`initialize` の前は 1、0)です。
 - **保存しない制御器を警告します。** `export_csv` は書き出しを終えた後、制御器が残っていると `GUILDA:PowerNetwork:ControllersNotSaved` で警告し、ローカル制御器(`<機器>/<AVR>/<PSS>`)と大域制御器を列挙します。読み込んだ系統には戻らないので、`import_csv` の後に付け直してください。
 - **往復でタグを保持します。** 母線、ブランチ、機器の表に `FullTag` 列を追加しました。欠番や改名を含めて保存時のタグが戻ります。`FullTag` のないフォルダや空の値は、これまでどおり自動のタグになります。母線の `Tag` 列は接頭辞(タグの末尾の数字を除いた部分)です。`FullTag` の重複は番号を付けて改名します。
 - **`import_csv` は系統を変える前に表を検査します。** 間違ったファイル、列、行番号では `Network=` の系統は変わりません(モデルのキーが不明な場合や潮流の失敗など、検査の後の失敗では途中まで作られることがあるので、作り直してください)。
@@ -911,7 +929,8 @@ there.
   `optimize_powerflow` (e.g. `net.initialize(Method="OPF",
   Solver="fmincon")`, `net.initialize(MaxIteration=50)`); unknown names stop
   with `GUILDA:resolve_options:UnknownName`. `"equilibrium"` takes no other
-  option. The power-flow formulation is `net.solver_PF.Method`.
+  option. The power-flow formulation is the `Method` of the PowerFlowCalculation
+  section of GUILDA.setting. `WarmStart` is passed on like the other options.
 - **Output order** (silent change, see the box at the top).
 - **Failure is an error.** A power flow that does not converge, an
   infeasible OPF, or stored equilibria that do not satisfy the network
@@ -1380,19 +1399,19 @@ end
 
 ### Name-Value options
 
-Merge `net.solver_*` defaults with the call's overrides with
-`tools.resolve_options`; never write the overrides into the solver.
+Merge the defaults (a `net.solver_*` object, or a struct such as the values of a
+GUILDA.setting section) with the call's overrides with `tools.resolve_options`;
+never write the overrides into the solver or the settings file.
 
 ```matlab
-function varargout = calculate_powerflow(obj, opt)
+function varargout = calculate_continuation_powerflow(obj, opt)
     arguments
         obj
-        opt.MaxIteration (1,1) double {mustBeNonnegative, mustBeInteger}   % no default
+        opt.MaxIteration (1,1) double {mustBePositive, mustBeInteger}   % no default
         opt.Verbose      (1,1) logical
     end
-    sct_map = struct("MaxIteration", "MaxIterations", ...
-                   "Verbose", {{"Display", @(l) replace(string(l), ["true","false"], ["iter","none"])}});
-    options = tools.resolve_options(obj.solver_PF, sct_map, opt);
+    sct_map = struct("MaxIteration", "MaxIterations", "Verbose", "Verbose");
+    options = tools.resolve_options(obj.solver_CPF, sct_map, opt);
     ...
 end
 ```
@@ -1400,7 +1419,6 @@ end
 - Declare the options in the `arguments` block **without defaults**, so
   that only the given names are fields of `opt`; validate them there.
 - `sct_map` maps each accepted name to a solver field: a name, a string array
-  (several fields), a dotted path into a struct property
-  (`"dynamic.t_span"`), or `{field, converter}`.
+  (several fields), a dotted path into a struct field, or `{field, converter}`.
 - A name not in `sct_map` gives `GUILDA:resolve_options:UnknownName` with the
   list of accepted names.

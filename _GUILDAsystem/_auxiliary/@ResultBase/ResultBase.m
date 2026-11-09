@@ -4,8 +4,9 @@ classdef (Abstract) ResultBase < auxiliary
 % An analysis method net.verb_noun() returns [result, flag, output]; the result object
 % also keeps flag and output, the settings actually used and the elapsed time, so the
 % result alone is enough to check the outcome. A result stores only what the analysis
-% computed and the settings it used (`options`: the stored defaults of net.solver_* with
-% the Name-Value overrides of the call applied, see tools.resolve_options). Model data
+% computed and the settings it used (`options`: GUILDA.setting or the stored defaults of
+% net.solver_*, with the Name-Value overrides of the call applied, see
+% tools.resolve_options). Model data
 % stays with its owner: the result refers to the network (a_PowerNetwork, not a copy; the
 % network may have been edited after the analysis) and keeps its tag (s_network); it does
 % not copy bus, branch or component data. Plot and Export are part of the contract. A subclass overrides
@@ -28,7 +29,7 @@ classdef (Abstract) ResultBase < auxiliary
     properties (SetAccess=protected) % Result
         flag = false                  % Success or convergence flag (second output): logical, or a numeric exit flag positive on success. <@Type> logical or double
         output struct = struct()      % Solver details, as returned by the analysis (third output).
-        options struct = struct()     % Effective settings: the stored defaults of net.solver_* with the Name-Value overrides applied.
+        options struct = struct()     % Effective settings: GUILDA.setting or the stored defaults of net.solver_*, with the Name-Value overrides applied.
         s_solver (1,1) string = ""    % Class name of the solver object that ran the analysis.
         r_elapsed (1,1) double = NaN  % [s] Elapsed time of the analysis.
         s_network (1,1) string = ""   % Tag of the analysed network at the time of the analysis.

@@ -75,10 +75,15 @@ function net = import_csv(path, opt)
 
     % Bus
     sr_BusReq   = ["V", "Varg"];
-    sr_BusOpt   = ["V0", "Varg0", "Gshunt", "Bshunt", "Vmin", "Vmax", "baseKV", "Tag", "Xaxis","Yaxis","Marker"];
-    % (a "baseMVA" column is accepted and ignored: the system base is net.tab_parameter.base.baseMVA)
+    sr_BusOpt   = ["Gshunt", "Bshunt", "Vmin", "Vmax", "baseKV", "Tag", "Xaxis","Yaxis","Marker"];
+    % (a "baseMVA" column is accepted and ignored: the system base is net.tab_parameter.base.baseMVA;
+    % the removed initial values "V0", "Varg0" are ignored with an INFO message)
     tab_bus    = read_csv(path, "bus/parameter.csv");
-    sr_BusOpt  = check_cols(tab_bus, sr_BusReq, sr_BusOpt, "bus/parameter.csv", ["FullTag", "Slack", "baseMVA"]);
+    sr_BusOpt  = check_cols(tab_bus, sr_BusReq, sr_BusOpt, "bus/parameter.csv", ["FullTag", "Slack", "baseMVA", "V0", "Varg0"]);
+    sr_removed = intersect(["V0", "Varg0"], string(tab_bus.Properties.VariableNames), "stable");
+    if ~isempty(sr_removed)
+        show_msg("info", "GUILDA:import_csv:RemovedColumn", "bus/parameter.csv", strjoin(sr_removed, ", "));
+    end
     sv_BusTag  = read_full_tag(fullfile(path, "bus", "parameter.csv"));
     n_Bus      = size(tab_bus,1);
 

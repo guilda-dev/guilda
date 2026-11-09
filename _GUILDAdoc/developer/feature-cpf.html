@@ -110,13 +110,13 @@
       <li>a successful <code>net.initialize()</code>, with no edit since that makes a layer stale;</li>
       <li>bus types from <code>Bus.get_pf_condition</code>: the slack bus is the one <code>l_isSlack</code> marks.</li>
     </ul>
-    <p lang="en">Other settings of the corrector: <code>GUILDA.config("MethodNewtonRaphson")</code> (<code>MaxIter = 1000</code>, <code>Increment = 1e-4</code> of the numerical Jacobian, <code>StepSize = 1</code>).</p>
+    <p lang="en">Other settings of the corrector, in <code>GUILDA.config("ContinuationPowerFlow")</code>, no Name-Value option: <code>CorrectorMaxIteration = 1000</code>, <code>CorrectorStepSize = 1</code>, <code>Increment = 1e-4</code> (step of the numerical Jacobian of the predictor and the corrector).</p>
     <p lang="ja">前提条件:</p>
     <ul lang="ja">
       <li><code>net.initialize()</code> が成功済みで、その後に層を古くする編集なし</li>
       <li>母線の種別は <code>Bus.get_pf_condition</code> で決定: スラック母線は <code>l_isSlack</code> が示す母線</li>
     </ul>
-    <p lang="ja">修正子のその他の設定: <code>GUILDA.config("MethodNewtonRaphson")</code>（<code>MaxIter = 1000</code>、数値ヤコビアンの <code>Increment = 1e-4</code>、<code>StepSize = 1</code>）。</p>
+    <p lang="ja">修正子のその他の設定（<code>GUILDA.config("ContinuationPowerFlow")</code>。Name-Value なし）: <code>CorrectorMaxIteration = 1000</code>、<code>CorrectorStepSize = 1</code>、<code>Increment = 1e-4</code>（予測子と修正子の数値ヤコビアンの刻み）。</p>
 
     <!-- ============================== SEQUENCE ============================== -->
     <h2 id="sequence"><span lang="en">Call sequence between classes</span><span lang="ja">クラス間の呼び出し順</span></h2>
@@ -301,11 +301,11 @@
           <dd><span lang="en">Creates the corrector.</span><ul lang="en">
               <li><code>f_PF</code>: <code>pf_equation</code> bound to the network, the layout, <code>LoadBus</code>, and the admittance matrix.</li>
               <li>Jacobian: central difference with <code>Increment</code> (<code>tools.fd_jacobian</code>); the predictor uses it too.</li>
-              <li><code>ConvTol</code> = <code>Tolerance</code> (largest residual); <code>MaxIter</code>, <code>StepSize</code>, <code>Increment</code> from <code>GUILDA.config("MethodNewtonRaphson")</code>.</li>
+              <li><code>ConvTol</code> = <code>Tolerance</code> (largest residual); <code>MaxIter</code> = <code>CorrectorMaxIteration</code>, <code>StepSize</code> = <code>CorrectorStepSize</code>, <code>Increment</code> from <code>GUILDA.config("ContinuationPowerFlow")</code>.</li>
             </ul><span lang="ja">修正子を作成</span><ul lang="ja">
               <li><code>f_PF</code>: ネットワーク、配置、<code>LoadBus</code>、アドミタンス行列を束縛した <code>pf_equation</code></li>
               <li>ヤコビアン: <code>Increment</code> による中心差分（<code>tools.fd_jacobian</code>）。予測子も使用</li>
-              <li><code>ConvTol</code> = <code>Tolerance</code>（残差の最大値）。<code>MaxIter</code>、<code>StepSize</code>、<code>Increment</code> は <code>GUILDA.config("MethodNewtonRaphson")</code> から</li>
+              <li><code>ConvTol</code> = <code>Tolerance</code>（残差の最大値）。<code>MaxIter</code> = <code>CorrectorMaxIteration</code>、<code>StepSize</code> = <code>CorrectorStepSize</code>、<code>Increment</code> は <code>GUILDA.config("ContinuationPowerFlow")</code> から</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>get_admittance_matrix</code>, <code>w</code>, <code>sct_options</code></span><span lang="ja"><code>get_admittance_matrix</code>、<code>w</code>、<code>sct_options</code></span></dd>

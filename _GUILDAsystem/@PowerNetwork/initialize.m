@@ -25,17 +25,21 @@ function [result, flag, output] = initialize(obj, varargin)
 %
 % - `Method` — How the operating point is obtained when it is solved. Default:
 %   "powerflow".
-%   - "powerflow": net.calculate_powerflow (settings of net.solver_PF).
+%   - "powerflow": net.calculate_powerflow (settings of GUILDA.setting).
 %   - "OPF": net.optimize_powerflow with Method="AC OPF" (settings of net.solver_OPF;
 %     the AC formulation gives a complete AC operating point).
 %   - "equilibrium": never solved; the equilibria the components already hold (from an
 %     earlier initialize) are kept, and buses without components get the voltage of
 %     Y*V = I. A stale power flow stops with an error: use net.initialize().
+% - `WarmStart` — true starts the power flow or the "AC OPF" from the last solution of the
+%   network (kept by net.solver_PF or net.solver_OPF); false from the flat start. Default:
+%   the WarmStart of the PowerFlowCalculation or OptimalPowerFlow section of GUILDA.setting.
+%   Passed to calculate_powerflow or optimize_powerflow like the other options.
 % - Other options go unchanged to calculate_powerflow ("powerflow") or
 %   optimize_powerflow ("OPF") and are validated there (unknown names stop with
 %   GUILDA:resolve_options:UnknownName); "equilibrium" takes no other option. The
-%   formulation of that analysis (its own Method) is not set here: use
-%   net.solver_PF.Method for the power flow.
+%   formulation of that analysis (its own Method) is not set here: it is the Method of
+%   the PowerFlowCalculation section of GUILDA.setting for the power flow.
 %
 % When the analysis does not succeed (no convergence, an infeasible OPF, or stored
 % equilibria that do not satisfy the network equations), initialize stops with an error

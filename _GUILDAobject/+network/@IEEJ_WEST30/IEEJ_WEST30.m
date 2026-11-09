@@ -68,10 +68,9 @@ classdef IEEJ_WEST30 < PowerNetwork
 % - The data has no bus coordinates, voltage limits, base voltages or OPF data; these
 %   are the GUILDA defaults (OPF cost `HP = fP = 1` for generators and 0 for loads).
 %
-% - The bus columns `V0`, `Varg0` hold the power-flow solution as the initial guess. The
-%   flat start (`V0 = 1`, `Varg0 = 0`) gives the same solution within 1e-10 and simulate
-%   runs from it; only the residual of the equilibrium is larger at night (a drift of
-%   1e-9 to 1e-8 in 10 s without events, against 1e-13 with the stored guess).
+% - The data has no initial voltages: the power flow starts from the flat start (or the
+%   last solution, WarmStart). With the default Tolerance (1e-8) the equilibrium of both
+%   sections drifts by at most a few 1e-12 in 10 s of simulate without events.
 %
 % The power flow gives the generation and load totals of table 4.10 of the report and
 % agrees with its flow diagrams within their rounding, in both sections.

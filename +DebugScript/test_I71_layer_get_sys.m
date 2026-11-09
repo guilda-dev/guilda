@@ -164,7 +164,7 @@ gc.get_sys();
 
 
 %% Initialize of a controller that designs with get_sys still passes
-[net, gen] = DebugScript.helper.build_3bus("gen-1axis");     % B002 (1.02 pu): V0 = 1 と異なる母線
+[net, gen] = DebugScript.helper.build_3bus("gen-1axis");     % B002 (1.02 pu): フラットスタートの 1 pu と異なる母線
 gen.add_local_controller("avr-ST1");
 gen.add_local_controller("local-LQR");
 DebugScript.helper.quiet(@() net.initialize);
