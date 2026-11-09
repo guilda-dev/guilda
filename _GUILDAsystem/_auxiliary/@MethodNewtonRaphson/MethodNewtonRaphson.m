@@ -1,81 +1,63 @@
-classdef (Sealed = true) MethodNewtonRaphson < auxiliary
-% Newton-Raphson solver of a nonlinear equation F(x) = b.
+classdef (Sealed = true) MethodNewtonRaphson < MethodBase
+% Newton-Raphson solver of a nonlinear equation F(x) = 0.
 %
 % The power flow (Method="newton") uses it, and the continuation power flow uses it as its
 % corrector. Give the equation and the options as Name-Value arguments of the constructor
-% (they are the public properties), then call solve. Without NRMJac the Jacobian is
-% computed by central differences with step Increment; giving NRMJac is usually faster.
-% NRMFcn may be a symbolic expression (needs Symbolic Math Toolbox); GUILDA itself always
-% passes function handles.
+% (they are the public properties), then call solve (see MethodBase for the outputs).
+% Without Jac the Jacobian is computed by central differences with step Increment; giving
+% Jac is usually faster. Fcn may be a symbolic expression (needs Symbolic Math Toolbox);
+% GUILDA itself always passes function handles.
+%
+% - Iterates x = x - StepSize * (J(x) \ F(x)) until the largest |F(x)| is at most ConvTol.
+% - A singular J(x) gives the minimum norm step (lsqminnorm) instead, without a warning.
+% - flag -2: F(x) is no longer finite (diverged), or the step is at the rounding level of x
+%   (at most 10*eps(max(1, max|x|))) while |F| > ConvTol (no solution, e.g. the minimum
+%   norm steps of an island without a slack bus).
+% - A call that does not take flag warns GUILDA:MethodNewtonRaphson:MaxIteration when
+%   MaxIter is reached.
 %
 % <@Examples>
 % ```matlab
-% nrm = MethodNewtonRaphson(NRMFcn=@(x) [x(1)^2 + x(2); x(2)^3], ...
-%                           NRMVal=[2; 1], InitVal=[0.5; 0.5]);
-% [x, n_iter] = nrm.solve();
+% nrm = MethodNewtonRaphson(Fcn=@(x) [x(1)^2 + x(2) - 2; x(2)^3 - 1], InitVal=[0.5; 0.5]);
+% [x, flag, output] = nrm.solve();
 % ```
 %
-% See also SolverPF, SolverCPF, MethodLevenbergMarquardt
-    
-    properties (Access=public) % Equation
-        NRMFcn                                                                      % Function F of the equation F(x) = b: a function handle or a symbolic expression. <@Type> function_handle | sym
-        NRMJac                                                                      % Jacobian of NRMFcn; computed by numerical differentiation when not given. <@Type> function_handle
-        NRMVal                                                                      % Right-hand side b of F(x) = b; zeros (F(x) = 0) when not given. <@Type> double (n x 1)
-        ConvTol (1,1) double = GUILDA.config("MethodNewtonRaphson","ConvTol");      % Absolute tolerance of the step dx for convergence.
-        MaxIter (1,1) double = GUILDA.config("MethodNewtonRaphson","MaxIter");      % Maximum number of iterations (a warning when reached).
-        InitVal (:,1) double = GUILDA.config("MethodNewtonRaphson","InitVal");      % Initial value of x.
-        Increment (1,1) double = GUILDA.config("MethodNewtonRaphson","Increment");  % Step of the numerical differentiation.
-        StepSize (1,1) double = GUILDA.config("MethodNewtonRaphson","StepSize");    % Factor of the update x = x - StepSize*dx; large values may not converge.
-        Display (1,1) string {mustBeMember(Display,["none","iter","iter-detailed","final","final-detailed"])} = "none"  % "iter"/"iter-detailed" print the largest |F(x) - b| of each iteration.
+% See also MethodBase, SolverPF, SolverCPF, MethodLevenbergMarquardt
+
+    properties (Access=public) % Settings
+        StepSize (1,1) double = 1   % Factor of the update x = x - StepSize*dx; large values may not converge.
     end
-    
+
     methods
-        function obj = MethodNewtonRaphson(opt)            
+        function obj = MethodNewtonRaphson(opt)
         % Create a Newton-Raphson solver.
         %
-        % The Name-Value options are the public properties; the others keep the defaults of
-        % GUILDA.config("MethodNewtonRaphson").
+        % The Name-Value options are the public properties; the others keep the defaults
+        % (ConvTol 1e-5, MaxIter 1000, InitVal 1, Increment 1e-4, StepSize 1). A symbolic
+        % Fcn is converted to function handles of Fcn and its Jacobian.
             arguments (Input)
                 opt.?MethodNewtonRaphson
-            end            
+            end
             arguments (Output)
                 obj  % Newton-Raphson solver.
             end
+            obj.ConvTol   = 1e-5;
+            obj.MaxIter   = 1000;
+            obj.InitVal   = 1;
+            obj.Increment = 1e-4;
+            obj.set_options(opt);
 
-            fnames = fieldnames(opt);
-            argi = 1;
-            while argi <= numel(fnames)
-                fname_i = fnames{argi};
-                obj.(fname_i) = opt.(fname_i);
-
-                argi = argi + 1;
-            end            
-
-            if isempty(obj.NRMJac)
-                func  = obj.NRMFcn;
-                delta = obj.Increment;
-                switch class(func)
-                    case {'function_handle','double'}                        
-                        obj.NRMJac = @(x) obj.numerical_differentiation(x,func,delta);
-                    case 'sym'
-                        % The symbolic path is optional and needs Symbolic Math Toolbox.
-                        if ~MethodNewtonRaphson.has_symbolic()
-                            error(msg("GUILDA:MethodNewtonRaphson:SymbolicUnavailable"));
-                        end
-                        sv_x = symvar(func);
-                        Jacobian = jacobian(func,sv_x);
-        
-                        obj.NRMFcn = matlabFunction(func    ,"Vars",sv_x);
-                        obj.NRMJac = matlabFunction(Jacobian,"Vars",sv_x);                    
-                    otherwise
-                        error(msg("GUILDA:MethodNewtonRaphson:InvalidInput"))
-                end                
+            if isa(obj.Fcn, "sym")
+                % The symbolic path is optional and needs Symbolic Math Toolbox.
+                if ~MethodNewtonRaphson.has_symbolic()
+                    error(msg("GUILDA:MethodNewtonRaphson:SymbolicUnavailable"));
+                end
+                sv_x = symvar(obj.Fcn);
+                obj.Jac = matlabFunction(jacobian(obj.Fcn, sv_x), "Vars", sv_x);
+                obj.Fcn = matlabFunction(obj.Fcn, "Vars", sv_x);
+            elseif ~isempty(obj.Fcn) && ~isa(obj.Fcn, "function_handle")
+                error(msg("GUILDA:MethodNewtonRaphson:InvalidInput"))
             end
-
-            if isempty(obj.NRMVal)                
-                obj.NRMVal = zeros(size(obj.InitVal));
-            end
-            
         end
     end
 
@@ -83,12 +65,7 @@ classdef (Sealed = true) MethodNewtonRaphson < auxiliary
         l = has_symbolic()
     end
 
-    methods (Access=private,Hidden)
-        Jacobian = numerical_differentiation(obj, x, OBJFcn, del)
-        flag = isConvergence(obj,dx,Tol)
-    end
-
-    methods (Access=public)        
-        [xi,iteration,flag,rm_history] = solve(obj)
+    methods (Access=public)
+        [x, flag, output, rm_history, rv_step] = solve(obj)
     end
 end

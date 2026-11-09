@@ -279,16 +279,16 @@ c_tmp = onCleanup(@() cellfun(@feval, {@() rmpath(s_tmp), @() rmdir(s_tmp, "s"),
     @() clear("sym", "license"), @() warning(w)}));
 assert(isa(sym(), "sym") && ~license("test", "Symbolic_Toolbox"))
 try
-    MethodNewtonRaphson(NRMFcn=sym(), InitVal=1);
+    MethodNewtonRaphson(Fcn=sym(), InitVal=1);
     error("DebugScript:NoError", "エラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:MethodNewtonRaphson:SymbolicUnavailable", ME.message)
-    assert(contains(ME.message, "function handle") && contains(ME.message, "NRMJac"))
+    assert(contains(ME.message, "function handle") && contains(ME.message, "Jac"))
 end
 clear c_tmp
 
 % 数値の関数ハンドルなら Toolbox 無しで解ける
-nrm = MethodNewtonRaphson(NRMFcn=@(x) x.^2 - 4, InitVal=1);
+nrm = MethodNewtonRaphson(Fcn=@(x) x.^2 - 4, InitVal=1);
 assert(abs(nrm.solve() - 2) < 1e-6)
 
 

@@ -352,21 +352,28 @@ end
 
 
 %% Newton-Raphson solver reports convergence without a warning
-% 収束フラグを受け取る呼び出しは MaxIter の警告を出さず、反復の履歴を返す
-nrm = MethodNewtonRaphson(NRMFcn=@(x) x.^2 - 4, NRMJac=@(x) 2*x, InitVal=1, MaxIter=2);
+% 収束フラグを受け取る呼び出しは MaxIter の警告を出さず、共通の出力と反復の履歴を返す
+nrm = MethodNewtonRaphson(Fcn=@(x) x.^2 - 4, Jac=@(x) 2*x, InitVal=1, MaxIter=2);
 lastwarn("");
-[x, n_iter, l_conv, rm_hist] = nrm.solve();
-assert(~l_conv && n_iter == 3 && isequal(size(rm_hist), [1 3]) && rm_hist(1) == 1 && rm_hist(end) == x)
+[x, flag, output, rm_hist, rv_step] = nrm.solve();
+assert(flag == 0 && output.iterations == 2 && isequal(size(rm_hist), [1 3]) && rm_hist(1) == 1 && rm_hist(end) == x)
+assert(isequal(rv_step, 0:2) && output.algorithm == "newton" && contains(output.message, "MaxIterations"))
 assert(isempty(lastwarn()))
 nrm.MaxIter = 50;
-[x, ~, l_conv] = nrm.solve();
-assert(l_conv && abs(x - 2) < 1e-6)
-% 出力が 2 つまでなら従来どおり警告する (連続潮流計算の補正子)
+[x, flag, output] = nrm.solve();
+assert(flag == 1 && abs(x - 2) < 1e-6 && output.residual <= nrm.ConvTol)
+% 出力が 1 つなら従来どおり警告する
 nrm.MaxIter = 2;
 w = warning("off", "all"); c = onCleanup(@() warning(w));
 lastwarn("");
-[~, ~] = nrm.solve();
+x = nrm.solve(); %#ok<NASGU>
 assert(DebugScript.helper.msg_id() == "GUILDA:MethodNewtonRaphson:MaxIteration")
+clear c
+% Jac が無ければ Increment の中心差分。解のない方程式は flag -2
+[x, flag] = MethodNewtonRaphson(Fcn=@(x) [x(1)^2 + x(2) - 2; x(2)^3 - 1], InitVal=[0.5; 0.5]).solve();
+assert(flag == 1 && norm(x - [1; 1]) < 1e-5)
+[~, flag, output] = MethodNewtonRaphson(Fcn=@(x) x.^2 + 1, InitVal=0, MaxIter=200).solve();
+assert(flag <= 0 && startsWith(output.message, "✘"))
 
 
 %% Method classes solve a generic equation
@@ -375,10 +382,14 @@ f_F = @(x) [x(1)^2 - 4; x(1) + x(2) - 3];
 f_J = @(x) [2*x(1), 0; 1, 1];
 [x, flag, output, rm_hist, rv_step] = MethodLevenbergMarquardt(Fcn=f_F, Jac=f_J, InitVal=[1; 1]).solve();
 assert(flag == 1 && norm(x - [2; 1]) < 1e-8 && isequal(rm_hist(:,end), x) && rv_step(end) == output.iterations)
-[x, flag] = MethodFsolve(Fcn=f_F, Jac=f_J, InitVal=[1; 1], Display="none").solve();
-assert(flag > 0 && norm(x - [2; 1]) < 1e-6)
+[x, flag, output] = MethodFsolve(Fcn=f_F, Jac=f_J, InitVal=[1; 1], Display="none").solve();
+assert(flag == 1 && norm(x - [2; 1]) < 1e-6 && output.exitflag > 0 && output.algorithm == "fsolve")
 [x, flag] = MethodFsolve(Fcn=f_F, InitVal=[1; 1], Display="none").solve();     % Jacobian なし (差分)
-assert(flag > 0 && norm(x - [2; 1]) < 1e-6)
+assert(flag == 1 && norm(x - [2; 1]) < 1e-6)
+[~, flag, output] = MethodFsolve(Fcn=@(x) x.^2 + 1, InitVal=1, Display="none").solve();   % 解なし
+assert(flag == -2 && output.exitflag <= 0 && startsWith(output.message, "✘"))
+[x, flag] = MethodLevenbergMarquardt(Fcn=f_F, InitVal=[1; 1]).solve();        % Jacobian なし (差分)
+assert(flag == 1 && norm(x - [2; 1]) < 1e-8)
 [x, flag, output] = MethodGradient(Fcn=@(x) [1; 2] - x, InitVal=[0; 0], StepSize=0.5).solve();
 assert(flag == 1 && norm(x - [1; 2]) < 1e-8 && output.iterations > 10)
 [~, flag] = MethodGradient(Fcn=@(x) x, InitVal=1, StepSize=1).solve();           % x が増え続けて発散

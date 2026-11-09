@@ -1,66 +1,67 @@
-function [xi,iteration,flag,rm_history] = solve(obj)
-% Solve F(x) = b from InitVal.
-%
-% Iterates x = x - StepSize * (J(x) \ (F(x) - b)) until every element of the step is
-% smaller than ConvTol, or MaxIter iterations. A singular J(x) gives the minimum norm step
-% (lsqminnorm) instead, without a warning. Reaching MaxIter gives a warning unless
-% the caller takes flag.
+function [x, flag, output, rm_history, rv_step] = solve(obj)
+% Solve F(x) = 0 from InitVal (see the class help).
     arguments (Input)
         obj
     end
     arguments (Output)
-        xi          % Solution x.
-        iteration   % Number of iterations.
-        flag        % true when the step became smaller than ConvTol.
+        x           % Last iterate.
+        flag        % 1: converged, 0: MaxIter reached, -2: diverged or no solution (see the class help).
+        output      % Details: iterations, algorithm, residual (largest |F|), message.
         rm_history  % Iterates: InitVal and x after each step (one column each).
+        rv_step     % Iteration numbers of rm_history.
     end
-
-    AbsTol = obj.ConvTol;
-    Gamma  = obj.StepSize;
-    MaxIt  = obj.MaxIter;
-
-    NRMF = obj.NRMFcn;
-    NRMJ = obj.NRMJac;
-    NRMV = obj.NRMVal;
-
-    xi = obj.InitVal;
-    rm_history = xi;
     l_iter = startsWith(obj.Display, "iter");
+    Gamma  = obj.StepSize;
+    f_F    = obj.Fcn;
 
-    isConvergence = false;
-    iteration     = 1;
-    while ~isConvergence && iteration <= MaxIt
-        Ferror = NRMF(xi) - NRMV;
+    x = obj.InitVal;
+    rm_history = x;
+    flag   = 0;
+    s_fail = "";
+    for k = 0:obj.MaxIter
+        rv_F  = f_F(x);
+        r_res = full(max(abs(rv_F)));
         if l_iter
-            fprintf('  newton  iter %4d   max |F-b| %.3e\n', iteration-1, full(max(abs(Ferror))));
+            obj.print_iter("newton", k, r_res);
         end
-        Jacobi = NRMJ(xi);
+        if r_res <= obj.ConvTol
+            flag = 1;
+            break
+        elseif ~(isfinite(r_res) && all(isfinite(x)))
+            flag   = -2;
+            s_fail = '✘ The process was terminated: the Newton-Raphson iteration diverged.';
+            break
+        elseif k == obj.MaxIter
+            break
+        end
+        rm_J = obj.eval_jacobian(x);
         [s_warn, s_id] = lastwarn();
         w = warning("off", "MATLAB:singularMatrix");
         warning("off", "MATLAB:nearlySingularMatrix");
         lastwarn("");
-        dx = Jacobi \ Ferror;
+        dx = rm_J \ rv_F;
         [~, s_singular] = lastwarn();
         warning(w);
         if ~all(isfinite(dx)) || s_singular ~= ""
             % singular Jacobian (e.g. an undetermined angle): minimum norm step
-            dx = lsqminnorm(Jacobi, Ferror, "nowarn");
+            dx = lsqminnorm(rm_J, rv_F, "nowarn");
         end
         lastwarn(s_warn, s_id);
 
-        if obj.isConvergence(dx,AbsTol)
-            isConvergence = true;
-        else
-            xi = xi - Gamma * dx;
-            iteration = iteration + 1;
-            if nargout > 3
-                rm_history(:,end+1) = xi; %#ok<AGROW>
-            end
+        dx = Gamma * dx;
+        if full(max(abs(dx))) <= 10*eps(max(1, max(abs(x))))
+            % the step is at the rounding level of x while |F| > ConvTol: no solution from here
+            flag   = -2;
+            s_fail = sprintf('✘ No solution was found: the Newton-Raphson step became negligible, but the largest mismatch is %.3e.', r_res);
+            break
         end
+        x = x - dx;
+        rm_history(:,end+1) = x; %#ok<AGROW>
     end
-    flag = isConvergence;
+    rv_step = 0:size(rm_history,2)-1;
+    output  = obj.make_output(flag, rv_step(end), r_res, "newton", "Newton-Raphson iteration", s_fail);
 
-    if nargout < 3 && iteration >= MaxIt
+    if nargout < 2 && flag == 0
         show_msg("warning", "GUILDA:MethodNewtonRaphson:MaxIteration")
     end
 end

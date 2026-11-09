@@ -31,7 +31,7 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
         end
         r_res = max(abs(r));
         if l_iter
-            fprintf('  gradient  iter %6d   max mismatch %.3e\n', k, r_res);
+            obj.print_iter("gradient", k, r_res);
         end
         if ~(isfinite(r_res) && all(isfinite(d)))
             flag = -2;
@@ -49,16 +49,8 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
         rv_step(end+1)      = k;
     end
 
-    output = struct("iterations", k, "algorithm", "gradient", "residual", r_res, "StepSize", obj.StepSize);
-    switch flag
-        case 1
-            output.message = sprintf('✔ The gradient iteration has converged within the tolerance limit (%d iterations).', k);
-        case 0
-            output.message = sprintf('✘ The gradient iteration did not converge within MaxIterations (%d); a different StepSize may help.', obj.MaxIter);
-        otherwise
-            output.message = '✘ The process was terminated: the gradient iteration diverged; reduce StepSize.';
-    end
-    if obj.Display ~= "none"
-        disp(output.message)
-    end
+    output = obj.make_output(flag, k, r_res, "gradient", "gradient iteration", ...
+        '✘ The process was terminated: the gradient iteration diverged; reduce StepSize.', ...
+        "; a different StepSize may help");
+    output.StepSize = obj.StepSize;
 end

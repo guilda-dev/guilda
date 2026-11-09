@@ -97,10 +97,10 @@
           <li><code>"dynamic"</code>: 仮想的な母線ダイナミクスを <code>ode15s</code> で積分。不平衡量が許容値を下回るまで継続（<code>MethodDynamic</code>）</li>
         </ul></td></tr>
         <tr><td><code>Tolerance</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>0</code><small><code>net.solver_PF.Tolerance</code> ← config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
-          <li>newton: largest element of the Newton step [pu]; gradient, dynamic: largest P/Q mismatch [pu]; levenberg-marquardt: largest residual; fsolve: <code>FunctionTolerance</code></li>
+          <li>newton, gradient, levenberg-marquardt, fsolve, dynamic: largest P/Q mismatch [pu]; fsolve also takes it as <code>FunctionTolerance</code></li>
           <li><code>0</code>: method default (newton, gradient, levenberg-marquardt: 1e-8; fsolve: 1e-6; dynamic: 1e-5)</li>
         </ul><ul lang="ja">
-          <li>newton: ニュートン・ステップの要素の最大値 [pu]。gradient・dynamic: P/Q 不平衡量の最大値 [pu]。levenberg-marquardt: 残差の最大値。fsolve: <code>FunctionTolerance</code></li>
+          <li>newton・gradient・levenberg-marquardt・fsolve・dynamic: P/Q 不平衡量の最大値 [pu]。fsolve には <code>FunctionTolerance</code> としても指定</li>
           <li><code>0</code>: 計算方法の既定値（newton・gradient・levenberg-marquardt: 1e-8、fsolve: 1e-6、dynamic: 1e-5）</li>
         </ul></td></tr>
         <tr><td><code>MaxIteration</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>0</code><small><code>net.solver_PF.MaxIterations</code> ← config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
@@ -415,11 +415,12 @@
             <li>Jacobian: <code>J_V + J_I*Y</code></li>
             <li>Starts from <code>V0</code>, <code>Varg0</code></li>
             <li><code>SolverPF.solve</code> creates the Method object from the settings (0 → the method default) and maps its results to <code>cv_Vbus</code>, <code>flag</code>, <code>output</code>, <code>cm_Vhistory</code>, <code>rv_step</code></li>
-            <li>newton: <code>MethodNewtonRaphson</code> with <code>NRMFcn</code> = F, <code>NRMJac</code> = Jacobian; stops when every element of the step is below <code>Tolerance</code>; converged only when the largest |F| is also at most max(1e-6, <code>Tolerance</code>); a singular Jacobian (island without a slack bus) gives minimum norm steps (<code>lsqminnorm</code>)</li>
+            <li>Every Method class inherits <code>MethodBase</code> and returns flag and output itself; converged when the largest |F| is at most <code>Tolerance</code></li>
+            <li>newton: <code>MethodNewtonRaphson</code> with <code>Fcn</code> = F, <code>Jac</code> = Jacobian; a singular Jacobian (island without a slack bus) gives minimum norm steps (<code>lsqminnorm</code>); a step at the rounding level of x while |F| &gt; <code>Tolerance</code> gives flag −2</li>
             <li>A non-slack bus without branches: flag −2 (dynamic: false) before any method runs, as its voltage is not determined</li>
             <li>gradient: <code>MethodGradient</code> with the direction <code>[ΔP; ΔQ/V]</code> of <code>power_equation</code>; polar coordinates; slack angle and voltage and PV voltages fixed at their set values; <code>θ += α·ΔP</code> (non-slack), <code>V += α·ΔQ/V</code> (PQ); stops when the largest |ΔP|, |ΔQ| is at most <code>Tolerance</code></li>
             <li>levenberg-marquardt: <code>MethodLevenbergMarquardt</code>; <code>(JᵀJ + μI) dx = −JᵀF</code>; μ ÷ 3 after a step that reduces |F|, μ × 4 and a retry otherwise; stops when the largest |F| is at most <code>Tolerance</code></li>
-            <li>fsolve: <code>tools.require_toolbox("optim", ...)</code>, then <code>fsolve</code> with <code>SpecifyObjectiveGradient</code> (<code>MethodFsolve</code>)</li>
+            <li>fsolve: <code>tools.require_toolbox("optim", ...)</code>, then <code>fsolve</code> with <code>SpecifyObjectiveGradient</code> (<code>MethodFsolve</code>); flag 1 when exitflag &gt; 0 and the largest |F| is at most <code>Tolerance</code> (1e-6 for 0), 0 for exitflag 0, −2 otherwise</li>
             <li>Every iterate is recorded (gradient: every iterate up to 1000, then every 1000th and the last)</li>
           </ul><ul lang="ja">
             <li><code>private/power_equation</code>: 電力方程式の残差 F(x) と疎なヤコビ行列。x は母線電圧の実部と虚部</li>
@@ -427,17 +428,18 @@
             <li>ヤコビ行列: <code>J_V + J_I*Y</code></li>
             <li>初期値: <code>V0</code>, <code>Varg0</code></li>
             <li><code>SolverPF.solve</code> が設定から Method オブジェクトを作成（0 → 計算方法の既定値）し、その結果を <code>cv_Vbus</code>、<code>flag</code>、<code>output</code>、<code>cm_Vhistory</code>、<code>rv_step</code> に変換</li>
-            <li>newton: <code>NRMFcn</code> = F、<code>NRMJac</code> = ヤコビ行列とした <code>MethodNewtonRaphson</code>。ステップの全要素が <code>Tolerance</code> 未満で停止。|F| の最大値も max(1e-6, <code>Tolerance</code>) 以下のときだけ収束。ヤコビ行列が特異（slack 母線のない島）なら最小ノルムのステップ（<code>lsqminnorm</code>）</li>
+            <li>Method クラスはすべて <code>MethodBase</code> を継承し、flag と output を自身で作成。|F| の最大値が <code>Tolerance</code> 以下で収束</li>
+            <li>newton: <code>Fcn</code> = F、<code>Jac</code> = ヤコビ行列とした <code>MethodNewtonRaphson</code>。ヤコビ行列が特異（slack 母線のない島）なら最小ノルムのステップ（<code>lsqminnorm</code>）。|F| &gt; <code>Tolerance</code> のままステップが x の丸め誤差の大きさになると flag −2</li>
             <li>ブランチのない slack 以外の母線: 電圧が定まらないため、計算方法を実行せずに flag −2（dynamic: false）</li>
             <li>gradient: <code>power_equation</code> の方向 <code>[ΔP; ΔQ/V]</code> を使う <code>MethodGradient</code>。極座標。slack の角度・電圧と PV の電圧は指定値に固定。<code>θ += α·ΔP</code>（slack 以外）、<code>V += α·ΔQ/V</code>（PQ）。|ΔP|、|ΔQ| の最大値が <code>Tolerance</code> 以下で停止</li>
             <li>levenberg-marquardt: <code>MethodLevenbergMarquardt</code>。<code>(JᵀJ + μI) dx = −JᵀF</code>。|F| が減るステップの後は μ ÷ 3、減らなければ μ × 4 で再試行。|F| の最大値が <code>Tolerance</code> 以下で停止</li>
-            <li>fsolve: <code>tools.require_toolbox("optim", ...)</code> の後、<code>SpecifyObjectiveGradient</code> を指定した <code>fsolve</code>（<code>MethodFsolve</code>）</li>
+            <li>fsolve: <code>tools.require_toolbox("optim", ...)</code> の後、<code>SpecifyObjectiveGradient</code> を指定した <code>fsolve</code>（<code>MethodFsolve</code>）。exitflag &gt; 0 かつ |F| の最大値が <code>Tolerance</code>（0 なら 1e-6）以下で flag 1、exitflag 0 で 0、それ以外は −2</li>
             <li>各反復の値を記録（gradient: 1000 回目までは毎回、以降は 1000 回ごとと最後）</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options</code> (<code>Tolerance</code>, <code>MaxIterations</code>, <code>Display</code>, <code>gradient.StepSize</code>, <code>MaxFunEvals</code>, <code>UseParallel</code>, <code>PlotFcn</code>)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>cv_Vbus</code> <span lang="en">(n_bus×1 complex [pu])</span><span lang="ja">（n_bus×1 の複素数 [pu]）</span>, <code>flag</code> <span lang="en">(1 converged, 0 MaxIterations reached, −2 diverged or no solution; fsolve: its exitflag)</span><span lang="ja">（1 収束、0 反復回数の上限、−2 発散または解なし。fsolve: その exitflag）</span>, <code>output</code> <span lang="en">(iterations, algorithm, residual, message; fsolve: its output)</span><span lang="ja">（iterations, algorithm, residual, message。fsolve: その output）</span>, <code>cm_Vhistory</code> (n_bus×n_step), <code>rv_step</code></dd>
+          <dd><code>cv_Vbus</code> <span lang="en">(n_bus×1 complex [pu])</span><span lang="ja">（n_bus×1 の複素数 [pu]）</span>, <code>flag</code> <span lang="en">(1 converged, 0 MaxIterations reached, −2 diverged or no solution)</span><span lang="ja">（1 収束、0 反復回数の上限、−2 発散または解なし）</span>, <code>output</code> <span lang="en">(iterations, algorithm, residual, message; fsolve: also exitflag)</span><span lang="ja">（iterations, algorithm, residual, message。fsolve: exitflag も）</span>, <code>cm_Vhistory</code> (n_bus×n_step), <code>rv_step</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-08">
@@ -566,13 +568,11 @@
         <tr><td><code>rv_step</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">1×n_step</td><td data-label="Content" data-label-ja="内容"><span lang="en">Iteration numbers, or times [s] (dynamic)</span><span lang="ja">反復番号、または時刻 [s]（dynamic）</span></td></tr>
         <tr><td><code>flag</code>, <code>output</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位"><span lang="en">scalar, struct</span><span lang="ja">スカラー、構造体</span></td><td data-label="Content" data-label-ja="内容"><ul lang="en">
           <li>Same as the 2nd and 3rd outputs</li>
-          <li>newton, gradient, levenberg-marquardt: 1 / 0 / −2 and a struct with iterations, algorithm, residual, message</li>
-          <li>fsolve: fsolve exitflag and output (iterations, funcCount, algorithm, firstorderopt, message)</li>
+          <li>newton, gradient, levenberg-marquardt, fsolve: 1 / 0 / −2 and a struct with iterations, algorithm, residual, message (<code>MethodBase</code>); fsolve also exitflag (the fsolve exitflag)</li>
           <li>dynamic: logical and a struct with <code>message</code> only</li>
         </ul><ul lang="ja">
           <li>2 番目・3 番目の出力と同じ</li>
-          <li>newton・gradient・levenberg-marquardt: 1 / 0 / −2 と、iterations, algorithm, residual, message を持つ構造体</li>
-          <li>fsolve: fsolve の exitflag と output（iterations, funcCount, algorithm, firstorderopt, message）</li>
+          <li>newton・gradient・levenberg-marquardt・fsolve: 1 / 0 / −2 と、iterations, algorithm, residual, message を持つ構造体（<code>MethodBase</code>）。fsolve は exitflag（fsolve の exitflag）も</li>
           <li>dynamic: logical と、<code>message</code> だけを持つ構造体</li>
         </ul></td></tr>
         <tr><td><code>l_success</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">logical</td><td data-label="Content" data-label-ja="内容"><span lang="en">Dependent: true for a logical true or a numeric flag &gt; 0</span><span lang="ja">Dependent: logical の true、または数値の flag &gt; 0 のとき true</span></td></tr>

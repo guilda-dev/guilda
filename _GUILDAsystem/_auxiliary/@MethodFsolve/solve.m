@@ -1,13 +1,13 @@
 function [x, flag, output, rm_history, rv_step] = solve(obj)
-% Solve F(x) = 0 from InitVal with fsolve. rm_history holds the iterates of fsolve (one
-% column each), rv_step their iteration numbers.
+% Solve F(x) = 0 from InitVal with fsolve (see the class help). rm_history holds the
+% iterates of fsolve (one column each), rv_step their iteration numbers.
     arguments (Input)
         obj
     end
     arguments (Output)
         x           % Solution of fsolve.
-        flag        % exitflag of fsolve.
-        output      % Output structure of fsolve.
+        flag        % 1: converged, 0: MaxIter (or MaxFunEvals) reached, -2: no solution (see the class help).
+        output      % Details: iterations, algorithm, residual (largest |F|), message, exitflag.
         rm_history  % Iterates of fsolve (one column each).
         rv_step     % Iteration numbers.
     end
@@ -22,18 +22,33 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
     if obj.MaxFunEvals ~= 0
         opt = optimoptions(opt, "MaxFunctionEvaluations", obj.MaxFunEvals);
     end
-    if obj.MaxIterations ~= 0
-        opt = optimoptions(opt, "MaxIterations", obj.MaxIterations);
+    if obj.MaxIter ~= 0
+        opt = optimoptions(opt, "MaxIterations", obj.MaxIter);
     end
-    if obj.FunctionTolerance ~= 0
-        opt = optimoptions(opt, "FunctionTolerance", obj.FunctionTolerance);
+    r_tol = 1e-6;     % fsolve default FunctionTolerance
+    if obj.ConvTol ~= 0
+        opt   = optimoptions(opt, "FunctionTolerance", obj.ConvTol);
+        r_tol = obj.ConvTol;
     end
 
     rm_history = nan(numel(obj.InitVal), 0);
     n_iter = 0;
-    [x, ~, flag, output] = fsolve(@func, obj.InitVal, opt);
+    [x, rv_F, exitflag, sct_fsolve] = fsolve(@func, obj.InitVal, opt);
     rm_history = rm_history(:, 1:n_iter);
     rv_step    = 0:n_iter-1;
+
+    r_res = full(max(abs(rv_F)));
+    if exitflag > 0 && r_res <= r_tol
+        flag = 1;
+    elseif exitflag == 0
+        flag = 0;
+    else
+        flag = -2;
+    end
+    s_fail = sprintf('✘ No solution was found: fsolve stopped with exitflag %d and the largest mismatch %.3e.', exitflag, r_res);
+    output = obj.make_output(flag, sct_fsolve.iterations, r_res, "fsolve", "fsolve iteration", s_fail, ...
+                             " or MaxFunEvals");
+    output.exitflag = exitflag;
 
     function [F, J] = func(x)
         F = obj.Fcn(x);
