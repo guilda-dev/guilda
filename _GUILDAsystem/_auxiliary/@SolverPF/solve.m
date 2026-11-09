@@ -13,7 +13,7 @@ function [result,flag,output] = solve(obj, net, sct_options)
     end
     arguments (Output)
         result % Bus and branch values of the solution.
-        flag % 1/0/-2 (newton, gradient, levenberg-marquardt), exitflag of fsolve, or convergence (dynamic); positive or true = converged.
+        flag % 1/0/-2 (newton, gradient, levenberg-marquardt, fsolve; see MethodBase), or convergence (dynamic); positive or true = converged.
         output % Solver details; output.message describes the outcome.
     end
     t0 = tic;
@@ -109,27 +109,8 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, tab, sct)
     [f_res, f_jac, rv_x0, f_grad, rv_xp0] = power_equation(cm_Y, tab);
     switch sct.Method
         case "newton"
-            nrm = MethodNewtonRaphson(NRMFcn=f_res, NRMJac=f_jac, NRMVal=zeros(size(rv_x0)), ...
-                InitVal=rv_x0, ConvTol=default(r_tol, 1e-8), MaxIter=default(n_max, 50), Display=sct.Display);
-            [rm_x, ~, l_conv, rm_hist] = nrm.solve();
-            rv_step = 0:size(rm_hist,2)-1;
-            output  = struct("iterations", rv_step(end), "algorithm", "newton", "residual", max(abs(f_res(rm_x))));
-            if ~all(isfinite(rm_x))
-                flag = -2;
-                output.message = '✘ The process was terminated: the Newton-Raphson iteration diverged.';
-            elseif l_conv && ~(output.residual <= max(1e-6, r_tol))
-                flag = -2;          % a minimum norm step of a singular Jacobian can be small without a solution
-                output.message = sprintf('✘ No power flow solution was found: the Newton-Raphson step became small, but the largest mismatch is %.3e.', output.residual);
-            elseif l_conv
-                flag = 1;
-                output.message = sprintf('✔ The Newton-Raphson iteration has converged within the tolerance limit (%d iterations).', rv_step(end));
-            else
-                flag = 0;
-                output.message = sprintf('✘ The Newton-Raphson iteration did not converge within MaxIterations (%d).', nrm.MaxIter);
-            end
-            if sct.Display ~= "none"
-                disp(output.message)
-            end
+            [rm_x, flag, output, rm_hist, rv_step] = MethodNewtonRaphson(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
+                ConvTol=default(r_tol, 1e-8), MaxIter=default(n_max, 50), Display=sct.Display).solve();
         case "gradient"
             r_alpha = sct.gradient.StepSize;
             if r_alpha == 0
@@ -146,7 +127,7 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, tab, sct)
                 ConvTol=default(r_tol, 1e-8), MaxIter=default(n_max, 100), Display=sct.Display).solve();
         case "fsolve"
             [rm_x, flag, output, rm_hist, rv_step] = MethodFsolve(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
-                FunctionTolerance=r_tol, MaxIterations=n_max, MaxFunEvals=sct.MaxFunEvals, Display=sct.Display, ...
+                ConvTol=r_tol, MaxIter=n_max, MaxFunEvals=sct.MaxFunEvals, Display=sct.Display, ...
                 UseParallel=sct.UseParallel, PlotFcn=sct.PlotFcn, Feature='Method="fsolve" of the power flow').solve();
     end
     cv_Vbus     = rm_x(1:2:end) + 1j*rm_x(2:2:end);

@@ -13,7 +13,7 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
     l_iter = startsWith(obj.Display, "iter");
     x     = obj.InitVal;
     rv_F  = obj.Fcn(x);
-    rm_J  = obj.Jac(x);
+    rm_J  = obj.eval_jacobian(x);
     r_mu  = full(1e-6 * max(sum(rm_J.^2, 1)));
     m_eye = speye(numel(x));
     rm_history = x;
@@ -21,7 +21,7 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
     for k = 0:obj.MaxIter
         r_res = max(abs(rv_F));
         if l_iter
-            fprintf('  levenberg-marquardt  iter %4d   max mismatch %.3e   mu %.1e\n', k, r_res, r_mu);
+            obj.print_iter("levenberg-marquardt", k, r_res, sprintf("   mu %.1e", r_mu));
         end
         if r_res <= obj.ConvTol
             flag = 1;
@@ -35,7 +35,7 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
             x_new = x - (rm_A + r_mu*m_eye) \ rv_g;
             F_new = obj.Fcn(x_new);
             if norm(F_new) < norm(rv_F)
-                x = x_new;  rv_F = F_new;  rm_J = obj.Jac(x);
+                x = x_new;  rv_F = F_new;  rm_J = obj.eval_jacobian(x);
                 r_mu = r_mu/10;
                 break
             end
@@ -52,16 +52,6 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
     end
     rv_step = 0:size(rm_history,2)-1;
 
-    output = struct("iterations", rv_step(end), "algorithm", "levenberg-marquardt", "residual", r_res);
-    switch flag
-        case 1
-            output.message = sprintf('✔ The Levenberg-Marquardt iteration has converged within the tolerance limit (%d iterations).', rv_step(end));
-        case 0
-            output.message = sprintf('✘ The Levenberg-Marquardt iteration did not converge within MaxIterations (%d).', obj.MaxIter);
-        otherwise
-            output.message = sprintf('✘ No solution was found: the Levenberg-Marquardt iteration stopped at a local minimum of the mismatch (max %.3e).', r_res);
-    end
-    if obj.Display ~= "none"
-        disp(output.message)
-    end
+    output = obj.make_output(flag, rv_step(end), r_res, "levenberg-marquardt", "Levenberg-Marquardt iteration", ...
+        sprintf('✘ No solution was found: the Levenberg-Marquardt iteration stopped at a local minimum of the mismatch (max %.3e).', r_res));
 end

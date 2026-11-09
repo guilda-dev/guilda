@@ -11,15 +11,15 @@ classdef SolverPF < auxiliary
 %
 %   | Method                | Class (algorithm)                                       | Tolerance (default)                     | MaxIterations (default) |
 %   |-----------------------|---------------------------------------------------------|-----------------------------------------|-------------------------|
-%   | "newton"              | MethodNewtonRaphson (analytic Jacobian)                 | largest element of the step [pu] (1e-8) | 50                      |
+%   | "newton"              | MethodNewtonRaphson (analytic Jacobian)                 | largest P/Q mismatch [pu] (1e-8)        | 50                      |
 %   | "gradient"            | MethodGradient (theta += alpha*dP, V += alpha*dQ./V)    | largest P/Q mismatch [pu] (1e-8)        | 1e6                     |
-%   | "levenberg-marquardt" | MethodLevenbergMarquardt (analytic Jacobian)            | largest residual [pu] (1e-8)            | 100                     |
-%   | "fsolve"              | MethodFsolve (fsolve, analytic Jacobian)                | FunctionTolerance of fsolve (1e-6)      | fsolve default (400)    |
+%   | "levenberg-marquardt" | MethodLevenbergMarquardt (analytic Jacobian)            | largest P/Q mismatch [pu] (1e-8)        | 100                     |
+%   | "fsolve"              | MethodFsolve (fsolve, analytic Jacobian)                | largest P/Q mismatch [pu] (1e-6)        | fsolve default (400)    |
 %   | "dynamic"             | MethodDynamic (virtual bus dynamics, ode15s)            | largest P/Q mismatch [pu] (1e-5)        | not used                |
 %
-%   0 for Tolerance or MaxIterations uses the default of the method. "newton" also needs
-%   the largest mismatch to be at most max(1e-6, Tolerance); a singular Jacobian (an island
-%   without a slack bus) gives minimum norm steps. A non-slack bus without branches has no
+%   0 for Tolerance or MaxIterations uses the default of the method. "fsolve" also passes
+%   Tolerance as FunctionTolerance of fsolve. For "newton", a
+%   singular Jacobian (an island without a slack bus) gives minimum norm steps. A non-slack bus without branches has no
 %   determined voltage: every method returns flag -2 (false for "dynamic") without solving. solve creates the
 %   Method object from the settings for each run. The residual and Jacobian of the power
 %   equations (x = real and imaginary parts of the bus voltages) are shared by "newton",
@@ -33,7 +33,7 @@ classdef SolverPF < auxiliary
 %   "gradient" and "levenberg-marquardt", and every value but "none" prints the final
 %   message. Display, MaxFunEvals, UseParallel and PlotFcn are passed to fsolve.
 % - flag: 1 converged, 0 MaxIterations reached, -2 diverged or no solution found
-%   (exitflag of fsolve for "fsolve", logical for "dynamic").
+%   (logical for "dynamic"); the Method classes set flag and output (see MethodBase).
 % - `OptionMap` is the input of tools.resolve_options. Only the common option names are
 %   used. Verbose=true sets Display="iter", Verbose=false sets Display="none".
 %
@@ -46,7 +46,7 @@ classdef SolverPF < auxiliary
 % ```
 %
 % See also ResultPF, PowerNetwork.calculate_powerflow, MethodNewtonRaphson, MethodGradient,
-% MethodLevenbergMarquardt, MethodFsolve, MethodDynamic
+% MethodLevenbergMarquardt, MethodFsolve, MethodDynamic, MethodBase
 
     properties(Access=public) % Settings
         Method (1,1) string {mustBeMember(Method,["newton","gradient","levenberg-marquardt","fsolve","dynamic"])} = "newton"                                         % Calculation method: "newton", "gradient", "levenberg-marquardt", "fsolve" or "dynamic" (see the class help).
