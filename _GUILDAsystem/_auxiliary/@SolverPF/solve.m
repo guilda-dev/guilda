@@ -2,10 +2,10 @@ function [result,flag,output] = solve(obj, net, sct_options)
 % Solve the power flow with the given settings.
 %
 % Runs the power flow calculation of net with the effective settings sct_options and
-% returns the computed values as a ResultPF. The solver is only read: nothing is
-% written back into it. The calculation itself is done by the Method class of
-% sct_options.Method (see SolverPF), created from the settings. Called by
-% net.calculate_powerflow; calling it directly is for advanced use.
+% returns the computed values as a ResultPF. The solver keeps only the warm start
+% solution (a converged one) and the cache of net (see SolverPF). The calculation itself
+% is done by the Method class of sct_options.Method (see SolverPF), created from the
+% settings. Called by net.calculate_powerflow; calling it directly is for advanced use.
     arguments (Input)
         obj % Solver (net.solver_PF).
         net % Network with a slack bus.
@@ -18,12 +18,15 @@ function [result,flag,output] = solve(obj, net, sct_options)
     end
     t0 = tic;
 
-    tab_Ymat  = net.get_admittance_matrix;
-    tab_PFcondition = tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus);
-    sv_bus    = string(tab_PFcondition.Properties.RowNames);
-    cm_Y      = tab_Ymat{sv_bus,sv_bus};
+    sv_bus = reshape(string(net.a_Bus), [], 1);
+    sct_eq = equations(obj, net, sv_bus);
+    cm_Y   = obj.cm_Y;
+    cv_V0  = initial_voltage(obj, sct_eq.tab, sct_options.WarmStart);
 
-    [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, tab_PFcondition, sct_options);
+    [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, sct_eq, cv_V0, sct_options);
+    if flag == 1
+        obj.cv_Vwarm = cv_Vbus;
+    end
 
     % Vbus -> Ibus -> Pbus,Qbus
     cv_Ibus = cm_Y*cv_Vbus;
@@ -73,16 +76,65 @@ function tab = branch_flow(net, sv_bus, cv_Vbus)
 end
 
 
-function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, tab, sct)
+function sct_eq = equations(obj, net, sv_bus)
+% Power flow conditions and equations of net, from the cache when the revisions of net
+% match (the cache and the warm start are reset when the buses differ or the topology
+% was edited)
+    a_Bus = net.a_Bus;
+    l_same = obj.n_revTopology == net.n_revTopology && numel(obj.a_Bus) == numel(a_Bus) ...
+             && all(cellfun(@(b1, b2) b1 == b2, obj.a_Bus, a_Bus));
+    if ~l_same
+        obj.a_Bus         = a_Bus;
+        obj.n_revTopology = net.n_revTopology;
+        obj.cv_Vwarm      = zeros(0,1);
+        obj.n_revY        = NaN;
+        obj.n_revPF       = NaN;
+    end
+    if obj.n_revY ~= net.n_revY
+        tab_Ymat   = net.get_admittance_matrix;
+        obj.cm_Y   = tab_Ymat{sv_bus, sv_bus};
+        obj.n_revY = net.n_revY;
+        obj.n_revPF = NaN;
+    end
+    if obj.n_revPF ~= net.n_revPF
+        tab = tools.vcellfun(@(b) b.get_pf_condition, a_Bus);
+        [f_res, f_jac, f_grad] = power_equation(obj.cm_Y, tab);
+        obj.sct_equation = struct("tab", tab, "f_res", f_res, "f_jac", f_jac, "f_grad", f_grad);
+        obj.n_revPF = net.n_revPF;
+    end
+    sct_eq = obj.sct_equation;
+    sct_eq.tab.Properties.RowNames = sv_bus;     % a tag edit does not change the revisions
+end
+
+
+function cv_V0 = initial_voltage(obj, tab, l_warm)
+% The kept solution (WarmStart), or the flat start: angle 0 and magnitude 1, with the set
+% V at PV and slack buses and the set angle at the slack bus
+    if l_warm && numel(obj.cv_Vwarm) == height(tab)
+        cv_V0 = obj.cv_Vwarm;
+        return
+    end
+    rv_V  = ones(height(tab), 1);
+    rv_T  = zeros(height(tab), 1);
+    lv_set = tab.Type ~= "PQ";
+    rv_V(lv_set) = tab.V(lv_set);
+    lv_slack = tab.Type == "slack";
+    rv_T(lv_slack) = tab.Varg(lv_slack);
+    cv_V0 = rv_V .* exp(1j*rv_T);
+end
+
+
+function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, sct_eq, cv_V0, sct)
 % Create the Method object of sct.Method from the settings and map its results to the bus
 % voltages (cv_Vbus), flag, output, the voltage history and its steps.
+    tab   = sct_eq.tab;
     r_tol = sct.Tolerance;
     n_max = sct.MaxIteration;
 
     % a bus without branches (not slack) has no determined voltage: no solution
     lv_isolated = ~any(cm_Y, 2) & tab.Type ~= "slack";
     if any(lv_isolated)
-        cv_Vbus     = tab.V0 .* exp(1j*tab.Varg0);
+        cv_Vbus     = cv_V0;
         cm_Vhistory = cv_Vbus;
         rv_step     = 0;
         flag        = -2;
@@ -93,11 +145,22 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, tab, sct)
     end
 
     if sct.Method == "dynamic"
+        tab.Varg0 = angle(cv_V0);     % initial voltages of MethodDynamic
+        tab.V0    = abs(cv_V0);
         [cv_Vbus,flag,output,cm_Vhistory,rv_step] = MethodDynamic(Y=cm_Y, PFcondition=tab, Tolerance=r_tol).solve();
         return
     end
 
-    [f_res, f_jac, rv_x0, f_grad, rv_xp0] = power_equation(cm_Y, tab);
+    f_res  = sct_eq.f_res;
+    f_jac  = sct_eq.f_jac;
+    f_grad = sct_eq.f_grad;
+    rv_x0  = reshape([real(cv_V0), imag(cv_V0)].', [], 1);
+    lv_PQ  = tab.Type == "PQ";
+    rv_T0  = angle(cv_V0);
+    rv_V0  = abs(cv_V0);
+    rv_T0(tab.Type == "slack") = tab.Varg(tab.Type == "slack");
+    rv_V0(~lv_PQ) = tab.V(~lv_PQ);
+    rv_xp0 = [rv_T0; rv_V0];      % "gradient": the fixed values at their settings
     switch sct.Method
         case "newton"
             [rm_x, flag, output, rm_hist, rv_step] = MethodNewtonRaphson(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...

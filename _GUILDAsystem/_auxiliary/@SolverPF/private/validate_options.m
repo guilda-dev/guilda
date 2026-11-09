@@ -5,5 +5,6 @@ function validate_options(opt)
         opt.Tolerance    (1,1) double  {mustBePositive}
         opt.MaxIteration (1,1) double  {mustBeNonnegative,mustBeInteger}
         opt.Verbose      (1,1) logical
+        opt.WarmStart    (1,1) logical
     end
 end

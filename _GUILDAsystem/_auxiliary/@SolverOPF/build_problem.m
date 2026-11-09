@@ -17,8 +17,9 @@ function [prob, x0] = build_problem(obj, net, sct_options)
 % - Objective GenCost: HP*P^2 + fP*P + HQ*Q^2 + fQ*Q of every component (DefaultCost),
 %   plus Cost(v, p).
 % - Constraint(v, p) adds named constraints prob.Constraints.<name>.
-% x0 starts from tab_parameter.powerflow Varg0, V0 of the buses and tab_parameter.OPF
-% P0, Q0 of the components; the branch ends start at the flows of these voltages.
+% x0 starts from the bus voltages of the flat start, or of the last solved "AC OPF" when
+% sct_options.WarmStart is true (see SolverOPF), and tab_parameter.OPF P0, Q0 of the
+% components; the branch ends start at the flows of these voltages.
 %
 % <@Examples>
 % ```matlab
@@ -30,7 +31,7 @@ function [prob, x0] = build_problem(obj, net, sct_options)
     arguments (Input)
         obj                                          % Solver (net.solver_OPF).
         net                                          % Network whose problem is built; only read.
-        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options): Method, Cost, Constraint, DefaultCost, ReferenceBus.
+        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options): Method, Cost, Constraint, DefaultCost, ReferenceBus; WarmStart (default false).
     end
     arguments (Output)
         prob % optimproblem; its Description shows the OPF settings of the network.
@@ -48,10 +49,11 @@ function [prob, x0] = build_problem(obj, net, sct_options)
         const.P = 0;
     end
 
-    a_Bus = net.a_Bus;
+    a_Bus  = net.a_Bus;
+    rm_init = initial_voltage(obj, net, isfield(sct_options, "WarmStart") && sct_options.WarmStart);
     for i_bus = 1:numel(a_Bus)
         bus = a_Bus{i_bus};
-        [prob, x0, const, var] = build_bus(bus, prob, x0, const, s_method);
+        [prob, x0, const, var] = build_bus(bus, prob, x0, const, s_method, rm_init(i_bus,:));
         if ~isempty(var)
             sct_var.(string(bus)) = var;
         end
@@ -130,4 +132,23 @@ function s_text = describe(net, s_method)
     s_text = s_text + "<<Network Topology>>"+newline ...
                     + net.disp_tree + newline ...
                     + string(repmat('=',1,100))+newline;
+end
+
+
+function rm_init = initial_voltage(obj, net, l_warm)
+% [Varg, V] of each bus: the kept "AC OPF" solution (l_warm, same buses and topology), or
+% the flat start (angle 0 and magnitude 1, the set V at PV and slack buses and the set
+% angle at the slack bus)
+    a_Bus = net.a_Bus;
+    if l_warm && obj.n_revTopology == net.n_revTopology && numel(obj.a_Bus) == numel(a_Bus) ...
+            && all(cellfun(@(b1, b2) b1 == b2, obj.a_Bus, a_Bus))
+        rm_init = obj.rm_Vwarm;
+        return
+    end
+    tab = tools.vcellfun(@(b) b.get_pf_condition, a_Bus);
+    rm_init = [zeros(numel(a_Bus),1), ones(numel(a_Bus),1)];
+    lv_set   = tab.Type ~= "PQ";
+    lv_slack = tab.Type == "slack";
+    rm_init(lv_set, 2)   = tab.V(lv_set);
+    rm_init(lv_slack, 1) = tab.Varg(lv_slack);
 end

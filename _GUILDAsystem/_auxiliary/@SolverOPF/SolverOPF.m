@@ -23,6 +23,11 @@ classdef SolverOPF < auxiliary
 %   and p.base (baseMVA, Hz). Cost returns a scalar added to the objective; Constraint
 %   returns struct(name1, constraint1, ...), and field <name> becomes
 %   prob.Constraints.<name> and result.lambda.Constraints.<name>.
+% - The "AC OPF" starts from the bus voltages of the last solved "AC OPF" of the same
+%   network when the call option WarmStart of optimize_powerflow is true (kept until
+%   buses or branches are added, removed or replaced; buses are matched by object), and
+%   from the flat start otherwise: angle 0 and magnitude 1, with the set V at PV and slack
+%   buses and the set angle at the slack bus. "DC OPF" starts from the flat angles.
 % - A default limit of one object is removed by setting it to Inf (-Inf for a lower
 %   bound) in its tab_parameter.operation: Vmin, Vmax (bus); Pmin, Pmax, Qmin, Qmax
 %   (component); Pmax, Qmax, Vargmax, Imax, Smax (branch, where NaN also means none).
@@ -67,6 +72,12 @@ classdef SolverOPF < auxiliary
             "Constraint",   "Constraint", ...
             "DefaultCost",  "DefaultCost", ...
             "ReferenceBus", "ReferenceBus")                                                 % Name-Value options of net.optimize_powerflow (Method, Cost, Constraint, DefaultCost, ReferenceBus also of net.build_opf_problem) and the property each one sets (see the class help). <@Type> struct
+    end
+
+    properties(Access=private) % Warm start
+        a_Bus (:,1) cell = cell(0,1)                                                                                                                            % Buses of the network of rm_Vwarm, in its bus order.
+        n_revTopology (1,1) double = NaN                                                                                                                        % Topology revision of the network when rm_Vwarm was kept.
+        rm_Vwarm (:,2) double = zeros(0,2)                                                                                                                      % [rad, pu] Varg and V of the buses in the last solved "AC OPF" (a_Bus order); empty when none.
     end
 
     methods

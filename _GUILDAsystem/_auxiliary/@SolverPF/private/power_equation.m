@@ -1,4 +1,4 @@
-function [f_res, f_jac, rv_x0, f_grad, rv_xp0] = power_equation(cm_Y, tab_PFcondition)
+function [f_res, f_jac, f_grad] = power_equation(cm_Y, tab_PFcondition)
 % Power equations of the buses and their Jacobian, shared by the power flow methods.
 %
 % The unknowns x are the bus voltages in real form [Vre_1; Vim_1; Vre_2; Vim_2; ...].
@@ -15,9 +15,7 @@ function [f_res, f_jac, rv_x0, f_grad, rv_xp0] = power_equation(cm_Y, tab_PFcond
     arguments (Output)
         f_res  (1,1) function_handle  % Residual F(x) (2*n_bus x 1).
         f_jac  (1,1) function_handle  % Jacobian dF/dx (sparse, 2*n_bus x 2*n_bus).
-        rv_x0  (:,1) double           % [pu] Initial point from V0 and Varg0.
         f_grad (1,1) function_handle  % [d, r] = f_grad(xp) of "gradient".
-        rv_xp0 (:,1) double           % Initial [theta; V] of "gradient": V0, Varg0 with the slack values and the PV voltages set.
     end
     n_bus = height(tab_PFcondition);
     sv_type  = tab_PFcondition.Type;
@@ -39,13 +37,7 @@ function [f_res, f_jac, rv_x0, f_grad, rv_xp0] = power_equation(cm_Y, tab_PFcond
 
     f_res = @residual;
     f_jac = @power_jacobian;
-    V0    = tab_PFcondition.V0;
-    T0    = tab_PFcondition.Varg0;
-    rv_x0 = reshape([V0.*cos(T0), V0.*sin(T0)].', [], 1);
     f_grad = @direction;
-    T0(lv_slack) = tab_PFcondition.Varg(lv_slack);
-    V0(~lv_PQ)   = tab_PFcondition.V(~lv_PQ);
-    rv_xp0 = [T0; V0];
 
     function F = residual(x)
         [e, f, a, b] = split(x);

@@ -31,6 +31,10 @@ function [result, flag, output] = initialize(obj, varargin)
 %   - "equilibrium": never solved; the equilibria the components already hold (from an
 %     earlier initialize) are kept, and buses without components get the voltage of
 %     Y*V = I. A stale power flow stops with an error: use net.initialize().
+% - `WarmStart` — true starts the power flow or the "AC OPF" from the last solution of the
+%   network (kept by net.solver_PF or net.solver_OPF); false from the flat start. Default:
+%   the WarmStart of the PowerFlowCalculation or OptimalPowerFlow section of GUILDA.setting.
+%   Passed to calculate_powerflow or optimize_powerflow like the other options.
 % - Other options go unchanged to calculate_powerflow ("powerflow") or
 %   optimize_powerflow ("OPF") and are validated there (unknown names stop with
 %   GUILDA:resolve_options:UnknownName); "equilibrium" takes no other option. The

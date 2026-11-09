@@ -3,7 +3,8 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 %
 % Calculates the power flow of the network. The settings are the PowerFlowCalculation
 % section of GUILDA.setting; Name-Value options override them for this call only (the
-% settings file is not changed). The network is not changed either, except that a slack
+% settings file is not changed). net.solver_PF keeps the solution for the next warm start
+% and the cache of the equations. The network is not changed, except that a slack
 % bus is selected when none is set (with an INFO message): the first bus that has a
 % component with Q = NaN, otherwise the first bus that has a component
 % (GUILDA:Bus:SlackWithoutQnan). A network without buses stops with
@@ -18,6 +19,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 % - `Tolerance` — [pu] Largest P/Q mismatch of a converged solution, for every method. Default: GUILDA.setting (1e-8).
 % - `MaxIteration` — Maximum number of iterations; 0 for the automatic value of the method (see SolverPF). Default: GUILDA.setting (0).
 % - `Verbose` — Print the progress of each iteration. Default: false.
+% - `WarmStart` — true starts from the last converged solution of this network (kept by net.solver_PF); false from the flat start (see SolverPF). Default: GUILDA.setting (true).
 % - `Plot` — Call result.Plot after the calculation. Default: false.
 % - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
 %

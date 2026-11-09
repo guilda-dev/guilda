@@ -273,12 +273,12 @@ sct_before = GUILDA.config("PowerFlowCalculation");
 
 % MaxIteration=1 では収束しない (flag = 0)
 w = warning("off"); c = onCleanup(@() warning(w));
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(MaxIteration=1, Tolerance=1e-10));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(MaxIteration=1, Tolerance=1e-10, WarmStart=false));
 assert(flag == 0 && ~res.l_success)
 assert(res.options.MaxIteration == 1 && res.options.Tolerance == 1e-10)
 % Verbose=true は反復ごとの表示 ("iter")
-s_log = evalc("res = net.calculate_powerflow(Verbose=true);");
-assert(res.options.Display == "iter" && strlength(s_log) > strlength(evalc("net.calculate_powerflow();")))
+s_log = evalc("res = net.calculate_powerflow(Verbose=true, WarmStart=false);");
+assert(res.options.Display == "iter" && strlength(s_log) > strlength(evalc("net.calculate_powerflow(WarmStart=false);")))
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(verbose=false, method="dynamic"));   % 名前の大文字小文字は区別しない
 assert(res.options.Display == "none" && res.options.Method == "dynamic")
 
@@ -294,6 +294,62 @@ clear c_cfg
 assert(GUILDA.config("PowerFlowCalculation", "Method") == "newton")
 
 
+%% Warm start starts from the last converged solution
+% WarmStart=true は前回の収束解から (反復 0 回)、false はフラットスタート
+net = DebugScript.helper.build_ieee14();
+[res0, ~, out0] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+[res1, ~, out1] = DebugScript.helper.quiet(@() net.calculate_powerflow());          % 既定 WarmStart=true
+assert(out0.iterations > 0 && out1.iterations == 0 && res1.options.WarmStart)
+assert(max(abs(res1.tab_bus.Vphasor - res0.tab_bus.Vphasor)) < 1e-8)
+[~, ~, out2] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+assert(out2.iterations == out0.iterations)
+% フラットスタート: 位相 0、大きさ 1 (PV・スラックは設定値 V、スラックの位相は設定値)
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false, MaxIteration=1, Method="newton"));
+cv_V0 = res.cm_Vhistory(:,1);
+tab_set = tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus);
+lv_PQ = tab_set.Type == "PQ";
+assert(all(abs(cv_V0(lv_PQ) - 1) < 1e-15) && max(abs(abs(cv_V0(~lv_PQ)) - tab_set.V(~lv_PQ))) < 1e-15)
+% パラメータの編集ではウォームスタートを保持し、方程式は作り直す (解は新しく作った系統と一致)
+net.a_Bus{14}.a_Component{1}.tab_parameter.powerflow.P = -0.2;
+net.a_Branch{3}.tab_parameter.dynamics.X = 0.21;
+net.a_Bus{9}.tab_parameter.dynamics.Bshunt = 0.25;
+[res_w, flag, out_w] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+assert(flag == 1 && out_w.iterations > 0 && out_w.iterations <= out0.iterations)
+net2 = DebugScript.helper.build_ieee14();
+net2.a_Bus{14}.a_Component{1}.tab_parameter.powerflow.P = -0.2;
+net2.a_Branch{3}.tab_parameter.dynamics.X = 0.21;
+net2.a_Bus{9}.tab_parameter.dynamics.Bshunt = 0.25;
+res_ref = DebugScript.helper.quiet(@() net2.calculate_powerflow(WarmStart=false));
+assert(max(abs(res_w.tab_bus.Vphasor - res_ref.tab_bus.Vphasor)) < 1e-8)
+% タグの変更ではキャッシュもウォームスタートも保持し、結果の行名は新しいタグ
+net.a_Bus{14}.s_tag = "Bnew";
+[res_t, ~, out_t] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+assert(out_t.iterations == 0 && string(res_t.tab_bus.Properties.RowNames(14)) == string(net.a_Bus{14}))
+% スラック母線の変更でも方程式は作り直す
+evalc("net.a_Bus{2}.l_isSlack = true;");
+net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow.P = 2.3;
+[res_s, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+assert(flag == 1 && abs(res_s.tab_bus.Varg(2) - net.a_Bus{2}.tab_parameter.powerflow.Varg) < 1e-12)
+% トポロジーの編集でウォームスタートを捨てる (フラットスタートと同じ反復回数)
+net.remove_branch(string(net.a_Branch{1}));
+[res_f, ~, out_f] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+[~, ~, out_g] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+assert(out_f.iterations == out_g.iterations && out_f.iterations > 0 && res_f.l_success)
+% 収束しなかった解は保存しない。reset_solver で捨てる
+w = warning("off"); c = onCleanup(@() warning(w));
+DebugScript.helper.quiet(@() net.calculate_powerflow(MaxIteration=1, WarmStart=false));
+[~, ~, out_h] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+assert(out_h.iterations == 0)
+clear c
+net.reset_solver();
+[~, ~, out_r] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+assert(out_r.iterations == out_g.iterations)
+% 別の系統で同じソルバーを使っても母線はオブジェクトで対応付ける (他の系統の解を使わない)
+net3 = DebugScript.helper.build_ieee14();
+[~, ~, out3] = DebugScript.helper.quiet(@() net.solver_PF.solve(net3, net.solver_PF.get_options()));
+assert(out3.iterations == out0.iterations)
+
+
 %% Unknown or invalid options stop with an error
 net = DebugScript.helper.build_9bus();
 try
@@ -301,7 +357,7 @@ try
     error("DebugScript:noError", "未知のオプションでエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "Tolerence") && contains(ME.message, "Method, Tolerance, MaxIteration, Verbose"))
+    assert(contains(ME.message, "Tolerence") && contains(ME.message, "Method, Tolerance, MaxIteration, Verbose, WarmStart"))
 end
 % 共通名以外 (ソルバー固有の名前) も受け付けない
 assert(error_id(@() net.calculate_powerflow("MaxIterations", 5)) == "GUILDA:resolve_options:UnknownName")
@@ -309,6 +365,8 @@ assert(error_id(@() net.calculate_powerflow("MaxIterations", 5)) == "GUILDA:reso
 assert(error_id(@() net.calculate_powerflow(Method="algebraic")) == "MATLAB:validators:mustBeMember")
 assert(error_id(@() net.calculate_powerflow(MaxIteration=-1)) ~= "")
 assert(error_id(@() net.calculate_powerflow(Plot="yes")) ~= "")
+assert(error_id(@() net.calculate_powerflow(WarmStart="yes")) ~= "")
+assert(error_id(@() net.calculate_powerflow(Tolerance=0)) == "MATLAB:validators:mustBePositive")
 % Name-Value の組になっていない
 assert(error_id(@() net.calculate_powerflow("Method")) == "GUILDA:resolve_options:InvalidPairs")
 
@@ -318,7 +376,7 @@ assert(error_id(@() net.calculate_powerflow("Method")) == "GUILDA:resolve_option
 net = DebugScript.helper.build_ieee14();
 tab_ref = DebugScript.helper.quiet(@() net.calculate_powerflow(Method="fsolve")).tab_bus;
 for s_method = ["newton", "gradient", "levenberg-marquardt"]
-    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Method=s_method));
+    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Method=s_method, WarmStart=false));
     assert(flag == 1 && res.l_success, s_method + ": " + output.message)
     assert(max(abs(res.tab_bus.Vphasor - tab_ref.Vphasor)) < 1e-6, s_method)
     assert(output.algorithm == s_method && output.residual <= 1e-8 && contains(output.message, "converged"))
@@ -327,17 +385,17 @@ for s_method = ["newton", "gradient", "levenberg-marquardt"]
     assert(norm(res.cm_Vhistory(:,end) - res.tab_bus.Vphasor) < 1e-12)
     % 反復回数の上限に達すると flag = 0
     w = warning("off"); c = onCleanup(@() warning(w));
-    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Method=s_method, MaxIteration=1));
+    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Method=s_method, MaxIteration=1, WarmStart=false));
     assert(flag == 0 && ~res.l_success && output.iterations == 1 && contains(output.message, "MaxIterations"), s_method)
     clear c
     % Verbose=true は反復ごとに 1 行
-    s_log = evalc("net.calculate_powerflow(Method=s_method, Verbose=true);");
+    s_log = evalc("net.calculate_powerflow(Method=s_method, Verbose=true, WarmStart=false);");
     assert(count(s_log, "iter ") >= 2 && contains(s_log, "converged"), s_method)
 end
 % gradient の刻み幅は GUILDA.setting の GradientStepSize で変えられる (大きすぎると発散)
 c_cfg = DebugScript.helper.user_config("PowerFlowCalculation", struct("GradientStepSize", 1));
 w = warning("off"); c = onCleanup(@() warning(w));
-[~, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Method="gradient"));
+[~, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Method="gradient", WarmStart=false));
 assert(flag == -2 && output.StepSize == 1 && contains(output.message, "diverged"))
 clear c_cfg
 

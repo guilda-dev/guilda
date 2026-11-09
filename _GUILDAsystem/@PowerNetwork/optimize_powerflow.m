@@ -19,11 +19,11 @@ function varargout = optimize_powerflow(obj, varargin)
 % the MATPOWER branch susceptance b = 1/(X*tap) (tap ratio and phase shift at the from
 % end). The angle of the ReferenceBus is fixed to its tab_parameter.powerflow Varg;
 % l_isSlack is not set. The solver
-% starts from tab_parameter.powerflow V0 and Varg0 of the buses and P0, Q0 of the
-% components; branch current and power limits are applied as |I|^2 <= Imax^2 and
+% starts from the bus voltages of the last solved "AC OPF" of the network (WarmStart) or
+% of the flat start (see SolverOPF), and P0, Q0 of the components; branch current and power limits are applied as |I|^2 <= Imax^2 and
 % P^2 + Q^2 <= Smax^2 at both ends.
-% Accepted options are the names in SolverOPF.OptionMap plus Plot, Export, Problem and
-% InitialPoint;
+% Accepted options are the names in SolverOPF.OptionMap plus Plot, Export, Problem,
+% InitialPoint and WarmStart;
 % any other name stops with GUILDA:resolve_options:UnknownName.
 %
 % Name-Value options:
@@ -39,6 +39,7 @@ function varargout = optimize_powerflow(obj, varargin)
 % - `ReferenceBus` — Bus with a fixed angle: "auto" (bus of tools.slack_bus_index, else the first bus), a bus tag, or "none" (net.solver_OPF.ReferenceBus).
 % - `Problem` — optimproblem to solve instead of building one, e.g. from net.build_opf_problem with the same Method, modified by the user; Cost, Constraint, DefaultCost and ReferenceBus are not applied to it. Default: none.
 % - `InitialPoint` — Initial point (struct of values by variable name). Default: the x0 of net.build_opf_problem for the same Method; give it when Problem has added variables.
+% - `WarmStart` — true starts "AC OPF" from the bus voltages of the last solved "AC OPF" of this network (kept by net.solver_OPF); false from the flat start (see SolverOPF). Default: GUILDA.setting OptimalPowerFlow (true).
 % - `Plot` — Call result.Plot after the calculation. Default: false.
 % - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
 %
@@ -75,7 +76,8 @@ function varargout = optimize_powerflow(obj, varargin)
     [c_nv, opt] = take_call_options(varargin);
     sct_options = obj.solver_OPF.get_options(c_nv);
 
-    sct_input = rmfield(opt, ["Plot","Export"]);
+    sct_options.WarmStart = opt.WarmStart;
+    sct_input = rmfield(opt, ["Plot","Export","WarmStart"]);
     [result, flag, output] = obj.solver_OPF.solve(obj, sct_options, sct_input);
 
     if opt.Plot
@@ -93,7 +95,7 @@ end
 
 
 function [c_nv, opt] = take_call_options(c_in)
-% Separates the options of this call (Plot, Export, Problem, InitialPoint) from the solver options
+% Separates the options of this call (Plot, Export, Problem, InitialPoint, WarmStart) from the solver options
     c_nv = c_in;
     opt  = call_options();
     if mod(numel(c_in), 2) ~= 0
@@ -101,7 +103,7 @@ function [c_nv, opt] = take_call_options(c_in)
     end
     lv_call = false(size(c_in));
     for k = 1:2:numel(c_in)
-        lv_call(k:k+1) = (ischar(c_in{k}) || isstring(c_in{k})) && any(strcmpi(c_in{k}, ["Plot","Export","Problem","InitialPoint"]));
+        lv_call(k:k+1) = (ischar(c_in{k}) || isstring(c_in{k})) && any(strcmpi(c_in{k}, ["Plot","Export","Problem","InitialPoint","WarmStart"]));
     end
     c_call = c_in(lv_call);
     c_nv   = c_in(~lv_call);
@@ -114,6 +116,7 @@ function opt = call_options(opt)
         opt.Export {mustBeA(opt.Export, ["logical","string","char"])} = false
         opt.Problem      (1,1) optim.problemdef.OptimizationProblem
         opt.InitialPoint (1,1) struct
+        opt.WarmStart    (1,1) logical = GUILDA.config("OptimalPowerFlow", "WarmStart")
     end
     if ischar(opt.Export)
         opt.Export = string(opt.Export);

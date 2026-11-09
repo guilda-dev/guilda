@@ -80,11 +80,16 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve(obj)
                      'Mass', MassMat, ...
                      'Events', event_func, ...
                      'JPattern', J_pattern);
-    s_warn = lastwarn();
-    w = warning("off", "MATLAB:ode15s:IntegrationTolNotMet");
-    [t_out, Y_out, ~, ~, ie] = ode15s(ode_func, [0, r_tEnd], Y0, options);
-    warning(w);
-    lastwarn(s_warn);
+    if max_mismatch(Y0, cm_Y, tab_PFcondition, N) <= tol
+        % already converged (e.g. a warm start): the event would never cross
+        t_out = 0;  Y_out = Y0.';  ie = 1;
+    else
+        s_warn = lastwarn();
+        w = warning("off", "MATLAB:ode15s:IntegrationTolNotMet");
+        [t_out, Y_out, ~, ~, ie] = ode15s(ode_func, [0, r_tEnd], Y0, options);
+        warning(w);
+        lastwarn(s_warn);
+    end
 
     % Convergence Test
     r_res = max_mismatch(Y_out(end,:).', cm_Y, tab_PFcondition, N);

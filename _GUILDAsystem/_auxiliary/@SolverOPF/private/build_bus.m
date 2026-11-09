@@ -1,4 +1,4 @@
-function [prob, x0, const, var] = build_bus(bus, prob, x0, const, s_method)
+function [prob, x0, const, var] = build_bus(bus, prob, x0, const, s_method, rv_init)
 % Add the variables and shunt power of one bus to the OPF problem.
 %
 % "AC OPF": variable <bus> = [Varg; V] with Vmin <= V <= Vmax (tab_parameter.operation;
@@ -10,6 +10,7 @@ function [prob, x0, const, var] = build_bus(bus, prob, x0, const, s_method)
         x0       (1,1) struct  % Initial values, extended.
         const    (1,1) struct  % Power-balance expressions by "P_<bus>" / "Q_<bus>", extended.
         s_method (1,1) string  % "ELD", "DC OPF" or "AC OPF".
+        rv_init  (1,2) double  % [rad, pu] Initial Varg and V of the bus.
     end
     arguments (Output)
         prob                   % Problem (unchanged; kept for a uniform signature).
@@ -22,12 +23,11 @@ function [prob, x0, const, var] = build_bus(bus, prob, x0, const, s_method)
     dyn    = group(bus, "dynamics");
     switch s_method
         case "AC OPF"
-            pf  = group(bus, "powerflow");
             ope = group(bus, "operation");
             var = optimvar(s_bus, {'Varg','V'}, 1, "Type","continuous", ...
                            "LowerBound", [-inf; ope.Vmin], ...
                            "UpperBound", [ inf; ope.Vmax]);
-            x0.(s_bus) = [pf.Varg0; pf.V0];
+            x0.(s_bus) = rv_init(:);
 
             if dyn.Gshunt ~= 0
                 const.(sv_con(1)) = - var("V")^2 * dyn.Gshunt;
@@ -42,7 +42,7 @@ function [prob, x0, const, var] = build_bus(bus, prob, x0, const, s_method)
 
         case "DC OPF"
             var = optimvar(s_bus, {'Varg'}, 1, "Type","continuous");
-            x0.(s_bus) = group(bus, "powerflow").Varg0;
+            x0.(s_bus) = rv_init(1);
             % With |V| = 1 the shunt draws Pshunt + jQshunt = G - jB.
             const.(sv_con(1)) = - dyn.Gshunt;
 
