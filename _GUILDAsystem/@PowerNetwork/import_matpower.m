@@ -7,7 +7,7 @@ function net = import_matpower(mpc, opt)
 % angles to radians. Buses keep the row order of mpc.bus (bus i = net.a_Bus{i}); the
 % bus numbers of mpc.bus(:,1) are only used to resolve gen and branch rows.
 %   bus     : Gshunt/Bshunt = GS/BS / baseMVA, Vmin/Vmax = VMIN/VMAX, baseKV = BASE_KV,
-%             V0/Varg0 = VM/VA (initial values), Varg = VA, and V = VG of the first
+%             Varg = VA, and V = VG of the first
 %             in-service generator of the bus (VM without one). The REF bus (type 3) is
 %             the slack bus. Isolated buses (type 4) are not supported.
 %   load    : a LoadModel component with P = -PD/baseMVA, Q = -QD/baseMVA (GUILDA
@@ -96,7 +96,7 @@ function net = import_matpower(mpc, opt)
         i_g = find(lv_gen & iv_genbus == i, 1);
         if ~isempty(i_g); r_V = rm_gen(i_g, 6); end
         r_Varg = rm_bus(i, 9)*pi/180;
-        a_Bus{i} = net.add_bus("V", r_V, "Varg", r_Varg, "V0", rm_bus(i,8), "Varg0", r_Varg, ...
+        a_Bus{i} = net.add_bus("V", r_V, "Varg", r_Varg, ...
                                "Gshunt", rm_bus(i,5)/base, "Bshunt", rm_bus(i,6)/base, ...
                                "Vmin", rm_bus(i,13), "Vmax", rm_bus(i,12), "baseKV", rm_bus(i,10));
     end

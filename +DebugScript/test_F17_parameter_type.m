@@ -173,7 +173,7 @@ assert(isequal(para.tab_parameter.V, tab.V - 0.01) && isempty(DebugScript.helper
 [net, ~] = initialized_3bus();
 para = net.a_Bus{1}.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", net.a_Bus{1}.a_Parameter)};
 tab0 = para.tab_parameter;
-assert(table_error(para, removevars(tab0, "V0")) == "GUILDA:Parameter:TableMismatch")
+assert(table_error(para, removevars(tab0, "Varg")) == "GUILDA:Parameter:TableMismatch")
 tab = tab0;  tab.extra = 1;
 assert(table_error(para, tab) == "GUILDA:Parameter:TableMismatch")
 assert(table_error(para, [tab0; tab0]) == "GUILDA:Parameter:TableMismatch")

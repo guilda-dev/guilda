@@ -17,7 +17,9 @@ function mpc = network_to_mpc(net)
 % BranchAdmittance when the network uses something the
 % MATPOWER model cannot express: a finite branch Imax, Pmax or Qmax, a load without
 % fixed P and Q, or a branch admittance matrix that does not fit the branch model.
-% mpc.bus_name, mpc.gen_name and mpc.branch_name hold the GUILDA tags.
+% mpc.bus_name, mpc.gen_name and mpc.branch_name hold the GUILDA tags. VM/VA are the
+% equilibrium voltages of the buses (1 and 0 before net.initialize); the generator VG is
+% the bus V (1 when it is NaN).
 %
 % <@Examples>
 % ```matlab
@@ -50,7 +52,7 @@ function mpc = network_to_mpc(net)
         ope = bus.a_Parameter{cellfun(@(p) p.s_tag=="operation", bus.a_Parameter)}.tab_parameter;
         dyn = bus.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", bus.a_Parameter)}.tab_parameter;
         rm_bus(i, [5 6])   = [dyn.Gshunt, dyn.Bshunt] * base;
-        rm_bus(i, [8 9])   = [pf.V0, pf.Varg0*180/pi];
+        rm_bus(i, [8 9])   = [abs(bus.c_Vequilibrium), angle(bus.c_Vequilibrium)*180/pi];   % 1, 0 before initialize
         rm_bus(i, 10)      = ope.baseKV;
         rm_bus(i, [12 13]) = [ope.Vmax, ope.Vmin];
 
@@ -67,7 +69,7 @@ function mpc = network_to_mpc(net)
             opf = com.a_Parameter{cellfun(@(p) p.s_tag=="OPF", com.a_Parameter)}.tab_parameter;
             cop = com.a_Parameter{cellfun(@(p) p.s_tag=="operation", com.a_Parameter)}.tab_parameter;
             V_g = pf.V;
-            if isnan(V_g); V_g = pf.V0; end
+            if isnan(V_g); V_g = 1; end
             r_gen = zeros(1, 21);
             r_gen(1:10) = [i, opf.P0*base, opf.Q0*base, cop.Qmax*base, cop.Qmin*base, ...
                            V_g, cop.baseMVA, 1, cop.Pmax*base, cop.Pmin*base];

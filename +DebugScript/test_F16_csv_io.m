@@ -214,6 +214,20 @@ assert(contains(s_msg, "bus/parameter.csv") && contains(s_msg, "Bshnt"))
 assert(numel(net2.a_Bus) == 3 && net2.a_Bus{1}.tab_parameter.dynamics.Bshunt == 0, "列は無視する")
 
 
+%% The removed bus columns V0 and Varg0 are ignored with an INFO message
+% 母線の初期値 V0, Varg0 は廃止。旧形式の CSV は INFO を出して列を無視する (警告ではない)
+[s_path, c] = csv_folder(); %#ok<ASGLU>
+s_file = fullfile(s_path, "bus", "parameter.csv");
+tab = readtable(s_file, "TextType", "string");
+tab.V0(:) = 1.1;
+tab.Varg0(:) = 0.1;
+writetable(tab, s_file);
+lastwarn("");
+s_log = evalc("net2 = PowerNetwork.import_csv(s_path);");
+assert(isempty(lastwarn()) && contains(s_log, "V0, Varg0") && contains(s_log, "bus/parameter.csv"))
+assert(numel(net2.a_Bus) == 3 && ~any(ismember(["V0","Varg0"], net2.a_Bus{1}.tab_parameter.powerflow.Properties.VariableNames)))
+
+
 %% A memo column warns with its name as written in each table
 w = warning("off", "MATLAB:table:ModifiedAndSavedVarnames");
 c_w = onCleanup(@() warning(w));
