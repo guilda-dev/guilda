@@ -295,17 +295,17 @@
         </dl>
       </li>
       <li class="fs-step" id="CPF-08">
-        <p class="fs-head"><b class="fs-id">CPF-08</b> <span class="fs-call"><code>SolverCPF.solve</code> → <code>MethodNewtonRaphson(NRMFcn=f_PF, NRMJac=[], NRMVal=0)</code></span></p>
+        <p class="fs-head"><b class="fs-id">CPF-08</b> <span class="fs-call"><code>SolverCPF.solve</code> → <code>MethodNewtonRaphson(Fcn=f_PF, ...)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Creates the corrector.</span><ul lang="en">
               <li><code>f_PF</code>: <code>pf_equation</code> bound to the network, the layout, <code>LoadBus</code>, and the admittance matrix.</li>
-              <li>Jacobian: central difference (no <code>NRMJac</code>); the predictor uses it too.</li>
-              <li><code>ConvTol</code> = <code>Tolerance</code>.</li>
+              <li>Jacobian: central difference with <code>Increment</code> (<code>tools.fd_jacobian</code>); the predictor uses it too.</li>
+              <li><code>ConvTol</code> = <code>Tolerance</code> (largest residual); <code>MaxIter</code>, <code>StepSize</code>, <code>Increment</code> from <code>GUILDA.config("MethodNewtonRaphson")</code>.</li>
             </ul><span lang="ja">修正子を作成</span><ul lang="ja">
               <li><code>f_PF</code>: ネットワーク、配置、<code>LoadBus</code>、アドミタンス行列を束縛した <code>pf_equation</code></li>
-              <li>ヤコビアン: 中心差分（<code>NRMJac</code> なし）。予測子も使用</li>
-              <li><code>ConvTol</code> = <code>Tolerance</code></li>
+              <li>ヤコビアン: <code>Increment</code> による中心差分（<code>tools.fd_jacobian</code>）。予測子も使用</li>
+              <li><code>ConvTol</code> = <code>Tolerance</code>（残差の最大値）。<code>MaxIter</code>、<code>StepSize</code>、<code>Increment</code> は <code>GUILDA.config("MethodNewtonRaphson")</code> から</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>get_admittance_matrix</code>, <code>w</code>, <code>sct_options</code></span><span lang="ja"><code>get_admittance_matrix</code>、<code>w</code>、<code>sct_options</code></span></dd>
