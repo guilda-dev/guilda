@@ -19,38 +19,17 @@ function [Cix, Div, Dii, Diu] = Jacobi_I_num(obj,r_t,rv_x,rv_V,rv_I,rv_u,rr_para
         Dii double   % Derivative of fcn_I ([Ire; Iim]) with respect to the current [Ire; Iim].
         Diu double   % Derivative of fcn_I ([Ire; Iim]) with respect to the inputs u.
     end
-    fcn     = @(x,v,i,u) obj.fcn_I(r_t, x, v, i, u, rr_param, r_omega0);
-    
-    % make variable
-    nx = numel(obj.sv_x);
-    nu = numel(obj.sv_u);
-    
-    % make function
-    d = 1e-5;
-    e = @(i,n) d/2 * ((1:n)==i).';
-    
-    % get linearized matrix numerically
-    jacobi = zeros(1, nx+2+2+nu);
-    for i = 1:nx
-        jacobi(:,i)      = fcn(rv_x+e(i,nx), rv_V       , rv_I       , rv_u        ) ...
-                         - fcn(rv_x-e(i,nx), rv_V       , rv_I       , rv_u        );
+    % [x; V; I; u] stacked into one vector (step 1e-5: x +- 0.5e-5)
+    nx = numel(rv_x);
+    J  = tools.fd_jacobian(@f, [rv_x; rv_V; rv_I; rv_u], Step=0.5e-5);
+
+    Cix = J(:,1:nx);
+    Div = J(:,nx+1:nx+2);
+    Dii = J(:,nx+3:nx+4);
+    Diu = J(:,nx+5:end);
+
+    function r = f(z)
+        c_I = obj.fcn_I(r_t, z(1:nx), z(nx+1:nx+2), z(nx+3:nx+4), z(nx+5:end), rr_param, r_omega0);
+        r = [real(c_I); imag(c_I)];
     end
-    for i = 1:2
-        jacobi(:,nx+i)   = fcn(rv_x        , rv_V+e(i,2), rv_I       , rv_u        ) ...
-                         - fcn(rv_x        , rv_V-e(i,2), rv_I       , rv_u        );
-    end  
-    for i = 1:2
-        jacobi(:,nx+2+i) = fcn(rv_x        , rv_V       , rv_I+e(i,2), rv_u        ) ...
-                         - fcn(rv_x        , rv_V       , rv_I-e(i,2), rv_u        );
-    end
-    for i = 1:nu
-        jacobi(:,nx+4+i) = fcn(rv_x        , rv_V       , rv_I       , rv_u+e(i,nu)) ...
-                         - fcn(rv_x        , rv_V       , rv_I       , rv_u-e(i,nu));
-    end
-    jacobi = [real(jacobi); imag(jacobi)]/d;
-    
-    Cix = jacobi(:,(1:nx)     );
-    Div = jacobi(:,(1: 2)+nx  );
-    Dii = jacobi(:,(1: 2)+nx+2);
-    Diu = jacobi(:,(1:nu)+nx+4);
 end

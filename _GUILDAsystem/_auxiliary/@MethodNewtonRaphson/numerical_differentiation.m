@@ -1,5 +1,5 @@
 function Jacobian = numerical_differentiation(obj, x, OBJFcn, del)
-% Compute the Jacobian of OBJFcn at x by central differences.
+% Compute the Jacobian of OBJFcn at x by central differences (tools.fd_jacobian).
     arguments (Input)
         obj       %#ok<INUSA>
         x         % Point at which to differentiate (column).
@@ -9,7 +9,5 @@ function Jacobian = numerical_differentiation(obj, x, OBJFcn, del)
     arguments (Output)
         Jacobian  % Jacobian of OBJFcn at x.
     end
-    nx  = numel(x);
-    Jacobian = cell2mat( arrayfun(@(ITER) ( OBJFcn(x+[zeros(ITER-1,1);del;zeros(nx-ITER,1)]) - ...
-        OBJFcn(x-[zeros(ITER-1,1);del;zeros(nx-ITER,1)]) ) / 2 / del, 1:nx, 'UniformOutput', false) );
+    Jacobian = tools.fd_jacobian(OBJFcn, x, Step=del);
 end

@@ -214,11 +214,11 @@ function c = numeric_jacobian(fcn, rv_x, rv_V, rv_u, nr, delta)
 end
 
 function J = diff_arg(f, v, nr, delta)
-    n = numel(v);
-    J = zeros(nr,n);
-    for i = 1:n
-        e = delta/2 * ((1:n)==i).';
-        J(:,i) = (f(v+e) - f(v-e)) / delta;
+    % Central differences with step delta (v +- delta/2); nr rows when v is empty
+    if isempty(v)
+        J = zeros(nr,0);
+    else
+        J = tools.fd_jacobian(f, v, Step=delta/2);
     end
 end
 
