@@ -5,7 +5,9 @@
 
 - 決定: 2026-11-09、メンテナー。
 - 基準コミット: `0af04ad3`(`refactor/design-alignment`)。「現状」はこのコミットのコード。
-- 状態: すべて未実装。実装の指示書はこのノートを引用する。
+- 状態: 手順 A(`MethodBase` と数値微分の共有、1 節・12 節)は `refactor/method-base` で実装。
+  手順 B(SolverPF のオプション、GUILDA.setting のセクション、ウォームスタート、キャッシュ、
+  母線の `V0`/`Varg0` の廃止)と手順 C(連続潮流計算の `Limits`)は未実装。実装の指示書はこのノートを引用する。
 - 区別: **決定**(メンテナーの決定)、**現状**(コードで確認済み)、**未決**(末尾の一覧)。
 
 ## 1. Method クラス
@@ -14,13 +16,28 @@
 
 - `MethodNewtonRaphson` / `MethodLevenbergMarquardt` / `MethodGradient` / `MethodFsolve` /
   `MethodDynamic` は `_GUILDAsystem/_auxiliary/` に残す(名前空間なし)。
-- 新しい基底クラス `MethodBase`(`_auxiliary/@MethodBase/`)を前の 4 クラスの親にする。
-  - 共通プロパティ: `Fcn`、`Jac`、`InitVal`、`ConvTol`、`MaxIter`、`Display`。
-  - `solve` の出力: `[x, flag, output, rm_history, rv_step]`。
+- 新しい基底クラス `MethodBase`(`_auxiliary/@MethodBase/`、`auxiliary` を継承する抽象 handle クラス)を前の 4 クラスの親にする。
+  - プロパティ: `Fcn`(F(x)=0 の F)、`Jac`(空なら数値ヤコビアン)、`InitVal`、`ConvTol`、`MaxIter`、`Display`、
+    `Increment`(数値ヤコビアンの刻み)。
+  - メソッド:
+    - Abstract `solve`。出力は `[x, flag, output, rm_history, rv_step]`。
+    - protected `set_options(obj, opt)`: Name-Value の構造体をプロパティへ代入(サブクラスのコンストラクタが使用)。
+    - protected `eval_jacobian(obj, x)`: `Jac`、または `Increment` による `tools.fd_jacobian`。
+    - protected `make_output(...)`: flag と `output`(iterations、algorithm、residual、message)を作成。
+      `Display` が "none" 以外なら最後のメッセージを表示。
+    - protected `print_iter(...)`: 反復ごとの表示。
   - `flag`: 1 収束、0 `MaxIter` 到達、-2 発散または解なし。
   - `output.message` は各 Method の中で作成(SolverPF では作らない)。
-  - 数値ヤコビアン(現状は `@MethodNewtonRaphson/numerical_differentiation.m` のみ)を `MethodBase` で共有。
-- `MethodNewtonRaphson` の `NRMFcn` / `NRMJac` / `NRMVal` を共通名へそろえる(正確な改名は未決)。
+  - 収束判定は 4 クラスとも「|F(x)| の最大値 ≤ `ConvTol`」(Gradient は残差 r)。
+  - 既定値は各クラスが自身で持つ(Method クラスは `GUILDA.config` を読まない)。
+  - 数値ヤコビアンは `MethodBase.eval_jacobian` で共有(12 節)。
+- `MethodNewtonRaphson`: `NRMFcn` → `Fcn`、`NRMJac` → `Jac`、`NRMVal` は削除(呼び出し側が F(x)-b を渡す)。互換層なし。
+  - `StepSize` と、記号式の `Fcn`(Symbolic Math Toolbox)は維持。
+  - 特異なヤコビアンでは最小ノルムのステップ。|F| > `ConvTol` のままステップが停滞すると flag -2
+    (`@SolverPF/solve.m` の `run_method` にあった NR の判定を移動)。
+  - 既定値: `ConvTol` 1e-5、`MaxIter` 1000、`InitVal` 1、`Increment` 1e-4、`StepSize` 1(現状の JSON の値)。
+- `MethodFsolve`: `FunctionTolerance` → `ConvTol`、`MaxIterations` → `MaxIter`(0 は fsolve の既定)。
+  flag は exitflag > 0 かつ |F| の最大値 ≤ `ConvTol` で 1、exitflag 0 で 0、それ以外は -2。元の exitflag は `output.exitflag`。
 - `MethodDynamic` は `MethodBase` の外(方程式の形が異なるため)。
 - 既定値は 1 か所で持つ。`@SolverPF/solve.m` の `run_method` にハードコードした既定値(1e-8、50、1e6、100 など)は削除。
 - 連続潮流計算の修正子は、将来 `MethodBase` 型として LM / fsolve も受け付け可能。Gradient と Dynamic は連続潮流計算に不向き。
@@ -59,7 +76,9 @@
   | `WarmStart` | ウォームスタートの既定(7 節) |
 
 - Name-Value はその呼び出しだけを上書き。JSON には書き込まない。
-- `Increment` は MethodNewtonRaphson セクションに残す(連続潮流計算の数値ヤコビアンだけが使用)。
+- GUILDA.setting のセクションは解析ごと。MethodNewtonRaphson セクションは手順 B で削除。
+  - ContinuationPowerFlow セクションに `CorrectorMaxIteration`、`CorrectorStepSize`、`Increment` を追加(連続潮流計算の修正子と数値ヤコビアン)。
+  - Method クラスは直接使うときのために自身の既定値を持つ(1 節)。
 - fsolve の `PlotFcn` は設定から削除。
 - `Display` は設定から外し、`Verbose` で指定(5 節)。
 
@@ -97,7 +116,7 @@
 | なし | `WhenFailed` | – | –(SolverPF が使用) |
 | `WarmStart` | `WarmStart` | – | –(SolverPF が初期値を選択) |
 | `Plot`、`Export` | なし | – | – |
-| なし | MethodNewtonRaphson セクション `Increment` | –(数値ヤコビアン) | 連続潮流計算のみ |
+| なし | ContinuationPowerFlow セクション `CorrectorMaxIteration`、`CorrectorStepSize`、`Increment` | `MaxIter`、`Increment` | NR `StepSize`(連続潮流計算の修正子のみ) |
 
 ## 3. Tolerance
 
@@ -159,7 +178,7 @@
 **決定**
 
 - 解析ごとの既定を GUILDA.setting に持ち、Name-Value `WarmStart`(true/false)で上書き。
-- `WarmStart` は API Design ルール 7(共通 Name-Value)への追加候補(未決)。
+- API Design ルール 7(共通 Name-Value)に `WarmStart` と `Limits`(10 節)を追加。
 - OFF = フラットスタート: 位相 0、大きさ 1。PV 母線とスラック母線の大きさは設定値 `V`。
 - 対象: 潮流計算、OPF、`initialize`。連続潮流計算は対象外。
 - ウォームスタートのデータを捨てるのは Topology の編集のときだけ(母線タグの順序の確認も行う)。
@@ -167,10 +186,21 @@
 
 **現状**: ウォームスタートなし。初期値は母線の `V0`/`Varg0`。NR / LM / fsolve は全母線を `V0`/`Varg0` から開始。PV・スラックの大きさを設定値にするのは gradient だけ(`private/power_equation.m` の `rv_xp0`)。
 
-## 8. キャッシュの有効性(提案、メンテナーは詳細化に同意)
+## 8. キャッシュの有効性
 
-- 編集の種類(タグ)ごとの改訂カウンタを `PowerNetwork` に持ち、`handle_edit` で増やす。
+**決定**(コーディネーターの提案)
+
+- `PowerNetwork` に 3 つの改訂カウンタを持ち、`handle_edit` で増やす。分類は `@PowerNetwork/handle_edit.m` の現在の分類(stale タグ powerflow)に合わせる。
+
+  | カウンタ | 増やす編集 | 無効にするもの |
+  |---|---|---|
+  | Y | ブランチの dynamics、母線の dynamics(`Gshunt`、`Bshunt`)、ネットワークの Topology、ネットワークの base | アドミタンス行列(と、それを使う方程式) |
+  | PF | Y の編集すべて、母線の powerflow・Slack・Topology(機器の接続)、機器の powerflow | 方程式のハンドル |
+  | Topology | ネットワークの Topology(母線・ブランチの追加、削除、置換) | ウォームスタートのデータ(とすべてのキャッシュ) |
+
 - キャッシュは作成時のカウンタを記録し、使用時に比較。
+- 保存したウォームスタートは、タグではなくオブジェクトの同一性で母線に対応付ける(タグの変更では捨てない)。
+- 以下の表は提案時の整理(上の表で確定)。
 
 | 編集 | ウォームスタート | キャッシュ |
 |---|---|---|
@@ -228,7 +258,7 @@
 - 潮流計算は `operation` の制約を課さない(頑健性のため)。
   - PV→PQ の切り替えなし、OLTC なし、注入は定 PQ。
   - 将来の ZIP 負荷は潮流解を基準電圧とする。
-- `ResultPF` は違反を表に記録するだけ(警告もエラーもなし)。表の名前は未決。
+- `ResultPF` は違反を表 `tab_violation` に記録するだけ(警告もエラーもなし。違反がなければ 0 行)。
 - `SolverPF` は「方程式の構築 → Method で 1 回解く」のまま。制約の切り替えやタップの外側ループは `SolverCPF` / `SolverOPF` の役割。
 - 連続潮流計算のオプション `Limits`: `["Q","V","S"]` の string 配列、または `"all"` / `"none"`。既定 `"none"`(GUILDA.setting)、Name-Value で上書き。
 - OPF は常に制約を課す(制約を外すには `Inf`)。
@@ -248,17 +278,26 @@
 
 - `SolverPF` の Name-Value は `MaxIteration`、プロパティと JSON キーは `MaxIterations`(変更後は `MaxIteration` に統一)。
 - `SolverPF` の `WhenFailed` のプロパティ既定は `"NONE"`、JSON は `"WARN"`(コンストラクタが JSON で上書きするので実害なし)。
-- NR の既定値が JSON(1e-5、1000)と `run_method`(1e-8、50)の 2 か所(1 節の決定で解消)。
-- 連続潮流計算の修正子は JSON の NR `MaxIter` 1000、`StepSize` 1 を使用。MethodNewtonRaphson セクションに `Increment` だけを残すと、これらの置き場所が必要(未決)。
+- NR の既定値が JSON(1e-5、1000)と `run_method`(1e-8、50)の 2 か所(1 節の決定で解消。手順 A で NR クラスが JSON を読まなくなった。`run_method` の値の削除は手順 B)。
+- 連続潮流計算の修正子は JSON の NR `MaxIter` 1000、`StepSize` 1 を使用(手順 A では `@SolverCPF/solve.m` が `GUILDA.config("MethodNewtonRaphson", ...)` から明示的に渡す。手順 B で ContinuationPowerFlow セクションへ移動、2 節)。
 - `MethodDynamic` の `Damper` 既定は 0.1(決定は 1)。flag は logical(他の Method と異なる)。
 - `import_matpower` の VM/VA は初期値以外にも使用(9 節の注)。
 
+## 12. 数値微分の共有
+
+**決定**: 中心差分のヤコビアンは `tools.fd_jacobian`(`_GUILDAsystem/+tools/fd_jacobian.m`)の 1 か所で計算。
+
+- 列 i は (f(x + Step·e_i) − f(x − Step·e_i)) / (2·Step)。Name-Value `Step` は必須(既定値なし)。
+- 呼び出し元と刻み(現状の値と差分の形を維持し、結果はビット単位で同一):
+  - `MethodBase.eval_jacobian`: `Increment`(NR の既定 1e-4、x ± 1e-4)。旧 `@MethodNewtonRaphson/numerical_differentiation.m` は削除。
+  - `@Component/private/Jacobi_dx_num.m`、`Jacobi_I_num.m`、`Jacobi_Y_num.m`: [x; V; I; u] を 1 本のベクトルにまとめて呼び、ブロックに分割(1e-5、x ± 0.5e-5)。
+  - `@Component/validate.m`(上の `Jacobi_*_num` を使用)、`@LocalController/validate.m`(同じ 1e-5)。
+  - 連続潮流計算の予測子・修正子: `Increment`(`@SolverCPF/solve.m`)。
+
 ## 未決
 
-1. `MethodBase` のメンバーの正確な一覧と、NR の `NRMFcn` / `NRMJac` / `NRMVal` の改名先(`NRMVal`(右辺 b)を残すか)。
 2. `Tolerance` の既定値(IEEJ_WEST30 / EAST30 夜間で検証)。
 3. `MethodDynamic` の再試行時の `foh_PQ` の値と、内部の安全上限。
-4. API Design ルール 7(共通 Name-Value)に `WarmStart` / `Limits` を加えるか。
-5. `ResultPF` の違反の表の名前。
-6. MethodNewtonRaphson セクションの `ConvTol` / `MaxIter` / `InitVal` / `StepSize` の扱い(連続潮流計算の修正子の設定の置き場所)。
-7. キャッシュ有効性の表の詳細化(母線の dynamics とアドミタンス行列、8 節の注)。
+
+決定済み(2026-11-09、番号は旧一覧): 1 `MethodBase` のメンバーと NR の改名(1 節)、4 ルール 7 への `WarmStart` / `Limits` の追加(7 節)、
+5 違反の表 `tab_violation`(10 節)、6 GUILDA.setting のセクション(2 節)、7 改訂カウンタ(8 節)。
