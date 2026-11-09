@@ -1,4 +1,4 @@
-classdef (Sealed = true) SolverODE < auxiliary
+classdef SolverODE < auxiliary
 % Solver of the time simulation (net.simulate).
 %
 % net.solver_ODE holds one; its properties are the stored defaults of net.simulate and are

@@ -1,4 +1,4 @@
-classdef (Sealed = true) SolverCPF < auxiliary
+classdef SolverCPF < auxiliary
 % Solver of the continuation power flow (CPF).
 %
 % Starting from the equilibrium found by net.initialize, it scales the loads of LoadBus by
@@ -17,6 +17,9 @@ classdef (Sealed = true) SolverCPF < auxiliary
 %   (getCompPQ) and all loads are scaled; when false, the components inject their
 %   equilibrium powers. True stops with GUILDA:build_layout:MissingGetCompPQ if a component
 %   has no getCompPQ.
+% - The Newton-Raphson corrector takes CorrectorMaxIteration and CorrectorStepSize, and
+%   the predictor and the corrector the numerical Jacobian step Increment, from the
+%   ContinuationPowerFlow section of GUILDA.setting.
 % - `OptionMap` is the input of tools.resolve_options. MaxIteration, Tolerance and Verbose
 %   are common names; LoadBus, InitialLambda, StepSize, ArcLength and UseInternalState have
 %   no common equivalent.

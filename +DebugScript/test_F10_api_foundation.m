@@ -83,6 +83,18 @@ assert(error_id(@() tools.resolve_options(solver, struct("Method", "Algorithm"))
 assert(error_id(@() tools.resolve_options(solver, struct("TimeSpan", "dynamic.tspan"))) == "GUILDA:resolve_options:UnknownField")
 
 
+%% Solver properties are validated and the solver classes can be subclassed
+% net.solver_* はクラスの検証付き。ソルバークラスはどれも Sealed ではない (系統のサブクラスで差し替え可能)
+for s_cls = ["SolverPF","SolverOPF","SolverCPF","SolverODE","SolverLIN"]
+    assert(~meta.class.fromName(s_cls).Sealed, s_cls)
+end
+mc = ?PowerNetwork;
+for s_prop = ["solver_PF","solver_OPF","solver_CPF","solver_ODE","solver_LIN"]
+    p = mc.PropertyList(strcmp({mc.PropertyList.Name}, s_prop));
+    assert(p.Validation.Class.Name == "Solver" + extractAfter(s_prop, "solver_"), s_prop)
+end
+
+
 %% Analysis result base holds the shared parts
 net = PowerNetwork("Grid");
 solver = net.solver_PF;
