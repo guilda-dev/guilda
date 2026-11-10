@@ -2,8 +2,10 @@ function [s_solver, c_nv] = optimoption(obj, prob, sct_options)
 % Get the solver name and the solve() options for the effective settings.
 %
 % Returns the Name-Value arguments of solve (Optimization Toolbox) for the effective settings.
-% Only settings that differ from the defaults of the solver are passed, so that the
-% default settings (Solver="auto", Display="default", NaN) call solve(prob, x0) as is.
+% Display follows Verbose ("iter" or "none"); the other settings are passed only when they
+% differ from the defaults of the solver (NaN: the default). PlotFcn becomes the PlotFcn
+% option of fmincon (keys k as optimplot<k>, a handle as it is); with linprog or quadprog,
+% a PlotFcn other than "none" stops with GUILDA:SolverOPF:PlotFcnUnsupported.
     arguments (Input)
         obj  %#ok<INUSA>
         prob                       % Problem built by build_opf_problem.
@@ -28,8 +30,20 @@ function [s_solver, c_nv] = optimoption(obj, prob, sct_options)
             c_opt = [c_opt, {"Algorithm", sct_options.(s_alg)}];
         end
     end
-    if sct_options.Display ~= "default"
-        c_opt = [c_opt, {"Display", sct_options.Display}];
+    if sct_options.Verbose
+        c_opt = [c_opt, {"Display", "iter"}];
+    else
+        c_opt = [c_opt, {"Display", "none"}];
+    end
+    if ~isequal(sct_options.PlotFcn, "none")
+        if s_solver ~= "fmincon"
+            error(msg("GUILDA:SolverOPF:PlotFcnUnsupported", s_solver, sct_options.Method))
+        end
+        if isa(sct_options.PlotFcn, "function_handle")
+            c_opt = [c_opt, {"PlotFcn", sct_options.PlotFcn}];
+        else
+            c_opt = [c_opt, {"PlotFcn", cellstr("optimplot" + sct_options.PlotFcn)}];
+        end
     end
     sct_num = struct("MaxIteration","MaxIterations", "Tolerance","OptimalityTolerance", ...
                    "StepTolerance","StepTolerance", "MaxFunctionEvaluations","MaxFunctionEvaluations");

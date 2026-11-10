@@ -569,9 +569,11 @@ assert(double(flag) > 0 && output.solver == "fmincon" && res.options.Tolerance =
 assert(all(abs(res.tab_bus{["B001","B002","B003"],"P"} - 1) < 1e-4))
 % Verbose=true はソルバーの表示 ("iter")、false は表示なし
 s_on    = evalc("res = net.optimize_powerflow(Method=""DC OPF"", Verbose=true);");
-assert(res.options.Display == "iter")
+assert(res.options.Verbose == true && ~isfield(res.options, "Display"))
 s_off = evalc("res = net.optimize_powerflow(method=""DC OPF"", verbose=false);");   % 名前の大文字小文字は区別しない
-assert(res.options.Display == "none" && strlength(s_on) > strlength(s_off))
+assert(res.options.Verbose == false && strlength(s_on) > strlength(s_off) && s_off == "")
+% 既定 (GUILDA.setting の Verbose = false) は何も表示しない
+assert(evalc("net.optimize_powerflow(Method=""AC OPF"");") == "")
 
 % 既定値 (GUILDA.setting と net.solver_OPF の条件) は変わらない
 assert(isequaln(sct_before, solver.get_options()) && net.solver_OPF == solver)   % NaN = ソルバーの既定値
@@ -617,9 +619,9 @@ t2 = res_ELD.Plot(Parent=figure("Visible","off"));
 c_fig2 = onCleanup(@() close(ancestor(t2, "figure")));
 ax = findobj(t2.Children, "Type", "axes");
 assert(numel(ax) == 1 && numel(ax.Children.XData) == numel(tools.vcellfun(@(b) b.a_Component, net.a_Bus)))
-% 計算後の図は result.Plot だけ。Plot オプションは廃止、PlotFcn は "none" のみ
+% 計算後の図は result.Plot だけ。Plot オプションは廃止。PlotFcn は fmincon の表示 (別のテスト)
 assert(error_id(@() net.optimize_powerflow(Method="ELD", Plot=true)) == "GUILDA:resolve_options:UnknownName")
-assert(error_id(@() net.optimize_powerflow(Method="ELD", PlotFcn="cost")) == "GUILDA:check_plotfcn:InDevelopment")
+assert(error_id(@() net.optimize_powerflow(Method="ELD", PlotFcn="cost")) == "GUILDA:check_plotfcn:UnknownKey")
 res_none = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD", PlotFcn="none"));
 assert(res_none.options.PlotFcn == "none")
 
@@ -1088,6 +1090,50 @@ assert(flag > 0)
 assert(abs(sum(res.tab_bus.P) - real(DebugScript.helper.branch_losses(net, res.tab_bus.Vphasor))) < 1e-4)
 
 % ---- local functions ----
+%% PlotFcn draws the plot functions of fmincon in AC OPF
+% キー k は fmincon の optimplot<k>。"none" と結果は同じ
+net = DebugScript.helper.build_9bus();
+a_before = findall(groot, "Type", "figure");
+c_fig = onCleanup(@() close(setdiff(findall(groot, "Type", "figure"), a_before)));
+res0 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+sv_key = ["fval","constrviolation","fvalconstr","firstorderopt","stepsize","funccount","x"];
+res1 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", PlotFcn=sv_key));
+assert(res1.l_success && res1.r_cost == res0.r_cost && isequal(res1.tab_bus, res0.tab_bus))
+assert(isequal(res1.options.PlotFcn, sv_key))
+a_new = setdiff(findall(groot, "Type", "figure"), a_before);
+assert(isscalar(a_new) && numel(findobj(a_new, "Type", "axes")) == numel(sv_key))
+% 図は使い回す (fmincon の動作): 2 回目も図は 1 枚、キーごとの軸に反復の点
+DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", PlotFcn="fval"));
+a_new = setdiff(findall(groot, "Type", "figure"), a_before);
+ax = findobj(a_new, "Type", "axes");
+assert(isscalar(a_new) && isscalar(ax) && numel(ax.Children(1).XData) >= 2)     % optimplotfval: a scatter of the iterates
+% 関数ハンドルは fmincon にそのまま渡す (stop = f(x, optimValues, state))
+m_log = containers.Map({'state'}, {strings(1,0)});
+res2 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", PlotFcn=@(x, o, s) opf_log(m_log, o, s)));
+sv_state = m_log("state");
+assert(res2.l_success && sv_state(1) == "init" && sv_state(end) == "done" && any(sv_state == "iter"))
+% stop = true で fmincon が止まる (exitflag -1)
+[res3, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", PlotFcn=@(x, o, s) o.iteration >= 1));
+assert(~res3.l_success && double(flag) == -1)
+% linprog・quadprog (ELD、DC OPF) は PlotFcn を持たない: Solver 名を挙げたエラー
+for s_method = ["ELD","DC OPF"]
+    try
+        DebugScript.helper.quiet(@() net.optimize_powerflow(Method=s_method, PlotFcn="fval"));
+        error("DebugScript:noError", "linprog / quadprog の PlotFcn でエラーにならない")
+    catch ME
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverOPF:PlotFcnUnsupported", DebugScript.helper.msg_id(ME))
+        assert(contains(ME.message, ["linprog","quadprog"]) && contains(ME.message, s_method))
+    end
+    assert(error_id(@() net.optimize_powerflow(Method=s_method, PlotFcn=@(x, o, s) false)) == "GUILDA:SolverOPF:PlotFcnUnsupported")
+end
+% fmincon を選べば ELD でも表示できる
+res4 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD", Solver="fmincon", PlotFcn="fval"));
+assert(res4.l_success)
+% GUILDA.setting の PlotFcn (select) にキーがある
+assert(isequal(string(GUILDA.config("OptimalPowerFlow").PlotFcn.options(:)).', ["none", sv_key]))
+assert(GUILDA.config("OptimalPowerFlow", "Verbose") == false && ~isfield(GUILDA.config("OptimalPowerFlow"), "Display"))
+
+
 function net = build_loop3()
 % 3 母線ループ: 送電線 B001-B002, B002-B003, B001-B003 (R = 0, X = 0.1)。
 % B001: 発電機 (P^2+P)、B002: 発電機 (P^2+2P)、B003: 負荷 1.0。全母線に負荷 (B001, B002 は 0) を置く。
@@ -1218,4 +1264,12 @@ function l = shares_variable(prob1, prob2, s_var)
     v1.UpperBound = 123.25;      % 一意な有限値 (上限は Inf のこともある)
     l = isequal(v2.UpperBound, 123.25);
     v1.UpperBound = r_old;
+end
+
+
+function stop = opf_log(m_log, sct, s_state)
+% PlotFcn の関数ハンドル (fmincon): 呼ばれた state を m_log に足す
+    assert(isstruct(sct) && isfield(sct, "iteration"))
+    m_log("state") = [m_log("state"), string(s_state)];
+    stop = false;
 end

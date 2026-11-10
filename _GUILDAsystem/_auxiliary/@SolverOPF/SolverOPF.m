@@ -15,9 +15,15 @@ classdef SolverOPF < auxiliary
 % - `Solver` "auto" uses the solver that solve chooses for the problem: linprog, quadprog
 %   or fmincon.
 % - `OptionMap` is the input of tools.resolve_options. Only the common option names are
-%   used. Tolerance is the OptimalityTolerance of the solver; Verbose=true sets
-%   Display="iter", Verbose=false sets Display="none". PlotFcn (live display) is "none"
-%   only (tools.check_plotfcn); result.Plot() draws the result.
+%   used, and each name is also the key of the setting (Cost, Constraint, DefaultCost,
+%   ReferenceBus: the properties). Tolerance is the OptimalityTolerance of the solver;
+%   Verbose=true passes Display="iter" to the solver, Verbose=false Display="none".
+% - `PlotFcn` (live display, fmincon only): display keys of the PlotFcn option of fmincon,
+%   key = name without "optimplot" ("fval", "constrviolation", "fvalconstr",
+%   "firstorderopt", "stepsize", "funccount", "x"), or a function handle
+%   stop = f(x, optimValues, state) passed to fmincon as it is. linprog and quadprog
+%   ("ELD", "DC OPF") have no PlotFcn: a value other than "none" stops with
+%   GUILDA:SolverOPF:PlotFcnUnsupported. result.Plot() draws the result.
 % - `Cost` and `Constraint` are function handles @(v, p) applied to the whole network.
 %   v holds the variables by tag: v.Component.(tag).P, .Q ("AC OPF");
 %   v.Bus.(tag).Varg, .V ("AC OPF"); v.Branch.(tag).Pfrom, .Pto, .Vargfrom, .Vargto
@@ -64,7 +70,7 @@ classdef SolverOPF < auxiliary
             "Solver",       "Solver", ...
             "Tolerance",    "Tolerance", ...
             "MaxIteration", "MaxIteration", ...
-            "Verbose",      {{"Display", @(l) replace(string(logical(l)), ["true","false"], ["iter","none"])}}, ...
+            "Verbose",      "Verbose", ...
             "Cost",         "Cost", ...
             "Constraint",   "Constraint", ...
             "DefaultCost",  "DefaultCost", ...

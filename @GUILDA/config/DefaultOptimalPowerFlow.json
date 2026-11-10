@@ -52,20 +52,10 @@
         ],
         "Description": "algorithm option @fmincon"
     },
-    "Display":{
-        "Value": "default",
-        "Type": "select",
-        "options": [
-            "default",
-            "none",
-            "iter",
-            "iter-detailed",
-            "final",
-            "final-detailed",
-            "notify",
-            "notify-detailed"
-        ],
-        "Description": "'Display' option of solver ('default': the default of the solver)"
+    "Verbose":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Print the progress of the solver (Display 'iter'; false: 'none')"
     },
     "MaxIteration":{
         "Value": NaN,
@@ -101,8 +91,15 @@
         "Value": "none",
         "Type": "select",
         "options": [
-            "none"
+            "none",
+            "fval",
+            "constrviolation",
+            "fvalconstr",
+            "firstorderopt",
+            "stepsize",
+            "funccount",
+            "x"
         ],
-        "Description": "Live display during the analysis ('none'; other displays are under development). The figure after the analysis: result.Plot()"
+        "Description": "Live display during the analysis (fmincon only, 'AC OPF'): the plot function optimplot<key> of fmincon, or 'none'. The figure after the analysis: result.Plot()"
     }
 }

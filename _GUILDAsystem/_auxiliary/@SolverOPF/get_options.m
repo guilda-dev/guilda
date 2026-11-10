@@ -11,7 +11,7 @@ function sct_options = get_options(obj, nv)
         nv (1,:) cell = {} % Name-Value overrides: Method, Solver, Tolerance, MaxIteration, Verbose, Cost, Constraint, DefaultCost, ReferenceBus, PlotFcn.
     end
     arguments (Output)
-        sct_options % One field per setting of the section (Method, Solver, Algorithm_*, Display, MaxIteration, Tolerance, ...) and per condition.
+        sct_options % One field per setting of the section (Method, Solver, Algorithm_*, Verbose, MaxIteration, Tolerance, ..., PlotFcn) and per condition.
     end
     sct_options = default_options(obj);
     sct_given   = tools.resolve_options(sct_options, SolverOPF.OptionMap, nv);
@@ -21,12 +21,12 @@ function sct_options = get_options(obj, nv)
     end
     sct_options.Method       = string(sct_options.Method);
     sct_options.Solver       = string(sct_options.Solver);
-    sct_options.Display      = string(sct_options.Display);
+    sct_options.Verbose      = logical(sct_options.Verbose);
     sct_options.ReferenceBus = string(sct_options.ReferenceBus);
     for s_alg = ["Algorithm_linprog","Algorithm_quadprog","Algorithm_fmincon"]
         sct_options.(s_alg) = string(sct_options.(s_alg));
     end
-    tools.check_plotfcn(sct_options.PlotFcn, "optimize_powerflow");
+    sct_options.PlotFcn = tools.check_plotfcn(sct_options.PlotFcn, "optimize_powerflow", plot_keys());
 end
 
 

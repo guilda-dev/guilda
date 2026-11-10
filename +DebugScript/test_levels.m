@@ -140,6 +140,7 @@ function tab = test_levels()
     "test_F4_opf/ProblemAndInitialPointSolveAUser_modifiedProblem", "large"
     "test_F4_opf/Network_levelReserveConstraintAndCost", "large"
     "test_F4_opf/IEEJ_WEST10ACOPFNamesItsBranchConstraintsAfterTheTags", "large"
+    "test_F4_opf/PlotFcnDrawsThePlotFunctionsOfFminconInACOPF", "large"
     "test_F4_opf/DCOptimalPowerFlow", "medium"
     "test_F4_opf/ACOptimalPowerFlow", "medium"
     "test_F4_opf/ACOPFRespectsGeneratorLimits", "medium"
