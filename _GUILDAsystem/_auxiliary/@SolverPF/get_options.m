@@ -23,6 +23,7 @@ function sct_options = get_options(obj, nv)
     sct_options.WhenFailed = string(sct_options.WhenFailed);
     sct_options.Display = string(sct_options.Display);
     sct_options.WarmStart = logical(sct_options.WarmStart);
+    tools.check_plotfcn(sct_options.PlotFcn, "calculate_powerflow");
 end
 
 

@@ -56,5 +56,13 @@
         "Value": true,
         "Type": "logical",
         "Description": "Start from the last power flow solution of the network (false: flat start)"
+    },
+    "PlotFcn":{
+        "Value": "none",
+        "Type": "select",
+        "options": [
+            "none"
+        ],
+        "Description": "Live display during the analysis ('none'; other displays are under development). The figure after the analysis: result.Plot()"
     }
 }

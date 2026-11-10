@@ -6,5 +6,6 @@ function validate_options(opt)
         opt.MaxIteration (1,1) double  {mustBeNonnegative,mustBeInteger}
         opt.Verbose      (1,1) logical
         opt.WarmStart    (1,1) logical
+        opt.PlotFcn                   % checked by tools.check_plotfcn
     end
 end

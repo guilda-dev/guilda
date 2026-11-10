@@ -50,7 +50,7 @@ assert(isequal(sct_pf, struct("MaxIteration", 5, "Tolerance", 1e-6)))
 cf = GUILDA.config();
 assert(~isfield(cf, "MethodNewtonRaphson"))
 assert(isequal(sort(string(fieldnames(cf.PowerFlowCalculation))), sort(["Solver";"Tolerance";"MaxIteration"; ...
-    "NewtonStepSize";"GradientStepSize";"FsolveUseParallel";"FsolveMaxFunEvals";"WhenFailed";"WarmStart"])))
+    "NewtonStepSize";"GradientStepSize";"FsolveUseParallel";"FsolveMaxFunEvals";"WhenFailed";"WarmStart";"PlotFcn"])))
 assert(cf.PowerFlowCalculation.Tolerance.Value == 1e-8 && cf.PowerFlowCalculation.MaxIteration.Value == 0)
 assert(cf.ContinuationPowerFlow.CorrectorMaxIteration.Value == 1000 && cf.ContinuationPowerFlow.CorrectorStepSize.Value == 1 ...
     && cf.ContinuationPowerFlow.Increment.Value == 1e-4)
