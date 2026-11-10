@@ -419,7 +419,16 @@ function sys = via_feedback(obj)
     sv_x   = tools.cellfun(@(S) S.StateName, ssFromBus);
     sv_x   = vertcat(strings(0,1), sv_x{:});
     sv_blk = tools.cellfun(@(S) string(S.OutputName), [ssFromBus(:); {ssN}]);
-    sv_gcIn = tools.vcellfun(@(S) reshape(string(S.InputName), [], 1), s.c_sysGC);
+    % Inputs of the global controllers that act (a column of B or D other than 0): a
+    % controller that does not use the voltages does not need them as outputs here
+    c_sysGC = s.c_sysGC;
+    for k = 1:numel(c_sysGC)
+        lv_used = reshape(any(c_sysGC{k}.B ~= 0, 1) | any(c_sysGC{k}.D ~= 0, 1), [], 1);
+        c_sysGC{k}.B = c_sysGC{k}.B(:, lv_used);
+        c_sysGC{k}.D = c_sysGC{k}.D(:, lv_used);
+        c_sysGC{k}.InputName = c_sysGC{k}.InputName(lv_used);
+    end
+    sv_gcIn = tools.vcellfun(@(S) reshape(string(S.InputName), [], 1), c_sysGC);
     sv_gcIn = unique(string(sv_gcIn(ismember(string(sv_gcIn), vertcat(strings(0,1), sv_blk{:})))), "stable");
     sv_gcIn = sv_gcIn(~ismember(sv_gcIn, sv_x));
     sysODE = connect_by_name([ssFromBus(:); {ssN}], [input; sv_l], [sv_x; sv_gcIn]);
@@ -429,8 +438,8 @@ function sys = via_feedback(obj)
     % inputs are bus voltages and component outputs or states (e.g. omega), and their
     % outputs add to component inputs (e.g. Pmech) or drive inputs of local controllers.
     % A voltage of a bus without an I-to-V form is not an output here.
-    for k = 1:numel(s.c_sysGC)
-        sysGC = s.c_sysGC{k};
+    for k = 1:numel(c_sysGC)
+        sysGC = c_sysGC{k};
         [lv_out, feedout] = ismember(sysGC.InputName,  sysODE.OutputName);
         [lv_in,  feedin ] = ismember(sysGC.OutputName, sysODE.InputName);
         if ~all(lv_out) || ~all(lv_in)
