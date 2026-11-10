@@ -40,8 +40,8 @@ function odeX = getODEFunction(ctx, t, x, RM, EM, lg)
 
         u_connect = tools.dcellfun(@(CU) CU.l_isConnect, a_GC.controlledUnits);
 
-        odeX(a_GC.iv_odeX) = a_GC.f_dx(t,x_GC,[],[],u_connect*u_GC);
-        y_GC(a_GC.iv_odeY) = y_GC(a_GC.iv_odeY) + a_GC.f_Y(t,x_GC,[],[],u_connect*u_GC);
+        odeX(a_GC.iv_odeX) = a_GC.f_dx(t,x_GC,[],u_connect*u_GC);
+        y_GC(a_GC.iv_odeY) = y_GC(a_GC.iv_odeY) + a_GC.f_Y(t,x_GC,[],u_connect*u_GC);
     end
 
     c_unit = ctx.c_unit;
@@ -56,7 +56,7 @@ function odeX = getODEFunction(ctx, t, x, RM, EM, lg)
             ue = ue + f_Uoffset(t);
         end
 
-        odeX = get_dx_algebraic(unit.comp, t, x, x(unit.idx_V), x(unit.idx_I), ue, odeX);
+        odeX = get_dx_algebraic(unit.comp, t, x, x(unit.idx_V), ue, odeX);
     end
 
     Ib = x(ctx.iv_busI);

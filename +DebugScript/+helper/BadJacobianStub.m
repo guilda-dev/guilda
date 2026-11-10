@@ -11,9 +11,8 @@ classdef BadJacobianStub < DebugScript.helper.BadComponentStub
         end
     end
     methods (Static)
-        function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(~, ~, ~, ~, ~, ~, ~)
+        function [Axx,Bxv,Bxu] = Jacobi_dx(~, ~, ~, ~, ~, ~)
             arguments (Input)
-                ~
                 ~
                 ~
                 ~
@@ -24,10 +23,9 @@ classdef BadJacobianStub < DebugScript.helper.BadComponentStub
             arguments (Output)
                 Axx  % fcn_dx の x によるヤコビアン
                 Bxv  % fcn_dx の V によるヤコビアン
-                Bxi  % fcn_dx の I によるヤコビアン
                 Bxu  % fcn_dx の u によるヤコビアン
             end
-            Axx = 2*eye(2);  Bxv = zeros(2);  Bxi = zeros(2);  Bxu = zeros(2,3);
+            Axx = 2*eye(2);  Bxv = zeros(2);  Bxu = zeros(2,3);
         end
     end
 end

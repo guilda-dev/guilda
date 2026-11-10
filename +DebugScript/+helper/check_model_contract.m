@@ -27,7 +27,7 @@ function sv_issue = check_model_contract(obj, opt)
     for fn = ["dx","I"]
         sv_issue = [sv_issue; over_tolerance(flag, fn, opt.TolResidual)]; %#ok<AGROW>
     end
-    for fn = ["Axx","Bxv","Bxi","Bxu","Cix","Div","Dii","Diu","Cyx","Dyv","Dyi","Dyu"]
+    for fn = ["Axx","Bxv","Bxu","Cix","Div","Diu","Cyx","Dyv","Dyu"]
         sv_issue = [sv_issue; over_tolerance(flag, fn, opt.TolJacobian)]; %#ok<AGROW>
     end
 end

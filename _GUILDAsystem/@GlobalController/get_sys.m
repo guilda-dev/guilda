@@ -1,8 +1,8 @@
-function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
+function [sys, varargout] = get_sys(obj, x, V, u, opt)
 % Linearize the global controller.
 %
 % The inputs are the outputs of the controlled units and the outputs are the
-% controller outputs that feed them; the V and I ports are not used.
+% controller outputs that feed them; the V port is not used.
 %
 % A controller on a network stops with the error GUILDA:GlobalController:Stale
 % when net.initialize() is needed (a stale tag of the network or the controller); a controller without a network builds its stale
@@ -24,7 +24,6 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         obj
         x        (:,1) double  = obj.rv_Xequilibrium   % States (default: the equilibrium).
         V        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
-        I        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
         u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
         opt.full (1,1) logical = false  % Ignored; kept for old calls.
         opt.Format (1,1) string {mustBeMember(opt.Format, ["GUILDAorigin","struct","ss"])} = "GUILDAorigin"   % Form of the model: GUILDAorigin (a ResultLIN), struct or ss (dss; needs the Control System Toolbox).
@@ -64,12 +63,12 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         obj.set_odefcn();    % no network to initialize: stale handles are rebuilt here
     end
 
-    % Same Jacobian contract as SolverODE: f_JacobiDx/Y(t,x,V,I,u).
+    % Same Jacobian contract as SolverODE: f_JacobiDx/Y(t,x,V,u).
     % A global controller has no V port, so only the u columns are used.
     nx = numel(x);
     nu = numel(u);
-    [Axx,~,~,Bxu] = obj.f_JacobiDx(0,x,V,I,u);
-    [Cyx,~,~,Dyu] = obj.f_JacobiY( 0,x,V,I,u);
+    [Axx,~,Bxu] = obj.f_JacobiDx(0,x,V,u);
+    [Cyx,~,Dyu] = obj.f_JacobiY( 0,x,V,u);
     ny = size(Cyx,1);
 
     A = full(reshape(Axx,nx,nx));
@@ -77,7 +76,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     C = full(reshape(Cyx,ny,nx));
     D = full(reshape(Dyu,ny,nu));
 
-    E = full(obj.f_Mass(0,x,V,I,u));
+    E = full(obj.f_Mass(0,x,V,u));
     if isempty(E)
         E = eye(nx);
     end

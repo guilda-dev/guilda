@@ -47,7 +47,6 @@ function flag = validate(obj, l_message)
     rv_x = obj.rv_Xequilibrium;
     rv_u = obj.rv_Uequilibrium;
     rv_V = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)];
-    rv_I = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)];
 
     time  = 0;
     delta = 1e-5;
@@ -60,8 +59,8 @@ function flag = validate(obj, l_message)
     rv_x = fit_size(rv_x, nx);
     rv_u = fit_size(rv_u, nu);
 
-    fcn_dx = @(x,v,u) obj.f_dx(time, x, v, rv_I, u);
-    fcn_Y  = @(x,v,u) obj.f_Y( time, x, v, rv_I, u);
+    fcn_dx = @(x,v,u) obj.f_dx(time, x, v, u);
+    fcn_Y  = @(x,v,u) obj.f_Y( time, x, v, u);
 
     % validate dx=0 at the equilibrium point
     [dx_test, s_id] = eval_value(@() fcn_dx(rv_x,rv_V,rv_u));
@@ -78,15 +77,10 @@ function flag = validate(obj, l_message)
     contract = add_row(contract, "fcn_y size", l_ok, s_detail);
 
     % simulate reads the mass matrix without a point (tools.read_mass)
-    [M_test, s_id] = eval_value(@() obj.f_Mass([],[],[],[],[]));
+    [M_test, s_id] = eval_value(@() obj.f_Mass([],[],[],[]));
     l_ok = s_id == "" && (isequal(size(M_test),[nx,nx]) || (nx == 0 && isempty(M_test)));
     contract = add_row(contract, "fcn_Mass constant and square", l_ok, ...
         join_detail(s_id, "size " + join(string(size(M_test)),"x") + sprintf(" (sv_x %d)",nx)));
-
-    % I is not a port of a controller: get_sys leaves its effect out of the linear model
-    [r_dep, s_id] = current_dependence({@(I) obj.f_dx(time,rv_x,rv_V,I,rv_u), @(I) obj.f_Y(time,rv_x,rv_V,I,rv_u)}, rv_I);
-    contract = add_row(contract, "no dependence on I", s_id == "" && r_dep < 1e-10, ...
-        join_detail(s_id, sprintf("%.3g",r_dep)));
 
     sv_port = intersect(obj.sv_u, sv_v);
     contract = add_row(contract, "sv_u has no port names", isempty(sv_port), join(sv_port,", "));
@@ -96,11 +90,11 @@ function flag = validate(obj, l_message)
 
     % validate linearized matrix
     [flag, contract] = compare_jacobian(flag, contract, "Jacobi_dx", obj.f_JacobiDx, ...
-        @() numeric_jacobian(fcn_dx, rv_x, rv_V, rv_u, nx, delta), {time,rv_x,rv_V,rv_I,rv_u}, ...
-        ["Axx","Bxv","","Bxu"], sv_x, {sv_x,sv_v,sv_v,sv_u});
+        @() numeric_jacobian(fcn_dx, rv_x, rv_V, rv_u, nx, delta), {time,rv_x,rv_V,rv_u}, ...
+        ["Axx","Bxv","Bxu"], sv_x, {sv_x,sv_v,sv_u});
     [flag, contract] = compare_jacobian(flag, contract, "Jacobi_Y", obj.f_JacobiY, ...
-        @() numeric_jacobian(fcn_Y, rv_x, rv_V, rv_u, ny, delta), {time,rv_x,rv_V,rv_I,rv_u}, ...
-        ["Cyx","Dyv","","Dyu"], sv_y, {sv_x,sv_v,sv_v,sv_u});
+        @() numeric_jacobian(fcn_Y, rv_x, rv_V, rv_u, ny, delta), {time,rv_x,rv_V,rv_u}, ...
+        ["Cyx","Dyv","Dyu"], sv_y, {sv_x,sv_v,sv_u});
 
     flag.contract = table(contract(:,2), contract(:,3), ...
         RowNames=contract(:,1), VariableNames=["status","detail"]);
@@ -191,29 +185,10 @@ function str = join_detail(s_id, s_value)
     end
 end
 
-function [r_dep, s_id] = current_dependence(c_f, rv_I)
-    % Largest slope of the model functions with respect to I (the error of the first failure)
-    r_dep  = 0;
-    s_id   = "";
-    d = 1e-3;
-    for k = 1:numel(c_f)
-        for m = 1:2
-            e = d * ((1:2)==m).';
-            [r, id] = eval_value(@() max(abs(reshape(c_f{k}(rv_I+e) - c_f{k}(rv_I),[],1)))/d);
-            if id ~= ""
-                s_id = id;
-            elseif ~isempty(r)
-                r_dep = max(r_dep, r);
-            end
-        end
-    end
-end
-
 function c = numeric_jacobian(fcn, rv_x, rv_V, rv_u, nr, delta)
-    % Central differences of fcn(x,V,u): {d/dx, d/dV, [], d/du}
+    % Central differences of fcn(x,V,u): {d/dx, d/dV, d/du}
     c = {diff_arg(@(x) fcn(x,rv_V,rv_u), rv_x, nr, delta), ...
          diff_arg(@(v) fcn(rv_x,v,rv_u), rv_V, nr, delta), ...
-         [], ...
          diff_arg(@(u) fcn(rv_x,rv_V,u), rv_u, nr, delta)};
 end
 
@@ -228,17 +203,17 @@ end
 
 function [flag, contract] = compare_jacobian(flag, contract, s_method, f_valid, f_num, point, sv_name, sv_row, c_col)
     % Compare the analytic blocks with the numerical ones; NaN for a block that cannot be
-    % compared. An empty name skips the block of I, which is checked as a dependence on I.
+    % compared.
     s_detail = "";
     c_num   = {};
-    c_valid = cell(1,4);
+    c_valid = cell(1,numel(sv_name));
     try
         c_num = f_num();
         [c_valid{:}] = f_valid(point{:});
     catch ME
         s_detail = error_text(ME);
     end
-    for k = find(sv_name ~= "")
+    for k = 1:numel(sv_name)
         nr = numel(sv_row);
         nc = numel(c_col{k});
         A = nan(nr,nc);

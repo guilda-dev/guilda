@@ -98,8 +98,8 @@ assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
 x = comp.rv_Xequilibrium;  x(comp.sv_x == "omega") = 0.01;
 V = comp.c_Vequilibrium;  I = comp.c_Iequilibrium;
 para = comp.tab_parameter.dynamics{:, comp.sv_para};
-dx_used = comp.f_dx(0, x, [real(V);imag(V)], [real(I);imag(I)], comp.rv_Uequilibrium);
-dx_new  = comp.fcn_dx(0, x, [real(V);imag(V)], [real(I);imag(I)], comp.rv_Uequilibrium, para, 50);
+dx_used = comp.f_dx(0, x, [real(V);imag(V)], comp.rv_Uequilibrium);
+dx_new  = comp.fcn_dx(0, x, [real(V);imag(V)], comp.rv_Uequilibrium, para, 50);
 assert(norm(dx_used - dx_new) < 1e-12, "f_dx が変更前の Hz を使っている")
 
 
@@ -302,7 +302,7 @@ assert(~isequal(h_dx, avr.f_dx))
 x = avr.rv_Xequilibrium + 0.01;  u = avr.rv_Uequilibrium;
 V = [real(comp.c_Vequilibrium); imag(comp.c_Vequilibrium)];
 para = avr.tab_parameter.dynamics{:, avr.sv_para}.';
-assert(norm(avr.f_dx(0,x,V,[0;0],u) - avr.fcn_dx(0,x,V,[0;0],u,para,60)) < 1e-12, ...
+assert(norm(avr.f_dx(0,x,V,u) - avr.fcn_dx(0,x,V,u,para,60)) < 1e-12, ...
        "AVR の f_dx が変更前の定数を使っている")
 
 
@@ -322,7 +322,7 @@ DebugScript.helper.quiet(@() net.initialize);
 assert(~isequal(h_dx, agc.f_dx))
 para = agc.tab_parameter.dynamics{:, agc.sv_para};
 x = 0.1;  u = [0.01; 0.02];
-assert(norm(agc.f_dx(0,x,[],[],u) - agc.fcn_dx(0,x,[],[],u,para,60)) < 1e-12, ...
+assert(norm(agc.f_dx(0,x,[],u) - agc.fcn_dx(0,x,[],u,para,60)) < 1e-12, ...
        "AGC の f_dx が変更前の定数を使っている")
 
 
@@ -370,7 +370,7 @@ assert(all(cellfun(@DebugScript.helper.handle_Hz, a_model) == 50))
 x = avr.rv_Xequilibrium + 0.01;  u = avr.rv_Uequilibrium;
 V = [real(c{1}.c_Vequilibrium); imag(c{1}.c_Vequilibrium)];
 para = avr.tab_parameter.dynamics{:, avr.sv_para}.';
-assert(norm(avr.f_dx(0,x,V,[0;0],u) - avr.fcn_dx(0,x,V,[0;0],u,para,50)) < 1e-12)
+assert(norm(avr.f_dx(0,x,V,u) - avr.fcn_dx(0,x,V,u,para,50)) < 1e-12)
 
 
 %% Network Hz edit redesigns the LQR gain
@@ -391,8 +391,8 @@ assert(~DebugScript.helper.is_stale(net) && DebugScript.helper.handle_Hz(lqr) ==
 DebugScript.helper.quiet(@() net.initialize);
 assert(isequal(lqr.K, K50), "設計した Hz と同じなら設計し直さない")
 u = ones(numel(gen.sv_x), 1);
-y_expected = lqr.fcn_y(0, [], [], [], u, struct("K",K50, "x0",gen.rv_Xequilibrium, "u0",gen.rv_Uequilibrium), 50);
-assert(norm(lqr.f_Y(0, [], [], [], u) - y_expected) < 1e-12, "f_Y が古い K を使っている")
+y_expected = lqr.fcn_y(0, [], [], u, struct("K",K50, "x0",gen.rv_Xequilibrium, "u0",gen.rv_Uequilibrium), 50);
+assert(norm(lqr.f_Y(0, [], [], u) - y_expected) < 1e-12, "f_Y が古い K を使っている")
 DebugScript.helper.quiet(@() net.initialize(Method="powerflow"));
 assert(norm(lqr.K - K50) < 1e-6 * norm(K50), "潮流から解き直した値と一致しない")
 
@@ -494,8 +494,8 @@ assert(~isempty(gen.f_dx) && ~isempty(avr.f_dx))
 assert(DebugScript.helper.handle_Hz(avr) == 50)
 x = zeros(numel(gen.sv_x),1);  x(gen.sv_x == "omega") = 0.01;
 para = gen.tab_parameter.dynamics{:, gen.sv_para};
-V = [1;0];  I = [0.5;0];  u = zeros(numel(gen.sv_u),1);
-assert(norm(gen.f_dx(0,x,V,I,u) - gen.fcn_dx(0,x,V,I,u,para,50)) < 1e-12)
+V = [1;0];  u = zeros(numel(gen.sv_u),1);
+assert(norm(gen.f_dx(0,x,V,u) - gen.fcn_dx(0,x,V,u,para,50)) < 1e-12)
 
 
 %% Handles are built at initialize
@@ -512,7 +512,7 @@ assert(~any(cellfun(@(m) isempty(m.f_dx), a_model)))
 % 系統に属さない機器を直接使う: get_sys と validate がハンドルを作る
 stub = DebugScript.helper.HessianStub();
 assert(isempty(stub.f_dx))
-sys = stub.get_sys([1;2], [1;0], [0.5;0], 0);
+sys = stub.get_sys([1;2], [1;0], 0);
 assert(~isempty(stub.f_dx) && isequal(size(sys.A), [2 2]))
 assert(DebugScript.helper.handle_Hz(stub) == GUILDA.config("Model","Hz"))
 stub = DebugScript.helper.HessianStub();
@@ -526,16 +526,16 @@ assert(isstruct(flag) && isfield(flag, "contract"))
 DebugScript.helper.quiet(@() net.initialize);
 DebugScript.helper.quiet(@() net.simulate([0,0.1], DebugScript.helper.noop_event(net,[0,0.1])));   % 変数の番号 iv_ode* を決める
 n = max([comp.iv_odeX; comp.iv_odeU; comp.a_Bus.iv_odeX]);
-x = rand(n,1);  V = [1;0.1];  I = [0.5;0.1];  u = x(comp.iv_odeU);
+x = rand(n,1);  V = [1;0.1];  u = x(comp.iv_odeU);
 para0 = comp.tab_parameter.dynamics{:, comp.sv_para};
 comp.tab_parameter.dynamics.D = 5;
-DAEvec = comp.get_dx_algebraic(0, x, V, I, u, zeros(n,1));
-dx = comp.fcn_dx(0, x(comp.iv_odeX), V, I, u, para0, comp.get_Hz());
+DAEvec = comp.get_dx_algebraic(0, x, V, u, zeros(n,1));
+dx = comp.fcn_dx(0, x(comp.iv_odeX), V, u, para0, comp.get_Hz());
 assert(norm(DAEvec(comp.iv_odeX) - dx) < 1e-12, "initialize を挟まない直接呼び出しは以前のハンドルを使う")
 DebugScript.helper.quiet(@() net.initialize);
-DAEvec = comp.get_dx_algebraic(0, x, V, I, u, zeros(n,1));
+DAEvec = comp.get_dx_algebraic(0, x, V, u, zeros(n,1));
 para = comp.tab_parameter.dynamics{:, comp.sv_para};
-dx = comp.fcn_dx(0, x(comp.iv_odeX), V, I, u, para, comp.get_Hz());
+dx = comp.fcn_dx(0, x(comp.iv_odeX), V, u, para, comp.get_Hz());
 assert(norm(DAEvec(comp.iv_odeX) - dx) < 1e-12, "initialize の後は編集後のハンドルを使う")
 
 

@@ -1,8 +1,9 @@
 function flag = validate(obj, l_message)
 % Check the model functions of the component against the contract of Component.
 %
-% Evaluates the model at the equilibrium, or at a random point of unit V and I when the
-% equilibrium is not set. A broken model does not stop the check: it is reported as FAIL
+% Evaluates the model at the equilibrium, or at a random point of unit V and injected
+% current when the equilibrium is not set (the current gives the power of get_equilibrium).
+% The model functions take no bus current, and the output fcn_Y takes no input. A broken model does not stop the check: it is reported as FAIL
 % in flag.contract and the values that cannot be computed are NaN. Analytic Jacobians
 % (Jacobi_*) are compared with finite differences of fcn_dx, fcn_I and fcn_Y; a component
 % without them uses those same finite differences, so there is nothing to compare.
@@ -68,12 +69,8 @@ function flag = validate(obj, l_message)
     rv_x = fit_size(rv_x, nx);
     rv_u = fit_size(rv_u, nu);
 
-    f_dx = @(I) obj.fcn_dx(r_t,rv_x,rv_V,I,rv_u,rr_param,r_omega0);
-    f_I  = @(I) obj.fcn_I( r_t,rv_x,rv_V,I,rv_u,rr_param,r_omega0);
-    f_Y  = @(I) obj.fcn_Y( r_t,rv_x,rv_V,I,rv_u,rr_param,r_omega0);
-
     % validate dx=0 and I=Ist at the equilibrium point
-    [dx_test, s_id] = eval_value(@() f_dx(rv_I));
+    [dx_test, s_id] = eval_value(@() obj.fcn_dx(r_t,rv_x,rv_V,rv_u,rr_param,r_omega0));
     [l_ok, s_detail] = check_size(dx_test, s_id, nx);
     contract = add_row(contract, "fcn_dx size", l_ok, s_detail);
     if l_ok
@@ -82,7 +79,7 @@ function flag = validate(obj, l_message)
         dx_test = nan(nx,1);
     end
 
-    [c_test, s_id] = eval_value(@() f_I(rv_I));
+    [c_test, s_id] = eval_value(@() obj.fcn_I(r_t,rv_x,rv_V,rv_u,rr_param,r_omega0));
     [l_ok, s_detail] = check_size(c_test, s_id, 1);
     contract = add_row(contract, "fcn_I complex scalar", l_ok, s_detail);
     if l_ok
@@ -91,20 +88,15 @@ function flag = validate(obj, l_message)
         I_test = nan(2,1);
     end
 
-    [y_test, s_id] = eval_value(@() f_Y(rv_I));
+    [y_test, s_id] = eval_value(@() obj.fcn_Y(r_t,rv_x,rv_V,rr_param,r_omega0));
     [l_ok, s_detail] = check_size(y_test, s_id, ny);
     contract = add_row(contract, "fcn_Y size", l_ok, s_detail);
 
     % simulate reads the mass matrix without a point (tools.read_mass)
-    [M_test, s_id] = eval_value(@() obj.fcn_Mass([],[],[],[],[],rr_param,r_omega0));
+    [M_test, s_id] = eval_value(@() obj.fcn_Mass([],[],[],[],rr_param,r_omega0));
     l_ok = s_id == "" && (isequal(size(M_test),[nx,nx]) || (nx == 0 && isempty(M_test)));
     contract = add_row(contract, "fcn_Mass constant and square", l_ok, ...
         join_detail(s_id, "size " + join(string(size(M_test)),"x") + sprintf(" (sv_x %d)",nx)));
-
-    % get_sys stops with CurrentDependence
-    [r_dep, s_id] = current_dependence({f_dx,f_I,f_Y}, rv_I);
-    contract = add_row(contract, "no dependence on I", s_id == "" && r_dep < 1e-10, ...
-        join_detail(s_id, sprintf("%.3g",r_dep)));
 
     sv_port = intersect(sv_u, [sv_v;sv_i]);
     contract = add_row(contract, "sv_u has no port names", isempty(sv_port), join(sv_port,", "));
@@ -121,21 +113,21 @@ function flag = validate(obj, l_message)
         );
 
     % validate linearized matrix
-    point = {r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0};
+    point = {r_t,rv_x,rv_V,rv_u,rr_param,r_omega0};
     if ismethod(obj,"Jacobi_dx")
         [flag, contract] = compare_jacobian(flag, contract, "Jacobi_dx", ...
             @() Jacobi_dx_num(obj,point{:}), @() obj.Jacobi_dx(point{:}), ...
-            ["Axx","Bxv","Bxi","Bxu"], {sv_x,sv_x,sv_x,sv_x}, {sv_x,sv_v,sv_i,sv_u});
+            ["Axx","Bxv","Bxu"], {sv_x,sv_x,sv_x}, {sv_x,sv_v,sv_u});
     end
     if ismethod(obj,"Jacobi_I")
         [flag, contract] = compare_jacobian(flag, contract, "Jacobi_I", ...
             @() Jacobi_I_num(obj,point{:}), @() obj.Jacobi_I(point{:}), ...
-            ["Cix","Div","Dii","Diu"], {sv_i,sv_i,sv_i,sv_i}, {sv_x,sv_v,sv_i,sv_u});
+            ["Cix","Div","Diu"], {sv_i,sv_i,sv_i}, {sv_x,sv_v,sv_u});
     end
     if ismethod(obj,"Jacobi_Y")
         [flag, contract] = compare_jacobian(flag, contract, "Jacobi_Y", ...
-            @() Jacobi_Y_num(obj,point{:}), @() obj.Jacobi_Y(point{:}), ...
-            ["Cyx","Dyv","Dyi","Dyu"], {sv_y,sv_y,sv_y,sv_y}, {sv_x,sv_v,sv_i,sv_u});
+            @() Jacobi_Y_num(obj,point{[1:3,5:6]}), @() obj.Jacobi_Y(point{[1:3,5:6]}), ...
+            ["Cyx","Dyv"], {sv_y,sv_y}, {sv_x,sv_v});
     end
 
     flag.contract = table(contract(:,2), contract(:,3), ...
@@ -152,12 +144,12 @@ function flag = validate(obj, l_message)
                 disp(">> obj.f_dx(0,xst,Vst,ust)"+newline)
             elseif fn == "I"
                 disp(">> Ist - obj.f_I(0,xst,Vst,ust)"+newline)
-            elseif ismember(fn ,["Axx","Bxu","Bxv","Bxi"])
+            elseif ismember(fn ,["Axx","Bxu","Bxv"])
                 disp(">> obj.Jacobi"+fn+"(0,xst,Vst,ust) - (Numerical differentiation @obj.f_dx)"+newline)
-            elseif ismember(fn ,["Cix","Diu","Div","Dii"])
+            elseif ismember(fn ,["Cix","Diu","Div"])
                 disp(">> obj.Jacobi"+fn+"(0,xst,Vst,ust) - (Numerical differentiation @obj.f_I)"+newline)
-            elseif ismember(fn ,["Cyx","Dyu","Dyv","Dyi"])
-                disp(">> obj.Jacobi"+fn+"(0,xst,Vst,ust) - (Numerical differentiation @obj.f_Y)"+newline)
+            elseif ismember(fn ,["Cyx","Dyv"])
+                disp(">> obj.Jacobi"+fn+"(0,xst,Vst) - (Numerical differentiation @obj.f_Y)"+newline)
             elseif fn == "contract"
                 disp(">> Contract of the model functions"+newline)
             elseif fn == "inputs"
@@ -227,36 +219,19 @@ function str = join_detail(s_id, s_value)
     end
 end
 
-function [r_dep, s_id] = current_dependence(c_f, rv_I)
-    % Largest slope of the model functions with respect to I (the error of the first failure)
-    r_dep  = 0;
-    s_id   = "";
-    d = 1e-3;
-    for k = 1:numel(c_f)
-        for m = 1:2
-            e = d * ((1:2)==m).';
-            [r, id] = eval_value(@() max(abs(reshape(c_f{k}(rv_I+e) - c_f{k}(rv_I),[],1)))/d);
-            if id ~= ""
-                s_id = id;
-            elseif ~isempty(r)
-                r_dep = max(r_dep, r);
-            end
-        end
-    end
-end
-
 function [flag, contract] = compare_jacobian(flag, contract, s_method, f_num, f_valid, sv_name, c_row, c_col)
     % Compare the analytic blocks with the numerical ones; NaN for a block that cannot be compared
     s_detail = "";
-    c_num   = cell(1,4);
-    c_valid = cell(1,4);
+    n_blk   = numel(sv_name);
+    c_num   = cell(1,n_blk);
+    c_valid = cell(1,n_blk);
     try
         [c_num{:}]   = f_num();
         [c_valid{:}] = f_valid();
     catch ME
         s_detail = error_text(ME);
     end
-    for k = 1:4
+    for k = 1:n_blk
         nr = numel(c_row{k});
         nc = numel(c_col{k});
         A = nan(nr,nc);

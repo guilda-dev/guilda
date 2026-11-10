@@ -1,4 +1,4 @@
-function [x, V, I, u, c_con] = point_values(obj, a_LC, rv_point)
+function [x, V, u, c_con] = point_values(obj, a_LC, rv_point)
 % Values of the component and of its local controllers a_LC (depth first) at a point.
 %
 % The inputs of a controller are the outputs and states of the component it observes and
@@ -12,9 +12,8 @@ function [x, V, I, u, c_con] = point_values(obj, a_LC, rv_point)
     arguments (Output)
         x     % States of the component, read from rv_point.
         V     % [pu] Bus voltage [Vre; Vim], read from rv_point.
-        I     % [pu] Current [Ire; Iim]: fcn_I at the point (the equilibrium current is passed for I).
         u     % Inputs of the component, read from rv_point.
-        c_con % c_con{k}: {x, V, I, u} of a_LC{k}.
+        c_con % c_con{k}: {x, V, u} of a_LC{k}.
     end
     nx  = numel(obj.sv_x);
     nxc = cellfun(@(c) numel(c.sv_x), a_LC);
@@ -22,16 +21,6 @@ function [x, V, I, u, c_con] = point_values(obj, a_LC, rv_point)
     x = rv_point(1:nx);
     V = rv_point(n_x + (1:2));
     u = rv_point(n_x + 2 + (1:numel(obj.sv_u)));
-
-    I0 = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)];
-    if isempty(I0)
-        I0 = zeros(2,1);
-    end
-    I = obj.f_I(0, x, V, I0, u);
-    if numel(I) == 1
-        I = [real(I); imag(I)];
-    end
-    I = reshape(I, 2, 1);
 
     c_x = cell(numel(a_LC),1);
     for k = 1:numel(a_LC)
@@ -41,7 +30,7 @@ function [x, V, I, u, c_con] = point_values(obj, a_LC, rv_point)
     % The inputs read on the component (its outputs and states, iv_obsY / iv_obsX), then
     % the outputs of the controllers by name, from the deepest one up (a PSS output is an
     % input of the AVR above it)
-    rv_yComp = reshape(obj.f_Y(0, x, V, I, u), [], 1);
+    rv_yComp = reshape(obj.f_Y(0, x, V), [], 1);
     sv_y = strings(0,1);
     rv_y = zeros(0,1);
     c_con = cell(numel(a_LC),1);
@@ -59,8 +48,8 @@ function [x, V, I, u, c_con] = point_values(obj, a_LC, rv_point)
                 uc(m) = rv_y(idx);
             end
         end
-        c_con{k} = {c_x{k}, V, I, uc};
+        c_con{k} = {c_x{k}, V, uc};
         sv_y = [sv_y; reshape(string(con.sv_y), [], 1)]; %#ok<AGROW>
-        rv_y = [rv_y; reshape(con.f_Y(0, c_x{k}, V, I, uc), [], 1)]; %#ok<AGROW>
+        rv_y = [rv_y; reshape(con.f_Y(0, c_x{k}, V, uc), [], 1)]; %#ok<AGROW>
     end
 end

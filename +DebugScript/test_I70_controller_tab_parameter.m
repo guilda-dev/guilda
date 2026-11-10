@@ -28,7 +28,7 @@ assert(~isequal(h_dx, avr.f_dx))
 x = avr.rv_Xequilibrium + 0.01;  u = avr.rv_Uequilibrium;
 V = [real(comp.c_Vequilibrium); imag(comp.c_Vequilibrium)];
 para = avr.tab_parameter.dynamics{:, avr.sv_para}.';
-assert(norm(avr.f_dx(0,x,V,[0;0],u) - avr.fcn_dx(0,x,V,[0;0],u,para,60)) < 1e-12, ...
+assert(norm(avr.f_dx(0,x,V,u) - avr.fcn_dx(0,x,V,u,para,60)) < 1e-12, ...
        "AVR の f_dx が変更前の定数を使っている")
 
 
@@ -92,7 +92,7 @@ DebugScript.helper.quiet(@() net.initialize);
 assert(~isequal(h_dx, agc.f_dx))
 para = agc.tab_parameter.dynamics{:, agc.sv_para};
 x = 0.1;  u = [0.01; 0.02];
-assert(norm(agc.f_dx(0,x,[],[],u) - agc.fcn_dx(0,x,[],[],u,para,60)) < 1e-12, ...
+assert(norm(agc.f_dx(0,x,[],u) - agc.fcn_dx(0,x,[],u,para,60)) < 1e-12, ...
        "AGC の f_dx が変更前の定数を使っている")
 
 

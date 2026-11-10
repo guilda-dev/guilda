@@ -260,7 +260,7 @@ assert(isequal(lqr.sv_y, gen.sv_u))
 DebugScript.helper.quiet(@() net.initialize);
 assert(isequal(size(lqr.K), [numel(gen.sv_u), numel(gen.sv_x)]) && all(isfinite(lqr.K(:))))
 assert(isequal(lqr.rv_Uequilibrium, gen.rv_Xequilibrium) && isempty(lqr.rv_Xequilibrium))
-assert(norm(lqr.f_Y(0, [], [], [], gen.rv_Xequilibrium) - gen.rv_Uequilibrium) < 1e-12)
+assert(norm(lqr.f_Y(0, [], [], gen.rv_Xequilibrium) - gen.rv_Uequilibrium) < 1e-12)
 
 % 駆動する入力を選べる。Q, R はベクトルなら対角行列
 evalc("lqr2 = gen.add_local_controller(""local-LQR"", parameter=struct(Input=""Vfield"", Q=[1 10 1 1 1 1], R=2))");      % 置き換え (警告)

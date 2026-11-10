@@ -1,4 +1,4 @@
-function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec) 
+function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, obs, DAEvec)
 % Add the DAE residual of the controller (and of its nested controllers) to DAEvec.
 %
 % Called by Component.get_dx_algebraic. obs.y / obs.x are the outputs and states of the
@@ -12,7 +12,6 @@ function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
         t      (1,1) double  % [s] Time.
         x      (:,1) double  % Variables of the network DAE (states, inputs, bus voltages and currents).
         Vi     (2,1) double  % [pu] Voltage of the bus of the observed component [real; imag].
-        Ii     (2,1) double  % [pu] Current of the bus of the observed component [real; imag].
         obs    (1,1) struct  % Outputs (obs.y) and states (obs.x) of the observed component.
         DAEvec (:,1) double  % DAE residual of the network so far.
     end
@@ -37,9 +36,9 @@ function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
     if obj.l_hasController
         % y_LC: the outputs of the nested controllers, stacked in order (iv_odeYtoU)
         a_LC = obj.a_LocalController;
-        [DAEvec, y_LC] = get_dx_algebraic(a_LC{1}, t, x, Vi, Ii, obs, DAEvec);
+        [DAEvec, y_LC] = get_dx_algebraic(a_LC{1}, t, x, Vi, obs, DAEvec);
         for k = 2:numel(a_LC)
-            [DAEvec, y_k] = get_dx_algebraic(a_LC{k}, t, x, Vi, Ii, obs, DAEvec);
+            [DAEvec, y_k] = get_dx_algebraic(a_LC{k}, t, x, Vi, obs, DAEvec);
             y_LC = [y_LC; y_k]; %#ok<AGROW>
         end
         
@@ -53,9 +52,9 @@ function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
     x_con = x(rv_x);
     u_con = x(rv_u);        
     
-    X = obj.f_dx(t, x_con, Vi, Ii, u_con);        
+    X = obj.f_dx(t, x_con, Vi, u_con);        
     
     DAEvec([rv_x;rv_u]) = DAEvec([rv_x;rv_u]) + [X; u_con - rv_U];        
-    y = obj.f_Y(t, x_con, Vi, Ii, u_con);  
+    y = obj.f_Y(t, x_con, Vi, u_con);  
     
 end

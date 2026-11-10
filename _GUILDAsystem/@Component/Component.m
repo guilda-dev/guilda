@@ -4,9 +4,13 @@ classdef Component < PowerSystemModel
 % A component is a dynamical system with state $x$, input $u$ and output $y$, connected to
 % its bus through the bus voltage $V$ and the current $I$ it injects (positive for generation):
 %
-% - `fcn_dx`, `fcn_Mass`: the state equation M*dx/dt = fcn_dx(t, x, V, I, u)
-% - `fcn_I`: the current injected into the bus
-% - `fcn_Y`: the output signals (read by the local controllers)
+% - `fcn_dx`, `fcn_Mass`: the state equation M*dx/dt = fcn_dx(t, x, V, u)
+% - `fcn_I`: the current injected into the bus, fcn_I(t, x, V, u)
+% - `fcn_Y`: the output signals fcn_Y(t, x, V), read by the local and global controllers.
+%   The output does not depend on u (no feedthrough), so there is no algebraic loop through
+%   the inputs.
+%
+% No model function takes the bus current: it is the sum of all the components on the bus.
 %
 % Subclasses in the `component` package define these static methods, the names of the
 % variables (`sv_x`, `sv_u`, `sv_y`, `sv_para`) and the equilibrium (`get_equilibrium`).
@@ -27,7 +31,7 @@ classdef Component < PowerSystemModel
 %   `rv_Uequilibrium`, `c_Iequilibrium`) and its local controllers (`a_LocalController`).
 % - The base class turns the static model functions into the cached handles `f_*`, adds its
 %   local controllers to the DAE and the linear model, and computes Jacobians numerically
-%   when the subclass gives none. The handles @(t,x,V,I,u) bind the parameters and omega0;
+%   when the subclass gives none. The handles @(t,x,V,u) (f_Y and f_JacobiY: @(t,x,V)) bind the parameters and omega0;
 %   `set_odefcn` builds them, called by `PowerNetwork.initialize` when they are stale
 %   (`sct_stale.odefcn`, or a network frequency other than `r_odefcnHz`).
 % - Stale tags (`sct_stale`): `equilibrium` (its dynamics, its local controllers, its
@@ -47,7 +51,7 @@ classdef Component < PowerSystemModel
 %
 % - `get_equilibrium` is always called with all of c_V, c_I, r_P and r_Q (a trip of
 %   `simulate` passes c_I = r_P = r_Q = 0).
-% - `fcn_Mass` is constant: `simulate` calls it with empty t, x, V, I and u.
+% - `fcn_Mass` is constant: `simulate` calls it with empty t, x, V and u.
 % - `getCompPQ(obj, x, V, u, param)`, which returns the injected power [P; Q], is needed only
 %   by the continuation power flow with `UseInternalState=true`.
 %
@@ -82,10 +86,10 @@ classdef Component < PowerSystemModel
         a_LocalController (:,1) = cell(0,1)  % Top-level local controllers, in slot order whatever the attach order: the AVR or "local" controller (a PSS hangs under an AVR), then the governor. <@Stale> equilibrium
     end
     properties(SetAccess=protected) % Cached function handles
-        f_Mass                               % Mass matrix function @(t,x,V,I,u) with the parameters bound.
-        f_dx                                 % State equation function @(t,x,V,I,u) with the parameters bound.
-        f_I                                  % Current injection function @(t,x,V,I,u) with the parameters bound.
-        f_Y                                  % Output function @(t,x,V,I,u) with the parameters bound.
+        f_Mass                               % Mass matrix function @(t,x,V,u) with the parameters bound.
+        f_dx                                 % State equation function @(t,x,V,u) with the parameters bound.
+        f_I                                  % Current injection function @(t,x,V,u) with the parameters bound.
+        f_Y                                  % Output function @(t,x,V) with the parameters bound (no input).
         f_JacobiDx                           % Jacobian function of f_dx (analytic or numerical).
         f_JacobiI                            % Jacobian function of f_I (analytic or numerical).
         f_JacobiY                            % Jacobian function of f_Y (analytic or numerical).
@@ -139,29 +143,28 @@ classdef Component < PowerSystemModel
         % Return the state derivatives of the model.
         %
         % The arguments of all model functions are the time r_t [s], the states rv_x, the
-        % bus voltage rv_V = [Vre; Vim] [pu], the current rv_I = [Ire; Iim] [pu], the inputs
-        % rv_u, the dynamic parameters rr_param (in the order of sv_para) and the nominal
-        % frequency r_omega0 [Hz]. A subclass may define them as ordinary methods instead,
-        % with obj before r_t.
-        rv_dx = fcn_dx(  r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
+        % bus voltage rv_V = [Vre; Vim] [pu], the inputs rv_u (not for fcn_Y), the dynamic
+        % parameters rr_param (in the order of sv_para) and the nominal frequency r_omega0
+        % [Hz]. A subclass may define them as ordinary methods instead, with obj before r_t.
+        rv_dx = fcn_dx(  r_t, rv_x, rv_V, rv_u, rr_param, r_omega0)
 
         % Return the current injected into the bus as a complex number.
-        c_I   = fcn_I(   r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)        
+        c_I   = fcn_I(   r_t, rv_x, rv_V, rv_u, rr_param, r_omega0)
 
-        % Return the outputs of the model.
-        rv_y  = fcn_Y(   r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
+        % Return the outputs of the model. They do not depend on the inputs.
+        rv_y  = fcn_Y(   r_t, rv_x, rv_V, rr_param, r_omega0)
 
         % Return the mass matrix of the state equation.
         %
-        % It must be constant: simulate calls it with empty r_t, rv_x, rv_V, rv_I and rv_u.
-        rm_M  = fcn_Mass(r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
+        % It must be constant: simulate calls it with empty r_t, rv_x, rv_V and rv_u.
+        rm_M  = fcn_Mass(r_t, rv_x, rv_V, rv_u, rr_param, r_omega0)
     end
 
 %% override recommended
     % methods(Static)
-    %     [rm_Axx,rm_Bxv,rm_Bxi,rm_Bxu] = Jacobi_dx(r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
-    %     [rm_Cyx,rm_Dyv,rm_Dyi,rm_Dyu] = Jacobi_Y( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
-    %     [rm_Cix,rm_Div,rm_Dii,rm_Diu] = Jacobi_I( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
+    %     [rm_Axx,rm_Bxv,rm_Bxu] = Jacobi_dx(r_t,rv_x,rv_V,rv_u,rr_param,r_omega0);
+    %     [rm_Cyx,rm_Dyv]        = Jacobi_Y( r_t,rv_x,rv_V,rr_param,r_omega0);
+    %     [rm_Cix,rm_Div,rm_Diu] = Jacobi_I( r_t,rv_x,rv_V,rv_u,rr_param,r_omega0);
     % end
 
 
@@ -231,10 +234,10 @@ classdef Component < PowerSystemModel
         remove_local_controller(obj, s_tag, opt)
 
         % get_sys
-        [sys, varargout] = get_sys(obj, x, V, I, u, opt)
+        [sys, varargout] = get_sys(obj, x, V, u, opt)
 
         % get dx, I and y
-        DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
+        DAEvec = get_dx_algebraic(obj, t, x, Vi, u, DAEvec)
 
         % Steady State
         set_input(obj, rv_u)

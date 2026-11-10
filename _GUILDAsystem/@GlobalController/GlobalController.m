@@ -17,12 +17,12 @@ classdef GlobalController < PowerSystemModel
 %   unit. Output signals `sv_y`: added to the inputs of the same name in the `sv_u` of the unit.
 %   For example, `controller.agc.broadcast_PI_AGC` reads the speed state "omega" of each
 %   generator and adds to its input "Pmech".
-% - Unlike a `LocalController`: no port V or I (its functions receive [] or zeros(2,1),
+% - Unlike a `LocalController`: no port V (its functions receive [] or zeros(2,1),
 %   which they must not use), no nested controller, no observation by output name. It
 %   does not own its units and is not a child of any bus.
 % - Only the network sets and clears `a_PowerNetwork` (`SetAccess`;
 %   `PowerNetwork.add_global_controller` logs the attachment as a "Topology" edit).
-% - The handles `f_*` @(t,x,V,I,u) bind param and omega0; `set_odefcn` builds them,
+% - The handles `f_*` @(t,x,V,u) bind param and omega0; `set_odefcn` builds them,
 %   called by `initialize` when they are stale (`sct_stale.odefcn`, or a network
 %   frequency other than `r_odefcnHz`).
 % - Stale tags (`sct_stale`): `equilibrium` (its dynamics, its addition to the network)
@@ -52,9 +52,9 @@ classdef GlobalController < PowerSystemModel
     end
 
     properties(SetAccess=protected) % Cached function handles
-        f_Mass                                     % Mass matrix function @(t,x,V,I,u) with the parameters bound.
-        f_dx                                       % State equation function @(t,x,V,I,u) with the parameters bound.
-        f_Y                                        % Output function @(t,x,V,I,u) with the parameters bound.
+        f_Mass                                     % Mass matrix function @(t,x,V,u) with the parameters bound.
+        f_dx                                       % State equation function @(t,x,V,u) with the parameters bound.
+        f_Y                                        % Output function @(t,x,V,u) with the parameters bound.
         f_JacobiDx                                 % Jacobian function of f_dx.
         f_JacobiY                                  % Jacobian function of f_Y.
     end
@@ -95,18 +95,18 @@ classdef GlobalController < PowerSystemModel
         % Return the state derivatives of the controller.
         %
         % The arguments of all model functions are the time t [s], the states x, the
-        % ports V and I (a global controller has none: [] in a simulation, zeros(2,1) in
-        % get_sys and get_hessian; do not use them), the inputs u, the dynamic parameters
+        % port V (a global controller has none: [] in a simulation, zeros(2,1) in
+        % get_sys and get_hessian; do not use it), the inputs u, the dynamic parameters
         % param and the nominal frequency omega0 [Hz].
-        dx = fcn_dx(t, x, V, I, u, param, omega0)
+        dx = fcn_dx(t, x, V, u, param, omega0)
 
         % Return the outputs of the controller: one value per driven unit input, added to that input.
-        y  = fcn_y(t, x, V, I, u, param, omega0)
+        y  = fcn_y(t, x, V, u, param, omega0)
 
         % Return the mass matrix of the state equation.
         %
-        % It must be constant: simulate calls it with empty t, x, V, I and u.
-        M  = fcn_Mass(t, x, V, I, u, param, omega0)
+        % It must be constant: simulate calls it with empty t, x, V and u.
+        M  = fcn_Mass(t, x, V, u, param, omega0)
     end       
 
     methods
@@ -161,7 +161,7 @@ classdef GlobalController < PowerSystemModel
         end
 
         % get sys
-        [sys, varargout] = get_sys(obj, x, V, I, u, opt)
+        [sys, varargout] = get_sys(obj, x, V, u, opt)
     end
     methods (Access=protected)
         set_odefcn(obj)

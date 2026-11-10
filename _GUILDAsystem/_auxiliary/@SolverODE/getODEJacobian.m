@@ -36,12 +36,11 @@ function odeJac = getODEJacobian(ctx, t, x, RM, EM, lg)
         x_GC = x(a_GC.iv_odeX);
         u_GC = x(a_GC.iv_odeU);
 
-        % [Axx_GC, Bxu_GC, Bxv_GC, Bxi_GC, Cyx_GC, Dyu_GC, Dyv_GC, Dyi_GC, ~, ~, ~, ~] = getSubJacobian(a_GC, t, x_GC, [], [], u_GC);
-        [Axx_GC, Bxv_GC, Bxi_GC, Bxu_GC] = a_GC.f_JacobiDx(t,x_GC,[],[],u_GC);
-        [Cyx_GC, Dyv_GC, Dyi_GC, Dyu_GC] = a_GC.f_JacobiY(t,x_GC,[],[],u_GC);
+        [Axx_GC, ~, Bxu_GC] = a_GC.f_JacobiDx(t,x_GC,[],u_GC);
+        [Cyx_GC, ~, Dyu_GC] = a_GC.f_JacobiY(t,x_GC,[],u_GC);
 
-        odeJac(lv_GC, lh_GC) = odeJac(lv_GC, lh_GC) + [  Axx_GC,   Bxv_GC,   Bxu_GC,  Bxi_GC;
-                                                        -Cyx_GC,  -Dyv_GC,  -Dyu_GC, -Dyi_GC];
+        odeJac(lv_GC, lh_GC) = odeJac(lv_GC, lh_GC) + [  Axx_GC,   Bxu_GC;
+                                                        -Cyx_GC,  -Dyu_GC];
 
     end
 
@@ -52,25 +51,26 @@ function odeJac = getODEJacobian(ctx, t, x, RM, EM, lg)
         idx_I = a_bus{i}.iv_odeI;
 
         Vi = x(idx_V);
-        Ii = x(idx_I);
 
         for j=1:numel(cm)
             cj = cm{j};
 
             idx_X = cj.iv_odeX;
             idx_U = cj.iv_odeU;
-            idx_Y = cj.iv_odeY;
 
             xi = x(idx_X);
             ui = x(idx_U);
 
-            % [Axx, Bxu, Bxv, Bxi, Cyx, Dyu, Dyv, Dyi, Cix, Diu, Div, Dii] = getSubJacobian(cj,t,xi,Vi,Ii,ui);
-            [Axx, Bxv, Bxi, Bxu] = cj.f_JacobiDx(t,xi,Vi,Ii,ui);
-            [Cix, Div, Dii, Diu] = cj.f_JacobiI(t,xi,Vi,Ii,ui);
-            [Cyx, Dyv, Dyi, Dyu] = cj.f_JacobiY(t,xi,Vi,Ii,ui);
+            [Axx, Bxv, Bxu] = cj.f_JacobiDx(t,xi,Vi,ui);
+            [Cix, Div, Diu] = cj.f_JacobiI(t,xi,Vi,ui);
 
-            rh = [idx_X; idx_U; idx_V; idx_I];
+            rh = [idx_X; idx_U; idx_V];
             rv = [idx_X; idx_V];
+
+            % Outputs of the component (no input feedthrough), read by its controllers
+            if cj.l_hasController
+                [Cyx, Dyv] = cj.f_JacobiY(t,xi,Vi);
+            end
 
             % The local controllers of the component, depth first (e.g. an AVR,
             % its PSS, then a governor)
@@ -83,8 +83,8 @@ function odeJac = getODEJacobian(ctx, t, x, RM, EM, lg)
                 lv_Y = con.iv_obsY > 0;
                 if any(lv_Y)
                     iv_y = con.iv_obsY(lv_Y);
-                    odeJac(con.iv_odeU(lv_Y), rh) = odeJac(con.iv_odeU(lv_Y), rh) ...
-                                                  + [-Cyx(iv_y,:), -Dyu(iv_y,:), -Dyv(iv_y,:), -Dyi(iv_y,:)];
+                    odeJac(con.iv_odeU(lv_Y), [idx_X; idx_V]) = odeJac(con.iv_odeU(lv_Y), [idx_X; idx_V]) ...
+                                                  + [-Cyx(iv_y,:), -Dyv(iv_y,:)];
                 end
                 for m = reshape(find(con.iv_obsX > 0), 1, [])
                     idx_m = con.iv_odeU(m);
@@ -99,23 +99,23 @@ function odeJac = getODEJacobian(ctx, t, x, RM, EM, lg)
                 xi_LC = x(idx_X_LC);
                 ui_LC = x(idx_U_LC);
 
-                [Axx_LC, Bxv_LC, Bxi_LC, Bxu_LC] = con.f_JacobiDx(t,xi_LC,Vi,Ii,ui_LC);
-                [Cyx_LC, Dyv_LC, Dyi_LC, Dyu_LC] = con.f_JacobiY(t,xi_LC,Vi,Ii,ui_LC);
+                [Axx_LC, Bxv_LC, Bxu_LC] = con.f_JacobiDx(t,xi_LC,Vi,ui_LC);
+                [Cyx_LC, Dyv_LC, Dyu_LC] = con.f_JacobiY(t,xi_LC,Vi,ui_LC);
 
                 % Its outputs drive the inputs of its parent (rows idx_Y_LC)
-                rh_LC = [idx_X_LC; idx_U_LC; idx_V; idx_I];
+                rh_LC = [idx_X_LC; idx_U_LC; idx_V];
                 rv_LC = [idx_X_LC; idx_Y_LC];
 
-                odeJac(rv_LC, rh_LC) = odeJac(rv_LC, rh_LC) + [ Axx_LC,  Bxu_LC,  Bxv_LC,  Bxi_LC; ...
-                                                               -Cyx_LC, -Dyu_LC, -Dyv_LC, -Dyi_LC];
+                odeJac(rv_LC, rh_LC) = odeJac(rv_LC, rh_LC) + [ Axx_LC,  Bxu_LC,  Bxv_LC; ...
+                                                               -Cyx_LC, -Dyu_LC, -Dyv_LC];
 
                 odeJac(idx_U_LC,idx_U_LC) = odeJac(idx_U_LC,idx_U_LC) + eye(length(idx_U_LC));
             end
 
             % A tripped unit gives no current (see get_dx_algebraic)
             l_c = double(cj.l_isConnect);
-            odeJac(rv,rh) = odeJac(rv,rh) + [ Axx,  Bxu,  Bxv,  Bxi;...
-                                             -l_c*Cix, -l_c*Diu, -l_c*Div, -l_c*Dii];
+            odeJac(rv,rh) = odeJac(rv,rh) + [ Axx,  Bxu,  Bxv;...
+                                             -l_c*Cix, -l_c*Diu, -l_c*Div];
 
             odeJac(idx_U,idx_U) = odeJac(idx_U,idx_U) + eye(length(idx_U));
 

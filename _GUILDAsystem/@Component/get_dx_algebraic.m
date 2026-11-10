@@ -1,4 +1,4 @@
-function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec) 
+function DAEvec = get_dx_algebraic(obj, t, x, Vi, u, DAEvec)
 % Add the equations of the component and its local controllers to the DAE residual.
 %
 % Called by SolverODE at each evaluation of the network DAE: the state derivatives,
@@ -11,9 +11,8 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
     arguments (Input)
         obj
         t      (1,1) double  % [s] Time.
-        x      (:,1) double  % Variables of the network DAE (states, inputs, bus voltages and currents).
+        x      (:,1) double  % Variables of the network DAE (states, inputs, bus voltages and bus current balances).
         Vi     (2,1) double  % [pu] Bus voltage [real; imag].
-        Ii     (2,1) double  % [pu] Bus current [real; imag].
         u      (:,1) double  % Input values of the component: equilibrium, input events and global controllers.
         DAEvec (:,1) double  % DAE residual of the network so far.
     end
@@ -40,20 +39,20 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
         % and their outputs drive the inputs of the same name. An input event or a global
         % controller on such an input adds to the output, as in get_sys.
         % y_LC: the outputs of the top-level controllers, stacked in order (iv_odeYtoU)
-        obs.y = obj.f_Y(t,x_comp,Vi,Ii,u_comp);
+        obs.y = obj.f_Y(t,x_comp,Vi);
         obs.x = x_comp;
         a_LC = obj.a_LocalController;
-        [DAEvec, y_LC] = get_dx_algebraic(a_LC{1}, t, x, Vi, Ii, obs, DAEvec);
+        [DAEvec, y_LC] = get_dx_algebraic(a_LC{1}, t, x, Vi, obs, DAEvec);
         for k = 2:numel(a_LC)
-            [DAEvec, y_k] = get_dx_algebraic(a_LC{k}, t, x, Vi, Ii, obs, DAEvec);
+            [DAEvec, y_k] = get_dx_algebraic(a_LC{k}, t, x, Vi, obs, DAEvec);
             y_LC = [y_LC; y_k]; %#ok<AGROW>
         end
         lv_U2Y = obj.lv_odeUfromLC;
         u(lv_U2Y) = y_LC(obj.iv_odeYtoU(lv_U2Y)) + u(lv_U2Y) - obj.rv_Uequilibrium(lv_U2Y);
     end
     
-    X = obj.f_dx(t,x_comp,Vi,Ii,u_comp);
-    I = obj.l_isConnect * obj.f_I(t,x_comp,Vi,Ii,u_comp);       
+    X = obj.f_dx(t,x_comp,Vi,u_comp);
+    I = obj.l_isConnect * obj.f_I(t,x_comp,Vi,u_comp);       
 
     DAEvec([rv_x; rv_u; rv_v]) = DAEvec([rv_x; rv_u; rv_v]) + [X; u_comp-u; -[real(I); imag(I)]];        
 

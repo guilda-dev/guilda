@@ -443,28 +443,27 @@ function c_row = component_residuals(comp)
     u = comp.rv_Uequilibrium;
     c_I = comp.c_Iequilibrium;
     V = [real(comp.c_Vequilibrium); imag(comp.c_Vequilibrium)];
-    I = [real(c_I); imag(c_I)];
 
-    dx  = model_value(comp, "fcn_dx", numel(comp.sv_x), @() comp.f_dx(0, x, V, I, u));
-    c_Ic = model_value(comp, "fcn_I", 1, @() comp.f_I(0, x, V, I, u));
+    dx  = model_value(comp, "fcn_dx", numel(comp.sv_x), @() comp.f_dx(0, x, V, u));
+    c_Ic = model_value(comp, "fcn_I", 1, @() comp.f_I(0, x, V, u));
 
     c_row = cell(0,1);
     rv_source = u;
     if ~isempty(comp.a_LocalController)
-        y = model_value(comp, "fcn_Y", numel(comp.sv_y), @() comp.f_Y(0, x, V, I, u));
-        [rv_source, c_row] = nested_outputs(comp, rv_source, x, y, V, I);
+        y = model_value(comp, "fcn_Y", numel(comp.sv_y), @() comp.f_Y(0, x, V));
+        [rv_source, c_row] = nested_outputs(comp, rv_source, x, y, V);
     end
     c_row = [{{string(comp.s_tag), [largest(dx), abs(c_Ic - c_I), largest(u - rv_source)]}}; c_row];
 end
 
 
-function [rv_source, c_row] = nested_outputs(parent, rv_source, x_obs, y_obs, V, I)
+function [rv_source, c_row] = nested_outputs(parent, rv_source, x_obs, y_obs, V)
 % Replaces the inputs of parent driven by its local controllers with their outputs, as in
 % get_dx_algebraic, and adds the rows of those controllers
     c_row = cell(0,1);
     for k = 1:numel(parent.a_LocalController)
         con = parent.a_LocalController{k};
-        [y_con, c_con] = controller_residuals(con, x_obs, y_obs, V, I);
+        [y_con, c_con] = controller_residuals(con, x_obs, y_obs, V);
         c_row = [c_row; c_con]; %#ok<AGROW>
         [lv_u, iv_y] = ismember(reshape(string(parent.sv_u),[],1), reshape(string(con.sv_y),[],1));
         rv_source(lv_u) = y_con(iv_y(lv_u));
@@ -472,21 +471,21 @@ function [rv_source, c_row] = nested_outputs(parent, rv_source, x_obs, y_obs, V,
 end
 
 
-function [y, c_row] = controller_residuals(con, x_obs, y_obs, V, I)
+function [y, c_row] = controller_residuals(con, x_obs, y_obs, V)
 % Rows of the local controller and of its nested controllers, and its outputs
     check_point_size(con, numel(con.sv_u));
     x = con.rv_Xequilibrium;
     u = con.rv_Uequilibrium;
 
-    dx = model_value(con, "fcn_dx", numel(con.sv_x), @() con.f_dx(0, x, V, I, u));
-    y  = model_value(con, "fcn_y", numel(con.sv_y), @() con.f_Y(0, x, V, I, u));
+    dx = model_value(con, "fcn_dx", numel(con.sv_x), @() con.f_dx(0, x, V, u));
+    y  = model_value(con, "fcn_y", numel(con.sv_y), @() con.f_Y(0, x, V, u));
 
     rv_source = u;
     lv_Y = con.iv_obsY > 0;
     lv_X = con.iv_obsX > 0;
     rv_source(lv_Y) = y_obs(con.iv_obsY(lv_Y));
     rv_source(lv_X) = x_obs(con.iv_obsX(lv_X));
-    [rv_source, c_row] = nested_outputs(con, rv_source, x_obs, y_obs, V, I);
+    [rv_source, c_row] = nested_outputs(con, rv_source, x_obs, y_obs, V);
     c_row = [{{string(con.s_tag), [largest(dx), 0, largest(u - rv_source)]}}; c_row];
 end
 
@@ -503,8 +502,8 @@ function c_row = global_controller_residual(gc)
     end
     u = vertcat(zeros(0,1), c_u{:});
 
-    dx = model_value(gc, "fcn_dx", numel(gc.sv_x), @() gc.f_dx(0, x, zeros(2,1), zeros(2,1), u));
-    y  = gc.f_Y(0, x, zeros(2,1), zeros(2,1), u);
+    dx = model_value(gc, "fcn_dx", numel(gc.sv_x), @() gc.f_dx(0, x, zeros(2,1), u));
+    y  = gc.f_Y(0, x, zeros(2,1), u);
     c_row = {{string(gc.s_tag), [largest(dx), 0, largest(y)]}};
 end
 

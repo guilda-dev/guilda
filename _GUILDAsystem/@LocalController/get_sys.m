@@ -1,4 +1,4 @@
-function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
+function [sys, varargout] = get_sys(obj, x, V, u, opt)
 % Linearize the local controller alone.
 %
 % Linear model of the controller alone: inputs are the bus voltage [Vre; Vim] and the
@@ -13,9 +13,9 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % empty); "struct" returns a struct with the same eight fields; "ss" returns a
 % descriptor state-space model (dss) and needs the Control System Toolbox.
 %
-% At the default point (x, V, I, u all omitted), a controller on a network stops with the
+% At the default point (x, V, u all omitted), a controller on a network stops with the
 % error GUILDA:LocalController:Stale when net.initialize() is needed (a stale tag of the
-% network or the controller). A call with x, V, I, u does not check the stale tags (as
+% network or the controller). A call with x, V, u does not check the stale tags (as
 % in Component.get_sys). A controller without a network builds its stale handles first.
 %
 % See also Component.get_sys
@@ -25,7 +25,6 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         obj
         x        (:,1) double  = obj.rv_Xequilibrium   % States (default: the equilibrium).
         V        (:,1) double  = [real(obj.c_Vequilibrium);imag(obj.c_Vequilibrium)]   % [pu] Voltage [Vre; Vim] of the parent.
-        I        (:,1) double  = [real(obj.c_Iequilibrium);imag(obj.c_Iequilibrium)]   % [pu] Current [Ire; Iim] of the parent (unused; not a port).
         u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
         opt.full (1,1) logical = false     % Also output the states.
         opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the controller tag.
@@ -63,7 +62,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         obj.set_odefcn();    % no network to initialize: stale handles are rebuilt here
     end
 
-    sys = linearize_alone(obj, x, V, I, u, opt.full, opt.tag);
+    sys = linearize_alone(obj, x, V, u, opt.full, opt.tag);
 
     varargout{1} = cellstr(sys.StateName);
     varargout{2} = cellstr(sys.InputName);
@@ -93,14 +92,13 @@ function net = net_of(owner)
 end
 
 
-function sys = linearize_alone(obj, x, V, I, u, l_full, l_tag)
-% Linear model of the controller at x, V, I, u: a struct with the fields A, B, C, D, E,
+function sys = linearize_alone(obj, x, V, u, l_full, l_tag)
+% Linear model of the controller at x, V, u: a struct with the fields A, B, C, D, E,
 % StateName, InputName, OutputName (string columns), as get_sys with Format "struct".
     arguments (Input)
         obj
         x     (:,1) double    % States.
         V     (:,1) double    % [pu] Voltage [Vre; Vim] of the parent.
-        I     (:,1) double    % [pu] Current [Ire; Iim] of the parent (unused; not a port).
         u     (:,1) double    % Inputs.
         l_full (1,1) logical  % Also output the states.
         l_tag  (1,1) logical  % Name the states, inputs and outputs with the controller tag.
@@ -108,20 +106,15 @@ function sys = linearize_alone(obj, x, V, I, u, l_full, l_tag)
     arguments (Output)
         sys   % Struct A, B, C, D, E, StateName, InputName, OutputName of the controller.
     end
-    % I is not a port of a controller (c_Iequilibrium is the parent's, [] without a parent)
-    if isempty(I)
-        I = zeros(2,1);
-    end
-
     nx = numel(obj.sv_x);
     nu = numel(obj.sv_u);
     ny = numel(obj.sv_y);
 
-    Mass = shape(obj.f_Mass(0,x,V,I,u), nx, nx);
+    Mass = shape(obj.f_Mass(0,x,V,u), nx, nx);
 
-    % Same Jacobian contract as SolverODE: f_JacobiDx/Y(t,x,V,I,u)
-    [Axx,Bxv,~,Bxu] = obj.f_JacobiDx(0,x,V,I,u);
-    [Cyx,Dyv,~,Dyu] = obj.f_JacobiY( 0,x,V,I,u);
+    % Same Jacobian contract as SolverODE: f_JacobiDx/Y(t,x,V,u)
+    [Axx,Bxv,Bxu] = obj.f_JacobiDx(0,x,V,u);
+    [Cyx,Dyv,Dyu] = obj.f_JacobiY( 0,x,V,u);
 
     Axx = shape(Axx, nx, nx);  Bxv = shape(Bxv, nx, 2);  Bxu = shape(Bxu, nx, nu);
     Cyx = shape(Cyx, ny, nx);  Dyv = shape(Dyv, ny, 2);  Dyu = shape(Dyu, ny, nu);

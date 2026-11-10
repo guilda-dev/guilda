@@ -169,7 +169,7 @@ for k = 1:numel(c_cls)
     flag = gov.validate(false);
     lv = flag.contract.status == "FAIL";
     assert(~any(lv), "%s: %s", c_cls(k), join(flag.contract.Properties.RowNames(lv), ", "))
-    for fn = ["Axx","Bxv","Bxi","Bxu","Cyx","Dyv","Dyi","Dyu"]
+    for fn = ["Axx","Bxv","Bxu","Cyx","Dyv","Dyu"]
         if isfield(flag, fn) && ~isempty(flag.(fn)) && width(flag.(fn)) > 0
             r = max(flag.(fn){:,:}, [], "all");
             assert(r < 1e-5, "%s %s %g", c_cls(k), fn, r);
@@ -324,7 +324,7 @@ val = sol.get_point(1.2, tab, Side="after");
 for c_lc = {gen.a_LocalController{1}, gen.a_LocalController{1}.a_LocalController{1}, gov}
     lc = c_lc{1};
     rv = val(tab.Kind == "x" & tab.Owner == lc.s_tag);
-    lv = diag(lc.f_Mass([],[],[],[],[])) ~= 0;
+    lv = diag(lc.f_Mass([],[],[],[])) ~= 0;
     assert(max(abs(rv(lv) - lc.rv_Xequilibrium(lv))) < 1e-9, lc.s_tag + " does not restart from its equilibrium")
 end
 
@@ -418,21 +418,21 @@ function [r_dx, r_y] = jacobian_error(s_cls, x, u, param)
     f_y  = str2func(s_cls + ".fcn_y");
     f_Jx = str2func(s_cls + ".Jacobi_dx");
     f_Jy = str2func(s_cls + ".Jacobi_Y");
-    V = [1; 0.1];  I = [0.5; -0.2];
-    [Axx, Bxv, ~, Bxu] = f_Jx(0, x, V, I, u, param, 60);
-    [Cyx, Dyv, ~, Dyu] = f_Jy(0, x, V, I, u, param, 60);
+    V = [1; 0.1];
+    [Axx, Bxv, Bxu] = f_Jx(0, x, V, u, param, 60);
+    [Cyx, Dyv, Dyu] = f_Jy(0, x, V, u, param, 60);
     z = [x; V; u];
     nx = numel(x);  nu = numel(u);
     split = @(z) {z(1:nx), z(nx+(1:2)), z(nx+2+(1:nu))};
-    fd = @(f) fd_jacobian(@(z) call(f, split(z), I, param), z);
+    fd = @(f) fd_jacobian(@(z) call(f, split(z), param), z);
     J_dx = fd(f_dx);
     J_y  = fd(f_y);
     r_dx = max(abs(J_dx - [Axx, Bxv, Bxu]), [], "all");
     r_y  = max(abs(J_y  - [Cyx, Dyv, Dyu]), [], "all");
 end
 
-function v = call(f, c_z, I, param)
-    v = f(0, c_z{1}, c_z{2}, I, c_z{3}, param, 60);
+function v = call(f, c_z, param)
+    v = f(0, c_z{1}, c_z{2}, c_z{3}, param, 60);
 end
 
 function J = fd_jacobian(f, z)

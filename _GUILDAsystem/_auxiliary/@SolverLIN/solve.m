@@ -86,7 +86,7 @@ function [result, flag, output] = solve(obj, net, sct_options)
         if l_eq
             f_sys = @() a_gc{k}.get_sys("Format","struct");
         else
-            f_sys = @() a_gc{k}.get_sys(rv_point(c_idxGC{k}), zeros(2,1), zeros(2,1), ...
+            f_sys = @() a_gc{k}.get_sys(rv_point(c_idxGC{k}), zeros(2,1), ...
                                         gc_input(a_gc{k}, tab_map, rv_point), "Format","struct");
         end
         c_sysGC{k} = model_at_point(f_sys, "global controller " + a_gc{k}.s_tag);
