@@ -5,7 +5,8 @@ function fig = Plot(obj, opt)
 % (A, E) of get_ss(Method) in the complex plane, with the imaginary axis (the port
 % model for an object-level result, see ResultLIN). It needs no toolbox.
 % Eigenvalues with a positive real part (larger than Tolerance) are drawn in red.
-% net.linearize(..., Plot=true) calls it.
+% The only figure of the analysis: net.linearize and net.get_sys draw none (their
+% PlotFcn is a live display during the linearization).
     arguments (Input)
         obj
         opt.Method (1,1) string {mustBeMember(opt.Method, ["Kron","Feedback","DAE"])} = default_algorithm(obj) % Model whose eigenvalues are drawn. Default: the Method of the linearization.

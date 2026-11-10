@@ -6,6 +6,8 @@
 sr_templates = ["IEEE14bus","IEEE14bus_NoTap","IEEE14bus_lossless","Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus"];
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Admittance matrix is symmetric and matches branch data
 net = DebugScript.helper.build_9bus();
 tab_Y = net.get_admittance_matrix;
@@ -543,7 +545,7 @@ for i = 1:14
 end
 
 % 参照値 (このブランチで計算した値)
-net.solver_ODE.Progress = "none";
+
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
 assert(flag > 0)
 V_ref = [1.06 1.045 1.01 1.0294893 1.0348827 1.07 1.0558758 1.09 1.0496724 1.045822 1.0542952 1.0546926 1.0494854 1.0315436]';
@@ -581,7 +583,7 @@ end
 % アドミタンス行列は純虚数、有効電力の損失は 0
 Y = net.get_admittance_matrix.Variables;
 assert(all(real(Y(:)) == 0))
-net.solver_ODE.Progress = "none";
+
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
 assert(flag > 0)
 assert(abs(sum(tab.P)) < 1e-8)
@@ -638,7 +640,7 @@ assert(net.tab_parameter.base.Hz == 60 && net.a_Bus{1}.l_isSlack)
 check_v2_network(net, fullfile(fileparts(which("network.IEEE9bus")), "..", "archive", "IEEE9bus_past"))
 
 % 潮流計算は Anderson & Fouad (Fig. 2.18, 丸めた値) の WSCC 9 母線の潮流解と一致
-net.solver_ODE.Progress = "none";
+
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);  tab = res.tab_bus;
 assert(flag > 0)
 V_lit   = [1.04 1.025 1.025 1.026 0.996 1.013 1.026 1.016 1.032]';
@@ -671,7 +673,7 @@ assert(net.tab_parameter.base.Hz == 60 && net.a_Bus{16}.l_isSlack)
 check_v2_network(net, fullfile(fileparts(which("network.IEEE68bus")), "..", "archive", "IEEE68bus"))
 
 % v2 の CSV には潮流解が無いので、参照値はこのブランチで計算した値
-net.solver_ODE.Progress = "none";
+
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);  tab = res.tab_bus;
 assert(flag > 0)
 assert(abs(tab.P(16) - 33.7953168) < 1e-6 && abs(sum(tab.P) - 1.6683168) < 1e-6)

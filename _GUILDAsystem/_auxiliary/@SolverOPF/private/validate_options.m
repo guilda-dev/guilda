@@ -10,5 +10,6 @@ function validate_options(opt)
         opt.Constraint                 {mustBeHandleOrEmpty(opt.Constraint)}
         opt.DefaultCost  (1,1) logical
         opt.ReferenceBus (1,1) string
+        opt.PlotFcn                    % checked by tools.check_plotfcn
     end
 end

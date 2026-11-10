@@ -66,7 +66,7 @@ function [result,flag,output] = solve(obj, net, sct_options)
     g_current = limit_values(lim, st.w, sol, Ymat);
 
     Iteration = 1;
-    while Iteration <= sct_options.MaxIterations && isempty(st.c_stop)
+    while Iteration <= sct_options.MaxIteration && isempty(st.c_stop)
 
         [x_pred,t_old] = predict(st.f_Jac, r_h, x_current, x_past, t_old);
         r_h = sct_options.StepSize;

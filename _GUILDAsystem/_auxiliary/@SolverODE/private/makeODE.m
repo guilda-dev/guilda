@@ -15,9 +15,14 @@ function o = makeODE(sct_options)
 
     props = pList(pLogc);
 
+    sct_ode = sct_options;
+    sct_ode.RelativeTolerance = sct_options.Tolerance;    % Name-Value option and setting Tolerance
+    if isempty(sct_ode.SolverOptions)
+        sct_ode = rmfield(sct_ode, "SolverOptions");      % the options of the Solver
+    end
     for ip = 1:numel(props)
-        if isfield(sct_options, props{ip})
-            o.(props{ip}) = sct_options.(props{ip});
+        if isfield(sct_ode, props{ip})
+            o.(props{ip}) = sct_ode.(props{ip});
         end
     end
 end

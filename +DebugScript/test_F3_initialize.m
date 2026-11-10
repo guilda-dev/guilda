@@ -16,6 +16,8 @@ tol_dx    = 1e-8;      % 平衡点での状態微分の許容値
 tol_drift = 1e-6;      % 外乱なしシミュレーションでの状態変化の許容値
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Initialize returns result flag output
 % 9 母線系統 (旧 Task3)
 net = DebugScript.helper.build_9bus();
@@ -192,12 +194,13 @@ assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 
 
 %% Initialize with OPF
-% OPF の解を平衡点にする (常に AC OPF。net.solver_OPF.Method によらない)
+% OPF の解を平衡点にする (常に AC OPF。GUILDA.setting の OptimalPowerFlow の Method によらない)
 net = DebugScript.helper.build_ieee14();
-net.solver_OPF.Method = "DC OPF";
+c_cfg = DebugScript.helper.user_config("OptimalPowerFlow", struct("Method", "DC OPF"));
 [res, flag] = DebugScript.helper.quiet(@() net.initialize(Method="OPF", Verbose=false));
 assert(isa(res, "ResultOPF") && res.l_success && double(flag) > 0)
-assert(res.options.Method == "AC OPF" && net.solver_OPF.Method == "DC OPF")
+assert(res.options.Method == "AC OPF" && GUILDA.config("OptimalPowerFlow", "Method") == "DC OPF")
+clear c_cfg
 assert(istable(res.tab_bus) && height(res.tab_bus) == numel(net.a_Bus))
 assert(norm(net.cv_Vequilibrium - res.tab_bus.Vphasor) < 1e-8)
 assert(DebugScript.helper.edit_flag(net) == "initialized")

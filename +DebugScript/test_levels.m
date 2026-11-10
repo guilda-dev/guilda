@@ -172,7 +172,7 @@ function tab = test_levels()
     "test_F6_simulation/SimulationResultStructure", "medium"
     "test_F6_simulation/TrajectoryFollowsTheVariableMap", "medium"
     "test_F6_simulation/PointAtAPhaseBoundary", "medium"
-    "test_F6_simulation/Name_ValueOverridesLeaveSolver_ODEUnchanged", "medium"
+    "test_F6_simulation/Name_ValueOverridesLeaveGUILDA_settingUnchanged", "medium"
     "test_F6_simulation/FaultWithLocalControllers", "medium"
     "test_F6_simulation/AVRAndPSSResponseIsUnchangedByNameWiring", "medium"
     "test_F6_simulation/FaultWithLQR", "medium"

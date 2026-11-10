@@ -10,7 +10,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 % (GUILDA:Bus:SlackWithoutQnan). A network without buses stops with
 % GUILDA:PowerNetwork:NoBus, and a network whose buses have no components with
 % GUILDA:PowerNetwork:NoSlackCandidate.
-% Accepted options are the names in SolverPF.OptionMap plus Plot and Export;
+% Accepted options are the names in SolverPF.OptionMap plus Export;
 % any other name stops with GUILDA:resolve_options:UnknownName.
 %
 % Name-Value options:
@@ -20,14 +20,15 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 % - `MaxIteration` — Maximum number of iterations; 0 for the automatic value of the method (see SolverPF). Default: GUILDA.setting (0).
 % - `Verbose` — Print the progress of each iteration. Default: false.
 % - `WarmStart` — true starts from the last converged solution of this network (kept by net.solver_PF); false from the flat start (see SolverPF). Default: GUILDA.setting (true).
-% - `Plot` — Call result.Plot after the calculation. Default: false.
+% - `PlotFcn` — Live display during the calculation: "none" (the other displays are under development; draw the result with result.Plot()). Default: GUILDA.setting ("none").
 % - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
 %
 % <@Examples>
 % ```matlab
 % [res, flag] = net.calculate_powerflow();
 % res.tab_bus            % Varg, V, P, Q, Vphasor, Iphasor of each bus
-% res = net.calculate_powerflow(Solver="dynamic", Tolerance=1e-10, Plot=true);
+% res = net.calculate_powerflow(Solver="dynamic", Tolerance=1e-10);
+% res.Plot();            % voltage profile
 % ```
 %
 % See also ResultPF, SolverPF, PowerNetwork.initialize
@@ -58,9 +59,6 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 
     [result, flag, output] = obj.solver_PF.solve(obj, sct_options);
 
-    if opt.Plot
-        result.Plot();
-    end
     if isstring(opt.Export)
         result.Export(opt.Export);
     elseif opt.Export
@@ -83,7 +81,7 @@ end
 
 
 function [c_nv, opt] = take_call_options(c_in)
-% Separates the options of this call (Plot, Export) from the solver options
+% Separates the option of this call (Export) from the solver options
     c_nv = c_in;
     opt  = call_options();
     if mod(numel(c_in), 2) ~= 0
@@ -91,7 +89,7 @@ function [c_nv, opt] = take_call_options(c_in)
     end
     lv_call = false(size(c_in));
     for k = 1:2:numel(c_in)
-        lv_call(k:k+1) = (ischar(c_in{k}) || isstring(c_in{k})) && any(strcmpi(c_in{k}, ["Plot","Export"]));
+        lv_call(k:k+1) = (ischar(c_in{k}) || isstring(c_in{k})) && strcmpi(c_in{k}, "Export");
     end
     c_call = c_in(lv_call);
     c_nv   = c_in(~lv_call);
@@ -100,7 +98,6 @@ end
 
 function opt = call_options(opt)
     arguments (Input)
-        opt.Plot   (1,1) logical = false
         opt.Export {mustBeA(opt.Export, ["logical","string","char"])} = false
     end
     if ischar(opt.Export)

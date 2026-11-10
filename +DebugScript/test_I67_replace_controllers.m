@@ -5,6 +5,8 @@
 %
 % 実行: runtests("DebugScript.test_I67_replace_controllers")  または  DebugScript.run_all("Features","I67")
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% The default drops the controllers with a warning naming them
 [net, bus, gen, avr, pss] = network_with_avr_pss();
 [new, id, str] = replace_warned(@() bus.replace_component(gen.s_tag, "gen-1axis"));

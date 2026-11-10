@@ -6,6 +6,8 @@
 % 実行: runtests("DebugScript.test_I105_model_contracts")  または  DebugScript.run_all("Features","I105")
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Trip of a generator that requires P and Q completes
 % スタブをキーとして一時的に登録するので、GUILDA の再実行が 1 回で済むようにまとめる
 c_stub = register_stubs();

@@ -69,6 +69,7 @@
 >   not `numel + 1`; scripts that build tags by counting may name another
 >   object (1.4).
 > - **潮流計算の解の数値。** `Tolerance` の既定は全手法で最大 P/Q 不平衡 1e-8 [pu] です(以前は手法ごとに意味と既定値が異なり、`"dynamic"` は 1e-5、`"fsolve"` は fsolve の既定)。また既定の `WarmStart=true` では、2 回目以降の計算は同じ系統の前回の収束解から始まります。解は `Tolerance` の範囲で変わり、`"dynamic"` では以前より代数解に近くなります。初期値を固定したい計算は `WarmStart=false`(フラットスタート)を渡してください(1.8)。
+> - **`@GUILDA/user/` の改名した設定キーは無視されます。** OptimalPowerFlow の `OptimalityTolerance`、ContinuationPowerFlow の `MaxIterations`、TimeSimulation の `RelativeTolerance` は読まれず(表示だけで警告なし)、新しいキー `Tolerance` / `MaxIteration` の既定値で計算します。新しいキー名で書き直してください(「解析の設定は GUILDA.setting」の節)。
 > - **`local_LQR` のゲインは系統の Hz の編集に追従します。** Hz の編集後の `get_sys` や `simulate` で、保持している平衡点から `K` を設計し直します。以前は古い Hz の `K` のままだったので、Hz を編集するスクリプトでは数値が変わります(1.6)。
 
 ---
@@ -97,10 +98,42 @@
 次の名前は変わりません。
 
 - 結果の `s_solver` の値は新しいクラス名になりますが、`net.solver_PF`、`net.solver_OPF`、`net.solver_CPF`、`net.solver_ODE`、`net.solver_LIN` のプロパティ名はそのままです。
-- 設定のセクション名とファイル名(`GUILDA.config("PowerFlowCalculation")`、`"OptimalPowerFlow"`、`"ContinuationPowerFlow"`、`Default<セクション名>.json`)はそのままなので、`@GUILDA/user` に保存した設定は引き続き読み込まれます。
+- 設定のセクション名とファイル名(`GUILDA.config("PowerFlowCalculation")`、`"OptimalPowerFlow"`、`"ContinuationPowerFlow"`、`Default<セクション名>.json`)はそのままなので、`@GUILDA/user` に保存した設定は引き続き読み込まれます。ただし改名したキーは変換しません(次の節)。
 - `GUILDA:Deprecated:*` と `GUILDA:v3_*` の ID(`ContinuationPowerFlowConstructor`、`OdeLinearizerConstructor` など)と `ContinuationPowerFlowV3`、`Continuation_Power_Flow` もそのままです。
 
 この文書の v3 の書き方を示す箇所では、旧クラス名を残しています。
+
+---
+
+## 解析の設定は GUILDA.setting、`net.solver_*` は条件だけ
+
+潮流計算(1.8)と同じく、最適潮流計算、連続潮流計算、時間応答シミュレーション、近似線形化の設定も `GUILDA.setting` に置きました。各ソルバーの `get_options` が実行のたびに解析ごとのセクション(`GUILDA.config("<セクション>")`。既定値は `@GUILDA/config/Default<セクション>.json`、`@GUILDA/user/` の同名ファイルで上書き)を読み、呼び出しの Name-Value をその呼び出しだけに適用します(設定ファイルは変わりません)。
+
+| 解析 | セクション | `net.solver_*` に残るもの |
+|---|---|---|
+| 潮流計算 | PowerFlowCalculation | `solver_PF`: ウォームスタートの解とキャッシュ(設定なし) |
+| 最適潮流計算 | OptimalPowerFlow | `solver_OPF`: 条件 `Cost`、`Constraint`、`DefaultCost`、`ReferenceBus`(public。実行をまたいで保持し、Name-Value で上書き可)、AC OPF のウォームスタートの解、問題のキャッシュ |
+| 連続潮流計算 | ContinuationPowerFlow | `solver_CPF`: 条件 `LoadBus` |
+| 時間応答シミュレーション | TimeSimulation | `solver_ODE`: なし |
+| 近似線形化 | Linearization(新設) | `solver_LIN`: なし(v3 互換の Hidden `NonUnit` だけ) |
+
+- **削除したプロパティへの代入はエラーです(互換なし)。** 例: `net.solver_ODE.RelativeTolerance = 1e-6`、`net.solver_ODE.Progress = "none"`、`net.solver_ODE.TimeLimit = 60`、`net.solver_OPF.Method = "ELD"`、`net.solver_CPF.MaxIterations = 100`、`net.solver_LIN.Method`、`.Point`、`.Coordinate`。いずれも存在しないプロパティへの代入として止まります。既定を変えるときは `GUILDA.setting` で該当するセクションを編集し、1 回だけ変えるときは Name-Value を渡してください(例 `net.simulate(t, sc, Tolerance=1e-6, Progress="none")`)。
+- **v3 互換の `net.solver_ODE.Reporter` も削除しました。** `v3_ode_reporter.m` と警告 `GUILDA:Deprecated:SimulatorReporter` はなくなり、代入はエラーです。Name-Value の `simulate(..., Reporter=..., RelativeTolerance=...)`(`GUILDA:Deprecated:SimulateOptionName`)はこれまでどおり動きます。
+- **JSON のキーを Name-Value の名前にそろえました。** `@GUILDA/user/` の旧キーは変換しません。読み込み時に未知のキーとして捨てられ(`Remove unknown environment field '<キー>'.` を表示、警告なし)、新しいキーは既定値になります。
+
+  | セクション | 旧キー | 新キー |
+  |---|---|---|
+  | OptimalPowerFlow | `OptimalityTolerance` | `Tolerance` |
+  | ContinuationPowerFlow | `MaxIterations` | `MaxIteration` |
+  | ContinuationPowerFlow | `LoadBus` | なし(`net.solver_CPF.LoadBus` の条件か Name-Value `LoadBus`) |
+  | TimeSimulation | `RelativeTolerance` | `Tolerance` |
+  | TimeSimulation | なし | `Solver`(既定 `"ode15s"`。`"ode15s"` / `"ode23t"`)、`Verbose`(既定 false) |
+  | Linearization(新設) | なし | `Method`(既定 `"Feedback"`。`"Kron"` / `"Feedback"` / `"DAE"`)、`Coordinate`(既定 `"theta&rho"`) |
+  | 各解析のセクション | なし | `PlotFcn`(既定 `"none"`) |
+
+  結果の `res.options` のフィールドも新しい名前です(`res.options.Tolerance`、`res.options.MaxIteration` など)。
+- **`SolverOptions` と `Point` は呼び出しだけ。** 時間応答シミュレーションの `SolverOptions`(`matlab.ode.Options`)は呼び出しかシナリオの `Options` でだけ与えます。与えなければ `ode` オブジェクトは `Solver` のオプションを使います。優先順位は `GUILDA.setting` < `sc.Options` < 呼び出しの Name-Value です。線形化の `Point` も呼び出しだけで(既定 `[]` = 平衡点)、保存しません。
+- **`Plot` オプションを `PlotFcn` に置き換えました。** `calculate_powerflow`、`optimize_powerflow`、`calculate_continuation_powerflow`、`simulate`、`linearize`、`get_sys` の `Plot`(解析後に `result.Plot()` を呼ぶ)は廃止し、渡すと `GUILDA:resolve_options:UnknownName` で止まります。解析後の図は `result.Plot()` で描いてください。`PlotFcn`(MATLAB の `optimoptions` / `odeset` と同じ名前)は解析中のライブ表示で、値は `"none"`、表示キーの string 配列、または関数ハンドルです。いま使えるのは `"none"` だけで、既定は各セクションのキー `PlotFcn`(select、選択肢は `"none"` のみ)です。ほかの値は `GUILDA:check_plotfcn:InDevelopment`、別の型の値は `GUILDA:check_plotfcn:InvalidValue` で止まります(`tools.check_plotfcn`)。`Export` は変わりません。
 
 ---
 
@@ -358,17 +391,22 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   network.
 - `flag` keeps the solver's exit flag where there is one; `output.message`
   describes the outcome.
-- Name-Value options (UpperCamelCase) override the defaults in
-  `net.solver_*` **for this call only**; `net.solver_*` is not changed. Edit
-  `net.solver_*` to change the defaults for later calls. An unknown name
+- Name-Value options (UpperCamelCase) override the defaults **for this
+  call only**: the settings in the analysis section of `GUILDA.setting` and
+  the conditions kept in `net.solver_OPF` / `net.solver_CPF`. Neither the
+  settings file nor the solver is changed. Edit `GUILDA.setting` (or the
+  conditions) to change the defaults for later calls. An unknown name
   stops with `GUILDA:resolve_options:UnknownName`, which lists the accepted
   names.
 - Plotting and writing files are methods of the result: `result.Plot()`,
-  `result.Export(filename)`, or the options `Plot=true` /
-  `Export=true|filename` of the analysis call. A relative file name is
+  `result.Export(filename)`, or the option `Export=true|filename` of the
+  analysis call. The option `Plot` is removed; `PlotFcn` is the live display
+  during the analysis (only `"none"` for now; see "解析の設定は GUILDA.setting"). A relative file name is
   relative to the **current folder** (v3 wrote to `GUILDA.pwd`).
-- The solvers hold defaults only: they no longer keep the network, the last
-  result or intermediate data (see each section for removed properties).
+- The solvers hold no settings: they keep at most the conditions of their
+  network (`solver_OPF`, `solver_CPF`), warm start solutions and caches, and no
+  longer keep the network, the last result or intermediate data (see each
+  section for removed properties).
 - `net.solver_LIN` (`SolverLIN`) is new; `reset_solver` creates all
   five solvers.
 
@@ -381,7 +419,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 | `net.calculate_powerflow("dynamic", "export", true, "filename", f)` | `net.calculate_powerflow(Solver="dynamic", Export=f)` or `res.Export(f)` (`.json`) |
 | `net.solver_PF.rm_response`, `rr_step`, `i_iteration` | `res.cm_Vhistory`, `res.rv_step` |
 
-- オプション: `Solver`(`"newton"` | `"gradient"` | `"levenberg-marquardt"` | `"fsolve"` | `"dynamic"`。開発版の `Method` から改名)、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`、`Plot`、`Export`。v3 の潮流計算(fsolve)は `Solver="fsolve"` で、Optimization Toolbox が必要です。
+- オプション: `Solver`(`"newton"` | `"gradient"` | `"levenberg-marquardt"` | `"fsolve"` | `"dynamic"`。開発版の `Method` から改名)、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`、`PlotFcn`、`Export`。v3 の潮流計算(fsolve)は `Solver="fsolve"` で、Optimization Toolbox が必要です。
 - **設定は GUILDA.setting に置きます。** 既定値は PowerFlowCalculation セクション(`@GUILDA/config/DefaultPowerFlowCalculation.json`)にあり、Name-Value はその呼び出しだけを上書きします(JSON には書きません)。`net.solver_PF` は数値の設定を持ちません。`net.solver_PF.Method = ...`、`.Tolerance`、`.MaxIterations`、`.Display`、`.WhenFailed`、`.gradient`、`.dynamic` などは存在しないプロパティへの代入としてエラーになります。
 
   | 旧(`net.solver_PF` / JSON キー) | 新(PowerFlowCalculation のキー / Name-Value) |
@@ -391,7 +429,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   | `MaxIterations` | `MaxIteration`(0 = 自動: newton 50、gradient 1e6、levenberg-marquardt 100、fsolve 400) |
   | `Display` | なし(Name-Value `Verbose`) |
   | `MaxFunEvals`、`UseParallel` | `FsolveMaxFunEvals`、`FsolveUseParallel` |
-  | `PlotFcn` | なし |
+  | `PlotFcn` | `PlotFcn`(解析中のライブ表示。`"none"` のみ) |
   | `gradient.StepSize` | `GradientStepSize`(0 = 自動) |
   | JSON MethodNewtonRaphson `StepSize` | `NewtonStepSize` |
   | `dynamic.Mass`、`Damper`、`foh_PQ`、`t_span` | なし(`MethodDynamic` が自動で決める) |
@@ -456,8 +494,10 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 - Options: `Method` (`"ELD"` | `"DC OPF"` | `"AC OPF"`, default
   `"AC OPF"`), `Solver` (`"auto"` | `"linprog"` | `"quadprog"` |
   `"fmincon"`), `Tolerance` (`OptimalityTolerance`), `MaxIteration`,
-  `Verbose` (sets `Display`), `Plot`, `Export`. Defaults in
-  `net.solver_OPF` (`SolverOPF`, new; it was empty in v3).
+  `Verbose` (sets `Display`), `PlotFcn`, `Export`. Settings in the
+  OptimalPowerFlow section of `GUILDA.setting` (key `Tolerance`, was
+  `OptimalityTolerance`); the conditions `Cost`, `Constraint`, `DefaultCost`,
+  `ReferenceBus` in `net.solver_OPF` (`SolverOPF`, new; it was empty in v3).
 - `ResultOPF`: `Plot` draws the component outputs and, for DC/AC OPF, the
   bus voltages; `Export` writes the bus, connection or branch table.
   `l_success` is true for a positive exit flag. The nodal price of a bus is
@@ -487,7 +527,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 - **Customizing the problem (options).** `SolverOPF` builds the problem from
   `tab_parameter` of the buses, components and branches; user terms are
   Name-Value options of `optimize_powerflow` and `build_opf_problem`
-  (stored defaults in `net.solver_OPF`), applied to the whole network:
+  (conditions kept between runs in `net.solver_OPF`), applied to the whole network:
   - `Cost=@(v, p) <scalar>` is added to the objective; `Constraint=@(v, p)
     struct(name, constraint, ...)` is added, each field becoming
     `prob.Constraints.<name>`, also the label of its dual in
@@ -533,15 +573,15 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 
 Option names:
 
-| v3 (`CPF*` property) | v4 option | `net.solver_CPF` property |
+| v3 (`CPF*` property) | v4 option | ContinuationPowerFlow key (`LoadBus`: `net.solver_CPF` property) |
 |----------------------|-----------|---------------------------|
-| `CPFBus` | `LoadBus` | `LoadBus` |
+| `CPFBus` | `LoadBus` | `LoadBus` (property) |
 | `CPFInitLam` | `InitialLambda` | `InitialLambda` |
-| `CPFMaxIter` | `MaxIteration` | `MaxIterations` |
+| `CPFMaxIter` | `MaxIteration` | `MaxIteration` |
 | `CPFStepSize` | `StepSize` | `StepSize` |
 | `CPFArcL` | `ArcLength` | `ArcLength` |
 | `CPFUseInternal` | `UseInternalState` | `UseInternalState` |
-| – | `Tolerance` (default 1e-5), `Verbose`, `Plot`, `Export` | `Tolerance`, `Verbose` |
+| – | `Tolerance` (default 1e-5), `Verbose`, `Limits`, `PlotFcn`, `Export` | `Tolerance`, `Verbose`, `Limits`, `PlotFcn` (`Export`: call only) |
 | `CPFFcn`, `CPFJac`, `CPFInitVal` | not supported | – |
 
 - `flag` is a logical: true when the path passed the nose. `output` has
@@ -550,8 +590,8 @@ Option names:
   the path table.
 - Behavior: the network must be initialized (an error names the remedy);
   an empty or unknown `LoadBus` is an error (v3 warned for an empty bus
-  list). `SolverCPF()` takes no arguments and holds defaults
-  only.
+  list). `SolverCPF()` takes no arguments and holds only the
+  condition `LoadBus`.
 - Deprecated:
 
   | Old form | ID | Behavior |
@@ -568,16 +608,17 @@ Option names:
 |----|----|
 | `[out, l_stop] = net.simulate(t, ev1, ev2)` | `[res, flag, output] = net.simulate(t, ev1, ev2)` |
 | `if l_stop` (stopped early) | `if flag < 1` (`0` TimeLimit, `-1` solver stop) |
-| `net.solver_ODE.Reporter = "none"; net.simulate(t, ev)` | `net.simulate(t, ev, Progress="none")` (one call) or `net.solver_ODE.Progress = "none"` |
-| `net.solver_ODE.RelativeTolerance = 1e-6; ...` | `net.simulate(t, ev, Tolerance=1e-6)` (the property keeps its name) |
+| `net.solver_ODE.Reporter = "none"; net.simulate(t, ev)` | `net.simulate(t, ev, Progress="none")` (one call) or the key `Progress` of the TimeSimulation section; assigning `net.solver_ODE.Reporter` is an error |
+| `net.solver_ODE.RelativeTolerance = 1e-6; ...` | `net.simulate(t, ev, Tolerance=1e-6)` (one call) or the key `Tolerance` of the TimeSimulation section; assigning the property is an error |
 | `out.odeNetwork` | `res.a_PowerNetwork` |
 
 - Options after the events: `Solver` (MATLAB `ode` solver, default
   `"ode15s"`), `SolverOptions`, `Tolerance` (`RelativeTolerance`),
   `AbsoluteTolerance`, `SeparateComplexParts`, `TimeLimit`, `Progress`
-  (`"dialog"` | `"disp"` | `"none"`, or true/false), `Verbose`, `Plot`,
-  `Export`. New solver properties `Solver`, `SolverOptions`, `Progress`,
-  `Verbose`, `Plot`.
+  (`"dialog"` | `"disp"` | `"none"`, or true/false), `Verbose`, `PlotFcn`,
+  `Export`. Defaults: the TimeSimulation section of `GUILDA.setting`
+  (`SolverOptions`: call or `sc.Options` only); `net.solver_ODE` holds no
+  settings.
 - `ResultODE` stores the trajectory once, in the order of
   `net.get_variable_map()`: `res.rv_t` (times), `res.tab_variable` (the
   map at the time of the run) and `res.rm_variable` (row k at `rv_t(k)`,
@@ -634,8 +675,8 @@ Option names:
     so ode15s does not read round-off noise as divergence.
   - `TimeLimit` is the wall-clock limit **of the whole run**, checked at each
     solver step, and its default is `Inf` (before: 10 s of each phase; silent
-    change, see the box at the top). `solver_ODE.TimeLimit` takes its default
-    from the key `TimeLimit` of `DefaultTimeSimulation.json`, so a user
+    change, see the box at the top). The default is the key `TimeLimit` of the
+    TimeSimulation section (`DefaultTimeSimulation.json`), so a user
     settings file that sets this key keeps its value. Set `TimeLimit=...` if
     a script relied on the old stop.
   - **Sparse matrices.** `simulate` solves with sparse admittance, Jacobian
@@ -695,7 +736,6 @@ Option names:
 
   | Old form | Warning ID |
   |----------|------------|
-  | `net.solver_ODE.Reporter = v` (read returns `Progress`, no warning) | `GUILDA:Deprecated:SimulatorReporter` |
   | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `GUILDA:Deprecated:SimulateOptionName` |
   | user settings key `Reporter` | (no warning; converted to `Progress`) |
 
@@ -716,8 +756,9 @@ Option names:
 | – | `net.get_variable_map()`, `bus.get_variable_map()`, `comp.get_variable_map()` |
 
 - Options: `Method` (`"Kron"` | `"Feedback"` | `"DAE"`, default
-  `"Feedback"` as in v3), `Point`, `Plot` (eigenvalue map).
-  Defaults in `net.solver_LIN`.
+  `"Feedback"` as in v3), `Point` (call only), `Coordinate`, `PlotFcn`; the
+  eigenvalue map is `res.Plot()`. Defaults in the Linearization section of
+  `GUILDA.setting`; `net.solver_LIN` holds no settings.
 - `res.get_ss(Method)` gives the same A, E, C, D and names as v3
   `get_sys` for every algorithm (checked against a copy of the v3 code in
   F7); `get_ss("DAE", Coordinate=...)` chooses `"theta&rho"` (default),
@@ -1027,7 +1068,7 @@ there.
 
 - **所有。** `net.add_scenario(sc)` で追加、`net.remove_scenario(tag)` で外します(親の参照も消えます)。タグは系統の中で一意です。他の系統のシナリオを追加すると移動します(親は 1 つ)。別の系統でも使うときは `sc.copy()`(親のない複製)を追加します。シナリオの追加や編集は平衡点を古くしません(編集履歴にも記録しません)。
 - **タグの検査。** 外乱は母線、ブランチ、機器を(番号ではなく)タグで指します。系統に属するシナリオへ外乱を足すとき、シナリオを系統へ追加するとき、シミュレーションの開始時(そのときの系統で)に検査します。検査に失敗すると何も追加しません。属していないシナリオの `simulate` は `GUILDA:Scenario:OtherNetwork` で止まります。
-- **時間と設定。** `net.simulate(sc)` または `time = []` は `sc.Time`、なければ外乱の時間幅を使います。オプションの優先順位は `net.solver_ODE` < `sc.Options` < 呼び出しの Name-Value です。一緒に実行するシナリオの `Time` や `Options` が食い違うときは、呼び出しで与えないと `GUILDA:PowerNetwork:ScenarioTimeConflict` / `ScenarioOptionConflict` で止まります。
+- **時間と設定。** `net.simulate(sc)` または `time = []` は `sc.Time`、なければ外乱の時間幅を使います。オプションの優先順位は `GUILDA.setting` の TimeSimulation セクション < `sc.Options` < 呼び出しの Name-Value です。一緒に実行するシナリオの `Time` や `Options` が食い違うときは、呼び出しで与えないと `GUILDA:PowerNetwork:ScenarioTimeConflict` / `ScenarioOptionConflict` で止まります。
 - **判定。** `sc.judge(result)` は `sc.Judge(result)` を返します。既定の `Scenario.out_of_step` は、状態 `delta` を持つ機器(同期発電機)の回転子角の基準からの差の絶対値が `Threshold`(既定 360 度)を超えたら `"out-of-step"`、超えずに `flag ~= 1` なら `"incomplete"`、それ以外は `"stable"` を返します。基準 `Reference` は既定がスラック母線の発電機で、`"COI"`(慣性 `M` の重み付き重心)や機器のタグも指定できます。結果は構造体(`Verdict`, `Time`, `Units`, `MaxAngle`, `Reference`, `Threshold`)です。`net.simulate` の `output` には判定を入れません(複数のシナリオを一緒に実行できるため)。文献との比較や一致数の集計は GUILDA には入れず、検証用スクリプトで行います。
 - **CSV。** `Scenario.import_csv(path, Network=net)` が 1 つのファイルの複数のシナリオを読み(`Scenario` 列が同じ行が 1 つのシナリオ、1 行が 1 つの外乱)、`Scenario.export_csv(path, net.a_Scenario)` が同じ形式で書きます。列は `Scenario`, `Description`, `ScenarioTimeStart`, `ScenarioTimeEnd`, `Tag`, `TimeStart`, `TimeEnd`, `FaultBus`, `TripUnit`, `OpenBranch`, `OffsetUnit`, `OffsetState`, `OffsetValue`, `InputUnit`, `InputName`, `InputValue` で、リストは `;` 区切りです。`InputValue` の関数ハンドルは CSV に書けず `GUILDA:Scenario:CsvFunctionHandle` で止まります(MAT ファイルに保存してください)。`Options` と既定以外の `Judge` は保存せず、`GUILDA:Scenario:CsvNotSaved` で警告します。
 - **メッセージ ID。** `GUILDA:ODEevent:*` は `GUILDA:Scenario:*` になりました(キーは同じ)。`EventArray` は `ScenarioArray` に、一緒に実行するシナリオ間のタグの重複は `DuplicateRunTag` に、シナリオ内のタグの重複は追加の時点の `DuplicateTag` になりました。`add_scenario` / `remove_scenario` の誤りは `GUILDA:PowerNetwork:ScenarioTagInUse`, `ScenarioNotFound`, `NotScenario` です。
@@ -1203,7 +1244,7 @@ there.
 
 Everything that was listed here is implemented (sections 1.7–1.13 and
 1.17): result classes, `[result, flag, output]` (also for `initialize`),
-UpperCamelCase Name-Value options over `net.solver_*` defaults,
+UpperCamelCase Name-Value options over `GUILDA.setting` defaults,
 `net.calculate_continuation_powerflow`, `PowerNetwork.import_csv` /
 `import_matpower`, `net.export_csv`, `Plot` / `Export` as result methods,
 and simulation results in the order of `get_variable_map`. Open follow-ups
@@ -1237,7 +1278,6 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | 6 outputs of `optimize_powerflow` | `GUILDA:Deprecated:OptimizePowerflowTuple` | warning; returns `{tab_bus, tab_cub, flag, output, lambda, OPFprob}` |
 | `Continuation_Power_Flow(net, opt)` | `GUILDA:Deprecated:ContinuationPowerFlowFunction` | warning; returns a `ContinuationPowerFlowV3` (v3 properties, `solve`, `CPF_Result`) |
 | `SolverCPF(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | error |
-| set `net.solver_ODE.Reporter` | `GUILDA:Deprecated:SimulatorReporter` | warning; sets `Progress` (reading `Reporter` returns `Progress`, no warning) |
 | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `GUILDA:Deprecated:SimulateOptionName` | warning; becomes `Progress` / `Tolerance` |
 | user settings key `TimeSimulation.Reporter` (`@GUILDA/user/DefaultTimeSimulation.json`) | – | no warning; read as `Progress` (an existing `Progress` wins); the startup writes the file back with the new key |
 | `SolverLIN(net, NonUnit, Name, Value)` | `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` | error |
@@ -1270,9 +1310,6 @@ lists all of them:
 | `@PowerNetwork/build_opf_problem.m` | `v3_opf_args(varargin, "BuildOpfProblemMethods")` | `methods` option |
 | `@PowerNetwork/initialize.m` | `v3_initialize_args(varargin)` | `methods` option and old values |
 | `@PowerNetwork/simulate.m` | `v3_simulate_args(c_nv)` | option names `Reporter`, `RelativeTolerance` |
-| `_auxiliary/@SolverODE/SolverODE.m` | `Reporter` property (Dependent, Hidden) | old name of `Progress` |
-| `_auxiliary/@SolverODE/SolverODE.m` | `get.Reporter` | returns `Progress` |
-| `_auxiliary/@SolverODE/SolverODE.m` | `set.Reporter` | `v3_ode_reporter`: warns, sets `Progress` |
 | `_auxiliary/@SolverCPF/SolverCPF.m` | `v3_cpf_constructor(varargin)` | rejects v3 constructor arguments |
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `v3_linearizer_constructor(varargin)` | rejects v3 constructor arguments |
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `NonUnit` property (Hidden) | 廃止した設定の保存先 |
@@ -1309,7 +1346,6 @@ settings (an untagged line, needed by the `get_config` hook).
 | `v3_optimize_powerflow.m` | v4 outputs → the v3 6-output tuple |
 | `v3_cpf_constructor.m` | error for `SolverCPF(net, ...)` |
 | `v3_simulate_args.m` | `simulate` option names `Reporter`, `RelativeTolerance` |
-| `v3_ode_reporter.m` | `solver_ODE.Reporter` setter |
 | `v3_linearizer_constructor.m` | error for `SolverLIN(net, ...)` |
 | `v3_linearize_args.m` | `linearize` / `get_sys` の `NonUnit` |
 | `v3_solver_nonunit.m` | `solver_LIN.NonUnit` の setter |
@@ -1361,7 +1397,7 @@ selects it only for 6 outputs, so 4 or 5 outputs are an error.
      `methods` part of "Build OPF problem with Method and deprecated
      methods option"
    - F5 "COMPAT v3 Continuation_Power_Flow and SolverCPF constructor"
-   - F6 "Deprecated Reporter and option names still work"
+   - F6 "Deprecated option names still work"
    - F7 "SolverLIN constructor of v3 names the remedy",
      "Deprecated NonUnit option warns and ignores buses without states",
      "Deprecated NonUnit naming a bus with states is rejected",
@@ -1371,7 +1407,7 @@ selects it only for 6 outputs, so 4 or 5 outputs are an error.
    - F9 the `v3_user_config` asserts in "GUILDA config reads settings"
    - F10 "Legacy output …", "COMPAT hook helper for add_bus baseMVA",
      "COMPAT hooks are single tagged lines …"
-4. `SolverODE` reads its default `Progress` from the `Progress` key of
+4. `SolverODE.get_options` reads the default `Progress` from the `Progress` key of
    `@GUILDA/config/DefaultTimeSimulation.json`; that is the config key,
    not compat code, and stays.
 
@@ -1415,9 +1451,11 @@ end
 
 ### Name-Value options
 
-Merge the defaults (a `net.solver_*` object, or a struct such as the values of a
-GUILDA.setting section) with the call's overrides with `tools.resolve_options`;
-never write the overrides into the solver or the settings file.
+Merge the defaults (a struct: the values of the analysis section of
+GUILDA.setting, plus the conditions a solver keeps such as `LoadBus`) with the
+call's overrides with `tools.resolve_options`; never write the overrides into
+the solver or the settings file. The solvers do this in `get_options` with
+their constant `OptionMap`.
 
 ```matlab
 function varargout = calculate_continuation_powerflow(obj, opt)
@@ -1426,8 +1464,10 @@ function varargout = calculate_continuation_powerflow(obj, opt)
         opt.MaxIteration (1,1) double {mustBePositive, mustBeInteger}   % no default
         opt.Verbose      (1,1) logical
     end
-    sct_map = struct("MaxIteration", "MaxIterations", "Verbose", "Verbose");
-    options = tools.resolve_options(obj.solver_CPF, sct_map, opt);
+    sct_cfg = GUILDA.config("ContinuationPowerFlow");
+    sct_def = struct("MaxIteration", sct_cfg.MaxIteration.Value, "Verbose", sct_cfg.Verbose.Value);
+    sct_map = struct("MaxIteration", "MaxIteration", "Verbose", "Verbose");
+    options = tools.resolve_options(sct_def, sct_map, opt);
     ...
 end
 ```

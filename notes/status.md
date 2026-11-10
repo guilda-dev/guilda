@@ -126,6 +126,8 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **Q3〜Q6(2026-11-10):** OPF の `WarmStart` の既定は false。`SolverOPF` は OPF の問題をキャッシュし、`PowerNetwork.n_revOPF` で照合(IEEE68 DC OPF 1.0 → 0.2 s、AC OPF 22 → 19 s)。
   fsolve の `FunctionTolerance` と `OptimalityTolerance` は `Tolerance^2`(`Tolerance` 1e-10 の flag -2 と FixedInput の 1.7e-7 での停止を解消)。機器の P・Q の配分は `tools.distribute_power` に統一。
 - **要判断:** powerflow-options.md の「手順 B の実装」の要判断 1・2、「Q3〜Q6 の実装」の要判断 1(既定値が既存の環境に届かない件、判断中)。
+- **Q1(2026-11-10):** OPF・連続潮流計算・時間応答シミュレーション・線形化の設定も GUILDA.setting(OptimalPowerFlow、ContinuationPowerFlow、TimeSimulation、新設の Linearization)から `get_options` が実行ごとに読む。`net.solver_*` に残るのは条件だけ(`solver_OPF` の `Cost`・`Constraint`・`DefaultCost`・`ReferenceBus`、`solver_CPF` の `LoadBus`)で、削除したプロパティへの代入と v3 互換の `net.solver_ODE.Reporter` はエラー(互換なし)。
+- JSON キーを Name-Value 名にそろえた(`OptimalityTolerance`・`RelativeTolerance` → `Tolerance`、`MaxIterations` → `MaxIteration`。ユーザー設定の旧キーは変換せず捨てる)。全解析の呼び出しオプション `Plot` を廃止し、解析中のライブ表示 `PlotFcn` に置換(当面 `"none"` のみ、`tools.check_plotfcn`)。図は `result.Plot()`。移行の説明は [v4-migration.md](v4-migration.md)「解析の設定は GUILDA.setting、`net.solver_*` は条件だけ」。
 
 ## 入力を固定した平衡点と Solver / Method の名前(2026-11-10)
 

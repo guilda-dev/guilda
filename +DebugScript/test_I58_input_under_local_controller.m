@@ -11,6 +11,8 @@ r_step = 1e-3;
 s_unit = "SG1B003";
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% A step on an input driven by an AVR matches get_sys
 net = build_with_avr(s_unit);
 gen = component_of(net, s_unit);
@@ -84,8 +86,7 @@ function [r_err, r_max] = error_to_linear(net, s_unit, s_input, r_step)
 % Relative 2-norm error of the omega of the unit to the Kron model, and the largest change of omega.
     rv_time = [0,10];
     % 既定の許容誤差では応答 (1e-5 程度) に対して積分誤差が目立つ
-    net.solver_ODE.RelativeTolerance = 1e-8;
-    net.solver_ODE.AbsoluteTolerance = 1e-10;
+    c_cfg = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none", "Tolerance", 1e-8, "AbsoluteTolerance", 1e-10)); %#ok<NASGU>
     r = simulate_step(net, s_unit, s_input, r_step, rv_time);
 
     gen = component_of(net, s_unit);

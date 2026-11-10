@@ -4,6 +4,8 @@
 %
 % 実行: runtests("DebugScript.test_I57_stale_gc_references")  または  DebugScript.run_all("Features","I57")
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% remove_component rejects a controlled component and changes nothing
 [net, agc, bus, comp] = build_controlled_network();
 assert(error_id(@() bus.remove_component("SG1B002")) == "GUILDA:Bus:ComponentControlled")

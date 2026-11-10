@@ -10,6 +10,8 @@
 tol_jacobi = 1e-5;
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% The model list matches the key map and has the known models
 % 手書きの一覧は下限の確認にだけ使う。試験の対象は GUILDA.dictionary から決まる
 tab = DebugScript.helper.model_classes("Component");

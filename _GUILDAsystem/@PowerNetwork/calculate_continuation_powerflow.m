@@ -4,9 +4,10 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
 % Traces the PV curve of the network by the continuation power flow: starting from the
 % equilibrium of net.initialize, the loads of LoadBus are scaled by (1 + lambda) and the
 % power flow solution is followed past the maximum loading point (the nose). The
-% settings are the stored defaults of net.solver_CPF; Name-Value options override them
-% for this call only (net.solver_CPF is not changed).
-% Accepted options are the names in SolverCPF.OptionMap plus Plot and Export;
+% settings are the ContinuationPowerFlow section of GUILDA.setting, and the condition
+% LoadBus is kept by net.solver_CPF; Name-Value options override them for this call only
+% (neither net.solver_CPF nor the settings file is changed).
+% Accepted options are the names in SolverCPF.OptionMap plus Export;
 % any other name stops with GUILDA:resolve_options:UnknownName.
 % It stops with an error naming the remedy when the network is not initialized (or was
 % edited after net.initialize) and when LoadBus is empty or names an unknown bus.
@@ -14,15 +15,15 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
 % Name-Value options:
 %
 % - `LoadBus` — Tags of the buses whose loads are scaled by (1 + lambda) (net.solver_CPF.LoadBus).
-% - `MaxIteration` — Maximum number of predictor-corrector steps (net.solver_CPF.MaxIterations).
-% - `Tolerance` — Convergence tolerance of the Newton-Raphson corrector (net.solver_CPF.Tolerance).
-% - `StepSize` — Step size of the predictor (net.solver_CPF.StepSize).
-% - `ArcLength` — Arc length of the corrector (net.solver_CPF.ArcLength).
-% - `InitialLambda` — lambda at the starting point (net.solver_CPF.InitialLambda).
-% - `UseInternalState` — Solve with the internal states of the generators (net.solver_CPF.UseInternalState).
-% - `Verbose` — Print lambda at each step (net.solver_CPF.Verbose).
-% - `Limits` — Operating limits applied along the path: a subset of "Q" (PV to PQ at the Q limits of the generators), "V" (stop at Vmin/Vmax of a bus), "S" (stop at Smax of a branch), or "all" / "none" (net.solver_CPF.Limits). See ResultCPF.tab_switch and tab_stop.
-% - `Plot` — Call result.Plot after the calculation. Default: false.
+% - `MaxIteration` — Maximum number of predictor-corrector steps Default: GUILDA.setting (500).
+% - `Tolerance` — Convergence tolerance of the Newton-Raphson corrector. Default: GUILDA.setting (1e-5).
+% - `StepSize` — Step size of the predictor. Default: GUILDA.setting (0.5).
+% - `ArcLength` — Arc length of the corrector. Default: GUILDA.setting (1e-3).
+% - `InitialLambda` — lambda at the starting point. Default: GUILDA.setting (0).
+% - `UseInternalState` — Solve with the internal states of the generators. Default: GUILDA.setting (false).
+% - `Verbose` — Print lambda at each step. Default: GUILDA.setting (false).
+% - `Limits` — Operating limits applied along the path: a subset of "Q" (PV to PQ at the Q limits of the generators), "V" (stop at Vmin/Vmax of a bus), "S" (stop at Smax of a branch), or "all" / "none". Default: GUILDA.setting ("none"). See ResultCPF.tab_switch and tab_stop.
+% - `PlotFcn` — Live display during the calculation: "none" (the other displays are under development; draw the result with result.Plot()). Default: GUILDA.setting ("none").
 % - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
 %
 % <@Examples>
@@ -53,9 +54,6 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
 
     [result, flag, output] = obj.solver_CPF.solve(obj, sct_options);
 
-    if opt.Plot
-        result.Plot();
-    end
     if isstring(opt.Export)
         result.Export(opt.Export);
     elseif opt.Export
@@ -65,7 +63,7 @@ end
 
 
 function [c_nv, opt] = take_call_options(c_in)
-% Separates the options of this call (Plot, Export) from the solver options
+% Separates the option of this call (Export) from the solver options
     c_nv = c_in;
     opt  = call_options();
     if mod(numel(c_in), 2) ~= 0
@@ -73,7 +71,7 @@ function [c_nv, opt] = take_call_options(c_in)
     end
     lv_call = false(size(c_in));
     for k = 1:2:numel(c_in)
-        lv_call(k:k+1) = (ischar(c_in{k}) || isstring(c_in{k})) && any(strcmpi(c_in{k}, ["Plot","Export"]));
+        lv_call(k:k+1) = (ischar(c_in{k}) || isstring(c_in{k})) && strcmpi(c_in{k}, "Export");
     end
     c_call = c_in(lv_call);
     c_nv   = c_in(~lv_call);
@@ -82,7 +80,6 @@ end
 
 function opt = call_options(opt)
     arguments (Input)
-        opt.Plot   (1,1) logical = false
         opt.Export {mustBeA(opt.Export, ["logical","string","char"])} = false
     end
     if ischar(opt.Export)

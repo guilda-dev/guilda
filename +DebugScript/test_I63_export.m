@@ -17,6 +17,8 @@ tab_ctrl = net.get_variable_map();
 tab_ctrl = tab_ctrl(ismember(tab_ctrl.Owner, [avr1.s_tag, pss1.s_tag, avr2.s_tag, agc.s_tag]), :);
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Invalid file name fails before the integration
 % 終わらない長さの計算が一瞬で止まれば、積分の前に検査している
 c_case = {"a.json", "a", "", 'a.json', strings(0,1), ".csv.bak"};

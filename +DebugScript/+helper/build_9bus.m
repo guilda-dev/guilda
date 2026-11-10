@@ -67,5 +67,4 @@ function net = build_9bus(opt)
     net.a_Bus{8}.a_Component{1}.tab_parameter.powerflow{:,["P","Q"]} = [-1.2, -0.4];
 
 % バッチ実行用のソルバー設定 (進捗ダイアログを出さない)
-    net.solver_ODE.Progress = "none";
 end

@@ -78,7 +78,7 @@ function [tab, r_agree] = compare_table4_9(opt)
         end
         sc = c_sc{sv_tag == tab.Scenario(k)};
         sc.Judge = @(r) Scenario.out_of_step(r, Reference=s_ref, Threshold=360);
-        tab.Tolerance(k) = net.solver_ODE.RelativeTolerance;
+        tab.Tolerance(k) = GUILDA.config("TimeSimulation", "Tolerance");
         result = run_case(net, sc, opt);
         v = sc.judge(result);
         if v.Verdict == "incomplete" && opt.RetryTolerance < tab.Tolerance(k)

@@ -14,6 +14,8 @@ c_input = {"InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0.01};
 c_os    = {"OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 1e-3};
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Fault, trip and input need a duration
 for c_kind = {c_fault, c_trip, c_input}
     expect_zero_length(net, "1", "TimeSpan", 1, c_kind{1}{:});

@@ -8,6 +8,8 @@
 s_warn = "GUILDA:PowerNetwork:EquilibriumResidual";
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Models of components are checked with every Method
 % スタブをキーとして一時的に登録するので、GUILDA の再実行が 1 回で済むようにまとめる
 c_stub = register_stub();

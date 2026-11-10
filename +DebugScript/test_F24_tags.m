@@ -7,6 +7,8 @@
 % 実行: runtests("DebugScript.test_F24_tags")  または  DebugScript.run_all("Features","F24")
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Renaming a bus makes nothing stale
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);

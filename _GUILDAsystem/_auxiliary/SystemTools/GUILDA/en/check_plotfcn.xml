@@ -1,0 +1,7 @@
+<!--This is an XML file containing error messages related to the function "tools.check_plotfcn".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="InDevelopment">PlotFcn of {0}: the live display during the analysis is under development; only "none" is available. Draw the result with result.Plot() after the analysis.</entry>
+        <entry key="InvalidValue">PlotFcn of {0} must be "none", a string array of display keys or a function handle.</entry>
+    </message>
+</rsccat>

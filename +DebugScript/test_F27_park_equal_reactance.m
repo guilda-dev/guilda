@@ -8,6 +8,8 @@
 s_warn = "GUILDA:PowerNetwork:EquilibriumResidual";
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Xq_p equal to Xq gives a finite equilibrium with Ed = 0
 [net, g2] = network_with("Xq_p", @(p) p.Xq);
 assert(warning_of(@() net.initialize) ~= s_warn)

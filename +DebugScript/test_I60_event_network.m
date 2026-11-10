@@ -9,6 +9,8 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% An event created before a topology change gives the same result as a new one
 args = {"TimeSpan", [1,1.05], "FaultBus", "B008"};
 old = DebugScript.helper.scenario("fault", net, args{:});

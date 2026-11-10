@@ -571,13 +571,14 @@ res = DebugScript.helper.quiet(@() net.calculate_powerflow);
 t = res.Plot(Parent=figure("Visible","off"));
 c_fig = onCleanup(@() close(ancestor(t, "figure")));
 assert(isa(t, "matlab.graphics.layout.TiledChartLayout") && numel(t.Children) == 2)
-% Plot=true は計算後に result.Plot を呼ぶ
+% 計算後の図は result.Plot だけ。Plot オプションは廃止、PlotFcn (計算中の表示) は "none" のみ (ほかは開発中のエラー)
 a_before = findall(groot, "Type", "figure");
-DebugScript.helper.quiet(@() net.calculate_powerflow(Plot=true));
-a_after = findall(groot, "Type", "figure");
-a_new   = a_after(~ismember(a_after, a_before));
-assert(numel(a_new) == 1)
-close(a_new)
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(PlotFcn="none"));
+assert(res.options.PlotFcn == "none" && isempty(setdiff(findall(groot, "Type", "figure"), a_before)))
+assert(error_id(@() net.calculate_powerflow(Plot=true)) == "GUILDA:resolve_options:UnknownName")
+assert(error_id(@() net.calculate_powerflow(PlotFcn="voltage")) == "GUILDA:check_plotfcn:InDevelopment")
+assert(error_id(@() net.calculate_powerflow(PlotFcn=@(x) x)) == "GUILDA:check_plotfcn:InDevelopment")
+assert(error_id(@() net.calculate_powerflow(PlotFcn=1)) == "GUILDA:check_plotfcn:InvalidValue")
 
 % Export: 拡張子で形式が決まる。CSV は母線または枝の表
 s_dir = tempname; mkdir(s_dir); c_dir = onCleanup(@() rmdir(s_dir, "s"));

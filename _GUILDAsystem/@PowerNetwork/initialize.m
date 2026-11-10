@@ -32,7 +32,7 @@ function [result, flag, output] = initialize(obj, varargin)
 % - `Method` — How the operating point is obtained when it is solved. Default:
 %   "powerflow".
 %   - "powerflow": net.calculate_powerflow (settings of GUILDA.setting).
-%   - "OPF": net.optimize_powerflow with Method="AC OPF" (settings of net.solver_OPF;
+%   - "OPF": net.optimize_powerflow with Method="AC OPF" (OptimalPowerFlow section of GUILDA.setting and conditions of net.solver_OPF;
 %     the AC formulation gives a complete AC operating point).
 %   - "FixedInput": the equilibrium with the inputs of the components held
 %     (rv_Uequilibrium, edited with Component.set_input): the states, the bus voltages,

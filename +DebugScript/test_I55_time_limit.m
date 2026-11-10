@@ -15,6 +15,8 @@ offset = @(n) DebugScript.helper.scenario("offset", n, "TimeSpan", 0, "OffsetUni
                           "OffsetState", "delta", "OffsetValue", 1);
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Partial result warns with any number of outputs
 lastwarn("");
 sol = net.simulate([0,5], ev, TimeLimit=1e-6);
@@ -54,9 +56,8 @@ assert(s_got ~= s_id)
 
 
 %% Default TimeLimit is Inf
-mp = ?SolverODE;
-p  = mp.PropertyList(string({mp.PropertyList.Name}) == "TimeLimit");
-assert(isinf(p.DefaultValue))
+% 既定は GUILDA.setting の TimeSimulation (net.solver_ODE は設定を持たない)
+assert(~isprop(SolverODE(), "TimeLimit") && isinf(SolverODE().get_options().TimeLimit))
 sct_config = readstruct(fullfile(GUILDA.pwd, "@GUILDA", "config", "DefaultTimeSimulation.json"));
 assert(isinf(sct_config.TimeLimit.Value))
 

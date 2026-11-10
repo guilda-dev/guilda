@@ -6,6 +6,8 @@
 % 実行: runtests("DebugScript.test_I56_initialize_equilibrium")  または  DebugScript.run_all("Features","I56")
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% OPF initialize gives a real equilibrium
 tol_kcl   = 1e-8;
 tol_drift = 1e-6;
@@ -186,7 +188,7 @@ function net = build_shared_bus()
     net.a_Bus{2}.add_component("gen-1axis", "P",0.2, "Q",nan);
     net.a_Bus{2}.add_component("load-power", "P",-0.1, "Q",-0.05);
     net.a_Bus{3}.add_component("load-power", "P",-1.0, "Q",-0.2);
-    net.solver_ODE.Progress = "none";
+    
 end
 
 function r = kcl_residual(net)

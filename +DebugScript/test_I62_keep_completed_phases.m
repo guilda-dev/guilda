@@ -8,13 +8,15 @@
 % 共通設定 (実行は 1 度だけで、net は全テストで共有される)
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
-net.solver_ODE.Progress = "none";
+
 sv_gen = generators(net);
 ev_trip_later = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.5], "TripUnit", sv_gen);
 ev_trip_first = DebugScript.helper.scenario("trip", net, "TimeSpan", [0,1.5], "TripUnit", sv_gen);
 ev_nan = DebugScript.helper.scenario("nan", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", NaN);
 s_warn = "GUILDA:PowerNetwork:SimulationIncomplete";
 
+
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
 
 %% Solver error in a later phase keeps the completed phases
 [sol, flag, output] = run(net, [0,2], ev_trip_later);
@@ -88,12 +90,12 @@ s = load(s_mat);
 assert(s.flag == -1 && DebugScript.helper.msg_id(s.output.exception) == "GUILDA:SolverODE:PhaseFailed")
 
 
-%% Plot and Export options work when the first phase fails
+%% Export option works when the first phase fails
 s_dir = tempname;
 mkdir(s_dir);
 c_dir = onCleanup(@() rmdir(s_dir, "s"));
 s_csv = fullfile(s_dir, "opt.csv");
-[~, flag] = run(net, [0,2], ev_trip_first, "Plot", true, "Export", s_csv);
+[~, flag] = run(net, [0,2], ev_trip_first, "Export", s_csv);
 close all
 assert(flag == -1 && isfile(s_csv))
 
@@ -108,7 +110,7 @@ for i = 1:numel(net.a_Bus)
 end
 ref = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() ref.initialize);
-ref.solver_ODE.Progress = "none";
+
 sol = run(net, [0,1]);
 sol_ref = run(ref, [0,1]);
 assert(isequaln(sol.rm_variable, sol_ref.rm_variable))
@@ -138,7 +140,7 @@ assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:ode15s:MassMatrixAllZer
 %% Wrong solver settings are still raised
 net2 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net2.initialize);
-net2.solver_ODE.Progress = "none";
+
 ME = catch_error(@() run(net2, [0,1], "SolverOptions", matlab.ode.options.ODE45));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:PhaseFailed", DebugScript.helper.msg_id(ME))
 assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:ode45:MassSingularYes", DebugScript.helper.msg_id(ME.cause{1}))

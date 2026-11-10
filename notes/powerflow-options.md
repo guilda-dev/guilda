@@ -333,7 +333,7 @@
 
 **要判断**(実装では決めていない。3〜6 は 2026-11-10 に決定、「Q3〜Q6 の実装」)
 
-1. `net.solver_OPF` / `solver_CPF` / `solver_ODE` / `solver_LIN` は今も数値の設定を保存する(6 節の「一般の数値設定は保存しない」は手順 B では `SolverPF` だけ)。
+1. `net.solver_OPF` / `solver_CPF` / `solver_ODE` / `solver_LIN` は今も数値の設定を保存する(6 節の「一般の数値設定は保存しない」は手順 B では `SolverPF` だけ)。 → Q1 で解決(「Q1」節)。
 2. `initialize(Method="powerflow")` で潮流計算の手法を選ぶ手段は GUILDA.setting だけ(`Method` は initialize 自身の名前)。旧 `net.solver_PF.Method = ...` の代わりが必要か。
 3. AC OPF の `WarmStart` の既定(true)。内点法では反復が減るとは限らない(上の記録、status.md の OPF の記録も同様)。
 4. OPF の問題のキャッシュ: `operation` / `OPF` の編集を数えるカウンタがないため実装していない。
@@ -441,6 +441,55 @@
    既定値と同じ値は書き出さない、などの対応をするか(このブランチでは未対応)。
 
 **決定**(2026-11-10): OPF のキャッシュは `Cost`・`Constraint` を関数ハンドルの同一性で比較するだけで、関数が取り込んだハンドルオブジェクトの状態の変化は考慮しない(`Cost`・`Constraint` に渡すのは v、p だけという前提)。
+
+## Q1: `solver_OPF`・`solver_CPF`・`solver_ODE`・`solver_LIN` の設定の移動(2026-11-10)
+
+**決定**(メンテナー、2026-11-10。要判断 9 件の回答を含む)
+
+- `SolverPF` と同じく、4 つの Solver も数値の設定をプロパティに保存しない。既定値は GUILDA.setting(`@GUILDA/config/Default*.json`)、Name-Value はその呼び出しだけ上書き(JSON に書き戻さない)。
+- `solver_*` に残すのは系統固有の条件、ウォームスタート、キャッシュ、差し替え可能な Solver オブジェクトの役割だけ(6 節)。
+  - 条件: OPF の `Cost`・`Constraint`・`ReferenceBus`・`DefaultCost`(`Cost`・`Constraint` と組)、CPF の `LoadBus`。
+- 呼び出し時だけのオプション: 時間応答シミュレーションの `SolverOptions`(Name-Value とシナリオの `Options`)、線形化の `Point`(指定しなければ平衡点)。
+- CPF の `InitialLambda` は GUILDA.setting(既存キー)。CPF の JSON キー `LoadBus` は廃止(`solver_CPF.LoadBus` と呼び出しの `LoadBus=` のみ)。
+- TimeSimulation に `Solver` を新設(ode15s / ode23t、既定 ode15s)。線形化のセクション名は `Linearization`。
+- JSON キー名は Name-Value 名に揃える。旧キーの変換はしない(既存の利用者設定は、次の作業の `version` の仕組みで既定に戻る)。
+- `Plot` の再設計(全解析共通): 呼び出しの `Plot`(終わったら図を出す)は廃止し、`PlotFcn`(解析中のリアルタイム表示。MATLAB の optimoptions / odeset と同じ名前)に置き換える。
+  値は表示の種類のキーの string 配列か `"none"`、または関数ハンドル。今回は口だけ: 既定 `"none"`、各解析セクションに `PlotFcn`(select、選択肢は `"none"` のみ)。
+  それ以外は「開発中」のエラー。解析後の図は結果クラスの `Plot` メソッドだけ。
+- v3 の `solver_ODE` のプロパティ(`RelativeTolerance` など)の互換は作らない(代入は存在しないプロパティとしてエラー)。付随する互換(`Reporter`)は削除。
+- OPF の `WarmStart` の既定 false(Q3)、CPF の `Limits` の既定 `"none"`、修正子の設定は維持。
+
+**対応表**(実装後。「設定」= GUILDA.setting のキー、「条件」= `solver_*` のプロパティ、「呼び出し」= 保存も JSON もない Name-Value)
+
+| 解析(セクション) | 設定(JSON キー = Name-Value 名) | 条件 | 呼び出しのみ |
+|---|---|---|---|
+| 潮流計算(PowerFlowCalculation) | `Solver`、`Tolerance`、`MaxIteration`、`WarmStart`、`PlotFcn`(新)、ほか手順 B のキー | – | `Verbose`、`Export` |
+| OPF(OptimalPowerFlow) | `Method`、`Solver`、`Algorithm_*`、`Display`、`MaxIteration`、`Tolerance`(旧 `OptimalityTolerance`)、`StepTolerance`、`MaxFunctionEvaluations`、`UseParallel`、`WarmStart`、`PlotFcn`(新) | `Cost`、`Constraint`、`DefaultCost`、`ReferenceBus` | `Verbose`(→ `Display`)、`Problem`、`InitialPoint`、`Export` |
+| 連続潮流計算(ContinuationPowerFlow) | `InitialLambda`、`MaxIteration`(旧 `MaxIterations`)、`StepSize`、`ArcLength`、`Tolerance`、`Corrector*`、`Increment`、`Limits`、`UseInternalState`、`Verbose`、`PlotFcn`(新)。`LoadBus` は廃止 | `LoadBus` | `Export` |
+| 時間応答シミュレーション(TimeSimulation) | `Solver`(新)、`Tolerance`(旧 `RelativeTolerance`)、`AbsoluteTolerance`、`SeparateComplexParts`、`Progress`、`TimeLimit`、`Verbose`(新)、`PlotFcn`(新) | – | `SolverOptions`、`Export` |
+| 線形化(Linearization、新) | `Method`("Feedback")、`Coordinate`("theta&rho")、`PlotFcn` | – | `Point`(`get_sys` は `Input`、`Output`、`Format` も) |
+
+**現状**(実装後のコード)
+
+- 各 Solver の `get_options` が GUILDA.config のセクションの値(OPF・CPF は条件のプロパティも)の構造体を `tools.resolve_options` に渡し、Name-Value を適用(`SolverPF` と同じ作り)。
+  コンストラクタは設定を読まない。`OptionMap` の各名前が JSON キー(`SolverOptions`、`Point`、条件を除く)。
+- `PlotFcn`: `tools.check_plotfcn`(新規、5 つの Solver が共用するので `+tools`)が `"none"` 以外を `GUILDA:check_plotfcn:InDevelopment`、型の違う値を `GUILDA:check_plotfcn:InvalidValue` で止める(`check_plotfcn.xml`)。
+  `Plot` は存在しない名前として `GUILDA:resolve_options:UnknownName`。`ResultPF`・`ResultOPF`・`ResultCPF`・`ResultODE`・`ResultLIN` の `Plot` のヘルプを更新。
+- 時間応答シミュレーション: `makeODE` が設定 `Tolerance` を ode の `RelativeTolerance` に渡し、`SolverOptions` が空なら ode の既定(Solver に合う options)。`TimeLimit` が正でなければ Inf(旧コンストラクタと同じ)。
+- 削除: `SolverODE` の `Reporter`(Dependent、Hidden)、`_VersionSupport/v3_ode_reporter.m`、メッセージ `GUILDA:Deprecated:SimulatorReporter`。Name-Value の `Reporter`・`RelativeTolerance`(`v3_simulate_args`)の互換は維持。
+  `v3_user_config` の旧キー `Reporter`(TimeSimulation)の変換も維持(利用者設定ファイルの互換で、プロパティの互換ではないため)。
+- JSON キーと Name-Value 名の揃え: 改名は上の 3 つ(OPF `OptimalityTolerance` → `Tolerance`、CPF `MaxIterations` → `MaxIteration`、TimeSimulation `RelativeTolerance` → `Tolerance`)。
+  ずれが残るもの: OPF の JSON `Display`(select、"default" はソルバーの既定)と Name-Value `Verbose`(logical、`Display` に変換)は値の型と意味が違うため改名していない。潮流計算の `Verbose` は JSON キーなし(呼び出しのみ、既定 false)。
+- テスト: 補助関数 `build_*.m` の `net.solver_ODE.Progress = "none"` を削除。`simulate` を使うテストファイルの共通部分に
+  `c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"))` を追加(各テストの終わりに元へ戻す)。
+  設定を変えるテストは `user_config` か Name-Value に変更。`_GUILDAverification/IEEJ_EAST30/compare_table4_9.m` は `GUILDA.config("TimeSimulation", "Tolerance")` を読む。
+- 既存の不具合(この作業の前から失敗、large のみ): F7 の `DeprecatedNonUnitOptionWarnsAndIgnoresBusesWithoutStates`、`DeprecatedSolver_LIN_NonUnitWarnsAndActsAsTheOption`、
+  `LinearizeMatchesV3Get_sysMatricesForEveryAlgorithm`(直前のコミット `a72ca21e` でも同じ 3 件が失敗)。
+
+**要判断**
+
+1. `v3_user_config` は PowerFlowCalculation の利用者設定のキー `PlotFcn`(v3 の fsolve の PlotFcn)を削除する。今は `"none"` しかないので影響はないが、`PlotFcn` が表示の種類を受け付けるようになったら、利用者が設定した値も消える(次の `version` の作業で扱うか)。
+2. OPF の `Display` と `Verbose` の名前の不一致を残すか(上記)。
 
 ## 未決
 

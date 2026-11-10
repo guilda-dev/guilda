@@ -6,6 +6,8 @@
 % 実行: runtests("DebugScript.test_I64_simulate_sparse")  または  DebugScript.run_all("Features","I64")
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Mass matrix and Jacobian are sparse by default
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
@@ -91,7 +93,7 @@ function net = ring(N)
         net.a_Bus{i}.a_Component{1}.add_local_controller("avr-ST1");
         net.a_Bus{i}.a_Component{1}.add_local_controller("pss-PSS1");
     end
-    net.solver_ODE.Progress = "none";
+    
     DebugScript.helper.quiet(@() net.initialize);
 end
 

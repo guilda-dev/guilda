@@ -107,28 +107,28 @@ verdict = sc.judge(result)</code></pre>
 
     <h3><span lang="en">Name-Value options and defaults</span><span lang="ja">Name-Value オプションと既定値</span></h3>
     <ul lang="en">
-      <li>Defaults: the properties of <code>net.solver_ODE</code> (a <code>SolverODE</code>). <em>config</em>: read by the constructor from <code>GUILDA.config("TimeSimulation")</code>; <em>class</em>: class defaults.</li>
-      <li>Precedence, for this call only: Name-Value option of the call &gt; stored <code>Options</code> of the scenarios &gt; solver (<code>scenario_settings</code>, <code>SolverODE.OptionMap</code>, <code>tools.resolve_options</code>).</li>
-      <li><code>net.reset_solver()</code>: replaces the solver with a new one. Shared rules: <a href="api-design.html#rules">API Design</a>.</li>
+      <li>Defaults: the TimeSimulation section of <code>GUILDA.setting</code>, read at each run from <code>GUILDA.config("TimeSimulation")</code> (<code>@GUILDA/config/DefaultTimeSimulation.json</code>, overridden by a file of the same name in <code>@GUILDA/user/</code>). <code>net.solver_ODE</code> (a <code>SolverODE</code>) holds no settings.</li>
+      <li>Precedence, for this call only: Name-Value option of the call &gt; stored <code>Options</code> of the scenarios &gt; <code>GUILDA.setting</code> (<code>scenario_settings</code>, <code>SolverODE.OptionMap</code>, <code>tools.resolve_options</code>). The settings file is not changed.</li>
+      <li>Shared rules: <a href="api-design.html#rules">API Design</a>.</li>
     </ul>
     <ul lang="ja">
-      <li>既定値: <code>net.solver_ODE</code> (<code>SolverODE</code>) のプロパティ。<em>config</em>: コンストラクタが <code>GUILDA.config("TimeSimulation")</code> から読み込み。<em>class</em>: クラスの既定値</li>
-      <li>優先順位 (その呼び出しのみ): 呼び出しの Name-Value オプション &gt; シナリオに保存された <code>Options</code> &gt; ソルバー (<code>scenario_settings</code>、<code>SolverODE.OptionMap</code>、<code>tools.resolve_options</code>)</li>
-      <li><code>net.reset_solver()</code>: ソルバーを新しいものに置換。共通の規則: <a href="api-design.html#rules">API 設計</a></li>
+      <li>既定値: <code>GUILDA.setting</code> の TimeSimulation セクション。実行のたびに <code>GUILDA.config("TimeSimulation")</code> から読み込み (<code>@GUILDA/config/DefaultTimeSimulation.json</code>。<code>@GUILDA/user/</code> の同名ファイルで上書き)。<code>net.solver_ODE</code> (<code>SolverODE</code>) は設定を持たない</li>
+      <li>優先順位 (その呼び出しのみ): 呼び出しの Name-Value オプション &gt; シナリオに保存された <code>Options</code> &gt; <code>GUILDA.setting</code> (<code>scenario_settings</code>、<code>SolverODE.OptionMap</code>、<code>tools.resolve_options</code>)。設定ファイルは不変</li>
+      <li>共通の規則: <a href="api-design.html#rules">API 設計</a></li>
     </ul>
     <table class="dg-table sim-opts">
       <thead><tr><th><span lang="en">Option</span><span lang="ja">オプション</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Default</span><span lang="ja">既定値</span></th></tr></thead>
       <tbody>
-        <tr><td><code>Solver</code></td><td><span lang="en">Solver of the <code>ode</code> object; the singular mass matrix needs a DAE solver.</span><span lang="ja"><code>ode</code> オブジェクトのソルバー。質量行列が特異なので DAE 用ソルバーが必要</span></td><td><code>"ode15s"</code><small>class</small></td></tr>
-        <tr><td><code>SolverOptions</code></td><td><span lang="en">Options of the solver (e.g. <code>MaxStep</code>); class must match <code>Solver</code>.</span><span lang="ja">ソルバーのオプション (<code>MaxStep</code> など)。クラスは <code>Solver</code> に一致させる</span></td><td><code>ODE15s</code><small>class</small></td></tr>
-        <tr><td><code>Tolerance</code></td><td><span lang="en">Relative tolerance (property <code>RelativeTolerance</code>), 1e-15 to 1e-3.</span><span lang="ja">相対許容誤差 (プロパティ <code>RelativeTolerance</code>)。1e-15〜1e-3。</span></td><td><code>1e-4</code><small>config</small></td></tr>
+        <tr><td><code>Solver</code></td><td><span lang="en">Solver of the <code>ode</code> object; the singular mass matrix needs a DAE solver.</span><span lang="ja"><code>ode</code> オブジェクトのソルバー。質量行列が特異なので DAE 用ソルバーが必要</span></td><td><code>"ode15s"</code><small>config</small></td></tr>
+        <tr><td><code>SolverOptions</code></td><td><span lang="en">Options of the solver (e.g. <code>MaxStep</code>); class must match <code>Solver</code>. Given only in a call or in the <code>Options</code> of a scenario; when empty, the <code>ode</code> object uses the options of its <code>Solver</code>.</span><span lang="ja">ソルバーのオプション (<code>MaxStep</code> など)。クラスは <code>Solver</code> に一致させる。呼び出しまたはシナリオの <code>Options</code> でのみ指定。空のとき <code>ode</code> オブジェクトは <code>Solver</code> のオプションを使用</span></td><td><code>[]</code><small>call</small></td></tr>
+        <tr><td><code>Tolerance</code></td><td><span lang="en">Relative tolerance (<code>RelativeTolerance</code> of the <code>ode</code> object), 1e-15 to 1e-3.</span><span lang="ja">相対許容誤差 (<code>ode</code> オブジェクトの <code>RelativeTolerance</code>)。1e-15〜1e-3。</span></td><td><code>1e-4</code><small>config</small></td></tr>
         <tr><td><code>AbsoluteTolerance</code></td><td><span lang="en">Absolute tolerance, 1e-15 to 1e-3.</span><span lang="ja">絶対許容誤差。1e-15〜1e-3。</span></td><td><code>1e-6</code><small>config</small></td></tr>
         <tr><td><code>SeparateComplexParts</code></td><td><span lang="en">Property of the <code>ode</code> object.</span><span lang="ja"><code>ode</code> オブジェクトのプロパティ。</span></td><td><code>"off"</code><small>config</small></td></tr>
         <tr><td><code>TimeLimit</code></td><td><span lang="en">[s] Wall-clock limit of the whole run; <code>Inf</code> for none. A non-positive config value means <code>Inf</code>.</span><span lang="ja">[s] 実行全体の計算時間 (実時間) の上限。<code>Inf</code> で無制限。config の値が正でなければ <code>Inf</code>。</span></td><td><code>Inf</code><small>config</small></td></tr>
         <tr><td><code>Progress</code></td><td><span lang="en"><code>"dialog"</code>, <code>"disp"</code> or <code>"none"</code>; <code>true</code> / <code>false</code> mean <code>"dialog"</code> / <code>"none"</code>.</span><span lang="ja"><code>"dialog"</code>、<code>"disp"</code>、<code>"none"</code>。<code>true</code> / <code>false</code> は <code>"dialog"</code> / <code>"none"</code>。</span></td><td><code>"dialog"</code><small>config</small></td></tr>
-        <tr><td><code>Verbose</code></td><td><span lang="en">Print the phase table before and <code>output.message</code> after the integration.</span><span lang="ja">積分の前にフェーズ表、後に <code>output.message</code> を表示</span></td><td><code>false</code><small>class</small></td></tr>
-        <tr><td><code>Plot</code></td><td><span lang="en">Call <code>result.Plot()</code> after the run.</span><span lang="ja">実行後に <code>result.Plot()</code> を呼び出し</span></td><td><code>false</code><small>class</small></td></tr>
-        <tr><td><code>Export</code></td><td><span lang="en">Calls <code>result.Export</code>: <code>true</code> for a time-stamped CSV name, or a file name (.csv, .txt, .xlsx, .xls, .mat, checked before the integration). Call option only, not a solver property.</span><span lang="ja"><code>result.Export</code> を呼び出し。<code>true</code> で日時付きの CSV 名、またはファイル名 (.csv, .txt, .xlsx, .xls, .mat。積分前に検査)。呼び出しのみのオプションで、ソルバーのプロパティではない</span></td><td><code>false</code></td></tr>
+        <tr><td><code>Verbose</code></td><td><span lang="en">Print the phase table before and <code>output.message</code> after the integration.</span><span lang="ja">積分の前にフェーズ表、後に <code>output.message</code> を表示</span></td><td><code>false</code><small>config</small></td></tr>
+        <tr><td><code>PlotFcn</code></td><td><span lang="en">Live display during the run; only <code>"none"</code> is available (other values: <code>GUILDA:check_plotfcn:InDevelopment</code>). The figure after the run: <code>result.Plot()</code>.</span><span lang="ja">実行中のライブ表示。使用可能なのは <code>"none"</code> のみ (他の値は <code>GUILDA:check_plotfcn:InDevelopment</code>)。実行後の図は <code>result.Plot()</code></span></td><td><code>"none"</code><small>config</small></td></tr>
+        <tr><td><code>Export</code></td><td><span lang="en">Calls <code>result.Export</code>: <code>true</code> for a time-stamped CSV name, or a file name (.csv, .txt, .xlsx, .xls, .mat, checked before the integration). Call option only, not a setting.</span><span lang="ja"><code>result.Export</code> を呼び出し。<code>true</code> で日時付きの CSV 名、またはファイル名 (.csv, .txt, .xlsx, .xls, .mat。積分前に検査)。呼び出しのみのオプションで、設定ではない</span></td><td><code>false</code></td></tr>
       </tbody>
     </table>
 
@@ -330,11 +330,11 @@ verdict = sc.judge(result)</code></pre>
         <p class="fs-head"><b class="fs-id">SIM-02</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <code>SolverODE.get_options</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Applies the Name-Value overrides to the stored settings (<code>tools.resolve_options</code> with <code>OptionMap</code>), then checks the values (<code>validate_options</code>). Solver unchanged.</span><span lang="ja">保存された設定に Name-Value の上書きを適用（<code>OptionMap</code> を使った <code>tools.resolve_options</code>）、値を検査（<code>validate_options</code>）。ソルバー自体は不変</span></dd>
+          <dd><span lang="en">Applies the Name-Value overrides to the TimeSimulation section of <code>GUILDA.setting</code> (<code>tools.resolve_options</code> with <code>OptionMap</code>), then checks the values (<code>validate_options</code>; <code>PlotFcn</code>: <code>tools.check_plotfcn</code>). Solver and settings file unchanged.</span><span lang="ja"><code>GUILDA.setting</code> の TimeSimulation セクションに Name-Value の上書きを適用（<code>OptionMap</code> を使った <code>tools.resolve_options</code>）、値を検査（<code>validate_options</code>。<code>PlotFcn</code>: <code>tools.check_plotfcn</code>）。ソルバーと設定ファイルは不変</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en">public properties of</span><span lang="ja">次の公開プロパティ:</span> <code>net.solver_ODE</code>, <code>c_nv</code></dd>
+          <dd><code>GUILDA.config("TimeSimulation")</code>, <code>c_nv</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>sct_options</code>: <code>Solver</code>, <code>SolverOptions</code>, <code>RelativeTolerance</code>, <code>AbsoluteTolerance</code>, <code>SeparateComplexParts</code>, <code>Progress</code>, <code>TimeLimit</code>, <code>Verbose</code>, <code>Plot</code></dd>
+          <dd><code>sct_options</code>: <code>Solver</code>, <code>Tolerance</code>, <code>AbsoluteTolerance</code>, <code>SeparateComplexParts</code>, <code>Progress</code>, <code>TimeLimit</code>, <code>Verbose</code>, <code>PlotFcn</code>, <code>SolverOptions</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="SIM-03">
@@ -631,11 +631,11 @@ verdict = sc.judge(result)</code></pre>
         <p class="fs-head"><b class="fs-id">SIM-21</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <span lang="en">caller</span><span lang="ja">呼び出し側</span></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Warns when <code>flag ≠ 1</code>; calls <code>result.Plot()</code> and <code>result.Export</code> when asked.</span><span lang="ja"><code>flag ≠ 1</code> なら警告。指定があれば <code>result.Plot()</code> と <code>result.Export</code> を呼び出し</span></dd>
+          <dd><span lang="en">Warns when <code>flag ≠ 1</code>; calls <code>result.Export</code> when asked.</span><span lang="ja"><code>flag ≠ 1</code> なら警告。指定があれば <code>result.Export</code> を呼び出し</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>flag</code>, <code>output.message</code>, <code>sct_options.Plot</code>, <code>opt.Export</code></dd>
+          <dd><code>flag</code>, <code>output.message</code>, <code>opt.Export</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>[result, flag, output]</code>; <span lang="en">figure or file when asked</span><span lang="ja">指定時は図またはファイル</span></dd>
+          <dd><code>[result, flag, output]</code>; <span lang="en">file when asked</span><span lang="ja">指定時はファイル</span></dd>
         </dl>
       </li>
     </ol>
@@ -705,7 +705,7 @@ verdict = sc.judge(result)</code></pre>
       <tbody>
         <tr><td><code>f_*</code> <span lang="en">handles</span><span lang="ja">ハンドル</span></td><td><span lang="en">Read only; built by <code>net.initialize()</code>.</span><span lang="ja">参照のみ。<code>net.initialize()</code> が作成</span></td></tr>
         <tr><td><span lang="en">Equilibrium, stale state</span><span lang="ja">平衡点、stale 状態</span></td><td><span lang="en">Read only. <code>sct_stale</code> and the equilibrium values are not changed.</span><span lang="ja">参照のみ。<code>sct_stale</code> と平衡点の値は不変</span></td></tr>
-        <tr><td><code>net.solver_ODE</code></td><td><span lang="en">Read only; options of the call are not stored.</span><span lang="ja">参照のみ。呼び出しのオプションは保存しない</span></td></tr>
+        <tr><td><code>net.solver_ODE</code></td><td><span lang="en">Holds no settings; options of the call are not stored.</span><span lang="ja">設定を持たない。呼び出しのオプションは保存しない</span></td></tr>
         <tr><td><span lang="en">Simulator indices</span><span lang="ja">シミュレータの添字</span></td><td><span lang="en"><code>iv_odeX</code>, <code>iv_odeU</code>, <code>iv_odeY</code>, <code>iv_odeI</code>, <code>lv_odeUfromLC</code>, <code>iv_odeYtoU</code> are written by SIM-05 and kept after the run; every run renumbers them.</span><span lang="ja"><code>iv_odeX</code>、<code>iv_odeU</code>、<code>iv_odeY</code>、<code>iv_odeI</code>、<code>lv_odeUfromLC</code>、<code>iv_odeYtoU</code> : SIM-05 で書き込み、実行後も残存。実行ごとに番号を振り直し</span></td></tr>
         <tr><td><span lang="en">Disturbance state</span><span lang="ja">外乱の状態</span></td><td><span lang="en"><code>Bus.l_isFault</code>, <code>Component.l_isConnect</code>, <code>GlobalController.l_isConnect</code>, <code>Component.rv_Xoffset</code>, <code>rv_Uoffset</code> change during the run and are reset by SIM-20, also after an error. Opened branches are only left out of the admittance matrix of the run (<code>ctx</code>); the branches themselves are not changed.</span><span lang="ja"><code>Bus.l_isFault</code>、<code>Component.l_isConnect</code>、<code>GlobalController.l_isConnect</code>、<code>Component.rv_Xoffset</code>、<code>rv_Uoffset</code> : 実行中に変化し、SIM-20 で復元 (エラー時も同じ)。開放したブランチは実行中のアドミタンス行列 (<code>ctx</code>) から除くのみで、ブランチ自体は不変</span></td></tr>
         <tr><td><code>Scenario</code></td><td><span lang="en">Read only: the disturbances, <code>Time</code> and <code>Options</code> are not changed, and the verdict is computed later by <code>sc.judge(result)</code>.</span><span lang="ja">参照のみ。外乱、<code>Time</code>、<code>Options</code> は不変。判定は後で <code>sc.judge(result)</code> が算出</span></td></tr>

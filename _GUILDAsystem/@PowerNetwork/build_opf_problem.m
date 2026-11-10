@@ -3,8 +3,9 @@ function varargout = build_opf_problem(obj, varargin)
 %
 % Builds the problem that `net.optimize_powerflow` solves (SolverOPF.build_problem), so
 % that it can be inspected or modified before solving it with
-% net.optimize_powerflow(Problem=prob, InitialPoint=x0). The settings are the stored
-% defaults of net.solver_OPF; Name-Value options override them for this call only.
+% net.optimize_powerflow(Problem=prob, InitialPoint=x0). The settings are the
+% OptimalPowerFlow section of GUILDA.setting and the conditions kept by net.solver_OPF;
+% Name-Value options override them for this call only.
 % With no output the problem is displayed.
 % Constraint names: balancedP_<bus>, balancedQ_<bus> (balancedP in "ELD"), VargRef,
 % VargMax1_<branch>, VargMax2_<branch>, defIre_, defIim_, defP_, defQ_, Imax_, Smax_
@@ -14,7 +15,7 @@ function varargout = build_opf_problem(obj, varargin)
 %
 % Name-Value options:
 %
-% - `Method` — "ELD", "DC OPF" or "AC OPF" (net.solver_OPF.Method).
+% - `Method` — "ELD", "DC OPF" or "AC OPF". Default: GUILDA.setting ("AC OPF").
 % - `Cost` — Function handle @(v, p) returning a scalar added to the objective (net.solver_OPF.Cost; [] = none).
 % - `Constraint` — Function handle @(v, p) returning struct(name1, constraint1, ...) added to the problem (net.solver_OPF.Constraint; [] = none).
 % - `DefaultCost` — false leaves out the costs of tab_parameter.OPF (net.solver_OPF.DefaultCost).
@@ -49,7 +50,7 @@ function varargout = build_opf_problem(obj, varargin)
     % only the options of the problem (not the solver options such as Tolerance)
     sct_map = SolverOPF.OptionMap;
     sct_map = rmfield(sct_map, setdiff(fieldnames(sct_map), ["Method","Cost","Constraint","DefaultCost","ReferenceBus"]));
-    tools.resolve_options(obj.solver_OPF, sct_map, c_nv);
+    tools.resolve_options(obj.solver_OPF.get_options(), sct_map, c_nv);
     sct_options = obj.solver_OPF.get_options(c_nv);
 
     [prob, x0] = obj.solver_OPF.build_problem(obj, sct_options);

@@ -4,7 +4,8 @@ function ax = Plot(obj, opt)
 % Draws the PV curves: the voltage magnitude [pu] of each bus against the load parameter
 % lambda along the path. A dashed line marks the nose (maximum loading, r_lambdaMax).
 % By default it draws the load buses (options.LoadBus); Bus selects other buses.
-% calculate_continuation_powerflow(..., Plot=true) calls it.
+% The only figure of the analysis: calculate_continuation_powerflow draws none (its
+% PlotFcn is a live display during the calculation).
     arguments (Input)
         obj
         opt.Bus    {mustBeText} = default_bus(obj) % Tags of the buses to draw; "all" for every bus.

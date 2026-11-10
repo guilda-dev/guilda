@@ -71,22 +71,20 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
 
     <h3><span lang="en">Name-Value options and defaults</span><span lang="ja">Name-Value オプションと既定値</span></h3>
     <ul lang="en">
-      <li>Defaults: the properties of <code>net.solver_LIN</code> (a <code>SolverLIN</code>; class defaults, no <code>GUILDA.config</code> entry).</li>
-      <li>A Name-Value option applies to this call only (<code>SolverLIN.OptionMap</code>, <code>tools.resolve_options</code>).</li>
-      <li><code>net.reset_solver()</code>: replaces the solver. See <a href="api-design.html#rules">API Design</a>.</li>
+      <li>Defaults: the Linearization section of <code>GUILDA.setting</code>, read at each run from <code>GUILDA.config("Linearization")</code> (<code>@GUILDA/config/DefaultLinearization.json</code>, overridden by a file of the same name in <code>@GUILDA/user/</code>). <code>net.solver_LIN</code> (a <code>SolverLIN</code>) holds no settings.</li>
+      <li>A Name-Value option applies to this call only (<code>SolverLIN.OptionMap</code>, <code>tools.resolve_options</code>); the settings file is not changed. See <a href="api-design.html#rules">API Design</a>.</li>
     </ul>
     <ul lang="ja">
-      <li>既定値: <code>net.solver_LIN</code> (<code>SolverLIN</code>) のプロパティ。クラスの既定値 (<code>GUILDA.config</code> の項目なし)</li>
-      <li>Name-Value オプション: その呼び出しのみに適用 (<code>SolverLIN.OptionMap</code>、<code>tools.resolve_options</code>)</li>
-      <li><code>net.reset_solver()</code>: ソルバーを置換。<a href="api-design.html#rules">API 設計</a> を参照</li>
+      <li>既定値: <code>GUILDA.setting</code> の Linearization セクション。実行のたびに <code>GUILDA.config("Linearization")</code> から読み込み (<code>@GUILDA/config/DefaultLinearization.json</code>。<code>@GUILDA/user/</code> の同名ファイルで上書き)。<code>net.solver_LIN</code> (<code>SolverLIN</code>) は設定を持たない</li>
+      <li>Name-Value オプション: その呼び出しのみに適用 (<code>SolverLIN.OptionMap</code>、<code>tools.resolve_options</code>)。設定ファイルは不変。<a href="api-design.html#rules">API 設計</a> を参照</li>
     </ul>
     <table class="dg-table lin-opts">
       <thead><tr><th><span lang="en">Option</span><span lang="ja">オプション</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Default</span><span lang="ja">既定値</span></th></tr></thead>
       <tbody>
         <tr><td><code>Method</code></td><td><span lang="en">Default form of <code>result.get_ss()</code> and of <code>net.get_sys</code>: <code>"Kron"</code>, <code>"Feedback"</code> or <code>"DAE"</code>.</span><span lang="ja"><code>result.get_ss()</code> と <code>net.get_sys</code> の既定の形: <code>"Kron"</code>、<code>"Feedback"</code>、<code>"DAE"</code>。</span></td><td><code>"Feedback"</code></td></tr>
-        <tr><td><code>Point</code></td><td><span lang="en"><code>[]</code> for the equilibrium; a vector in the order of the variable map; or <code>{sim, t}</code> / <code>{sim, t, "before"}</code> for the state of a <code>ResultODE</code> at time <code>t</code>. Sets the variables only: the admittance matrix stays that of the model, also inside a fault.</span><span lang="ja"><code>[]</code> で平衡点。変数マップの順のベクトル。または <code>{sim, t}</code> / <code>{sim, t, "before"}</code> で <code>ResultODE</code> の時刻 <code>t</code> の状態。変数を決めるのみ。アドミタンス行列は地絡中の時刻でもモデルのもの</span></td><td><code>[]</code></td></tr>
+        <tr><td><code>Point</code></td><td><span lang="en"><code>[]</code> for the equilibrium; a vector in the order of the variable map; or <code>{sim, t}</code> / <code>{sim, t, "before"}</code> for the state of a <code>ResultODE</code> at time <code>t</code>. Sets the variables only: the admittance matrix stays that of the model, also inside a fault.</span><span lang="ja"><code>[]</code> で平衡点。変数マップの順のベクトル。または <code>{sim, t}</code> / <code>{sim, t, "before"}</code> で <code>ResultODE</code> の時刻 <code>t</code> の状態。変数を決めるのみ。アドミタンス行列は地絡中の時刻でもモデルのもの</span></td><td><code>[]</code><small><span lang="en">call only</span><span lang="ja">呼び出しのみ</span></small></td></tr>
         <tr><td><code>Coordinate</code></td><td><span lang="en">Bus variables of <code>"DAE"</code>: <code>"theta&amp;rho"</code>, <code>"theta&amp;V"</code> or <code>"Vre&amp;Vim"</code>.</span><span lang="ja"><code>"DAE"</code> の母線変数: <code>"theta&amp;rho"</code>、<code>"theta&amp;V"</code>、<code>"Vre&amp;Vim"</code>。</span></td><td><code>"theta&amp;rho"</code></td></tr>
-        <tr><td><code>Plot</code></td><td><span lang="en">Calls <code>result.Plot()</code> (eigenvalue map). Call option only.</span><span lang="ja"><code>result.Plot()</code> (固有値マップ) を呼び出し。呼び出しのみのオプション</span></td><td><code>false</code></td></tr>
+        <tr><td><code>PlotFcn</code></td><td><span lang="en">Live display during the linearization; only <code>"none"</code> is available (other values: <code>GUILDA:check_plotfcn:InDevelopment</code>). The eigenvalue map after the run: <code>result.Plot()</code>.</span><span lang="ja">線形化中のライブ表示。使用可能なのは <code>"none"</code> のみ (他の値は <code>GUILDA:check_plotfcn:InDevelopment</code>)。実行後の固有値マップは <code>result.Plot()</code></span></td><td><code>"none"</code></td></tr>
         <tr><td><code>Input</code>, <code>Output</code></td><td><span lang="en"><code>net.get_sys</code> only, passed to <code>get_ss</code>: <code>"u"</code> or input labels; <code>"x"</code>, <code>"V"</code>, <code>"I"</code>, <code>"y"</code> or names.</span><span lang="ja"><code>net.get_sys</code> のみ。<code>get_ss</code> に受け渡し。<code>"u"</code> または入力のラベル。<code>"x"</code>、<code>"V"</code>、<code>"I"</code>、<code>"y"</code> または名前。</span></td><td><span lang="en">all inputs / per algorithm</span><span lang="ja">全入力 / 形ごと</span></td></tr>
         <tr><td><code>Format</code></td><td><span lang="en"><code>net.get_sys</code> and the <code>get_sys</code> of each layer: <code>"GUILDAorigin"</code> (a <code>ResultLIN</code>), <code>"struct"</code> or <code>"ss"</code> (Control System Toolbox). <code>result.get_ss</code>: <code>"ss"</code> or <code>"struct"</code>. Call option only.</span><span lang="ja"><code>net.get_sys</code> と各層の <code>get_sys</code>: <code>"GUILDAorigin"</code> (<code>ResultLIN</code>)、<code>"struct"</code>、<code>"ss"</code> (Control System Toolbox)。<code>result.get_ss</code>: <code>"ss"</code> または <code>"struct"</code>。呼び出しのみのオプション</span></td><td><span lang="en"><code>"GUILDAorigin"</code> / <code>"ss"</code></span><span lang="ja"><code>"GUILDAorigin"</code> / <code>"ss"</code></span></td></tr>
       </tbody>
@@ -173,8 +171,8 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
           <text class="is-sm" x="334" y="528"><tspan style="fill:var(--dg-accent)">14</tspan> rcond(Avv), sv_faultBus</text>
           <path class="dg-sv-line" d="M300 560H928" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="306" y="554"><tspan style="fill:var(--dg-accent)">15</tspan> ResultLIN(net, obj, sct_options, flag, output, t0, …)</text>
-          <path class="dg-sv-line" d="M170 590H928" marker-end="url(#lin-ah)"/>
-          <text class="is-sm" x="176" y="584"><tspan style="fill:var(--dg-accent)">16</tspan> Plot()  [Plot=true]</text>
+          <path class="dg-sv-line" d="M50 590H928" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="56" y="584"><tspan style="fill:var(--dg-accent)">16</tspan> result.Plot()</text>
           <path class="dg-sv-line is-muted" d="M170 620H52" marker-end="url(#lin-ah-m)"/>
           <text class="is-sm" x="56" y="614"><tspan style="fill:var(--dg-accent)">17</tspan> [result, flag, output]</text>
           <path class="dg-sv-line" d="M50 650H928" marker-end="url(#lin-ah)"/>
@@ -200,14 +198,14 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
           <li><span class="lin-id">LIN-13</span> <code>SolverLIN</code>: <span lang="en">blocks</span><span lang="ja">ブロック</span>, <code>add_global_controllers</code></li>
           <li><span class="lin-id">LIN-14</span> <code>SolverLIN</code>: <span lang="en">checks</span><span lang="ja">検査</span></li>
           <li><span class="lin-id">LIN-15</span> <code>SolverLIN</code> → <code>ResultLIN</code></li>
-          <li><span class="lin-id">LIN-16</span> <code>PowerNetwork</code> → <code>ResultLIN.Plot</code></li>
+          <li><span class="lin-id">LIN-16</span> <span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>ResultLIN.Plot</code></li>
           <li><span class="lin-id">LIN-17</span> <code>PowerNetwork.linearize</code> → <span lang="en">caller</span><span lang="ja">呼び出し側</span></li>
           <li><span class="lin-id">LIN-18</span> <span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>ResultLIN.get_ss</code></li>
           <li><span class="lin-id">LIN-19</span> <span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.get_sys</code></li>
         </ol>
       </div>
-      <figcaption lang="en">One run of <code>net.linearize</code>, then <code>get_ss</code>. <code>net.get_sys</code> (LIN-19) runs LIN-01 to LIN-18 in one call.</figcaption>
-      <figcaption lang="ja"><code>net.linearize</code> の 1 回の実行と、その後の <code>get_ss</code>。<code>net.get_sys</code> (LIN-19) は LIN-01〜LIN-18 を 1 回の呼び出しで実行。</figcaption>
+      <figcaption lang="en">One run of <code>net.linearize</code>, then <code>get_ss</code>. <code>net.get_sys</code> (LIN-19) runs LIN-01 to LIN-15 and LIN-18 in one call.</figcaption>
+      <figcaption lang="ja"><code>net.linearize</code> の 1 回の実行と、その後の <code>get_ss</code>。<code>net.get_sys</code> (LIN-19) は LIN-01〜LIN-15 と LIN-18 を 1 回の呼び出しで実行。</figcaption>
     </figure>
 
     <!-- ============================== STEPS ============================== -->
@@ -225,11 +223,11 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         <p class="fs-head"><b class="fs-id">LIN-01</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.linearize</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Takes <code>Plot</code> out of the options (<code>take_call_options</code>).</span><span lang="ja">オプションから <code>Plot</code> を取り出し (<code>take_call_options</code>)</span></dd>
+          <dd><span lang="en">Passes all Name-Value options to LIN-02; <code>linearize</code> has no call-only option.</span><span lang="ja">すべての Name-Value オプションを LIN-02 へ受け渡し。<code>linearize</code> に呼び出しのみのオプションはなし</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>varargin</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>c_nv</code>, <code>opt.Plot</code></dd>
+          <dd><code>c_nv</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="LIN-02">
@@ -238,15 +236,15 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
               <li>Removes the deprecated option <code>NonUnit</code>, with a warning (<code>v3_linearize_args</code>; the buses are detected automatically).</li>
-              <li>Applies the overrides (<code>tools.resolve_options</code>); checks the values (<code>validate_options</code>) and the form of <code>Point</code> (<code>check_point</code>).</li>
+              <li>Applies the overrides to the Linearization section of <code>GUILDA.setting</code> (<code>tools.resolve_options</code>); checks the values (<code>validate_options</code>), the form of <code>Point</code> (<code>check_point</code>) and <code>PlotFcn</code> (<code>tools.check_plotfcn</code>). Solver and settings file unchanged.</li>
             </ul><ul lang="ja">
               <li>非推奨のオプション <code>NonUnit</code> を警告付きで除去 (<code>v3_linearize_args</code>。母線は自動で判別)</li>
-              <li>上書きを適用 (<code>tools.resolve_options</code>)。値 (<code>validate_options</code>) と <code>Point</code> の形 (<code>check_point</code>) を検査</li>
+              <li><code>GUILDA.setting</code> の Linearization セクションに上書きを適用 (<code>tools.resolve_options</code>)。値 (<code>validate_options</code>)、<code>Point</code> の形 (<code>check_point</code>)、<code>PlotFcn</code> (<code>tools.check_plotfcn</code>) を検査。ソルバーと設定ファイルは不変</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>net.solver_LIN</code>, <code>c_nv</code></dd>
+          <dd><code>GUILDA.config("Linearization")</code>, <code>c_nv</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>sct_options</code>: <code>Method</code>, <code>Point</code>, <code>Coordinate</code></dd>
+          <dd><code>sct_options</code>: <code>Method</code>, <code>Coordinate</code>, <code>PlotFcn</code>, <code>Point</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="LIN-03">
@@ -441,10 +439,10 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         </dl>
       </li>
       <li class="fs-step" id="LIN-16">
-        <p class="fs-head"><b class="fs-id">LIN-16</b> <span class="fs-call"><code>PowerNetwork.linearize</code> → <code>ResultLIN.Plot</code></span></p>
+        <p class="fs-head"><b class="fs-id">LIN-16</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>ResultLIN.Plot</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">With <code>Plot=true</code>: plots the finite generalized eigenvalues of <code>(A, E)</code> of <code>get_ss(Method)</code>, unstable ones in red.</span><span lang="ja"><code>Plot=true</code> のとき、<code>get_ss(Method)</code> の <code>(A, E)</code> の有限な一般化固有値を描画。不安定なものは赤</span></dd>
+          <dd><span lang="en">Called on the returned result only (<code>net.linearize</code> draws nothing): plots the finite generalized eigenvalues of <code>(A, E)</code> of <code>get_ss(Method)</code>, unstable ones in red.</span><span lang="ja">返された結果に対して呼び出したときのみ (<code>net.linearize</code> は描画しない)。<code>get_ss(Method)</code> の <code>(A, E)</code> の有限な一般化固有値を描画。不安定なものは赤</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>options.Method</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -493,7 +491,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         <p class="fs-head"><b class="fs-id">LIN-19</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.get_sys</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Takes <code>Input</code>, <code>Output</code>, <code>Format</code> and <code>Plot</code> out (<code>take_call_options</code>), puts <code>Input</code> and <code>Output</code> into the options, runs LIN-02 to LIN-16, so that <code>A</code> … <code>OutputName</code> of the result follow them. <code>Format="GUILDAorigin"</code> returns the result; <code>"struct"</code> and <code>"ss"</code> return <code>result.get_ss(result.options.Method, …)</code> (LIN-18).</span><span lang="ja"><code>Input</code>、<code>Output</code>、<code>Format</code>、<code>Plot</code> を取り出し (<code>take_call_options</code>)、<code>Input</code> と <code>Output</code> を設定に入れて LIN-02〜LIN-16 を実行。結果の <code>A</code> … <code>OutputName</code> はこの選択に従う。<code>Format="GUILDAorigin"</code> は結果を返却。<code>"struct"</code> と <code>"ss"</code> は <code>result.get_ss(result.options.Method, …)</code> (LIN-18) を返却</span></dd>
+          <dd><span lang="en">Takes <code>Input</code>, <code>Output</code> and <code>Format</code> out (<code>take_call_options</code>), puts <code>Input</code> and <code>Output</code> into the options, runs LIN-02 to LIN-15, so that <code>A</code> … <code>OutputName</code> of the result follow them. <code>Format="GUILDAorigin"</code> returns the result; <code>"struct"</code> and <code>"ss"</code> return <code>result.get_ss(result.options.Method, …)</code> (LIN-18).</span><span lang="ja"><code>Input</code>、<code>Output</code>、<code>Format</code> を取り出し (<code>take_call_options</code>)、<code>Input</code> と <code>Output</code> を設定に入れて LIN-02〜LIN-15 を実行。結果の <code>A</code> … <code>OutputName</code> はこの選択に従う。<code>Format="GUILDAorigin"</code> は結果を返却。<code>"struct"</code> と <code>"ss"</code> は <code>result.get_ss(result.options.Method, …)</code> (LIN-18) を返却</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>varargin</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>

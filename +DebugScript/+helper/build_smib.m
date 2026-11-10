@@ -23,5 +23,4 @@ function [net, gen] = build_smib()
     tp.dynamics.Xq = 1e-4;
     inf.tab_parameter = tp;
     evalc("net.a_Bus{2}.l_isSlack = true;");     % 表示 (INFO) は抑制
-    net.solver_ODE.Progress = "none";
 end

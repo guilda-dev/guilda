@@ -64,48 +64,51 @@
 <pre><code>net.initialize();
 [result, flag, output] = net.calculate_continuation_powerflow(LoadBus=["B009","B014"], Name=Value, ...)</code></pre>
     <ul lang="en">
-      <li>Defaults: the properties of <code>net.solver_CPF</code> (a <code>SolverCPF</code>).</li>
-      <li>A new solver reads them from <code>GUILDA.config("ContinuationPowerFlow")</code>: <code>@GUILDA/config/DefaultContinuationPowerFlow.json</code>, overridden by a file of the same name in <code>@GUILDA/user/</code>.</li>
+      <li>Settings: the ContinuationPowerFlow section of <code>GUILDA.setting</code>, read at each run from <code>GUILDA.config("ContinuationPowerFlow")</code>: <code>@GUILDA/config/DefaultContinuationPowerFlow.json</code>, overridden by a file of the same name in <code>@GUILDA/user/</code>.</li>
+      <li>Condition <code>LoadBus</code>: the public property of <code>net.solver_CPF</code> (a <code>SolverCPF</code>), kept between runs.</li>
       <li>A Name-Value option applies to this call only.</li>
     </ul>
     <ul lang="ja">
-      <li>既定値: <code>net.solver_CPF</code>（<code>SolverCPF</code>）のプロパティ</li>
-      <li>ソルバー生成時に <code>GUILDA.config("ContinuationPowerFlow")</code> から読み込み: <code>@GUILDA/config/DefaultContinuationPowerFlow.json</code>（<code>@GUILDA/user/</code> の同名ファイルで上書き）</li>
+      <li>設定: <code>GUILDA.setting</code> の ContinuationPowerFlow セクション。実行のたびに <code>GUILDA.config("ContinuationPowerFlow")</code> から読み込み: <code>@GUILDA/config/DefaultContinuationPowerFlow.json</code>（<code>@GUILDA/user/</code> の同名ファイルで上書き）</li>
+      <li>条件 <code>LoadBus</code>: <code>net.solver_CPF</code>（<code>SolverCPF</code>）の public プロパティ。実行をまたいで保持</li>
       <li>Name-Value オプション: その呼び出しのみに適用</li>
     </ul>
     <table class="dg-table cpf-opts">
-      <thead><tr><th lang="en">Option</th><th lang="ja">オプション</th><th lang="en">Solver property and default</th><th lang="ja">ソルバーのプロパティと既定値</th></tr></thead>
+      <thead><tr><th lang="en">Option</th><th lang="ja">オプション</th><th lang="en">Setting or condition and default</th><th lang="ja">設定・条件と既定値</th></tr></thead>
       <tbody>
         <tr><td><code>LoadBus</code></td>
-          <td lang="en" data-label="Property and default"><code>LoadBus = strings(1,0)</code>: tags of the buses whose components are scaled by <code>(1 + λ)</code>. Required: per call or on the solver.</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>LoadBus = strings(1,0)</code>: 機器を <code>(1 + λ)</code> 倍する母線のタグ。必須: 呼び出しごとに指定、またはソルバーに設定</td></tr>
+          <td lang="en" data-label="Setting and default">condition (<code>net.solver_CPF</code>); <code>LoadBus = strings(1,0)</code>: tags of the buses whose components are scaled by <code>(1 + λ)</code>. Required: per call or on the solver.</td>
+          <td lang="ja" data-label="設定と既定値">条件（<code>net.solver_CPF</code>）。<code>LoadBus = strings(1,0)</code>: 機器を <code>(1 + λ)</code> 倍する母線のタグ。必須: 呼び出しごとに指定、またはソルバーに設定</td></tr>
         <tr><td><code>InitialLambda</code></td>
-          <td lang="en" data-label="Property and default"><code>InitialLambda = 0</code>: λ at the starting point</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>InitialLambda = 0</code>: 出発点での λ</td></tr>
+          <td lang="en" data-label="Setting and default"><code>InitialLambda = 0</code>: λ at the starting point</td>
+          <td lang="ja" data-label="設定と既定値"><code>InitialLambda = 0</code>: 出発点での λ</td></tr>
         <tr><td><code>MaxIteration</code></td>
-          <td lang="en" data-label="Property and default"><code>MaxIterations = 500</code>: maximum number of predictor-corrector steps</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>MaxIterations = 500</code>: 予測子・修正子のステップの最大数</td></tr>
+          <td lang="en" data-label="Setting and default"><code>MaxIteration = 500</code>: maximum number of predictor-corrector steps</td>
+          <td lang="ja" data-label="設定と既定値"><code>MaxIteration = 500</code>: 予測子・修正子のステップの最大数</td></tr>
         <tr><td><code>StepSize</code></td>
-          <td lang="en" data-label="Property and default"><code>StepSize = 0.5</code>: factor of the predictor (tangent at the first step, secant afterwards)</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>StepSize = 0.5</code>: 予測子の係数（最初のステップは接線、以降は割線）</td></tr>
+          <td lang="en" data-label="Setting and default"><code>StepSize = 0.5</code>: factor of the predictor (tangent at the first step, secant afterwards)</td>
+          <td lang="ja" data-label="設定と既定値"><code>StepSize = 0.5</code>: 予測子の係数（最初のステップは接線、以降は割線）</td></tr>
         <tr><td><code>ArcLength</code></td>
-          <td lang="en" data-label="Property and default"><code>ArcLength = 1e-3</code>: the corrected point satisfies <code>|x − x_current|² = ArcLength</code></td>
-          <td lang="ja" data-label="プロパティと既定値"><code>ArcLength = 1e-3</code>: 修正後の点が満たす条件 <code>|x − x_current|² = ArcLength</code></td></tr>
+          <td lang="en" data-label="Setting and default"><code>ArcLength = 1e-3</code>: the corrected point satisfies <code>|x − x_current|² = ArcLength</code></td>
+          <td lang="ja" data-label="設定と既定値"><code>ArcLength = 1e-3</code>: 修正後の点が満たす条件 <code>|x − x_current|² = ArcLength</code></td></tr>
         <tr><td><code>Tolerance</code></td>
-          <td lang="en" data-label="Property and default"><code>Tolerance = 1e-5</code>: <code>ConvTol</code> of the Newton-Raphson corrector (every element of the step below it)</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>Tolerance = 1e-5</code>: ニュートン・ラフソン修正子の <code>ConvTol</code>（更新量のすべての要素がこれ未満）</td></tr>
+          <td lang="en" data-label="Setting and default"><code>Tolerance = 1e-5</code>: <code>ConvTol</code> of the Newton-Raphson corrector (every element of the step below it)</td>
+          <td lang="ja" data-label="設定と既定値"><code>Tolerance = 1e-5</code>: ニュートン・ラフソン修正子の <code>ConvTol</code>（更新量のすべての要素がこれ未満）</td></tr>
         <tr><td><code>UseInternalState</code></td>
-          <td lang="en" data-label="Property and default"><code>UseInternalState = false</code>: when true, the generator powers follow their state equations through <code>getCompPQ</code></td>
-          <td lang="ja" data-label="プロパティと既定値"><code>UseInternalState = false</code>: true で発電機の電力が <code>getCompPQ</code> を通じて状態方程式に追従</td></tr>
+          <td lang="en" data-label="Setting and default"><code>UseInternalState = false</code>: when true, the generator powers follow their state equations through <code>getCompPQ</code></td>
+          <td lang="ja" data-label="設定と既定値"><code>UseInternalState = false</code>: true で発電機の電力が <code>getCompPQ</code> を通じて状態方程式に追従</td></tr>
         <tr><td><code>Verbose</code></td>
-          <td lang="en" data-label="Property and default"><code>Verbose = false</code>: print λ at each step</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>Verbose = false</code>: 各ステップの λ を表示</td></tr>
+          <td lang="en" data-label="Setting and default"><code>Verbose = false</code>: print λ at each step</td>
+          <td lang="ja" data-label="設定と既定値"><code>Verbose = false</code>: 各ステップの λ を表示</td></tr>
         <tr><td><code>Limits</code></td>
-          <td lang="en" data-label="Property and default"><code>Limits = "none"</code>: operating limits (<code>tab_parameter.operation</code>) applied along the path: a subset of <code>"Q"</code>, <code>"V"</code>, <code>"S"</code>, or <code>"all"</code> / <code>"none"</code> (see CPF-11)</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>Limits = "none"</code>: 経路上で課す運転制約（<code>tab_parameter.operation</code>）。<code>"Q"</code>、<code>"V"</code>、<code>"S"</code> の部分集合、または <code>"all"</code> / <code>"none"</code>（CPF-11 を参照）</td></tr>
-        <tr><td><code>Plot</code>, <code>Export</code></td>
-          <td lang="en" data-label="Property and default"><code>false</code>: call <code>result.Plot()</code> / <code>result.Export(...)</code> afterwards</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>false</code>: 実行後に <code>result.Plot()</code> / <code>result.Export(...)</code> を呼び出し</td></tr>
+          <td lang="en" data-label="Setting and default"><code>Limits = "none"</code>: operating limits (<code>tab_parameter.operation</code>) applied along the path: a subset of <code>"Q"</code>, <code>"V"</code>, <code>"S"</code>, or <code>"all"</code> / <code>"none"</code> (see CPF-11)</td>
+          <td lang="ja" data-label="設定と既定値"><code>Limits = "none"</code>: 経路上で課す運転制約（<code>tab_parameter.operation</code>）。<code>"Q"</code>、<code>"V"</code>、<code>"S"</code> の部分集合、または <code>"all"</code> / <code>"none"</code>（CPF-11 を参照）</td></tr>
+        <tr><td><code>PlotFcn</code></td>
+          <td lang="en" data-label="Setting and default"><code>PlotFcn = "none"</code>: live display during the analysis; only <code>"none"</code> is available (other values: <code>GUILDA:check_plotfcn:InDevelopment</code>); the PV curves after the analysis: <code>result.Plot()</code></td>
+          <td lang="ja" data-label="設定と既定値"><code>PlotFcn = "none"</code>: 解析中のライブ表示。使用可能なのは <code>"none"</code> のみ（他の値は <code>GUILDA:check_plotfcn:InDevelopment</code>）。解析後の PV 曲線は <code>result.Plot()</code></td></tr>
+        <tr><td><code>Export</code></td>
+          <td lang="en" data-label="Setting and default">call only; <code>false</code>: call <code>result.Export(...)</code> afterwards</td>
+          <td lang="ja" data-label="設定と既定値">呼び出しのみ。<code>false</code>: 実行後に <code>result.Export(...)</code> を呼び出し</td></tr>
       </tbody>
     </table>
     <p lang="en">Preconditions:</p>
@@ -169,8 +172,8 @@
         <text x="420" y="374"><tspan class="cpf-num">08</tspan> <tspan class="dg-mono">MethodNewtonRaphson(f_PF)</tspan></text>
 
         <rect class="cpf-loop" x="232" y="398" width="580" height="166" rx="6"/>
-        <text class="is-muted" x="240" y="416" lang="en">loop: Iteration ≤ MaxIterations</text>
-        <text class="is-muted" x="240" y="416" lang="ja">繰り返し: Iteration ≤ MaxIterations</text>
+        <text class="is-muted" x="240" y="416" lang="en">loop: Iteration ≤ MaxIteration</text>
+        <text class="is-muted" x="240" y="416" lang="ja">繰り返し: Iteration ≤ MaxIteration</text>
         <path class="dg-sv-line" d="M270 428h26v14h-22" marker-end="url(#cpf-ah)"/>
         <text x="302" y="439"><tspan class="cpf-num">09</tspan> <tspan class="dg-mono">predict</tspan></text>
         <path class="dg-sv-line" d="M270 476H721" marker-end="url(#cpf-ah)"/>
@@ -202,7 +205,7 @@
         <p class="fs-head"><b class="fs-id">CPF-01</b> <span class="fs-call">user → <code>PowerNetwork.calculate_continuation_powerflow</code></span><small><code>take_call_options</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Separates <code>Plot</code> and <code>Export</code> from the solver options.</span><span lang="ja"><code>Plot</code> と <code>Export</code> をソルバーのオプションから分離</span></dd>
+          <dd><span lang="en">Separates <code>Export</code> from the solver options.</span><span lang="ja"><code>Export</code> をソルバーのオプションから分離</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>varargin</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -213,11 +216,11 @@
         <p class="fs-head"><b class="fs-id">CPF-02</b> <span class="fs-call"><code>calculate_continuation_powerflow</code> → <code>SolverCPF.get_options</code></span><small>→ <code>tools.resolve_options</code>, <code>validate_options</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Maps the Name-Value names through <code>OptionMap</code>, checks the values, fills the rest from the solver.</span><span lang="ja">Name-Value の名前を <code>OptionMap</code> で対応づけ、値を検査。残りの設定はソルバーから補完</span></dd>
+          <dd><span lang="en">Maps the Name-Value names through <code>OptionMap</code>, checks the values (<code>PlotFcn</code>: <code>tools.check_plotfcn</code>), fills the rest from the ContinuationPowerFlow section of <code>GUILDA.setting</code> and the condition <code>LoadBus</code> of the solver.</span><span lang="ja">Name-Value の名前を <code>OptionMap</code> で対応づけ、値を検査（<code>PlotFcn</code>: <code>tools.check_plotfcn</code>）。残りは <code>GUILDA.setting</code> の ContinuationPowerFlow セクションとソルバーの条件 <code>LoadBus</code> から補完</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>c_nv</code>; public properties of <code>net.solver_CPF</code></span><span lang="ja"><code>c_nv</code>、<code>net.solver_CPF</code> の public プロパティ</span></dd>
+          <dd><span lang="en"><code>c_nv</code>; <code>GUILDA.config("ContinuationPowerFlow")</code>; <code>net.solver_CPF.LoadBus</code></span><span lang="ja"><code>c_nv</code>、<code>GUILDA.config("ContinuationPowerFlow")</code>、<code>net.solver_CPF.LoadBus</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>sct_options</code>: struct with 8 fields (<code>LoadBus</code> as a 1 × n string row). Solver unchanged.</span><span lang="ja"><code>sct_options</code>: 8 フィールドの構造体（<code>LoadBus</code> は 1 × n の string 行）。ソルバーは不変</span></dd>
+          <dd><span lang="en"><code>sct_options</code>: struct with 13 fields (the 12 keys of the section and <code>LoadBus</code> as a 1 × n string row). Solver and settings file unchanged.</span><span lang="ja"><code>sct_options</code>: 13 フィールドの構造体（セクションの 12 個のキーと、1 × n の string 行の <code>LoadBus</code>）。ソルバーと設定ファイルは不変</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="CPF-03">
@@ -366,7 +369,7 @@
                   <li>Limits already violated at the starting point: <code>"Q"</code> switches there; <code>"V"</code> or <code>"S"</code> ends the path at the first point.</li>
                 </ul></li>
               <li>Appends the point; prints λ when <code>Verbose</code> (and the limit reached).</li>
-              <li>Ends the loop when λ of the corrected point is below 0 (the path came back past the nose) or a <code>"V"</code> / <code>"S"</code> limit was reached; otherwise continues up to <code>MaxIterations</code> steps.</li>
+              <li>Ends the loop when λ of the corrected point is below 0 (the path came back past the nose) or a <code>"V"</code> / <code>"S"</code> limit was reached; otherwise continues up to <code>MaxIteration</code> steps.</li>
             </ul><ul lang="ja">
               <li><code>Limits</code> の指定時: 修正後の点を <code>limit_set</code> の制約と比較（Inf・NaN は制約なし）。値が制約を <code>Tolerance</code> より大きく超えたら、その点を制約に達する点に置き換え: 直前の 2 点の線形内挿の後、経路上へ修正（<code>correct_at</code>）。ステップ内で最初に達した制約が対象
                 <ul>
@@ -375,10 +378,10 @@
                   <li>初期点で既に違反している制約: <code>"Q"</code> は初期点で切替、<code>"V"</code>・<code>"S"</code> は最初の点で経路を終了</li>
                 </ul></li>
               <li>点を追加。<code>Verbose</code> なら λ（と達した制約）を表示</li>
-              <li>修正後の点の λ が 0 未満（先端を越えて戻った）、または <code>"V"</code> / <code>"S"</code> の制約に達したらループ終了。それ以外は <code>MaxIterations</code> ステップまで継続</li>
+              <li>修正後の点の λ が 0 未満（先端を越えて戻った）、または <code>"V"</code> / <code>"S"</code> の制約に達したらループ終了。それ以外は <code>MaxIteration</code> ステップまで継続</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>x_current(end)</code>, <code>MaxIterations</code>, <code>Limits</code>, <code>Tolerance</code>; <code>operation</code> of the buses, components and branches</span><span lang="ja"><code>x_current(end)</code>、<code>MaxIterations</code>、<code>Limits</code>、<code>Tolerance</code>、母線・機器・ブランチの <code>operation</code></span></dd>
+          <dd><span lang="en"><code>x_current(end)</code>, <code>MaxIteration</code>, <code>Limits</code>, <code>Tolerance</code>; <code>operation</code> of the buses, components and branches</span><span lang="ja"><code>x_current(end)</code>、<code>MaxIteration</code>、<code>Limits</code>、<code>Tolerance</code>、母線・機器・ブランチの <code>operation</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>sol</code>, <code>sol_pred</code> (full vectors; first column NaN), <code>rv_N</code>; the switches and the stop of <code>Limits</code></span><span lang="ja"><code>sol</code>、<code>sol_pred</code>（全体ベクトル。最初の列は NaN）、<code>rv_N</code>、<code>Limits</code> の切替と停止</span></dd>
         </dl>
@@ -412,10 +415,10 @@
         </dl>
       </li>
       <li class="fs-step" id="CPF-14">
-        <p class="fs-head"><b class="fs-id">CPF-14</b> <span class="fs-call"><code>calculate_continuation_powerflow</code> → user</span><small><code>result.Plot</code>, <code>result.Export</code></small></p>
+        <p class="fs-head"><b class="fs-id">CPF-14</b> <span class="fs-call"><code>calculate_continuation_powerflow</code> → user</span><small><code>result.Export</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Runs <code>Plot</code> / <code>Export</code> when asked.</span><span lang="ja">指定があれば <code>Plot</code> / <code>Export</code> を実行</span></dd>
+          <dd><span lang="en">Runs <code>Export</code> when asked.</span><span lang="ja">指定があれば <code>Export</code> を実行</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>opt</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -492,13 +495,13 @@
     <h2 id="failure"><span lang="en">Failure behavior and result flags</span><span lang="ja">失敗時の動作と結果フラグ</span></h2>
     <ul lang="en">
       <li><code>flag</code> (logical): <code>true</code> when the largest λ lies strictly inside the path, i.e. the trace passed the nose, or when a <code>"V"</code> / <code>"S"</code> limit of <code>Limits</code> ended the path after at least one step. A limit violated at the starting point gives a path of one point and <code>flag = false</code>.</li>
-      <li>Nose not passed within <code>MaxIterations</code> steps: <code>flag = false</code>; <code>output.message</code> suggests a larger <code>MaxIteration</code> or <code>StepSize</code>; the partial path is still returned.</li>
+      <li>Nose not passed within <code>MaxIteration</code> steps: <code>flag = false</code>; <code>output.message</code> suggests a larger <code>MaxIteration</code> or <code>StepSize</code>; the partial path is still returned.</li>
       <li>Corrector not converged: a warning only; the trace continues from the point reached.</li>
       <li>The IDs name message entries in <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>, not MATLAB identifiers (see <a href="class-design.html#conventions">Class Design: Coding conventions of the classes</a>).</li>
     </ul>
     <ul lang="ja">
       <li><code>flag</code>（logical）: λ の最大値が経路の内側にあるとき、つまり先端を越えたとき、または 1 ステップ以上の後に <code>Limits</code> の <code>"V"</code> / <code>"S"</code> の制約で経路が終了したときに <code>true</code>。初期点で違反している制約では 1 点の経路で <code>flag = false</code></li>
-      <li><code>MaxIterations</code> ステップ以内に先端を越えない場合: <code>flag = false</code>。<code>output.message</code> が <code>MaxIteration</code> または <code>StepSize</code> の拡大を提案。途中までの経路は返却</li>
+      <li><code>MaxIteration</code> ステップ以内に先端を越えない場合: <code>flag = false</code>。<code>output.message</code> が <code>MaxIteration</code> または <code>StepSize</code> の拡大を提案。途中までの経路は返却</li>
       <li>修正子の非収束: 警告のみ。到達した点から追跡を継続</li>
       <li>ID: <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のメッセージ項目の名前。MATLAB の識別子ではない（<a href="class-design.html#conventions">クラス設計: クラス実装の規約</a> を参照）</li>
     </ul>

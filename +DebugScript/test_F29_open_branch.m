@@ -14,6 +14,8 @@ net = build_avr_pss();
 inwin = @(t, t1, t2) t > t1 + 1e-3 & t < t2 - 1e-3;   % 区間の内側 (境界の重複点を除く)
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Open and reclose returns near the equilibrium
 % EL003 (B002-B003) を 1.0〜1.2 秒に開放して再投入する
 [sol, flag, output] = net.simulate([0,10], DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003"));
@@ -264,6 +266,6 @@ function net = ring(N)
         net.a_Bus{i}.a_Component{1}.add_local_controller("avr-ST1");
         net.a_Bus{i}.a_Component{1}.add_local_controller("pss-PSS1");
     end
-    net.solver_ODE.Progress = "none";
+    
     DebugScript.helper.quiet(@() net.initialize);
 end

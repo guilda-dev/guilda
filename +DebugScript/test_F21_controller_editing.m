@@ -11,6 +11,8 @@ s_key   = "GUILDA:Component:InvalidControllerKey";
 s_out   = "GUILDA:Component:ControllerOutput";
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% An unknown role stops with an error instead of attaching nothing
 [s_stub, c] = stub("turbine");
 [net, gen] = fresh_network();

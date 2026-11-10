@@ -19,6 +19,8 @@ sct_mapODE = struct("Tolerance", ["AbsoluteTolerance","RelativeTolerance"], ...
                   "Progress",  "Progress");
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Resolve options returns stored defaults without overrides
 % 既定値の持ち主は構造体でもよい (SolverPF は GUILDA.setting の値の構造体を渡す)
 sct_hold = sct_holdPF;
@@ -34,14 +36,14 @@ assert(isequal(sort(string(fieldnames(opt))), sort(["MaxIterations";"Display";"d
 
 
 %% Resolve options applies overrides and leaves the stored solver unchanged
-solver   = SolverCPF();
+solver   = struct("MaxIterations", 500, "StepSize", 0.5);   % 既定値の入れ物 (構造体)
 r_iter   = solver.MaxIterations;
 r_step   = solver.StepSize;
 [opt, sv_given] = tools.resolve_options(solver, struct("MaxIteration", "MaxIterations", "StepSize", "StepSize"), ...
                                         {"maxiteration", 7, "StepSize", 0.1});
 assert(opt.MaxIterations == 7 && opt.StepSize == 0.1)   % 名前の大文字小文字は区別しない
 assert(isequal(sv_given, ["MaxIteration","StepSize"]))
-% 保存されているソルバーは変わらない
+% 既定値の入れ物は変わらない
 assert(solver.MaxIterations == r_iter && solver.StepSize == r_step)
 % 変換関数 (Verbose -> Display) と入れ子のパス
 [opt, sv_given] = tools.resolve_options(sct_holdPF, sct_mapPF, {"Verbose", true, "TimeSpan", 0:0.5:1});
@@ -57,7 +59,7 @@ assert(opt.MaxIterations == 5)
 
 
 %% Resolve options sets several solver fields from one name
-solver = SolverODE();
+solver = struct("AbsoluteTolerance", 1e-6, "RelativeTolerance", 1e-4, "TimeLimit", Inf, "Progress", "dialog");
 r_abs  = solver.AbsoluteTolerance;
 r_rel  = solver.RelativeTolerance;
 opt = tools.resolve_options(solver, sct_mapODE, {"Tolerance", 1e-8, "Progress", "none"});
@@ -206,13 +208,12 @@ assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "build_opf_prob
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "initialize.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverCPF", "SolverCPF.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "simulate.m")) == 1, join(sv_hook, ", "))
-assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverODE", "SolverODE.m")) == 3, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "SolverLIN.m")) == 3, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "get_options.m")) == 2, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "solve.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@ResultLIN", "get_ss.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("@GUILDA", "private", "get_config.m")) == 1, join(sv_hook, ", "))
-assert(numel(sv_hook) == 20, join(sv_hook, ", "))
+assert(numel(sv_hook) == 17, join(sv_hook, ", "))
 
 
 % ---- local functions ----
