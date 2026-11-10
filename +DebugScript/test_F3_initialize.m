@@ -16,6 +16,8 @@ tol_dx    = 1e-8;      % 平衡点での状態微分の許容値
 tol_drift = 1e-6;      % 外乱なしシミュレーションでの状態変化の許容値
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Initialize returns result flag output
 % 9 母線系統 (旧 Task3)
 net = DebugScript.helper.build_9bus();

@@ -10,6 +10,8 @@
 r_tol = 1e-4;
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Parameters are appended after the existing ones
 avr = controller.avr.AVR_DC1("avr1", Vfld_max=4, Vfld_min=0);
 assert(isequal(avr.sv_para(end-1:end), ["Vfld_max"; "Vfld_min"]))

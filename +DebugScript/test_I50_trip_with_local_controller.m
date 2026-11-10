@@ -9,6 +9,8 @@
 trip = @(n, ts) DebugScript.helper.scenario("trip", n, "TimeSpan", ts, "TripUnit", "SG1B003");
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Default IEEE9 trip completes
 net = ieee9();
 [sol, eq] = run_trip(net, [0,2], trip(net, [1,1.2]));
@@ -68,7 +70,7 @@ end
 
 function net = ieee9()
     net = network.IEEE9bus();
-    net.solver_ODE.Progress = "none";
+    
     DebugScript.helper.quiet(@() net.initialize);
 end
 

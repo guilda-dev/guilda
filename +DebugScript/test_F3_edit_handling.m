@@ -19,6 +19,8 @@
 % 共通設定 (各テストの前に毎回実行される)
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Simulate and get_sys before initialize ask for initialize
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 assert_stale_error(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])), "GUILDA:SolverODE:Stale")

@@ -22,6 +22,8 @@ eig_finite = @DebugScript.helper.finite_eigs;    % 有限な一般化固有値
 same_eigs  = @DebugScript.helper.same_eigs;      % 固有値の集合が一致するか
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Get sys Kron
 sys = net.get_sys("Method", "Kron");
 assert(isa(sys, "ResultLIN"))

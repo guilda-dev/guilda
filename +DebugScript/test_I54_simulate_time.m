@@ -8,6 +8,8 @@ DebugScript.helper.quiet(@() net.initialize);
 s_id = "GUILDA:PowerNetwork:SimulateTime";
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Invalid time stops with an error naming the cause
 % {time, メッセージに含まれるべき原因}
 c_case = { ...

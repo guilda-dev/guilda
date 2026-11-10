@@ -15,6 +15,8 @@
 % 各テストは新しい系統で始める (共通設定の handle はテストの間で共有されるため)
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% A fault then a permanent opening equals two old-style events
 net = new_ieee14();
 sc = Scenario("case1", Time=[0,3]);
@@ -65,10 +67,10 @@ sc = Scenario("stored", Time=[0,2], Options=struct("Tolerance", 1e-6, "AbsoluteT
 sc.add_fault("B008", [1,1.05]);
 net.add_scenario(sc);
 res = DebugScript.helper.quiet(@() net.simulate(sc));
-assert(res.rv_t(end) == 2 && res.options.RelativeTolerance == 1e-6 && res.options.AbsoluteTolerance == 1e-6)
+assert(res.rv_t(end) == 2 && res.options.Tolerance == 1e-6 && res.options.AbsoluteTolerance == 1e-6)
 res = DebugScript.helper.quiet(@() net.simulate([0,1.5], sc, Tolerance=1e-5));
-assert(res.rv_t(end) == 1.5 && res.options.RelativeTolerance == 1e-5 && res.options.AbsoluteTolerance == 1e-6)
-assert(net.solver_ODE.RelativeTolerance ~= 1e-6, "net.solver_ODE は変わらない")
+assert(res.rv_t(end) == 1.5 && res.options.Tolerance == 1e-5 && res.options.AbsoluteTolerance == 1e-6)
+assert(GUILDA.config("TimeSimulation", "Tolerance") ~= 1e-6, "GUILDA.setting は変わらない")
 % 異なる Time や Options のシナリオを一緒に実行するときは呼び出しで与える
 other = Scenario("other", Time=[0,3], Options=struct("Tolerance", 1e-5));
 other.add_offset("SG1B002", "delta", 0.01, 0);
@@ -222,7 +224,7 @@ assert(error_id(@() Scenario.import_csv(s_file)) == "GUILDA:Scenario:CsvConflict
 
 %% Default judge: stable and out-of-step on IEEE9bus
 net = new_ieee14();
-n9 = network.IEEE9bus;  n9.solver_ODE.Progress = "none";
+n9 = network.IEEE9bus;  
 DebugScript.helper.quiet(@() n9.initialize);
 short = Scenario("short", Time=[0,5]);
 short.add_fault("B007", [1,1.05]);
@@ -253,7 +255,7 @@ assert(v.Verdict == "out-of-step")
 
 %% Incomplete verdict and a custom judge
 net = new_ieee14();
-n9 = network.IEEE9bus;  n9.solver_ODE.Progress = "none";
+n9 = network.IEEE9bus;  
 DebugScript.helper.quiet(@() n9.initialize);
 sc = Scenario("limit", Time=[0,5]);
 sc.add_fault("B007", [1,1.05]);

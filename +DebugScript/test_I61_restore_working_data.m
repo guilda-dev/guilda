@@ -11,6 +11,8 @@ DebugScript.helper.quiet(@() net.initialize);
 gen = net.a_Bus{2}.a_Component{1};
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Unit stays connected after a trip lasting to the end time
 ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,5], "TripUnit", "SG1B002");
 DebugScript.helper.quiet(@() net.simulate([0,2], ev));

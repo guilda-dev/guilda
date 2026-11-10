@@ -15,6 +15,8 @@ offset = @(n, val) DebugScript.helper.scenario("offset", n, "TimeSpan", 0, "Offs
                                "OffsetState", "delta", "OffsetValue", val);
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Jacobian matches the right-hand side while a generator is tripped
 err = jacobian_errors(net, [0,2], {DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003")});
 assert(numel(err) == 3)

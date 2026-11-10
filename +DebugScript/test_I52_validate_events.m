@@ -9,6 +9,8 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Unknown FaultBus
 expect_event_error(net, "UnknownFaultBus", "B999", "TimeSpan", [1,1.05], "FaultBus", "B999");
 % 正しいタグが混ざっていても、誤ったものだけを示す

@@ -23,6 +23,8 @@ DebugScript.helper.quiet(@() net.initialize);
 inwin = @(t, t1, t2) t > t1 + 1e-3 & t < t2 - 1e-3;   % 区間の内側 (境界の重複点を除く)
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Simulation result structure
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 sol = net.simulate([0,3], ev);
@@ -133,38 +135,47 @@ assert(isequal(sol.output, output) && output.tEnd == 3 && output.nPhases == 3 &&
 assert(isstring(output.message) && contains(output.message, "t = 3"))
 assert(istable(output.phases) && height(output.phases) == 3)
 assert(sol.s_solver == "SolverODE" && sol.s_network == string(net.s_tag) && sol.r_elapsed > 0)
-assert(sol.options.RelativeTolerance == net.solver_ODE.RelativeTolerance)
-assert(sol.options.Progress == "none" && sol.options.TimeLimit == net.solver_ODE.TimeLimit)
+assert(sol.options.Tolerance == GUILDA.config("TimeSimulation", "Tolerance"))
+assert(sol.options.Progress == "none" && sol.options.TimeLimit == GUILDA.config("TimeSimulation", "TimeLimit"))
 assert(isequal(sol.sv_bus, string(net.a_Bus(:))) && numel(sol.c_component) == numel(net.a_Bus))
 assert(sol.c_component{1}(1) == string(net.a_Bus{1}.a_Component{1}))
 % モデルのデータは複製しない (未使用だった odeNetwork は廃止)
 assert(~isprop(sol, "odeNetwork"))
-% ソルバーは設定だけを持つ (系統・時間表・結果を保持しない)
+% ソルバーは設定も系統・時間表・結果も保持しない (設定は GUILDA.setting の TimeSimulation)
 assert(~isprop(net.solver_ODE, "odeNetwork") && ~isprop(net.solver_ODE, "odeTimeTable") && ~isprop(net.solver_ODE, "odeResult"))
+assert(~isprop(net.solver_ODE, "RelativeTolerance") && ~isprop(net.solver_ODE, "Progress") && ~isprop(net.solver_ODE, "Reporter"))
 
 
-%% Name-Value overrides leave solver_ODE unchanged
-% Name-Value はその呼び出しだけ有効。net.solver_ODE の値は変わらない
+%% Name-Value overrides leave GUILDA.setting unchanged
+% Name-Value はその呼び出しだけ有効。GUILDA.setting の TimeSimulation は変わらない
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-s0  = net.solver_ODE;
-c0  = {s0.RelativeTolerance, s0.AbsoluteTolerance, s0.TimeLimit, s0.Progress, s0.Verbose, s0.Plot, string(s0.Solver)};
+sct0 = GUILDA.config("TimeSimulation");
 sol = net.simulate([0,3], ev, Tolerance=1e-6, AbsoluteTolerance=1e-8, TimeLimit=Inf, Progress=false, Solver="ode23t");
-assert(sol.options.RelativeTolerance == 1e-6 && sol.options.AbsoluteTolerance == 1e-8)
+assert(sol.options.Tolerance == 1e-6 && sol.options.AbsoluteTolerance == 1e-8)
 assert(isinf(sol.options.TimeLimit) && sol.options.Progress == "none" && string(sol.options.Solver) == "ode23t")
 assert(sol.flag == 1 && sol.odeResults.t(end) == 3)
-c1  = {s0.RelativeTolerance, s0.AbsoluteTolerance, s0.TimeLimit, s0.Progress, s0.Verbose, s0.Plot, string(s0.Solver)};
-assert(isequal(c0, c1), "Name-Value で net.solver_ODE が変わった")
+assert(isequaln(sct0, GUILDA.config("TimeSimulation")), "Name-Value で GUILDA.setting が変わった")
 % 厳しい許容誤差では刻みが細かくなり、応答はほぼ同じ
 ref = net.simulate([0,3], ev);
 assert(numel(sol.odeResults.t) > numel(ref.odeResults.t))
 w1  = sol.odeResults.Bus(1).Component(1).X.omega;
 w0  = ref.odeResults.Bus(1).Component(1).X.omega;
 assert(abs(w1(end) - w0(end)) < 1e-4)
-% 保存された既定値の変更は次の呼び出しから使われる (net は他のテストと共有なので戻す)
-net.solver_ODE.RelativeTolerance = 1e-5;
-c_rel = onCleanup(@() set_property(net.solver_ODE, "RelativeTolerance", c0{1}));
+% GUILDA.setting の既定値は次の呼び出しから使われる (Solver も設定のキー)
+c_cfg = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none", "Tolerance", 1e-5, "Solver", "ode23t"));
 sol = net.simulate([0,1], ev);
-assert(sol.options.RelativeTolerance == 1e-5)
+assert(sol.options.Tolerance == 1e-5 && string(sol.options.Solver) == "ode23t")
+clear c_cfg
+% SolverOptions は呼び出し (またはシナリオの Options) だけ。既定は Solver の既定の options
+assert(isempty(net.solver_ODE.get_options().SolverOptions))
+sol = net.simulate([0,1], ev, SolverOptions=matlab.ode.options.ODE15s(MaxStep=0.01));
+assert(max(diff(sol.odeResults.t)) <= 0.01 + 1e-12)
+% 設定はプロパティではない (v3 の名前も互換なし)
+assert(error_id(@() set_property(net.solver_ODE, "RelativeTolerance", 1e-5)) ~= "")
+assert(error_id(@() set_property(net.solver_ODE, "Reporter", "none")) ~= "")
+% Plot オプションは廃止 (図は result.Plot)、PlotFcn は "none" のみ
+assert(error_id(@() net.simulate([0,1], ev, Plot=true)) == "GUILDA:resolve_options:UnknownName")
+assert(error_id(@() net.simulate([0,1], ev, PlotFcn="omega")) == "GUILDA:check_plotfcn:InDevelopment")
 % Verbose: 区間の一覧と結果を表示する
 str = evalc("net.simulate([0,3], ev, Verbose=true);");
 assert(contains(str, "phase  1") && contains(str, "fault") && contains(str, "reached t = 3"))
@@ -180,30 +191,22 @@ assert(output.nPhasesDone < output.nPhases)
 assert(contains(output.message, "TimeLimit"))
 % 結果は途中までの軌道として使える
 assert(height(sol.odeResults.Bus(1).V) == numel(sol.odeResults.t))
-% 既定値 (net.solver_ODE.TimeLimit) は変わらず、次の計算は最後まで進む
-assert(net.solver_ODE.TimeLimit ~= 1e-6)
+% 既定値 (GUILDA.setting の TimeLimit) は変わらず、次の計算は最後まで進む
+assert(GUILDA.config("TimeSimulation", "TimeLimit") ~= 1e-6)
 [~, flag] = net.simulate([0,5], ev);
 assert(flag == 1)
 
 
-%% Deprecated Reporter and option names still work
-% COMPAT(v3): solver_ODE.Reporter は Progress、Name-Value の Reporter / RelativeTolerance は
-% Progress / Tolerance に読み替え、警告を1回出す
+%% Deprecated option names still work
+% COMPAT(v3): Name-Value の Reporter / RelativeTolerance は Progress / Tolerance に読み替え、警告を1回出す
 clear Deprecated
-lastwarn("");
-evalc('net.solver_ODE.Reporter = "disp";');
-id = DebugScript.helper.msg_id();
-assert(id == "GUILDA:Deprecated:SimulatorReporter", id)
-assert(net.solver_ODE.Progress == "disp" && net.solver_ODE.Reporter == "disp")
-net.solver_ODE.Progress = "none";
-
 lastwarn("");
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 evalc('sol = net.simulate([0,2], ev, Reporter="none", RelativeTolerance=1e-5);');
 id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:Deprecated:SimulateOptionName", id)
-assert(sol.options.Progress == "none" && sol.options.RelativeTolerance == 1e-5)
-assert(net.solver_ODE.RelativeTolerance ~= 1e-5)
+assert(sol.options.Progress == "none" && sol.options.Tolerance == 1e-5)
+assert(GUILDA.config("TimeSimulation", "Tolerance") ~= 1e-5)
 
 
 %% Unknown option or misplaced argument stops with an error
@@ -277,10 +280,10 @@ try
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:ExportFormat", DebugScript.helper.msg_id(ME))
 end
-% simulate(..., Plot=true, Export=file) は結果のメソッドを呼ぶ
+% simulate(..., Export=file) は result.Export を呼ぶ。図は描かない (図は result.Plot)
 n_fig = numel(findall(0, "Type", "figure"));
-net.simulate([0,1], ev, Plot=true, Export=fullfile(s_dir, "sim2.csv"));
-assert(numel(findall(0, "Type", "figure")) == n_fig + 1)
+net.simulate([0,1], ev, Export=fullfile(s_dir, "sim2.csv"));
+assert(numel(findall(0, "Type", "figure")) == n_fig)
 assert(isfile(fullfile(s_dir, "sim2.csv")))
 
 
@@ -700,7 +703,7 @@ expect_error(@() DebugScript.helper.scenario("in", net, "TimeSpan", [1,2], "Inpu
 % 何もしないイベントで区間を分けても最後まで進み、平衡点に留まる
 net = DebugScript.helper.quiet(@() network.IEEE68bus(LocalController=false));
 DebugScript.helper.quiet(@() net.initialize);
-net.solver_ODE.Progress = "none";
+
 [sol, flag, output] = net.simulate([0,5], DebugScript.helper.scenario("none", net, "TimeSpan", 1));
 assert(flag == 1, output.message)
 assert(output.nPhases == 2)
@@ -840,5 +843,19 @@ function expect_error(f, s_id)
         error("DebugScript:noError", "エラーにならない (期待: " + s_id + ")")
     catch ME
         assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME) + ": " + ME.message)
+    end
+end
+
+
+function id = error_id(fcn)
+% fcn を実行し、エラーの ID を返す (エラーにならなければ "")
+    id = "";
+    try
+        DebugScript.helper.quiet(fcn);
+    catch ME
+        id = string(DebugScript.helper.msg_id(ME));
+        if id == ""
+            id = "(no id)";
+        end
     end
 end

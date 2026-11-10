@@ -9,5 +9,4 @@ function net = build_ieee14()
         net  % 作成した電力系統
     end
     net = network.IEEE14bus;
-    net.solver_ODE.Progress = "none";
 end

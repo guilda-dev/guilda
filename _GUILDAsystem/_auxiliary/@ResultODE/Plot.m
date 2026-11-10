@@ -5,7 +5,8 @@ function ax = Plot(obj, opt)
 % voltage angle (Vangle) or the power P / Q injected by the components; for the
 % components, a state or an input given by its name (e.g. omega, Pmech), with one line
 % per component of the selected buses that has it. By default it draws Vabs of every bus.
-% simulate(..., Plot=true) calls it.
+% The only figure of the analysis: simulate draws none (its PlotFcn is a live display
+% during the simulation).
     arguments (Input)
         obj
         opt.Quantity (1,1) string = "Vabs" % "Vabs", "Vangle", "P", "Q", or a state or input name of the components.

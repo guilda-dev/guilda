@@ -10,6 +10,8 @@ c_warn = {warning("off", "GUILDA:PowerNetwork:SimulationIncomplete")};
 c_warn{2} = onCleanup(@() warning(c_warn{1}));
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Fault on a generator bus explains the failure
 for s_bus = ["B001","B002"]
     [net, ev] = build_case("load-power", s_bus);
@@ -47,7 +49,7 @@ function [net, ev] = build_case(s_load, s_bus)
     net.a_Bus{1}.add_component("gen-park");
     net.a_Bus{2}.add_component("gen-classical", "P", 0.5, "Q", nan);
     net.a_Bus{3}.add_component(s_load, "P",-1.0, "Q",-0.2);
-    net.solver_ODE.Progress = "none";
+    
     DebugScript.helper.quiet(@() net.initialize);
     ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", s_bus);
 end

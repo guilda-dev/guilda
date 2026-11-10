@@ -9,6 +9,6 @@ function validate_options(opt)
         opt.TimeLimit            (1,1) double {mustBePositive}
         opt.Progress             {mustBeProgress}
         opt.Verbose              (1,1) logical
-        opt.Plot                 (1,1) logical
+        opt.PlotFcn                             % checked by tools.check_plotfcn
     end
 end

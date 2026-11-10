@@ -5,9 +5,9 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % and controllers is integrated over time, with the disturbances of the given scenarios
 % (Scenario: bus faults, unit trips, branch openings, state offsets, input changes). The
 % scenarios must belong to the network (net.add_scenario); their disturbances are combined.
-% The settings are the stored defaults of net.solver_ODE, replaced by the stored Options of
-% the scenarios, then by the Name-Value options of the call, for this call only
-% (net.solver_ODE and the scenarios are not changed).
+% The settings are the TimeSimulation section of GUILDA.setting, replaced by the stored
+% Options of the scenarios, then by the Name-Value options of the call, for this call only
+% (the settings file and the scenarios are not changed).
 % Accepted options are the names in SolverODE.OptionMap plus Export; any other name
 % stops with GUILDA:resolve_options:UnknownName.
 % time is [t0, tend] with finite t0 < tend. Without it (net.simulate(sc, ...)) or with [],
@@ -26,15 +26,15 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % disturbance. The verdict of a scenario is not computed here: call sc.judge(result).
 % Name-Value options:
 %
-% - `Solver` — Solver of the MATLAB ode object, e.g. "ode15s", "ode23t" (net.solver_ODE.Solver).
-% - `SolverOptions` — Options of the solver, matching Solver (net.solver_ODE.SolverOptions).
-% - `Tolerance` — Relative error tolerance (net.solver_ODE.RelativeTolerance).
-% - `AbsoluteTolerance` — Absolute error tolerance (net.solver_ODE.AbsoluteTolerance).
-% - `SeparateComplexParts` — SeparateComplexParts of the ode object (net.solver_ODE.SeparateComplexParts).
-% - `TimeLimit` — Limit of the computation time [s] of the whole run; Inf for no limit (net.solver_ODE.TimeLimit).
-% - `Progress` — "dialog", "disp" or "none"; true = "dialog", false = "none" (net.solver_ODE.Progress).
-% - `Verbose` — Print the phases and the outcome (net.solver_ODE.Verbose).
-% - `Plot` — Call result.Plot after the simulation (net.solver_ODE.Plot).
+% - `Solver` — Solver of the MATLAB ode object: "ode15s" or "ode23t". Default: GUILDA.setting ("ode15s").
+% - `SolverOptions` — Options of the solver (matlab.ode.Options, e.g. MaxStep), matching Solver; given only in a call or in the Options of a scenario. Default: the options of the Solver.
+% - `Tolerance` — Relative error tolerance. Default: GUILDA.setting (1e-4).
+% - `AbsoluteTolerance` — Absolute error tolerance. Default: GUILDA.setting (1e-6).
+% - `SeparateComplexParts` — SeparateComplexParts of the ode object. Default: GUILDA.setting ("off").
+% - `TimeLimit` — Limit of the computation time [s] of the whole run; Inf for no limit. Default: GUILDA.setting (Inf).
+% - `Progress` — "dialog", "disp" or "none"; true = "dialog", false = "none". Default: GUILDA.setting ("dialog").
+% - `Verbose` — Print the phases and the outcome. Default: GUILDA.setting (false).
+% - `PlotFcn` — Live display during the simulation: "none" (the other displays are under development; draw the result with result.Plot()). Default: GUILDA.setting ("none").
 % - `Export` — Call result.Export after the simulation: true for the default file name, or the file name, whose extension is checked before the integration. Default: false.
 %
 % <@Examples>
@@ -92,9 +92,6 @@ function [result, flag, output] = simulate(obj, time, varargin)
         show_msg("warning", "GUILDA:PowerNetwork:SimulationIncomplete", string(flag), output.message);
     end
 
-    if sct_options.Plot
-        result.Plot();
-    end
     if isstring(opt.Export)
         result.Export(opt.Export);
     elseif opt.Export

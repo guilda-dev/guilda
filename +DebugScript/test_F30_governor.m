@@ -14,6 +14,8 @@ c_key = ["gov-LPT1"; "gov-LPT3"; "gov-LPT4"];    % c_cls のモデルキー
 r_step = -0.05;    % SG1B001 の Pmech のステップ (負荷の増加と同じ向き)
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Governors have the key, ports, tag and figure defaults of the report
 gov = controller.governor.IEEJ_LPT1("g");
 assert(gov.s_role == "governor" && gov.key == "gov-LPT1" && gov.s_tag == "CGg")
@@ -446,10 +448,8 @@ end
 function [r_err, r_max] = error_to_linear(net, s_unit, comp, r_step)
 % s_unit の Pmech の小さなステップへの comp の omega の応答と Kron モデルの応答の相対誤差
     rv_time = [0,10];
-    net.solver_ODE.RelativeTolerance = 1e-8;
-    net.solver_ODE.AbsoluteTolerance = 1e-10;
     ev  = DebugScript.helper.scenario("step", net, "TimeSpan", rv_time, "InputUnit", s_unit, "InputName", "Pmech", "InputValue", r_step);
-    sol = DebugScript.helper.quiet(@() net.simulate(rv_time, ev));
+    sol = DebugScript.helper.quiet(@() net.simulate(rv_time, ev, Tolerance=1e-8, AbsoluteTolerance=1e-10));
 
     unit = [];
     for i = 1:numel(net.a_Bus)

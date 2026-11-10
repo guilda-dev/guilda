@@ -8,6 +8,8 @@
 % 実行: runtests("DebugScript.test_F1_model_building")  または  DebugScript.run_all("Features","F1")
 
 
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
 %% Add buses with default tags
 % ネットワーククラスの定義
 net = PowerNetwork("TestSystem");

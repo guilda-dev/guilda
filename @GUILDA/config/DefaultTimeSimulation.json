@@ -1,13 +1,22 @@
 {
-    "RelativeTolerance":{
+    "Solver":{
+        "Value": "ode15s",
+        "Type": "select",
+        "options":[
+            "ode15s",
+            "ode23t"
+        ],
+        "Description": "Solver of the MATLAB ode object (a solver for DAEs)"
+    },
+    "Tolerance":{
         "Value": 1e-4,
         "Type": "double",
-        "Description": "Relative error tolerance, 'RelTol' option (1e-15 <= tol <= 1e-3)"
+        "Description": "Relative error tolerance, 'RelativeTolerance' of the ode object (1e-15 <= tol <= 1e-3)"
     },
     "AbsoluteTolerance":{
         "Value": 1e-6,
         "Type": "double",
-        "Description": "Absolute error tolerance, 'AbsTol' option (1e-15 <= tol <= 1e-3)"
+        "Description": "Absolute error tolerance, 'AbsoluteTolerance' of the ode object (1e-15 <= tol <= 1e-3)"
     },
     "SeparateComplexParts":{
         "Value": "off",
@@ -26,11 +35,24 @@
             "disp",
             "dialog"
         ],
-        "Description": "Progress display during the integration (SolverODE.Progress)"
+        "Description": "Progress display during the integration"
     },
     "TimeLimit":{
         "Value": Infinity,
         "Type": "double",
         "Description": "[s] Limit of the computation time of the whole run. When exceeded, the simulation stops and returns the result up to the time reached (flag = 0). A value that is not positive means no limit."
+    },
+    "Verbose":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Print the phases before the integration and the outcome after it"
+    },
+    "PlotFcn":{
+        "Value": "none",
+        "Type": "select",
+        "options": [
+            "none"
+        ],
+        "Description": "Live display during the analysis ('none'; other displays are under development). The figure after the analysis: result.Plot()"
     }
 }
