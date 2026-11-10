@@ -5,8 +5,8 @@ function sct_user = v3_user_config(s_field, sct_user)
 % get_config): renames the old keys into the v4 ones.
 %   TimeSimulation.Reporter -> TimeSimulation.Progress (kept when Progress is also given)
 %   PowerFlowCalculation: MaxIterations -> MaxIteration, UseParallel -> FsolveUseParallel,
-%   MaxFunEvals -> FsolveMaxFunEvals (the new key wins when both are given); Display and
-%   PlotFcn are removed; Tolerance 0 (the old "default of the method") is removed, so the
+%   MaxFunEvals -> FsolveMaxFunEvals (the new key wins when both are given); Display is
+%   removed; Tolerance 0 (the old "default of the method") is removed, so the
 %   default applies
 % The startup writes the settings back (set_config), so an old file is converted once.
     arguments (Input)
@@ -25,7 +25,7 @@ function sct_user = v3_user_config(s_field, sct_user)
     if s_field == "PowerFlowCalculation" && isstruct(sct_user)
         sct_user = rename(sct_user, ["MaxIterations","UseParallel","MaxFunEvals"], ...
                                     ["MaxIteration","FsolveUseParallel","FsolveMaxFunEvals"]);
-        sct_user = rmfield(sct_user, intersect(["Display","PlotFcn"], string(fieldnames(sct_user))));
+        sct_user = rmfield(sct_user, intersect("Display", string(fieldnames(sct_user))));
         if isfield(sct_user, "Tolerance") && isnumeric(sct_user.Tolerance) && isequal(sct_user.Tolerance, 0)
             sct_user = rmfield(sct_user, "Tolerance");
         end

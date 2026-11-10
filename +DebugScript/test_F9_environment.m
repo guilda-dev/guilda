@@ -41,9 +41,10 @@ sct_both = v3_user_config("TimeSimulation", struct("Reporter", "disp", "Progress
 assert(isequal(sct_both, struct("Progress", "none")))
 assert(isequal(v3_user_config("Model", struct("Reporter", 1)), struct("Reporter", 1)))
 % 潮流計算の旧キー: 改名、削除、Tolerance 0 (旧「手法の既定」) は削除して既定値を使う
+% PlotFcn は消さない (表示の種類を受け付ける現行のキー。旧ファイルは version の仕組みで既定に戻る)
 sct_pf = v3_user_config("PowerFlowCalculation", struct("MaxIterations", 20, "UseParallel", true, ...
     "MaxFunEvals", 0, "Display", "iter", "PlotFcn", "none", "Tolerance", 0, "Method", "newton"));
-assert(isequal(sct_pf, struct("Method", "newton", "MaxIteration", 20, "FsolveUseParallel", true, "FsolveMaxFunEvals", 0)))
+assert(isequal(sct_pf, struct("PlotFcn", "none", "Method", "newton", "MaxIteration", 20, "FsolveUseParallel", true, "FsolveMaxFunEvals", 0)))
 sct_pf = v3_user_config("PowerFlowCalculation", struct("MaxIterations", 20, "MaxIteration", 5, "Tolerance", 1e-6));
 assert(isequal(sct_pf, struct("MaxIteration", 5, "Tolerance", 1e-6)))
 % 潮流計算の設定: MethodNewtonRaphson のセクションはなく、連続潮流計算の修正子はそのセクション
@@ -54,6 +55,106 @@ assert(isequal(sort(string(fieldnames(cf.PowerFlowCalculation))), sort(["Solver"
 assert(cf.PowerFlowCalculation.Tolerance.Value == 1e-8 && cf.PowerFlowCalculation.MaxIteration.Value == 0)
 assert(cf.ContinuationPowerFlow.CorrectorMaxIteration.Value == 1000 && cf.ContinuationPowerFlow.CorrectorStepSize.Value == 1 ...
     && cf.ContinuationPowerFlow.Increment.Value == 1e-4)
+
+
+%% GUILDA setting changes settings by command
+% カテゴリと Name-Value で値だけを変える。@GUILDA/user に保存し、キャッシュも書き直す
+c_user = backup_user_config(); %#ok<NASGU>
+GUILDA.config([], [], "reset", true);
+GUILDA.setting("PowerFlowCalculation", Tolerance=1e-10, WhenFailed="ERROR");
+assert(GUILDA.config("PowerFlowCalculation", "Tolerance") == 1e-10)
+assert(GUILDA.config("PowerFlowCalculation", "WhenFailed") == "ERROR")
+assert(GUILDA.config("PowerFlowCalculation", "Solver") == "newton")   % ほかの値はそのまま
+sct = jsondecode(fileread(fullfile(s_root, "@GUILDA", "user", "DefaultPowerFlowCalculation.json")));
+assert(sct.Tolerance == 1e-10 && string(sct.WhenFailed) == "ERROR")
+GUILDA.config([], [], "reset", true);                                 % ファイルから読み直しても残る
+assert(GUILDA.config("PowerFlowCalculation", "Tolerance") == 1e-10)
+% 型の変換: 数値の 0/1 は logical、char は string
+GUILDA.setting("Message", ShowInfo=1);
+assert(GUILDA.config("Message", "ShowInfo") == true && islogical(GUILDA.config("Message", "ShowInfo")))
+GUILDA.setting("TimeSimulation", Progress='none');
+assert(GUILDA.config("TimeSimulation", "Progress") == "none")
+% 直後の解析が新しい値を使う
+GUILDA.setting("PowerFlowCalculation", MaxIteration=7, WhenFailed="NONE");
+res = DebugScript.helper.quiet(@() DebugScript.helper.build_9bus().calculate_powerflow());
+assert(res.options.Tolerance == 1e-10 && res.options.MaxIteration == 7)
+
+
+%% GUILDA setting rejects invalid input and changes nothing
+c_user = backup_user_config(); %#ok<NASGU>
+GUILDA.setting("PowerFlowCalculation", Tolerance=1e-9);
+s_dir = fullfile(s_root, "@GUILDA", "user");
+s_before = user_texts(s_dir);
+c_case = {
+    {"NoSuchCategory", "Tolerance", 1},                                "GUILDA:GUILDA:UnknownSettingCategory"
+    {"PowerFlowCalculation", "NoSuchName", 1},                         "GUILDA:GUILDA:UnknownSettingName"
+    {"PowerFlowCalculation", "Tolerance"},                             "GUILDA:GUILDA:SettingNameValue"
+    {"PowerFlowCalculation"},                                          "GUILDA:GUILDA:SettingNameValue"
+    {"PowerFlowCalculation", "Tolerance", 1e-6, "WhenFailed", "FAIL"}, "GUILDA:GUILDA:InvalidSettingValue"
+    {"PowerFlowCalculation", "Tolerance", "small"},                    "GUILDA:GUILDA:InvalidSettingValue"
+    {"PowerFlowCalculation", "Tolerance", [1 2]},                      "GUILDA:GUILDA:InvalidSettingValue"
+    {"PowerFlowCalculation", "WarmStart", "yes"},                      "GUILDA:GUILDA:InvalidSettingValue"
+    {"PowerFlowCalculation", "WarmStart", 2},                          "GUILDA:GUILDA:InvalidSettingValue"
+    {"ContinuationPowerFlow", "Limits", 3},                            "GUILDA:GUILDA:InvalidSettingValue"
+    };
+for k = 1:size(c_case, 1)
+    try
+        GUILDA.setting(c_case{k,1}{:});
+        error("DebugScript:NoError", "エラーにならない: case " + k)
+    catch ME
+        assert(string(DebugScript.helper.msg_id(ME)) == c_case{k,2}, "case " + k + ": " + ME.message)
+    end
+end
+assert(isequal(user_texts(s_dir), s_before), "エラーのあとに設定ファイルが変わった")
+assert(GUILDA.config("PowerFlowCalculation", "Tolerance") == 1e-9)   % 先に正しい値があっても変えない
+% エラー文に候補を示す
+try
+    GUILDA.setting("PowerFlowCalculation", WhenFailed="FAIL");
+catch ME
+    assert(contains(ME.message, "WhenFailed") && contains(ME.message, """ERROR"""), ME.message)
+end
+
+
+%% User settings of another version are reset to the defaults with INFO
+% 利用者の JSON の version が既定ファイルと違うと、そのカテゴリを既定値で上書きして INFO で知らせる
+c_user = backup_user_config(); %#ok<NASGU>
+s_file = fullfile(s_root, "@GUILDA", "user", "DefaultModel.json");
+writelines(jsonencode(struct("version", 999, "Hz", 50)), s_file);
+s_out = string(evalc("GUILDA.config([], [], ""reset"", true);"));
+assert(contains(s_out, "INFO: ") && contains(s_out, "Model") && contains(s_out, "reset"), s_out)
+assert(GUILDA.config("Model", "Hz") == 60)
+sct = jsondecode(fileread(s_file));
+sct_def = jsondecode(fileread(fullfile(s_root, "@GUILDA", "config", "DefaultModel.json")));
+assert(sct.Hz == 60)
+assert(isfield(sct, "version") == isfield(sct_def, "version"))
+if isfield(sct_def, "version")
+    assert(isequal(sct.version, sct_def.version))
+end
+% 書き直したファイルは次から同じ version: もう知らせない
+s_out = string(evalc("GUILDA.config([], [], ""reset"", true);"));
+assert(~contains(s_out, "INFO"), s_out)
+% 起動時にも知らせる
+writelines(jsonencode(struct("version", 999, "Hz", 50)), s_file);
+s_out = string(evalc("GUILDA;"));
+assert(contains(s_out, "INFO: ") && contains(s_out, "Model"), s_out)
+assert(GUILDA.config("Model", "Hz") == 60)
+
+
+%% User settings without a version follow the version of the defaults
+% これまでの (version のない) 利用者の JSON は、既定ファイルに version があれば既定値に戻す
+c_user = backup_user_config(); %#ok<NASGU>
+s_file = fullfile(s_root, "@GUILDA", "user", "DefaultModel.json");
+writelines(jsonencode(struct("Hz", 50)), s_file);
+s_out = string(evalc("GUILDA.config([], [], ""reset"", true);"));
+sct_def = jsondecode(fileread(fullfile(s_root, "@GUILDA", "config", "DefaultModel.json")));
+if isfield(sct_def, "version")
+    assert(contains(s_out, "INFO: ") && GUILDA.config("Model", "Hz") == 60, s_out)
+else
+    assert(~contains(s_out, "INFO") && GUILDA.config("Model", "Hz") == 50, s_out)
+end
+% helper.user_config は既定ファイルの version を付けるので上書きされない
+c_set = DebugScript.helper.user_config("Model", struct("Hz", 50)); %#ok<NASGU>
+assert(GUILDA.config("Model", "Hz") == 50)
 
 
 %% Model key map lists the keys of the classes
@@ -329,7 +430,12 @@ function c_restore = set_message(l_warning, l_info, l_reset)
         s_old = string(missing);
     end
     c_restore = onCleanup(@() restore_message(s_file, s_old));
-    writelines(jsonencode(struct("ShowWarning", l_warning, "ShowInfo", l_info)), s_file);
+    sct = struct("ShowWarning", l_warning, "ShowInfo", l_info);
+    sct_def = jsondecode(fileread(fullfile(GUILDA.pwd, "@GUILDA", "config", "DefaultMessage.json")));
+    if isfield(sct_def, "version")
+        sct.version = sct_def.version;   % 違う version は既定値で上書きされる
+    end
+    writelines(jsonencode(sct), s_file);
     if l_reset
         GUILDA.config([], [], "reset", true);
     end
@@ -341,6 +447,41 @@ function restore_message(s_file, s_old)
         delete(s_file)
     else
         fid = fopen(s_file, "w");  fwrite(fid, s_old);  fclose(fid);
+    end
+    GUILDA.config([], [], "reset", true);
+end
+
+
+function c_restore = backup_user_config()
+% @GUILDA/user の設定ファイルを退避し、終了時 (c_restore の削除) に元へ戻して設定を読み直す
+    arguments (Output)
+        c_restore  % onCleanup
+    end
+    s_dir = fullfile(GUILDA.pwd, "@GUILDA", "user");
+    sct   = user_texts(s_dir);
+    c_restore = onCleanup(@() restore_user_config(s_dir, sct));
+end
+
+
+function sct = user_texts(s_dir)
+% @GUILDA/user の Default*.json の中身 (ファイル名 -> 文章)
+    sct = dictionary(string.empty, string.empty);
+    for f = dir(fullfile(s_dir, "Default*.json"))'
+        sct(string(f.name)) = string(fileread(fullfile(s_dir, f.name)));
+    end
+end
+
+
+function restore_user_config(s_dir, sct)
+    for f = dir(fullfile(s_dir, "Default*.json"))'
+        if ~isConfigured(sct) || ~isKey(sct, string(f.name))
+            delete(fullfile(s_dir, f.name))
+        end
+    end
+    if isConfigured(sct)
+        for s_name = keys(sct)'
+            fid = fopen(fullfile(s_dir, s_name), "w");  fwrite(fid, sct(s_name));  fclose(fid);
+        end
     end
     GUILDA.config([], [], "reset", true);
 end

@@ -13,13 +13,17 @@ function update_keymap(opt)
 % removing a model class or changing its key, to use the new keys without restarting
 % GUILDA.
 %
-% For developers, `Signature=true` also regenerates
-% `_GUILDAsystem/resources/functionSignatures.json`, the code suggestions of the methods
-% that build or remove a model, from their arguments blocks: the names, kinds, classes
+% For developers, `Signature=true` also regenerates the code suggestions:
+% `_GUILDAsystem/resources/functionSignatures.json` for the methods that build or remove a
+% model, and `resources/functionSignatures.json` (next to @GUILDA, where MATLAB looks for
+% it) for GUILDA.setting. GUILDA.setting gets the categories
+% and their settings (names, types, options of a select, descriptions) from
+% @GUILDA/config/Default*.json. The methods get them from their arguments blocks: the names, kinds, classes
 % and defaults of the arguments, the trailing comment of each argument line as its
 % purpose, the model keys of the category for `Key`, and the tags of the current
 % object for the tag arguments. The file is written only when its content changes.
-% Run it after editing the arguments block of one of these methods.
+% Run it after editing the arguments block of one of these methods or a default
+% settings file.
 %
 % <@Examples>
 % ```matlab
@@ -29,7 +33,7 @@ function update_keymap(opt)
 %
 % See also GUILDA.keymap, GUILDA.dictionary
     arguments (Input)
-        opt.Signature (1,1) logical = false   % Also regenerate _GUILDAsystem/resources/functionSignatures.json (for developers).
+        opt.Signature (1,1) logical = false   % Also regenerate the functionSignatures.json files (for developers).
     end
 
     clear keymap    % the persistent cache of GUILDA.keymap
@@ -49,19 +53,22 @@ function update_keymap(opt)
     end
 
     if opt.Signature
-        write_signatures(fullfile(GUILDA.pwd(), "_GUILDAsystem", "resources", "functionSignatures.json"))
+        c_method = sig_methods();
+        sv_entry = strings(0,1);
+        for i = 1:size(c_method, 1)
+            sv_entry(end+1,1) = method_entry(c_method{i,:});    %#ok<AGROW>
+        end
+        write_signatures(fullfile(GUILDA.pwd(), "_GUILDAsystem", "resources", "functionSignatures.json"), sv_entry)
+        % MATLAB reads the suggestions of @GUILDA from the resources folder next to it
+        write_signatures(fullfile(GUILDA.pwd(), "resources", "functionSignatures.json"), setting_entries())
     end
 end
 
-function write_signatures(s_file)
-    % Write functionSignatures.json of the methods in sig_methods, only when it changes
+function write_signatures(s_file, sv_entry)
+    % Write functionSignatures.json with the entries, only when it changes
     arguments (Input)
-        s_file (1,1) string   % Path of functionSignatures.json.
-    end
-    c_method = sig_methods();
-    sv_entry = strings(0,1);
-    for i = 1:size(c_method, 1)
-        sv_entry(end+1,1) = method_entry(c_method{i,:});    %#ok<AGROW>
+        s_file   (1,1) string   % Path of functionSignatures.json.
+        sv_entry (:,1) string   % JSON texts of the entries.
     end
     s_json = "{" + newline + "  ""_schemaVersion"": ""1.0.0""," + newline ...
            + join(sv_entry, "," + newline) + newline + "}" + newline;
@@ -75,6 +82,54 @@ function write_signatures(s_file)
     fprintf(file_id, '%s', char(s_json));
     fclose(file_id);
     validateFunctionSignaturesJSON(char(s_file))
+end
+
+function sv_entry = setting_entries()
+    % JSON text of GUILDA.setting: one signature per settings category, from the default
+    % files @GUILDA/config/Default*.json (the category, then its settings as Name-Value)
+    arguments (Output)
+        sv_entry  % JSON texts of the entries "GUILDA.setting": {...} (string column).
+    end
+    sct_def  = sct_defaults();
+    sv_entry = strings(0,1);
+    for s_cat = string(fieldnames(sct_def))'
+        sct_cat = sct_def.(s_cat);
+        sv_in = "      " + jsonencode(struct("name", "s_category", "kind", "required", ...
+            "type", {{'char', char("choices={'" + s_cat + "'}")}}, "purpose", "Settings category."));
+        for s_name = string(fieldnames(sct_cat))'
+            sct_set = sct_cat.(s_name);
+            if ~(isstruct(sct_set) && all(isfield(sct_set, ["Value","Type"])))
+                continue    % "version" and other fields that are not a setting
+            end
+            sct = struct("name", s_name, "kind", "namevalue");
+            switch sct_set.Type
+                case "double";  sct.type = {'double', 'scalar'};
+                case "logical"; sct.type = {'logical', 'scalar'};
+                case "string";  sct.type = {'string'};
+                case "select"
+                    sct.type = {'char', char("choices={" + strjoin("'" + string(sct_set.options(:))' + "'", ",") + "}")};
+            end
+            if isfield(sct_set, "Description")
+                sct.purpose = string(sct_set.Description);
+            end
+            sv_in(end+1,1) = "      " + jsonencode(sct);    %#ok<AGROW>
+        end
+        sv_entry(end+1,1) = "  ""GUILDA.setting"": {" + newline ...
+            + "    ""inputs"": [" + newline + join(sv_in, "," + newline) + newline + "    ]" + newline + "  }";    %#ok<AGROW>
+    end
+end
+
+function sct = sct_defaults()
+    % Contents of the default settings files, by category (file name without Default and .json)
+    arguments (Output)
+        sct  % struct: category -> decoded contents of its default file.
+    end
+    sct = struct();
+    a_file = dir(fullfile(GUILDA.pwd(), "@GUILDA", "config", "Default*.json"));
+    for k = 1:numel(a_file)
+        s_cat = erase(string(a_file(k).name), ["Default", ".json"]);
+        sct.(s_cat) = jsondecode(fileread(fullfile(a_file(k).folder, a_file(k).name)));
+    end
 end
 
 function c_method = sig_methods()

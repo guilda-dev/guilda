@@ -1,37 +1,15 @@
 function set_config(Env)
-% Write the configuration to the user files in @GUILDA/user.
+% Write the configuration to the user files in @GUILDA/user and read it again.
+%
+% Each category goes to @GUILDA/user/Default<Category>.json with the version of its default
+% file (write_user_config). The cache of GUILDA.config is read again, so the new values
+% apply to the next GUILDA.config call and analysis.
     arguments (Input)
         Env  % Configuration struct (as returned by get_config).
     end
-    Env = format(Env);
-
-    sv_file  = arrayfun(@(s) string(s.name), dir(fullfile(GUILDA.pwd,"@GUILDA","config")));
-    lv_def   = cellfun(@(c) contains(c,'Default'), sv_file);
-    
-    for ele = sv_file(lv_def)'
+    for ele = config_files()'
         field = replace(ele,["Default",".json"],["",""]);
-        text  = jsonencode(format(Env.(field)), PrettyPrint=true,ConvertInfAndNaN=false);
-        path  = fullfile(GUILDA.pwd,'@GUILDA','user',ele);
-        Env   = rmfield(Env,field);
-        writelines(text,path)
+        write_user_config(field, Env.(field));
     end
-    text = jsonencode(format(Env), PrettyPrint=true,ConvertInfAndNaN=false);
-    path = fullfile(GUILDA.pwd,'@GUILDA','user',"GUILDAconfig.json");
-    writelines(text,path)
     GUILDA.config([],[],"reset",true);
-end
-
-
-function data = format(data)
-    fields = fieldnames(data);
-    for i = 1:numel(fields)
-        field = fields{i};
-        if isstruct(data.(field))
-            if all( ismember(["Value","Type","Description"], fieldnames(data.(field))) )
-                data.(field) = data.(field).Value;
-            else
-                data.(field) = format(data.(field));
-            end
-        end
-    end
 end

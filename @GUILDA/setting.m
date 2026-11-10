@@ -1,5 +1,36 @@
-function setting()
-% Settings (GUI launches)
+function setting(s_category, varargin)
+% Change the GUILDA settings: in the settings window, or by command
+%
+% Without inputs, opens the settings window (GUI). With a category and Name-Value
+% arguments, changes those settings without opening the window. Each value is checked
+% against the type of the setting ("double", "logical", "string", or "select" with its
+% options); an unknown category or name, or an invalid value, stops with an error and
+% changes nothing. The change is saved in @GUILDA/user, as with Apply in the window, so it
+% stays after MATLAB restarts, and the next GUILDA.config call and analysis use it.
+%
+% A new version of GUILDA may reset the settings of a category to their defaults (INFO
+% at startup): the user settings of a category are kept only while the version of its
+% default file stays the same.
+%
+% <@Examples>
+% ```matlab
+% GUILDA.setting
+% GUILDA.setting("PowerFlowCalculation", Tolerance=1e-10, WhenFailed="ERROR")
+% GUILDA.config("PowerFlowCalculation", "Tolerance")
+% ```
+%
+% See also GUILDA.config
+    arguments (Input)
+        s_category string {mustBeScalarOrEmpty} = string.empty   % Settings category, e.g. "PowerFlowCalculation"; omit to open the window.
+    end
+    arguments (Input, Repeating)
+        varargin   % Name-Value pairs: setting name and new value.
+    end
+
+    if ~isempty(s_category)
+        set_by_command(s_category, varargin);
+        return
+    end
 
     fontcolor  = [0,0,0];
     backcolor  = [150,220,255]/256;
@@ -166,4 +197,76 @@ function setting()
         end
     end
 
+end
+
+
+function set_by_command(s_category, c_nv)
+    % Check the Name-Value pairs against the settings of the category, then save them all
+    arguments (Input)
+        s_category (1,1) string   % Settings category.
+        c_nv       cell           % Name-Value pairs.
+    end
+    env = get_config();
+    if ~isfield(env, s_category)
+        error(msg("GUILDA:GUILDA:UnknownSettingCategory", s_category, strjoin(string(fieldnames(env)), ", ")))
+    end
+    sct = env.(s_category);
+    if mod(numel(c_nv), 2) ~= 0 || isempty(c_nv)
+        error(msg("GUILDA:GUILDA:SettingNameValue", s_category))
+    end
+    for k = 1:2:numel(c_nv)
+        s_name = c_nv{k};
+        if ~(ischar(s_name) || isstring(s_name) && isscalar(s_name)) || ~isfield(sct, s_name)
+            if ~(ischar(s_name) || isstring(s_name))
+                s_name = "(" + class(s_name) + ")";
+            end
+            error(msg("GUILDA:GUILDA:UnknownSettingName", string(s_name), s_category, ...
+                strjoin(string(fieldnames(sct)), ", ")))
+        end
+        s_name = char(s_name);
+        [val, l_ok, s_expect] = check_value(sct.(s_name), c_nv{k+1});
+        if ~l_ok
+            error(msg("GUILDA:GUILDA:InvalidSettingValue", s_category, s_name, s_expect))
+        end
+        sct.(s_name).Value = val;
+    end
+    env.(s_category) = sct;
+    set_config(env);
+end
+
+
+function [val, l_ok, s_expect] = check_value(sct_set, val)
+    % Check a new value against the Type (and options) of the setting; convert it to the stored class
+    arguments (Input)
+        sct_set (1,1) struct   % Setting: fields Value, Type, Description (and options).
+        val                    % New value.
+    end
+    arguments (Output)
+        val       % Value in the stored class.
+        l_ok      % true when the value is valid.
+        s_expect  % Description of the accepted values (for the error message).
+    end
+    switch sct_set.Type
+        case "double"
+            s_expect = "a real numeric scalar";
+            l_ok = (isnumeric(val) || islogical(val)) && isscalar(val) && isreal(val);
+            if l_ok, val = double(val); end
+        case "logical"
+            s_expect = "true or false";
+            l_ok = (islogical(val) || isnumeric(val) && ismember(val, [0 1])) && isscalar(val);
+            if l_ok, val = logical(val); end
+        case "select"
+            sv_opt   = string(sct_set.options);
+            s_expect = "one of " + strjoin("""" + sv_opt(:)' + """", ", ");
+            l_ok = (ischar(val) && (isrow(val) || isempty(val)) || isstring(val) && isscalar(val)) ...
+                   && ismember(string(val), sv_opt);
+            if l_ok, val = string(val); end
+        case "string"
+            s_expect = "text (a string array, a character vector or a cell array of character vectors)";
+            l_ok = isstring(val) && ~any(ismissing(val)) || ischar(val) && (isrow(val) || isempty(val)) || iscellstr(val);
+            if l_ok, val = reshape(string(val), 1, []); end
+        otherwise
+            s_expect = "a value of type " + sct_set.Type;
+            l_ok = false;
+    end
 end
