@@ -18,7 +18,10 @@ function sys = get_ss(obj, Method, opt)
 %   matrix, then the global controllers are closed (positive feedback). Non-unit buses (buses without
 %   components, and buses without states that have no I-to-V form) are detected automatically
 %   and eliminated with the network: their linearized current is absorbed into the admittance
-%   matrix and their inputs are kept, so the model is equivalent to "Kron". A network without
+%   matrix and their inputs are kept, so the model is equivalent to "Kron". A global controller
+%   can read the voltage of an eliminated bus and the outputs of its components: the network
+%   gives them from the voltages of the other buses and the inputs. It cannot drive an input of
+%   a local controller there (GUILDA:ResultLIN:GlobalControllerPort). A network without
 %   states has nothing to connect, which is an error (GUILDA:ResultLIN:NoUnitBus).
 %   Inputs: the inputs u, in the same order as "Kron". States: the connection removes the
 %   states that no input reaches through the nonzero pattern of the model (such as Vst of an
@@ -409,16 +412,6 @@ function sys = via_feedback(obj)
     Diu = tools.dcellfun(@(S) S.D(:,3:end), sysNon);
     nonUnames = tools.cellfun(@(S) S.InputName(3:end), sysNon);
 
-    [Ymat, Hmat] = complex2matrix(s.cm_Y, Div, Diu);
-    ssN = model(zeros(0), zeros(0,size(Ymat,2)+size(Hmat,2)), zeros(size(Ymat,1),0), [Ymat, Hmat], zeros(0), ...
-                strings(0,1), [vertcat(busVnames{:}); vertcat(strings(0,1), nonUnames{:})], vertcat(busInames{:}));
-
-    % The bus models and the network connected by name; outputs: the states of the bus models,
-    % then the voltages, component outputs and states that global controllers read;
-    % inputs: the component inputs, then the inputs of local controllers they drive
-    sv_x   = tools.cellfun(@(S) S.StateName, ssFromBus);
-    sv_x   = vertcat(strings(0,1), sv_x{:});
-    sv_blk = tools.cellfun(@(S) string(S.OutputName), [ssFromBus(:); {ssN}]);
     % Inputs of the global controllers that act (a column of B or D other than 0): a
     % controller that does not use the voltages does not need them as outputs here
     c_sysGC = s.c_sysGC;
@@ -429,6 +422,22 @@ function sys = via_feedback(obj)
         c_sysGC{k}.InputName = c_sysGC{k}.InputName(lv_used);
     end
     sv_gcIn = tools.vcellfun(@(S) reshape(string(S.InputName), [], 1), c_sysGC);
+
+    % The network block: the currents of the unit buses, then the voltages of the eliminated buses
+    % and the outputs of their components that global controllers read, by the KCL on those buses
+    % V_n = Ybar_nn^-1 (Diu_n u_n - Y_nu V_u), and y_n = Dyv_n V_n + Dyu_n u_n (no states there)
+    [Ymat, Hmat, Vmat] = complex2matrix(s.cm_Y, Div, Diu);
+    [Cn, sv_n] = eliminated_outputs(s.c_sysY(~l_isU), sysNon, Vmat, size(Ymat,2));
+    lv_n = ismember(sv_n, string(sv_gcIn));
+    ssN = model(zeros(0), zeros(0,size(Ymat,2)+size(Hmat,2)), zeros(size(Ymat,1)+nnz(lv_n),0), [Ymat, Hmat; Cn(lv_n,:)], zeros(0), ...
+                strings(0,1), [vertcat(busVnames{:}); vertcat(strings(0,1), nonUnames{:})], [vertcat(busInames{:}); sv_n(lv_n)]);
+
+    % The bus models and the network connected by name; outputs: the states of the bus models,
+    % then the voltages, component outputs and states that global controllers read;
+    % inputs: the component inputs, then the inputs of local controllers they drive
+    sv_x   = tools.cellfun(@(S) S.StateName, ssFromBus);
+    sv_x   = vertcat(strings(0,1), sv_x{:});
+    sv_blk = tools.cellfun(@(S) string(S.OutputName), [ssFromBus(:); {ssN}]);
     sv_gcIn = unique(string(sv_gcIn(ismember(string(sv_gcIn), vertcat(strings(0,1), sv_blk{:})))), "stable");
     sv_gcIn = sv_gcIn(~ismember(sv_gcIn, sv_x));
     sysODE = connect_by_name([ssFromBus(:); {ssN}], [input; sv_l], [sv_x; sv_gcIn]);
@@ -437,7 +446,8 @@ function sys = via_feedback(obj)
     % Global controllers (all of them, one after another, as in Kron and DAE): their
     % inputs are bus voltages and component outputs or states (e.g. omega), and their
     % outputs add to component inputs (e.g. Pmech) or drive inputs of local controllers.
-    % A voltage of a bus without an I-to-V form is not an output here.
+    % The voltages and component outputs of eliminated buses are outputs of the network block;
+    % an input of a local controller on an eliminated bus is not an input here.
     for k = 1:numel(c_sysGC)
         sysGC = c_sysGC{k};
         [lv_out, feedout] = ismember(sysGC.InputName,  sysODE.OutputName);
@@ -453,13 +463,43 @@ function sys = via_feedback(obj)
     sys = model(sysODE.A, sysODE.B(:,iv_in), sysODE.C(iv_out,:), sysODE.D(iv_out,iv_in), sysODE.E, ...
                 sysODE.StateName, sysODE.InputName(iv_in), sysODE.OutputName(iv_out));
 
-    function [rm_Ymat, rm_Hmat] = complex2matrix(Ymat, Div, Diu)
+    function [rm_Ymat, rm_Hmat, rm_Vmat] = complex2matrix(Ymat, Div, Diu)
         rm_Ymat = cell2mat( arrayfun(@(M) [real(M), -imag(M); imag(M), real(M)], Ymat, 'UniformOutput', false) );
         lv_Unit = logical( kron(l_isU,ones(2,1)) );
         inv_Ynn = (rm_Ymat(~lv_Unit,~lv_Unit) - Div)^-1;
+        rm_Vmat = inv_Ynn * [-rm_Ymat(~lv_Unit,lv_Unit), Diu];     % V_n from [V_u; u_n]
         rm_Hmat = rm_Ymat(lv_Unit,~lv_Unit) * inv_Ynn * Diu;
         rm_Ymat = rm_Ymat(lv_Unit,lv_Unit) - rm_Ymat(lv_Unit,~lv_Unit) * inv_Ynn * rm_Ymat(~lv_Unit,lv_Unit);
     end
+end
+
+function [Cn, sv_n] = eliminated_outputs(c_sysY, c_sysNon, Vmat, n_vu)
+% Voltages of the eliminated buses and outputs of their components as rows in the inputs
+% [V_u; u_n] of the network block (n_vu: number of V_u), named as in the bus models
+    arguments (Input)
+        c_sysY   cell    % Outputs of the components of each eliminated bus (sct_model.c_sysY)
+        c_sysNon cell    % Bus models of the eliminated buses (V to I)
+        Vmat     double  % V_n of all eliminated buses from [V_u; u_n]
+        n_vu     (1,1) double  % Number of the voltages of the unit buses
+    end
+    arguments (Output)
+        Cn   double  % Rows of the voltages, then of the component outputs
+        sv_n string  % Names of the rows
+    end
+    sv_V = tools.vcellfun(@(S) reshape(string(S.InputName(1:2)), [], 1), c_sysNon);
+    c_Cy = cell(numel(c_sysY),1);   c_y = cell(numel(c_sysY),1);
+    i_u = n_vu;
+    for i = 1:numel(c_sysY)
+        Y   = c_sysY{i};
+        n_u = size(Y.D,2) - 2;
+        Su  = zeros(n_u, size(Vmat,2));
+        Su(:, i_u+(1:n_u)) = eye(n_u);                       % u_i from [V_u; u_n]
+        c_Cy{i} = Y.D(:,1:2) * Vmat(2*i-1:2*i,:) + Y.D(:,3:end) * Su;
+        c_y{i}  = reshape(string(Y.OutputName), [], 1);
+        i_u = i_u + n_u;
+    end
+    Cn   = [Vmat; vertcat(zeros(0,size(Vmat,2)), c_Cy{:})];
+    sv_n = [vertcat(strings(0,1), sv_V); vertcat(strings(0,1), c_y{:})];
 end
 
 function tf = has_I2V(sys)
