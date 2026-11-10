@@ -29,6 +29,11 @@ classdef SolverOPF < auxiliary
 %   from the flat start otherwise: angle 0 and magnitude 1, with the set V at PV and slack
 %   buses and the set angle at the slack bus. "DC OPF" starts from the angles of the same
 %   start.
+% - solve keeps the problem it built and uses it again while the network (by object),
+%   its OPF revision (every edit of the power flow, operation and OPF parameters, tags
+%   and Hz), Method, Cost, Constraint (by function handle), DefaultCost, ReferenceBus,
+%   the start and the bounds and types of the variables are unchanged.
+%   net.build_opf_problem always builds a new problem.
 % - A default limit of one object is removed by setting it to Inf (-Inf for a lower
 %   bound) in its tab_parameter.operation: Vmin, Vmax (bus); Pmin, Pmax, Qmin, Qmax
 %   (component); Pmax, Qmax, Vargmax, Imax, Smax (branch, where NaN also means none).
@@ -79,6 +84,10 @@ classdef SolverOPF < auxiliary
         a_Bus (:,1) cell = cell(0,1)                                                                                                                            % Buses of the network of rm_Vwarm, in its bus order.
         n_revTopology (1,1) double = NaN                                                                                                                        % Topology revision of the network when rm_Vwarm was kept.
         rm_Vwarm (:,2) double = zeros(0,2)                                                                                                                      % [rad, pu] Varg and V of the buses in the last solved "AC OPF" (a_Bus order); empty when none.
+    end
+
+    properties(Access=private) % Cache
+        sct_problem struct = struct([])                                                                                                                          % Problem built by the last solve: Network, Revision (n_revOPF), Key (settings and start), Problem, InitialPoint, Bounds (of the variables); empty when none.
     end
 
     methods

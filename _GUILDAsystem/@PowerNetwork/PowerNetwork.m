@@ -108,6 +108,7 @@ classdef PowerNetwork < PowerSystemModel
         n_revY (1,1) double = 0                     % Revision of the bus admittance matrix, increased by handle_edit (see there); compared by the caches of the solvers.
         n_revPF (1,1) double = 0                    % Revision of the power flow equations (every n_revY edit and the power flow settings), increased by handle_edit.
         n_revTopology (1,1) double = 0              % Revision of the topology (buses and branches added, removed or replaced), increased by handle_edit; discards the warm start.
+        n_revOPF (1,1) double = 0                   % Revision of the OPF problem (every n_revPF edit, the operation and OPF parameters, tags, Hz), increased by handle_edit.
     end
     properties(Dependent) % Steady State
         cv_Vequilibrium                             % [pu] Bus voltage phasors at the equilibrium, one per bus.

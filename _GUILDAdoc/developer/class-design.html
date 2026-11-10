@@ -335,13 +335,13 @@
     <ul lang="en">
       <li><code>solver_*</code> properties: class-validated (<code>solver_PF SolverPF {mustBeScalarOrEmpty}</code>, ...); a subclass of the network may replace a solver with a subclass of it</li>
       <li><code>net.solver_PF</code>: no settings; keeps the last converged solution (<code>WarmStart</code>) and a cache of the admittance matrix and the power equations, checked against the revision counters <code>n_revY</code>, <code>n_revPF</code>, <code>n_revTopology</code> of the network (increased by <code>handle_edit</code>)</li>
-      <li><code>net.solver_OPF</code>: also keeps the bus voltages of the last solved AC OPF (<code>WarmStart</code>)</li>
+      <li><code>net.solver_OPF</code>: also keeps the bus voltages of the last solved AC OPF (<code>WarmStart</code>) and the problem it built last, checked against the network (by object), its revision counter <code>n_revOPF</code> (every <code>n_revPF</code> edit, the <code>operation</code> and <code>OPF</code> parameters, tags, <code>Hz</code>), the settings, the start and the variable bounds</li>
       <li>Both discard the kept solution only on a <code>Topology</code> edit of the network; <code>net.reset_solver()</code> replaces every solver</li>
     </ul>
     <ul lang="ja">
       <li><code>solver_*</code> プロパティ: クラス検証あり（<code>solver_PF SolverPF {mustBeScalarOrEmpty}</code> など）。ネットワークのサブクラスはソルバーをそのサブクラスに置き換え可能</li>
       <li><code>net.solver_PF</code>: 設定なし。最後の収束解（<code>WarmStart</code>）と、アドミタンス行列・電力方程式のキャッシュを保持。ネットワークの版番号 <code>n_revY</code>、<code>n_revPF</code>、<code>n_revTopology</code>（<code>handle_edit</code> が増加）で照合</li>
-      <li><code>net.solver_OPF</code>: 最後に解いた AC OPF の母線電圧も保持（<code>WarmStart</code>）</li>
+      <li><code>net.solver_OPF</code>: 最後に解いた AC OPF の母線電圧（<code>WarmStart</code>）と、最後に構築した問題も保持。ネットワーク（オブジェクト）、その版番号 <code>n_revOPF</code>（<code>n_revPF</code> の編集すべて、<code>operation</code>・<code>OPF</code> パラメータ、タグ、<code>Hz</code>）、設定、初期点、変数の上下限で照合</li>
       <li>どちらも保持した解を破棄するのはネットワークの <code>Topology</code> の編集のときのみ。<code>net.reset_solver()</code> はすべてのソルバーを置き換え</li>
     </ul>
     <p lang="en">System data (line constants, power-flow specifications, limits) is not a solver setting: set it beforehand on the model objects through properties and <code>tab_parameter</code> (see <a href="api-design.html#rules">API Design, rule 2</a>).</p>

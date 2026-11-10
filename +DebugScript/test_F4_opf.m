@@ -171,6 +171,57 @@ sct_def = jsondecode(fileread(fullfile(GUILDA.pwd, "@GUILDA", "config", "Default
 assert(sct_def.WarmStart.Value == false)
 
 
+%% The OPF problem is kept until the network or the settings change
+% net.solver_OPF は作った問題を保持し、ネットワーク・設定・初期点が同じなら再利用する。
+% 再利用の判定: 問題の変数はハンドルなので、同じ問題なら一方の上下限の変更が他方に見える
+net = DebugScript.helper.build_9bus();
+s_var = "SG1B001";
+shared = @(r1, r2) shares_variable(r1.OPFprob, r2.OPFprob, s_var);
+res1 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+res2 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(shared(res1, res2))                                  % 再利用
+res3 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
+assert(~shared(res2, res3))
+res4 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(~shared(res2, res4))                                 % 設定が変われば作り直す (保持は 1 つ)
+res5 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", Cost=@(v, p) 0*v.Component.SG1B001.P));
+assert(~shared(res4, res5))                                 % Cost (関数ハンドル) が違う
+res6 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(~shared(res5, res6))
+% operation / OPF / powerflow / タグの編集で作り直し、結果は編集を反映する
+g1 = net.a_Bus{1}.a_Component{1};
+g1.tab_parameter.operation.Pmax = 0.5;
+res7 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(~shared(res6, res7) && res7.tab_cub{"SG1B001","P"} <= 0.5 + 1e-6)
+g1.tab_parameter.OPF.fP = g1.tab_parameter.OPF.fP + 1;
+res8 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(~shared(res7, res8))
+net.a_Bus{5}.a_Component{1}.tab_parameter.powerflow.P = -1.1;
+res9 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(~shared(res8, res9))
+g1.s_tag = "G1";
+res10 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(isfield(res10.OPFprob.Variables, "G1") && ~isfield(res10.OPFprob.Variables, "SG1B001"))
+s_var = "G1";
+shared = @(r1, r2) shares_variable(r1.OPFprob, r2.OPFprob, s_var);
+% 結果の問題の上下限を変えると、次の計算は作り直す (変更は既定の問題に残らない)
+res11 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(shared(res10, res11))
+var = res11.OPFprob.Variables.G1;     % ハンドル (結果のプロパティ自体は読み取り専用)
+var.UpperBound = 0.2;
+res12 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(res12.OPFprob.Variables.G1.UpperBound == 0.5 && abs(res12.r_cost - res10.r_cost) < 1e-9*max(1, abs(res10.r_cost)))
+% build_opf_problem は毎回新しい問題 (保持した問題を返さない)
+prob = DebugScript.helper.quiet(@() net.build_opf_problem(Method="DC OPF"));
+prob.Variables.G1.UpperBound = 0.3;
+res13 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(shared(res12, res13) && res13.OPFprob.Variables.G1.UpperBound == 0.5)
+% net.reset_solver() で捨てる
+net.reset_solver();
+res14 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(~shared(res13, res14))
+
+
 %% AC OPF respects generator limits
 % 発電機の出力上限・無効電力の範囲が守られ、上限に達する
 net = DebugScript.helper.build_9bus();
@@ -1140,4 +1191,19 @@ end
 function set_property(obj, s_name, val)
 % obj.(s_name) = val (プロパティの検証を関数ハンドルの中で確かめる)
     obj.(s_name) = val;
+end
+
+
+function l = shares_variable(prob1, prob2, s_var)
+% prob1 と prob2 が同じ変数 s_var (ハンドル) を持つか: 一方の上下限を変えて他方を見る
+    if ~isfield(prob1.Variables, s_var) || ~isfield(prob2.Variables, s_var)
+        l = false;
+        return
+    end
+    v1 = prob1.Variables.(s_var);
+    v2 = prob2.Variables.(s_var);
+    r_old = v1.UpperBound;
+    v1.UpperBound = 123.25;      % 一意な有限値 (上限は Inf のこともある)
+    l = isequal(v2.UpperBound, 123.25);
+    v1.UpperBound = r_old;
 end
