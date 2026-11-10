@@ -42,8 +42,16 @@ classdef SolverPF < auxiliary
 % - `Verbose` (Display): "iter" prints one line per iteration for "newton", "gradient"
 %   and "levenberg-marquardt" (the fsolve display for "fsolve"), and the final message.
 % - flag: 1 converged, 0 MaxIteration reached (for "dynamic", its virtual time limit),
-%   -2 diverged or no solution found; the Method classes set flag and output (see
-%   MethodBase).
+%   -1 stopped by PlotFcn, -2 diverged or no solution found; the Method classes set flag
+%   and output (see MethodBase).
+% - `PlotFcn` (live display, every Solver): "residual" draws one bar per power equation
+%   (two per bus: P, or the angle at the slack bus; Q, or |V| at PV and slack buses) with
+%   its |residual| at the iterate, on a log scale with Tolerance as a line, in one reused
+%   figure updated during the iterations ("dynamic": along the virtual time). A function
+%   handle is called at every iterate as stop = f(x, optimValues, state): x the complex
+%   bus voltages, optimValues.iteration, .fval (residuals), .residual (largest |residual|)
+%   and, for "dynamic", .time (virtual time); state "init", "iter" or "done". A true stop
+%   ends the calculation with flag -1. "none" leaves the calculation as it is.
 % - `OptionMap` is the input of tools.resolve_options. Verbose=true sets Display="iter",
 %   Verbose=false sets Display="none".
 %

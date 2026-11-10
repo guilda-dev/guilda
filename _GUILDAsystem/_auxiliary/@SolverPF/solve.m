@@ -13,7 +13,7 @@ function [result,flag,output] = solve(obj, net, sct_options)
     end
     arguments (Output)
         result % Bus and branch values of the solution.
-        flag % 1 converged, 0 MaxIteration reached, -2 diverged or no solution (see SolverPF).
+        flag % 1 converged, 0 MaxIteration reached, -1 stopped by PlotFcn, -2 diverged or no solution (see SolverPF).
         output % Solver details; output.message describes the outcome.
     end
     t0 = tic;
@@ -132,9 +132,10 @@ end
 function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, sct_eq, cv_V0, sct)
 % Create the Method object of sct.Solver from the settings and map its results to the bus
 % voltages (cv_Vbus), flag, output, the voltage history and its steps.
-    tab   = sct_eq.tab;
-    r_tol = sct.Tolerance;
-    n_max = sct.MaxIteration;
+    tab    = sct_eq.tab;
+    r_tol  = sct.Tolerance;
+    n_max  = sct.MaxIteration;
+    l_plot = ~isequal(sct.PlotFcn, "none");
 
     % a bus without branches (not slack) has no determined voltage: no solution
     lv_isolated = ~any(cm_Y, 2) & tab.Type ~= "slack";
@@ -152,7 +153,11 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, sct_eq, cv
     if sct.Solver == "dynamic"
         tab.Varg0 = angle(cv_V0);     % initial voltages of MethodDynamic
         tab.V0    = abs(cv_V0);
-        [cv_Vbus,flag,output,cm_Vhistory,rv_step] = MethodDynamic(Y=cm_Y, PFcondition=tab, Tolerance=r_tol).solve();
+        md = MethodDynamic(Y=cm_Y, PFcondition=tab, Tolerance=r_tol);
+        if l_plot
+            md.f_iter = live_residual(sct.PlotFcn, sct.Solver, sct_eq.f_res, sct_eq.tab, r_tol);
+        end
+        [cv_Vbus,flag,output,cm_Vhistory,rv_step] = md.solve();
         return
     end
 
@@ -168,27 +173,34 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, sct_eq, cv
     rv_xp0 = [rv_T0; rv_V0];      % "gradient": the fixed values at their settings
     switch sct.Solver
         case "newton"
-            [rm_x, flag, output, rm_hist, rv_step] = MethodNewtonRaphson(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
-                ConvTol=r_tol, MaxIter=auto(n_max, 50), StepSize=sct.NewtonStepSize, Display=sct.Display).solve();
+            mt = MethodNewtonRaphson(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
+                ConvTol=r_tol, MaxIter=auto(n_max, 50), StepSize=sct.NewtonStepSize, Display=sct.Display);
         case "gradient"
             r_alpha = sct.GradientStepSize;
             if r_alpha == 0
                 r_alpha = 0.5/(max(abs(diag(cm_Y))) * max([tab.V; 1], [], "omitnan")^2);
             end
-            [rm_xp, flag, output, rm_hist, rv_step] = MethodGradient(Fcn=f_grad, InitVal=rv_xp0, ...
-                StepSize=r_alpha, ConvTol=r_tol, MaxIter=auto(n_max, 1e6), Display=sct.Display).solve();
-            n_bus       = height(tab);            % [theta; V] -> complex voltages
-            cv_Vbus     = rm_xp(n_bus+1:end) .* exp(1j*rm_xp(1:n_bus));
-            cm_Vhistory = rm_hist(n_bus+1:end,:) .* exp(1j*rm_hist(1:n_bus,:));
-            return
+            mt = MethodGradient(Fcn=f_grad, InitVal=rv_xp0, ...
+                StepSize=r_alpha, ConvTol=r_tol, MaxIter=auto(n_max, 1e6), Display=sct.Display);
         case "levenberg-marquardt"
-            [rm_x, flag, output, rm_hist, rv_step] = MethodLevenbergMarquardt(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
-                ConvTol=r_tol, MaxIter=auto(n_max, 100), Display=sct.Display).solve();
+            mt = MethodLevenbergMarquardt(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
+                ConvTol=r_tol, MaxIter=auto(n_max, 100), Display=sct.Display);
         case "fsolve"
-            [rm_x, flag, output, rm_hist, rv_step] = MethodFsolve(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
+            mt = MethodFsolve(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
                 ConvTol=r_tol, MaxIter=auto(n_max, 400), MaxFunEvals=sct.FsolveMaxFunEvals, Display=sct.Display, ...
-                UseParallel=sct.FsolveUseParallel, Feature='Solver="fsolve" of the power flow').solve();
+                UseParallel=sct.FsolveUseParallel, Feature='Solver="fsolve" of the power flow');
     end
+    if l_plot
+        mt.f_iter = live_residual(sct.PlotFcn, sct.Solver, f_res, tab, r_tol);
+    end
+    if sct.Solver == "gradient"
+        [rm_xp, flag, output, rm_hist, rv_step] = mt.solve();
+        n_bus       = height(tab);            % [theta; V] -> complex voltages
+        cv_Vbus     = rm_xp(n_bus+1:end) .* exp(1j*rm_xp(1:n_bus));
+        cm_Vhistory = rm_hist(n_bus+1:end,:) .* exp(1j*rm_hist(1:n_bus,:));
+        return
+    end
+    [rm_x, flag, output, rm_hist, rv_step] = mt.solve();
     cv_Vbus     = rm_x(1:2:end) + 1j*rm_x(2:2:end);
     cm_Vhistory = rm_hist(1:2:end,:) + 1j*rm_hist(2:2:end,:);
 end

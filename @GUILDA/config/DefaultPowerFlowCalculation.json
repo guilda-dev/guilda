@@ -61,8 +61,9 @@
         "Value": "none",
         "Type": "select",
         "options": [
-            "none"
+            "none",
+            "residual"
         ],
-        "Description": "Live display during the analysis ('none'; other displays are under development). The figure after the analysis: result.Plot()"
+        "Description": "Live display during the analysis: 'residual' (a bar of |residual| per power equation, updated at each iteration) or 'none'. The figure after the analysis: result.Plot()"
     }
 }

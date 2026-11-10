@@ -16,7 +16,7 @@ classdef (Sealed = true) MethodDynamic < auxiliary
 % - The initial voltages are the columns Varg0, V0 of PFcondition when it has them, the
 %   flat start otherwise (angle 0 and magnitude 1, the set V at PV and slack buses).
 % - output: iterations (number of ODE steps), algorithm, residual (largest mismatch at the
-%   end), message.
+%   end), message. flag -1: stopped by the live display of the power flow (PlotFcn).
 %
 % <@Examples>
 % ```matlab
@@ -35,6 +35,10 @@ classdef (Sealed = true) MethodDynamic < auxiliary
         Damper (1,1) double {mustBePositive} = 1           % Damping D of the virtual bus dynamics (with Mass 0, it only scales the virtual time).
         foh_PQ (1,1) double {mustBeNonnegative} = 0        % [s] Ramp time of the specified P and Q (0: step).
         Tolerance (1,1) double {mustBePositive} = 1e-8     % [pu] Largest P/Q mismatch for convergence.
+    end
+
+    properties (Access={?MethodDynamic, ?SolverPF}) % Live display
+        f_iter = []                                        % Called at each ODE step as stop = f_iter(Y, t, state) (Y = [theta; omega; V; u], t the virtual time, state "init", "iter" or "done"; PlotFcn of SolverPF); [] for none. A true stop ends solve with flag -1.
     end
 
     methods
