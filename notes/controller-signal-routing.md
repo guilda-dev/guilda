@@ -151,7 +151,8 @@ Jacobian(`getODEJacobian`): 上の順に、
 | 0 | `5dd94011` | このノート |
 | 1 | `84420b17` | 全モデル関数・ハンドル・`get_sys`・`get_hessian` から I を削除。機器の `fcn_Y` / `Jacobi_Y` から u を削除 |
 | 2 | `af2e642a` | GC の観測(出力 → 状態、全母線の V)、出力の振り分け、INFO、評価順、Jacobian、平衡点の検査、`get_sys`、線形化。テスト `test_F35_controller_signal_routing` |
-| 3 | (このコミット) | `notes/v4-migration.md`、For Developer のページ |
+| 3 | `6bb9c7d0` | `notes/v4-migration.md`、For Developer のページ |
+| 修正 | `5e4c3f4b` | `get_ss("Feedback")` で使わない GC 入力(全母線の V)を落とす(medium の F7 で発見) |
 
 **現状**(実装後のコード)
 
@@ -160,7 +161,7 @@ Jacobian(`getODEJacobian`): 上の順に、
 - 変えたシグネチャ: `SolverODE.get_units` は `[c_unit, c_gc]` を返す。`Component.get_dx_algebraic(t, x, Vi, u, y, y_GC, DAEvec)`、`LocalController.get_dx_algebraic(t, x, Vi, obs, y_GC, DAEvec)`。
 - 新しいメッセージ: `GUILDA:PowerNetwork:GconRoute`(INFO)、`GUILDA:SolverODE:GconRouteChanged`(INFO)、`GUILDA:SolverODE:GconNoTarget`(エラー)。`GconPorts` と `GlobalController:GlobalControllerPort` の文を新しい規則に合わせた。
 - `GlobalController.get_sys` の出力は、駆動する入力ごとに 1 行(その入力の名前)。`SolverLIN` はこの名前で機器の入力か LC の入力(母線モデルの列 `c_sysL`)に接続する。
-- `ResultLIN.get_ss("Feedback")`: GC が非単位母線(I→V の形がない母線)の電圧や、その母線の機器の出力を読むときは `GUILDA:ResultLIN:GlobalControllerPort` で止まる(Kron と DAE は扱える)。
+- `ResultLIN.get_ss("Feedback")`: GC が非単位母線(I→V の形がない母線)の電圧や、その母線の機器の出力を読むときは `GUILDA:ResultLIN:GlobalControllerPort` で止まる(Kron と DAE は扱える)。使わない入力(B と D の列が 0)は照合の前に落とす。
 - 機器の `get_equilibrium(c_V, c_I, r_P, r_Q)` の `c_I` は機器自身の注入電流なので残した(4 節)。`FixedInput`(`solve_fixed_input`)の未知数 I も機器ごとの電流で、母線電流ではない。
 - `component.ConstSource.power`(v1 の `get_dx_constraint`)は作成も追加もできない死んだコード(クラスの help にも記載)なので変更していない。`component.load.history`、`_GUILDAobject/+component/未+GFM`、`未+farm` も旧インターフェースの保管で、パス上の `+` パッケージではないか登録されないため変更していない。
 - 測定(MATLAB R2026a、IEEE68bus 既定(AVR+PSS)、先頭母線の地絡 [1, 1.05] s、`simulate([0,10])`、1 スレッド、5 回の中央値): 変更前 0.832 s、段階 1 の後 0.914 s、段階 2 の後 0.870 s。軌道の最終値のノルムは 3 回とも 60.7713729221(同一)。差は測定のばらつきと、出力の先行計算・引数の追加の範囲。
