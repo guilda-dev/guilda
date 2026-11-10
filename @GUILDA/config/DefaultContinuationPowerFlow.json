@@ -1,15 +1,10 @@
 {
-    "LoadBus":{
-        "Value": "",
-        "Type": "string",
-        "Description": "Tags of the buses whose loads are scaled by (1 + lambda). Usually given per call (LoadBus=...)"
-    },
     "InitialLambda":{
         "Value": 0,
         "Type": "double",
         "Description": "lambda at the starting point (the equilibrium)"
     },
-    "MaxIterations":{
+    "MaxIteration":{
         "Value": 500,
         "Type": "double",
         "Description": "Maximum number of predictor-corrector steps"
@@ -58,5 +53,13 @@
         "Value": false,
         "Type": "logical",
         "Description": "Print lambda at each step"
+    },
+    "PlotFcn":{
+        "Value": "none",
+        "Type": "select",
+        "options": [
+            "none"
+        ],
+        "Description": "Live display during the analysis ('none'; other displays are under development). The figure after the analysis: result.Plot()"
     }
 }

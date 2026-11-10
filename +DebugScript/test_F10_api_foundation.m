@@ -34,14 +34,14 @@ assert(isequal(sort(string(fieldnames(opt))), sort(["MaxIterations";"Display";"d
 
 
 %% Resolve options applies overrides and leaves the stored solver unchanged
-solver   = SolverCPF();
+solver   = struct("MaxIterations", 500, "StepSize", 0.5);   % 既定値の入れ物 (構造体)
 r_iter   = solver.MaxIterations;
 r_step   = solver.StepSize;
 [opt, sv_given] = tools.resolve_options(solver, struct("MaxIteration", "MaxIterations", "StepSize", "StepSize"), ...
                                         {"maxiteration", 7, "StepSize", 0.1});
 assert(opt.MaxIterations == 7 && opt.StepSize == 0.1)   % 名前の大文字小文字は区別しない
 assert(isequal(sv_given, ["MaxIteration","StepSize"]))
-% 保存されているソルバーは変わらない
+% 既定値の入れ物は変わらない
 assert(solver.MaxIterations == r_iter && solver.StepSize == r_step)
 % 変換関数 (Verbose -> Display) と入れ子のパス
 [opt, sv_given] = tools.resolve_options(sct_holdPF, sct_mapPF, {"Verbose", true, "TimeSpan", 0:0.5:1});

@@ -10,6 +10,7 @@ function validate_options(opt)
         opt.UseInternalState (1,1) logical
         opt.Verbose          (1,1) logical
         opt.Limits           {mustBeLimits}
+        opt.PlotFcn                        % checked by tools.check_plotfcn
     end
 end
 
