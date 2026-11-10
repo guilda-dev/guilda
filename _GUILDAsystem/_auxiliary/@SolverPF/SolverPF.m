@@ -19,7 +19,7 @@ classdef SolverPF < auxiliary
 %
 % - `Tolerance` [pu]: every method converges when the largest P/Q mismatch is at most
 %   Tolerance ("newton", "levenberg-marquardt" and "fsolve" also count the set |V| and
-%   slack angle residuals). "fsolve" also passes it as FunctionTolerance of fsolve and
+%   slack angle residuals). "fsolve" also passes Tolerance^2 as FunctionTolerance of fsolve and
 %   checks the mismatch after fsolve stops. "dynamic" tightens its ODE tolerances with it.
 % - `WarmStart`: true starts from the last converged solution of this network, kept by the
 %   solver; false, or no kept solution, is the flat start: angle 0 and magnitude 1, with

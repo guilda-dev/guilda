@@ -27,7 +27,8 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
     end
     r_tol = 1e-6;     % fsolve default FunctionTolerance
     if obj.ConvTol ~= 0
-        opt   = optimoptions(opt, "FunctionTolerance", obj.ConvTol);
+        % FunctionTolerance bounds the change of the sum of squares |F|^2, ConvTol the largest |F|
+        opt   = optimoptions(opt, "FunctionTolerance", obj.ConvTol^2);
         r_tol = obj.ConvTol;
     end
 
