@@ -4,8 +4,10 @@ function bus = add_bus(obj, opt)
 % The bus tag is `Tag` followed by a three-digit number (the largest number in use + 1),
 % e.g. "B001". `FullTag` gives the complete tag instead, with no automatic number; a
 % tag already used in the network is renamed with a number suffix, as for `s_tag`, and
-% an Info line shows the change. The addition is a "Topology" edit, so the power flow is
-% stale until `net.initialize()` runs again.
+% an Info line shows the change. The tag must be a valid variable name (isvarname, e.g.
+% "Sub_7", not "Sub-7"); any other tag stops with GUILDA:LayerPackage:InvalidTag and no bus
+% is added. The addition is a "Topology" edit, so the power flow is stale until
+% `net.initialize()` runs again.
 %
 % <@Examples>
 % ```matlab

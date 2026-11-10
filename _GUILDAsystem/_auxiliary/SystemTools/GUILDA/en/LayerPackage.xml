@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class "LayerPackage".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="InvalidTag">The tag ''{0}'' is not a valid MATLAB variable name. A tag starts with a letter, has only letters (A-Z, a-z), digits and underscores, has at most {1} characters and is not a keyword (check with isvarname). Replace other characters with underscores, e.g. ''LINE20_1'' instead of ''LINE20-1''.</entry>
+    </message>
+</rsccat>

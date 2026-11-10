@@ -237,6 +237,7 @@ net.add_branch(Type, ["B001","B002"], ...)       % buses may be given by tag
 
   同梱の系統はすべて通ります。
 - **`add_bus` の `FullTag`。** `net.add_bus(FullTag="Sub7")` は自動の番号を付けずにそのタグを使います。使用中のタグなら番号を付けて改名します。
+- **タグは MATLAB の変数名として有効な文字列です。** ネットワーク・母線・ブランチ・機器・制御器の `s_tag`(作成時の `PowerNetwork(tag)`、`add_bus` の `Tag` / `FullTag`、CSV の `FullTag` 列、改名)は `isvarname` を満たす必要があり(英字で始まり、英字・数字・`_` のみ、`namelengthmax` 文字以内、予約語でない)、それ以外は `GUILDA:LayerPackage:InvalidTag` で止まります。タグは OPF の変数・制約の名前や struct のフィールド名に使うためです。重複による番号の付与(`<tag>002` など)の後も同じ検査をします。`-` や空白を含むタグは `_` に置き換えてください。同梱の IEEJ_WEST10 のブランチは `LINE20-1` → `LINE20_1`、`G1-TR` → `G1_TR` に変わりました(`Scenario.add_open_branch` などで参照するタグも同様)。
 - `_GUILDAsystem/@PowerNetwork/add_branch.m` は通常の追跡対象のファイルです(1.22)。
 
 ### 1.5 Single slack bus

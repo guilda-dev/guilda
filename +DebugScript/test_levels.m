@@ -41,6 +41,7 @@ function tab = test_levels()
     "test_F22_model_contract/EveryGlobalControllerWorksOnTheGeneratorsThatHaveItsInputs", "medium"
     % ---- F24_tags --------------------------------------------------------------------------------
     "test_F24_tags/ARenameMakesNothingStaleAndAnalysesRunWithoutInitialize", "medium"
+    "test_F24_tags/AutomaticTagsOfTheBuilt_inNetworksAreValidVariableNames", "large"
     % ---- F26_call_graph --------------------------------------------------------------------------
     "test_F26_call_graph/TheCallGraphDoesNotDependOnAPrivateFolderAboveGUILDA", "large"
     "test_F26_call_graph/APackageFolderAboveAUserClassDoesNotHideAReceiverOfThatName", "large"
@@ -137,6 +138,7 @@ function tab = test_levels()
     "test_F4_opf/ConstraintOptionBindsAndItsDualHasTheUser_sName", "large"
     "test_F4_opf/ProblemAndInitialPointSolveAUser_modifiedProblem", "large"
     "test_F4_opf/Network_levelReserveConstraintAndCost", "large"
+    "test_F4_opf/IEEJ_WEST10ACOPFNamesItsBranchConstraintsAfterTheTags", "large"
     "test_F4_opf/DCOptimalPowerFlow", "medium"
     "test_F4_opf/ACOptimalPowerFlow", "medium"
     "test_F4_opf/ACOPFRespectsGeneratorLimits", "medium"

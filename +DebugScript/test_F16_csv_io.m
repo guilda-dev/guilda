@@ -58,7 +58,7 @@ end
 
 
 %% Bus tags survive a round trip
-for s_tag = ["Bus2", "B1000", "BX", "1234"]
+for s_tag = ["Bus2", "B1000", "BX", "N1234"]
     net = tag_network();
     net.a_Bus{2}.s_tag = s_tag;
     [net2, c] = round_trip(net); %#ok<ASGLU>
@@ -167,7 +167,7 @@ assert(string(net2.a_Bus{2}) == "B001002")
 %% add_bus FullTag gives the complete tag without an automatic number
 net = PowerNetwork("TagNet");
 assert(string(net.add_bus(FullTag="Sub7", Tag="Ignored")) == "Sub7")
-assert(string(net.add_bus(FullTag="1234")) == "1234")
+assert(string(net.add_bus(FullTag="N1234")) == "N1234")
 assert(string(net.add_bus()) == "B1235", "次の番号は完全なタグの数字に続く")
 assert(string(net.add_bus(Tag="Bus", FullTag="")) == "Bus1236", "空なら従来どおり")
 
@@ -184,7 +184,7 @@ assert(endsWith(net.sct_stale.powerflow(end), "<<-Add--- B001002"), "追加の�
 %% Importing a bus FullTag logs the addition with that tag and no rename
 net = PowerNetwork("TagNet");
 net.add_bus(FullTag="Sub7");
-net.add_bus(FullTag="1234");
+net.add_bus(FullTag="N1234");
 net.add_branch("pi", [1, 2], X=0.1);
 net.a_Bus{1}.add_component("load-power", P=-0.1);
 net.a_Bus{2}.add_component("load-power", P=-0.1);
@@ -194,9 +194,9 @@ s_path = DebugScript.helper.quiet(@() net.export_csv(fullfile(s_dir, "Net")));
 % 古さのメッセージは初回の initialize の後から積まれるので、初期化済みの系統へ読み込む
 net2 = initialized_network();
 DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Network=net2, Initialize=false));
-assert(all(ismember(["Sub7"; "1234"], string(net2.a_Bus))))
+assert(all(ismember(["Sub7"; "N1234"], string(net2.a_Bus))))
 sv_log = net2.sct_stale.powerflow;
-assert(any(endsWith(sv_log, "<<-Add--- Sub7")) && any(endsWith(sv_log, "<<-Add--- 1234")))
+assert(any(endsWith(sv_log, "<<-Add--- Sub7")) && any(endsWith(sv_log, "<<-Add--- N1234")))
 assert(~any(contains(sv_log, "<<-Add--- B")), "自動のタグを経由しない")
 assert(~any(contains(sv_log, "rename")), "改名は何も古くしない")
 
