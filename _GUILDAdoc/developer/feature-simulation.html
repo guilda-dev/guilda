@@ -391,18 +391,18 @@ verdict = sc.judge(result)</code></pre>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>a_Bus</code>, <code>a_Component</code>, <code>a_LocalController</code>, <code>a_GlobalController</code>, <code>controlledUnits</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <code>sct_stale</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en">writes</span><span lang="ja">書き込み:</span> <code>iv_odeX</code>, <code>iv_odeU</code> (<span lang="en">components, controllers</span><span lang="ja">機器、制御器</span>), <code>iv_odeY</code> (<span lang="en">controllers</span><span lang="ja">制御器</span>), <code>lv_odeUfromLC</code>, <code>iv_odeYtoU</code>, <code>Bus.iv_odeX</code>, <code>Bus.iv_odeI</code></dd>
+          <dd><span lang="en">writes</span><span lang="ja">書き込み:</span> <code>iv_odeX</code>, <code>iv_odeU</code> (<span lang="en">components, controllers</span><span lang="ja">機器、制御器</span>), <code>iv_odeY</code> (<span lang="en">local controllers</span><span lang="ja">局所制御器</span>), <code>lv_odeUfromLC</code>, <code>iv_odeYtoU</code>, <code>Bus.iv_odeX</code>, <code>Bus.iv_odeI</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="SIM-06">
         <p class="fs-head"><b class="fs-id">SIM-06</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>PowerNetwork.get_admittance_matrix</code>, <code>SolverODE.set_admittance</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Builds the context of the run: the complex admittance matrix with all branches closed, its real form, and what the right-hand side reads for each component (<code>get_units</code>).</span><span lang="ja">実行の文脈を構築: すべてのブランチを閉じた複素数のアドミタンス行列とその実数形式、右辺が機器ごとに読む値（<code>get_units</code>）</span></dd>
+          <dd><span lang="en">Builds the context of the run: the complex admittance matrix with all branches closed, its real form, and what the right-hand side reads for each component and global controller (<code>get_units</code>). <code>get_units</code> resolves the routing of each global controller output by name: to every local controller of the unit (nested ones included) with an input of that name, otherwise to the input of the unit. A routing that differs from <code>gc.sv_route</code> is shown as an INFO message and stored; an output with no input to drive stops with <code>GUILDA:SolverODE:GconNoTarget</code>.</span><span lang="ja">実行の文脈を構築: すべてのブランチを閉じた複素数のアドミタンス行列とその実数形式、右辺が機器ごと・広域制御器ごとに読む値（<code>get_units</code>）。<code>get_units</code> は広域制御器の各出力の接続先を名前で決定: 同名の入力を持つ制御対象のすべての局所制御器（入れ子を含む）、ない場合は制御対象の同名の入力。<code>gc.sv_route</code> と異なる接続は INFO で表示して記録。駆動する入力のない出力は <code>GUILDA:SolverODE:GconNoTarget</code> で停止</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en">branches and bus shunts</span><span lang="ja">ブランチと母線のシャント</span>, <code>rv_Uequilibrium</code></dd>
+          <dd><span lang="en">branches and bus shunts</span><span lang="ja">ブランチと母線のシャント</span>, <code>rv_Uequilibrium</code>, <code>controlledUnits</code>, <code>iv_obsY</code>, <code>iv_obsX</code>, <code>sv_route</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>ctx.Ybus</code>, <code>ctx.Ymat</code> (<code>n_v × n_v</code>, <span lang="en">sparse</span><span lang="ja">疎行列</span>, pu), <code>ctx.absYmat</code>, <code>ctx.sv_open</code>, <code>ctx.iv_busV</code>, <code>ctx.iv_busI</code>, <code>ctx.c_unit</code>, <code>ctx.l_sparse = true</code></dd>
+          <dd><code>ctx.Ybus</code>, <code>ctx.Ymat</code> (<code>n_v × n_v</code>, <span lang="en">sparse</span><span lang="ja">疎行列</span>, pu), <code>ctx.absYmat</code>, <code>ctx.sv_open</code>, <code>ctx.iv_busV</code>, <code>ctx.iv_busI</code>, <code>ctx.c_unit</code>, <code>ctx.c_gc</code> (<span lang="en">inputs read and inputs driven of each global controller</span><span lang="ja">各広域制御器の入力の読み取り先と出力の接続先</span>), <code>ctx.n_y</code>, <code>ctx.l_sparse = true</code>; <code>gc.sv_route</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="SIM-07">
@@ -531,16 +531,18 @@ verdict = sc.judge(result)</code></pre>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Residual of the DAE.</span><ul lang="en">
-              <li>Global controllers: <code>f_dx</code> and <code>f_Y</code> of their inputs (zero for a tripped unit).</li>
-              <li>Each component: its controller first (inputs from the component's outputs <code>f_Y</code> and states by name; outputs replace the driven inputs), then <code>f_dx</code>, the input equations <code>u − u_applied</code>, and <code>−I</code> on the bus rows (zero when tripped).</li>
+              <li>Outputs <code>f_Y(t, x, V)</code> of the components that a controller reads. They do not depend on the inputs, so no algebraic loop runs through <code>u</code>.</li>
+              <li>Global controllers: <code>f_dx</code> and <code>f_Y</code> at their inputs (the outputs or states of their units; zero for a tripped unit) and the voltages of all buses; the outputs are summed at the inputs they drive.</li>
+              <li>Each component: its controllers first, nested first (inputs from the component's outputs and states by name, plus the global controller outputs routed to them; outputs replace the driven inputs), then the input equations <code>u − u_applied</code>, <code>f_dx</code>, and <code>−I</code> on the bus rows (zero when tripped).</li>
               <li>Bus rows: <code>Ib − ΣI = 0</code> and <code>Ib − Y·V = 0</code>; terms below the round-off level of their parts set to 0.</li>
             </ul><span lang="ja">DAE の残差</span><ul lang="ja">
-              <li>広域制御器: 入力に対する <code>f_dx</code> と <code>f_Y</code>（トリップした機器の入力は 0）</li>
-              <li>各機器: まず制御器（入力は機器の出力 <code>f_Y</code> と状態から名前で読み、出力は対応する入力を置換）、次に <code>f_dx</code>、入力の式 <code>u − u_applied</code>、母線の行に <code>−I</code>（トリップ中は 0）</li>
+              <li>制御器が読む機器の出力 <code>f_Y(t, x, V)</code>。入力に依存しないため、<code>u</code> を通る代数ループは不発生</li>
+              <li>広域制御器: 入力（制御対象の出力または状態。トリップした機器は 0）と全母線の電圧での <code>f_dx</code> と <code>f_Y</code>。出力は接続先の入力ごとに合算</li>
+              <li>各機器: まず制御器（入れ子が先。入力は機器の出力と状態から名前で読み、接続された広域制御器の出力を加算。出力は対応する入力を置換）、次に入力の式 <code>u − u_applied</code>、<code>f_dx</code>、母線の行に <code>−I</code>（トリップ中は 0）</li>
               <li>母線の行: <code>Ib − ΣI = 0</code> と <code>Ib − Y·V = 0</code>。丸め誤差以下の項は 0</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>t</code>, <code>x</code>, <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>rv_Uequilibrium</code>, <code>rv_Uoffset</code>, <code>l_isConnect</code>, <code>iv_obsY</code>, <code>iv_obsX</code>, <code>ctx.Ymat</code></dd>
+          <dd><code>t</code>, <code>x</code>, <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>rv_Uequilibrium</code>, <code>rv_Uoffset</code>, <code>l_isConnect</code>, <code>iv_obsY</code>, <code>iv_obsX</code>, <code>ctx.c_unit</code>, <code>ctx.c_gc</code>, <code>ctx.Ymat</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>odeX</code> (<code>n_red × 1</code>)</dd>
         </dl>
@@ -549,7 +551,7 @@ verdict = sc.judge(result)</code></pre>
         <p class="fs-head"><b class="fs-id">SIM-15</b> <span class="fs-call"><code>ode</code> → <code>SolverODE.getODEJacobian</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Analytic Jacobian of SIM-14 from the blocks of each model (component, its controllers, global controllers) and <code>−Y</code>; identity entries for the input equations and the bus current variables. Sparse while <code>ctx.l_sparse</code>.</span><span lang="ja">各モデル（機器、その制御器、広域制御器）のブロックと <code>−Y</code> から組み立てた SIM-14 の解析的なヤコビアン。入力の式と母線電流変数には単位行列の要素。<code>ctx.l_sparse</code> の間は疎行列</span></dd>
+          <dd><span lang="en">Analytic Jacobian of SIM-14, in the same order, from the blocks of each model (the outputs <code>[Cyx, Dyv]</code> of the components, shared by the controllers that read them; the global controllers, through the chain rule over their inputs and the voltages of all buses; each component and its controllers) and <code>−Y</code>; identity entries for the input equations and the bus current variables. Sparse while <code>ctx.l_sparse</code>.</span><span lang="ja">SIM-14 と同じ順に、各モデルのブロック（機器の出力 <code>[Cyx, Dyv]</code>。読む制御器で共用。広域制御器は入力と全母線の電圧を通る連鎖律。各機器とその制御器）と <code>−Y</code> から組み立てた解析的なヤコビアン。入力の式と母線電流変数には単位行列の要素。<code>ctx.l_sparse</code> の間は疎行列</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>f_JacobiDx</code>, <code>f_JacobiI</code>, <code>f_JacobiY</code>, <code>l_isConnect</code>, <code>ctx.Ymat</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>

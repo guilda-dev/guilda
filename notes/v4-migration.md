@@ -57,6 +57,12 @@
 >   global controller on an input that a local controller drives adds to the
 >   controller's output in `simulate` (before: it was overwritten, so it had
 >   no effect) (1.6).
+> - **A global controller reads outputs and can drive local controllers.**
+>   It reads an output of its unit before a state of the same name (the AGC
+>   reads the output `omega`, equal to the state), and an output whose name is
+>   an input of a local controller of the unit goes to that controller instead
+>   of the component (1.6). The bundled models give the same numbers: no
+>   bundled local controller has an input named like an AGC output.
 > - **`TimeLimit` no longer stops a run by default.** The default is `Inf`
 >   (before: 10 s of each phase), so a run that used to stop early with
 >   `flag = 0` now continues to the end time (1.11).
@@ -305,6 +311,30 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
   controller and of the controller nested in it restart from their
   `rv_Xequilibrium`; the stored equilibrium does not change. Whether this
   transient after reconnection is physically valid has not been evaluated.
+- **Global controllers observe outputs and all bus voltages** (see
+  `notes/controller-signal-routing.md`). The inputs `sv_u` of a global
+  controller are read on each controlled unit by name, as for a local
+  controller: an output in `sv_y` of the unit, otherwise a state in `sv_x`
+  (`gc.iv_obsY` / `gc.iv_obsX`). Its port `V` is the voltage of all buses
+  `[Vre1; Vim1; Vre2; ...]` in the order of `net.a_Bus` (before: `[]`); a
+  branch flow is computed from `V` and the branch data. `add_global_controller`
+  accepts a unit that has each name of `sv_u` as an output or a state.
+- **Global controller outputs are routed by name**, per controlled unit:
+  - to every local controller of the unit (nested ones included) that has an
+    input of that name, and then not to the component. The controller input
+    receives the sum of what it reads without the global controller (an
+    output or state of the component, the output of a nested controller, or
+    its equilibrium) and the global controller output;
+  - otherwise to the component input of that name, as before. An input driven
+    by both a local and a global controller receives the sum.
+  - `add_global_controller` prints an INFO line per unit and output (e.g.
+    `Pmech of SG1B001 goes directly to the component input`), kept in
+    `gc.sv_route`. When a local controller is added, removed or replaced, the
+    next `simulate` prints the outputs that go elsewhere now (`... now goes
+    ...`) once. An output that has no input left stops `simulate` with
+    `GUILDA:SolverODE:GconNoTarget`. `Message.ShowInfo` hides the INFO lines.
+  - `gc.get_sys` has the bus voltages and the observed signals as inputs, and
+    one output row for each input an output drives (labelled as that input).
 - **Controller inputs are wired by name.** A local controller reads the
   component it is attached to (directly, or through the controller above
   it) by the names of its inputs `sv_u`: a name in the component's `sv_y`
@@ -1150,9 +1180,22 @@ there.
 
 新しいモデルの実装手順は `_GUILDAdoc/developer/model-implementation.html` を見てください。
 
-- **Function signatures.** `fcn_dx`, `fcn_I`, `fcn_Y`, `fcn_Mass` take
-  `(obj, t, x, V, I, u, param, omega0)`. Declare them with `omega0` in the
-  `classdef` too.
+- **Function signatures** (no bus current, no output feedthrough; see
+  `notes/controller-signal-routing.md`). A component has
+  `fcn_dx(obj, t, x, V, u, param, omega0)`, `fcn_I(obj, t, x, V, u, param, omega0)`,
+  `fcn_Mass(obj, t, x, V, u, param, omega0)` and `fcn_Y(obj, t, x, V, param, omega0)`:
+  the output takes no input `u`, so no algebraic loop runs through the inputs. A
+  local or global controller has `fcn_dx`, `fcn_y`, `fcn_Mass` with
+  `(t, x, V, u, param, omega0)`. The argument `I` (the bus current, the sum of all
+  components on the bus) is removed everywhere, without a compatibility layer: a model
+  with the old signature stops with a MATLAB error about the number of arguments. A
+  model that read `I` computes the current from its states and `V`
+  (`I = conj(S/V)` for a power). Declare the functions with `omega0` in the
+  `classdef` too. The handles are `f_dx`, `f_I`, `f_Mass`, `f_JacobiDx`,
+  `f_JacobiI` `@(t,x,V,u)` and `f_Y`, `f_JacobiY` `@(t,x,V)` for a component,
+  and `@(t,x,V,u)` for a controller. `get_sys(x, V, u)` and `get_hessian(x, V, u)`
+  of components and controllers drop `I` too; the Hessians are with respect to
+  `z = [x; V; u]` (`[x; V]` for `Hessian_Y` of a component).
 - **`omega0` is the nominal frequency in Hz**, not rad/s. Multiply by
   `2*pi` inside the model where needed. It is the network's `get_Hz()`.
 - **Parameters are on the system base** (`net.tab_parameter.base.baseMVA`).
@@ -1173,11 +1216,16 @@ there.
 
   ```matlab
   methods (Static)
-      [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0);
-      [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0);
-      [Cix,Div,Dii,Diu] = Jacobi_I(t,x,V,I,u,param,omega0);
+      [Axx,Bxv,Bxu] = Jacobi_dx(t,x,V,u,param,omega0);
+      [Cyx,Dyv]     = Jacobi_Y(t,x,V,param,omega0);      % a component: no u
+      [Cix,Div,Diu] = Jacobi_I(t,x,V,u,param,omega0);
   end
   ```
+
+  The blocks of `I` (`Bxi`, `Dyi`, `Dii`) and `Dyu` of a component are removed. A
+  controller has `[Axx,Bxv,Bxu] = Jacobi_dx(...)` and `[Cyx,Dyv,Dyu] = Jacobi_Y(...)`
+  with `(t,x,V,u,param,omega0)`; for a global controller `Bxv` and `Dyv` have
+  `2*numel(net.a_Bus)` columns. `GUILDA:Component:CurrentDependence` is removed.
 
   A missing Jacobian falls back to a numerical one (`Jacobi_*_num`).
   `get_sys` and `SolverODE` use the same `f_Jacobi*` handles.
@@ -1203,11 +1251,17 @@ there.
   state; `"Xall"` / `"Yall"` for all states / outputs, see 1.6); a class
   that uses the reserved names overrides `set_inputs`, otherwise it stops
   with `GUILDA:LocalController:ReservedInputNoOverride`. Global controllers are
-  coupled to components by port names (`sv_u` / `sv_y`).
+  coupled to components by port names (`sv_u` / `sv_y`): they observe outputs
+  (else states) and drive inputs of local controllers or components (1.6). The
+  outputs of a global controller must be 0 at its equilibrium.
 - **Inputs driven by a controller.** A controller output does not overwrite
   the component input in `simulate`: an input event or a global controller on
   it adds (see 1.6). `LocalController.get_dx_algebraic` returns
   `[DAEvec, y]`; the third output `y_name` is removed (the names are `sv_y`).
+  `Component.get_dx_algebraic(t, x, Vi, u, y, y_GC, DAEvec)` receives the outputs
+  `y` of the component and the global controller outputs `y_GC` (summed at the
+  inputs they drive), computed first by `SolverODE` (order: component outputs,
+  global controllers, local controllers, inputs, states and currents).
 - **Working data of a simulation.** `LocalController.l_isConnect` is removed.
   `Component.rv_Xoffset` / `rv_Uoffset` can only be written by `SolverODE`,
   and are empty after a run. `rv_Uoffset` is also empty
@@ -1215,11 +1269,11 @@ there.
   from a model.
 - **モデルへの要求の明文化。**
   - `get_equilibrium` は常に `c_V`, `c_I`, `r_P`, `r_Q` の 4 引数で呼ばれます。解列のときは `c_I = r_P = r_Q = 0` です。`nargin` で分岐しているモデルは 4 引数で動くように直してください。`LocalController` と `GlobalController` でも `get_equilibrium` は `Abstract` として宣言されています。
-  - `fcn_Mass` は定数です。`simulate` は `t, x, V, I, u` を空にして呼びます。これらを使う `fcn_Mass` は `GUILDA:read_mass:NotConstant` で止まり、機器や制御器のタグを示します。
+  - `fcn_Mass` は定数です。`simulate` は `t, x, V, u` を空にして呼びます。これらを使う `fcn_Mass` は `GUILDA:read_mass:NotConstant` で止まり、機器や制御器のタグを示します。
   - `getCompPQ(obj, x, V, u, param)` は `UseInternalState=true` の連続潮流でだけ必要です。ない機器は `GUILDA:build_layout:MissingGetCompPQ` で止まり、タグを示します。
 - **コンストラクタのエラー。** 発電機の基底クラスは次を検査します。表の列の不足は `GUILDA:Component:MissingParameter`(不足する列と参照先を示す)、不明なパラメータ名は `GUILDA:Component:UnknownParameter`(使える名前を示す)で止まります。発電機に与えた `Q` は潮流が決めるので無視され、`GUILDA:Component:GeneratorQIgnored` で警告します(`Q` を省略するか `NaN` にしてください)。追加の列は受け付けます。コンストラクタを持たない負荷のサブクラスも動きます。
 - **`validate` の修復。** `comp.validate` と `con.validate` は現行の API で動きます。従来の表に、次の 2 つが加わりました。
-  - `flag.contract`: 各検査の状態(`PASS`, `FAIL`, `INFO`)です。壊れたモデルでも止まらず `FAIL` として報告し、計算できない値は NaN にします。寸法、`fcn_I` が複素スカラーか、`fcn_Mass` が定数か、`I` に依存しないかなどを見ます。
+  - `flag.contract`: 各検査の状態(`PASS`, `FAIL`, `INFO`)です。壊れたモデルでも止まらず `FAIL` として報告し、計算できない値は NaN にします。寸法、`fcn_I` が複素スカラーか、`fcn_Mass` が定数かなどを見ます(モデル関数は母線電流を受け取らないので、`I` への依存の検査はありません)。
   - `flag.inputs`: 各入力の接続元です。綴りの誤りは `equilibrium (not connected)` と出ます。
 
   `comp.validate` は平衡点で、未設定なら単位長の V と I の乱数点で評価します。乱数点では値を保持するモデル(負荷など)がその点の値を保持するので、後で `net.initialize()` を実行してください。`con.validate` は系統上の機器に付いて初期化された制御器が対象で、そうでなければ `GUILDA:LocalController:ValidateNotAttached` で止まります。

@@ -452,30 +452,32 @@ b1.l_isSlack = true;</code></pre>
               <ul>
                 <li>the tag is unused</li>
                 <li>every unit belongs to this network (handle comparison through <code>unit.a_Bus.a_PowerNetwork</code>)</li>
-                <li><code>sv_u</code> are states and <code>sv_y</code> inputs of every unit</li>
+                <li><code>sv_u</code> are outputs or states of every unit, and each <code>sv_y</code> is an input of the unit or of one of its local controllers</li>
               </ul>
             </li>
             <li>Append the controller</li>
             <li>Set <code>gc.a_PowerNetwork = net</code> (writable only by <code>PowerNetwork</code>)</li>
             <li>Report a <code>"Topology"</code> edit on the controller (not on the network): its <code>equilibrium</code> becomes stale, the power flow stays up to date</li>
+            <li>Record where each output goes in <code>gc.sv_route</code> (to the local controllers of the unit with an input of that name, else to the input of the unit) and show it as an INFO message</li>
             <li>Return the controller</li>
           </ul><ul lang="ja">
             <li>検査:
               <ul>
                 <li>タグが未使用</li>
                 <li>すべての制御対象がこのネットワークに所属（<code>unit.a_Bus.a_PowerNetwork</code> によるハンドル比較）</li>
-                <li><code>sv_u</code> が各対象の状態、<code>sv_y</code> が入力</li>
+                <li><code>sv_u</code> が各対象の出力または状態、各 <code>sv_y</code> が対象またはその局所制御器の入力</li>
               </ul>
             </li>
             <li>制御器を追加</li>
             <li><code>gc.a_PowerNetwork = net</code> を代入（書き込めるのは <code>PowerNetwork</code> だけ）</li>
             <li>制御器（ネットワークではない）の <code>"Topology"</code> の編集として報告: 制御器の <code>equilibrium</code> が古くなり、潮流は最新のまま</li>
+            <li>各出力の接続先（同名の入力を持つ対象の局所制御器、ない場合は対象の入力）を <code>gc.sv_route</code> に記録し、INFO で表示</li>
             <li>制御器を返す</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>gc.s_tag</code>, <code>gc.controlledUnits</code>, <code>gc.sv_u</code>, <code>gc.sv_y</code>, <span lang="en">unit</span><span lang="ja">対象の</span> <code>sv_x</code>, <code>sv_u</code></dd>
+          <dd><code>gc.s_tag</code>, <code>gc.controlledUnits</code>, <code>gc.sv_u</code>, <code>gc.sv_y</code>, <span lang="en">unit</span><span lang="ja">対象の</span> <code>sv_x</code>, <code>sv_y</code>, <code>sv_u</code>, <code>a_LocalController</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>gc</code>; <code>net.a_GlobalController</code>, <code>gc.a_PowerNetwork</code>, <code>gc.sct_stale</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+          <dd><code>gc</code>; <code>net.a_GlobalController</code>, <code>gc.a_PowerNetwork</code>, <code>gc.sct_stale</code>, <code>gc.sv_route</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-08">

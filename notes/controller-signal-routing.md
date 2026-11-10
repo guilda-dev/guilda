@@ -4,7 +4,7 @@
 
 - 決定: 2026-11-10、メンテナー(1〜6 節の規則)。このノートの 7 節以降は実装上の詰め(**提案**)。
 - 基準コミット: `4a2f7f25`(`refactor/design-alignment`)。「現状」はこのコミットのコード。
-- 状態: `refactor/controller-signal-routing` で実装中。
+- 状態: `refactor/controller-signal-routing` で実装(2026-11-10)。記録は末尾の「10. 実装」節。
 - 区別: **決定**(メンテナーの決定)、**現状**(コードで確認済み)、**提案**(このノートの詰め。未承認)、**未決**。
 - 記法: 機器の状態 x_mac、入力 u_mac、出力 y_mac、注入電流 i_mac、母線電圧 v_bus。局所制御器 LC、大域制御器 GC。
 
@@ -140,4 +140,34 @@ Jacobian(`getODEJacobian`): 上の順に、
 
 ## 9. 未決
 
-- なし(実装の途中で見つかったものは実装節に追記する)。
+- 10 節の「確認してほしい点」。
+
+## 10. 実装
+
+ブランチ `refactor/controller-signal-routing`(基準 `4a2f7f25`)。
+
+| 段階 | コミット | 内容 |
+|---|---|---|
+| 0 | `5dd94011` | このノート |
+| 1 | `84420b17` | 全モデル関数・ハンドル・`get_sys`・`get_hessian` から I を削除。機器の `fcn_Y` / `Jacobi_Y` から u を削除 |
+| 2 | `af2e642a` | GC の観測(出力 → 状態、全母線の V)、出力の振り分け、INFO、評価順、Jacobian、平衡点の検査、`get_sys`、線形化。テスト `test_F35_controller_signal_routing` |
+| 3 | (このコミット) | `notes/v4-migration.md`、For Developer のページ |
+
+**現状**(実装後のコード)
+
+- 新しいメンバー: `GlobalController.iv_obsY`、`iv_obsX`(コンストラクタで解く)、`sv_route`(`add_global_controller` が作り、`SolverODE.get_units` が変化を INFO で表示して更新)。
+- 削除したメンバー: `GlobalController.iv_odeU`、`iv_odeY`(1 つの出力が複数の入力に入るため。実行ごとの接続は `ctx.c_gc`)。`SolverODE/private/getSubJacobian.m`(未使用)。メッセージ `GUILDA:Component:CurrentDependence`。
+- 変えたシグネチャ: `SolverODE.get_units` は `[c_unit, c_gc]` を返す。`Component.get_dx_algebraic(t, x, Vi, u, y, y_GC, DAEvec)`、`LocalController.get_dx_algebraic(t, x, Vi, obs, y_GC, DAEvec)`。
+- 新しいメッセージ: `GUILDA:PowerNetwork:GconRoute`(INFO)、`GUILDA:SolverODE:GconRouteChanged`(INFO)、`GUILDA:SolverODE:GconNoTarget`(エラー)。`GconPorts` と `GlobalController:GlobalControllerPort` の文を新しい規則に合わせた。
+- `GlobalController.get_sys` の出力は、駆動する入力ごとに 1 行(その入力の名前)。`SolverLIN` はこの名前で機器の入力か LC の入力(母線モデルの列 `c_sysL`)に接続する。
+- `ResultLIN.get_ss("Feedback")`: GC が非単位母線(I→V の形がない母線)の電圧や、その母線の機器の出力を読むときは `GUILDA:ResultLIN:GlobalControllerPort` で止まる(Kron と DAE は扱える)。
+- 機器の `get_equilibrium(c_V, c_I, r_P, r_Q)` の `c_I` は機器自身の注入電流なので残した(4 節)。`FixedInput`(`solve_fixed_input`)の未知数 I も機器ごとの電流で、母線電流ではない。
+- `component.ConstSource.power`(v1 の `get_dx_constraint`)は作成も追加もできない死んだコード(クラスの help にも記載)なので変更していない。`component.load.history`、`_GUILDAobject/+component/未+GFM`、`未+farm` も旧インターフェースの保管で、パス上の `+` パッケージではないか登録されないため変更していない。
+- 測定(MATLAB R2026a、IEEE68bus 既定(AVR+PSS)、先頭母線の地絡 [1, 1.05] s、`simulate([0,10])`、1 スレッド、5 回の中央値): 変更前 0.832 s、段階 1 の後 0.914 s、段階 2 の後 0.870 s。軌道の最終値のノルムは 3 回とも 60.7713729221(同一)。差は測定のばらつきと、出力の先行計算・引数の追加の範囲。
+
+**確認してほしい点**(提案、未承認)
+
+- 振り分けの規則(LC の木をたどる)は `add_global_controller`、`SolverODE.get_units`、`GlobalController.get_sys`、`Component.validate` の 4 か所に数行ずつ同じ形で書いた(新しい補助関数を足さないため)。共通の関数にまとめるかは判断待ち。
+- `sv_route` は「`add_global_controller` で表示した記録」に加え、実行時に変化を表示した後は新しい接続で上書きする(同じ変化を毎回表示しないため)。
+- GC の出力が LC の入力に入るときの値は「GC がないときの値 + 出力」(観測入力なら y_mac + y_gcon、入れ子の LC の出力が駆動する入力ならその出力 + y_gcon、それ以外は平衡値 + y_gcon)。
+- `GlobalController.get_sys` と `get_hessian` の既定の V は全母線の平衡点の電圧。GC の `get_equilibrium(obj)` は引数なしのまま(観測した出力の平衡値は `PowerNetwork.initialize` のモデル残差の検査で使う)。
