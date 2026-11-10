@@ -1,5 +1,5 @@
-function w = build_layout(net, useInt)
-% Variable layout of the CPF equations for net.
+function w = build_layout(net, useInt, lv_PQ)
+% Variable layout of the CPF equations for net (the PV buses of lv_PQ solved as PQ buses).
 %   Writes the analysis working data on the models (bus.iv_CPFV, comp.iv_CPFX,
 %   comp.f_PQ2Bus) and returns
 %   w.rv_BusVi : rows of [|V|;angle V] of each bus in the full variable vector
@@ -7,9 +7,14 @@ function w = build_layout(net, useInt)
 %   w.rm_BusEM : maps the unknowns into the full variable vector
 %   w.CONSTANT : fixed part of the full variable vector
 %   w.InitVal  : unknowns at the equilibrium
+%   w.c_lvFree : per bus, the components with Q = NaN in powerflow (the generators of a
+%                PV bus, whose Q Limits "Q" bounds)
+%   w.rv_Qfix  : per bus, the fixed Q of these components after a switch to PQ (NaN: none;
+%                set by SolverCPF.solve, see pf_equation)
     arguments (Input)
         net                    % Network initialized by net.initialize.
         useInt                 % True to solve with the internal states of the components.
+        lv_PQ   (:,1) logical = false(numel(net.a_Bus),1) % PV buses switched to PQ by Limits "Q" (rows of net.a_Bus; only without useInt).
     end
     arguments (Output)
         w       (1,1) struct   % Variable layout (fields above).
@@ -23,12 +28,14 @@ function w = build_layout(net, useInt)
     E = cell(1,n_Bus);
     C = cell(n_Bus,1);
     I = cell(n_Bus,1);
+    c_lvFree = cell(n_Bus,1);
 
     for i=1:n_Bus
         i_Bus = a_Bus{i};
         a_Comp = i_Bus.a_Component;
         n_Comp = numel(a_Comp);
 
+        c_lvFree{i} = cellfun(@(c) isnan(c.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", c.a_Parameter)}.tab_parameter.Q), a_Comp(:));
         tab_PF = i_Bus.get_pf_condition();
         rv_Veq = [abs(i_Bus.c_Vequilibrium);angle(i_Bus.c_Vequilibrium)];
 
@@ -36,7 +43,11 @@ function w = build_layout(net, useInt)
         Ri = cell(1,n_Comp);
         Ii = cell(n_Comp,1);
 
-        switch tab_PF{:,"Type"}
+        s_type = tab_PF{:,"Type"};
+        if s_type == "PV" && lv_PQ(i)
+            s_type = "PQ";
+        end
+        switch s_type
             case "slack"
                 i_Bus.iv_CPFV = id_VX + (1:2);
 
@@ -127,6 +138,8 @@ function w = build_layout(net, useInt)
     w.rm_BusEM = EM(:,ismember(1:id_VX,iv_BEM_all));
     w.CONSTANT = vertcat(C{:});
     w.InitVal  = vertcat(I{:});
+    w.c_lvFree = c_lvFree;
+    w.rv_Qfix  = nan(n_Bus,1);
 
     function setPQ2Bus(i_Comp)
         CompVeq = i_Comp.c_Vequilibrium;

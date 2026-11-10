@@ -6,5 +6,7 @@
         <entry key="NoEquilibrium">The continuation power flow starts from the equilibrium, but component {0} has none. Run net.initialize first.</entry>
         <entry key="Stale">The continuation power flow stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
         <entry key="InputEdited">The continuation power flow stopped: inputs of components of ''{0}'' were edited ({1}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
+        <entry key="InvalidLimits">Limits of the continuation power flow must be distinct members of "Q", "V" and "S" (for example ["Q","V"]), or "all" or "none".</entry>
+        <entry key="LimitsInternalState">Limits "Q" (PV to PQ switching) cannot be used with UseInternalState=true: the generators follow their internal states. Use Limits=["V","S"] or UseInternalState=false.</entry>
     </message>
 </rsccat>

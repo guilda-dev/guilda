@@ -8,7 +8,7 @@
 - 状態: 手順 A(`MethodBase` と数値微分の共有、1 節・12 節)は `refactor/method-base` で実装。
   手順 B(SolverPF のオプション、GUILDA.setting のセクション、ウォームスタート、キャッシュ、
   母線の `V0`/`Varg0` の廃止、`tab_violation`)は `refactor/powerflow-options` で実装(「手順 B の実装」節)。
-  手順 C(連続潮流計算の `Limits`)は未実装。実装の指示書はこのノートを引用する。
+  手順 C(連続潮流計算の `Limits`、10 節)は `feature/cpf-limits` で実装(「手順 C の実装」節)。実装の指示書はこのノートを引用する。
 - 区別: **決定**(メンテナーの決定)、**現状**(コードで確認済み)、**未決**(末尾の一覧)。
 
 ## 1. Method クラス
@@ -337,6 +337,56 @@
 4. OPF の問題のキャッシュ: `operation` / `OPF` の編集を数えるカウンタがないため実装していない。
 5. fsolve で `Tolerance` を 1e-10 程度まで下げると flag -2 になる系統がある。対処案(未検証): `FunctionTolerance` を `Tolerance^2` にする、または fsolve の後に NR で仕上げる。
 6. 機器の違反の判定は `Bus.set_equilibrium` の配分を複製している(`QdistributionRule` "Qmax" の系統では initialize の値と異なりうる)。
+
+## 手順 C の実装(`feature/cpf-limits`、2026-11-10)
+
+**現状**(実装後のコード)
+
+- オプション: `SolverCPF.Limits`(`(1,:) string`、既定 `"none"`)。JSON キー `Limits`(`DefaultContinuationPowerFlow.json`)、`OptionMap` の `Limits`、`validate_options` の検査。
+  - 値: `"Q"`・`"V"`・`"S"` の重複のない部分集合(順序は自由)、または `"all"` / `"none"` 単独。それ以外は `GUILDA:SolverCPF:InvalidLimits`。
+  - 直接設定した保存値(`net.solver_CPF.Limits = ...`)も `get_options` で検査。`result.options.Limits` は与えた値のまま(`"all"` は展開しない)。
+- 制約の一覧: `@SolverCPF/private/limit_set.m`(有限の制約ごとに 1 行)、点での値: `limit_values.m`。Inf・NaN は制約なし。
+  - `"Q"`: スラックでない PV 母線。発電機 = `powerflow` の `Q` が NaN の機器(`Bus.get_pf_condition` が PV とする根拠と同じ)。
+    限界は発電機の `Qmin` / `Qmax` の合計、値は「母線の注入 Q − 他の機器の Q(`LoadBus` なら (1+λ) 倍)」。
+  - `"V"`: 母線の `|V|` と `Vmin` / `Vmax`(PV・スラック母線も対象。電圧は設定値に固定)。
+  - `"S"`: ブランチの両端の大きい方の `|S|` と `Smax`(`ResultPF.tab_violation` と同じ定義)。
+- 検出: 修正後の点で値が制約を `Tolerance`(修正子の許容誤差、既定 1e-5)より大きく超えたら、直前の点との線形内挿で制約に達する点を求める。ステップ内で最初に達した制約(内挿の割合が最小)を処理。
+  - `"Q"`: 母線を PQ に切替(`w.rv_Qfix` に限界値、`build_layout` の `lv_PQ`)。内挿点をその λ で修正(`correct_at`、λ 固定)。
+    切替で他の発電機が限界を超えたら同じ点で続けて切替。予測子は接線から再開(向きは直前のステップ、長さは `sqrt(ArcLength)`)。PQ→PV には戻さない。
+  - `"V"` / `"S"`: 内挿点を、直前の点を中心とする球面上で修正(先端付近でも λ 固定より頑健)し、その点で終了。
+  - 1 ステップ内で出入りした制約(往復)は検出しない。
+- 初期点で既に違反している制約(提案どおり実装): `"Q"` はその点で切替(初期点は平衡点から λ 固定で修正した点になる)、`"V"` / `"S"` は 1 点の経路で終了し `flag = false`。
+- 結果: `ResultCPF.tab_switch`(列 `lambda`、`Step`、`Bus`、`Limit`、`Bound`)、`ResultCPF.tab_stop`(0 または 1 行。列 `lambda`、`Step`、`Class`、`Object`、`Limit`、`Bound`)。
+  `Step` は `rv_lambda` での位置。`lambda` は `tab_path` と同じ小文字(他の列は `tab_violation` に合わせた)。
+- `flag`: 先端を越えた、または 1 ステップ以上の後に `"V"` / `"S"` で終了したとき true。先端より前で止まると `r_lambdaMax` は停止点の λ。
+- `"Q"` と `UseInternalState=true` の組み合わせは `GUILDA:SolverCPF:LimitsInternalState`(発電機の Q が内部状態で決まり、PV/PQ の区別がないため)。`"V"`・`"S"` は内部状態ありでも使用可。
+- モデルへの書き戻しなし(母線はモデル上 PV のまま、stale にもならない)。`operation` の編集は平衡点を古くしない(8 節・11 節)ので、制約を変えて `initialize` なしで再計算できる。
+- `Limits="none"` の経路は変更前(`84e0a421`)とビット単位で一致(IEEE14、`LoadBus` B009・B014 と B009〜B014、`UseInternalState` true / false で `rm_x`、`rm_xPredicted`、修正子の反復回数を比較)。IEEE14・B009・B014 は 362 点。
+- 拡張: 他の制約(ブランチの `Imax`、`Pmax` など)は `limit_set.m` に行、`limit_values.m` に値、`validate_options` と JSON の説明に種類を足す。経路を終える制約はそれだけで対応(`feature-cpf.html` の「機能を拡張する箇所」)。
+
+**代表系統での挙動**(IEEE14、`LoadBus` = B009〜B014、既定の設定)
+
+| `Limits` | 経路 | 切替(λ、母線、限界) | 停止 |
+|---|---|---|---|
+| `"none"` | 先端 λ ≈ 4.03 | – | – |
+| `"Q"` | 146 点、先端 λ ≈ 1.29 | 0.198 B002 Qmax 0.5、0.309 B006 Qmax 0.24、0.351 B008 Qmax 0.24、0.530 B003 Qmax 0.4 | – |
+| `"V"`、`"all"`(元のデータ) | 1 点、`flag = false` | – | 初期点で B006 の Vmax 1.06(設定電圧 1.07) |
+| `"V"`(全母線の Vmax 1.1、B009〜B014 の Vmin 0.95) | 52 点 | – | λ ≈ 1.423、B014 Vmin 0.95(停止点の \|V\| = 0.950005) |
+| `"all"`(同上) | 28 点 | 上の `"Q"` と同じ 4 件 | λ ≈ 0.677、B014 Vmin 0.95 |
+| `"S"`(EL001 の Smax 1.94) | 23 点 | – | λ ≈ 0.613、EL001 Smax(停止点の \|S\| = 1.940246) |
+
+- IEEE14 の元のデータでは B006(1.07)、B007(1.0615)、B008(1.09)が初期点で Vmax 1.06 を超える(`ResultPF.tab_violation` にも出る)。`"V"` を含む `Limits` は初期点で止まる。
+
+**要判断**
+
+1. 初期点で違反している `"V"` / `"S"` の扱い。実装は「初期点で終了、`flag = false`」。IEEE14 の元のデータでは `Limits="all"` が常に 1 点で終わる。
+   代案: (a) 初期点で違反している制約はその追跡では課さない(初期点の違反は `ResultPF.tab_violation` で確認する)、(b) 違反が初期点より悪化した点で止める、(c) INFO メッセージを出して (a)。
+   推奨は現状か (a)。(a) なら `settle` の V/S の部分を「その行を無効にする」に変えるだけ。
+2. `flag` の意味の拡張(制約で止まったら true)。`"V"`・`"S"` で止まった経路は「最大負荷 = 停止点」という解なので true とした。
+3. `"Q"` の値の定義: 母線上の発電機(`Q` が NaN の機器)の Q の合計を、その `Qmin` / `Qmax` の合計と比較。
+   `LoadBus` の PV 母線では発電機の P も (1+λ) 倍される(従来の連続潮流計算の扱い)が、切替後の Q は限界値に固定(倍しない)。
+4. 切替の検出の許容幅に修正子の `Tolerance` を流用(Q・V・S とも pu)。独立した設定は作っていない。
+5. Update log(`_GUILDAdoc/database/list_UpdateLog.js`)への告知は未記入(並行作業との衝突を避けるため。マージ時にコーディネーターが記入)。
 
 ## 未決
 

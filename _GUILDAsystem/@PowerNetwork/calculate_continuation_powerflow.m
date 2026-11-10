@@ -21,6 +21,7 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
 % - `InitialLambda` — lambda at the starting point (net.solver_CPF.InitialLambda).
 % - `UseInternalState` — Solve with the internal states of the generators (net.solver_CPF.UseInternalState).
 % - `Verbose` — Print lambda at each step (net.solver_CPF.Verbose).
+% - `Limits` — Operating limits applied along the path: a subset of "Q" (PV to PQ at the Q limits of the generators), "V" (stop at Vmin/Vmax of a bus), "S" (stop at Smax of a branch), or "all" / "none" (net.solver_CPF.Limits). See ResultCPF.tab_switch and tab_stop.
 % - `Plot` — Call result.Plot after the calculation. Default: false.
 % - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
 %

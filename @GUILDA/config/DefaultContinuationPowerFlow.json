@@ -44,6 +44,11 @@
         "Type": "double",
         "Description": "Step of the numerical Jacobian of the predictor and the corrector"
     },
+    "Limits":{
+        "Value": "none",
+        "Type": "string",
+        "Description": "Operating limits applied by the continuation power flow: a subset of \"Q\" (PV to PQ at Qmin/Qmax of the generators), \"V\" (stop at Vmin/Vmax of a bus) and \"S\" (stop at Smax of a branch), or \"all\" / \"none\""
+    },
     "UseInternalState":{
         "Value": false,
         "Type": "logical",

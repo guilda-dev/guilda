@@ -7,6 +7,14 @@ classdef ResultCPF < ResultBase
 % stay with the network. Plot draws the PV curves. Export writes the path as a table (CSV,
 % Excel): tab_path.
 %
+% With the option Limits (see SolverCPF), `tab_switch` lists the PV buses switched to PQ
+% at Qmin/Qmax of their generators: lambda and Step (index in rv_lambda) of the switch
+% point, Bus, Limit ("Qmin"/"Qmax") and Bound (the fixed Q [pu]). `tab_stop` has one row
+% when a "V" or "S" limit ended the path: lambda and Step of the last point, Class ("Bus"
+% or "Branch"), Object (tag), Limit ("Vmin", "Vmax", "Smax") and Bound [pu]. Both have 0
+% rows otherwise. When the path stops before the nose, r_lambdaMax is the lambda of the
+% stop.
+%
 % `rm_x` is the CPF_Result.x_sol of v3: its rows are [|V|; angle V] of each bus (followed
 % by the component states when options.UseInternalState is true), and lambda in the last
 % row. `rm_xPredicted` is the CPF_Result.x_prd of v3 in the same layout.
@@ -17,6 +25,9 @@ classdef ResultCPF < ResultBase
 % net.initialize();
 % [result, flag] = net.calculate_continuation_powerflow(LoadBus=["B009","B014"]);
 % result.r_lambdaMax       % maximum loading (nose of the PV curve)
+% result = net.calculate_continuation_powerflow(LoadBus=["B009","B014"], Limits="all");
+% result.tab_switch        % PV buses switched to PQ at their Q limits
+% result.tab_stop          % voltage or branch limit that ended the path
 % result.tab_nose          % bus voltages at the nose
 % result.Plot(Bus="all");  % PV curves of every bus
 % result.Export("cpf.csv");
@@ -32,6 +43,8 @@ classdef ResultCPF < ResultBase
         r_noseStep (1,1) double = NaN       % Index of the nose point in rv_lambda and the columns of cm_Vbus.
         rm_x double = zeros(0,0)            % Full variable vector at each point of the path, lambda in the last row (see the class help).
         rm_xPredicted double = zeros(0,0)   % Predicted points of the predictor-corrector method, in the layout of rm_x (first column NaN).
+        tab_switch table = table()          % PV buses switched to PQ by Limits "Q", one row per switch: lambda, Step, Bus, Limit, Bound (see the class help).
+        tab_stop table = table()            % Limit of Limits "V" or "S" that ended the path (0 or 1 row): lambda, Step, Class, Object, Limit, Bound (see the class help).
     end
 
     properties (Dependent) % Result
@@ -40,7 +53,7 @@ classdef ResultCPF < ResultBase
     end
 
     methods
-        function obj = ResultCPF(net, solver, options, flag, output, elapsed, sv_bus, rv_lambda, cm_Vbus, rm_x, rm_xPredicted)
+        function obj = ResultCPF(net, solver, options, flag, output, elapsed, sv_bus, rv_lambda, cm_Vbus, rm_x, rm_xPredicted, tab_switch, tab_stop)
         % Create a continuation power flow result.
         %
         % Stores the computed values of a continuation power flow.
@@ -56,6 +69,8 @@ classdef ResultCPF < ResultBase
                 cm_Vbus       double = zeros(0,0) % [pu] Bus voltages along the path.
                 rm_x          double = zeros(0,0) % Full variable vector along the path.
                 rm_xPredicted double = zeros(0,0) % Predicted points.
+                tab_switch    table  = table() % Switches to PQ (see tab_switch).
+                tab_stop      table  = table() % Limit that ended the path (see tab_stop).
             end
             arguments (Output)
                 obj % The result object.
@@ -66,6 +81,8 @@ classdef ResultCPF < ResultBase
             obj.cm_Vbus       = cm_Vbus;
             obj.rm_x          = rm_x;
             obj.rm_xPredicted = rm_xPredicted;
+            obj.tab_switch    = tab_switch;
+            obj.tab_stop      = tab_stop;
             if ~isempty(obj.rv_lambda)
                 [obj.r_lambdaMax, obj.r_noseStep] = max(obj.rv_lambda);
             end
