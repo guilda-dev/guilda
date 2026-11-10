@@ -268,5 +268,29 @@ const updateLogData = [
     "date": "2026-11-10",
     "type": "feature",
     "content": "comp.set_input(u) edits the inputs of a component at the equilibrium, and net.initialize(Method=\"FixedInput\") solves the states, bus voltages and currents with those inputs held; the Pmech of the first generator of the slack bus balances the power. Until then the analyses and net.initialize() stop with InputEdited; Method=\"powerflow\" replaces the edited inputs. The load properties Z and PQ_st are removed (the values are rv_Uequilibrium)."
+  },
+  {
+    "title": "Operating limits in the continuation power flow",
+    "date": "2026-11-10",
+    "type": "feature",
+    "content": "net.calculate_continuation_powerflow(Limits=[\"Q\",\"V\",\"S\"]) applies the operating limits (tab_parameter.operation) along the path. \"Q\": a PV bus whose generators reach their total Qmin or Qmax becomes a PQ bus with Q fixed at that bound, and the trace goes on. \"V\" (Vmin/Vmax of a bus) and \"S\" (Smax of a branch): the trace stops at the first point that reaches the limit. The switches are in result.tab_switch and the stop in result.tab_stop. Limits=\"all\" applies all three; the default is \"none\" (ContinuationPowerFlow section of GUILDA.setting)."
+  },
+  {
+    "title": "Limit violations of the power flow",
+    "date": "2026-11-10",
+    "type": "feature",
+    "content": "result.tab_violation of net.calculate_powerflow (ResultPF) lists the operating limits (tab_parameter.operation) of buses, branches and components that the solution violates, one row per limit, with 0 rows when there is none. The power flow itself does not apply the limits."
+  },
+  {
+    "title": "Power flow tolerance and warm start",
+    "date": "2026-11-10",
+    "type": "feature",
+    "content": "The default Tolerance of net.calculate_powerflow is 1e-8, the largest P/Q mismatch [pu], with the same meaning for every Solver. The defaults can be changed in the PowerFlowCalculation section of GUILDA.setting. The power flow starts from the last solution of the network (WarmStart, on by default; WarmStart=false for a flat start), so repeated runs with small parameter changes need fewer iterations. The bus parameters V0 and Varg0 are removed: scripts that set them must be changed."
+  },
+  {
+    "title": "Tags must be valid variable names",
+    "date": "2026-11-10",
+    "type": "fix",
+    "content": "Every tag (network, bus, branch, component, controller; s_tag, Tag and FullTag of add_bus, the FullTag column of CSV data) must be a valid MATLAB variable name (isvarname: a letter first, then letters, digits and underscores); any other tag stops with GUILDA:LayerPackage:InvalidTag. The branches of network.IEEJ_WEST10 are now named like LINE20_1 and G1_TR (were LINE20-1, G1-TR), and the AC OPF of IEEJ_WEST10 now solves."
   }
 ];
