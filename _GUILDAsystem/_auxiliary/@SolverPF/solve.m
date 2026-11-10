@@ -177,7 +177,7 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, sct_eq, cv
                 ConvTol=r_tol, MaxIter=auto(n_max, 50), StepSize=sct.NewtonStepSize, Display=sct.Display);
         case "gradient"
             r_alpha = sct.GradientStepSize;
-            if r_alpha == 0
+            if isnan(r_alpha)
                 r_alpha = 0.5/(max(abs(diag(cm_Y))) * max([tab.V; 1], [], "omitnan")^2);
             end
             mt = MethodGradient(Fcn=f_grad, InitVal=rv_xp0, ...
@@ -187,7 +187,7 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, sct_eq, cv
                 ConvTol=r_tol, MaxIter=auto(n_max, 100), Display=sct.Display);
         case "fsolve"
             mt = MethodFsolve(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
-                ConvTol=r_tol, MaxIter=auto(n_max, 400), MaxFunEvals=sct.FsolveMaxFunEvals, Display=sct.Display, ...
+                ConvTol=r_tol, MaxIter=auto(n_max, 400), MaxFunEvals=auto(sct.FsolveMaxFunctionEvaluations, 0), Display=sct.Display, ...
                 UseParallel=sct.FsolveUseParallel, Feature='Solver="fsolve" of the power flow');
     end
     if l_plot
@@ -207,8 +207,8 @@ end
 
 
 function n = auto(n, n_auto)
-% MaxIteration 0 is the automatic value of the method
-    if n == 0
+% NaN is the automatic value of the setting (n_auto: the value given to the method)
+    if isnan(n)
         n = n_auto;
     end
 end

@@ -240,7 +240,7 @@ net = DebugScript.helper.build_9bus();
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
 assert(flag > 0)
 assert(res.s_solver == "SolverPF" && res.a_PowerNetwork == net && res.r_elapsed >= 0)
-assert(res.options.Solver == "newton" && res.options.Tolerance == 1e-8 && res.options.MaxIteration == 0)
+assert(res.options.Solver == "newton" && res.options.Tolerance == 1e-8 && isnan(res.options.MaxIteration) && res.options.Verbose == false)
 % 反復ごとの母線電圧 (最後が解)
 assert(size(res.cm_Vhistory,1) == numel(net.a_Bus) && isequal(res.rv_step, 0:size(res.cm_Vhistory,2)-1))
 assert(norm(res.cm_Vhistory(:,end) - res.tab_bus.Vphasor) < 1e-12)
@@ -281,9 +281,15 @@ s_log = evalc("res = net.calculate_powerflow(Verbose=true, WarmStart=false);");
 assert(res.options.Display == "iter" && strlength(s_log) > strlength(evalc("net.calculate_powerflow(WarmStart=false);")))
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(verbose=false, solver="dynamic"));   % 名前の大文字小文字は区別しない
 assert(res.options.Display == "none" && res.options.Solver == "dynamic")
+% Verbose は GUILDA.setting のキーでもある (他の解析と同じ)。MaxIteration の自動は NaN
+c_cfg = DebugScript.helper.user_config("PowerFlowCalculation", struct("Verbose", true));
+s_log = evalc("res = net.calculate_powerflow(WarmStart=false, MaxIteration=NaN);");
+assert(res.options.Verbose && res.options.Display == "iter" && contains(s_log, "iter") && res.flag == 1)
+clear c_cfg
+assert(error_id(@() net.calculate_powerflow(MaxIteration=-1)) ~= "")
 
 % GUILDA.setting は変わらない。ソルバーは数値の設定を持たない
-assert(isequal(GUILDA.config("PowerFlowCalculation"), sct_before))
+assert(isequaln(GUILDA.config("PowerFlowCalculation"), sct_before))   % NaN = automatic
 assert(~isprop(net.solver_PF, "Method") && ~isprop(net.solver_PF, "Tolerance") && ~isprop(net.solver_PF, "WhenFailed"))
 
 % GUILDA.setting を変えると以後の呼び出しすべてに効く

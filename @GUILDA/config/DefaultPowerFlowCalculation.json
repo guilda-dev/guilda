@@ -17,9 +17,9 @@
         "Description": "[pu] Largest P/Q mismatch of a converged solution (every method)"
     },
     "MaxIteration":{
-        "Value": 0,
+        "Value": NaN,
         "Type": "double",
-        "Description": "Maximum number of iterations. 0: automatic (newton 50, gradient 1e6, levenberg-marquardt 100, fsolve 400)"
+        "Description": "Maximum number of iterations. NaN: automatic (newton 50, gradient 1e6, levenberg-marquardt 100, fsolve 400)"
     },
     "NewtonStepSize":{
         "Value": 1,
@@ -27,19 +27,19 @@
         "Description": "Factor of the Newton-Raphson update ('newton')"
     },
     "GradientStepSize":{
-        "Value": 0,
+        "Value": NaN,
         "Type": "double",
-        "Description": "Step size alpha of 'gradient'. 0: automatic"
+        "Description": "Step size alpha of 'gradient'. NaN: automatic"
     },
     "FsolveUseParallel":{
         "Value": false,
         "Type": "logical",
         "Description": "'UseParallel' option @fsolve"
     },
-    "FsolveMaxFunEvals":{
-        "Value": 0,
+    "FsolveMaxFunctionEvaluations":{
+        "Value": NaN,
         "Type": "double",
-        "Description": "'MaxFunctionEvaluations' option @fsolve. 0: the fsolve default"
+        "Description": "'MaxFunctionEvaluations' option @fsolve. NaN: the fsolve default"
     },
     "WhenFailed":{
         "Value": "WARN",
@@ -51,6 +51,11 @@
             "NONE"
         ],
         "Description": "Behavior if the power flow calculation does not converge"
+    },
+    "Verbose":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Print each iteration and the final message (the fsolve display for 'fsolve')"
     },
     "WarmStart":{
         "Value": true,

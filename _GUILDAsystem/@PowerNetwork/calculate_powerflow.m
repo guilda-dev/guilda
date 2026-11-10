@@ -17,8 +17,8 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 %
 % - `Solver` — Algorithm: "newton", "gradient", "levenberg-marquardt", "fsolve" or "dynamic" (see SolverPF). Default: GUILDA.setting.
 % - `Tolerance` — [pu] Largest P/Q mismatch of a converged solution, for every method. Default: GUILDA.setting (1e-8).
-% - `MaxIteration` — Maximum number of iterations; 0 for the automatic value of the method (see SolverPF). Default: GUILDA.setting (0).
-% - `Verbose` — Print the progress of each iteration. Default: false.
+% - `MaxIteration` — Maximum number of iterations; NaN for the automatic value of the method (see SolverPF). Default: GUILDA.setting (NaN).
+% - `Verbose` — Print the progress of each iteration. Default: GUILDA.setting (false).
 % - `WarmStart` — true starts from the last converged solution of this network (kept by net.solver_PF); false from the flat start (see SolverPF). Default: GUILDA.setting (true).
 % - `PlotFcn` — Live display during the calculation (every Solver): "residual" draws one bar per power equation (two per bus) with its |residual|, updated during the iterations; a function handle is called at every iterate as stop = f(x, optimValues, state) (x the complex bus voltages; optimValues.iteration, .fval = residuals, .residual = the largest, .time = virtual time for "dynamic"; state "init", "iter", "done"), and a true stop ends the calculation with flag -1; "none" draws nothing. The figure after the calculation: result.Plot(). Default: GUILDA.setting ("none").
 % - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
