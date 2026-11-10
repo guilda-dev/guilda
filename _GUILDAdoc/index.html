@@ -418,6 +418,20 @@ sys = net.get_sys();                  % linearized model</code></pre>
 <pre><code>&gt;&gt; GUILDA.setting();</code></pre>
       <img src="./images/setting_startup.png" data-alt-ja="GUILDA の環境設定" alt="GUILDA Environment Settings" class="gs-settings-img">
 
+      <h3 id="gs-setting-command"><span lang="en">Changing Settings by Command</span><span lang="ja">コマンドによる設定の変更</span></h3>
+      <p lang="en">Give a category and Name-Value arguments to change settings without opening the window. The change is saved as with Apply in the window and stays after MATLAB restarts. Tab completion lists the categories, the setting names and the choices of a setting. <code>GUILDA.config</code> reads a setting.</p>
+      <p lang="ja">カテゴリと Name-Value 引数を渡すと、ウィンドウを開かずに設定を変更。ウィンドウの Apply と同じく保存され、MATLAB を再起動しても維持。Tab 補完でカテゴリ、設定名、設定の選択肢を表示。設定の読み出しは <code>GUILDA.config</code>。</p>
+<pre><code>&gt;&gt; GUILDA.setting("PowerFlowCalculation", Tolerance=1e-10, WhenFailed="ERROR")
+&gt;&gt; GUILDA.config("PowerFlowCalculation", "Tolerance")</code></pre>
+      <ul lang="en">
+        <li>An unknown category or setting, or a value of the wrong type or not among the choices, stops with an error and changes nothing.</li>
+        <li>A new version of GUILDA may reset the settings of a category to the defaults, also the values you changed. GUILDA then prints <code>INFO:</code> with the category at startup.</li>
+      </ul>
+      <ul lang="ja">
+        <li>未知のカテゴリや設定、型の違う値や選択肢にない値はエラーで停止し、何も変更しない</li>
+        <li>GUILDA の新しい版で、カテゴリの設定が既定値に戻る場合あり（変更した値も含む）。その場合は起動時にカテゴリ名つきの <code>INFO:</code> を表示</li>
+      </ul>
+
       <h3 id="gs-messages"><span lang="en">Warnings and INFO Messages</span><span lang="ja">警告と INFO メッセージ</span></h3>
       <p lang="en">The <code>Message</code> category of <code>GUILDA.setting()</code> shows or hides the messages of GUILDA. Errors are always shown.</p>
       <p lang="ja"><code>GUILDA.setting()</code> の <code>Message</code> カテゴリで、GUILDA のメッセージの表示・非表示を切り替え。エラーは常に表示。</p>
@@ -438,6 +452,8 @@ sys = net.get_sys();                  % linearized model</code></pre>
 &gt;&gt; GUILDA.addpath()     % Add the required folders again
 &gt;&gt; GUILDA.gitpull()     % Pull the latest revision from GitHub
 &gt;&gt; GUILDA.setting()     % Open environment and startup settings
+&gt;&gt; GUILDA.setting("Message", ShowInfo=false)   % Change settings by command
+&gt;&gt; GUILDA.config("Message", "ShowInfo")        % Read a setting
 &gt;&gt; GUILDA.tutorial()    % Open the tutorial
 &gt;&gt; GUILDA.doc()         % Open this documentation
 &gt;&gt; GUILDA.dictionary()  % Search the implemented class hierarchy

@@ -347,6 +347,23 @@
       <li><code>net.solver_CPF</code>: 条件 <code>LoadBus</code>（public プロパティ）を保持。<code>net.solver_ODE</code>、<code>net.solver_LIN</code>: 設定なし</li>
       <li><code>net.solver_PF</code> と <code>net.solver_OPF</code> が保持した解を破棄するのはネットワークの <code>Topology</code> の編集のときのみ。<code>net.reset_solver()</code> はすべてのソルバーを置き換え</li>
     </ul>
+    <h3 id="settings-files"><span lang="en">Settings files and their version</span><span lang="ja">設定ファイルとその版</span></h3>
+    <ul lang="en">
+      <li>Each category of <code>GUILDA.setting</code> is a default file <code>@GUILDA/config/Default&lt;Category&gt;.json</code> (shipped): per setting <code>Value</code>, <code>Type</code> (<code>double</code>, <code>logical</code>, <code>string</code>, <code>select</code> with <code>options</code>) and <code>Description</code>, plus a top-level <code>version</code></li>
+      <li>The values of the user go to <code>@GUILDA/user/Default&lt;Category&gt;.json</code> (not committed) with the <code>version</code> of the default file: written by Apply in the window, by <code>GUILDA.setting(Category, Name=Value)</code> and at startup</li>
+      <li><code>GUILDA.config</code> reads the defaults merged with the user values and caches them; writing the user files reads them again, so the next call and analysis use the new values</li>
+      <li>A user file whose <code>version</code> differs from that of the default file, or has none, is ignored and written again with the defaults; the category is reported as <code>INFO</code> (<code>GUILDA:GUILDA:ConfigReset</code>)</li>
+      <li><strong>Raise the <code>version</code> of a default file</strong> when you change a default value, a key name, the <code>Type</code> or <code>options</code>, or the structure of the file. The users then start from the new defaults, so no conversion of old user files is needed. A change of <code>Description</code> only needs no new version</li>
+      <li>After any change of a default file, run <code>GUILDA.update_keymap(Signature=true)</code>: the completion of <code>GUILDA.setting</code> is generated from these files</li>
+    </ul>
+    <ul lang="ja">
+      <li><code>GUILDA.setting</code> の各カテゴリは既定ファイル <code>@GUILDA/config/Default&lt;Category&gt;.json</code>（配布物）。設定ごとに <code>Value</code>、<code>Type</code>（<code>double</code>、<code>logical</code>、<code>string</code>、<code>options</code> つきの <code>select</code>）、<code>Description</code>。最上位に <code>version</code></li>
+      <li>利用者の値は <code>@GUILDA/user/Default&lt;Category&gt;.json</code>（コミットしない）に既定ファイルの <code>version</code> とともに保存。書き込むのはウィンドウの Apply、<code>GUILDA.setting(Category, Name=Value)</code>、起動時の処理</li>
+      <li><code>GUILDA.config</code> は既定値に利用者の値を重ねて読み、キャッシュ。利用者のファイルを書くと読み直すため、直後の呼び出しと解析が新しい値を使用</li>
+      <li>利用者のファイルの <code>version</code> が既定ファイルと違う、または無い場合は、そのファイルを無視して既定値で書き直し。カテゴリ名を <code>INFO</code>（<code>GUILDA:GUILDA:ConfigReset</code>）で通知</li>
+      <li><strong>既定ファイルの <code>version</code> を上げる</strong>のは、既定値、キー名、<code>Type</code> や <code>options</code>、ファイルの構造を変えたとき。利用者は新しい既定値から始めるため、旧ファイルの変換は不要。<code>Description</code> だけの変更では上げない</li>
+      <li>既定ファイルを変えたら <code>GUILDA.update_keymap(Signature=true)</code> を実行。<code>GUILDA.setting</code> の補完はこれらのファイルから生成</li>
+    </ul>
     <p lang="en">System data (line constants, power-flow specifications, limits) is not a solver setting: set it beforehand on the model objects through properties and <code>tab_parameter</code> (see <a href="api-design.html#rules">API Design, rule 2</a>).</p>
     <p lang="ja">系統データ（線路定数、潮流計算の指定値、制限値）はソルバーの設定ではない。プロパティと <code>tab_parameter</code> を通じて、事前にモデルオブジェクトに設定（<a href="api-design.html#rules">API 設計のルール 2</a> を参照）。</p>
 

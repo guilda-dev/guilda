@@ -11,7 +11,17 @@ GUILDA.pwd
 
 %% 環境設定 (設定ウィンドウが開く)
 % 確認: 各タブの値を変更して保存 → @GUILDA/user/*.json に反映される
+% 確認: Apply のあと GUILDA.config("<カテゴリ>","<名前>") が新しい値を返す (保存したファイルに version が付く)
 GUILDA.setting
+
+%% 環境設定のコマンドと Tab 補完
+% 確認: GUILDA.setting( で Tab → カテゴリの一覧、GUILDA.setting("PowerFlowCalculation", で Tab → 設定名の一覧、
+%       WhenFailed= で Tab → "WARN" "DISP" "ERROR" "NONE"
+% 確認: 次の行のあと、設定ウィンドウを開くと Tolerance が 1e-10 になっている (確認後に元の値へ戻す)
+s_old = GUILDA.config("PowerFlowCalculation", "Tolerance");
+GUILDA.setting("PowerFlowCalculation", Tolerance=1e-10)
+GUILDA.setting
+% GUILDA.setting("PowerFlowCalculation", Tolerance=s_old)
 
 %% チュートリアルの起動 (_GUILDAtutorial/Main.mlx が開く)
 GUILDA.tutorial
