@@ -668,10 +668,14 @@ for s_solver = ["newton","levenberg-marquardt","gradient","fsolve","dynamic"]
     a_fig = findall(groot, "Type", "figure", "Tag", s_tag);
     a_bar = findobj(fig, "Type", "bar");
     assert(isscalar(a_fig) && a_fig == fig && numel(a_bar) == 2, s_solver)
-    % 最後の反復の残差 (下限 Tolerance/100 で切る)、題に Solver
+    % 最後の反復の残差 (0 は棒なし = NaN)、題に Solver
     rm_F = [a_bar(2).YData(:), a_bar(1).YData(:)];
-    assert(numel(rm_F) == 2*n_bus && max(rm_F(:)) <= max(res1.options.Tolerance, 1e-10) + eps, s_solver)
-    s_title = string(findobj(fig, "Type", "axes").Title.String);
+    r_tol = res1.options.Tolerance;
+    assert(numel(rm_F) == 2*n_bus && max(rm_F(:), [], "omitnan") <= 1.01*r_tol && all(rm_F(:) > 0 | isnan(rm_F(:))), s_solver)
+    % 縦軸は最小の残差と Tolerance の 1/10 以下から最大の 10 倍以上 (棒と Tolerance の線が見える)
+    ax = findobj(fig, "Type", "axes");
+    assert(ax.YLim(1) <= min([rm_F(:); r_tol], [], "omitnan")/10 && ax.YLim(2) >= 10*r_tol && a_bar(1).BaseValue == ax.YLim(1), s_solver)
+    s_title = string(ax.Title.String);
     assert(contains(s_title, "(" + s_solver + ")"), s_title)
 end
 % 反復の途中で更新される (MaxIteration=1 の newton は残差が許容誤差より大きい棒のまま終わる)

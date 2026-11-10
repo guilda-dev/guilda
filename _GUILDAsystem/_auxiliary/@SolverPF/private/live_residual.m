@@ -8,7 +8,9 @@ function f_iter = live_residual(PlotFcn, s_solver, f_res, tab, r_tol)
 %
 % - "residual": one bar per power equation (two per bus, in the order of f_res: P, or
 %   the angle at the slack bus; Q, or |V| at PV and slack buses), with the height |F| of
-%   the equation at the iterate (log scale, Tolerance as a dashed line). One figure (Tag
+%   the equation at the iterate (log scale from a decade below the smallest nonzero
+%   residual and Tolerance to a decade above the largest; an exact zero has no bar;
+%   Tolerance as a dashed line; the legend above the axes). One figure (Tag
 %   "GUILDA:PlotFcn:residual") is reused; it is redrawn at most every
 %   0.2 s and at the end (so that drawing does not slow the iteration down).
 % - A function handle is called at every iterate as stop = PlotFcn(x, optimValues, state)
@@ -30,7 +32,6 @@ function f_iter = live_residual(PlotFcn, s_solver, f_res, tab, r_tol)
     if isa(PlotFcn, "function_handle")
         f_user = PlotFcn;
     end
-    r_floor = r_tol/100;          % bars below it are drawn at it (log scale)
     a_bar   = [];
     ax      = [];
     t_draw  = [];
@@ -66,10 +67,15 @@ function f_iter = live_residual(PlotFcn, s_solver, f_res, tab, r_tol)
         if isempty(a_bar) || ~all(isgraphics(a_bar))
             return               % the figure was closed
         end
-        rm_F = reshape(max(abs(full(rv_F)), r_floor), 2, []).';
+        rm_F = reshape(abs(full(rv_F)), 2, []).';
+        rm_F(rm_F == 0) = NaN;    % an exact zero has no bar on the log scale
+        % range: a decade below the smallest nonzero residual and Tolerance, a decade above the largest
+        r_low  = 10^floor(log10(min([rm_F(:); r_tol], [], "omitnan")/10));
+        r_high = 10^ceil(log10(10*max([rm_F(:); r_tol], [], "omitnan")));
+        set(a_bar, "BaseValue", r_low);
         a_bar(1).YData = rm_F(:,1);
         a_bar(2).YData = rm_F(:,2);
-        ylim(ax, [r_floor, 10^ceil(log10(max([rm_F(:); 10*r_floor])))]);
+        ylim(ax, [r_low, r_high]);
         if s_solver == "dynamic"
             s_step = sprintf("virtual time %.4g", k);
         else
@@ -106,13 +112,14 @@ function f_iter = live_residual(PlotFcn, s_solver, f_res, tab, r_tol)
         end
         sv_bus = string(tab.Properties.RowNames);
         ax = axes(fig);
-        a_bar = bar(ax, categorical(sv_bus, sv_bus), r_floor*ones(n_bus, 2), "BaseValue", r_floor);
+        a_bar = bar(ax, categorical(sv_bus, sv_bus), nan(n_bus, 2), "BaseValue", r_tol/10);
         set(ax, "YScale", "log");
         hold(ax, "on");
         yline(ax, r_tol, "--", "Tolerance", "HandleVisibility", "off");
         hold(ax, "off");
         ylabel(ax, "|residual| [pu]");
-        legend(ax, ["P (angle at slack)", "Q (|V| at PV and slack)"], "Location", "northeast");
+        legend(ax, ["P (angle at slack)", "Q (|V| at PV and slack)"], "Location", "northoutside", ...
+               "Orientation", "horizontal", "AutoUpdate", "off");
         grid(ax, "on");
     end
 end
