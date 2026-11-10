@@ -419,8 +419,8 @@ sys = net.get_sys();                  % linearized model</code></pre>
       <img src="./images/setting_startup.png" data-alt-ja="GUILDA の環境設定" alt="GUILDA Environment Settings" class="gs-settings-img">
 
       <h3 id="gs-setting-command"><span lang="en">Changing Settings by Command</span><span lang="ja">コマンドによる設定の変更</span></h3>
-      <p lang="en">Give a category and Name-Value arguments to change settings without opening the window. The change is saved as with Apply in the window and stays after MATLAB restarts. Tab completion lists the categories, the setting names and the choices of a setting. <code>GUILDA.config</code> reads a setting.</p>
-      <p lang="ja">カテゴリと Name-Value 引数を渡すと、ウィンドウを開かずに設定を変更。ウィンドウの Apply と同じく保存され、MATLAB を再起動しても維持。Tab 補完でカテゴリ、設定名、設定の選択肢を表示。設定の読み出しは <code>GUILDA.config</code>。</p>
+      <p lang="en">Give a category and Name-Value arguments to change settings without opening the window. The change is saved as with Apply in the window and stays after MATLAB restarts. <code>GUILDA.config</code> reads a setting.</p>
+      <p lang="ja">カテゴリと Name-Value 引数を渡すと、ウィンドウを開かずに設定を変更。ウィンドウの Apply と同じく保存され、MATLAB を再起動しても維持。設定の読み出しは <code>GUILDA.config</code>。</p>
 <pre><code>&gt;&gt; GUILDA.setting("PowerFlowCalculation", Tolerance=1e-10, WhenFailed="ERROR")
 &gt;&gt; GUILDA.config("PowerFlowCalculation", "Tolerance")</code></pre>
       <ul lang="en">

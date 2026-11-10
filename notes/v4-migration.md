@@ -728,16 +728,14 @@ Option names:
     and inputs driven by a local controller: see 1.6.
 - **Settings key.** The default progress display is the key `Progress` of
   `@GUILDA/config/DefaultTimeSimulation.json` (was `Reporter`, same values
-  `"none"` | `"disp"` | `"dialog"`). A user settings file
-  (`@GUILDA/user/DefaultTimeSimulation.json`) with the old key is read as
-  `Progress` and rewritten with the new key at startup, without a warning;
-  when it has both keys, `Progress` wins.
+  `"none"` | `"disp"` | `"dialog"`). User settings files are not converted:
+  a user file whose `version` differs from that of its default file (or has
+  none) is reset to the defaults with an INFO (`GUILDA:GUILDA:ConfigReset`).
 - Deprecated, still working:
 
   | Old form | Warning ID |
   |----------|------------|
   | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `GUILDA:Deprecated:SimulateOptionName` |
-  | user settings key `Reporter` | (no warning; converted to `Progress`) |
 
 - Fixed earlier (stage 1): `simulate` works without events, clears previous
   phase results, keeps phases inside the requested time range, applies
@@ -1279,7 +1277,6 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | `Continuation_Power_Flow(net, opt)` | `GUILDA:Deprecated:ContinuationPowerFlowFunction` | warning; returns a `ContinuationPowerFlowV3` (v3 properties, `solve`, `CPF_Result`) |
 | `SolverCPF(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | error |
 | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `GUILDA:Deprecated:SimulateOptionName` | warning; becomes `Progress` / `Tolerance` |
-| user settings key `TimeSimulation.Reporter` (`@GUILDA/user/DefaultTimeSimulation.json`) | – | no warning; read as `Progress` (an existing `Progress` wins); the startup writes the file back with the new key |
 | `SolverLIN(net, NonUnit, Name, Value)` | `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` | error |
 | `net.linearize` / `net.get_sys` の `Algorithm=a` | `GUILDA:Deprecated:LinearizeAlgorithm` | 警告。`Method=a` として扱う |
 | `net.linearize` / `net.get_sys` の `NonUnit=n` | `GUILDA:Deprecated:LinearizeNonUnit` | 警告。状態のない母線は無視。状態のある母線は `Feedback` で `GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus`、存在しない母線は `GUILDA:v3_nonunit_range:NonUnit` のエラー |
@@ -1318,7 +1315,6 @@ lists all of them:
 | `_auxiliary/@SolverLIN/get_options.m` | `sct_options.NonUnit = rv_nonUnit` | 指定があるときだけ結果の `options` に残す |
 | `_auxiliary/@SolverLIN/solve.m` | `v3_nonunit_range(sct_options, n_bus)` | 存在しない母線のエラー |
 | `_auxiliary/@ResultLIN/get_ss.m` | `v3_nonunit_dynamic(obj.options, s.c_sysBus)` | 状態のある母線のエラー |
-| `@GUILDA/private/get_config.m` | `v3_user_config(field, ...)` | user settings key `Reporter` → `Progress` |
 
 `DebugScript.test_F10_api_foundation` checks this list and that core code
 does not call `Deprecated` outside a hook line. Update both when a hook is
@@ -1351,7 +1347,6 @@ settings (an untagged line, needed by the `get_config` hook).
 | `v3_solver_nonunit.m` | `solver_LIN.NonUnit` の setter |
 | `v3_nonunit_range.m` | `NonUnit` の存在しない母線のエラー |
 | `v3_nonunit_dynamic.m` | `NonUnit` の状態のある母線のエラー |
-| `v3_user_config.m` | user settings key `TimeSimulation.Reporter` → `Progress` |
 | `v3_initialize_args.m` | `initialize` option `methods` and old method values |
 | `ODEevent.m` | 旧イベント `ODEevent(tag, net, ...)`。外乱 1 つの `Scenario` を `net` に追加して返す |
 
@@ -1404,7 +1399,6 @@ selects it only for 6 outputs, so 4 or 5 outputs are an error.
      "Deprecated NonUnit naming a missing bus is rejected",
      "Deprecated solver_LIN.NonUnit warns and acts as the option"
    - F8 "Deprecated CsvNetHandler wrappers"
-   - F9 the `v3_user_config` asserts in "GUILDA config reads settings"
    - F10 "Legacy output …", "COMPAT hook helper for add_bus baseMVA",
      "COMPAT hooks are single tagged lines …"
 4. `SolverODE.get_options` reads the default `Progress` from the `Progress` key of

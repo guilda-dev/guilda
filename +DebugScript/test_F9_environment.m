@@ -34,19 +34,6 @@ end
 assert(GUILDA.config("Model", "Hz") == 60)
 cf = GUILDA.config("TimeSimulation");
 assert(isstruct(cf) && isfield(cf, "Progress") && ~isfield(cf, "Reporter"))
-% COMPAT(v3): 旧ユーザー設定のキー Reporter は Progress として読む
-sct_old = v3_user_config("TimeSimulation", struct("Reporter", "disp", "TimeLimit", 5));
-assert(isequal(sct_old, struct("TimeLimit", 5, "Progress", "disp")))
-sct_both = v3_user_config("TimeSimulation", struct("Reporter", "disp", "Progress", "none"));
-assert(isequal(sct_both, struct("Progress", "none")))
-assert(isequal(v3_user_config("Model", struct("Reporter", 1)), struct("Reporter", 1)))
-% 潮流計算の旧キー: 改名、削除、Tolerance 0 (旧「手法の既定」) は削除して既定値を使う
-% PlotFcn は消さない (表示の種類を受け付ける現行のキー。旧ファイルは version の仕組みで既定に戻る)
-sct_pf = v3_user_config("PowerFlowCalculation", struct("MaxIterations", 20, "UseParallel", true, ...
-    "MaxFunEvals", 0, "Display", "iter", "PlotFcn", "none", "Tolerance", 0, "Method", "newton"));
-assert(isequal(sct_pf, struct("PlotFcn", "none", "Method", "newton", "MaxIteration", 20, "FsolveUseParallel", true, "FsolveMaxFunEvals", 0)))
-sct_pf = v3_user_config("PowerFlowCalculation", struct("MaxIterations", 20, "MaxIteration", 5, "Tolerance", 1e-6));
-assert(isequal(sct_pf, struct("MaxIteration", 5, "Tolerance", 1e-6)))
 % 潮流計算の設定: MethodNewtonRaphson のセクションはなく、連続潮流計算の修正子はそのセクション
 cf = GUILDA.config();
 assert(~isfield(cf, "MethodNewtonRaphson"))

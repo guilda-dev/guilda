@@ -3,7 +3,7 @@ const updateLogData = [
     "title": "Change settings by command",
     "date": "2026-11-10",
     "type": "feature",
-    "content": "GUILDA.setting(\"PowerFlowCalculation\", Tolerance=1e-10) changes settings without opening the window and saves them, with Tab completion of the categories and settings. A new version of GUILDA may reset the settings of a category to their defaults; GUILDA then prints INFO at startup."
+    "content": "GUILDA.setting(\"PowerFlowCalculation\", Tolerance=1e-10) changes settings without opening the window and saves them. A new version of GUILDA may reset the settings of a category to their defaults; GUILDA then prints INFO at startup."
   },
   {
     "title": "OPF fixes",

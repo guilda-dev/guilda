@@ -29,7 +29,7 @@ function [out, sv_reset] = get_config(varargin)
         if isfile(path_def_user)
             [sct_user, version_user] = split_version(readstruct(path_def_user));
             if isequal(version_user, version_sys)
-                env_user.(field) = v3_user_config(field, sct_user);   % COMPAT(v3)
+                env_user.(field) = sct_user;
             else
                 sv_reset(end+1,1) = field; %#ok<AGROW>
             end

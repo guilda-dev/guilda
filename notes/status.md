@@ -134,10 +134,10 @@ matlab -batch "DebugScript.run_all('Level','small')"
 ブランチは `feature/setting-command`(未 push)。
 
 - `GUILDA.setting("カテゴリ", 名前=値, ...)` で、ウィンドウを開かずに設定を変更できる。値は既定の JSON の `Type`(`double`・`logical`・`string`・`select` と `options`)で検証し、未知のカテゴリ・名前や不正な値は何も変えずにエラー(`GUILDA:GUILDA:UnknownSettingCategory`・`UnknownSettingName`・`SettingNameValue`・`InvalidSettingValue`)。保存はウィンドウの Apply と同じ `set_config` で、`GUILDA.config` のキャッシュも読み直す。
-- Tab 補完は `GUILDA.update_keymap(Signature=true)` が `@GUILDA/config/Default*.json` から生成する。MATLAB は `@GUILDA` の補完を隣の `resources` フォルダからしか読まないため、出力はリポジトリルートの `resources/functionSignatures.json`(新設のフォルダ)。
+- カテゴリ名・設定名の Tab 補完はしない。MATLAB は `@GUILDA` の補完を隣の `resources` フォルダ(リポジトリルート)からしか読まず、ルートにフォルダを増やさないとメンテナーが判断した(2026-11-10)。
 - 利用者の JSON には既定ファイルの `version` を書く。`version` が違う・無いカテゴリは既定値で書き直し、INFO(`GUILDA:GUILDA:ConfigReset`)で知らせる。既定値・キー名・構造を変えたら `version` を上げる(class-design.html「設定ファイルとその版」)。これで潮流計算の手順 B の要判断「既定値が既存の環境に届かない件」も、version を上げれば解消する。
-- `v3_user_config` は `PlotFcn` を消さない。
-- **提案(未実施):** 既定ファイルに `version` を入れると、これまでの利用者の JSON(version なし)はすべて既定値に戻るため、`v3_user_config` の残りの変換(`Reporter` → `Progress`、潮流計算の旧キーの改名、`Display` と `Tolerance` 0 の削除)は働く場面がなくなる。`v3_user_config` と `get_config` からの呼び出し、F9 の該当テストの削除を提案する。
+- `v3_user_config`(利用者設定の旧キーの変換)は削除した。既定ファイルに `version` が入ると、version のない利用者の JSON はすべて既定値に戻るため、変換の働く場面がない。
+- **未実施:** 各 `Default*.json` への `version` の追加(全カテゴリ 1 から)。`feature/plotfcn` のマージ後に行う。
 
 ## 入力を固定した平衡点と Solver / Method の名前(2026-11-10)
 

@@ -10,28 +10,23 @@
 
 % 共通設定 (各テストの前に毎回実行される)
 s_file = fullfile(GUILDA.pwd, "_GUILDAsystem", "resources", "functionSignatures.json");
-s_file_setting = fullfile(GUILDA.pwd, "resources", "functionSignatures.json");   % GUILDA.setting (@GUILDA の隣)
 
 
 %% functionSignatures.json matches the arguments blocks
 % GUILDA.update_keymap(Signature=true) で作り直しても内容が変わらない
-% (GUILDA.setting の分は @GUILDA/config/Default*.json から作る)
-sv_file = [s_file, s_file_setting];
-sv_old = arrayfun(@(f) string(fileread(f, "Encoding", "UTF-8")), sv_file);
+s_old = string(fileread(s_file, "Encoding", "UTF-8"));
 evalc("GUILDA.update_keymap(Signature=true);");
-sv_new = arrayfun(@(f) string(fileread(f, "Encoding", "UTF-8")), sv_file);
-for k = find(sv_new ~= sv_old)
-    fid = fopen(sv_file(k), 'w', 'n', 'UTF-8');  fprintf(fid, '%s', sv_old(k));  fclose(fid);
+s_new = string(fileread(s_file, "Encoding", "UTF-8"));
+if s_new ~= s_old
+    fid = fopen(s_file, 'w', 'n', 'UTF-8');  fprintf(fid, '%s', s_old);  fclose(fid);
     matlab.lang.internal.introspective.tabcompletion.manageCaches("all", "clear");
 end
-assert(isequal(sv_new, sv_old), "functionSignatures.json is out of date: run GUILDA.update_keymap(Signature=true)")
+assert(s_new == s_old, "functionSignatures.json is out of date: run GUILDA.update_keymap(Signature=true)")
 
 
 %% functionSignatures.json passes validateFunctionSignaturesJSON
-for s_f = [s_file, s_file_setting]
-    txt = evalc("validateFunctionSignaturesJSON(char(s_f))");
-    assert(isempty(regexp(txt, "^L \d+ \(C", "once", "lineanchors")), txt)
-end
+txt = evalc("validateFunctionSignaturesJSON(char(s_file))");
+assert(isempty(regexp(txt, "^L \d+ \(C", "once", "lineanchors")), txt)
 
 
 %% functionSignatures.json covers the methods that build or remove a model
@@ -73,15 +68,6 @@ assignin("base", "gen__F34", evalin("base", "sys__F34.a_Bus{1}.a_Component{1}"))
 c_gen = onCleanup(@() evalin("base", "clear gen__F34"));
 sv_con = evalin("base", "string(gen__F34.a_LocalController)");
 assert(all(ismember(sv_con, choices('gen__F34.remove_local_controller('))))
-
-
-%% GUILDA setting suggests the categories, the settings and their options
-sv_cat = string(fieldnames(GUILDA.config()))';
-assert(isequal(sort(choices('GUILDA.setting(')), sort(sv_cat)))
-sv_name = string(fieldnames(GUILDA.config("PowerFlowCalculation")))';
-assert(isequal(sort(choices('GUILDA.setting("PowerFlowCalculation", ')), sort(sv_name)))
-assert(isequal(sort(choices('GUILDA.setting("PowerFlowCalculation", WhenFailed=')), sort(["WARN","DISP","ERROR","NONE"])))
-assert(isequal(sort(choices('GUILDA.setting("Message", ')), sort(["ShowWarning","ShowInfo"])))
 
 
 %% A bus without components keeps the suggestions of the later arguments
