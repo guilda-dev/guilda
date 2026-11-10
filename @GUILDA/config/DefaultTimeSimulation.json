@@ -19,13 +19,9 @@
         "Description": "Absolute error tolerance, 'AbsoluteTolerance' of the ode object (1e-15 <= tol <= 1e-3)"
     },
     "SeparateComplexParts":{
-        "Value": "off",
-        "Type": "select",
-        "options":[
-            "on",
-            "off"
-        ],
-        "Description": "SeparateComplexParts property of the MATLAB ode object"
+        "Value": false,
+        "Type": "logical",
+        "Description": "SeparateComplexParts property of the MATLAB ode object (true: 'on', false: 'off')"
     },
     "Progress":{
         "Value": "dialog",

@@ -21,7 +21,8 @@ classdef SolverODE < auxiliary
 % - `OptionMap` is the input of tools.resolve_options. Solver, Tolerance, TimeLimit,
 %   Progress, Verbose and PlotFcn are common names; Tolerance is the relative tolerance.
 %   AbsoluteTolerance, SolverOptions and SeparateComplexParts keep the names of the MATLAB
-%   ode object. Each name except SolverOptions is also the key of the setting. PlotFcn
+%   ode object (SeparateComplexParts is logical and given to ode as "on" / "off"). Each
+%   name except SolverOptions is also the key of the setting. PlotFcn
 %   (live display) is "none" only (tools.check_plotfcn); result.Plot() draws the result.
 %
 % <@Examples>
