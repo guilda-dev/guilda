@@ -24,7 +24,7 @@ function sct_options = get_options(obj, nv)
     sct_options.UseInternalState = logical(sct_options.UseInternalState);
     sct_options.Verbose = logical(sct_options.Verbose);
     validate_options(Limits=sct_options.Limits);    % also the value of GUILDA.setting
-    tools.check_plotfcn(sct_options.PlotFcn, "calculate_continuation_powerflow");
+    sct_options.PlotFcn = tools.check_plotfcn(sct_options.PlotFcn, "calculate_continuation_powerflow", "pvcurve");
 end
 
 

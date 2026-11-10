@@ -65,8 +65,15 @@ function [result,flag,output] = solve(obj, net, sct_options)
     rv_N     = zeros(1,0);
     g_current = limit_values(lim, st.w, sol, Ymat);
 
+    l_plot   = ~isequal(sct_options.PlotFcn, "none");
+    l_halted = false;
+    if l_plot
+        f_step   = live_pvcurve(sct_options.PlotFcn, string(net.a_Bus(:)), w.rv_BusVi);
+        l_halted = f_step(sol(:,end), 0, 0, "init");
+    end
+
     Iteration = 1;
-    while Iteration <= sct_options.MaxIteration && isempty(st.c_stop)
+    while Iteration <= sct_options.MaxIteration && isempty(st.c_stop) && ~l_halted
 
         [x_pred,t_old] = predict(st.f_Jac, r_h, x_current, x_past, t_old);
         r_h = sct_options.StepSize;
@@ -111,10 +118,17 @@ function [result,flag,output] = solve(obj, net, sct_options)
             end
         end
 
+        if l_plot && f_step(sol(:,end), N, Iteration, "iter")
+            l_halted = true;
+            break
+        end
         if x_current(end) < 0
             break;
         end
         Iteration = Iteration + 1;
+    end
+    if l_plot
+        f_step(sol(:,end), 0, numel(rv_N), "done");
     end
 
     rm_x    = sol;
@@ -133,7 +147,10 @@ function [result,flag,output] = solve(obj, net, sct_options)
     output = struct();
     output.iterations          = numel(rv_lambda) - 1;
     output.correctorIterations = rv_N;
-    if l_stop
+    if l_halted
+        output.message = sprintf("The path was stopped by PlotFcn at lambda = %.6g (step %d).", ...
+                                 rv_lambda(end), output.iterations);
+    elseif l_stop
         output.message = sprintf("The path stopped at the operating limit %s = %.6g of %s %s at lambda = %.6g (step %d of %d).", ...
                                  tab_stop.Limit, tab_stop.Bound, lower(tab_stop.Class), tab_stop.Object, ...
                                  tab_stop.lambda, tab_stop.Step - 1, output.iterations);
