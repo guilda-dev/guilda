@@ -1,9 +1,10 @@
 classdef GlobalController < PowerSystemModel
 % Abstract class of a controller that acts on several components of a network, such as an AGC.
 %
-% A global controller is a dynamical system with state $x$, input $u$ and output $y$. Its
-% input signals are states of the controlled components (`controlledUnits`), read by the names
-% in `sv_u`, and its outputs are inputs of those components. Subclasses in the
+% A global controller is a dynamical system with state $x$, input $u$ and output $y$. It
+% observes the controlled components (`controlledUnits`) by the names in `sv_u` and the
+% voltages of all buses (its port V), and its outputs drive inputs of those components or of
+% their local controllers. Subclasses in the
 % `controller` package define the static model functions (`fcn_dx`, `fcn_y`, `fcn_Mass`), their Jacobians and the
 % variable names. A global controller is built for a network and added with
 % `PowerNetwork.add_global_controller` from its model key `key` (e.g. "agc-PI").
@@ -13,13 +14,26 @@ classdef GlobalController < PowerSystemModel
 % - The components it acts on, `controlledUnits`, are associations fixed by its
 %   constructor, which receives the network only to look them up. While the controller is
 %   on the network, its units cannot be removed or replaced, nor their buses removed.
-% - Input signals `sv_u`: states of each controlled unit, matched by name in the `sv_x` of the
-%   unit. Output signals `sv_y`: added to the inputs of the same name in the `sv_u` of the unit.
-%   For example, `controller.agc.broadcast_PI_AGC` reads the speed state "omega" of each
+% - Input signals `sv_u`: for each controlled unit, in the order of `controlledUnits`, the
+%   outputs `sv_y` of the unit of these names, or its states `sv_x` (an output is read when
+%   both have the name, as for a local controller): u = [sv_u of unit 1; sv_u of unit 2; ...].
+%   `iv_obsY` / `iv_obsX` hold where each input is read. A tripped unit gives 0.
+% - Port V: the voltages of all buses [Vre1; Vim1; Vre2; ...] in the order of `a_Bus`. The
+%   flow of a branch is not an input: the controller computes it from V and the branch data.
+% - Output signals `sv_y`, one set per controlled unit in the same order: an output goes to
+%   every local controller of the unit (nested ones included) that has an input of that name,
+%   and then not to the component; the controller input receives the sum of what it reads
+%   without the global controller (an output or a state of the component, the output of a
+%   nested controller, or its equilibrium) and the output. Otherwise the output is added to
+%   the input of that name of the component. `sv_route` records where each output goes;
+%   `PowerNetwork.add_global_controller` shows it, and a simulation shows what changed
+%   (e.g. after a local controller is removed) as an INFO message.
+%   For example, `controller.agc.broadcast_PI_AGC` reads the speed "omega" of each
 %   generator and adds to its input "Pmech".
-% - Unlike a `LocalController`: no port V (its functions receive [] or zeros(2,1),
-%   which they must not use), no nested controller, no observation by output name. It
-%   does not own its units and is not a child of any bus.
+% - The outputs must be 0 at the equilibrium (net.initialize checks it), as they add to
+%   inputs whose equilibrium is already set.
+% - Unlike a `LocalController`: no nested controller. It does not own its units and is not a
+%   child of any bus.
 % - Only the network sets and clears `a_PowerNetwork` (`SetAccess`;
 %   `PowerNetwork.add_global_controller` logs the attachment as a "Topology" edit).
 % - The handles `f_*` @(t,x,V,u) bind param and omega0; `set_odefcn` builds them,
@@ -46,8 +60,8 @@ classdef GlobalController < PowerSystemModel
         key (1,1) string                           % Model key that selects the class in PowerNetwork.add_global_controller.
         s_role (1,1) string                        % Role of the controller, e.g. "agc".
         sv_x (:,1) string                          % Names of the states.
-        sv_u (:,1) string                          % Names of the inputs (states of the controlled units).
-        sv_y (:,1) string                          % Names of the outputs (inputs of the controlled units).
+        sv_u (:,1) string                          % Names of the inputs, read on each controlled unit (its outputs, else its states).
+        sv_y (:,1) string                          % Names of the outputs, for each controlled unit (inputs of its local controllers, else of the unit).
         sv_para (:,1) string                       % Names of the dynamic parameters passed to the model functions.
     end
 
@@ -63,11 +77,14 @@ classdef GlobalController < PowerSystemModel
     end
     properties (SetAccess=protected, Hidden) % Layer Structure
         controlledUnits                            % Controlled components, in the order given to the constructor.
+        iv_obsY (:,1) double = zeros(0,1)          % Index in sv_y of its unit of each input (0: not read from sv_y), units in order.
+        iv_obsX (:,1) double = zeros(0,1)          % Index in sv_x of its unit of each input (0: not read from sv_x), units in order.
+    end
+    properties (SetAccess={?PowerNetwork, ?SolverODE}, Hidden) % Layer Structure
+        sv_route (:,1) string = strings(0,1)       % Where each output goes, one line per unit and output (shown by add_global_controller, updated by simulate).
     end
     properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
         iv_odeX (:,1) double = zeros(0,1);         % Positions of the states in the simulation vector.
-        iv_odeU (:,1) double = zeros(0,1);         % Positions of the observed unit states (the inputs) in the simulation vector.
-        iv_odeY (:,1) double = zeros(0,1);         % Positions of the driven unit inputs (the outputs) in the simulation vector.
         rv_Xoffset = 0                             % State offset added to the initial state (0 for a global controller).
         rv_Uoffset = @(t) 0                        % Input change over time (zero for a global controller).
         l_isConnect (1,1) logical = true           % False while an active trip of a scenario names the controller (set by SolverODE); its output is then zero.
@@ -77,7 +94,7 @@ classdef GlobalController < PowerSystemModel
     end
     properties(SetAccess=protected) % Steady State
         rv_Xequilibrium (:,1) double = zeros(0,1)  % State equilibrium (from get_equilibrium, set by PowerNetwork.initialize).
-        rv_Uequilibrium (:,1) double = zeros(0,1)  % Equilibrium of the observed states, one entry per input of each unit.
+        rv_Uequilibrium (:,1) double = zeros(0,1)  % Equilibrium of the inputs (the observed outputs or states), one entry per input of each unit.
     end
     properties(Dependent, Access=protected) % Layer Structure
         parent                                     % Parent in the layer structure: the network.
@@ -87,20 +104,20 @@ classdef GlobalController < PowerSystemModel
     methods (Abstract)
         % Return the state and input equilibria of the controller.
         %
-        % Returns x (nx x 1) and u (nu x 1). Takes no network values: PowerNetwork.initialize
-        % calls it before it sets the equilibria of the buses and components.
+        % Returns x (nx x 1) and u (one entry per input of each unit). PowerNetwork.initialize
+        % calls it after the equilibria of the buses and components are set, so it may read
+        % them.
         [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj)
     end
     methods (Abstract, Static)        
         % Return the state derivatives of the controller.
         %
         % The arguments of all model functions are the time t [s], the states x, the
-        % port V (a global controller has none: [] in a simulation, zeros(2,1) in
-        % get_sys and get_hessian; do not use it), the inputs u, the dynamic parameters
-        % param and the nominal frequency omega0 [Hz].
+        % voltages of all buses V = [Vre1; Vim1; Vre2; ...] [pu] (in the order of a_Bus),
+        % the inputs u, the dynamic parameters param and the nominal frequency omega0 [Hz].
         dx = fcn_dx(t, x, V, u, param, omega0)
 
-        % Return the outputs of the controller: one value per driven unit input, added to that input.
+        % Return the outputs of the controller: the outputs sv_y for each controlled unit, in order.
         y  = fcn_y(t, x, V, u, param, omega0)
 
         % Return the mass matrix of the state equation.
@@ -156,6 +173,21 @@ classdef GlobalController < PowerSystemModel
                 obj.controlledUnits = [obj.controlledUnits; cls_comp(lv_comp)];
 
                 idx = idx + 1;
+            end
+
+            % Where each input is read on its unit: an output, else a state (fixed: the
+            % units and their variable names do not change while the controller exists)
+            n_unit = numel(obj.controlledUnits);
+            obj.iv_obsY = zeros(n_unit*numel(obj.sv_u), 1);
+            obj.iv_obsX = zeros(n_unit*numel(obj.sv_u), 1);
+            for idx = 1:n_unit
+                unit = obj.controlledUnits{idx};
+                [~, iv_y] = ismember(obj.sv_u, unit.sv_y);
+                [~, iv_x] = ismember(obj.sv_u, unit.sv_x);
+                iv_x(iv_y > 0) = 0;
+                iv_k = (idx-1)*numel(obj.sv_u) + (1:numel(obj.sv_u));
+                obj.iv_obsY(iv_k) = iv_y;
+                obj.iv_obsX(iv_k) = iv_x;
             end
 
         end

@@ -529,11 +529,11 @@ n = max([comp.iv_odeX; comp.iv_odeU; comp.a_Bus.iv_odeX]);
 x = rand(n,1);  V = [1;0.1];  u = x(comp.iv_odeU);
 para0 = comp.tab_parameter.dynamics{:, comp.sv_para};
 comp.tab_parameter.dynamics.D = 5;
-DAEvec = comp.get_dx_algebraic(0, x, V, u, zeros(n,1));
+DAEvec = comp.get_dx_algebraic(0, x, V, u, [], [], zeros(n,1));
 dx = comp.fcn_dx(0, x(comp.iv_odeX), V, u, para0, comp.get_Hz());
 assert(norm(DAEvec(comp.iv_odeX) - dx) < 1e-12, "initialize を挟まない直接呼び出しは以前のハンドルを使う")
 DebugScript.helper.quiet(@() net.initialize);
-DAEvec = comp.get_dx_algebraic(0, x, V, u, zeros(n,1));
+DAEvec = comp.get_dx_algebraic(0, x, V, u, [], [], zeros(n,1));
 para = comp.tab_parameter.dynamics{:, comp.sv_para};
 dx = comp.fcn_dx(0, x(comp.iv_odeX), V, u, para, comp.get_Hz());
 assert(norm(DAEvec(comp.iv_odeX) - dx) < 1e-12, "initialize の後は編集後のハンドルを使う")

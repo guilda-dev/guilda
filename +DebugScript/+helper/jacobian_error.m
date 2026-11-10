@@ -22,6 +22,8 @@ function err = jacobian_error(obj)
         V = [1; 0];
         if isa(obj, "LocalController") && ~isempty(obj.c_Vequilibrium)   % PSS は電圧を保持しない
             V = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)];
+        elseif isa(obj, "GlobalController")   % 全母線の電圧
+            V = tools.vcellfun(@(b) [real(b.c_Vequilibrium); imag(b.c_Vequilibrium)], obj.controlledUnits{1}.a_Bus.a_PowerNetwork.a_Bus);
         end
         fcn = {@(x,V,u) obj.f_dx(0,x,V,u), @(x,V,u) obj.f_Y(0,x,V,u)};
         jac = {obj.f_JacobiDx, obj.f_JacobiY};

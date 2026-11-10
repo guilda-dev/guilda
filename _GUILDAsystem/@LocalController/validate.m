@@ -235,7 +235,13 @@ end
 function sv_src = input_sources(obj, comp)
     % Where each input is read, as in get_dx_algebraic: on the observed component
     % (iv_obsY / iv_obsX), then replaced by the output of a nested controller of the same
-    % name; the other inputs stay at the equilibrium.
+    % name; the other inputs stay at the equilibrium. The outputs of global controllers
+    % of the component with the name of the input add to it.
+    c_GC = {};
+    if ~isempty(comp.a_Bus) && ~isempty(comp.a_Bus.a_PowerNetwork)
+        c_GC = comp.a_Bus.a_PowerNetwork.a_GlobalController;
+        c_GC = c_GC(cellfun(@(gc) any(cellfun(@(c) c == comp, gc.controlledUnits)), c_GC));
+    end
     nu = numel(obj.sv_u);
     sv_src = repmat("equilibrium (not connected)", nu, 1);
     for k = 1:nu
@@ -248,6 +254,10 @@ function sv_src = input_sources(obj, comp)
             if any(obj.a_LocalController{m}.sv_y == obj.sv_u(k))
                 sv_src(k) = "output of " + obj.a_LocalController{m}.s_tag;
             end
+        end
+        lv_GC = cellfun(@(gc) any(gc.sv_y == obj.sv_u(k)), c_GC);
+        if any(lv_GC)
+            sv_src(k) = sv_src(k) + " + output of " + join(cellfun(@(gc) string(gc.s_tag), c_GC(lv_GC)), ", ");
         end
     end
 end

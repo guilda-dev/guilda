@@ -1,10 +1,11 @@
-function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, obs, DAEvec)
+function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, obs, y_GC, DAEvec)
 % Add the DAE residual of the controller (and of its nested controllers) to DAEvec.
 %
 % Called by Component.get_dx_algebraic. obs.y / obs.x are the outputs and states of the
 % observed component: the inputs are read there (iv_obsY / iv_obsX), the outputs of a
 % nested controller replace the inputs of the same name, and the other inputs stay at
-% the equilibrium.
+% the equilibrium. The outputs of the global controllers that drive an input (y_GC at
+% iv_odeU) add to it.
 %
 % <@Group> Called by analyses
     arguments (Input)
@@ -13,6 +14,7 @@ function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, obs, DAEvec)
         x      (:,1) double  % Variables of the network DAE (states, inputs, bus voltages and currents).
         Vi     (2,1) double  % [pu] Voltage of the bus of the observed component [real; imag].
         obs    (1,1) struct  % Outputs (obs.y) and states (obs.x) of the observed component.
+        y_GC   (:,1) double  % Outputs of the global controllers summed at the inputs they drive (as x; empty: none).
         DAEvec (:,1) double  % DAE residual of the network so far.
     end
     arguments (Output)
@@ -36,9 +38,9 @@ function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, obs, DAEvec)
     if obj.l_hasController
         % y_LC: the outputs of the nested controllers, stacked in order (iv_odeYtoU)
         a_LC = obj.a_LocalController;
-        [DAEvec, y_LC] = get_dx_algebraic(a_LC{1}, t, x, Vi, obs, DAEvec);
+        [DAEvec, y_LC] = get_dx_algebraic(a_LC{1}, t, x, Vi, obs, y_GC, DAEvec);
         for k = 2:numel(a_LC)
-            [DAEvec, y_k] = get_dx_algebraic(a_LC{k}, t, x, Vi, obs, DAEvec);
+            [DAEvec, y_k] = get_dx_algebraic(a_LC{k}, t, x, Vi, obs, y_GC, DAEvec);
             y_LC = [y_LC; y_k]; %#ok<AGROW>
         end
         
@@ -48,6 +50,9 @@ function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, obs, DAEvec)
 
     rv_x = obj.iv_odeX;
     rv_u = obj.iv_odeU;        
+    if ~isempty(y_GC)
+        rv_U = rv_U + y_GC(rv_u);
+    end
     
     x_con = x(rv_x);
     u_con = x(rv_u);        

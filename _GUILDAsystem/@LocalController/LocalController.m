@@ -186,7 +186,7 @@ classdef LocalController < PowerSystemModel
         resolve_observe(obj)
 
         % get dx and y
-        [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, obs, DAEvec)
+        [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, obs, y_GC, DAEvec)
 
     end
 

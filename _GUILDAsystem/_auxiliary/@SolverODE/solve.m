@@ -45,7 +45,8 @@ function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
     ctx.iv_busV = reshape(ctx.rv_odeV, [], 1);
     ctx.iv_busI = reshape(cell2mat(tools.cellfun(@(b) b.iv_odeI, net.a_Bus)), [], 1);
     ctx.l_GC    = ~isempty(net.a_GlobalController);
-    ctx.c_unit  = SolverODE.get_units(net);
+    [ctx.c_unit, ctx.c_gc] = SolverODE.get_units(net);   % also reports a changed routing of the global controllers
+    ctx.n_y     = sum(cellfun(@(c) numel(c.idx_Y), ctx.c_unit));
 
     o = makeODE(sct_options);
     options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);

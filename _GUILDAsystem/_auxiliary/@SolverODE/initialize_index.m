@@ -38,7 +38,7 @@ function initialize_index(net)
     end
 
     % Global controllers: states after the components, in the order of a_GlobalController.
-    % Their inputs are states of the controlled units and their outputs are inputs of them.
+    % Where their inputs are read and their outputs go is resolved by get_units.
     a_gcon = net.a_GlobalController;
     for k = 1:numel(a_gcon)
         gcon = a_gcon{k};
@@ -46,14 +46,6 @@ function initialize_index(net)
         nxgc = length(gcon.sv_x);
         gcon.iv_odeX = idx_TGT + (1:nxgc)';
         idx_TGT = idx_TGT + nxgc;
-
-        nConUnit = gcon.controlledUnits;
-        gcon.iv_odeU = zeros(numel(nConUnit),1);
-        gcon.iv_odeY = zeros(numel(nConUnit),1);
-        for idx = 1:numel(nConUnit)
-            gcon.iv_odeU(idx) = nConUnit{idx}.iv_odeX( nConUnit{idx}.sv_x==gcon.sv_u );
-            gcon.iv_odeY(idx) = nConUnit{idx}.iv_odeU( nConUnit{idx}.sv_u==gcon.sv_y );
-        end
     end
 
     if ~isempty(sv)

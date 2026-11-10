@@ -21,8 +21,8 @@ function varargout = get_hessian(obj, x, V, u)
     arguments (Input)
         obj
         x (:,1) double = obj.rv_Xequilibrium   % States.
-        V (:,1) double = zeros(2,1)   % Not a port: zeros(2,1).
-        u (:,1) double = obj.rv_Uequilibrium   % Inputs (states of the controlled units).
+        V (:,1) double = tools.vcellfun(@(b) [real(b.c_Vequilibrium); imag(b.c_Vequilibrium)], obj.controlledUnits{1}.a_Bus.a_PowerNetwork.a_Bus)   % [pu] Voltages of all buses [Vre1; Vim1; ...] (default: the equilibrium).
+        u (:,1) double = obj.rv_Uequilibrium   % Inputs (the observed outputs or states of the controlled units).
     end
     arguments (Output, Repeating)
         varargout   % In this order: H_dx (fcn_dx, n_x x n_z x n_z), H_Y (fcn_y, n_y x n_z x n_z).

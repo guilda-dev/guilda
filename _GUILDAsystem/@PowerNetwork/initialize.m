@@ -491,19 +491,30 @@ end
 
 
 function c_row = global_controller_residual(gc)
-% Row of the global controller. Its inputs are the states of its controlled units, and its
-% outputs add to their inputs, so an output other than zero moves them.
+% Row of the global controller at the equilibrium. Its inputs are the outputs (or states)
+% of its controlled units and its port the voltages of all buses, as in a simulation; its
+% outputs add to inputs whose equilibrium is set, so an output other than zero moves them.
     check_point_size(gc, numel(gc.controlledUnits)*numel(gc.sv_u));   % sv_u is read on each unit
     x = gc.rv_Xequilibrium;
     a_unit = gc.controlledUnits;
-    c_u = cell(numel(a_unit),1);
+    n_u = numel(gc.sv_u);
+    u = zeros(numel(a_unit)*n_u, 1);
     for k = 1:numel(a_unit)
-        c_u{k} = reshape(a_unit{k}.rv_Xequilibrium(ismember(a_unit{k}.sv_x, gc.sv_u)), [], 1);
+        unit = a_unit{k};
+        iv_k = (k-1)*n_u + (1:n_u)';
+        lv_Y = gc.iv_obsY(iv_k) > 0;
+        lv_X = gc.iv_obsX(iv_k) > 0;
+        if any(lv_Y)
+            y_unit = model_value(unit, "fcn_Y", numel(unit.sv_y), @() unit.f_Y(0, unit.rv_Xequilibrium, ...
+                                 [real(unit.c_Vequilibrium); imag(unit.c_Vequilibrium)]));
+            u(iv_k(lv_Y)) = y_unit(gc.iv_obsY(iv_k(lv_Y)));
+        end
+        u(iv_k(lv_X)) = unit.rv_Xequilibrium(gc.iv_obsX(iv_k(lv_X)));
     end
-    u = vertcat(zeros(0,1), c_u{:});
+    V = tools.vcellfun(@(b) [real(b.c_Vequilibrium); imag(b.c_Vequilibrium)], gc.a_PowerNetwork.a_Bus);
 
-    dx = model_value(gc, "fcn_dx", numel(gc.sv_x), @() gc.f_dx(0, x, zeros(2,1), u));
-    y  = gc.f_Y(0, x, zeros(2,1), u);
+    dx = model_value(gc, "fcn_dx", numel(gc.sv_x), @() gc.f_dx(0, x, V, u));
+    y  = gc.f_Y(0, x, V, u);
     c_row = {{string(gc.s_tag), [largest(dx), 0, largest(y)]}};
 end
 

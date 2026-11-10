@@ -251,19 +251,30 @@ function [flag, contract] = compare_jacobian(flag, contract, s_method, f_num, f_
 end
 
 function sv_src = input_sources(obj)
-    % Who drives each input, as in SolverODE: the outputs of the local controller and of
-    % the global controllers of the same name; the other inputs stay at the equilibrium.
+    % Who drives each input, as in SolverODE: the outputs of the local controllers of the
+    % same name, and those of the global controllers that no local controller of the
+    % component (nested ones included) takes as an input; the other inputs stay at the
+    % equilibrium.
     a_con = obj.a_LocalController(:).';
+    c_all = cell(0,1);                       % all its local controllers, depth first
+    c_todo = obj.a_LocalController(:);
+    while ~isempty(c_todo)
+        c_all = [c_all; c_todo(1)]; %#ok<AGROW>
+        c_todo = [c_todo{1}.a_LocalController(:); c_todo(2:end)];
+    end
+    c_GC = {};
     if ~isempty(obj.a_Bus) && ~isempty(obj.a_Bus.a_PowerNetwork)
         c_GC = obj.a_Bus.a_PowerNetwork.a_GlobalController;
         lv_GC = cellfun(@(gc) any(cellfun(@(c) c == obj, gc.controlledUnits)), c_GC);
-        a_con = [a_con, reshape(c_GC(lv_GC),1,[])];
+        c_GC = reshape(c_GC(lv_GC),1,[]);
     end
     sv_src = repmat("equilibrium (not connected)", numel(obj.sv_u), 1);
     for k = 1:numel(obj.sv_u)
-        lv = cellfun(@(c) any(c.sv_y == obj.sv_u(k)), a_con);
-        if any(lv)
-            sv_src(k) = "output of " + join(cellfun(@(c) c.s_tag, a_con(lv)), ", ");
+        s_in = obj.sv_u(k);
+        lv_GC = cellfun(@(c) any(c.sv_y == s_in), c_GC) & ~any(cellfun(@(c) any(c.sv_u == s_in), c_all));
+        a_src = [a_con(cellfun(@(c) any(c.sv_y == s_in), a_con)), c_GC(lv_GC)];
+        if ~isempty(a_src)
+            sv_src(k) = "output of " + join(cellfun(@(c) string(c.s_tag), a_src), ", ");
         end
     end
 end

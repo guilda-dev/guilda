@@ -237,7 +237,7 @@ classdef Component < PowerSystemModel
         [sys, varargout] = get_sys(obj, x, V, u, opt)
 
         % get dx, I and y
-        DAEvec = get_dx_algebraic(obj, t, x, Vi, u, DAEvec)
+        DAEvec = get_dx_algebraic(obj, t, x, Vi, u, y, y_GC, DAEvec)
 
         % Steady State
         set_input(obj, rv_u)

@@ -1,9 +1,11 @@
-function DAEvec = get_dx_algebraic(obj, t, x, Vi, u, DAEvec)
+function DAEvec = get_dx_algebraic(obj, t, x, Vi, u, y, y_GC, DAEvec)
 % Add the equations of the component and its local controllers to the DAE residual.
 %
-% Called by SolverODE at each evaluation of the network DAE: the state derivatives,
-% the input equations and the current injected into the bus are added to the entries
-% of `DAEvec` that belong to the component (iv_odeX, iv_odeU) and its bus.
+% Called by SolverODE at each evaluation of the network DAE, after the outputs of the
+% components and the global controllers: the residuals of the local controllers (nested
+% first), the input equations, the state derivatives and the current injected into the bus
+% are added to the entries of `DAEvec` that belong to the component (iv_odeX, iv_odeU), its
+% controllers and its bus.
 %
 % See also SolverODE, Component.fcn_dx, Component.fcn_I
 %
@@ -14,6 +16,8 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, u, DAEvec)
         x      (:,1) double  % Variables of the network DAE (states, inputs, bus voltages and bus current balances).
         Vi     (2,1) double  % [pu] Bus voltage [real; imag].
         u      (:,1) double  % Input values of the component: equilibrium, input events and global controllers.
+        y      (:,1) double  % Outputs of the component (fcn_Y at x, Vi); empty: computed here when a controller reads them.
+        y_GC   (:,1) double  % Outputs of the global controllers summed at the inputs they drive (as x; empty: none).
         DAEvec (:,1) double  % DAE residual of the network so far.
     end
     arguments (Output)
@@ -39,12 +43,15 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, u, DAEvec)
         % and their outputs drive the inputs of the same name. An input event or a global
         % controller on such an input adds to the output, as in get_sys.
         % y_LC: the outputs of the top-level controllers, stacked in order (iv_odeYtoU)
-        obs.y = obj.f_Y(t,x_comp,Vi);
+        if isempty(y) && ~isempty(obj.sv_y)
+            y = obj.f_Y(t,x_comp,Vi);
+        end
+        obs.y = y;
         obs.x = x_comp;
         a_LC = obj.a_LocalController;
-        [DAEvec, y_LC] = get_dx_algebraic(a_LC{1}, t, x, Vi, obs, DAEvec);
+        [DAEvec, y_LC] = get_dx_algebraic(a_LC{1}, t, x, Vi, obs, y_GC, DAEvec);
         for k = 2:numel(a_LC)
-            [DAEvec, y_k] = get_dx_algebraic(a_LC{k}, t, x, Vi, obs, DAEvec);
+            [DAEvec, y_k] = get_dx_algebraic(a_LC{k}, t, x, Vi, obs, y_GC, DAEvec);
             y_LC = [y_LC; y_k]; %#ok<AGROW>
         end
         lv_U2Y = obj.lv_odeUfromLC;
