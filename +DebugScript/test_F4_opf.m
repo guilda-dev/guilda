@@ -154,10 +154,10 @@ assert(J_AC <= DebugScript.helper.opf_cost(net, DebugScript.helper.pf_component_
 
 
 %% AC OPF warm start starts from the last solution
-% WarmStart=true (既定) は前回の AC OPF の解から、false はフラットスタート。同じ解に収束する
+% WarmStart=true は前回の AC OPF の解から、false (既定) はフラットスタート。同じ解に収束する
 net = DebugScript.helper.build_ieee14();
 [res0, flag0, out0] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", WarmStart=false));
-[res1, flag1, out1] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+[res1, flag1, out1] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", WarmStart=true));
 assert(flag0 > 0 && flag1 > 0 && res1.options.WarmStart && ~res0.options.WarmStart)
 assert(out1.iterations ~= out0.iterations)     % 初期値が違う (内点法なので反復回数は減るとは限らない)
 assert(abs(res1.r_cost - res0.r_cost) < 1e-9*res0.r_cost && max(abs(res1.tab_bus.Vphasor - res0.tab_bus.Vphasor)) < 1e-4)
@@ -166,6 +166,9 @@ assert(abs(res1.r_cost - res0.r_cost) < 1e-9*res0.r_cost && max(abs(res1.tab_bus
 s_bus = string(net.a_Bus{14});
 assert(isequal(x0.(s_bus), [0; 1]))
 assert(error_id(@() net.optimize_powerflow(WarmStart="on")) ~= "")
+% 配布する既定値は false (ユーザー設定ファイルが既定を上書きしうるので JSON を直接読む)
+sct_def = jsondecode(fileread(fullfile(GUILDA.pwd, "@GUILDA", "config", "DefaultOptimalPowerFlow.json")));
+assert(sct_def.WarmStart.Value == false)
 
 
 %% AC OPF respects generator limits

@@ -39,7 +39,7 @@ function varargout = optimize_powerflow(obj, varargin)
 % - `ReferenceBus` — Bus with a fixed angle: "auto" (bus of tools.slack_bus_index, else the first bus), a bus tag, or "none" (net.solver_OPF.ReferenceBus).
 % - `Problem` — optimproblem to solve instead of building one, e.g. from net.build_opf_problem with the same Method, modified by the user; Cost, Constraint, DefaultCost and ReferenceBus are not applied to it. Default: none.
 % - `InitialPoint` — Initial point (struct of values by variable name). Default: the x0 of net.build_opf_problem for the same Method; give it when Problem has added variables.
-% - `WarmStart` — true starts "AC OPF" from the bus voltages of the last solved "AC OPF" of this network (kept by net.solver_OPF); false from the flat start (see SolverOPF). Default: GUILDA.setting OptimalPowerFlow (true).
+% - `WarmStart` — true starts "AC OPF" from the bus voltages of the last solved "AC OPF" of this network (kept by net.solver_OPF); false from the flat start (see SolverOPF). Default: GUILDA.setting OptimalPowerFlow (false).
 % - `Plot` — Call result.Plot after the calculation. Default: false.
 % - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
 %

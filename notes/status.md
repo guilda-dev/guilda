@@ -168,7 +168,7 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **完了:** 段階 1(正しさの修正)と段階 2(カスタマイズ。2026-11-07 にオブジェクトごとの `set_opffcn` から `SolverOPF` の `Cost` / `Constraint` などのオプションへ変更)です。変更点は [v4-migration.md](v4-migration.md) 1.9 にあります。
 - **未着手:** 段階 3 の外部バックエンド(`prob2struct` 経由の CPLEX / Gurobi、`tools.network_to_mpc` 経由の MATPOWER)です。
 - **先送り:** 多期間 OPF です。設計上の問いは opf-requirements.md にあります。
-- 記録: AC OPF の開始点は、フラットスタート、または同じ系統で最後に解けた AC OPF の母線電圧(`WarmStart`、既定 true)です。母線の `V0` / `Varg0` は廃止しました。潮流解からの開始点は以前に測定して採用しませんでした(反復が減らず、9 母線 43 → 43、IEEE14 59 → 72)。前回の AC OPF の解からの開始も、内点法では反復が減るとは限りません(IEEE14 17 → 22、IEEE68 80 → 55。[powerflow-options.md](powerflow-options.md) の要判断 3)。
+- 記録: AC OPF の開始点は、フラットスタート、または同じ系統で最後に解けた AC OPF の母線電圧(`WarmStart`、既定 false)です。母線の `V0` / `Varg0` は廃止しました。潮流解からの開始点は以前に測定して採用しませんでした(反復が減らず、9 母線 43 → 43、IEEE14 59 → 72)。前回の AC OPF の解からの開始も、内点法では反復が減るとは限りません(IEEE14 17 → 22、IEEE68 80 → 55)。このため既定は false です([powerflow-options.md](powerflow-options.md) の Q3)。
 
 ### `Scenario` の未確認の既定
 

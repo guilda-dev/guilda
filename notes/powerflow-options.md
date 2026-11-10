@@ -311,7 +311,7 @@
 - `Tolerance` は Name-Value で `mustBePositive`(0 の「手法の既定」は廃止)。
 - `MethodDynamic`: 初期値は `PFcondition` の列 `Varg0`、`V0`(SolverPF が初期電圧を渡すための列。なければフラットスタート)。
   初期値で収束済みなら積分せずに flag 1(ウォームスタートでイベントが交差しないため)。
-- ウォームスタートの既定は PowerFlowCalculation、OptimalPowerFlow とも true。`initialize` は自身の既定を持たず、`WarmStart` を潮流計算 / OPF に渡す。
+- ウォームスタートの既定は PowerFlowCalculation が true、OptimalPowerFlow が false(Q3 の決定。下の「Q3〜Q6 の実装」)。`initialize` は自身の既定を持たず、`WarmStart` を潮流計算 / OPF に渡す。
   `optimize_powerflow` の `WarmStart` は呼び出しのオプション(`SolverOPF` に設定のプロパティを足さないため)。
 - フラットスタートのスラック母線の位相は設定値 `Varg`(2 節の「位相 0」は PQ・PV 母線。旧コードもスラックは `Varg` から開始)。
 - キャッシュ: `SolverPF` はアドミタンス行列(n_revY)と潮流条件・方程式(n_revPF)を保持。母線の並びがオブジェクトとして同じで n_revTopology が同じときだけ使う。

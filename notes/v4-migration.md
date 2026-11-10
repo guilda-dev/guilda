@@ -398,7 +398,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   | なし | `WarmStart`(既定 true) |
 
   `@GUILDA/user/DefaultPowerFlowCalculation.json` の旧キーは読み込み時に変換します(`MaxIterations`、`MaxFunEvals`、`UseParallel` は改名、`Display`、`PlotFcn` は削除、`Tolerance` 0 は削除して既定値)。MethodNewtonRaphson セクションは廃止しました。連続潮流計算の修正子の設定は ContinuationPowerFlow セクションの `CorrectorMaxIteration`、`CorrectorStepSize`、`Increment` です(値は旧セクションと同じ 1000、1、1e-4)。`@GUILDA/user/DefaultMethodNewtonRaphson.json` は読みません。
-- **ウォームスタート。** `WarmStart=true`(既定)は同じ系統の前回の収束解から、`false` はフラットスタート(位相 0、大きさ 1。PV・スラック母線の大きさは設定値 `V`、スラックの位相は設定値 `Varg`)から解きます。解は `net.solver_PF` が保持し、母線・ブランチの追加、削除、置換のときだけ捨てます(パラメータの掃引では保持)。`net.reset_solver()` でも捨てます。`optimize_powerflow` と `initialize` も `WarmStart` を受け付けます(OPF は OptimalPowerFlow セクションの既定。連続潮流計算は対象外)。
+- **ウォームスタート。** `WarmStart=true`(既定)は同じ系統の前回の収束解から、`false` はフラットスタート(位相 0、大きさ 1。PV・スラック母線の大きさは設定値 `V`、スラックの位相は設定値 `Varg`)から解きます。解は `net.solver_PF` が保持し、母線・ブランチの追加、削除、置換のときだけ捨てます(パラメータの掃引では保持)。`net.reset_solver()` でも捨てます。`optimize_powerflow` と `initialize` も `WarmStart` を受け付けます(OPF は OptimalPowerFlow セクションの既定 false。連続潮流計算は対象外)。
 - **`"dynamic"`。** 仮想ダイナミクスの `Damper` は 1、`Mass` 0、`foh_PQ` 0 で固定し、`t_span` はありません。収束で止まり、内部の安全上限は仮想時間 1e4 です。flag は他の手法と同じ 1/0/-2(0 は仮想時間の上限)で、以前の logical ではありません。`res.rv_step` は ODE のステップの仮想時刻です。
 - **初期値 `V0`、`Varg0` の廃止。** 母線の `tab_parameter.powerflow` は `V`、`Varg` だけです。`add_bus(V0=..., Varg0=...)` はエラーになります。初期値は潮流計算・OPF のソルバーが決めます(上のウォームスタート)。
 - **`ResultPF.tab_violation`。** 潮流計算は `operation` の制約を課しません。解が違反する制約(母線の `Vmin`/`Vmax`、機器の `Pmin`/`Pmax`/`Qmin`/`Qmax`、ブランチの `Pmax`/`Qmax`/`Smax`/`Imax`/`Vargmax`)を `tab_violation`(列 `Class`、`Object`、`Limit`、`Value`、`Bound`、`Excess`)に記録するだけで、警告もエラーも出しません。
