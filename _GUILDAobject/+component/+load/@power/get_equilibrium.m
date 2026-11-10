@@ -2,9 +2,9 @@ function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_
 % Calculate the steady power of the load from the power flow.
 %
 % Called by `set_equilibrium` with the power-flow solution. The power `[r_P; r_Q]`
-% is stored in `PQ_st` and becomes the steady input `[Pload; Qload]`.
+% is the steady input `[Pload; Qload]`. The object is not changed.
 %
-% See also fcn_I, PQ_st
+% See also fcn_I
     arguments (Input)
         obj 
         % [pu] Complex bus voltage of the power-flow solution.
@@ -18,7 +18,6 @@ function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_
         rv_Xequilibrium % Equilibrium state in the order of `sv_x`.
         rv_Uequilibrium % Steady input in the order of `sv_u`.
     end
-    obj.PQ_st       = [r_P;r_Q];
     rv_Xequilibrium = zeros(0,1);
-    rv_Uequilibrium = obj.PQ_st;
+    rv_Uequilibrium = [r_P; r_Q];
 end
