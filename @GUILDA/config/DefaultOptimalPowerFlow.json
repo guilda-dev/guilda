@@ -93,7 +93,7 @@
         "Description": "'UseParallel' option of solver"
     },
     "WarmStart":{
-        "Value": true,
+        "Value": false,
         "Type": "logical",
         "Description": "Start 'AC OPF' from the last AC OPF solution of the network (false: flat start)"
     }

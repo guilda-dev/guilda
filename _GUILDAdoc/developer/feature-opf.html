@@ -110,8 +110,8 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
           <td lang="en" data-label="Property and default">call only, not stored: an <code>optimproblem</code> from <code>net.build_opf_problem</code> (same <code>Method</code>, possibly modified) to solve as it is; the initial point (default: the <code>x0</code> of OPF-04, with <code>WarmStart</code> applied)</td>
           <td lang="ja" data-label="プロパティと既定値">呼び出しのみ（保存しない）: そのまま解く <code>net.build_opf_problem</code> の <code>optimproblem</code>（同じ <code>Method</code>、変更可）、初期点（既定: <code>WarmStart</code> を反映した OPF-04 の <code>x0</code>）</td></tr>
         <tr><td><code>WarmStart</code></td>
-          <td lang="en" data-label="Property and default">call only, not stored; default <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>true</code>: <code>"AC OPF"</code> starts from the bus voltages of the last solved <code>"AC OPF"</code> of this network (kept by <code>net.solver_OPF</code>); <code>false</code>, or none kept: flat start (angle 0, magnitude 1; set <code>V</code> at PV and slack buses, set <code>Varg</code> at the slack bus)</td>
-          <td lang="ja" data-label="プロパティと既定値">呼び出しのみ（保存しない）。既定値 <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>true</code>: このネットワークで最後に解いた <code>"AC OPF"</code> の母線電圧（<code>net.solver_OPF</code> が保持）から <code>"AC OPF"</code> を開始。<code>false</code>、または保持なし: フラットスタート（角度 0、大きさ 1。PV・slack 母線は指定 <code>V</code>、slack 母線は指定 <code>Varg</code>）</td></tr>
+          <td lang="en" data-label="Property and default">call only, not stored; default <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>false</code>; <code>true</code>: <code>"AC OPF"</code> starts from the bus voltages of the last solved <code>"AC OPF"</code> of this network (kept by <code>net.solver_OPF</code>); <code>false</code>, or none kept: flat start (angle 0, magnitude 1; set <code>V</code> at PV and slack buses, set <code>Varg</code> at the slack bus)</td>
+          <td lang="ja" data-label="プロパティと既定値">呼び出しのみ（保存しない）。既定値 <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>false</code>。<code>true</code>: このネットワークで最後に解いた <code>"AC OPF"</code> の母線電圧（<code>net.solver_OPF</code> が保持）から <code>"AC OPF"</code> を開始。<code>false</code>、または保持なし: フラットスタート（角度 0、大きさ 1。PV・slack 母線は指定 <code>V</code>、slack 母線は指定 <code>Varg</code>）</td></tr>
         <tr><td><span lang="en">properties only</span><span lang="ja">プロパティのみ</span></td>
           <td lang="en" data-label="Property and default"><code>Algorithm_linprog = "dual-simplex-highs"</code>, <code>Algorithm_quadprog = "interior-point-convex"</code>, <code>Algorithm_fmincon = "interior-point"</code>, <code>StepTolerance = NaN</code>, <code>MaxFunctionEvaluations = NaN</code>, <code>UseParallel = false</code> (fmincon only)</td>
           <td lang="ja" data-label="プロパティと既定値"><code>Algorithm_linprog = "dual-simplex-highs"</code>、<code>Algorithm_quadprog = "interior-point-convex"</code>、<code>Algorithm_fmincon = "interior-point"</code>、<code>StepTolerance = NaN</code>、<code>MaxFunctionEvaluations = NaN</code>、<code>UseParallel = false</code>（fmincon のみ）</td></tr>
@@ -249,12 +249,14 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
+              <li>From <code>solve</code> (local <code>cached_problem</code>): the problem kept by the last <code>solve</code> when the network, <code>n_revOPF</code>, the settings, the start and the variable bounds are the same (see <a href="#side-effects">Side effects</a>); otherwise <code>build_problem</code>, and the new problem is kept.</li>
               <li>Writes the OPF settings and the network tree into the problem's <code>Description</code>.</li>
               <li>Creates <code>optimproblem</code> (minimize, <code>Objective.GenCost = 0</code>).</li>
               <li><code>"ELD"</code>: starts the single balance <code>const.P = 0</code>.</li>
               <li>With <code>Problem</code>: builds without <code>Cost</code> and <code>Constraint</code>, only for <code>x0</code> and the check of OPF-11.</li>
               <li>Initial bus voltages (local <code>initial_voltage</code>): with <code>sct_options.WarmStart</code> true and the same buses (by object) and <code>n_revTopology</code>, the kept <code>"AC OPF"</code> solution; otherwise the flat start. <code>net.build_opf_problem</code> gives no <code>WarmStart</code>: its <code>x0</code> is the flat start.</li>
             </ul><ul lang="ja">
+              <li><code>solve</code> から（内部関数 <code>cached_problem</code>）: ネットワーク、<code>n_revOPF</code>、設定、初期点、変数の上下限が同じなら前回の <code>solve</code> が保持した問題（<a href="#side-effects">副作用</a>を参照）。それ以外は <code>build_problem</code> で構築し、新しい問題を保持</li>
               <li>OPF の設定とネットワークの木構造を問題の <code>Description</code> に記録</li>
               <li><code>optimproblem</code> を作成（最小化、<code>Objective.GenCost = 0</code>）</li>
               <li><code>"ELD"</code>: 単一の需給式 <code>const.P = 0</code> を用意</li>
@@ -523,14 +525,16 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
     <!-- ============================== SIDE EFFECTS ============================== -->
     <h2 id="side-effects"><span lang="en">Side effects on the model and caches</span><span lang="ja">モデルへの副作用とキャッシュ</span></h2>
     <ul lang="en">
-      <li>Network and stale state unchanged; no cache: the problem is built from the current parameters on every call.</li>
+      <li>Network and stale state unchanged.</li>
+      <li><code>net.solver_OPF</code> keeps (private) the problem and <code>x0</code> that <code>solve</code> built last, and uses them again while the network (by object), <code>net.n_revOPF</code> (increased by <code>handle_edit</code> for every <code>n_revPF</code> edit, the <code>operation</code> and <code>OPF</code> parameters, tags and <code>Hz</code>), <code>Method</code>, <code>Cost</code> and <code>Constraint</code> (by function handle), <code>DefaultCost</code>, <code>ReferenceBus</code> and the start are unchanged. The variables of an <code>optimproblem</code> are handles, so a bound changed on <code>result.OPFprob</code> would reach the kept problem: their bounds and types are compared before reuse. <code>net.build_opf_problem</code> always builds a new problem.</li>
       <li><code>net.solver_OPF</code> keeps (private) the bus voltages of the last solved <code>"AC OPF"</code> (<code>flag &gt; 0</code>) for <code>WarmStart</code>, with the buses and <code>n_revTopology</code> they belong to; not used after a <code>Topology</code> edit; its settings are unchanged.</li>
       <li>No stale tag is read, no equilibrium needed: runs on a network never initialized or edited since.</li>
       <li>User terms live in <code>net.solver_OPF</code> (<code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code>), not in the model. Edits of <code>operation</code> and <code>OPF</code> parameters are reported with their group tags and make nothing stale (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>).</li>
       <li>The result keeps a reference to the network, not a copy. Record of the settings of the run: <code>OPFprob.Description</code>.</li>
     </ul>
     <ul lang="ja">
-      <li>ネットワーク、stale 状態は不変。キャッシュも不使用。問題は呼び出しごとに現在のパラメータから構築</li>
+      <li>ネットワーク、stale 状態は不変</li>
+      <li><code>net.solver_OPF</code> は <code>solve</code> が最後に構築した問題と <code>x0</code> を保持（private）。ネットワーク（オブジェクト）、<code>net.n_revOPF</code>（<code>n_revPF</code> の編集すべて、<code>operation</code>・<code>OPF</code> パラメータ、タグ、<code>Hz</code> の編集で <code>handle_edit</code> が増加）、<code>Method</code>、<code>Cost</code>・<code>Constraint</code>（関数ハンドルで比較）、<code>DefaultCost</code>、<code>ReferenceBus</code>、初期点が同じなら再利用。<code>optimproblem</code> の変数はハンドルで、<code>result.OPFprob</code> の上下限の変更が保持した問題に及ぶため、再利用の前に変数の上下限と型を照合。<code>net.build_opf_problem</code> は毎回新しい問題を構築</li>
       <li><code>net.solver_OPF</code> は <code>WarmStart</code> 用に、最後に解いた <code>"AC OPF"</code>（<code>flag &gt; 0</code>）の母線電圧を、対応する母線と <code>n_revTopology</code> とともに保持（private）。<code>Topology</code> の編集後は不使用。設定は不変</li>
       <li>stale タグの読み取りなし、平衡点も不要。未初期化のネットワークや初期化後に編集したネットワークでも実行可能</li>
       <li>ユーザー定義の項はモデルではなく <code>net.solver_OPF</code>（<code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code>）に保持。<code>operation</code> と <code>OPF</code> のパラメータの編集は区分のタグで編集として報告し、何も古くしない（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照）</li>

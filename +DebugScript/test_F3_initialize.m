@@ -441,7 +441,8 @@ for i_bus = [5 6 8]
 end
 DebugScript.helper.quiet(@() net.initialize(Method="FixedInput"));
 V1 = net.cv_Vequilibrium;
-for c = {{"Solver", "levenberg-marquardt"}, {"Solver", "fsolve", "Tolerance", 1e-6}, {"WarmStart", false}}
+% fsolve は Tolerance^2 を FunctionTolerance と OptimalityTolerance に使うので、既定の 1e-8 や 1e-10 でも止まらない
+for c = {{"Solver", "levenberg-marquardt"}, {"Solver", "fsolve"}, {"Solver", "fsolve", "Tolerance", 1e-10}, {"WarmStart", false}}
     net2 = network.IEEE9bus();
     DebugScript.helper.quiet(@() net2.initialize);
     for i_bus = [5 6 8]

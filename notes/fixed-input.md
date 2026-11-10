@@ -385,7 +385,9 @@ Xconst(x を固定して u・V・I を解く)の方程式は、機器ごとに�
 - 反復は newton(`Tolerance` 1e-8)。1 回 0.03〜0.2 s。「入力そのまま」は母線電圧の差 0(IEEE9 / 68 / EAST10 / 14 とも)。
 - 解いた点から外乱なしで 5 s のシミュレーション: 状態の変化は IEEE9 ×0.95 で 1.1e-9、IEEE68 ×0.95 で 2.5e-10、IEEE14 ×0.95 で 5.8e-9。
 - levenberg-marquardt / fsolve は解ける場合に newton と同じ点(F3 のテストで 1e-5 以内)。LM は遅い(IEEE68 ×1.02 で 62 反復、×0.95 は 100 反復で未収束)。
-  fsolve は IEEE9 ×0.95 で exitflag 1 のまま最大不平衡 1.7e-7 で止まり flag -2(powerflow-options.md 要判断 5 と同じ現象)。
+  fsolve は以前、IEEE9 ×0.95 で exitflag 1 のまま最大不平衡 1.7e-7 で止まり flag -2 だった(`OptimalityTolerance` が fsolve の既定 1e-6 のため)。
+  `FunctionTolerance` と `OptimalityTolerance` に `Tolerance^2` を渡すようにして解消(2026-11-10、powerflow-options.md の「Q3〜Q6 の実装」)。
+  `Tolerance` 1e-6 / 1e-8 / 1e-10 とも flag 1、8〜9 反復、不平衡 1e-14 以下。F3 のテストは既定の `Tolerance` と 1e-10 で確認。
 - 「解なし」: AVR があっても FixedInput では Vfield が固定され、励磁の制御が効かない。IEEE9 では負荷 ×1.005 付近でヤコビアンの最小特異値が 6e-3 まで下がり(×1.000 で 2.6e-2)、
   ×1.006 付近で平衡点が消える(静的な安定限界)。IEEJ_EAST10 も ×1.004 で解けない。発散ではなく平衡点がない。
 - IEEJ_EAST10 では負荷を減らすとスラック発電機の Pm が増える(×0.99 で 5.63 → 5.89)。電圧が上がり定インピーダンス負荷の消費が増えるため(未検証の解釈)。
@@ -404,4 +406,4 @@ Xconst(x を固定して u・V・I を解く)の方程式は、機器ごとに�
    「制御器の参照値(Vref、Pref)を固定し、制御器を含めて解く」別の Method が要るかは用途次第。
 2. 解いた後に制御器の `get_equilibrium` が上下限で失敗すると、従来の `initialize` と同じく `sct_stale.powerflow` に記録して止まり、平衡点は部分的に書き換わったまま(stale)。
    求解前に制御器の上下限を確かめるかは未決。
-3. fsolve の `Tolerance` 1e-8 での早期停止(上の測定)。
+3. fsolve の `Tolerance` 1e-8 での早期停止 → 解決済み(2026-11-10、`OptimalityTolerance` = `Tolerance^2`)。

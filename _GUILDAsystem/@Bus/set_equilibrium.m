@@ -3,7 +3,7 @@ function set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
 %
 % Called by PowerNetwork.initialize. The slack bus gives the remaining P to its first
 % component whose Q is NaN; Q goes to the components whose Q is NaN, split by
-% `QdistributionRule`. A slack bus without such components gives both to its first component.
+% `QdistributionRule` (tools.distribute_power). A slack bus without such components gives both to its first component.
 % With `rm_PQ` the components take the given powers instead, and r_P and r_Q are not used.
 % With `c_XU` the components store the given states and inputs (Component.set_equilibrium).
 %
@@ -26,14 +26,14 @@ function set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
     a_Comp = obj.a_Component;
     n_Comp = numel(a_Comp);
     if isempty(opt.rm_PQ)
-        tab_PQcomp = distribute_power(obj, r_P, r_Q, opt.QdistributionRule);
+        rm_PQcomp = tools.distribute_power(obj, r_P, r_Q, opt.QdistributionRule);
     else
-        tab_PQcomp = array2table(opt.rm_PQ,"VariableNames",["P","Q"]);
+        rm_PQcomp = opt.rm_PQ;
     end
 
     % @Component set_equilibrium
     for i = 1:n_Comp
-        rr_PQi = tab_PQcomp{i,["P","Q"]};
+        rr_PQi = rm_PQcomp(i,:);
         r_Pi   = rr_PQi(1);
         r_Qi   = rr_PQi(2);
         c_Ii   = conj( rr_PQi*[1;1j] / c_V );
@@ -45,49 +45,3 @@ function set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
     end
 end
 
-
-function tab_PQcomp = distribute_power(obj, r_P, r_Q, s_rule)
-% P and Q of each component: tab_parameter.powerflow, the slack remainder and the split of NaN Q
-    a_Comp = obj.a_Component;
-    n_Comp = numel(a_Comp);
-    if isempty(a_Comp)
-        tab_PQcomp = array2table(zeros(0,2),"VariableNames",["P","Q"]);
-    else
-        tab_PQcomp = tools.vcellfun(@(c) c.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", c.a_Parameter)}.tab_parameter, a_Comp);
-    end
-
-    % distrubute active power(P)
-    if obj.l_isSlack && n_Comp > 0
-        i_rest = find(isnan(tab_PQcomp.Q), 1);
-        if isempty(i_rest)
-            i_rest = 1;
-        end
-        lv_other = (1:n_Comp)' ~= i_rest;
-        tab_PQcomp{i_rest,"P"} = r_P - sum(tab_PQcomp{lv_other,"P"});
-    end
-
-    % distribute reactive power(Q)
-    lv_Qnan  = isnan(tab_PQcomp.Q);
-    if obj.l_isSlack && n_Comp > 0 && ~any(lv_Qnan)
-        tab_PQcomp{1,"Q"} = r_Q - sum(tab_PQcomp{2:end,"Q"});   % like P: the power flow ignores its setting
-    end
-    r_Qrest  = r_Q - sum(tab_PQcomp{~lv_Qnan,"Q"});
-    if any(lv_Qnan)
-        if sum(lv_Qnan) == 1
-            tab_PQcomp{lv_Qnan,"Q"} = r_Qrest;
-        else 
-            tab_Ocomp = tools.vcellfun(@(c) c.a_Parameter{cellfun(@(p) p.s_tag=="operation", c.a_Parameter)}.tab_parameter, a_Comp);
-                rv_Qmin = tab_Ocomp{lv_Qnan,"Qmin"};
-                rv_Qmax = tab_Ocomp{lv_Qnan,"Qmax"};
-            if s_rule=="Qmax" && ~any( isinf([rv_Qmin,rv_Qmax]), "all")
-                r_Qminall = sum(rv_Qmin);
-                r_Qmaxall = sum(rv_Qmax); 
-                rv_Qrate  = (rv_Qmax-rv_Qmin)/(r_Qmaxall-r_Qminall);
-                tab_PQcomp{lv_Qnan,"Q"} = rv_Qmin + rv_Qrate * (r_Qrest-r_Qminall);
-            else
-                rv_Qrate = tab_Ocomp{lv_Qnan,"baseMVA"};
-                tab_PQcomp{lv_Qnan,"Q"} = r_Qrest * rv_Qrate/sum(rv_Qrate);
-            end
-        end
-    end
-end

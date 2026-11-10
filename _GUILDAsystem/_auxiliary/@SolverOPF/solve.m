@@ -4,7 +4,7 @@ function [result,flag,output] = solve(obj, net, sct_options, sct_input)
 % Builds the optimal power flow problem of net with build_problem for the effective
 % settings sct_options, solves it and returns the solution as a ResultOPF. The solver is
 % only read, except that it keeps the bus voltages of a solved "AC OPF" for the next warm
-% start (see SolverOPF). Called by net.optimize_powerflow; calling it
+% start and the built problem for the next run (see SolverOPF). Called by net.optimize_powerflow; calling it
 % directly is for advanced use. Without Optimization Toolbox it stops with
 % GUILDA:require_toolbox:Unavailable before anything is built.
 % sct_input carries the call-only options Problem and InitialPoint of optimize_powerflow:
@@ -33,11 +33,11 @@ function [result,flag,output] = solve(obj, net, sct_options, sct_input)
         sct_build = sct_options;
         sct_build.Cost       = [];
         sct_build.Constraint = [];
-        [OPFprob, x0] = obj.build_problem(net, sct_build);
+        [OPFprob, x0] = cached_problem(obj, net, sct_build);
         check_problem(sct_input.Problem, OPFprob, s_method);
         OPFprob = sct_input.Problem;
     else
-        [OPFprob, x0] = obj.build_problem(net, sct_options);
+        [OPFprob, x0] = cached_problem(obj, net, sct_options);
     end
     if isfield(sct_input, "InitialPoint")
         x0 = sct_input.InitialPoint;
@@ -61,6 +61,46 @@ function [result,flag,output] = solve(obj, net, sct_options, sct_input)
         obj.a_Bus         = net.a_Bus;
         obj.n_revTopology = net.n_revTopology;
         obj.rm_Vwarm      = [tab_bus.Varg, tab_bus.V];
+    end
+end
+
+
+function [prob, x0] = cached_problem(obj, net, sct_options)
+% The kept problem when the network (by object), n_revOPF, the settings that build_problem
+% reads, the start and the variable bounds and types are those it was built with;
+% otherwise build_problem, and keep the new problem. The variables of an optimproblem are
+% handles, so a bound changed on a returned problem (e.g. result.OPFprob) would reach the
+% kept one: the bounds are compared before it is used again.
+    l_warm  = isfield(sct_options, "WarmStart") && sct_options.WarmStart;
+    rm_warm = zeros(0,2);
+    if l_warm
+        rm_warm = obj.rm_Vwarm;   % with the same network and revision, the start depends only on it
+    end
+    sct_key = struct("Method", sct_options.Method, "Cost", {sct_options.Cost}, ...
+                     "Constraint", {sct_options.Constraint}, "DefaultCost", sct_options.DefaultCost, ...
+                     "ReferenceBus", sct_options.ReferenceBus, "WarmStart", l_warm, "Vwarm", rm_warm);
+    sct = obj.sct_problem;
+    if ~isempty(sct) && sct.Network == net && sct.Revision == net.n_revOPF ...
+            && isequaln(sct.Key, sct_key) && isequaln(sct.Bounds, variable_bounds(sct.Problem))
+        prob = sct.Problem;
+        x0   = sct.InitialPoint;
+        return
+    end
+    [prob, x0] = obj.build_problem(net, sct_options);
+    sct = struct("Revision", net.n_revOPF, "Key", sct_key, "Problem", prob, ...
+                 "InitialPoint", x0, "Bounds", {variable_bounds(prob)});
+    sct.Network = net;    % assigned: struct(net, ...) would call the struct method of the network
+    obj.sct_problem = sct;
+end
+
+
+function c_bound = variable_bounds(prob)
+% {name, LowerBound, UpperBound, Type} of every variable of prob
+    sv_name = string(fieldnames(prob.Variables));
+    c_bound = cell(numel(sv_name), 4);
+    for k = 1:numel(sv_name)
+        var = prob.Variables.(sv_name(k));
+        c_bound(k,:) = {sv_name(k), var.LowerBound, var.UpperBound, var.Type};
     end
 end
 

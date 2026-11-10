@@ -274,12 +274,14 @@
 
 **現状**: 潮流計算・連続潮流計算は `operation` を読まない。OPF は母線の `Vmin`/`Vmax`(`build_bus.m`)ほかを使用。`SolverCPF` に `Limits` はない。
 
-## 11. 既存の不具合(別途修正)
+## 11. `Qmin`/`Qmax` の編集と平衡点
 
-- `set_equilibrium(..., QdistributionRule="Qmax")` は機器の `operation` の `Qmin`/`Qmax` で Q を配分する(`_GUILDAsystem/@Bus/set_equilibrium.m` の `distribute_power`)。
-- しかし `Qmin`/`Qmax` を編集しても平衡点が stale にならない。
-  - `@Component/handle_edit.m` は dynamics と Topology だけに反応。
-  - `@PowerNetwork/handle_edit.m` も機器の operation 編集を扱わない。
+**決定**(2026-11-10): 対応しない。`Qmin`/`Qmax` を編集しても、"Qmax" 配分則の平衡点は stale にしない(現状のまま)。
+
+- 理由: 機器が 1 台なら配分自体が起きない、Q が NaN でない機器は対象外、上下限が無限なら "baseMVA" に戻るなど、stale にすべき場合の判定が複雑になる。
+- 現状: `Bus.set_equilibrium(..., QdistributionRule="Qmax")` は機器の `operation` の `Qmin`/`Qmax` で Q を配分する(`tools.distribute_power`)。
+  `@Component/handle_edit.m` は dynamics と Topology、`@PowerNetwork/handle_edit.m` は operation を stale の判定に使わない。
+  `initialize` は既定の "baseMVA" を使い、"Qmax" を選ぶ手段はない(`Bus.set_equilibrium` は外から呼べない)。
 
 ## コードと決定の食い違い・補足(`0af04ad3` で確認)
 
@@ -311,12 +313,12 @@
 - `Tolerance` は Name-Value で `mustBePositive`(0 の「手法の既定」は廃止)。
 - `MethodDynamic`: 初期値は `PFcondition` の列 `Varg0`、`V0`(SolverPF が初期電圧を渡すための列。なければフラットスタート)。
   初期値で収束済みなら積分せずに flag 1(ウォームスタートでイベントが交差しないため)。
-- ウォームスタートの既定は PowerFlowCalculation、OptimalPowerFlow とも true。`initialize` は自身の既定を持たず、`WarmStart` を潮流計算 / OPF に渡す。
+- ウォームスタートの既定は PowerFlowCalculation が true、OptimalPowerFlow が false(Q3 の決定。下の「Q3〜Q6 の実装」)。`initialize` は自身の既定を持たず、`WarmStart` を潮流計算 / OPF に渡す。
   `optimize_powerflow` の `WarmStart` は呼び出しのオプション(`SolverOPF` に設定のプロパティを足さないため)。
 - フラットスタートのスラック母線の位相は設定値 `Varg`(2 節の「位相 0」は PQ・PV 母線。旧コードもスラックは `Varg` から開始)。
 - キャッシュ: `SolverPF` はアドミタンス行列(n_revY)と潮流条件・方程式(n_revPF)を保持。母線の並びがオブジェクトとして同じで n_revTopology が同じときだけ使う。
   結果の行名は毎回の母線のタグ(タグの編集はカウンタを増やさない)。収束した解(flag 1)だけをウォームスタートに保存。
-- OPF: `SolverOPF` は最後に解けた AC OPF の母線の [Varg, V] を保持。`build_opf_problem` の x0 は常にフラットスタート。OPF の問題はキャッシュしない(下の要判断)。
+- OPF: `SolverOPF` は最後に解けた AC OPF の母線の [Varg, V] を保持。`build_opf_problem` の x0 は常にフラットスタート。OPF の問題のキャッシュは Q4(下の「Q3〜Q6 の実装」)。
 - `tab_violation` の列: `Class`("Bus" / "Component" / "Branch")、`Object`(タグ)、`Limit`(例 "Vmax"、"Qmin"、"Smax")、`Value`、`Bound`、`Excess`(|Value − Bound|)。
   違反が `Tolerance` を超えるものだけ。機器の P、Q は `initialize` が与える値(`Bus.set_equilibrium` の "baseMVA" 規則と同じ配分を `@SolverPF/private/violation_table.m` で再計算)。
   ブランチは両端の大きい方の |P|、|Q|、|S|、|I| と |Varg_from − Varg_to|。収束しなければ 0 行。
@@ -329,7 +331,7 @@
   1 回の実時間は方程式と結果の表の作成が大半で、差は 1 割前後。AC OPF(fmincon 内点法)では反復が減るとは限らない(IEEE14 17 → 22、IEEE68 80 → 55)。
 - IEEJ 30 機のフラットスタートからの `initialize` 後、イベントなし 10 s のドリフト: WEST30 ピーク 1.9e-12、夜間 5.4e-14、EAST30 ピーク 8.2e-14、夜間 3.5e-12。
 
-**要判断**(実装では決めていない)
+**要判断**(実装では決めていない。3〜6 は 2026-11-10 に決定、「Q3〜Q6 の実装」)
 
 1. `net.solver_OPF` / `solver_CPF` / `solver_ODE` / `solver_LIN` は今も数値の設定を保存する(6 節の「一般の数値設定は保存しない」は手順 B では `SolverPF` だけ)。
 2. `initialize(Method="powerflow")` で潮流計算の手法を選ぶ手段は GUILDA.setting だけ(`Method` は initialize 自身の名前)。旧 `net.solver_PF.Method = ...` の代わりが必要か。
@@ -388,9 +390,61 @@
 4. 切替の検出の許容幅に修正子の `Tolerance` を流用(Q・V・S とも pu)。独立した設定は作っていない。
 5. Update log(`_GUILDAdoc/database/list_UpdateLog.js`)への告知は未記入(並行作業との衝突を避けるため。マージ時にコーディネーターが記入)。
 
+## Q3〜Q6 の実装(`refactor/powerflow-options`、2026-11-10)
+
+**決定**(メンテナー、2026-11-10): 手順 B の要判断 3〜6。
+
+- Q3: OPF の `WarmStart` の既定は false(フラットスタート)。潮流計算は true のまま。
+- Q4: `operation` と OPF の設定の編集を数える改訂カウンタを `PowerNetwork` に足し、`SolverOPF` が OPF の問題をキャッシュ。
+- Q5: fsolve の `FunctionTolerance` は `Tolerance^2`。下の測定で効果がなかったため、`OptimalityTolerance` も `Tolerance^2`(追加の決定、2026-11-10)。
+- Q6: 機器の P・Q の配分を 1 つの関数にまとめ、`Bus.set_equilibrium` と違反の表の両方から呼ぶ。
+- `Qmin`/`Qmax` の編集と "Qmax" 配分則の平衡点は対応しない(11 節)。
+
+**現状**(実装後のコード)
+
+- Q3: `DefaultOptimalPowerFlow.json` の `WarmStart` は false。
+  - 注意: `GUILDA` のコンストラクタ(起動時の準備)は全設定の値を `@GUILDA/user/*.json` に書き出す(`set_config`)。
+    一度起動した環境では旧既定 true がユーザー設定として残り、JSON の既定の変更が反映されない(このワークツリーでも true のまま)。
+    F4 のテストは `WarmStart` を明示し、配布する既定は JSON を直接読んで確認。
+- Q4: `PowerNetwork.n_revOPF`(Revisions ブロック、private)。`handle_edit` が増やすのは、`n_revPF` を増やす編集すべて、
+  ネットワークの `Hz`(base)、すべての層の `operation`・`OPF`・`Tag`(変数名がタグのため)。
+  - `SolverOPF` の private プロパティ `sct_problem`(Network、Revision、Key、Problem、InitialPoint、Bounds)。
+  - `solve` の内部関数 `cached_problem`: ネットワーク(オブジェクト)、`n_revOPF`、`Method`・`Cost`・`Constraint`(関数ハンドルを `isequal` で比較)・`DefaultCost`・`ReferenceBus`、
+    `WarmStart` とその初期値(`rm_Vwarm`)が同じなら、保持した問題と x0 を再利用。保持するのは最後の 1 つ。
+  - `optimproblem` の変数はハンドル(`OptimizationVariable` は handle クラス)。`result.OPFprob` の変数の上下限を変えると保持した問題も変わるため、
+    再利用の前に全変数の `LowerBound`・`UpperBound`・`Type` を作成時の値と比較し、違えば作り直す。
+    問題の複製(`getByteStreamFromArray`)は IEEE68 で 17 s と構築(3 s)より遅く、警告も出るため不採用。
+  - `net.build_opf_problem` はキャッシュを使わず毎回構築(利用者が変更する問題を保持した問題と共有しないため)。`Problem` を渡した `solve` の確認用の構築(`Cost`・`Constraint` なし)はキャッシュを使う。
+  - `WarmStart=true` の AC OPF は解くたびに `rm_Vwarm` が変わるので、毎回作り直す。
+  - 効果(R2026a、`WarmStart=false`、同じ条件の 2 回目、3 回平均): IEEE14 DC OPF 0.75 → 0.11 s、AC OPF 1.94 → 0.96 s、
+    IEEE68 DC OPF 1.02 → 0.22 s、AC OPF 22.2 → 19.1 s。`build_problem` 単体は IEEE14 0.2〜0.6 s、IEEE68 0.7〜2.6 s。
+    2 回目は `solve` が問題から作るソルバー用の関数も再利用されるため、構築時間以上に短くなる。費用の差は 0。
+  - テスト: F4 の「The OPF problem is kept until the network or the settings change」(変数のハンドルの共有で再利用を判定)。
+- Q5: `@MethodFsolve/solve.m` が `FunctionTolerance` と `OptimalityTolerance` に `ConvTol^2` を渡す。`FunctionTolerance` だけでは効果がなかった(下の測定)。
+  - 測定(フラットスタート、`Tolerance` 1e-10): 変更前後とも WEST10 夜間(不平衡 1.5e-10)、EAST30 ピーク(1.5e-9)、WEST30 夜間(6.9e-10)が flag -2。反復回数も同じ。
+    `Tolerance` 1e-8 では全系統 flag 1(前後とも)。
+  - FixedInput、IEEE9 ×0.95(`Solver="fsolve"`): `Tolerance` 1e-8 / 1e-10 では前後とも不平衡 1.7e-7 で停止(exitflag 1、flag -2 でエラー)。
+  - 原因: fsolve は `OptimalityTolerance`(既定 1e-6、一次の最適性 ‖JᵀF‖∞)で exitflag 1 として止まっている。
+  - 採用した `OptimalityTolerance` = `Tolerance^2`: IEEE9 / IEEE68 / IEEJ 10・30 機(ピーク・夜間)で `Tolerance` 1e-8・1e-10 とも全例 flag 1、不平衡 1.7e-13 以下、
+    newton の解との差 2.4e-14 以下(反復は 1 回程度増え、時間はほぼ同じ)。FixedInput IEEE9 ×0.95 も 1e-6 / 1e-8 / 1e-10 で flag 1、不平衡 1e-14 以下。
+    (比較: `OptimalityTolerance` = `Tolerance` でも潮流計算は全例 flag 1 だが、FixedInput の 1e-6 は不平衡 1.7e-7 のまま。)
+  - テスト: F2 の「fsolve reaches a small Tolerance」(EAST30 ピーク、WEST30 夜間、`Tolerance` 1e-10、medium)、F3 の `FixedInputGivesTheSamePointWithEverySolver`(fsolve を既定と 1e-10 で、large)。
+- Q6: `_GUILDAsystem/+tools/distribute_power.m`(2 つのクラスが使うので `+tools`)。`[P Q]` の行列を返す(機器ごとに 1 行)。
+  - `Bus.set_equilibrium` の内部関数 `distribute_power` と、`@SolverPF/private/violation_table.m` の内部関数 `component_power` を削除して置き換え。
+  - 確認: IEEE9 / IEEE14 / IEEE68 / IEEJ 10・30 機(ピーク・夜間)の初期化後の全 417 母線で、旧 `set_equilibrium` の配分とビット単位で同一("baseMVA"・"Qmax" とも)。
+    旧 `component_power` との差は最大 4.4e-16(Q が NaN の機器が 1 台のときの計算順の違い)。
+  - テスト: F2 の「Components share the bus P and Q as initialize gives them」(2 台の発電機での両規則の手計算、`initialize` と `tab_violation` の値の一致)。
+
+**要判断**
+
+1. `GUILDA` の起動時に全設定がユーザー設定ファイルへ書き出されるため、配布する既定値の変更(Q3 など)が既存の環境に反映されない。
+   既定値と同じ値は書き出さない、などの対応をするか(このブランチでは未対応)。
+
+**決定**(2026-11-10): OPF のキャッシュは `Cost`・`Constraint` を関数ハンドルの同一性で比較するだけで、関数が取り込んだハンドルオブジェクトの状態の変化は考慮しない(`Cost`・`Constraint` に渡すのは v、p だけという前提)。
+
 ## 未決
 
-なし(手順 B の実装で出た判断事項は「手順 B の実装」節の末尾)。
+なし(手順 B の実装で出た判断事項は「手順 B の実装」節の末尾、Q3〜Q6 の判断事項は「Q3〜Q6 の実装」節の末尾)。
 
 決定済み(2026-11-09、番号は旧一覧): 1 `MethodBase` のメンバーと NR の改名(1 節)、4 ルール 7 への `WarmStart` / `Limits` の追加(7 節)、
 5 違反の表 `tab_violation`(10 節)、6 GUILDA.setting のセクション(2 節)、7 改訂カウンタ(8 節)。

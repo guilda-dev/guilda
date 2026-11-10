@@ -6,8 +6,9 @@ function tab = violation_table(net, tab_bus, tab_branch, r_tol)
 %
 % - Bus: Vmin, Vmax on V.
 % - Component: Pmin, Pmax on P and Qmin, Qmax on Q, the powers that initialize would
-%   give it (Bus.set_equilibrium with QdistributionRule "baseMVA": tab_parameter.powerflow,
-%   the slack remainder and the split of the bus Q among the components with Q = NaN).
+%   give it (tools.distribute_power with "baseMVA", as Bus.set_equilibrium by default:
+%   tab_parameter.powerflow, the slack remainder and the split of the bus Q among the
+%   components with Q = NaN).
 % - Branch: Pmax on the larger |P|, Qmax on the larger |Q|, Smax on the larger |S| and
 %   Imax on the larger |I| of the two ends, Vargmax on |Varg_from - Varg_to|.
     arguments (Input)
@@ -30,7 +31,7 @@ function tab = violation_table(net, tab_bus, tab_branch, r_tol)
         if isempty(a_Com)
             continue
         end
-        rm_PQ = component_power(bus, a_Com, tab_bus.P(i_bus), tab_bus.Q(i_bus));
+        rm_PQ = tools.distribute_power(bus, tab_bus.P(i_bus), tab_bus.Q(i_bus), "baseMVA");
         for i_com = 1:numel(a_Com)
             com = a_Com{i_com};
             ope = group(com, "operation");
@@ -80,31 +81,6 @@ function c_row = check_max(c_row, s_obj, s_limit, r_val, r_max, r_tol)
 % Upper limit of a branch (NaN or Inf: none)
     if ~isnan(r_max) && r_val > r_max + r_tol
         c_row(end+1,:) = {"Branch", s_obj, s_limit, [r_val, r_max]};
-    end
-end
-
-
-function rm_PQ = component_power(bus, a_Com, r_P, r_Q)
-% [P Q] of each component as Bus.set_equilibrium distributes them (QdistributionRule "baseMVA")
-    tab_PQ = tools.vcellfun(@(c) group(c, "powerflow"), a_Com);
-    rm_PQ  = [tab_PQ.P, tab_PQ.Q];
-    n_com  = numel(a_Com);
-    if bus.l_isSlack
-        i_rest = find(isnan(rm_PQ(:,2)), 1);
-        if isempty(i_rest)
-            i_rest = 1;
-        end
-        lv_other = (1:n_com).' ~= i_rest;
-        rm_PQ(i_rest,1) = r_P - sum(rm_PQ(lv_other,1));
-        if ~any(isnan(rm_PQ(:,2)))
-            rm_PQ(1,2) = r_Q - sum(rm_PQ(2:end,2));
-        end
-    end
-    lv_nan = isnan(rm_PQ(:,2));
-    if any(lv_nan)
-        r_rest = r_Q - sum(rm_PQ(~lv_nan,2));
-        rv_rate = tools.vcellfun(@(c) group(c, "operation").baseMVA, a_Com(lv_nan));
-        rm_PQ(lv_nan,2) = r_rest * rv_rate / sum(rv_rate);
     end
 end
 

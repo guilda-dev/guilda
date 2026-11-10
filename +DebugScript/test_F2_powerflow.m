@@ -388,6 +388,38 @@ res = DebugScript.helper.quiet(@() net.calculate_powerflow(MaxIteration=1, WarmS
 assert(~res.l_success && height(res.tab_violation) == 0)
 
 
+%% Components share the bus P and Q as initialize gives them
+% tools.distribute_power は Bus.set_equilibrium (initialize) と tab_violation の両方が使う配分。
+% PV 母線 B002 に Q = NaN の発電機をもう 1 台つなぎ、残りの Q を 2 台で分ける
+net = DebugScript.helper.build_9bus();
+bus = net.a_Bus{2};
+g1 = bus.a_Component{1};
+g2 = bus.add_component("gen-park", P=0.3, Q=NaN);
+g1.tab_parameter.operation{1,["baseMVA","Qmin","Qmax"]} = [100, -0.5, 1.5];
+g2.tab_parameter.operation{1,["baseMVA","Qmin","Qmax"]} = [300, -0.2, 0.2];
+r_P = 2.0;  r_Q = 0.4;
+rm_PQ = tools.distribute_power(bus, r_P, r_Q);                          % 既定 "baseMVA"
+assert(isequal(rm_PQ(:,1), [g1.tab_parameter.powerflow.P; 0.3]))       % PV 母線の P は設定値のまま
+assert(max(abs(rm_PQ(:,2) - r_Q*[100; 300]/400)) < 1e-15)
+rm_PQ = tools.distribute_power(bus, r_P, r_Q, "Qmax");                  % Qmin から幅 Qmax - Qmin に比例
+assert(max(abs(rm_PQ(:,2) - ([-0.5; -0.2] + [2.0; 0.4]/2.4*(r_Q + 0.7)))) < 1e-15)
+g2.tab_parameter.operation.Qmax = Inf;                                  % 無限の幅があれば "baseMVA"
+assert(isequal(tools.distribute_power(bus, r_P, r_Q, "Qmax"), tools.distribute_power(bus, r_P, r_Q)))
+assert(isequal(size(tools.distribute_power(PowerNetwork().add_bus(), 1, 1)), [0 2]))
+% initialize の機器の P、Q と tab_violation の値は同じ配分
+res = DebugScript.helper.quiet(@() net.initialize());
+c_V = bus.c_Vequilibrium;
+rm_init = cell2mat(cellfun(@(c) [real(c_V*conj(c.c_Iequilibrium)), imag(c_V*conj(c.c_Iequilibrium))], ...
+                           bus.a_Component(:), "UniformOutput", false));
+rm_dist = tools.distribute_power(bus, res.tab_bus.P(2), res.tab_bus.Q(2));
+assert(max(abs(rm_init - rm_dist), [], "all") < 1e-12)
+g2.tab_parameter.operation.Qmax = rm_dist(2,2) - 0.01;                  % 違反させる
+res = DebugScript.helper.quiet(@() net.calculate_powerflow());
+row = res.tab_violation(res.tab_violation.Object == string(g2) & res.tab_violation.Limit == "Qmax", :);
+assert(height(row) == 1)
+assert(abs(row.Value - rm_dist(2,2)) < 1e-8)
+
+
 %% Unknown or invalid options stop with an error
 net = DebugScript.helper.build_9bus();
 try
@@ -407,6 +439,18 @@ assert(error_id(@() net.calculate_powerflow(WarmStart="yes")) ~= "")
 assert(error_id(@() net.calculate_powerflow(Tolerance=0)) == "MATLAB:validators:mustBePositive")
 % Name-Value の組になっていない
 assert(error_id(@() net.calculate_powerflow("Solver")) == "GUILDA:resolve_options:InvalidPairs")
+
+
+%% fsolve reaches a small Tolerance
+% fsolve には Tolerance^2 を FunctionTolerance と OptimalityTolerance として渡す。
+% OptimalityTolerance が既定 (1e-6) のままだと、これらの系統は不平衡 1e-10〜1e-9 で止まり flag -2 だった
+for c = {{"EAST30", "peak"}, {"WEST30", "night"}}
+    net = DebugScript.helper.quiet(@() network.("IEEJ_" + c{1}{1})(Section=c{1}{2}));
+    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="fsolve", Tolerance=1e-10, WarmStart=false));
+    assert(flag == 1 && output.residual <= 1e-10, c{1}{1} + " " + c{1}{2} + ": " + output.message)
+    tab_NR = DebugScript.helper.quiet(@() net.calculate_powerflow(Tolerance=1e-12, WarmStart=false)).tab_bus;
+    assert(max(abs(res.tab_bus.Vphasor - tab_NR.Vphasor)) < 1e-10)
+end
 
 
 %% Every method reaches the same solution

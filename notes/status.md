@@ -119,11 +119,13 @@ matlab -batch "DebugScript.run_all('Level','small')"
 
 ## 潮流計算のオプション(手順 B、2026-11-10)
 
-仕様と実装の記録は [powerflow-options.md](powerflow-options.md) にあります(「手順 B の実装」節)。
+仕様と実装の記録は [powerflow-options.md](powerflow-options.md) にあります(「手順 B の実装」節、「Q3〜Q6 の実装」節)。
 
 - 設定は GUILDA.setting の PowerFlowCalculation セクション、`Tolerance` の既定は全手法で 1e-8、`WarmStart` の既定は true、母線の `V0` / `Varg0` は廃止、`ResultPF.tab_violation` を追加。
 - **数値の変化:** フラットスタート・既定の設定で、変更前の解との差は newton で最大 1.4e-10、levenberg-marquardt で 1.1e-8(EAST10 夜間)、dynamic で 3.1e-7(以前の既定 `Tolerance` 1e-5 よりは代数解に近い)。連続潮流計算は変わらない(IEEE14 で λ の差 4e-12)。
-- **要判断:** powerflow-options.md の「要判断」1〜6。
+- **Q3〜Q6(2026-11-10):** OPF の `WarmStart` の既定は false。`SolverOPF` は OPF の問題をキャッシュし、`PowerNetwork.n_revOPF` で照合(IEEE68 DC OPF 1.0 → 0.2 s、AC OPF 22 → 19 s)。
+  fsolve の `FunctionTolerance` と `OptimalityTolerance` は `Tolerance^2`(`Tolerance` 1e-10 の flag -2 と FixedInput の 1.7e-7 での停止を解消)。機器の P・Q の配分は `tools.distribute_power` に統一。
+- **要判断:** powerflow-options.md の「手順 B の実装」の要判断 1・2、「Q3〜Q6 の実装」の要判断 1(既定値が既存の環境に届かない件、判断中)。
 
 ## 入力を固定した平衡点と Solver / Method の名前(2026-11-10)
 
@@ -168,7 +170,7 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **完了:** 段階 1(正しさの修正)と段階 2(カスタマイズ。2026-11-07 にオブジェクトごとの `set_opffcn` から `SolverOPF` の `Cost` / `Constraint` などのオプションへ変更)です。変更点は [v4-migration.md](v4-migration.md) 1.9 にあります。
 - **未着手:** 段階 3 の外部バックエンド(`prob2struct` 経由の CPLEX / Gurobi、`tools.network_to_mpc` 経由の MATPOWER)です。
 - **先送り:** 多期間 OPF です。設計上の問いは opf-requirements.md にあります。
-- 記録: AC OPF の開始点は、フラットスタート、または同じ系統で最後に解けた AC OPF の母線電圧(`WarmStart`、既定 true)です。母線の `V0` / `Varg0` は廃止しました。潮流解からの開始点は以前に測定して採用しませんでした(反復が減らず、9 母線 43 → 43、IEEE14 59 → 72)。前回の AC OPF の解からの開始も、内点法では反復が減るとは限りません(IEEE14 17 → 22、IEEE68 80 → 55。[powerflow-options.md](powerflow-options.md) の要判断 3)。
+- 記録: AC OPF の開始点は、フラットスタート、または同じ系統で最後に解けた AC OPF の母線電圧(`WarmStart`、既定 false)です。母線の `V0` / `Varg0` は廃止しました。潮流解からの開始点は以前に測定して採用しませんでした(反復が減らず、9 母線 43 → 43、IEEE14 59 → 72)。前回の AC OPF の解からの開始も、内点法では反復が減るとは限りません(IEEE14 17 → 22、IEEE68 80 → 55)。このため既定は false です([powerflow-options.md](powerflow-options.md) の Q3)。
 
 ### `Scenario` の未確認の既定
 
