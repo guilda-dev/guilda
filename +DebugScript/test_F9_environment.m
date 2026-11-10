@@ -116,10 +116,7 @@ assert(GUILDA.config("Model", "Hz") == 60)
 sct = jsondecode(fileread(s_file));
 sct_def = jsondecode(fileread(fullfile(s_root, "@GUILDA", "config", "DefaultModel.json")));
 assert(sct.Hz == 60)
-assert(isfield(sct, "version") == isfield(sct_def, "version"))
-if isfield(sct_def, "version")
-    assert(isequal(sct.version, sct_def.version))
-end
+assert(isfield(sct, "version") && isequal(sct.version, sct_def.version))
 % 書き直したファイルは次から同じ version: もう知らせない
 s_out = string(evalc("GUILDA.config([], [], ""reset"", true);"));
 assert(~contains(s_out, "INFO"), s_out)
@@ -130,21 +127,62 @@ assert(contains(s_out, "INFO: ") && contains(s_out, "Model"), s_out)
 assert(GUILDA.config("Model", "Hz") == 60)
 
 
-%% User settings without a version follow the version of the defaults
-% これまでの (version のない) 利用者の JSON は、既定ファイルに version があれば既定値に戻す
+%% GUILDA setting window has an editor for every setting
+% 設定ウィンドウはカテゴリごとに全設定の行 (名前のラベルと入力欄) を作る。Type "string" (Limits) も
+f = []; %#ok<NASGU>
+GUILDA.setting;
+f = findall(groot, "Type", "figure", "Name", "Preference");
+c_fig = onCleanup(@() delete(f));
+dd = findobj(f, "Type", "uidropdown", "FontSize", 20);
+for s_cat = string(dd.Items)
+    dd.Value = s_cat;  dd.ValueChangedFcn(dd, []);
+    g = f.Children(1);   % 最後に作ったレイアウト
+    sv_name = string(fieldnames(GUILDA.config(s_cat)));
+    sv_label = string({findobj(g, "-depth", 1, "Type", "uilabel", "HorizontalAlignment", "right").Text});
+    assert(isempty(setxor(sv_label, sv_name)), s_cat)
+    a_ed = findobj(g, "-depth", 1, {"Type","uitextarea","-or","Type","uicheckbox","-or","Type","uieditfield","-or","Type","uidropdown"});
+    assert(numel(a_ed) - 1 == numel(sv_name), s_cat)   % 1 つはカテゴリの選択
+end
+dd.Value = "ContinuationPowerFlow";  dd.ValueChangedFcn(dd, []);
+ef = findobj(f.Children(1), "Type", "uieditfield");
+assert(isscalar(ef) && string(ef.Value) == strjoin(string(GUILDA.config("ContinuationPowerFlow", "Limits")), ", "))
+clear c_fig
+
+
+%% Every default settings file has a version
+% 既定ファイルはすべて最上位に version (数値) を持つ。設定の構造体には出ない
+for f = dir(fullfile(s_root, "@GUILDA", "config", "Default*.json"))'
+    sct_def = jsondecode(fileread(fullfile(f.folder, f.name)));
+    assert(isfield(sct_def, "version") && isnumeric(sct_def.version) && isscalar(sct_def.version), f.name)
+    s_cat = erase(string(f.name), ["Default", ".json"]);
+    assert(~isfield(GUILDA.config(s_cat), "version"), f.name)
+end
+
+
+%% User settings without a version are reset to the defaults
+% これまでの (version のない) 利用者の JSON は既定値で上書きし、INFO で知らせる
 c_user = backup_user_config(); %#ok<NASGU>
 s_file = fullfile(s_root, "@GUILDA", "user", "DefaultModel.json");
 writelines(jsonencode(struct("Hz", 50)), s_file);
 s_out = string(evalc("GUILDA.config([], [], ""reset"", true);"));
+assert(contains(s_out, "INFO: ") && contains(s_out, "Model"), s_out)
+assert(GUILDA.config("Model", "Hz") == 60)
 sct_def = jsondecode(fileread(fullfile(s_root, "@GUILDA", "config", "DefaultModel.json")));
-if isfield(sct_def, "version")
-    assert(contains(s_out, "INFO: ") && GUILDA.config("Model", "Hz") == 60, s_out)
-else
-    assert(~contains(s_out, "INFO") && GUILDA.config("Model", "Hz") == 50, s_out)
-end
-% helper.user_config は既定ファイルの version を付けるので上書きされない
+sct = jsondecode(fileread(s_file));
+assert(sct.Hz == 60 && isfield(sct, "version") && isequal(sct.version, sct_def.version))
+% 旧形式の潮流計算の設定 (MaxIteration 0 は旧「自動」、新しい既定は NaN) も既定値に戻り、潮流計算が収束する
+s_file = fullfile(s_root, "@GUILDA", "user", "DefaultPowerFlowCalculation.json");
+writelines(jsonencode(struct("Solver", "newton", "Tolerance", 1e-8, "MaxIteration", 0, "WhenFailed", "WARN")), s_file);
+s_out = string(evalc("GUILDA.config([], [], ""reset"", true);"));
+assert(contains(s_out, "INFO: ") && contains(s_out, "PowerFlowCalculation"), s_out)
+assert(isnan(GUILDA.config("PowerFlowCalculation", "MaxIteration")))
+[res, flag] = DebugScript.helper.quiet(@() DebugScript.helper.build_9bus().calculate_powerflow());
+assert(flag == 1 && res.l_success, "flag = " + flag)
+% 同じ version なら利用者の値を残す (helper.user_config は既定ファイルの version を付ける)
 c_set = DebugScript.helper.user_config("Model", struct("Hz", 50)); %#ok<NASGU>
 assert(GUILDA.config("Model", "Hz") == 50)
+sct = jsondecode(fileread(fullfile(s_root, "@GUILDA", "user", "DefaultModel.json")));
+assert(sct.version == 1)
 
 
 %% Model key map lists the keys of the classes

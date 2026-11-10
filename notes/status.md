@@ -137,7 +137,8 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - カテゴリ名・設定名の Tab 補完はしない。MATLAB は `@GUILDA` の補完を隣の `resources` フォルダ(リポジトリルート)からしか読まず、ルートにフォルダを増やさないとメンテナーが判断した(2026-11-10)。
 - 利用者の JSON には既定ファイルの `version` を書く。`version` が違う・無いカテゴリは既定値で書き直し、INFO(`GUILDA:GUILDA:ConfigReset`)で知らせる。既定値・キー名・構造を変えたら `version` を上げる(class-design.html「設定ファイルとその版」)。これで潮流計算の手順 B の要判断「既定値が既存の環境に届かない件」も、version を上げれば解消する。
 - `v3_user_config`(利用者設定の旧キーの変換)は削除した。既定ファイルに `version` が入ると、version のない利用者の JSON はすべて既定値に戻るため、変換の働く場面がない。
-- **未実施:** 各 `Default*.json` への `version` の追加(全カテゴリ 1 から)。`feature/plotfcn` のマージ後に行う。
+- 各 `Default*.json` に `"version": 1` を追加(`feature/plotfcn` のマージ後)。version のない利用者の JSON は既定値に戻るため、PlotFcn の節の移行の注意(保存済みの `MaxIteration` 0 で潮流計算が失敗する)は起きない(F9 で確認)。
+- 設定ウィンドウに Type `"string"`(連続潮流計算の `Limits`)の入力欄(カンマ区切り)を追加。これまでは入力欄がなく、前の行の入力欄が動いていた。
 
 ## PlotFcn の実装と OPF の `Verbose`(2026-11-10)
 

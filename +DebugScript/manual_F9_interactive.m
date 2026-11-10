@@ -12,6 +12,7 @@ GUILDA.pwd
 %% 環境設定 (設定ウィンドウが開く)
 % 確認: 各タブの値を変更して保存 → @GUILDA/user/*.json に反映される
 % 確認: Apply のあと GUILDA.config("<カテゴリ>","<名前>") が新しい値を返す (保存したファイルに version が付く)
+% 確認: ContinuationPowerFlow の Limits に "Q, V" と入力して Apply → GUILDA.config("ContinuationPowerFlow","Limits") が ["Q","V"]
 GUILDA.setting
 
 %% 環境設定のコマンド

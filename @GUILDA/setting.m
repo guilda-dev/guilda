@@ -131,6 +131,14 @@ function setting(s_category, varargin)
                                             "FontWeight","bold",...
                                             "ValueChangedFcn",@(src,event) flogical(src,field,ith_field,uibtn_apply));
                     ue.Layout.Column = 5;
+                case "string"
+                    ue = uieditfield(uigrid, "text", ...
+                                            "BackgroundColor",[1,1,1], ...
+                                            "Value",char(strjoin(string(ith_data.Value), ", ")), ...
+                                            "FontColor",fontcolor, ...
+                                            "FontWeight","bold",...
+                                            "ValueChangedFcn",@(src,event) fstring(src,field,ith_field,uibtn_apply));
+                    ue.Layout.Column = [5,6];
                 case "select"
                     list  = ith_data.options;
                     ue = uidropdown(uigrid, "BackgroundColor",[1,1,1], ...
@@ -184,6 +192,17 @@ function setting(s_category, varargin)
     end
     function flogical(src,field,ith_field,uiApply)
         env.(field).(ith_field).Value = src.Value;
+        set_editFlag(true,uiApply);
+    end
+    function fstring(src,field,ith_field,uiApply)
+        % comma-separated text -> string row (e.g. "Q, V" -> ["Q","V"])
+        sv = strtrim(split(string(src.Value), ","))';
+        sv = sv(sv ~= "");
+        if isempty(sv)
+            src.Value = char(strjoin(string(env.(field).(ith_field).Value), ", "));
+            return
+        end
+        env.(field).(ith_field).Value = sv;
         set_editFlag(true,uiApply);
     end
     function fselect(src,field,ith_field,uiApply)
