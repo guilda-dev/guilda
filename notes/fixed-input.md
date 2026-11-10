@@ -3,7 +3,7 @@
 `initialize` に加える Method="FixedInput"(機器の入力 u を固定した平衡点の求解)、利用者による `rv_Uequilibrium` の編集、
 全解析でアルゴリズムの選択を Name-Value `Solver` に統一する改名、線形化の `Algorithm` から `Method` への改名の仕様。
 
-- 決定: 2026-11-10、メンテナー(1 節)。
+- 決定: 2026-11-10、メンテナー(1 節。未決 1〜5 の決定も同日)。
 - 基準コミット: `84e0a421`(`refactor/design-alignment`、手順 A・B のマージ後)。「現状」はこのコミットのコード。
 - 状態: 仕様の段階。コードは未変更。実装は別のセッションで行い、その指示書がこのノートを引用する。
 - 区別: **決定**(メンテナーの決定)、**現状**(コードで確認済み)、**測定**(MATLAB R2026a で確認)、**提案**(このノートの推奨。未承認)、**未決**(末尾の一覧)。
@@ -29,9 +29,15 @@
 - 想定 Solver: `"newton"` / `"levenberg-marquardt"` / `"fsolve"`(`MethodBase` 系)。`"gradient"` / `"dynamic"` は対象外。
 - 設定: `Tolerance`・`MaxIteration` は GUILDA.setting の PowerFlowCalculation を流用。`Solver` は流用せず、既定 `"newton"`。
 - `rv_Uequilibrium` は利用者が編集可能。編集は `log_edit` に記録され stale になり、解析前のチェックの対象。`rv_Xequilibrium` は利用者が編集できないまま。
+  - `rv_Uequilibrium` は `SetAccess=protected` のまま(`Dependent` と内部プロパティの案は不採用)。利用者の編集は新しい公開メソッドで行い、そこで検証と `log_edit` を行う(5 節。名前の提案は `set_input`)。
+  - 内部の書き込み(`set_equilibrium`、FixedInput の書き戻し)は従来どおりプロパティへ直接。
+- 初期値: x を保持していない機器は、内部の潮流計算と `get_equilibrium` で初期値を作る(モデルには書き込まない)。`WarmStart=false` は保持値があっても常にこの初期値。
 - 書き戻し: 解いた x・u をそのまま書く。`Bus.set_equilibrium` / `Component.set_equilibrium` に x・u を渡す新しい引数を加え、`get_equilibrium` を飛ばす。
 - 再初期化: FixedInput の後に Method なしの `initialize()`(自動初期化を含む)が走ったら、潮流計算で解き直す。
   ただし stale の原因に利用者の `rv_Uequilibrium` の編集が含まれる場合は、解析前のチェックで自動初期化せずエラーで止め、`initialize(Method="FixedInput")` の実行を促す。
+  - u の編集後に明示の `Method="powerflow"` / `"OPF"` で `initialize` したときは求解し、編集した u を潮流解(OPF 解)の値で上書きする。INFO で知らせ、`sct_stale.input` を空にする。
+- 線形化の旧名 `Algorithm` は `v3_linearize_args` で `Method` に変換し、`GUILDA:Deprecated:*` を警告(v3 の `get_sys(NonUnit, Algorithm)`、`odeLinearizer` の公開 API のため)。
+- 負荷の `obj.Z`(`load.impedance`)/ `obj.PQ_st`(`load.power`)は廃止(u と重複し、参照は `get_equilibrium` の中だけ)。
 - Xconst(状態 x を固定して u を解く)は廃止(理由は 7 節)。
 
 **この決定で解消する既存の要判断**
@@ -58,8 +64,8 @@
 | `generator.two_axis`(`gen-2axis`) | δ, ω, Eq, Ed(4) | Pmech, Vfield(2) | Ed = (Xq−Xq')Iq | dEd = −Ed + (Xq−Xq')Iq(u を含まない) |
 | `generator.park`(`gen-park`) | δ, ω, Eq, Ed, ψq, ψd(6) | Pmech, Vfield(2) | 4×4 の線形方程式 `SE\(...)` | Ed、ψq、ψd の式は u を含まない |
 | `generator.droop`(`gen-droop`) | δ(1) | Pmech, Vfield(2) | classical と同じ式(ω なし) | dδ = −Pout + Pm |
-| `load.impedance`(`load-impedance`) | なし | R, X(2) | Z = −V/I(`obj.Z` にも保存) | I = −V/Z |
-| `load.power`(`load-power`) | なし | Pload, Qload(2) | u = [P; Q](`obj.PQ_st` にも保存) | I = conj((P + jQ)/V) |
+| `load.impedance`(`load-impedance`) | なし | R, X(2) | Z = −V/I(現状は `obj.Z` にも保存。廃止) | I = −V/Z |
+| `load.power`(`load-power`) | なし | Pload, Qload(2) | u = [P; Q](現状は `obj.PQ_st` にも保存。廃止) | I = conj((P + jQ)/V) |
 
 - 発電機はすべて `sv_u(1) = "Pmech"`。FixedInput で自由にする Pm はこの入力(「発電機」は `component.generator.abstract` のサブクラス)。
 - classical / park / two_axis / droop の δ は `atan`(`atan2` でない)。Q + V²/Xq < 0(大きな進相運転)では δ が π ずれる。one_axis だけ `atan2`。解いた x をそのまま書き戻す理由の一つ(5 節)。
@@ -131,10 +137,14 @@
   - `MethodBase.Jac` を空にすると `tools.fd_jacobian`(刻み `Increment`)で全体を数値微分できるが、2·(未知数) 回の F の評価が要る(IEEE68 で 287 未知数)。テストでの比較用にとどめる。
 - 収束判定: max|F| ≤ `Tolerance`(`MethodBase` の共通の判定)。
   F は単位の異なる行(dx、電流、KCL)の混在。dδ の行は 2πf0 倍なので ω の許容誤差は実質 `Tolerance`/(2πf0)。
-- 初期値(ウォームスタート): 保持している平衡点。x = `rv_Xequilibrium`、I = `c_Iequilibrium`、V = 母線の `c_Vequilibrium`、Pm は `rv_Uequilibrium` の値。
+- 初期値(**決定**、`WarmStart=true`): 保持している平衡点。x = `rv_Xequilibrium`、I = `c_Iequilibrium`、V = 母線の `c_Vequilibrium`、Pm は `rv_Uequilibrium` の値。
   - powerflow が stale でも使う(典型的な用途は「系統や u を編集した後、u を保ったまま新しい平衡点を求める」で、編集前の点がよい初期値になる)。
-  - x を保持していない機器がある場合は未決 1。
-- 受け付ける Name-Value: `Method`、`Solver`、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`。他の名前は `GUILDA:resolve_options:UnknownName`。`WarmStart` の意味は未決 1。
+  - x を保持していない機器(一度も initialize していない、追加した直後)は、内部の潮流計算と `get_equilibrium` で初期値を作る。
+    潮流計算は `calculate_powerflow` と同じ設定(`Solver` は PowerFlowCalculation のもの)。結果は初期値にだけ使い、母線にも機器にも書き込まない。
+    `get_equilibrium` は x、u を返すだけの関数になる(負荷の `obj.Z` / `obj.PQ_st` の廃止で副作用がなくなる)。
+  - V、I も、x を保持していない機器のある母線は潮流解の値から始める(提案)。
+- `WarmStart=false`(**決定**): 保持値があっても、すべての機器と母線で上の潮流計算と `get_equilibrium` の初期値を使う。内部の潮流計算もフラットスタート(提案)。
+- 受け付ける Name-Value: `Method`、`Solver`、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`。他の名前は `GUILDA:resolve_options:UnknownName`。
 - 置き場所: `@PowerNetwork/private/` の関数(新しい Solver クラスや `net.solver_*` を増やさない)。
   ウォームスタートの解は機器の平衡点そのものなので、Solver オブジェクトに解を保持する必要がない。
   方程式の組み立てに `SolverODE` の `getODEFunction` / `getODEJacobian` を流用する案もあるが、シナリオ・制御器・オフセットを含むため、専用の関数を推奨。
@@ -154,18 +164,24 @@
   - `SolverLIN.solve`(`GUILDA:SolverLIN:Stale`)、`SolverCPF.solve`(`GUILDA:SolverCPF:Stale`)、各層の `get_sys`(`GUILDA:Component:Stale` など)も同様。
 - `Component.initialize`: 平衡点が stale なら、保持した V と I から `get_equilibrium` で再計算(u は上書きされる)。
 
-### 編集を stale にする仕組み(提案)
+### 編集を stale にする仕組み(決定: 公開メソッド。詳細は提案)
 
-- アクセス: `rv_Uequilibrium` を `Dependent` の公開プロパティにし、値は `SetAccess=protected` の内部プロパティ(例 `rv_Uheld`)に持つ。
-  - `set.rv_Uequilibrium`: 利用者の代入だけが通る。検証してから内部プロパティに書き、`log_edit` を呼ぶ。
-  - 内部の書き込み(`set_equilibrium`、FixedInput の書き戻し)は内部プロパティに直接書き、記録しない。
-  - 同じクラスのメソッド内の代入も set メソッドを通る(MATLAB の規則)ため、フラグで区別する案より内部プロパティの案が単純。
-  - 読み出しは get メソッドを通る。`simulate` の各ステップで読むか(hot path か)は未確認(未決 4)。
-- 検証(`set.rv_Uequilibrium`):
+- アクセス(**決定**): `rv_Uequilibrium` は `properties(SetAccess=protected)` のまま。利用者は新しい公開メソッドで編集する。
+  内部の書き込み(`Component.set_equilibrium`、FixedInput の書き戻し)は従来どおりプロパティへ直接書き、記録しない。読み出しの費用は変わらない。
+- メソッド名(提案): `set_input`。
+  - API Design のルール 6 で `set_` はモデルを変えてよい動詞。名前は snake_case の動詞_名詞(naming-conventions、api-design ルール 1)。
+  - 既存の `Component.set_equilibrium`(平衡点全体を書く。`Access={?Bus}`)と区別し、入力だけを書くことを名前で示す。
+  - 注意: `LocalController` に保護メソッド `set_inputs(obj, sv_name)`(入力名の展開のフック)がある。クラスと役割が違うが、名前が近い。
+    紛らわしさを避けるなら `set_input_equilibrium` も候補(メンテナーの確認待ち。指示書で確定)。
+- 呼び出しの形(提案): `comp.set_input(rv_u)`。`rv_u` は `sv_u` の順の全要素。
+  一部だけ変える場合は `u = comp.rv_Uequilibrium; u(1) = 0.8; comp.set_input(u);`。
+  返り値なし(ルール 3 の `[result, flag, output]` は解析のメソッドの規則で、編集のメソッドは `add_*` などと同じく返さない)。
+  `Component.m` の `methods` ブロックに宣言、本体は `@Component/set_input.m`(method-files の規則)。`arguments` の (Input) / (Output) ブロック付き。
+- 検証(`set_input` の中、提案):
   - double、実数、有限(`mustBeNumeric`、`mustBeReal`、`mustBeFinite`)。列ベクトルに整形。
   - 要素数 = `numel(sv_u)`。違えば `GUILDA:Component:InputSize`(案)。
-  - 機器が母線に接続されていない(`a_Bus` が空)ときもエラー(stale を記録する上位の層がない)。
-  - 同じ値の代入は記録しない(`set.l_isSlack` と同じ)。
+  - 機器が母線に接続されていない(`a_Bus` が空)ときはエラー(stale を記録する上位の層がない)。
+  - 保持値と同じ値なら何もしない(`set.l_isSlack` と同じ)。
 - 記録: `log_edit("edit rv_Uequilibrium: <旧> -> <新>", "input")`。新しいタグ `"input"`(`tools.value_text` で値の文字列)。
 - `Component.handle_edit`: `"input"` で `sct_stale.equilibrium` に追加(機器の `get_sys` などが止まる)。odefcn は stale にしない(ハンドルは u を束縛しない)。
 - `PowerNetwork.handle_edit`: 機器の `"input"` で新しいフィールド `net.sct_stale.input` に追加。`sct_stale.powerflow` には入れない。
@@ -174,16 +190,18 @@
 - 解析前のチェック: `SolverODE.initialize_index`、`SolverLIN.solve`、`SolverCPF.solve` などが集めるメッセージに `net.sct_stale.input` を加える。
   `input` が空でなければ、`initialize(Method="FixedInput")` を促す別のメッセージ ID(例 `GUILDA:SolverODE:InputEdited`)で止める。
   自動の初期化を導入するときも、`input` が空でなければ初期化せずに同じエラーにする(1 節の決定)。
-- 「セットされていない」の判定(FixedInput の起動時): 要素数が `numel(sv_u)` でない(一度も平衡点を持たない機器は `zeros(0,1)`)。値が NaN の場合は検証で入らない。
+- 「セットされていない」の判定(FixedInput の起動時): 要素数が `numel(sv_u)` でない(一度も平衡点を持たない機器は `zeros(0,1)`)。NaN などは `set_input` の検証で入らない。
 
 ### 書き戻し(決定と提案)
 
 - `take_method` の `sr_method` に `"FixedInput"` を追加。指定時は常に求解(`"OPF"` と同じ)。
 - 書き戻しは `write_powerflow` と同じ経路で、解いた x と u(自由にした Pm を含む)をそのまま書く。
   - `Bus.set_equilibrium` に機器ごとの [x, u] を渡す新しい引数(例 Name-Value `c_XU`、機器ごとの `{x, u}`)。
-  - `Component.set_equilibrium` に x、u を渡す新しい引数(例 `rv_X`、`rv_U`)。与えたときは `get_equilibrium` を飛ばし、内部プロパティへ直接書く。
+  - `Component.set_equilibrium` に x、u を渡す新しい引数(例 `rv_X`、`rv_U`)。与えたときは `get_equilibrium` を飛ばし、プロパティへ直接書く。
   - 制御器は従来どおり `get_equilibrium(c_V, u)` と `initialize(true)`。u が固定なので、AVR・調速機などは参照値(Vref、Pref など)を変えて同じ u を出す。
-  - 負荷の `obj.Z` / `obj.PQ_st`(`get_equilibrium` の副作用。参照は `get_equilibrium` の中だけ)は、飛ばすと古いまま。書き戻しで更新するか、プロパティを廃止するかは実装で決める。
+  - 負荷の `obj.Z` / `obj.PQ_st` は廃止(1 節)。`get_equilibrium` を飛ばしても古い値が残らない。
+    影響箇所: `_GUILDAobject/+component/+load/@impedance/impedance.m`(プロパティ `Z`)、`@impedance/get_equilibrium.m`、`+load/@power/power.m`(`PQ_st`)、`@power/get_equilibrium.m`(ヘルプ 5、7 行も)。
+    `+ConstSource/@power` と `+load/history/` の同名のプロパティは旧インタフェースで対象外。
 - 書き戻しの後: 現状のまま、全母線・ブランチの `initialize`、全グローバル制御器の `initialize(true)`、KCL の確認、モデル残差の警告。最後に `sct_stale.powerflow`、`odefcn`、`input` を空にする。
 - 改訂カウンタは変えない(求解は編集ではない)。`solver_PF` のウォームスタート(最後の潮流解)も変えない。
 - 返り値: `ResultPF`(`calculate_from_equilibrium` と同じ作り、`s_solver` = `"FixedInput"`、`options` = struct(Method, Solver, Tolerance))、flag、output(Method クラスの output)。
@@ -194,9 +212,11 @@
 - Method なしの `initialize()`:
   - `sct_stale.input` が空で powerflow が stale でなければ、FixedInput の点を保つ(現状の `l_solve` の規則)。
   - `sct_stale.input` が空で powerflow が stale なら、潮流計算で解き直す(1 節の決定。OPF の点と同じ扱い)。
-  - `sct_stale.input` が空でなければエラー(例 `GUILDA:PowerNetwork:InitializeInputEdited`)で止め、`initialize(Method="FixedInput")` を促す(利用者の u が `get_equilibrium` の再計算で消えるため)。明示の `Method="powerflow"` / `"OPF"` の扱いは未決 2。
+  - `sct_stale.input` が空でなければエラー(例 `GUILDA:PowerNetwork:InitializeInputEdited`)で止め、`initialize(Method="FixedInput")` を促す(利用者の u が `get_equilibrium` の再計算で消えるため)。
+- 明示の `initialize(Method="powerflow")` / `"OPF"`(**決定**): `sct_stale.input` が空でなくても求解し、編集した u を潮流解(OPF 解)の値で上書き。
+  上書きした機器を INFO(例 `GUILDA:PowerNetwork:InputOverwritten`)で知らせ、`sct_stale.input` を空にする。
 - dynamics の編集後の Method なしの `initialize()`: 現状どおり保持した V、I から `get_equilibrium` で再計算(FixedInput で求めた点の u は保たれない)。
-- 新しいメッセージ ID の案: `GUILDA:PowerNetwork:InitializeFixedInputFailed`(未収束、残差)、`InitializeFixedInputSolver`(gradient / dynamic)、`InitializeNoSlackGenerator`、`InitializeInputNotSet`、`InitializeInputEdited`、`GUILDA:Component:InputSize`、各 Solver の `InputEdited`。名前は実装の指示書で確定。
+- 新しいメッセージ ID の案: `GUILDA:PowerNetwork:InitializeFixedInputFailed`(未収束、残差)、`InitializeFixedInputSolver`(gradient / dynamic)、`InitializeNoSlackGenerator`、`InitializeInputNotSet`、`InitializeInputEdited`、`InputOverwritten`(INFO)、`GUILDA:Component:InputSize`、各 Solver の `InputEdited`。名前は実装の指示書で確定。
 
 ## 6. 改名の影響箇所
 
@@ -254,7 +274,10 @@ OPF の `Algorithm_linprog` などと `@SolverOPF/optimoption.m` 27〜28 行の 
 | `_GUILDAsystem/_auxiliary/@ResultLIN/ResultLIN.m` 21、23、31、47、67、110、113、121、123、135 行 | ヘルプとプロパティの説明 |
 | `_GUILDAsystem/_auxiliary/@ResultLIN/Plot.m` 5、11、22、39、49、51、52 行 | 引数と題名 |
 | `_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/ResultLIN.xml` 5、7、9、10 行 | メッセージ(`SingularAvv`、`StateNotInModel` など)の文中の Algorithm |
-| `_GUILDAsystem/_VersionSupport/v3_linearizer_constructor.m` 5 行、`SystemTools/GUILDA/en/v3_linearizer_constructor.xml` 4 行 | v3 の `odeLinearizer(net, NonUnit, Algorithm=...)` の説明。v3 の名前 `Algorithm` の互換は未決 3 |
+| `_GUILDAsystem/_VersionSupport/v3_linearizer_constructor.m` 5 行、`SystemTools/GUILDA/en/v3_linearizer_constructor.xml` 4 行 | v3 の `odeLinearizer(net, NonUnit, Algorithm=...)` の説明 |
+| `_GUILDAsystem/_VersionSupport/v3_linearize_args.m`(`SolverLIN.get_options` 15 行から呼ばれる) | 旧名 `Algorithm` → `Method` の変換と警告を追加(1 節)。現状は `NonUnit` だけを扱う |
+| `_GUILDAsystem/_VersionSupport/Deprecated.m`、`SystemTools/GUILDA/en/Deprecated.xml` | 新しい ID(例 `GUILDA:Deprecated:LinearizeAlgorithm`)と文 |
+| `@PowerNetwork/get_sys.m` | `get_sys` は `linearize` の Name-Value を受け渡すので、`Algorithm=` も同じフックを通るか確認 |
 
 - `ResultLIN.options` のフィールド名も `Algorithm` → `Method` になる。
 - `get_ss` の位置引数は名前だけの変更(呼び出し `res.get_ss("Kron")` は変わらない)。
@@ -266,6 +289,7 @@ OPF の `Algorithm_linprog` などと `@SolverOPF/optimoption.m` 27〜28 行の 
 | `test_F7_linearization.m` | 78 か所(`get_sys("Algorithm", ...)`、`linearize("Algorithm", ...)` など) |
 | `test_F8_utilities.m` | 380、554、651、681 |
 | `+helper/linearize_v3.m` | 1、9、21 |
+| 旧名 `Algorithm` の互換 | `Algorithm=` が警告つきで `Method=` と同じ結果になるテストを追加(`test_F7_linearization.m` か v3 互換のテスト) |
 | `Task_linearization.m` | 13、17 |
 | `test_I58_input_under_local_controller.m` | 92 |
 | `test_F3_edit_handling.m` | 470 |
@@ -308,10 +332,9 @@ Xconst(x を固定して u・V・I を解く)の方程式は、機器ごとに�
 
 ## 8. 未決
 
-| # | 問い | 選択肢 | 推奨 |
-|---|---|---|---|
-| 1 | x を保持していない機器(一度も initialize していない、追加した直後)の初期値と `WarmStart` | A: 潮流計算と `get_equilibrium` で初期値を作る(書き込まない)。`WarmStart=false` は常にこの初期値。B: エラー(先に `initialize()`) | A。`rv_Uequilibrium` は利用者がセットできるので、x がなくても u があれば起動できる方が自然 |
-| 2 | `rv_Uequilibrium` を編集した後の明示の `initialize(Method="powerflow")` / `"OPF"` | A: 求解し、編集した u を潮流解の値で上書き(INFO で知らせ、`sct_stale.input` を空にする)。B: これもエラー | A。明示の Method は利用者の選択で、編集を捨てる手段が要る |
-| 3 | 線形化の旧名 `Algorithm` | A: `Algorithm` は v3 の公開 API(`get_sys(NonUnit, Algorithm)`、`odeLinearizer`)なので、`v3_linearize_args` で `Method` に変換して `GUILDA:Deprecated:*` を警告。B: 互換なしで `UnknownName` | A。v3 の利用者のスクリプトに `Algorithm=` が多い |
-| 4 | `rv_Uequilibrium` を `Dependent` にしたときの読み出しの費用 | A: `Dependent` + 内部プロパティ(5 節)。B: 公開の set メソッドとフラグ | A。`simulate` の各ステップで読むなら、読み出し側を内部プロパティに変える(hot path かは未確認) |
-| 5 | 負荷の `obj.Z` / `obj.PQ_st` | A: 書き戻しで更新。B: プロパティを廃止(参照は `get_equilibrium` の中だけ) | B。u と重複し、FixedInput と編集で食い違う |
+なし。
+
+決定済み(2026-11-10、番号は前版の未決): 1 x を保持していない機器の初期値と `WarmStart=false`(1 節、4 節)、2 u 編集後の明示の `Method="powerflow"` / `"OPF"`(1 節、5 節)、
+3 線形化の旧名 `Algorithm` の互換(1 節、6 節)、4 `rv_Uequilibrium` の編集は公開メソッド(1 節、5 節)、5 負荷の `obj.Z` / `obj.PQ_st` の廃止(1 節、5 節)。
+
+指示書で確定する名前: `set_input`(または `set_input_equilibrium`)、5 節のメッセージ ID、`Bus.set_equilibrium` / `Component.set_equilibrium` の新しい引数名、`Deprecated` の新しい ID。
