@@ -2,6 +2,7 @@ function handle_edit(obj, a_layer, tag, log)
 % Mark the stale tags of the component for its own edits (LayerPackage.log_edit).
 %   dynamics (its tab_parameter.dynamics)              equilibrium, odefcn
 %   Topology (local controller add, replace, remove)   equilibrium
+%   input (set_input: rv_Uequilibrium)                 equilibrium
 % Edits of other layers, and powerflow edits (the power flow of the network), are not
 % the component's.
 %
@@ -18,7 +19,7 @@ function handle_edit(obj, a_layer, tag, log)
     if tag == "dynamics"
         obj.sct_stale.equilibrium(end+1,1) = log;
         obj.sct_stale.odefcn(end+1,1)      = log;
-    elseif tag == "Topology"
+    elseif tag == "Topology" || tag == "input"
         obj.sct_stale.equilibrium(end+1,1) = log;
     end
 end

@@ -21,6 +21,10 @@ function flag = validate(obj, l_message)
         error(msg("GUILDA:LocalController:ValidateNotAttached", obj.s_tag))
     end
     net = comp.a_Bus.a_PowerNetwork;
+    if ~isempty(net.sct_stale.input)   % edited inputs: initialize(Method="FixedInput")
+        sv_in = unique(net.sct_stale.input, "stable");
+        error(msg("GUILDA:LocalController:InputEdited", char(net.s_tag), char(join(sv_in(1:min(end,3)), "; "))))
+    end
     sv  = [net.sct_stale.powerflow; net.sct_stale.odefcn; obj.sct_stale.equilibrium; obj.sct_stale.odefcn];
     if ~isempty(sv)
         sv = unique(sv, "stable");

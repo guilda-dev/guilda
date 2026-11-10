@@ -2,15 +2,15 @@ function [sys, flag, output] = get_sys(obj, varargin)
 % Linearize the network and return its linear model.
 %
 % Linear model of the network: a shortcut of net.linearize(Name, Value) followed by
-% result.get_ss(). It takes the same options as net.linearize (Algorithm, Point,
-% Coordinate, Plot), the options Input and Output of get_ss, and Format; Algorithm chooses
+% result.get_ss(). It takes the same options as net.linearize (Method, Point,
+% Coordinate, Plot), the options Input and Output of get_ss, and Format; Method chooses
 % the form of the model: "Kron" and "Feedback" eliminate the bus voltages, "DAE" keeps them
-% (default net.solver_LIN.Algorithm, "Feedback"). Use net.linearize to keep the unreduced
+% (default net.solver_LIN.Method, "Feedback"). Use net.linearize to keep the unreduced
 % Jacobian blocks and the variable map.
 %
 % Format chooses the form of sys: "GUILDAorigin" (default) is the ResultLIN of the
 % linearization, whose properties A, B, C, D, E, StateName, InputName and OutputName hold
-% the model of Algorithm with the selected Input and Output (kept in result.options);
+% the model of Method with the selected Input and Output (kept in result.options);
 % "struct" is a struct with these eight fields; "ss" is a descriptor state-space model (dss)
 % and needs the Control System Toolbox. None of them needs a toolbox to linearize.
 % v3 returned [sys, lin] with lin a SolverLIN holding the network; the second
@@ -22,7 +22,7 @@ function [sys, flag, output] = get_sys(obj, varargin)
 %
 % Name-Value options:
 %
-% - `Algorithm` — Form of the model (see ResultLIN.get_ss). Default: net.solver_LIN.Algorithm.
+% - `Method` — Form of the model (see ResultLIN.get_ss). Default: net.solver_LIN.Method.
 % - `Point` — Point of the linearization (see net.linearize). Default: net.solver_LIN.Point.
 % - `Coordinate` — Bus variables of "DAE" (see ResultLIN.get_ss). Default: net.solver_LIN.Coordinate.
 % - `Plot` — Plot the eigenvalue map. Default: false.
@@ -32,9 +32,9 @@ function [sys, flag, output] = get_sys(obj, varargin)
 %
 % <@Examples>
 % ```matlab
-% res = net.get_sys(Algorithm="Kron");
+% res = net.get_sys(Method="Kron");
 % eig(res.A, res.E)
-% resV = net.get_sys(Algorithm="Kron", Output="V");   % resV.C gives the bus voltages
+% resV = net.get_sys(Method="Kron", Output="V");   % resV.C gives the bus voltages
 % sct = net.get_sys(Format="struct");
 % sys = net.get_sys(Format="ss");                     % Control System Toolbox
 % ```
@@ -71,10 +71,10 @@ function [sys, flag, output] = get_sys(obj, varargin)
     if opt.Format == "GUILDAorigin"
         sys = result;
         if isempty(result.StateName)
-            result.get_ss(result.options.Algorithm, c_channel{:}, Format="struct");   % stops with the reason, if any
+            result.get_ss(result.options.Method, c_channel{:}, Format="struct");   % stops with the reason, if any
         end
     else
-        sys = result.get_ss(result.options.Algorithm, c_channel{:}, Format=opt.Format);
+        sys = result.get_ss(result.options.Method, c_channel{:}, Format=opt.Format);
     end
     output.result = result;
 end

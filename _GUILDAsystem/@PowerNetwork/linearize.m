@@ -3,8 +3,8 @@ function [result, flag, output] = linearize(obj, varargin)
 %
 % Linearizes the network and returns the unreduced linear DAE (the Jacobian blocks in
 % the order of net.get_variable_map()) as a ResultLIN, whose properties A, B, C, D, E,
-% StateName, InputName and OutputName hold the reduced model of Algorithm;
-% result.get_ss(Algorithm) gives it for another algorithm or with other channels. The
+% StateName, InputName and OutputName hold the reduced model of Method;
+% result.get_ss(Method) gives it for another algorithm or with other channels. The
 % linearization needs no toolbox. The settings are the stored defaults of
 % net.solver_LIN; Name-Value options override them for this call only (net.solver_LIN is
 % not changed). Neither is the network: a Point away from the equilibrium is used only
@@ -19,7 +19,7 @@ function [result, flag, output] = linearize(obj, varargin)
 %
 % Name-Value options:
 %
-% - `Algorithm` — Default form of result.get_ss() (net.solver_LIN.Algorithm).
+% - `Method` — Default form of result.get_ss() (net.solver_LIN.Method).
 % - `Point` — Point of the linearization: [] for the equilibrium, the values in the order
 %   of net.get_variable_map(), or {sim, t} for the state of a simulation result at time t
 %   (sim.get_point(t); {sim, t, "before"} at a phase boundary takes the value before the
@@ -33,7 +33,7 @@ function [result, flag, output] = linearize(obj, varargin)
 % <@Examples>
 % ```matlab
 % res = net.linearize();
-% eig(res.A, res.E)                 % model of res.options.Algorithm
+% eig(res.A, res.E)                 % model of res.options.Method
 % sct = res.get_ss("Kron", Format="struct");
 % sys = res.get_ss("Kron");         % ss (Control System Toolbox)
 % tab = res.tab_variable;           % order of res.rm_Axx, res.rm_Axv, ...

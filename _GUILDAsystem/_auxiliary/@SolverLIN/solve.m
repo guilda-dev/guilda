@@ -30,6 +30,10 @@ function [result, flag, output] = solve(obj, net, sct_options)
 
     % Stale tags of the network, the components, their local controllers (depth first, as
     % a list) and the global controllers: net.initialize() is needed when any is not empty
+    if ~isempty(net.sct_stale.input)   % edited inputs: initialize(Method="FixedInput")
+        sv_in = unique(net.sct_stale.input, "stable");
+        error(msg("GUILDA:SolverLIN:InputEdited", char(net.s_tag), char(join(sv_in(1:min(end,3)), "; "))))
+    end
     sv    = [net.sct_stale.powerflow; net.sct_stale.odefcn];
     c_obj = tools.cellfun(@(b) b.a_Component, a_bus);
     c_obj = [vertcat(cell(0,1), c_obj{:}); a_gc];

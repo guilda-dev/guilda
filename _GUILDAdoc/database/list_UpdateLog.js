@@ -237,7 +237,7 @@ const updateLogData = [
     "title": "Power flow without toolboxes",
     "date": "2026-11-07",
     "type": "feature",
-    "content": "net.calculate_powerflow takes Method \"newton\" (default), \"gradient\", \"levenberg-marquardt\", \"dynamic\" or \"fsolve\"; only \"fsolve\" needs Optimization Toolbox, so the power flow runs with MATLAB alone. Method=\"algebraic\" is now \"fsolve\"."
+    "content": "net.calculate_powerflow takes Method (now Solver, 2026-11-10) \"newton\" (default), \"gradient\", \"levenberg-marquardt\", \"dynamic\" or \"fsolve\"; only \"fsolve\" needs Optimization Toolbox, so the power flow runs with MATLAB alone. Method=\"algebraic\" is now \"fsolve\"."
   },
   {
     "title": "Linearization without Control System Toolbox",
@@ -249,12 +249,24 @@ const updateLogData = [
     "title": "Optional toolboxes and the startup check",
     "date": "2026-11-07",
     "type": "feature",
-    "content": "GUILDA needs MATLAB only. OPF and Method=\"fsolve\" need Optimization Toolbox, ss output and the LQR controllers need Control System Toolbox. The startup prints for each toolbox \"ok\" or the features unavailable without it; Getting Started has the full table."
+    "content": "GUILDA needs MATLAB only. OPF and Method=\"fsolve\" (now Solver=\"fsolve\") need Optimization Toolbox, ss output and the LQR controllers need Control System Toolbox. The startup prints for each toolbox \"ok\" or the features unavailable without it; Getting Started has the full table."
   },
   {
     "title": "Show a model in a GUI",
     "date": "2026-11-07",
     "type": "feature",
     "content": "obj.gui() opens a window for a network, bus, branch, component or controller with its parameters (editable in place), its equilibrium, a breadcrumb and cards of the children to move between models, and a Docs button for the reference page of the class. obj.gui(h) puts it in a panel or tab of your own app, and a new model class needs no extra code."
+  },
+  {
+    "title": "Solver chooses the algorithm",
+    "date": "2026-11-10",
+    "type": "feature",
+    "content": "Every analysis chooses its numerical algorithm with Solver: net.calculate_powerflow(Solver=\"levenberg-marquardt\") (was Method; the key of the PowerFlowCalculation section of GUILDA.setting too), and net.initialize passes Solver on to the power flow or the OPF. Method says what is solved or built: net.linearize and net.get_sys take Method=\"Kron\"|\"Feedback\"|\"DAE\" (was Algorithm, which still works with the warning GUILDA:Deprecated:LinearizeAlgorithm)."
+  },
+  {
+    "title": "Equilibrium with the inputs held",
+    "date": "2026-11-10",
+    "type": "feature",
+    "content": "comp.set_input(u) edits the inputs of a component at the equilibrium, and net.initialize(Method=\"FixedInput\") solves the states, bus voltages and currents with those inputs held; the Pmech of the first generator of the slack bus balances the power. Until then the analyses and net.initialize() stop with InputEdited; Method=\"powerflow\" replaces the edited inputs. The load properties Z and PQ_st are removed (the values are rv_Uequilibrium)."
   }
 ];

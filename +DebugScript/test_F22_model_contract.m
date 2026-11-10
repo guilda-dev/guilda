@@ -190,10 +190,10 @@ assert(all(ismember(["dx","I","Axx","Bxv","Bxi","Bxu","Cix","Div","Dii","Diu","C
 %% validate does not change the equilibrium
 [net, comp] = DebugScript.helper.build_3bus("load-impedance");
 DebugScript.helper.quiet(@() net.initialize);
-x0 = comp.rv_Xequilibrium;  u0 = comp.rv_Uequilibrium;  Z0 = comp.Z;
+x0 = comp.rv_Xequilibrium;  u0 = comp.rv_Uequilibrium;
 comp.validate(false);
 assert(isequal(comp.rv_Xequilibrium, x0) && isequal(comp.rv_Uequilibrium, u0))
-assert(norm(comp.Z - Z0) < 1e-12)
+assert(~isprop(comp, "Z"))     % the impedance is the input [R; X] only
 
 
 %% Message prints without errors

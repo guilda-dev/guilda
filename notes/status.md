@@ -125,6 +125,16 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **数値の変化:** フラットスタート・既定の設定で、変更前の解との差は newton で最大 1.4e-10、levenberg-marquardt で 1.1e-8(EAST10 夜間)、dynamic で 3.1e-7(以前の既定 `Tolerance` 1e-5 よりは代数解に近い)。連続潮流計算は変わらない(IEEE14 で λ の差 4e-12)。
 - **要判断:** powerflow-options.md の「要判断」1〜6。
 
+## 入力を固定した平衡点と Solver / Method の名前(2026-11-10)
+
+仕様と実装の記録は [fixed-input.md](fixed-input.md) にあります(「実装」節)。ブランチは `feature/fixed-input`(未 push)。
+
+- 潮流計算のアルゴリズムは `Solver`(旧 `Method`。JSON キーも)、線形化の縮約は `Method`(旧 `Algorithm`、旧名は警告つきで有効)。
+- `Component.set_input` と stale タグ `input`(`net.sct_stale.input`)。`initialize(Method="FixedInput")` は入力を固定して状態・電圧・電流とスラック母線の発電機の Pmech を解く。
+- 負荷の `Z` / `PQ_st` を廃止。
+- **テスト(MATLAB R2026a):** `DebugScript.run_all('Level','medium')` 655 件、PASS 653 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、549 s。large は未実行。
+- **要判断:** fixed-input.md の「実装」節の要判断 1〜3(AVR の Vfield も固定されるため負荷を少し増やすと平衡点がない系統がある、など)。
+
 ## 未決事項
 
 状態は `a9afe24` のコードと履歴で確認しました(`301b5d0` までの統合はコードを変えていません)(下で日付や基準を別に示した項目を除く)。

@@ -10,11 +10,11 @@ net.initialize();
 % 2. 線形モデルを 1 回で求める。sys は ResultLIN で、記述子形式のモデル (E dx = A x + B u) を
 %    sys.A, sys.B, sys.C, sys.D, sys.E と名前 (StateName, InputName, OutputName) に持つ。Toolbox は不要
 sys = net.get_sys();
-[sys_kron, flag, output] = net.get_sys("Algorithm", "Kron");
+[sys_kron, flag, output] = net.get_sys("Method", "Kron");
 disp(output.message)
 assert(flag && isa(sys, "ResultLIN") && isequal(size(sys.A), size(sys.E)))
 % 構造体でも受け取れる。ss (Format="ss") は Control System Toolbox が必要
-sct = net.get_sys("Algorithm", "Kron", "Format", "struct");
+sct = net.get_sys("Method", "Kron", "Format", "struct");
 assert(isequal(sct.A, sys_kron.A))
 
 % 3. 結果を残して、方式ごとにモデルを取り出す (線形化は 1 回で済む)

@@ -116,6 +116,12 @@ function tab = test_levels()
     "test_F3_initialize/InitializeFromXequilibrium", "medium"
     "test_F3_initialize/DeprecatedMethodsOptionAndValuesWarn", "medium"
     "test_F3_initialize/EquilibriumVoltageAndCurrentHaveASingleOwner", "medium"
+    "test_F3_initialize/FixedInputWithTheHeldInputsKeepsTheEquilibrium", "medium"
+    "test_F3_initialize/set_inputMakesTheInputsStaleUntilFixedInput", "medium"
+    "test_F3_initialize/FixedInputSolvesTheEquilibriumWithTheEditedInputs", "medium"
+    "test_F3_initialize/FixedInputGivesTheSamePointWithEverySolver", "large"
+    "test_F3_initialize/FixedInputKeepsTheInputsUnderLocalControllers", "medium"
+    "test_F3_initialize/FixedInputErrorsLeaveTheNetworkUnchanged", "medium"
     % ---- F4_opf ----------------------------------------------------------------------------------
     "test_F4_opf/IEEE14ACOPF", "large"
     "test_F4_opf/ACOPFWithActiveBranchCurrentAndPowerLimits", "large"

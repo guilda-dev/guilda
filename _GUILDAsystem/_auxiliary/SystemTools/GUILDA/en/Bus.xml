@@ -11,5 +11,6 @@
         <entry key="SetSlack">'' {0} ''  set as slack bus.&#xA;      P and Q specifications for '' {1} '' ignored in powerflow calculation.</entry>         
         <entry key="NoI2V">Bus {0} has no I2V form: D of its V2I model (dI/dV of its components) is singular. Use the port "V2I".</entry>
         <entry key="Stale">get_sys of bus ''{0}'' stopped: the model is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
+        <entry key="InputEdited">get_sys of a bus of ''{0}'' stopped: inputs of components were edited ({1}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
     </message>
 </rsccat>

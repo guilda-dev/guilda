@@ -6,10 +6,10 @@ classdef SolverPF < auxiliary
 % with the Name-Value options of the call applied to that call only (see OptionMap and
 % get_options). Results are returned as a ResultPF.
 %
-% - `Method`: how the power equations are solved (see the table). Every method except
-%   "fsolve" runs on MATLAB alone; "fsolve" needs Optimization Toolbox.
+% - `Solver`: the algorithm that solves the power equations (see the table). Every
+%   solver except "fsolve" runs on MATLAB alone; "fsolve" needs Optimization Toolbox.
 %
-%   | Method                | Class (algorithm)                                       | MaxIteration 0 (automatic) |
+%   | Solver                | Class (algorithm)                                       | MaxIteration 0 (automatic) |
 %   |-----------------------|---------------------------------------------------------|----------------------------|
 %   | "newton"              | MethodNewtonRaphson (analytic Jacobian)                 | 50                         |
 %   | "gradient"            | MethodGradient (theta += alpha*dP, V += alpha*dQ./V)    | 1e6                        |
@@ -51,7 +51,7 @@ classdef SolverPF < auxiliary
 % ```matlab
 % net = network.IEEE14bus();
 % result = net.calculate_powerflow();                                  % GUILDA.setting
-% result = net.calculate_powerflow(Method="dynamic", Verbose=true);    % this call only
+% result = net.calculate_powerflow(Solver="dynamic", Verbose=true);    % this call only
 % result = net.calculate_powerflow(WarmStart=false);                   % flat start
 % ```
 %
@@ -60,7 +60,7 @@ classdef SolverPF < auxiliary
 
     properties(Constant) % Settings
         OptionMap = struct( ...
-            "Method",       "Method", ...
+            "Solver",       "Solver", ...
             "Tolerance",    "Tolerance", ...
             "MaxIteration", "MaxIteration", ...
             "Verbose",      {{"Display", @(l) replace(string(logical(l)), ["true","false"], ["iter","none"])}}, ...

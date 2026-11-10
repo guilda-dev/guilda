@@ -92,6 +92,10 @@ end
 function check_network(net, sv_load)
 % Preconditions: an equilibrium, up-to-date stale tags (powerflow and odefcn of the
 % network, equilibrium and odefcn of the components) and load buses of this network
+    if ~isempty(net.sct_stale.input)   % edited inputs: initialize(Method="FixedInput")
+        sv_in = unique(net.sct_stale.input, "stable");
+        error(msg("GUILDA:SolverCPF:InputEdited", char(net.s_tag), char(join(sv_in(1:min(end,3)), "; "))))
+    end
     sv = [net.sct_stale.powerflow; net.sct_stale.odefcn];
     for i = 1:numel(net.a_Bus)
         a_Comp = net.a_Bus{i}.a_Component;

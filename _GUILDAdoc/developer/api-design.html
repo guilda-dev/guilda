@@ -50,7 +50,7 @@
         <!-- inputs -->
         <rect class="dg-sv-box" x="1" y="48" width="196" height="100" rx="10"/>
         <text class="is-k" x="99" y="72" text-anchor="middle" lang="en">NAME-VALUE OPTIONS</text><text class="is-k" x="99" y="72" text-anchor="middle" lang="ja">Name-Value オプション</text>
-        <text class="dg-mono" x="99" y="97" text-anchor="middle">Method="newton"</text>
+        <text class="dg-mono" x="99" y="97" text-anchor="middle">Solver="newton"</text>
         <text class="dg-mono" x="99" y="116" text-anchor="middle">Tolerance=1e-8</text>
         <text class="is-sm is-muted" x="99" y="137" text-anchor="middle" lang="en">rules 2 · 7</text><text class="is-sm is-muted" x="99" y="137" text-anchor="middle" lang="ja">ルール 2 · 7</text>
         <path class="dg-sv-line dg-anim-dash" d="M199 98H234" marker-end="url(#ad-ah)"/>
@@ -76,7 +76,7 @@
         <text class="is-sm" x="572" y="149" lang="en">solver details</text><text class="is-sm" x="572" y="149" lang="ja">ソルバーの詳細</text>
       </svg>
       <div class="dg-only-narrow"><div class="dg-chain">
-        <div class="dg-chain-node"><span class="dg-kicker"><span lang="en">Name-Value options</span><span lang="ja">Name-Value オプション</span></span><code>Method="newton"</code> <code>Tolerance=1e-8</code></div>
+        <div class="dg-chain-node"><span class="dg-kicker"><span lang="en">Name-Value options</span><span lang="ja">Name-Value オプション</span></span><code>Solver="newton"</code> <code>Tolerance=1e-8</code></div>
         <div class="dg-chain-arrow"></div>
         <div class="dg-chain-node is-step"><span class="dg-kicker"><span lang="en">PowerNetwork method</span><span lang="ja">PowerNetwork のメソッド</span></span><code>net.verb_noun()</code></div>
         <div class="dg-chain-arrow"></div>
@@ -226,10 +226,10 @@
     <table class="dg-table ad-opts">
       <thead><tr><th><span lang="en">Option</span><span lang="ja">オプション</span></th><th><span lang="en">Meaning</span><span lang="ja">ルールの内容</span></th></tr></thead>
       <tbody>
-        <tr><td><code>Method</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Calculation method</span><span lang="ja">計算手法</span></td></tr>
+        <tr><td><code>Method</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">What is solved or built: the formulation (e.g. <code>"AC OPF"</code>, <code>"FixedInput"</code>, <code>"Kron"</code>)</span><span lang="ja">何を解くか・作るか: 定式化（例 <code>"AC OPF"</code>、<code>"FixedInput"</code>、<code>"Kron"</code>）</span></td></tr>
         <tr><td><code>Tolerance</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Convergence tolerance</span><span lang="ja">収束判定の許容誤差</span></td></tr>
         <tr><td><code>MaxIteration</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Maximum number of iterations</span><span lang="ja">最大反復回数</span></td></tr>
-        <tr><td><code>Solver</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Numerical solver</span><span lang="ja">数値ソルバー</span></td></tr>
+        <tr><td><code>Solver</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Algorithm that solves it: numerical solver (e.g. <code>"newton"</code>, <code>"fmincon"</code>, <code>"ode15s"</code>)</span><span lang="ja">それを解くアルゴリズム: 数値ソルバー（例 <code>"newton"</code>、<code>"fmincon"</code>、<code>"ode15s"</code>）</span></td></tr>
         <tr><td><code>TimeLimit</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Limit on computation time</span><span lang="ja">計算時間の上限</span></td></tr>
         <tr><td><code>Verbose</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en">Print progress messages</span><span lang="ja">進行状況のメッセージを表示</span></td></tr>
         <tr><td><code>WarmStart</code></td><td data-label="Meaning" data-label-ja="ルールの内容"><span lang="en"><code>true</code>: start from the last solution of the network; <code>false</code>: flat start. Default: the analysis section of <code>GUILDA.setting</code>. Power flow, OPF, <code>initialize</code>; not the continuation power flow</span><span lang="ja"><code>true</code>: ネットワークの最後の解から開始。<code>false</code>: フラットスタート。既定値: <code>GUILDA.setting</code> の解析ごとのセクション。潮流計算、OPF、<code>initialize</code> が対象。連続潮流計算は対象外</span></td></tr>
@@ -249,7 +249,7 @@
       <div class="dg-row">
         <span class="dg-row-head"><span lang="en">Power flow</span><span lang="ja">潮流計算</span></span>
         <div>
-          <div class="ad-call"><code>net.calculate_powerflow(...)</code><small><code>Method="newton"|"gradient"|"levenberg-marquardt"|"fsolve"|"dynamic"</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ...</small></div>
+          <div class="ad-call"><code>net.calculate_powerflow(...)</code><small><code>Solver="newton"|"gradient"|"levenberg-marquardt"|"fsolve"|"dynamic"</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ...</small></div>
           <ul class="ad-facts">
             <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <code>ResultPF</code></li>
             <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Only when no slack bus is set, one is selected (INFO message, rule 5): the first bus with a component with <code>Q = NaN</code>, otherwise the first bus with a component.</span><span lang="ja">スラック母線が未設定のときに限り 1 つを選択（INFO メッセージ、ルール 5）。<code>Q = NaN</code> の機器を持つ最初の母線、なければ機器を持つ最初の母線。</span></small></li>
@@ -259,7 +259,7 @@
       <div class="dg-row">
         <span class="dg-row-head"><span lang="en">Initialization</span><span lang="ja">初期化</span></span>
         <div>
-          <div class="ad-call"><code>net.initialize(...)</code><small><span lang="en"><code>Method="powerflow"|"OPF"|"equilibrium"</code>. The other options go to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>optimize_powerflow</code> with <code>Method="AC OPF"</code> (<code>"OPF"</code>). <code>"equilibrium"</code> reuses the equilibria the components hold and takes no other option. <code>methods</code> is a deprecated alias of <code>Method</code>.</span><span lang="ja"><code>Method="powerflow"|"OPF"|"equilibrium"</code>。ほかのオプションは <code>calculate_powerflow</code>（<code>"powerflow"</code>）または <code>Method="AC OPF"</code> の <code>optimize_powerflow</code>（<code>"OPF"</code>）に渡す。<code>"equilibrium"</code> は機器が保持する平衡点をそのまま使い、ほかのオプションは受け付けない。<code>methods</code> は <code>Method</code> の非推奨の別名。</span></small></div>
+          <div class="ad-call"><code>net.initialize(...)</code><small><span lang="en"><code>Method="powerflow"|"OPF"|"FixedInput"|"equilibrium"</code>. The other options go to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>optimize_powerflow</code> with <code>Method="AC OPF"</code> (<code>"OPF"</code>); <code>Solver</code> chooses their algorithm. <code>"FixedInput"</code> solves the equilibrium with the inputs of the components held (<code>Component.set_input</code>). <code>"equilibrium"</code> reuses the equilibria the components hold and takes no other option. <code>methods</code> is a deprecated alias of <code>Method</code>.</span><span lang="ja"><code>Method="powerflow"|"OPF"|"FixedInput"|"equilibrium"</code>。ほかのオプションは <code>calculate_powerflow</code>（<code>"powerflow"</code>）または <code>Method="AC OPF"</code> の <code>optimize_powerflow</code>（<code>"OPF"</code>）に渡し、<code>Solver</code> でそのアルゴリズムを選択。<code>"FixedInput"</code> は機器の入力を固定した平衡点を求解（<code>Component.set_input</code>）。<code>"equilibrium"</code> は機器が保持する平衡点をそのまま使い、ほかのオプションは受け付けない。<code>methods</code> は <code>Method</code> の非推奨の別名。</span></small></div>
           <ul class="ad-facts">
             <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <code>ResultPF</code><small><span lang="en"><code>ResultOPF</code> for <code>"OPF"</code>.</span><span lang="ja"><code>"OPF"</code> のときは <code>ResultOPF</code>。</span></small></li>
             <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status"><span lang="en">Yes</span><span lang="ja">あり</span></span><small><span lang="en">Brings the stale layers up to date (power flow, equilibria, handles); with nothing stale, only the equilibria of the global controllers are computed again. Analysis fails: error; equilibrium and stale state unchanged; a slack bus the power flow set is released. Writing the point fails, or the point does not satisfy Y*V = I (<code>GUILDA:PowerNetwork:InitializeNotEquilibrium</code>): error; the power flow stays stale until <code>initialize</code> succeeds.</span><span lang="ja">古い層を最新化（潮流、平衡点、ハンドル）。古いものがなければ大域制御器の平衡点の再計算のみ。解析が失敗: エラーで停止、平衡点と stale 状態は不変、潮流計算が設定したスラック母線を解除。点の書き込みに失敗、または点が Y*V = I を満たさない（<code>GUILDA:PowerNetwork:InitializeNotEquilibrium</code>）: エラーで停止、<code>initialize</code> が成功するまで潮流は古いまま。</span></small></li>
@@ -299,7 +299,7 @@
       <div class="dg-row">
         <span class="dg-row-head"><span lang="en">Linearization</span><span lang="ja">近似線形化</span></span>
         <div>
-          <div class="ad-call"><code>net.linearize(...)</code><br><code>net.get_sys(...)</code><small><span lang="en"><code>Algorithm="Feedback"|"Kron"|"DAE"</code>, <code>Point</code>, <code>Coordinate</code>, <code>Plot</code>; <code>get_sys</code> also takes <code>Input</code> and <code>Output</code>. The result holds the unreduced DAE in the order of <code>get_variable_map</code>.</span><span lang="ja"><code>Algorithm="Feedback"|"Kron"|"DAE"</code>、<code>Point</code>、<code>Coordinate</code>、<code>Plot</code>。<code>get_sys</code> は <code>Input</code>、<code>Output</code> も受け付け。結果は縮約前の DAE を <code>get_variable_map</code> の順で保持。</span></small></div>
+          <div class="ad-call"><code>net.linearize(...)</code><br><code>net.get_sys(...)</code><small><span lang="en"><code>Method="Feedback"|"Kron"|"DAE"</code>, <code>Point</code>, <code>Coordinate</code>, <code>Plot</code>; <code>get_sys</code> also takes <code>Input</code> and <code>Output</code>. The result holds the unreduced DAE in the order of <code>get_variable_map</code>.</span><span lang="ja"><code>Method="Feedback"|"Kron"|"DAE"</code>、<code>Point</code>、<code>Coordinate</code>、<code>Plot</code>。<code>get_sys</code> は <code>Input</code>、<code>Output</code> も受け付け。結果は縮約前の DAE を <code>get_variable_map</code> の順で保持。</span></small></div>
           <ul class="ad-facts">
             <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <code>ResultLIN</code><small><span lang="en"><code>get_sys</code> returns <code>result.get_ss()</code>, an <code>ss</code>.</span><span lang="ja"><code>get_sys</code> は <code>result.get_ss()</code>（<code>ss</code>）を返す。</span></small></li>
             <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized.</span><span lang="ja">net が未初期化ならエラー。</span></small></li>

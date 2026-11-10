@@ -21,6 +21,10 @@ function initialize_index(net)
     a_bus = net.a_Bus;
 
     idx_TGT = 0;
+    if ~isempty(net.sct_stale.input)   % edited inputs: initialize(Method="FixedInput")
+        sv_in = unique(net.sct_stale.input, "stable");
+        error(msg("GUILDA:SolverODE:InputEdited", char(net.s_tag), char(join(sv_in(1:min(end,3)), "; "))))
+    end
     sv = [net.sct_stale.powerflow; net.sct_stale.odefcn];   % messages of the stale tags
 
     for i=1:numel(a_bus)

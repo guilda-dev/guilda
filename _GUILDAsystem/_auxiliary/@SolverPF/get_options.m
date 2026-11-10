@@ -19,7 +19,7 @@ function sct_options = get_options(obj, nv)
     for s_name = string(fieldnames(sct_given)).'
         sct_options.(s_name) = sct_given.(s_name);
     end
-    sct_options.Method = string(sct_options.Method);
+    sct_options.Solver = string(sct_options.Solver);
     sct_options.WhenFailed = string(sct_options.WhenFailed);
     sct_options.Display = string(sct_options.Display);
     sct_options.WarmStart = logical(sct_options.WarmStart);

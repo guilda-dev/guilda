@@ -7,15 +7,15 @@ function sct_options = get_options(obj, nv)
 % an invalid value stops with the validation error of the option.
     arguments (Input)
         obj % Solver holding the defaults (net.solver_LIN).
-        nv (1,:) cell = {} % Name-Value overrides: Algorithm, Point, Coordinate.
+        nv (1,:) cell = {} % Name-Value overrides: Method, Point, Coordinate.
     end
     arguments (Output)
-        sct_options % Fields Algorithm, Point, Coordinate.
+        sct_options % Fields Method, Point, Coordinate.
     end
     [nv, rv_nonUnit] = v3_linearize_args(nv, obj.NonUnit);              % COMPAT(v3)
     sct_options = tools.resolve_options(obj, SolverLIN.OptionMap, nv);
     validate_options(nv{:});
-    sct_options.Algorithm = string(sct_options.Algorithm);
+    sct_options.Method = string(sct_options.Method);
     sct_options.Coordinate = string(sct_options.Coordinate);
     SolverLIN.check_point(sct_options.Point);
     if ~isempty(rv_nonUnit), sct_options.NonUnit = rv_nonUnit; end        % COMPAT(v3)

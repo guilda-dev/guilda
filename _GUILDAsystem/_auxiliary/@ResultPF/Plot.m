@@ -20,7 +20,9 @@ function fig = Plot(obj, opt)
 
     fig = tiledlayout(opt.Parent, 2, 1, "TileSpacing", "compact");
     s_title = "Power flow";
-    if isfield(obj.options, "Method")
+    if isfield(obj.options, "Solver")
+        s_title = s_title + " (" + obj.options.Solver + ")";
+    elseif isfield(obj.options, "Method")
         s_title = s_title + " (" + obj.options.Method + ")";
     end
     if ~obj.l_success

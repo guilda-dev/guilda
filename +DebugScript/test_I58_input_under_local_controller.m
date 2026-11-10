@@ -89,7 +89,7 @@ function [r_err, r_max] = error_to_linear(net, s_unit, s_input, r_step)
     r = simulate_step(net, s_unit, s_input, r_step, rv_time);
 
     gen = component_of(net, s_unit);
-    sys = net.get_sys("Algorithm", "Kron");
+    sys = net.get_sys("Method", "Kron");
     i_u = string(sys.InputName) == gen.attach_tag(s_input);
     i_x = string(sys.StateName) == gen.attach_tag("omega");
     assert(nnz(i_u) == 1 && nnz(i_x) == 1)

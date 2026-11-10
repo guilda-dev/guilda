@@ -6,7 +6,7 @@ classdef SolverLIN < auxiliary
 % that call only (see OptionMap and get_options). The solver holds settings only: the
 % network is passed to solve and the linear model is returned as a ResultLIN.
 %
-% - `Algorithm` is the reduction used when no Algorithm is given: "Kron" (eliminate the bus
+% - `Method` is the reduction used when no Method is given: "Kron" (eliminate the bus
 %   voltages from the DAE), "Feedback" (connect the bus models in I-to-V form through the
 %   admittance matrix) or "DAE" (keep the voltages as algebraic states, descriptor form
 %   with a singular E).
@@ -17,7 +17,7 @@ classdef SolverLIN < auxiliary
 %   value after the event, or {sim, t, "before"} for the value before it). It sets the
 %   variables only: the admittance matrix stays the one of the model, also at a time
 %   inside a fault. The model is not changed.
-% - `Coordinate` sets the bus variables of get_ss("DAE") and net.get_sys with Algorithm
+% - `Coordinate` sets the bus variables of get_ss("DAE") and net.get_sys with Method
 %   "DAE": "theta&rho" (angle and log magnitude), "theta&V" (angle and magnitude) or
 %   "Vre&Vim" (real and imaginary parts). "Kron" and "Feedback" do not use it.
 % - `OptionMap` is the input of tools.resolve_options.
@@ -26,15 +26,15 @@ classdef SolverLIN < auxiliary
 % ```matlab
 % net = network.IEEE14bus();
 % net.initialize();
-% net.solver_LIN.Algorithm = "Kron";              % stored default, kept between runs
+% net.solver_LIN.Method = "Kron";              % stored default, kept between runs
 % sys = net.get_sys();                            % uses "Kron"
-% result = net.linearize(Algorithm="Feedback");   % this call only
+% result = net.linearize(Method="Feedback");   % this call only
 % ```
 %
 % See also ResultLIN, PowerNetwork.linearize, PowerNetwork.get_sys
 
     properties (Access=public) % Settings
-        Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = "Feedback"             % Reduction of result.get_ss() and net.get_sys: "Kron", "Feedback" or "DAE" (see the class help).
+        Method (1,1) string {mustBeMember(Method, ["Kron","Feedback","DAE"])} = "Feedback"             % Reduction of result.get_ss() and net.get_sys: "Kron", "Feedback" or "DAE" (see the class help).
         Point = []                                                                                           % Point of the linearization: [] (equilibrium), a vector in variable-map order, or {sim, t} (see the class help). <@Type> [] | double vector | cell
         Coordinate (1,1) string {mustBeMember(Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = "theta&rho"  % Bus variables of the "DAE" reduction: "theta&rho", "theta&V" or "Vre&Vim" (see the class help).
     end
@@ -45,7 +45,7 @@ classdef SolverLIN < auxiliary
 
     properties (Constant) % Settings
         OptionMap = struct( ...
-            "Algorithm", "Algorithm", ...
+            "Method", "Method", ...
             "Point",     "Point", ...
             "Coordinate", "Coordinate")                                                                      % Name-Value options of net.linearize / net.get_sys and the property each one sets. <@Type> struct
     end

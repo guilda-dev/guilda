@@ -18,9 +18,9 @@ classdef ResultLIN < ResultBase
 % The properties A, B, C, D, E, StateName, InputName and OutputName hold one linear model
 % (E dx/dt = A x + B u, y = C x + D u) with the names of the states, inputs and outputs, as
 % in a state-space (ss) object, without the Control System Toolbox. For net.linearize it is
-% get_ss(options.Algorithm) (all inputs and the default outputs); net.get_sys with Input or
+% get_ss(options.Method) (all inputs and the default outputs); net.get_sys with Input or
 % Output keeps them in options and selects them here. They are empty when get_ss stops for
-% that Algorithm (flag false, or "Feedback" without a bus to connect); get_ss gives the
+% that Method (flag false, or "Feedback" without a bus to connect); get_ss gives the
 % reason.
 %
 % comp.get_sys, bus.get_sys, con.get_sys and gc.get_sys also return a ResultLIN (an
@@ -28,7 +28,7 @@ classdef ResultLIN < ResultBase
 % "GlobalController"; "PowerNetwork" for net.linearize). It holds the port model of the
 % layer in A ... OutputName, the point rv_point and the Jacobian blocks that apply
 % (rm_Axx, rm_Axv, rm_Bx, rm_E; see the help of each get_sys); get_ss returns that model,
-% and Algorithm and Coordinate do not apply.
+% and Method and Coordinate do not apply.
 %
 % - `tab_variable` has one row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"),
 %   Owner, Name, Label and Bus (see PowerNetwork.get_variable_map).
@@ -44,7 +44,7 @@ classdef ResultLIN < ResultBase
 % net.initialize();
 % [result, flag] = net.linearize();
 % eig(full(result.rm_Axx))          % Jacobian blocks of the unreduced DAE
-% eig(result.A, result.E)           % model of options.Algorithm
+% eig(result.A, result.E)           % model of options.Method
 % sct = result.get_ss("Kron", Format="struct");   % reduced model as a struct
 % sys = result.get_ss("Kron");      % ss object (Control System Toolbox)
 % result.Plot();                    % eigenvalue map
@@ -64,7 +64,7 @@ classdef ResultLIN < ResultBase
         rm_E double = zeros(0,0)               % Mass matrix of the state equations (the algebraic equations have none).
     end
     properties (SetAccess=private) % Model
-        A double = zeros(0,0)                  % State matrix of the model (E dx/dt = A x + B u, y = C x + D u): get_ss(options.Algorithm), or the port model of an object-level result.
+        A double = zeros(0,0)                  % State matrix of the model (E dx/dt = A x + B u, y = C x + D u): get_ss(options.Method), or the port model of an object-level result.
         B double = zeros(0,0)                  % Input matrix of the model.
         C double = zeros(0,0)                  % Output matrix of the model.
         D double = zeros(0,0)                  % Feedthrough matrix of the model.
@@ -107,10 +107,10 @@ classdef ResultLIN < ResultBase
             end
             obj.sct_model = sct_model;
 
-            % The model: the port model of an object-level result, or get_ss(Algorithm)
+            % The model: the port model of an object-level result, or get_ss(Method)
             if isfield(sct_model, "sct_sys")
                 sct_sys = sct_model.sct_sys;
-            elseif isfield(options, "Algorithm") && isfield(sct_model, "c_sysBus")
+            elseif isfield(options, "Method") && isfield(sct_model, "c_sysBus")
                 c_nv = cell(1,0);       % Input and Output of net.get_sys
                 for str = ["Input","Output"]
                     if isfield(options, str)
@@ -118,9 +118,9 @@ classdef ResultLIN < ResultBase
                     end
                 end
                 try
-                    sct_sys = obj.get_ss(options.Algorithm, c_nv{:}, Format="struct");
+                    sct_sys = obj.get_ss(options.Method, c_nv{:}, Format="struct");
                 catch
-                    sct_sys = [];   % flag false or no model for this Algorithm: get_ss gives the reason
+                    sct_sys = [];   % flag false or no model for this Method: get_ss gives the reason
                 end
             else
                 sct_sys = [];
@@ -132,7 +132,7 @@ classdef ResultLIN < ResultBase
             end
         end
 
-        sys = get_ss(obj, Algorithm, opt)
+        sys = get_ss(obj, Method, opt)
         fig = Plot(obj, opt)
     end
 end

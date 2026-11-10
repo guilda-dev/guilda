@@ -1,9 +1,9 @@
 % F7 近似線形化 (linearize / get_sys / ResultLIN / get_variable_map / get_hessian)
 %
 % 平衡点 (または指定した点) まわりの線形モデルを求める。
-%   res = net.linearize("Algorithm", ..., "Point", 点);
+%   res = net.linearize("Method", ..., "Point", 点);
 %   sys = res.get_ss("Kron" | "Feedback" | "DAE");   % ss (Format="struct" で構造体)
-%   res = net.get_sys("Algorithm", ...);          % linearize + get_ss の近道 (既定は ResultLIN)
+%   res = net.get_sys("Method", ...);          % linearize + get_ss の近道 (既定は ResultLIN)
 %   res = net.get_sys("Output", ["V","I","y"], "Input", 入力名);   % 入出力の選択 (既定は不変)
 %   tab = net.get_variable_map();                 % 変数の順 (res.rm_Axx などの行と列)
 % モデルは記述子形式 (E dx = A x + B u)。ResultLIN の A, B, C, D, E と名前、構造体、ss のどれでも同じ。
@@ -23,7 +23,7 @@ same_eigs  = @DebugScript.helper.same_eigs;      % 固有値の集合が一致�
 
 
 %% Get sys Kron
-sys = net.get_sys("Algorithm", "Kron");
+sys = net.get_sys("Method", "Kron");
 assert(isa(sys, "ResultLIN"))
 assert(size(sys.A,1) == n_x)
 assert(numel(sys.StateName) == size(sys.A,1))
@@ -38,7 +38,7 @@ assert(size(sys.A,1) == n_x)
 
 %% Get sys DAE
 % DAE 方式は母線電圧・電流などの代数変数も状態に含む (E が特異)
-sys = net.get_sys("Algorithm", "DAE");
+sys = net.get_sys("Method", "DAE");
 assert(isa(sys, "ResultLIN"))
 assert(size(sys.A,1) > n_x)
 assert(rank(sys.E) < size(sys.E,1))
@@ -84,16 +84,16 @@ end
 
 
 %% Three algorithms give same eigenvalues
-e_kron = eig_finite(net.get_sys("Algorithm","Kron"));
-e_fb   = eig_finite(net.get_sys("Algorithm","Feedback"));
-e_dae  = eig_finite(net.get_sys("Algorithm","DAE"));
+e_kron = eig_finite(net.get_sys("Method","Kron"));
+e_fb   = eig_finite(net.get_sys("Method","Feedback"));
+e_dae  = eig_finite(net.get_sys("Method","DAE"));
 assert(same_eigs(e_kron, e_fb,  1e-6), "Kron と Feedback の固有値が一致しない")
 assert(same_eigs(e_kron, e_dae, 1e-6), "Kron と DAE の固有値が一致しない")
 
 
 %% IEEE14 equilibrium is stable
 % 回転不変性による 0 固有値を除き、すべての固有値の実部が負
-e = eig_finite(net.get_sys("Algorithm","Kron"));
+e = eig_finite(net.get_sys("Method","Kron"));
 assert(max(real(e)) < 1e-6, "不安定な固有値がある: " + max(real(e)))
 assert(sum(abs(e) < 1e-6) <= 1)
 
@@ -141,26 +141,40 @@ G_f = (w*sys_f.E - sys_f.A) \ sys_f.B;
 assert(norm(G_k - G_f(ix,:), "fro") < 1e-9, "入力から状態までの周波数応答")
 
 
+%% Deprecated Algorithm option is Method
+% COMPAT(v3): v3 の名前 Algorithm は Method と同じ (警告は 1 セッションに 1 回)
+clear Deprecated
+lastwarn("");
+sys_old = net.get_sys("Algorithm", "Kron");
+id = DebugScript.helper.msg_id();
+assert(string(id) == "GUILDA:Deprecated:LinearizeAlgorithm", id)
+sys_new = net.get_sys(Method="Kron");
+assert(isequal(sys_old.A, sys_new.A) && isequal(sys_old.StateName, sys_new.StateName) && sys_old.options.Method == "Kron")
+res_old = net.linearize(algorithm="DAE");
+assert(res_old.options.Method == "DAE" && ~isfield(res_old.options, "Algorithm"))
+assert(~isprop(net.solver_LIN, "Algorithm"))
+
+
 %% Deprecated NonUnit option warns and ignores buses without states
 s_id = "GUILDA:Deprecated:LinearizeNonUnit";
 clear Deprecated
 lastwarn("");
-sys_nu = net.get_sys("Algorithm", "Feedback", "NonUnit", 7);
+sys_nu = net.get_sys("Method", "Feedback", "NonUnit", 7);
 id = DebugScript.helper.msg_id();
 assert(string(id) == s_id, id)
-assert(isequal(sys_nu, net.get_sys("Algorithm", "Feedback")))
+assert(isequal(sys_nu, net.get_sys("Method", "Feedback")))
 % 1 セッションに 1 回。名前の大文字小文字は問わない
 lastwarn("");
-sys_nu = net.get_sys("Algorithm", "Feedback", "nonunit", 7);
+sys_nu = net.get_sys("Method", "Feedback", "nonunit", 7);
 id = DebugScript.helper.msg_id();
 assert(string(id) == "", id)
-assert(isequal(sys_nu, net.get_sys("Algorithm", "Feedback")))
-% 状態のない母線の指定は、負荷があっても Algorithm によらず結果を変えない (B009 は負荷あり)
+assert(isequal(sys_nu, net.get_sys("Method", "Feedback")))
+% 状態のない母線の指定は、負荷があっても Method によらず結果を変えない (B009 は負荷あり)
 lv_static = tools.vcellfun(@(b) sum(cellfun(@(c) numel(c.sv_x), b.a_Component)) == 0, net.a_Bus);
 for nu = {[], [7 9], find(lv_static(:)')}
     for alg = ["Kron", "Feedback", "DAE"]
-        sys_ref = net.get_sys("Algorithm", alg);
-        assert(isequal(net.get_sys("Algorithm", alg, "NonUnit", nu{1}), sys_ref), alg)
+        sys_ref = net.get_sys("Method", alg);
+        assert(isequal(net.get_sys("Method", alg, "NonUnit", nu{1}), sys_ref), alg)
     end
 end
 % 結果の options には、指定したときだけ残る
@@ -191,7 +205,7 @@ end
 assert(size(res.get_ss("Kron").A,1) == n_x)
 assert(size(res.get_ss("DAE").A,1) > n_x)
 % 指定は呼び出しの間だけで、残らない
-assert(isequal(net.get_sys("Algorithm","Feedback","Format","ss"), net.linearize().get_ss("Feedback")))
+assert(isequal(net.get_sys("Method","Feedback","Format","ss"), net.linearize().get_ss("Feedback")))
 
 
 %% Deprecated NonUnit naming a missing bus is rejected
@@ -206,26 +220,26 @@ end
 %% Deprecated solver_LIN.NonUnit warns and acts as the option
 net_d = new_net();
 DebugScript.helper.quiet(@() net_d.initialize);
-sys_ref = net_d.get_sys("Algorithm", "Feedback");
+sys_ref = net_d.get_sys("Method", "Feedback");
 clear Deprecated
 lastwarn("");
 net_d.solver_LIN.NonUnit = [7 9];
 id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:SolverLinNonUnit", id)
 assert(isequal(net_d.solver_LIN.NonUnit, [7 9]))
-assert(isequal(net_d.get_sys("Algorithm", "Feedback"), sys_ref))
+assert(isequal(net_d.get_sys("Method", "Feedback"), sys_ref))
 % 状態のある母線と存在しない母線は、オプションと同じエラー
 for c = {{2, "GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus"}, {99, "GUILDA:v3_nonunit_range:NonUnit"}}
     net_d.solver_LIN.NonUnit = c{1}{1};
     try
-        net_d.get_sys("Algorithm", "Feedback");
+        net_d.get_sys("Method", "Feedback");
         error("DebugScript:NoError", "エラーにならない")
     catch ME
         assert(DebugScript.helper.msg_id(ME) == c{1}{2}, DebugScript.helper.msg_id(ME))
     end
 end
 % 呼び出しの指定が優先し、値は解法に保存しない
-assert(isequal(net_d.get_sys("Algorithm", "Feedback", "NonUnit", 7), sys_ref))
+assert(isequal(net_d.get_sys("Method", "Feedback", "NonUnit", 7), sys_ref))
 assert(isequal(net_d.solver_LIN.NonUnit, 99))
 % 空の値は警告しない (.mat の読み込みでも代入される)
 clear Deprecated
@@ -262,9 +276,9 @@ assert(nnz(tab.Bus == string(n9.a_Bus{4}.s_tag)) == 2)
 res = DebugScript.helper.quiet(@() n9.linearize);
 assert(isa(res, "ResultLIN"))
 n_x9 = sum(cellfun(@(b) sum(cellfun(@(c) numel(c.sv_x), b.a_Component)), n9.a_Bus));
-e_kron = eig_finite(n9.get_sys("Algorithm","Kron"));
-assert(size(n9.get_sys("Algorithm","Kron").A, 1) == n_x9)
-assert(same_eigs(e_kron, eig_finite(n9.get_sys("Algorithm","DAE")), 1e-6))
+e_kron = eig_finite(n9.get_sys("Method","Kron"));
+assert(size(n9.get_sys("Method","Kron").A, 1) == n_x9)
+assert(same_eigs(e_kron, eig_finite(n9.get_sys("Method","DAE")), 1e-6))
 
 
 %% I2V port stops when D is singular
@@ -299,7 +313,7 @@ catch ME
 end
 % V2I は従来どおり使え、3 方式の線形化もこれらの母線を含む系統で動く (既存の内部呼び出しは I2V を通らない)
 assert(isa(n9.a_Bus{4}.get_sys(), "ResultLIN") && isa(n9.a_Bus{4}.get_sys(Format="ss"), "ss"))
-assert(same_eigs(eig_finite(n14.get_sys("Algorithm","Feedback")), eig_finite(n14.get_sys("Algorithm","Kron")), 1e-6))
+assert(same_eigs(eig_finite(n14.get_sys("Method","Feedback")), eig_finite(n14.get_sys("Method","Kron")), 1e-6))
 % D が正則なら I2V の D は V2I の D の逆行列
 for obj = {n14.a_Bus{1}, n14.a_Bus{1}.a_Component{1}}
     D_V = obj{1}.get_sys().D(1:2,1:2);
@@ -314,7 +328,7 @@ net = new_net();
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
 DebugScript.helper.quiet(@() net.initialize);
-sys = net.get_sys("Algorithm","Kron");
+sys = net.get_sys("Method","Kron");
 assert(size(sys.A,1) == n_x + 3 + 3)
 assert(max(real(eig_finite(sys))) < 1e-6)
 
@@ -325,9 +339,9 @@ c{1} = net.a_Bus{1}.a_Component{1};
 c{2} = net.a_Bus{2}.a_Component{1};
 net.add_global_controller("agc-PI", c, parameter=struct(alpha=[1;1], beta=[1;1]));
 DebugScript.helper.quiet(@() net.initialize);
-sys = net.get_sys("Algorithm","Kron");
+sys = net.get_sys("Method","Kron");
 assert(size(sys.A,1) == n_x + 1)
-assert(same_eigs(eig_finite(sys), eig_finite(net.get_sys("Algorithm","Feedback")), 1e-6))
+assert(same_eigs(eig_finite(sys), eig_finite(net.get_sys("Method","Feedback")), 1e-6))
 % 大域制御器の状態: Kron / DAE は先頭、Feedback は末尾 (v3 と同じ。get_ss の help)
 res = net.linearize();
 sv_K = string(res.get_ss("Kron").StateName);
@@ -342,7 +356,7 @@ assert(isequal(sv_F(end-n_gc+1:end), sv_K(1:n_gc)), strjoin(sv_F(end-n_gc+1:end)
 %% SolverLIN constructor of v3 names the remedy
 % v3 の SolverLIN(net, NonUnit, ...) は削除: 解法は既定値だけを持つ (net.solver_LIN)
 try
-    SolverLIN(net, [], "Algorithm", "Kron");
+    SolverLIN(net, [], "Method", "Kron");
     error("DebugScript:NoError", "SolverLIN(net, ...) がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor", DebugScript.helper.msg_id(ME))
@@ -382,12 +396,12 @@ end
 for key = DebugScript.helper.model_classes("Component").Key'
     [net3, comp] = DebugScript.helper.build_3bus(key);
     DebugScript.helper.quiet(@() net3.initialize);
-    sys = net3.get_sys("Algorithm","Kron");
+    sys = net3.get_sys("Method","Kron");
     n_x3 = sum(cellfun(@(b) sum(cellfun(@(cc) numel(cc.sv_x), b.a_Component)), net3.a_Bus));
     assert(size(sys.A,1) == n_x3, key)
     e = eig_finite(sys);
-    assert(same_eigs(e, eig_finite(net3.get_sys("Algorithm","Feedback")), 1e-6), key + ": Kron と Feedback の固有値が一致しない")
-    assert(same_eigs(e, eig_finite(net3.get_sys("Algorithm","DAE")),      1e-6), key + ": Kron と DAE の固有値が一致しない")
+    assert(same_eigs(e, eig_finite(net3.get_sys("Method","Feedback")), 1e-6), key + ": Kron と Feedback の固有値が一致しない")
+    assert(same_eigs(e, eig_finite(net3.get_sys("Method","DAE")),      1e-6), key + ": Kron と DAE の固有値が一致しない")
 end
 
 
@@ -401,13 +415,13 @@ c{1} = net.a_Bus{1}.a_Component{1};
 c{2} = net.a_Bus{2}.a_Component{1};
 net.add_global_controller("agc-PI", c, parameter=struct(alpha=[1;1], beta=[1;1]));
 DebugScript.helper.quiet(@() net.initialize);
-sys = net.get_sys("Algorithm","Kron");
+sys = net.get_sys("Method","Kron");
 assert(size(sys.A,1) == n_x + 3 + 3 + 4 + 1)
 e = eig_finite(sys);
 assert(max(real(e)) < 1e-6)
-assert(same_eigs(e, eig_finite(net.get_sys("Algorithm","Feedback")), 1e-6))
-assert(same_eigs(e, eig_finite(net.get_sys("Algorithm","DAE")),      1e-6))
-sys = net.get_sys("Algorithm","DAE");
+assert(same_eigs(e, eig_finite(net.get_sys("Method","Feedback")), 1e-6))
+assert(same_eigs(e, eig_finite(net.get_sys("Method","DAE")),      1e-6))
+sys = net.get_sys("Method","DAE");
 assert(numel(sys.StateName) == size(sys.A,1))
 
 
@@ -417,14 +431,14 @@ net = new_net();
 net.add_global_controller("agc-PI", "SG1B001");
 net.add_global_controller("agc-PI", ["SG1B002", "SG1B003"], parameter=struct(kI=200));
 DebugScript.helper.quiet(@() net.initialize);
-sys = net.get_sys("Algorithm","Kron");
+sys = net.get_sys("Method","Kron");
 assert(size(sys.A,1) == n_x + 2)
 sv_x = string(sys.StateName);
 assert(numel(sv_x) == size(sys.A,1) && any(contains(sv_x,net.a_GlobalController{1}.s_tag)) && any(contains(sv_x,net.a_GlobalController{2}.s_tag)))
 e = eig_finite(sys);
 assert(max(real(e)) < 1e-6)
-assert(same_eigs(e, eig_finite(net.get_sys("Algorithm","Feedback")), 1e-6))
-assert(same_eigs(e, eig_finite(net.get_sys("Algorithm","DAE")),      1e-6))
+assert(same_eigs(e, eig_finite(net.get_sys("Method","Feedback")), 1e-6))
+assert(same_eigs(e, eig_finite(net.get_sys("Method","DAE")),      1e-6))
 
 % 制御対象を系統の順と逆に並べても同じ系になる (端子は名前で対応付ける)
 netA = new_net();
@@ -433,11 +447,11 @@ netB = new_net();
 netB.add_global_controller("agc-PI", ["SG1B002", "SG1B001"], parameter=struct(alpha=[1;2], beta=[3;1]));
 DebugScript.helper.quiet(@() netA.initialize);
 DebugScript.helper.quiet(@() netB.initialize);
-eA = eig_finite(netA.get_sys("Algorithm","Feedback"));
+eA = eig_finite(netA.get_sys("Method","Feedback"));
 for alg = ["Kron","Feedback","DAE"]
-    assert(same_eigs(eA, eig_finite(netB.get_sys("Algorithm",alg)), 1e-6), alg + ": 制御対象の順で固有値が変わる")
+    assert(same_eigs(eA, eig_finite(netB.get_sys("Method",alg)), 1e-6), alg + ": 制御対象の順で固有値が変わる")
 end
-assert(same_eigs(eA, eig_finite(netA.get_sys("Algorithm","Kron")), 1e-6))
+assert(same_eigs(eA, eig_finite(netA.get_sys("Method","Kron")), 1e-6))
 
 
 %% Inputs, states and outputs of get_sys on each layer
@@ -634,7 +648,7 @@ for k = 1:numel(nets)
         assert(isequal(sys_new.StateName, sys_old.StateName) && isequal(sys_new.InputName, sys_old.InputName) && ...
                isequal(sys_new.OutputName, sys_old.OutputName), str + ": names")
         % net.get_sys は linearize + get_ss と同じ
-        assert(isequal(nets{k}.get_sys("Algorithm", alg, "Format", "ss"), sys_ful), str + ": get_sys")
+        assert(isequal(nets{k}.get_sys("Method", alg, "Format", "ss"), sys_ful), str + ": get_sys")
     end
 end
 
@@ -729,7 +743,7 @@ e_open = eig_finite(smib.get_sys());
 lqr = gen.add_local_controller("local-LQR");
 DebugScript.helper.quiet(@() smib.initialize);
 for alg = ["Kron","Feedback","DAE"]
-    e_closed = eig_finite(smib.get_sys("Algorithm", alg));
+    e_closed = eig_finite(smib.get_sys("Method", alg));
     e_closed = e_closed(abs(e_closed) > 1e-2);
     assert(same_eigs(e_closed, eig(lqr.sys_design.A - lqr.sys_design.B*lqr.K), 1e-3), alg)
 end
@@ -755,7 +769,7 @@ e1 = eig_finite(netL.get_sys());
 assert(rightmost(e1) < rightmost(e0) - 0.01, "rightmost " + rightmost(e0) + " -> " + rightmost(e1))
 assert(damping(e1) > damping(e0), "damping " + damping(e0) + " -> " + damping(e1))
 for alg = ["Kron","Feedback"]
-    assert(same_eigs(e1, eig_finite(netL.get_sys("Algorithm", alg)), 1e-6), alg)
+    assert(same_eigs(e1, eig_finite(netL.get_sys("Method", alg)), 1e-6), alg)
 end
 
 % 平衡点の値を Point に与えると既定と同じ (LQR の入力は機器の状態から求め直す)
@@ -964,15 +978,15 @@ assert(isequal(res.rv_point(c_idxGC{1}), x(c_idxGC{1})))
 net = new_net();
 DebugScript.helper.quiet(@() net.initialize);
 sct_before = net.solver_LIN.get_options();
-res = net.linearize("Algorithm", "Kron");
+res = net.linearize("Method", "Kron");
 assert(isequal(net.solver_LIN.get_options(), sct_before))
-assert(res.options.Algorithm == "Kron")
+assert(res.options.Method == "Kron")
 assert(isequal(res.get_ss(), res.get_ss("Kron")))
 % 既定値の変更は残る
 n_x = size(res.rm_Axx,1);
-net.solver_LIN.Algorithm = "DAE";
+net.solver_LIN.Method = "DAE";
 assert(size(net.get_sys().A,1) > n_x)
-net.solver_LIN.Algorithm = "Feedback";
+net.solver_LIN.Method = "Feedback";
 % 知らない名前は受け付ける名前を示すエラー
 try
     net.linearize("Methd", "Kron");
@@ -984,21 +998,21 @@ end
 
 %% Get sys returns sys, flag and output
 % v4: [sys, flag, output] = net.get_sys(...) (v3 の 2 番目の出力 lin は flag になった)。
-[sys, flag, output] = net.get_sys("Algorithm", "Kron");
+[sys, flag, output] = net.get_sys("Method", "Kron");
 assert(isa(sys, "ResultLIN") && islogical(flag) && flag)
 assert(sys == output.result)
 assert(isstring(output.message))
 % Format で形を選ぶ: 既定 "GUILDAorigin" は ResultLIN。構造体と ss はどれも同じ行列と名前
-assert(isa(net.get_sys("Algorithm", "Kron", "Format", "GUILDAorigin"), "ResultLIN"))
+assert(isa(net.get_sys("Method", "Kron", "Format", "GUILDAorigin"), "ResultLIN"))
 try
     net.get_sys(Format="ResultLIN");
     error("DebugScript:NoError", "Format=""ResultLIN"" should stop")
 catch ME
     assert(ME.identifier == "MATLAB:validators:mustBeMember", ME.identifier)
 end
-sct =net.get_sys("Algorithm", "Kron", "Format", "struct");
+sct =net.get_sys("Method", "Kron", "Format", "struct");
 assert(isstruct(sct) && isequal(string(fieldnames(sct))', ["A","B","C","D","E","StateName","InputName","OutputName"]))
-sss = net.get_sys("Algorithm", "Kron", "Format", "ss");
+sss = net.get_sys("Method", "Kron", "Format", "ss");
 assert(isa(sss, "ss") && isequal(output.result.get_ss(), sss))
 for str = ["A","B","C","D","E","StateName","InputName","OutputName"]
     assert(isequal(sct.(str), sys.(str)), str)
@@ -1021,7 +1035,7 @@ assert(output.s_issue == "SingularAvv" && output.rcond_Avv < 1e-14)
 assert(contains(output.message, "Avv") && contains(output.message, "B001"), output.message)
 for alg = ["Kron", "Feedback"]
     try
-        net_s.get_sys("Algorithm", alg);
+        net_s.get_sys("Method", alg);
         error("DebugScript:NoError", alg + ": エラーにならない")
     catch ME
         assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:SingularAvv", DebugScript.helper.msg_id(ME))
@@ -1029,10 +1043,10 @@ for alg = ["Kron", "Feedback"]
     end
 end
 % DAE は電圧を消去しないので取り出せる
-[sys, flag, output] = net_s.get_sys("Algorithm", "DAE");
+[sys, flag, output] = net_s.get_sys("Method", "DAE");
 assert(isa(sys, "ResultLIN") && ~flag && output.s_issue == "SingularAvv" && ~isempty(sys.A))
 % Kron は使えないので linearize の結果の A などは空
-res = net_s.linearize("Algorithm", "Kron");
+res = net_s.linearize("Method", "Kron");
 assert(isempty(res.A) && isempty(res.StateName))
 % 使える結果は flag が true で s_issue は空
 [~, flag, output] = net.linearize();
@@ -1164,25 +1178,25 @@ res = net.linearize();
 ax = res.Plot();
 assert(isa(ax, "matlab.graphics.axis.Axes"))
 close(ancestor(ax, "figure"))
-ax = res.Plot("Algorithm", "Feedback");
+ax = res.Plot("Method", "Feedback");
 close(ancestor(ax, "figure"))
 
 
 %% Plot draws the algorithm of the options
-% 既定は options.Algorithm。Plot=true でも同じで、Algorithm を渡せばそちらを描く
+% 既定は options.Method。Plot=true でも同じで、Method を渡せばそちらを描く
 for alg = ["Feedback", "Kron", "DAE"]
-    DebugScript.helper.quiet(@() net.linearize("Algorithm", alg, "Plot", true));
+    DebugScript.helper.quiet(@() net.linearize("Method", alg, "Plot", true));
     ax = gca;
     assert(ax.Title.String == "Eigenvalues (" + alg + ")", ax.Title.String)
     close(ancestor(ax, "figure"))
 end
-res = net.linearize("Algorithm", "Kron");
-ax = res.Plot("Algorithm", "DAE");
+res = net.linearize("Method", "Kron");
+ax = res.Plot("Method", "DAE");
 assert(ax.Title.String == "Eigenvalues (DAE)", ax.Title.String)
 close(ancestor(ax, "figure"))
 % Feedback で描けない NonUnit は get_ss と同じエラー
 try
-    net.linearize("Algorithm", "Feedback", "NonUnit", [7 2], "Plot", true);
+    net.linearize("Method", "Feedback", "NonUnit", [7 2], "Plot", true);
     error("DebugScript:NoError", "状態のある母線の NonUnit がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus", DebugScript.helper.msg_id(ME))
@@ -1196,7 +1210,7 @@ net_68 = network.IEEE68bus();
 DebugScript.helper.quiet(@() net_68.initialize);
 assert(any(tools.vcellfun(@(b) isempty(b.a_Component), net_68.a_Bus)))
 for alg = ["Kron", "Feedback", "DAE"]
-    assert(~contains(evalc('net_68.get_sys("Algorithm", alg);'), "NonUnit"), alg)
+    assert(~contains(evalc('net_68.get_sys("Method", alg);'), "NonUnit"), alg)
 end
 res = net_68.linearize();
 assert(~contains(evalc('res.get_ss("Kron");'), "NonUnit"))
@@ -1229,8 +1243,8 @@ for c_arg = {{}, {"NonUnit", 1:2}}
         assert(contains(ME.message, "Kron") && contains(ME.message, "DAE"), ME.message)
     end
 end
-assert(isempty(net_load.get_sys("Algorithm", "Kron").A))
-assert(size(net_load.get_sys("Algorithm", "DAE").A, 1) == 4)
+assert(isempty(net_load.get_sys("Method", "Kron").A))
+assert(size(net_load.get_sys("Method", "DAE").A, 1) == 4)
 % 出力のない機器の AGC は追加で止まる。追加前に get_sys しても同じ原因を示す
 net_droop = DebugScript.helper.build_3bus("gen-droop");
 gen_droop = net_droop.a_Bus{2}.a_Component{1};
@@ -1255,14 +1269,14 @@ end
 net = new_net();
 DebugScript.helper.quiet(@() net.initialize);
 assert(net.solver_LIN.Coordinate == "theta&rho")
-sD0 = net.get_sys(Algorithm="DAE");
+sD0 = net.get_sys(Method="DAE");
 assert(any(string(sD0.StateName) == "rho1"))
-sD = net.get_sys(Algorithm="DAE", Coordinate="theta&V");
+sD = net.get_sys(Method="DAE", Coordinate="theta&V");
 assert(any(string(sD.StateName) == "V1") && net.solver_LIN.Coordinate == "theta&rho")
-assert(isequal(net.get_sys(Algorithm="DAE", Coordinate="theta&V", Format="ss"), net.linearize(Coordinate="theta&V").get_ss("DAE")))
-assert(isequal(net.get_sys(Algorithm="DAE", Format="struct"), net.linearize(Coordinate="theta&V").get_ss("DAE", Coordinate="theta&rho", Format="struct")))
+assert(isequal(net.get_sys(Method="DAE", Coordinate="theta&V", Format="ss"), net.linearize(Coordinate="theta&V").get_ss("DAE")))
+assert(isequal(net.get_sys(Method="DAE", Format="struct"), net.linearize(Coordinate="theta&V").get_ss("DAE", Coordinate="theta&rho", Format="struct")))
 net.solver_LIN.Coordinate = "Vre&Vim";
-assert(any(string(net.get_sys(Algorithm="DAE").StateName) == "Vre1"))
+assert(any(string(net.get_sys(Method="DAE").StateName) == "Vre1"))
 net.solver_LIN.Coordinate = "theta&rho";
 try
     net.get_sys(Coordinate="polar");
@@ -1277,11 +1291,11 @@ end
 net = new_net();
 DebugScript.helper.quiet(@() net.initialize);
 res = net.linearize();
-sK = net.get_sys(Algorithm="Kron");
+sK = net.get_sys(Method="Kron");
 assert(all(sK.OutputName == "") && numel(sK.OutputName) == size(sK.A,1) && isequal(sK.C, eye(size(sK.A,1))))
 for alg = ["Kron","Feedback","DAE"]
-    assert(isequal(net.get_sys(Algorithm=alg, Format="ss"), res.get_ss(alg)), alg)
-    assert(isequal(net.get_sys(Algorithm=alg, Format="struct"), res.get_ss(alg, Format="struct")), alg)
+    assert(isequal(net.get_sys(Method=alg, Format="ss"), res.get_ss(alg)), alg)
+    assert(isequal(net.get_sys(Method=alg, Format="struct"), res.get_ss(alg, Format="struct")), alg)
 end
 
 
@@ -1332,7 +1346,7 @@ assert(all(sy.D == 0, "all"))
 
 % 種類と名前の混在は指定の順で、重複は 1 つ。x はモデルのすべての状態を StateName の順に出す
 s_w = string(gen.attach_tag("omega"));
-sM = net.get_sys(Algorithm="Kron", output=[sv_v(3), s_w, sv_v(3)]);
+sM = net.get_sys(Method="Kron", output=[sv_v(3), s_w, sv_v(3)]);
 assert(isequal(string(sM.OutputName), [sv_v(3); s_w]))
 for alg = ["Kron","Feedback","DAE"]
     sys_def = res.get_ss(alg);
@@ -1349,19 +1363,19 @@ assert(~any(string(sys_def.OutputName) == string(net.a_GlobalController{1}.attac
 % Input: 指定の順。状態は変わらない。Output と併用できる。列ベクトルも受ける
 sv_u = tab.Label(tab.Kind == "u");
 for alg = ["Kron","Feedback","DAE"]
-    sys_all = net.get_sys(Algorithm=alg, Output="V");
-    sys_sel = net.get_sys(Algorithm=alg, Output="V", Input=sv_u([3;1]));
+    sys_all = net.get_sys(Method=alg, Output="V");
+    sys_sel = net.get_sys(Method=alg, Output="V", Input=sv_u([3;1]));
     assert(isequal(string(sys_sel.InputName), sv_u([3;1])), alg)
     assert(isequal(sys_sel.A, sys_all.A) && isequal(sys_sel.StateName, sys_all.StateName), alg)
     [~, iu] = ismember(sv_u([3;1]), string(sys_all.InputName));
     assert(isequal(sys_sel.D, sys_all.D(:,iu)) && isequal(sys_sel.B, sys_all.B(:,iu)), alg)
-    assert(isequal(net.get_sys(Algorithm=alg, Input="u").InputName, net.get_sys(Algorithm=alg).InputName), alg)
+    assert(isequal(net.get_sys(Method=alg, Input="u").InputName, net.get_sys(Method=alg).InputName), alg)
 end
 
 % 不明な名前。net.linearize は Input, Output を受けない
 for c = {{"Output","nope","UnknownOutput"}, {"Input","nope","UnknownInput"}, {"Input","V","UnknownInput"}}
     try
-        net.get_sys("Algorithm", "Kron", c{1}{1:2});
+        net.get_sys("Method", "Kron", c{1}{1:2});
         error("DebugScript:NoError", "不明な名前がエラーにならない")
     catch ME
         assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:" + c{1}{3}, DebugScript.helper.msg_id(ME))
@@ -1457,7 +1471,7 @@ c_tmp = onCleanup(@() cellfun(@feval, {@() rmpath(s_tmp), @() rmdir(s_tmp, "s"),
 assert(~license("test", "Control_Toolbox"))
 res = net.linearize();
 assert(isa(net.get_sys(), "ResultLIN") && ~isempty(res.A))
-sct = res.get_ss(res.options.Algorithm, Format="struct");
+sct = res.get_ss(res.options.Method, Format="struct");
 assert(isequal(sct.A, res.A))
 c_call = {@() res.get_ss("Kron"), @() net.get_sys(Format="ss"), ...
     @() net.a_Bus{1}.a_Component{1}.get_sys(Format="ss"), ...
