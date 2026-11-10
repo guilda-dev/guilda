@@ -1,8 +1,8 @@
 function c_restore = user_config(s_section, sct_value)
 % GUILDA.setting の 1 セクションをユーザー設定ファイルへ書き、終了時 (c_restore の削除) に元へ戻す
 %
-%   c = DebugScript.helper.user_config("PowerFlowCalculation", struct("Method", "dynamic"));
-%   ...                % GUILDA.config("PowerFlowCalculation","Method") == "dynamic"
+%   c = DebugScript.helper.user_config("PowerFlowCalculation", struct("Solver", "dynamic"));
+%   ...                % GUILDA.config("PowerFlowCalculation","Solver") == "dynamic"
 %   clear c            % 元のファイルに戻して設定を読み直す
     arguments (Input)
         s_section (1,1) string  % セクション (ファイル名の Default と .json を除いた部分)

@@ -3,8 +3,8 @@ function c_nv = v3_powerflow_args(c_nv)
 %
 % v3 compatibility hook of PowerNetwork.calculate_powerflow: rewrites the old arguments
 % into v4 Name-Value options.
-%   calculate_powerflow(mode, ...)     -> Method=mode  (GUILDA:Deprecated:CalculatePowerflowMode;
-%                                         the v3 mode "algebraic" is Method="fsolve")
+%   calculate_powerflow(mode, ...)     -> Solver=mode  (GUILDA:Deprecated:CalculatePowerflowMode;
+%                                         the v3 mode "algebraic" is Solver="fsolve")
 %   "export", l, "filename", f         -> Export=fullfile(GUILDA.pwd, f) when l is true
 %                                         (GUILDA:Deprecated:CalculatePowerflowExport)
 % The old options are recognized only together with the positional mode or "filename";
@@ -62,7 +62,7 @@ function c_nv = v3_powerflow_args(c_nv)
     lv_keep([2*iv_drop-1, 2*iv_drop]) = false;
     c_nv = c_nv(lv_keep);
     if l_mode
-        c_nv = [{"Method", s_mode}, c_nv];
+        c_nv = [{"Solver", s_mode}, c_nv];
     end
     if l_export
         c_nv = [c_nv, {"Export", fullfile(GUILDA.pwd, s_file)}];

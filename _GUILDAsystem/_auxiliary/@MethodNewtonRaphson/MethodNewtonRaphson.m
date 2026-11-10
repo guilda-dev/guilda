@@ -1,7 +1,7 @@
 classdef (Sealed = true) MethodNewtonRaphson < MethodBase
 % Newton-Raphson solver of a nonlinear equation F(x) = 0.
 %
-% The power flow (Method="newton") uses it, and the continuation power flow uses it as its
+% The power flow (Solver="newton") uses it, and the continuation power flow uses it as its
 % corrector. Give the equation and the options as Name-Value arguments of the constructor
 % (they are the public properties), then call solve (see MethodBase for the outputs).
 % Without Jac the Jacobian is computed by central differences with step Increment; giving

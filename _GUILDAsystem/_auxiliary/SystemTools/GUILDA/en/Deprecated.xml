@@ -3,7 +3,7 @@
     <message>
         <entry key="BusBaseMVA">The add_bus option baseMVA is deprecated and ignored: the system base is net.tab_parameter.base.baseMVA ({0} MVA).</entry>
         <entry key="BusBaseMVAMismatch">The add_bus option baseMVA is deprecated and ignored: the given {0} MVA differs from the system base net.tab_parameter.base.baseMVA = {1} MVA, which is used. Set net.tab_parameter.base.baseMVA instead.</entry>
-        <entry key="CalculatePowerflowMode">The positional mode argument of calculate_powerflow is deprecated: use net.calculate_powerflow(Method="{0}").</entry>
+        <entry key="CalculatePowerflowMode">The positional mode argument of calculate_powerflow is deprecated: use net.calculate_powerflow(Solver="{0}").</entry>
         <entry key="CalculatePowerflowExport">The calculate_powerflow options export and filename are deprecated: use net.calculate_powerflow(Export=filename) or result.Export(filename). A .json file holds the iteration history; a relative file name is now relative to the current folder.</entry>
         <entry key="OptimizePowerflowMethods">The optimize_powerflow option methods is deprecated: use net.optimize_powerflow(Method="{0}").</entry>
         <entry key="BuildOpfProblemMethods">The build_opf_problem option methods is deprecated: use net.build_opf_problem(Method="{0}").</entry>

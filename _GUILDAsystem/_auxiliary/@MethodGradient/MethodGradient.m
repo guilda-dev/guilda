@@ -7,7 +7,7 @@ classdef (Sealed = true) MethodGradient < MethodBase
 % diverged. Fcn may return NaN to mark a point outside its domain. The convergence is
 % linear: many cheap iterations instead of the few Jacobian solves of MethodNewtonRaphson.
 %
-% The power flow (Method="gradient") uses it with x = [theta; V] of the buses,
+% The power flow (Solver="gradient") uses it with x = [theta; V] of the buses,
 % d = [dP; dQ./V] and r = [dP; dQ] (the slack values and the PV voltages kept fixed).
 %
 % <@Examples>

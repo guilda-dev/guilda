@@ -37,9 +37,10 @@ function [result, flag, output] = initialize(obj, varargin)
 %   Passed to calculate_powerflow or optimize_powerflow like the other options.
 % - Other options go unchanged to calculate_powerflow ("powerflow") or
 %   optimize_powerflow ("OPF") and are validated there (unknown names stop with
-%   GUILDA:resolve_options:UnknownName); "equilibrium" takes no other option. The
-%   formulation of that analysis (its own Method) is not set here: it is the Method of
-%   the PowerFlowCalculation section of GUILDA.setting for the power flow.
+%   GUILDA:resolve_options:UnknownName); "equilibrium" takes no other option. `Solver`
+%   chooses the algorithm of that analysis, e.g. Solver="levenberg-marquardt" for the
+%   power flow (default: the Solver of the PowerFlowCalculation section of GUILDA.setting)
+%   or Solver="fmincon" for the OPF.
 %
 % When the analysis does not succeed (no convergence, an infeasible OPF, or stored
 % equilibria that do not satisfy the network equations), initialize stops with an error

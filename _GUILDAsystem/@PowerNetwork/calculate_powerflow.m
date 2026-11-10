@@ -15,7 +15,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 %
 % Name-Value options:
 %
-% - `Method` — Calculation method: "newton", "gradient", "levenberg-marquardt", "fsolve" or "dynamic" (see SolverPF). Default: GUILDA.setting.
+% - `Solver` — Algorithm: "newton", "gradient", "levenberg-marquardt", "fsolve" or "dynamic" (see SolverPF). Default: GUILDA.setting.
 % - `Tolerance` — [pu] Largest P/Q mismatch of a converged solution, for every method. Default: GUILDA.setting (1e-8).
 % - `MaxIteration` — Maximum number of iterations; 0 for the automatic value of the method (see SolverPF). Default: GUILDA.setting (0).
 % - `Verbose` — Print the progress of each iteration. Default: false.
@@ -27,7 +27,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 % ```matlab
 % [res, flag] = net.calculate_powerflow();
 % res.tab_bus            % Varg, V, P, Q, Vphasor, Iphasor of each bus
-% res = net.calculate_powerflow(Method="dynamic", Tolerance=1e-10, Plot=true);
+% res = net.calculate_powerflow(Solver="dynamic", Tolerance=1e-10, Plot=true);
 % ```
 %
 % See also ResultPF, SolverPF, PowerNetwork.initialize

@@ -1,5 +1,5 @@
 {
-    "Method":{
+    "Solver":{
         "Value": "newton",
         "Type": "select",
         "options": [
@@ -9,7 +9,7 @@
             "fsolve",
             "dynamic"
         ],
-        "Description": "Calculation method: 'newton', 'gradient', 'levenberg-marquardt', 'fsolve' (needs Optimization Toolbox) or 'dynamic' (virtual bus dynamics)"
+        "Description": "Algorithm: 'newton', 'gradient', 'levenberg-marquardt', 'fsolve' (needs Optimization Toolbox) or 'dynamic' (virtual bus dynamics)"
     },
     "Tolerance":{
         "Value": 1e-8,
