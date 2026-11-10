@@ -540,12 +540,62 @@
 4. 時間応答シミュレーションの `SeparateComplexParts` は select(`"on"` / `"off"`、ode のプロパティと同じ)で、他の on/off の設定(`UseParallel`、`WarmStart`、`Verbose`)は logical。
 5. 連続潮流計算の `Limits` は Type `"string"`(複数の値を取るため select ではない)。
 
-**要判断**
+**要判断**(1 はレビューで「すべて揃える」と決定。下の「設定キーの統一」節)
 
 1. 上の「ずれ」1〜4 を揃えるか。推奨は 1(潮流計算の `Verbose` を設定にする)だけ。2〜4 は MATLAB の各ソルバーの名前・型に合わせた結果。
 2. flag -1(PlotFcn で停止)を潮流計算の flag に加えた(MATLAB の exitflag -1 と同じ意味)。`WhenFailed="WARN"` では停止でも警告が出る。停止を通知の対象から外すか。
 3. 潮流計算の関数ハンドルの `optimValues` のフィールド名(`fval` = 残差のベクトル、`residual` = 最大値)。fsolve の optimValues の `fval` に合わせ、`residual` は `output.residual` に合わせた。
 4. `v3_user_config` は PowerFlowCalculation の利用者設定の `PlotFcn` を削除する(Q1 の要判断 1)。今は `"residual"` を保存しても読み込み時に消える。
+
+## 設定キーの統一(`feature/plotfcn`、2026-11-10)
+
+**決定**(コーディネーター経由のメンテナーの指示「他の Solver クラスのオプションと統一」、2026-11-10)
+
+- 潮流計算にも JSON キー `Verbose`(logical、既定 false)。
+- 「自動・ソルバーの既定」の印は全解析で NaN(0 は有効な値になりうるため)。
+- 1 つのソルバー・計算方法だけの設定は `<Solver 名><MATLAB のオプション名>`。全ソルバー共通なら接頭辞なし。
+- オン・オフの設定は logical(ode などへ渡すときに `"on"` / `"off"` に変換)。
+- 旧キーの変換はしない(`v3_user_config.m` は別セッションが削除するので触らない)。
+
+**対応表**(変更したキー)
+
+| セクション | 旧キー(型・既定) | 新キー(型・既定) | 渡す先 |
+|---|---|---|---|
+| PowerFlowCalculation | なし(Name-Value `Verbose` のみ) | `Verbose`(logical、false) | Method クラスの `Display`("iter" / "none") |
+| PowerFlowCalculation | `MaxIteration`(0 = 自動) | `MaxIteration`(NaN = 自動) | 全 Solver(dynamic は未使用) |
+| PowerFlowCalculation | `GradientStepSize`(0 = 自動) | `GradientStepSize`(NaN = 自動) | gradient |
+| PowerFlowCalculation | `FsolveMaxFunEvals`(0 = fsolve の既定) | `FsolveMaxFunctionEvaluations`(NaN = fsolve の既定) | fsolve |
+| OptimalPowerFlow | `Algorithm_linprog` | `LinprogAlgorithm` | linprog |
+| OptimalPowerFlow | `Algorithm_quadprog` | `QuadprogAlgorithm` | quadprog |
+| OptimalPowerFlow | `Algorithm_fmincon` | `FminconAlgorithm` | fmincon |
+| OptimalPowerFlow | `StepTolerance`(NaN。linprog に渡ると optimoptions のエラー) | `QuadprogStepTolerance`、`FminconStepTolerance`(NaN) | quadprog、fmincon |
+| OptimalPowerFlow | `MaxFunctionEvaluations`(NaN。linprog・quadprog に渡るとエラー) | `FminconMaxFunctionEvaluations`(NaN) | fmincon |
+| OptimalPowerFlow | `UseParallel`(false。fmincon のみ使用) | `FminconUseParallel`(false) | fmincon |
+| OptimalPowerFlow | `Display`(select、"default") | `Verbose`(logical、false)(前節) | 全ソルバーの `Display` |
+| TimeSimulation | `SeparateComplexParts`(select、"off") | `SeparateComplexParts`(logical、false) | ode(`makeODE` で "on" / "off") |
+
+変更しないキー(すでに規則どおり): `NewtonStepSize`、`FsolveUseParallel`(潮流計算)、`MaxIteration`・`Tolerance`(OPF は 3 ソルバー共通、NaN = 既定)、CPF の `CorrectorMaxIteration`・`CorrectorStepSize`(修正子 = Newton-Raphson の設定。形は `<役割><オプション>`)。
+
+**現状**(実装後のコード)
+
+- `SolverPF.OptionMap` の `Verbose` は変換なしの `"Verbose"`。`get_options` が `Display` を `Verbose` から作る(`result.options` は両方を持つ)。`initialize(Method="FixedInput")` の既定の `Verbose` も設定から。
+- `SolverPF.solve` と `solve_fixed_input` の `auto` は NaN を自動とする。`FsolveMaxFunctionEvaluations` の NaN は `MethodFsolve.MaxFunEvals` の 0(fsolve の既定)に変換。Method クラスのプロパティ(`ConvTol`・`MaxIter`・`MaxFunEvals` の 0 = 既定)は変えていない(設定ではないため)。
+- Name-Value `MaxIteration`(潮流計算・FixedInput)は NaN または 0 以上の整数、OPF の `MaxIteration`・`Tolerance` は NaN または正の値を受け付ける。
+- `SolverOPF.optimoption`: キーの接頭辞をソルバー名から作り(`"fmincon"` → `Fmincon`)、そのソルバーの `<接頭辞><オプション>` だけを渡す。以前は `StepTolerance` を設定すると linprog で、`MaxFunctionEvaluations` を設定すると linprog・quadprog で optimoptions のエラーになっていた。
+- `SolverODE`: `SeparateComplexParts` は logical のまま `sct_options` に入り、`makeODE` が `matlab.lang.OnOffSwitchState` に変換。
+
+**移行の注意**(要判断)
+
+- GUILDA は各セクションの値を `@GUILDA/user/Default*.json` に保存している。旧い利用者設定に `"MaxIteration": 0`・`"GradientStepSize": 0` が残っていると、新しい意味では 0 回の反復・刻み幅 0 になり、潮流計算が収束しない(この作業ツリーの利用者設定はこの状態だったので NaN に直した)。
+  改名したキー(`FsolveMaxFunEvals` など)は未知のキーとして捨てられ既定値になるが、0 の値は捨てられない。`version` の仕組み(別作業)で既定に戻るまでの間の扱い(0 を NaN とみなすか、検査でエラーにするか)を決める必要がある。
+- `v3_user_config` は v3 の `MaxFunEvals` を旧名 `FsolveMaxFunEvals` に変換する(今は未知のキーとして捨てられる)。同ファイルは削除予定なので触っていない。
+
+**ほかのずれ**(揃えていない)
+
+1. TimeSimulation の `TimeLimit`: 設定の 0 以下は「制限なし」(`get_options` が Inf に置換)、Name-Value は正の値のみ。制限なしは Inf(運転制約と同じ)で、「自動」ではないので NaN の規則の対象外とした。設定の 0 以下も受け付けなくするかは要判断。
+2. OPF の `Solver` だけ `"auto"` がある(潮流計算・時間応答シミュレーションは常に指定)。意味の違いなので残した。
+3. `WhenFailed` は潮流計算だけ(他の解析は失敗時の通知の設定がない)。
+4. CPF の `Limits` は Type `"string"`(複数の値)。
 
 ## 未決
 

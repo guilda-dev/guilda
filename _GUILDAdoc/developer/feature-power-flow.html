@@ -107,16 +107,16 @@
           <li>fsolve: 2 乗を <code>FunctionTolerance</code>（二乗和の許容値）と <code>OptimalityTolerance</code> としても指定</li>
           <li>dynamic: ODE の許容誤差 <code>AbsTol = min(Tolerance, 1e-5)</code>、<code>RelTol = min(100·Tolerance, 1e-4)</code> も設定</li>
         </ul></td></tr>
-        <tr><td><code>MaxIteration</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>0</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
+        <tr><td><code>MaxIteration</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>NaN</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li>Maximum number of iterations</li>
-          <li><code>0</code>: method default (newton: 50; gradient: 1e6; levenberg-marquardt: 100; fsolve: 400)</li>
+          <li><code>NaN</code>: method default (newton: 50; gradient: 1e6; levenberg-marquardt: 100; fsolve: 400)</li>
           <li>Unused by <code>"dynamic"</code></li>
         </ul><ul lang="ja">
           <li>反復回数の上限</li>
-          <li><code>0</code>: 計算方法の既定値（newton: 50、gradient: 1e6、levenberg-marquardt: 100、fsolve: 400）</li>
+          <li><code>NaN</code>: 計算方法の既定値（newton: 50、gradient: 1e6、levenberg-marquardt: 100、fsolve: 400）</li>
           <li><code>"dynamic"</code> では未使用</li>
         </ul></td></tr>
-        <tr><td><code>Verbose</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small><code>get_options</code>: <code>Display = "none"</code></small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>Display</code> for this call: <code>"iter"</code> (true, one line per iteration) or <code>"none"</code> (false)</span><span lang="ja">この呼び出しの <code>Display</code>: <code>"iter"</code>（true、反復ごとに 1 行）または <code>"none"</code>（false）</span></td></tr>
+        <tr><td><code>Verbose</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Print each iteration and the final message; <code>get_options</code> sets <code>Display</code> of the Method class: <code>"iter"</code> (true) or <code>"none"</code> (false)</span><span lang="ja">反復ごとの表示と終了時のメッセージ。<code>get_options</code> が Method クラスの <code>Display</code> を設定: <code>"iter"</code>（true）または <code>"none"</code>（false）</span></td></tr>
         <tr><td><code>WarmStart</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>true</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li><code>true</code>: starts from the last converged solution of this network, kept by <code>net.solver_PF</code></li>
           <li><code>false</code>, or no kept solution: flat start (angle 0, magnitude 1; set <code>V</code> at PV and slack buses, set <code>Varg</code> at the slack bus)</li>
@@ -153,8 +153,9 @@
       <li>Other settings: no Name-Value option; set in <code>GUILDA.setting</code>
         <ul>
           <li><code>NewtonStepSize</code> (<code>1</code>; newton)</li>
-          <li><code>GradientStepSize</code> (<code>0</code>: <code>α = 0.5/(max|Y_ii|·Vmax²)</code>, Vmax the largest set bus voltage or 1; gradient)</li>
-          <li><code>FsolveUseParallel</code> (<code>false</code>), <code>FsolveMaxFunEvals</code> (<code>0</code>: the fsolve default) (fsolve)</li>
+          <li><code>GradientStepSize</code> (<code>NaN</code>: <code>α = 0.5/(max|Y_ii|·Vmax²)</code>, Vmax the largest set bus voltage or 1; gradient)</li>
+          <li><code>FsolveUseParallel</code> (<code>false</code>), <code>FsolveMaxFunctionEvaluations</code> (<code>NaN</code>: the fsolve default) (fsolve)</li>
+          <li>Names: <code>&lt;Solver&gt;&lt;option&gt;</code> for a setting of one Solver; <code>NaN</code> is the automatic value of every setting that has one</li>
           <li><code>WhenFailed</code> (<code>"WARN"</code>)</li>
         </ul>
       </li>
@@ -168,8 +169,9 @@
       <li>その他の設定: Name-Value なし。<code>GUILDA.setting</code> で設定
         <ul>
           <li><code>NewtonStepSize</code>（<code>1</code>。newton）</li>
-          <li><code>GradientStepSize</code>（<code>0</code>: <code>α = 0.5/(max|Y_ii|·Vmax²)</code>。Vmax は指定母線電圧の最大値、なければ 1。gradient）</li>
-          <li><code>FsolveUseParallel</code>（<code>false</code>）、<code>FsolveMaxFunEvals</code>（<code>0</code>: fsolve の既定値）（fsolve）</li>
+          <li><code>GradientStepSize</code>（<code>NaN</code>: <code>α = 0.5/(max|Y_ii|·Vmax²)</code>。Vmax は指定母線電圧の最大値、なければ 1。gradient）</li>
+          <li><code>FsolveUseParallel</code>（<code>false</code>）、<code>FsolveMaxFunctionEvaluations</code>（<code>NaN</code>: fsolve の既定値）（fsolve）</li>
+          <li>名前: 1 つの Solver の設定は <code>&lt;Solver 名&gt;&lt;オプション名&gt;</code>。自動の値がある設定はすべて <code>NaN</code> が自動</li>
           <li><code>WhenFailed</code>（<code>"WARN"</code>）</li>
         </ul>
       </li>
@@ -357,7 +359,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>GUILDA.config("PowerFlowCalculation")</code>, <code>c_nv</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>sct_options</code> <span lang="en">(1×1 struct: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunEvals, WhenFailed, WarmStart, PlotFcn, Display); solver and settings file unchanged</span><span lang="ja">（1×1 構造体: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunEvals, WhenFailed, WarmStart, PlotFcn, Display）。ソルバーと設定ファイルは変更なし</span></dd>
+          <dd><code>sct_options</code> <span lang="en">(1×1 struct: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunctionEvaluations, WhenFailed, Verbose, WarmStart, PlotFcn, Display); solver and settings file unchanged</span><span lang="ja">（1×1 構造体: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunctionEvaluations, WhenFailed, Verbose, WarmStart, PlotFcn, Display）。ソルバーと設定ファイルは変更なし</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-03">
@@ -472,7 +474,7 @@
             <li>各反復の値を記録（gradient: 1000 回目までは毎回、以降は 1000 回ごとと最後）</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options</code> (<code>Tolerance</code>, <code>MaxIteration</code>, <code>Display</code>, <code>NewtonStepSize</code>, <code>GradientStepSize</code>, <code>FsolveMaxFunEvals</code>, <code>FsolveUseParallel</code>)</dd>
+          <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options</code> (<code>Tolerance</code>, <code>MaxIteration</code>, <code>Display</code>, <code>NewtonStepSize</code>, <code>GradientStepSize</code>, <code>FsolveMaxFunctionEvaluations</code>, <code>FsolveUseParallel</code>)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>cv_Vbus</code> <span lang="en">(n_bus×1 complex [pu])</span><span lang="ja">（n_bus×1 の複素数 [pu]）</span>, <code>flag</code> <span lang="en">(1 converged, 0 MaxIteration reached, −2 diverged or no solution)</span><span lang="ja">（1 収束、0 反復回数の上限、−2 発散または解なし）</span>, <code>output</code> <span lang="en">(iterations, algorithm, residual, message; fsolve: also exitflag)</span><span lang="ja">（iterations, algorithm, residual, message。fsolve: exitflag も）</span>, <code>cm_Vhistory</code> (n_bus×n_step), <code>rv_step</code></dd>
         </dl>

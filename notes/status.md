@@ -138,7 +138,9 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - `"none"` では結果が変わらない(5 つの Solver、CPF、AC OPF で一致を確認)。
 - **テスト(MATLAB R2026a):** `DebugScript.run_all('Level','medium')`(`87a17326`)663 件、PASS 661 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、652 s(small の並行実行あり)。small は `dc089366`・`fd10875b` でそれぞれ 492 件、FAIL 0。
   新しい表示のテスト 3 件(F2・F4・F5 の `PlotFcn*`、3 秒超)は large に登録し、F2・F4・F5・F9・F10 の large で PASS(修正後に個別に再実行)。large 全体は未実行。
-- **要判断:** powerflow-options.md の同節の要判断 1〜4(他のセクションとの名前・型のずれ、flag -1 の通知など)。
+- **要判断:** powerflow-options.md の同節の要判断 2〜4(flag -1 の通知など)。
+- **設定キーの統一(レビュー後):** 潮流計算に `Verbose` のキー、自動・既定は全解析で NaN、1 つのソルバーの設定は `<Solver 名><オプション名>`(`FsolveMaxFunctionEvaluations`、`LinprogAlgorithm`、`FminconUseParallel` など)、TimeSimulation の `SeparateComplexParts` は logical。対応表は powerflow-options.md の「設定キーの統一」節。
+  **移行の注意:** 保存済みの利用者設定に `MaxIteration` 0 が残ると潮流計算が 0 回の反復で失敗する(同節の要判断)。
 
 ## 入力を固定した平衡点と Solver / Method の名前(2026-11-10)
 

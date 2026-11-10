@@ -131,6 +131,15 @@
   | TimeSimulation | なし | `Solver`(既定 `"ode15s"`。`"ode15s"` / `"ode23t"`)、`Verbose`(既定 false) |
   | Linearization(新設) | なし | `Method`(既定 `"Feedback"`。`"Kron"` / `"Feedback"` / `"DAE"`)、`Coordinate`(既定 `"theta&rho"`) |
   | 各解析のセクション | なし | `PlotFcn`(既定 `"none"`) |
+  | PowerFlowCalculation | なし | `Verbose`(logical、既定 false) |
+  | PowerFlowCalculation | `MaxIteration`・`GradientStepSize` の 0 = 自動 | NaN = 自動(0 は 0 回・刻み幅 0。保存した 0 は直してください) |
+  | PowerFlowCalculation | `FsolveMaxFunEvals`(0 = 既定) | `FsolveMaxFunctionEvaluations`(NaN = 既定) |
+  | OptimalPowerFlow | `Algorithm_linprog`、`Algorithm_quadprog`、`Algorithm_fmincon` | `LinprogAlgorithm`、`QuadprogAlgorithm`、`FminconAlgorithm` |
+  | OptimalPowerFlow | `StepTolerance` | `QuadprogStepTolerance`、`FminconStepTolerance` |
+  | OptimalPowerFlow | `MaxFunctionEvaluations`、`UseParallel` | `FminconMaxFunctionEvaluations`、`FminconUseParallel` |
+  | TimeSimulation | `SeparateComplexParts`(`"on"` / `"off"`) | `SeparateComplexParts`(logical、既定 false) |
+
+  キーの規則: Name-Value と同じ名前・型、1 つのソルバーだけの設定は `<Solver 名><MATLAB のオプション名>`、自動・ソルバーの既定は NaN、オン・オフは logical。
 
   結果の `res.options` のフィールドも新しい名前です(`res.options.Tolerance`、`res.options.MaxIteration` など)。
 - **`SolverOptions` と `Point` は呼び出しだけ。** 時間応答シミュレーションの `SolverOptions`(`matlab.ode.Options`)は呼び出しかシナリオの `Options` でだけ与えます。与えなければ `ode` オブジェクトは `Solver` のオプションを使います。優先順位は `GUILDA.setting` < `sc.Options` < 呼び出しの Name-Value です。線形化の `Point` も呼び出しだけで(既定 `[]` = 平衡点)、保存しません。
@@ -433,17 +442,17 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   |----|----|
   | `Method` | `Solver` |
   | `Tolerance`(0 = 手法の既定) | `Tolerance`(全手法で最大 P/Q 不平衡 [pu]、既定 1e-8) |
-  | `MaxIterations` | `MaxIteration`(0 = 自動: newton 50、gradient 1e6、levenberg-marquardt 100、fsolve 400) |
-  | `Display` | なし(Name-Value `Verbose`) |
-  | `MaxFunEvals`、`UseParallel` | `FsolveMaxFunEvals`、`FsolveUseParallel` |
+  | `MaxIterations` | `MaxIteration`(NaN = 自動: newton 50、gradient 1e6、levenberg-marquardt 100、fsolve 400) |
+  | `Display` | `Verbose`(logical、既定 false) |
+  | `MaxFunEvals`、`UseParallel` | `FsolveMaxFunctionEvaluations`(NaN = fsolve の既定)、`FsolveUseParallel` |
   | `PlotFcn` | `PlotFcn`(解析中のライブ表示。`"none"` か `"residual"`) |
-  | `gradient.StepSize` | `GradientStepSize`(0 = 自動) |
+  | `gradient.StepSize` | `GradientStepSize`(NaN = 自動) |
   | JSON MethodNewtonRaphson `StepSize` | `NewtonStepSize` |
   | `dynamic.Mass`、`Damper`、`foh_PQ`、`t_span` | なし(`MethodDynamic` が自動で決める) |
   | `WhenFailed` | `WhenFailed` |
   | なし | `WarmStart`(既定 true) |
 
-  `@GUILDA/user/DefaultPowerFlowCalculation.json` の旧キーは読み込み時に変換します(`MaxIterations`、`MaxFunEvals`、`UseParallel` は改名、`Display`、`PlotFcn` は削除、`Tolerance` 0 は削除して既定値)。MethodNewtonRaphson セクションは廃止しました。連続潮流計算の修正子の設定は ContinuationPowerFlow セクションの `CorrectorMaxIteration`、`CorrectorStepSize`、`Increment` です(値は旧セクションと同じ 1000、1、1e-4)。`@GUILDA/user/DefaultMethodNewtonRaphson.json` は読みません。
+  `@GUILDA/user/DefaultPowerFlowCalculation.json` の v3 の旧キーは読み込み時に変換します(`MaxIterations`、`MaxFunEvals`、`UseParallel` は改名、`Display`、`PlotFcn` は削除、`Tolerance` 0 は削除して既定値。`MaxFunEvals` の変換先は旧名 `FsolveMaxFunEvals` のままで、今は未知のキーとして捨てられます)。MethodNewtonRaphson セクションは廃止しました。連続潮流計算の修正子の設定は ContinuationPowerFlow セクションの `CorrectorMaxIteration`、`CorrectorStepSize`、`Increment` です(値は旧セクションと同じ 1000、1、1e-4)。`@GUILDA/user/DefaultMethodNewtonRaphson.json` は読みません。
 - **ウォームスタート。** `WarmStart=true`(既定)は同じ系統の前回の収束解から、`false` はフラットスタート(位相 0、大きさ 1。PV・スラック母線の大きさは設定値 `V`、スラックの位相は設定値 `Varg`)から解きます。解は `net.solver_PF` が保持し、母線・ブランチの追加、削除、置換のときだけ捨てます(パラメータの掃引では保持)。`net.reset_solver()` でも捨てます。`optimize_powerflow` と `initialize` も `WarmStart` を受け付けます(OPF は OptimalPowerFlow セクションの既定 false。連続潮流計算は対象外)。
 - **`"dynamic"`。** 仮想ダイナミクスの `Damper` は 1、`Mass` 0、`foh_PQ` 0 で固定し、`t_span` はありません。収束で止まり、内部の安全上限は仮想時間 1e4 です。flag は他の手法と同じ 1/0/-2(0 は仮想時間の上限)で、以前の logical ではありません。`res.rv_step` は ODE のステップの仮想時刻です。
 - **初期値 `V0`、`Varg0` の廃止。** 母線の `tab_parameter.powerflow` は `V`、`Varg` だけです。`add_bus(V0=..., Varg0=...)` はエラーになります。初期値は潮流計算・OPF のソルバーが決めます(上のウォームスタート)。
@@ -622,7 +631,7 @@ Option names:
 
 - Options after the events: `Solver` (MATLAB `ode` solver, default
   `"ode15s"`), `SolverOptions`, `Tolerance` (`RelativeTolerance`),
-  `AbsoluteTolerance`, `SeparateComplexParts`, `TimeLimit`, `Progress`
+  `AbsoluteTolerance`, `SeparateComplexParts` (logical), `TimeLimit`, `Progress`
   (`"dialog"` | `"disp"` | `"none"`, or true/false), `Verbose`, `PlotFcn`,
   `Export`. Defaults: the TimeSimulation section of `GUILDA.setting`
   (`SolverOptions`: call or `sc.Options` only); `net.solver_ODE` holds no
