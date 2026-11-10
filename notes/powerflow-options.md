@@ -396,7 +396,7 @@
 
 - Q3: OPF の `WarmStart` の既定は false(フラットスタート)。潮流計算は true のまま。
 - Q4: `operation` と OPF の設定の編集を数える改訂カウンタを `PowerNetwork` に足し、`SolverOPF` が OPF の問題をキャッシュ。
-- Q5: fsolve の `FunctionTolerance` は `Tolerance^2`。
+- Q5: fsolve の `FunctionTolerance` は `Tolerance^2`。下の測定で効果がなかったため、`OptimalityTolerance` も `Tolerance^2`(追加の決定、2026-11-10)。
 - Q6: 機器の P・Q の配分を 1 つの関数にまとめ、`Bus.set_equilibrium` と違反の表の両方から呼ぶ。
 - `Qmin`/`Qmax` の編集と "Qmax" 配分則の平衡点は対応しない(11 節)。
 
@@ -420,13 +420,15 @@
     IEEE68 DC OPF 1.02 → 0.22 s、AC OPF 22.2 → 19.1 s。`build_problem` 単体は IEEE14 0.2〜0.6 s、IEEE68 0.7〜2.6 s。
     2 回目は `solve` が問題から作るソルバー用の関数も再利用されるため、構築時間以上に短くなる。費用の差は 0。
   - テスト: F4 の「The OPF problem is kept until the network or the settings change」(変数のハンドルの共有で再利用を判定)。
-- Q5: `@MethodFsolve/solve.m` が `FunctionTolerance` に `ConvTol^2` を渡す。**効果なし**(下の測定)。
+- Q5: `@MethodFsolve/solve.m` が `FunctionTolerance` と `OptimalityTolerance` に `ConvTol^2` を渡す。`FunctionTolerance` だけでは効果がなかった(下の測定)。
   - 測定(フラットスタート、`Tolerance` 1e-10): 変更前後とも WEST10 夜間(不平衡 1.5e-10)、EAST30 ピーク(1.5e-9)、WEST30 夜間(6.9e-10)が flag -2。反復回数も同じ。
     `Tolerance` 1e-8 では全系統 flag 1(前後とも)。
   - FixedInput、IEEE9 ×0.95(`Solver="fsolve"`): `Tolerance` 1e-8 / 1e-10 では前後とも不平衡 1.7e-7 で停止(exitflag 1、flag -2 でエラー)。
   - 原因: fsolve は `OptimalityTolerance`(既定 1e-6、一次の最適性 ‖JᵀF‖∞)で exitflag 1 として止まっている。
-  - 代案(試験のみ、未実装): `OptimalityTolerance` も `Tolerance^2` にすると、上の全例で flag 1、不平衡 1e-13 以下(反復 +1 程度、時間はほぼ同じ)。
-    FixedInput も 1e-6 / 1e-8 / 1e-10 で不平衡 1e-14 以下。`OptimalityTolerance` = `Tolerance` でも潮流計算は全例 flag 1、FixedInput は 1e-8 以下で解消。
+  - 採用した `OptimalityTolerance` = `Tolerance^2`: IEEE9 / IEEE68 / IEEJ 10・30 機(ピーク・夜間)で `Tolerance` 1e-8・1e-10 とも全例 flag 1、不平衡 1.7e-13 以下、
+    newton の解との差 2.4e-14 以下(反復は 1 回程度増え、時間はほぼ同じ)。FixedInput IEEE9 ×0.95 も 1e-6 / 1e-8 / 1e-10 で flag 1、不平衡 1e-14 以下。
+    (比較: `OptimalityTolerance` = `Tolerance` でも潮流計算は全例 flag 1 だが、FixedInput の 1e-6 は不平衡 1.7e-7 のまま。)
+  - テスト: F2 の「fsolve reaches a small Tolerance」(EAST30 ピーク、WEST30 夜間、`Tolerance` 1e-10、medium)、F3 の `FixedInputGivesTheSamePointWithEverySolver`(fsolve を既定と 1e-10 で、large)。
 - Q6: `_GUILDAsystem/+tools/distribute_power.m`(2 つのクラスが使うので `+tools`)。`[P Q]` の行列を返す(機器ごとに 1 行)。
   - `Bus.set_equilibrium` の内部関数 `distribute_power` と、`@SolverPF/private/violation_table.m` の内部関数 `component_power` を削除して置き換え。
   - 確認: IEEE9 / IEEE14 / IEEE68 / IEEJ 10・30 機(ピーク・夜間)の初期化後の全 417 母線で、旧 `set_equilibrium` の配分とビット単位で同一("baseMVA"・"Qmax" とも)。
@@ -435,11 +437,10 @@
 
 **要判断**
 
-1. Q5 の代案(`OptimalityTolerance` も `Tolerance^2` にする)を採るか。`Tolerance^2` だけでは何も変わらない。
-2. `GUILDA` の起動時に全設定がユーザー設定ファイルへ書き出されるため、配布する既定値の変更(Q3 など)が既存の環境に反映されない。
+1. `GUILDA` の起動時に全設定がユーザー設定ファイルへ書き出されるため、配布する既定値の変更(Q3 など)が既存の環境に反映されない。
    既定値と同じ値は書き出さない、などの対応をするか(このブランチでは未対応)。
-3. OPF のキャッシュは `Cost`・`Constraint` を関数ハンドルの同一性で比較する。関数がハンドルオブジェクト(例: `net`)を取り込み、
-   その状態を読む場合、状態が変わっても再利用される(`Cost`・`Constraint` に渡すのは v、p だけという前提)。
+
+**決定**(2026-11-10): OPF のキャッシュは `Cost`・`Constraint` を関数ハンドルの同一性で比較するだけで、関数が取り込んだハンドルオブジェクトの状態の変化は考慮しない(`Cost`・`Constraint` に渡すのは v、p だけという前提)。
 
 ## 未決
 

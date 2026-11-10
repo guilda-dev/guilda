@@ -441,6 +441,18 @@ assert(error_id(@() net.calculate_powerflow(Tolerance=0)) == "MATLAB:validators:
 assert(error_id(@() net.calculate_powerflow("Solver")) == "GUILDA:resolve_options:InvalidPairs")
 
 
+%% fsolve reaches a small Tolerance
+% fsolve には Tolerance^2 を FunctionTolerance と OptimalityTolerance として渡す。
+% OptimalityTolerance が既定 (1e-6) のままだと、これらの系統は不平衡 1e-10〜1e-9 で止まり flag -2 だった
+for c = {{"EAST30", "peak"}, {"WEST30", "night"}}
+    net = DebugScript.helper.quiet(@() network.("IEEJ_" + c{1}{1})(Section=c{1}{2}));
+    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="fsolve", Tolerance=1e-10, WarmStart=false));
+    assert(flag == 1 && output.residual <= 1e-10, c{1}{1} + " " + c{1}{2} + ": " + output.message)
+    tab_NR = DebugScript.helper.quiet(@() net.calculate_powerflow(Tolerance=1e-12, WarmStart=false)).tab_bus;
+    assert(max(abs(res.tab_bus.Vphasor - tab_NR.Vphasor)) < 1e-10)
+end
+
+
 %% Every method reaches the same solution
 % newton / gradient / levenberg-marquardt は fsolve と同じ解に収束し、同じ形の出力を返す
 net = DebugScript.helper.build_ieee14();

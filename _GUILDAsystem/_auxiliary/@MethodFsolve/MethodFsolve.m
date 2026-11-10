@@ -6,8 +6,8 @@ classdef (Sealed = true) MethodFsolve < MethodBase
 % (SpecifyObjectiveGradient); without it, the finite differences of fsolve.
 %
 % - ConvTol^2 is passed as FunctionTolerance (a tolerance on the sum of squares |F|^2) and
-%   MaxIter as MaxIterations of fsolve; 0 for ConvTol, MaxIter or MaxFunEvals keeps the
-%   fsolve default.
+%   as OptimalityTolerance (on the first-order optimality |J'F|), MaxIter as MaxIterations
+%   of fsolve; 0 for ConvTol, MaxIter or MaxFunEvals keeps the fsolve defaults.
 % - flag: 1 when fsolve succeeded (exitflag > 0) and the largest |F| is at most ConvTol
 %   (1e-6, the fsolve default FunctionTolerance, when ConvTol is 0); 0 when fsolve stopped
 %   at MaxIterations or MaxFunctionEvaluations (exitflag 0); -2 otherwise.

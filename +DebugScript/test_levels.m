@@ -61,6 +61,7 @@ function tab = test_levels()
     "test_F2_powerflow/DynamicMethodReachesTheAlgebraicSolution", "large"
     "test_F2_powerflow/PlotAndExportOfTheResult", "large"
     "test_F2_powerflow/AlgebraicPowerFlowConvergesOn9_busSystem", "medium"
+    "test_F2_powerflow/fsolveReachesASmallTolerance", "medium"
     "test_F2_powerflow/SwitchingTheSlackBusLeavesExactlyOne", "medium"
     "test_F2_powerflow/PowerFlowOnIEEE14HonorsGeneratorSettings", "medium"
     "test_F2_powerflow/PowerFlowOnIEEE14MatchesMATPOWERCase14", "medium"
