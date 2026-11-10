@@ -72,10 +72,10 @@
         "Type": "double",
         "Description": "'MaxIterations' option of solver (If NaN, use default value.)"
     },
-    "OptimalityTolerance":{
+    "Tolerance":{
         "Value": NaN,
         "Type": "double",
-        "Description": "'OptimalityTolerance' option of solver (If NaN, use default value.)"
+        "Description": "'OptimalityTolerance' option of the solver (NaN: the default of the solver)"
     },
     "StepTolerance":{
         "Value": NaN,
@@ -96,5 +96,13 @@
         "Value": false,
         "Type": "logical",
         "Description": "Start 'AC OPF' from the last AC OPF solution of the network (false: flat start)"
+    },
+    "PlotFcn":{
+        "Value": "none",
+        "Type": "select",
+        "options": [
+            "none"
+        ],
+        "Description": "Live display during the analysis ('none'; other displays are under development). The figure after the analysis: result.Plot()"
     }
 }

@@ -548,8 +548,8 @@ end
 assert(all(res.tab_branch.Ploss > -1e-6))
 assert(abs(sum(res.tab_branch.Ploss) - sum(res.tab_bus.P)) < 1e-4)
 
-% 既定の方式は net.solver_OPF.Method ("AC OPF")
-assert(net.solver_OPF.Method == "AC OPF" && isa(net.solver_OPF, "SolverOPF"))
+% 既定の方式は GUILDA.setting の OptimalPowerFlow の Method ("AC OPF")。net.solver_OPF は設定を持たない
+assert(GUILDA.config("OptimalPowerFlow", "Method") == "AC OPF" && isa(net.solver_OPF, "SolverOPF") && ~isprop(net.solver_OPF, "Method"))
 res = DebugScript.helper.quiet(@() net.optimize_powerflow());
 assert(res.options.Method == "AC OPF")
 
@@ -565,7 +565,7 @@ assert(double(flag) <= 0 && ~res.l_success)
 assert(res.options.MaxIteration == 2)
 % Solver と Tolerance は solve へ渡される
 [res, flag, output] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD", Solver="fmincon", Tolerance=1e-10));
-assert(double(flag) > 0 && output.solver == "fmincon" && res.options.OptimalityTolerance == 1e-10)
+assert(double(flag) > 0 && output.solver == "fmincon" && res.options.Tolerance == 1e-10)
 assert(all(abs(res.tab_bus{["B001","B002","B003"],"P"} - 1) < 1e-4))
 % Verbose=true はソルバーの表示 ("iter")、false は表示なし
 s_on    = evalc("res = net.optimize_powerflow(Method=""DC OPF"", Verbose=true);");
@@ -573,13 +573,16 @@ assert(res.options.Display == "iter")
 s_off = evalc("res = net.optimize_powerflow(method=""DC OPF"", verbose=false);");   % 名前の大文字小文字は区別しない
 assert(res.options.Display == "none" && strlength(s_on) > strlength(s_off))
 
-% 保存されている既定値は変わらない
+% 既定値 (GUILDA.setting と net.solver_OPF の条件) は変わらない
 assert(isequaln(sct_before, solver.get_options()) && net.solver_OPF == solver)   % NaN = ソルバーの既定値
 
-% 既定値を変えると以後の呼び出しすべてに効く
-net.solver_OPF.Method = "ELD";
+% 既定値は GUILDA.setting の OptimalPowerFlow。変えると以後の呼び出しすべてに効く
+c_cfg = DebugScript.helper.user_config("OptimalPowerFlow", struct("Method", "ELD", "Tolerance", 1e-9));
 res = DebugScript.helper.quiet(@() net.optimize_powerflow());
-assert(res.options.Method == "ELD" && width(res.tab_bus) == 1)
+assert(res.options.Method == "ELD" && width(res.tab_bus) == 1 && res.options.Tolerance == 1e-9)
+clear c_cfg
+% 設定はプロパティではない (v4 の名前なので互換なし)
+assert(error_id(@() set_property(net.solver_OPF, "Method", "ELD")) ~= "")
 
 
 %% Unknown or invalid options stop with an error
@@ -614,13 +617,11 @@ t2 = res_ELD.Plot(Parent=figure("Visible","off"));
 c_fig2 = onCleanup(@() close(ancestor(t2, "figure")));
 ax = findobj(t2.Children, "Type", "axes");
 assert(numel(ax) == 1 && numel(ax.Children.XData) == numel(tools.vcellfun(@(b) b.a_Component, net.a_Bus)))
-% Plot=true は計算後に result.Plot を呼ぶ
-a_before = findall(groot, "Type", "figure");
-DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD", Plot=true));
-a_after = findall(groot, "Type", "figure");
-a_new   = a_after(~ismember(a_after, a_before));
-assert(numel(a_new) == 1)
-close(a_new)
+% 計算後の図は result.Plot だけ。Plot オプションは廃止、PlotFcn は "none" のみ
+assert(error_id(@() net.optimize_powerflow(Method="ELD", Plot=true)) == "GUILDA:resolve_options:UnknownName")
+assert(error_id(@() net.optimize_powerflow(Method="ELD", PlotFcn="cost")) == "GUILDA:check_plotfcn:InDevelopment")
+res_none = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD", PlotFcn="none"));
+assert(res_none.options.PlotFcn == "none")
 
 % Export: 母線・接続・送電線の表を CSV に書く
 s_dir = tempname; mkdir(s_dir); c_dir = onCleanup(@() rmdir(s_dir, "s"));
@@ -688,7 +689,7 @@ w2 = warning("off", "GUILDA:Deprecated:OptimizePowerflowTuple"); c2 = onCleanup(
 assert(istable(tab_bus) && width(tab_bus) == 6)
 [out1, ~, out3] = DebugScript.helper.quiet(@() net.optimize_powerflow("methods", "AC OPF"));
 assert(isa(out1, "ResultOPF") && isstruct(out3))          % 3 出力は v4 の形式 [result, flag, output]
-assert(net.solver_OPF.Method == "AC OPF")
+assert(GUILDA.config("OptimalPowerFlow", "Method") == "AC OPF")
 
 %% DC OPF uses the MATPOWER susceptance 1/X
 % DC OPF の送電線は MATPOWER (makeBdc) と同じ b = 1/(X*tap) (タップ比・移相は from 端)。

@@ -3,7 +3,7 @@ function [s_solver, c_nv] = optimoption(obj, prob, sct_options)
 %
 % Returns the Name-Value arguments of solve (Optimization Toolbox) for the effective settings.
 % Only settings that differ from the defaults of the solver are passed, so that the
-% stored defaults (Solver="auto", Display="default", NaN) call solve(prob, x0) as is.
+% default settings (Solver="auto", Display="default", NaN) call solve(prob, x0) as is.
     arguments (Input)
         obj  %#ok<INUSA>
         prob                       % Problem built by build_opf_problem.
@@ -31,7 +31,7 @@ function [s_solver, c_nv] = optimoption(obj, prob, sct_options)
     if sct_options.Display ~= "default"
         c_opt = [c_opt, {"Display", sct_options.Display}];
     end
-    sct_num = struct("MaxIteration","MaxIterations", "OptimalityTolerance","OptimalityTolerance", ...
+    sct_num = struct("MaxIteration","MaxIterations", "Tolerance","OptimalityTolerance", ...
                    "StepTolerance","StepTolerance", "MaxFunctionEvaluations","MaxFunctionEvaluations");
     for s_name = string(fieldnames(sct_num)).'
         if ~isnan(sct_options.(s_name))

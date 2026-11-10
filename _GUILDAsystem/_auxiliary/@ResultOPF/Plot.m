@@ -4,7 +4,8 @@ function fig = Plot(obj, opt)
 % Draws the solution as bar charts: the active power P [pu] of each component (and the
 % reactive power Q for "AC OPF"), then for "DC OPF" and "AC OPF" the bus voltage angle
 % [deg], and for "AC OPF" the bus voltage magnitude [pu].
-% optimize_powerflow(..., Plot=true) calls it.
+% The only figure of the analysis: optimize_powerflow draws none (its PlotFcn is a live
+% display during the calculation).
     arguments (Input)
         obj
         opt.Parent = [] % Container to draw in. A new figure when empty.

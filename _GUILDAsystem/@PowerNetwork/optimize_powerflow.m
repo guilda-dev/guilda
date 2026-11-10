@@ -4,8 +4,10 @@ function varargout = optimize_powerflow(obj, varargin)
 % Calculates the optimal power flow of the network: the operating point that minimizes
 % the generation cost (tab_parameter.OPF of the components) under the constraints in
 % tab_parameter.operation of the buses, components and branches. The settings are the
-% stored defaults of net.solver_OPF; Name-Value options override them for this call only
-% (net.solver_OPF is not changed). The network is not changed.
+% OptimalPowerFlow section of GUILDA.setting, and the conditions of the network (Cost,
+% Constraint, DefaultCost, ReferenceBus) are kept by net.solver_OPF; Name-Value options
+% override both for this call only (neither net.solver_OPF nor the settings file is
+% changed). The network is not changed.
 % The cost of each component is HP*P^2 + fP*P + HQ*Q^2 + fQ*Q (tab_parameter.OPF; Q terms
 % in "AC OPF" only); the default cost of a load is 0. A load keeps the P and Q of
 % tab_parameter.powerflow while its Pmin/Pmax (Qmin/Qmax) are infinite; with finite
@@ -22,17 +24,17 @@ function varargout = optimize_powerflow(obj, varargin)
 % starts from the bus voltages of the last solved "AC OPF" of the network (WarmStart) or
 % of the flat start (see SolverOPF), and P0, Q0 of the components; branch current and power limits are applied as |I|^2 <= Imax^2 and
 % P^2 + Q^2 <= Smax^2 at both ends.
-% Accepted options are the names in SolverOPF.OptionMap plus Plot, Export, Problem,
+% Accepted options are the names in SolverOPF.OptionMap plus Export, Problem,
 % InitialPoint and WarmStart;
 % any other name stops with GUILDA:resolve_options:UnknownName.
 %
 % Name-Value options:
 %
-% - `Method` — Formulation: economic load dispatch (branches ignored), DC approximation or AC power flow equations (net.solver_OPF.Method).
-% - `Solver` — Optimization solver; "auto" lets solve choose (net.solver_OPF.Solver).
-% - `Tolerance` — OptimalityTolerance of the solver (net.solver_OPF.OptimalityTolerance; NaN = solver default).
-% - `MaxIteration` — MaxIterations of the solver (net.solver_OPF.MaxIteration; NaN = solver default).
-% - `Verbose` — Print solver progress (sets Display to "iter" or "none"). Default: net.solver_OPF.Display.
+% - `Method` — Formulation: "ELD" (economic load dispatch, branches ignored), "DC OPF" (DC approximation) or "AC OPF" (AC power flow equations). Default: GUILDA.setting ("AC OPF").
+% - `Solver` — Optimization solver; "auto" lets solve choose. Default: GUILDA.setting ("auto").
+% - `Tolerance` — OptimalityTolerance of the solver; NaN = solver default. Default: GUILDA.setting (NaN).
+% - `MaxIteration` — MaxIterations of the solver; NaN = solver default. Default: GUILDA.setting (NaN).
+% - `Verbose` — Print solver progress (sets Display to "iter" or "none"). Default: the Display of GUILDA.setting ("default").
 % - `Cost` — Function handle @(v, p) returning a scalar added to the objective (net.solver_OPF.Cost; [] = none). v holds the variables by tag: v.Component.(tag).P/.Q, v.Bus.(tag).Varg/.V, v.Branch.(tag).Pfrom/.Pto/...; p holds p.Method and p.base (see SolverOPF).
 % - `Constraint` — Function handle @(v, p) returning struct(name1, constraint1, ...); field <name> becomes prob.Constraints.<name> and result.lambda.Constraints.<name> (net.solver_OPF.Constraint; [] = none).
 % - `DefaultCost` — false leaves out the costs HP, fP, HQ, fQ of tab_parameter.OPF of all components (net.solver_OPF.DefaultCost).
@@ -40,15 +42,16 @@ function varargout = optimize_powerflow(obj, varargin)
 % - `Problem` — optimproblem to solve instead of building one, e.g. from net.build_opf_problem with the same Method, modified by the user; Cost, Constraint, DefaultCost and ReferenceBus are not applied to it. Default: none.
 % - `InitialPoint` — Initial point (struct of values by variable name). Default: the x0 of net.build_opf_problem for the same Method; give it when Problem has added variables.
 % - `WarmStart` — true starts "AC OPF" from the bus voltages of the last solved "AC OPF" of this network (kept by net.solver_OPF); false from the flat start (see SolverOPF). Default: GUILDA.setting OptimalPowerFlow (false).
-% - `Plot` — Call result.Plot after the calculation. Default: false.
+% - `PlotFcn` — Live display during the calculation: "none" (the other displays are under development; draw the result with result.Plot()). Default: GUILDA.setting ("none").
 % - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
 %
 % <@Examples>
 % ```matlab
-% [res, flag] = net.optimize_powerflow();            % AC OPF (net.solver_OPF.Method)
+% [res, flag] = net.optimize_powerflow();            % AC OPF (GUILDA.setting)
 % res.tab_bus                                         % Varg, V, P, Q, Vphasor, Iphasor of each bus
 % res.r_cost                                          % optimal cost
-% res = net.optimize_powerflow(Method="ELD", Verbose=false, Plot=true);
+% res = net.optimize_powerflow(Method="ELD", Verbose=false);
+% res.Plot();
 % % Spinning reserve of two generators; its price is the dual of the named constraint
 % res = net.optimize_powerflow(Method="DC OPF", Constraint=@(v, p) struct("Reserve", ...
 %           (2 - v.Component.SG1B001.P) + (2 - v.Component.SG1B002.P) >= 0.5));
@@ -77,12 +80,9 @@ function varargout = optimize_powerflow(obj, varargin)
     sct_options = obj.solver_OPF.get_options(c_nv);
 
     sct_options.WarmStart = opt.WarmStart;
-    sct_input = rmfield(opt, ["Plot","Export","WarmStart"]);
+    sct_input = rmfield(opt, ["Export","WarmStart"]);
     [result, flag, output] = obj.solver_OPF.solve(obj, sct_options, sct_input);
 
-    if opt.Plot
-        result.Plot();
-    end
     if isstring(opt.Export)
         result.Export(opt.Export);
     elseif opt.Export
@@ -95,7 +95,7 @@ end
 
 
 function [c_nv, opt] = take_call_options(c_in)
-% Separates the options of this call (Plot, Export, Problem, InitialPoint, WarmStart) from the solver options
+% Separates the options of this call (Export, Problem, InitialPoint, WarmStart) from the solver options
     c_nv = c_in;
     opt  = call_options();
     if mod(numel(c_in), 2) ~= 0
@@ -103,7 +103,7 @@ function [c_nv, opt] = take_call_options(c_in)
     end
     lv_call = false(size(c_in));
     for k = 1:2:numel(c_in)
-        lv_call(k:k+1) = (ischar(c_in{k}) || isstring(c_in{k})) && any(strcmpi(c_in{k}, ["Plot","Export","Problem","InitialPoint","WarmStart"]));
+        lv_call(k:k+1) = (ischar(c_in{k}) || isstring(c_in{k})) && any(strcmpi(c_in{k}, ["Export","Problem","InitialPoint","WarmStart"]));
     end
     c_call = c_in(lv_call);
     c_nv   = c_in(~lv_call);
@@ -112,7 +112,6 @@ end
 
 function opt = call_options(opt)
     arguments (Input)
-        opt.Plot   (1,1) logical = false
         opt.Export {mustBeA(opt.Export, ["logical","string","char"])} = false
         opt.Problem      (1,1) optim.problemdef.OptimizationProblem
         opt.InitialPoint (1,1) struct
