@@ -139,6 +139,19 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - `v3_user_config`(利用者設定の旧キーの変換)は削除した。既定ファイルに `version` が入ると、version のない利用者の JSON はすべて既定値に戻るため、変換の働く場面がない。
 - **未実施:** 各 `Default*.json` への `version` の追加(全カテゴリ 1 から)。`feature/plotfcn` のマージ後に行う。
 
+## PlotFcn の実装と OPF の `Verbose`(2026-11-10)
+
+仕様と実装の記録は [powerflow-options.md](powerflow-options.md) にあります(「PlotFcn の実装と OPF の `Verbose`」節)。ブランチは `feature/plotfcn`(未 push)。
+
+- `PlotFcn` のキー: 潮流計算 `"residual"`(方程式ごとの残差の棒、全 Solver)、OPF は fmincon のプロット関数(`"fval"` → `optimplotfval` など 7 種。linprog・quadprog は `GUILDA:SolverOPF:PlotFcnUnsupported`)、連続潮流計算 `"pvcurve"`(全母線の PV 曲線を伸ばす)。関数ハンドル `stop = f(x, optimValues, state)` も 3 解析で受け付ける。時間応答シミュレーション・線形化は `"none"` のみのまま。
+- 潮流計算の flag に -1(PlotFcn で停止)を追加。OPF の JSON キー `Display` を `Verbose`(logical、既定 false)に置換し、既定ではソルバーは何も表示しない。
+- `"none"` では結果が変わらない(5 つの Solver、CPF、AC OPF で一致を確認)。
+- **テスト(MATLAB R2026a):** 設定キーの統一の後の `DebugScript.run_all('Level','medium')`(`84dc051b`、コードの最後のコミット)664 件、PASS 662 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、457 s。small はコードのコミットごと(`dc089366`、`c9aeaf32`、`2963cc71`、`84dc051b`)に 492〜493 件、FAIL 0(`d3ac4edb`・`03834b69` は該当機能のテストファイルだけ実行)。
+  新しい表示のテスト(F2・F4・F5 の `PlotFcn*`、3 秒超のため large に登録)は最後に個別に実行して 4 件 PASS。large 全体は未実行。
+- **要判断:** powerflow-options.md の同節の要判断 2〜4(flag -1 の通知など)。
+- **設定キーの統一(レビュー後):** 潮流計算に `Verbose` のキー、自動・既定は全解析で NaN、1 つのソルバーの設定は `<Solver 名><オプション名>`(`FsolveMaxFunctionEvaluations`、`LinprogAlgorithm`、`FminconUseParallel` など)、TimeSimulation の `SeparateComplexParts` は logical。対応表は powerflow-options.md の「設定キーの統一」節。
+  **移行の注意:** 保存済みの利用者設定に `MaxIteration` 0 が残ると潮流計算が 0 回の反復で失敗する(同節の要判断)。
+
 ## 入力を固定した平衡点と Solver / Method の名前(2026-11-10)
 
 仕様と実装の記録は [fixed-input.md](fixed-input.md) にあります(「実装」節)。ブランチは `feature/fixed-input`(未 push)。

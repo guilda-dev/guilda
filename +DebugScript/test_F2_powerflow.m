@@ -240,7 +240,7 @@ net = DebugScript.helper.build_9bus();
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
 assert(flag > 0)
 assert(res.s_solver == "SolverPF" && res.a_PowerNetwork == net && res.r_elapsed >= 0)
-assert(res.options.Solver == "newton" && res.options.Tolerance == 1e-8 && res.options.MaxIteration == 0)
+assert(res.options.Solver == "newton" && res.options.Tolerance == 1e-8 && isnan(res.options.MaxIteration) && res.options.Verbose == false)
 % 反復ごとの母線電圧 (最後が解)
 assert(size(res.cm_Vhistory,1) == numel(net.a_Bus) && isequal(res.rv_step, 0:size(res.cm_Vhistory,2)-1))
 assert(norm(res.cm_Vhistory(:,end) - res.tab_bus.Vphasor) < 1e-12)
@@ -281,9 +281,15 @@ s_log = evalc("res = net.calculate_powerflow(Verbose=true, WarmStart=false);");
 assert(res.options.Display == "iter" && strlength(s_log) > strlength(evalc("net.calculate_powerflow(WarmStart=false);")))
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(verbose=false, solver="dynamic"));   % 名前の大文字小文字は区別しない
 assert(res.options.Display == "none" && res.options.Solver == "dynamic")
+% Verbose は GUILDA.setting のキーでもある (他の解析と同じ)。MaxIteration の自動は NaN
+c_cfg = DebugScript.helper.user_config("PowerFlowCalculation", struct("Verbose", true));
+s_log = evalc("res = net.calculate_powerflow(WarmStart=false, MaxIteration=NaN);");
+assert(res.options.Verbose && res.options.Display == "iter" && contains(s_log, "iter") && res.flag == 1)
+clear c_cfg
+assert(error_id(@() net.calculate_powerflow(MaxIteration=-1)) ~= "")
 
 % GUILDA.setting は変わらない。ソルバーは数値の設定を持たない
-assert(isequal(GUILDA.config("PowerFlowCalculation"), sct_before))
+assert(isequaln(GUILDA.config("PowerFlowCalculation"), sct_before))   % NaN = automatic
 assert(~isprop(net.solver_PF, "Method") && ~isprop(net.solver_PF, "Tolerance") && ~isprop(net.solver_PF, "WhenFailed"))
 
 % GUILDA.setting を変えると以後の呼び出しすべてに効く
@@ -571,13 +577,13 @@ res = DebugScript.helper.quiet(@() net.calculate_powerflow);
 t = res.Plot(Parent=figure("Visible","off"));
 c_fig = onCleanup(@() close(ancestor(t, "figure")));
 assert(isa(t, "matlab.graphics.layout.TiledChartLayout") && numel(t.Children) == 2)
-% 計算後の図は result.Plot だけ。Plot オプションは廃止、PlotFcn (計算中の表示) は "none" のみ (ほかは開発中のエラー)
+% 計算後の図は result.Plot だけ。Plot オプションは廃止、PlotFcn (計算中の表示) は "none" では図を作らない
 a_before = findall(groot, "Type", "figure");
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(PlotFcn="none"));
 assert(res.options.PlotFcn == "none" && isempty(setdiff(findall(groot, "Type", "figure"), a_before)))
 assert(error_id(@() net.calculate_powerflow(Plot=true)) == "GUILDA:resolve_options:UnknownName")
-assert(error_id(@() net.calculate_powerflow(PlotFcn="voltage")) == "GUILDA:check_plotfcn:InDevelopment")
-assert(error_id(@() net.calculate_powerflow(PlotFcn=@(x) x)) == "GUILDA:check_plotfcn:InDevelopment")
+assert(error_id(@() net.calculate_powerflow(PlotFcn="voltage")) == "GUILDA:check_plotfcn:UnknownKey")
+assert(error_id(@() net.calculate_powerflow(PlotFcn=["none","residual"])) == "GUILDA:check_plotfcn:InvalidValue")
 assert(error_id(@() net.calculate_powerflow(PlotFcn=1)) == "GUILDA:check_plotfcn:InvalidValue")
 
 % Export: 拡張子で形式が決まる。CSV は母線または枝の表
@@ -651,6 +657,70 @@ assert(isequal(v3_powerflow_args({}), {}))
 
 
 % ---- local functions ----
+%% PlotFcn residual shows the residual of each equation for every Solver
+% "residual": 方程式ごとの |残差| の棒 (母線あたり 2 本)。図 (Tag) を使い回し、反復ごとに更新
+net = DebugScript.helper.build_ieee14();
+n_bus = numel(net.a_Bus);
+s_tag = "GUILDA:PlotFcn:residual";
+fig = figure("Visible", "off", "Tag", s_tag);      % 同じ Tag の図があればそれを使う
+c_fig = onCleanup(@() close(findall(groot, "Type", "figure", "Tag", s_tag)));
+for s_solver = ["newton","levenberg-marquardt","gradient","fsolve","dynamic"]
+    res0 = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_solver, WarmStart=false));
+    res1 = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_solver, WarmStart=false, PlotFcn="residual"));
+    % 結果は "none" と同じ
+    assert(res1.flag == 1 && isequal(res1.tab_bus{:, 1:4}, res0.tab_bus{:, 1:4}) ...
+           && isequal(res1.output.iterations, res0.output.iterations), s_solver)
+    assert(isequal(res1.options.PlotFcn, "residual"))
+    a_fig = findall(groot, "Type", "figure", "Tag", s_tag);
+    a_bar = findobj(fig, "Type", "bar");
+    assert(isscalar(a_fig) && a_fig == fig && numel(a_bar) == 2, s_solver)
+    % 最後の反復の残差 (0 は棒なし = NaN)、題に Solver
+    rm_F = [a_bar(2).YData(:), a_bar(1).YData(:)];
+    r_tol = res1.options.Tolerance;
+    assert(numel(rm_F) == 2*n_bus && max(rm_F(:), [], "omitnan") <= 1.01*r_tol && all(rm_F(:) > 0 | isnan(rm_F(:))), s_solver)
+    % 縦軸は最小の残差と Tolerance の 1/10 以下から最大の 10 倍以上 (棒と Tolerance の線が見える)
+    ax = findobj(fig, "Type", "axes");
+    assert(ax.YLim(1) <= min([rm_F(:); r_tol], [], "omitnan")/10 && ax.YLim(2) >= 10*r_tol && a_bar(1).BaseValue == ax.YLim(1), s_solver)
+    s_title = string(ax.Title.String);
+    assert(contains(s_title, "(" + s_solver + ")"), s_title)
+end
+% 反復の途中で更新される (MaxIteration=1 の newton は残差が許容誤差より大きい棒のまま終わる)
+DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false, MaxIteration=1, PlotFcn="residual", Verbose=false));
+a_bar = findobj(fig, "Type", "bar");
+assert(max([a_bar.YData]) > 1e-6 && contains(string(findobj(fig, "Type", "axes").Title.String), "iteration 1"))
+% 図を閉じても計算は続く (表示だけ止まる): 図を閉じる関数ハンドルで "init" の後に閉じる
+close(fig)
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="gradient", WarmStart=false, PlotFcn="residual", MaxIteration=50));
+assert(isscalar(findall(groot, "Type", "figure", "Tag", s_tag)))
+
+
+%% PlotFcn handle receives the voltages and can stop the power flow
+% 関数ハンドル: stop = f(x, optimValues, state)。x は母線の複素電圧
+net = DebugScript.helper.build_ieee14();
+n_bus = numel(net.a_Bus);
+for s_solver = ["newton","levenberg-marquardt","gradient","fsolve","dynamic"]
+    m_log = containers.Map(["state","iteration","residual"], {strings(1,0), [], []});
+    res = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_solver, WarmStart=false, ...
+                                       PlotFcn=@(x, o, s) log_call(m_log, n_bus, x, o, s)));
+    assert(res.flag == 1, s_solver)
+    sv_state = m_log("state");
+    assert(sv_state(1) == "init" && sv_state(end) == "done" && all(sv_state(2:end-1) == "iter") && numel(sv_state) >= 3, s_solver)
+    rv_res = m_log("residual");
+    assert(rv_res(end) <= 1.01*res.options.Tolerance, s_solver)     % dynamic: the event at the crossing of Tolerance
+    rv_iter = m_log("iteration");
+    if s_solver ~= "dynamic"
+        assert(rv_iter(end) == res.output.iterations, s_solver)
+    end
+end
+% stop = true で止める: flag -1 とメッセージ
+c_w = DebugScript.helper.user_config("PowerFlowCalculation", struct("WhenFailed", "NONE"));
+for s_solver = ["newton","levenberg-marquardt","gradient","fsolve","dynamic"]
+    [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_solver, WarmStart=false, PlotFcn=@(x, o, s) o.iteration >= 1));
+    assert(flag == -1 && contains(res.output.message, "stopped by PlotFcn") && ~res.l_success, s_solver)
+end
+clear c_w
+
+
 function id = error_id(fcn)
 % fcn を実行し、エラーの ID を返す (エラーにならなければ "")
     id = "";
@@ -662,4 +732,14 @@ function id = error_id(fcn)
             id = "(no id)";
         end
     end
+end
+
+
+function stop = log_call(m_log, n_bus, x, sct, s_state)
+% PlotFcn の関数ハンドル: 呼ばれた state・iteration・residual を m_log に足す
+    assert(isequal(size(x), [n_bus, 1]) && isnumeric(x) && numel(sct.fval) == 2*n_bus && ischar(s_state))
+    m_log("state")     = [m_log("state"), string(s_state)];
+    m_log("iteration") = [m_log("iteration"), sct.iteration];
+    m_log("residual")  = [m_log("residual"), sct.residual];
+    stop = false;
 end

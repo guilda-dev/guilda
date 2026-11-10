@@ -44,12 +44,11 @@ classdef HessianStub < Component
     end
 
     methods (Static)
-        function dx = fcn_dx(~, x, V, ~, u, ~, ~)
+        function dx = fcn_dx(~, x, V, u, ~, ~)
             arguments (Input)
                 ~
                 x  % 状態
                 V  % [pu] 母線電圧 [real; imag]
-                ~
                 u  % 入力
                 ~
                 ~
@@ -59,12 +58,11 @@ classdef HessianStub < Component
             end
             dx = [x(1)^2 * V(1); x(1) * u(1)];
         end
-        function I = fcn_I(~, x, V, ~, ~, ~, ~)
+        function I = fcn_I(~, x, V, ~, ~, ~)
             arguments (Input)
                 ~
                 x  % 状態
                 V  % [pu] 母線電圧 [real; imag]
-                ~
                 ~
                 ~
                 ~
@@ -74,12 +72,10 @@ classdef HessianStub < Component
             end
             I = x(2) * (V(1) + 1j*V(2));
         end
-        function y = fcn_Y(~, x, ~, ~, ~, ~, ~)
+        function y = fcn_Y(~, x, ~, ~, ~)
             arguments (Input)
                 ~
                 x  % 状態
-                ~
-                ~
                 ~
                 ~
                 ~
@@ -89,9 +85,8 @@ classdef HessianStub < Component
             end
             y = x(1);
         end
-        function M = fcn_Mass(~, ~, ~, ~, ~, ~, ~)
+        function M = fcn_Mass(~, ~, ~, ~, ~, ~)
             arguments (Input)
-                ~
                 ~
                 ~
                 ~
@@ -105,8 +100,8 @@ classdef HessianStub < Component
             M = eye(2);
         end
 
-        function H = Hessian_dx(~, x, V, ~, ~, ~, ~)
-            % z = [x1 x2 Vre Vim Ire Iim w]
+        function H = Hessian_dx(~, x, V, ~, ~, ~)
+            % z = [x1 x2 Vre Vim w]
             arguments (Input)
                 ~
                 x  % 状態
@@ -114,15 +109,14 @@ classdef HessianStub < Component
                 ~
                 ~
                 ~
-                ~
             end
             arguments (Output)
-                H  % fcn_dx の [x; V; I; u] による 2 階微分
+                H  % fcn_dx の [x; V; u] による 2 階微分
             end
-            H = zeros(2, 7, 7);
+            H = zeros(2, 5, 5);
             H(1,1,1) = 2*V(1);
             H(1,1,3) = 2*x(1);  H(1,3,1) = 2*x(1);
-            H(2,1,7) = 1;       H(2,7,1) = 1;
+            H(2,1,5) = 1;       H(2,5,1) = 1;
         end
     end
 end

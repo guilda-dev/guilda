@@ -13,7 +13,9 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
     end
     tools.require_toolbox("optim", obj.Feature);
 
-    l_jac = ~isempty(obj.Jac);
+    l_jac  = ~isempty(obj.Jac);
+    l_plot = ~isempty(obj.f_iter);
+    l_stop = false;
     opt = optimoptions("fsolve", "UseParallel", obj.UseParallel, "Display", obj.Display, ...
                        "SpecifyObjectiveGradient", l_jac, "OutputFcn", @record);
     if obj.PlotFcn ~= "none"
@@ -40,14 +42,17 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
     rv_step    = 0:n_iter-1;
 
     r_res = full(max(abs(rv_F)));
+    s_fail = sprintf('✘ No solution was found: fsolve stopped with exitflag %d and the largest mismatch %.3e.', exitflag, r_res);
     if exitflag > 0 && r_res <= r_tol
         flag = 1;
     elseif exitflag == 0
         flag = 0;
+    elseif l_stop
+        flag   = -1;
+        s_fail = '✘ The process was stopped by PlotFcn.';
     else
         flag = -2;
     end
-    s_fail = sprintf('✘ No solution was found: fsolve stopped with exitflag %d and the largest mismatch %.3e.', exitflag, r_res);
     output = obj.make_output(flag, sct_fsolve.iterations, r_res, "fsolve", "fsolve iteration", s_fail, ...
                              " or MaxFunEvals");
     output.exitflag = exitflag;
@@ -59,8 +64,12 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
         end
     end
 
-    function stop = record(x, ~, state)
+    function stop = record(x, optimValues, state)
         stop = false;
+        if l_plot
+            stop   = obj.f_iter(x, optimValues.iteration, state);
+            l_stop = l_stop || stop;
+        end
         if state == "iter"
             n_iter = n_iter + 1;
             if n_iter > size(rm_history,2)

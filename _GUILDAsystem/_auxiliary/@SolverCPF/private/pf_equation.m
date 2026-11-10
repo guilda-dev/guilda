@@ -52,7 +52,7 @@ function func = pf_equation(net,w,sv_load,useInt,x,Ymat)
             PQC = PQC + i_Comp.f_PQ2Bus(X_Comp,V_Bus,Ueq) * (1 + lambda * or(isLoad, useInt));
 
             if ~isempty(X_Comp)
-                Fdx       = i_Comp.f_dx([],X_Comp,[V_Bus(1)*cos(V_Bus(2));V_Bus(1)*sin(V_Bus(2))],[],Ueq);
+                Fdx       = i_Comp.f_dx([],X_Comp,[V_Bus(1)*cos(V_Bus(2));V_Bus(1)*sin(V_Bus(2))],Ueq);
                 Fdx(1)    = PQG(1)-real(compSeq);
                 f_Comp{j} = Fdx;
             end

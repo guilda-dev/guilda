@@ -11,7 +11,7 @@ function sct_options = get_options(obj, nv)
         nv (1,:) cell = {} % Name-Value overrides: the names of SolverPF.OptionMap.
     end
     arguments (Output)
-        sct_options % One field per setting of the section, and Display ("none" or "iter").
+        sct_options % One field per setting of the section, and Display ("iter" or "none", from Verbose).
     end
     sct_options = default_options();
     sct_given   = tools.resolve_options(sct_options, SolverPF.OptionMap, nv);
@@ -21,18 +21,18 @@ function sct_options = get_options(obj, nv)
     end
     sct_options.Solver = string(sct_options.Solver);
     sct_options.WhenFailed = string(sct_options.WhenFailed);
-    sct_options.Display = string(sct_options.Display);
     sct_options.WarmStart = logical(sct_options.WarmStart);
-    tools.check_plotfcn(sct_options.PlotFcn, "calculate_powerflow");
+    sct_options.Verbose   = logical(sct_options.Verbose);
+    sct_options.Display   = replace(string(sct_options.Verbose), ["true","false"], ["iter","none"]);
+    sct_options.PlotFcn = tools.check_plotfcn(sct_options.PlotFcn, "calculate_powerflow", "residual");
 end
 
 
 function sct = default_options()
-% Values of the PowerFlowCalculation section, and Display (Verbose=false)
+% Values of the PowerFlowCalculation section
     sct_cfg = GUILDA.config("PowerFlowCalculation");
     sct = struct();
     for s_name = string(fieldnames(sct_cfg)).'
         sct.(s_name) = sct_cfg.(s_name).Value;
     end
-    sct.Display = "none";
 end

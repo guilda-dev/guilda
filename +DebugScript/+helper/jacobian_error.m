@@ -4,7 +4,7 @@ function err = jacobian_error(obj)
 %   err = DebugScript.helper.jacobian_error(comp)
 %
 % obj は Component / LocalController / GlobalController (平衡点を設定済みのもの)。
-% SolverODE と同じ呼び出し方 f_Jacobi*(t,x,V,I,u) で得た行列を、
+% SolverODE と同じ呼び出し方 f_Jacobi*(t,x,V,u) (機器の f_JacobiY は (t,x,V)) で得た行列を、
 % f_dx / f_I / f_Y (Component) または f_dx / f_Y (制御器) の中心差分と比べる。
 % 平衡点でだけ 0 になる項も確かめるため、平衡点から少しずらした点で比べる。
     arguments (Input)
@@ -15,30 +15,33 @@ function err = jacobian_error(obj)
     end
     if isa(obj, "Component")
         V = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)];
-        I = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)];
-        fcn = {@(x,V,I,u) obj.f_dx(0,x,V,I,u), @(x,V,I,u) cvec(obj.f_I(0,x,V,I,u)), @(x,V,I,u) obj.f_Y(0,x,V,I,u)};
+        fcn = {@(x,V,u) obj.f_dx(0,x,V,u), @(x,V,u) cvec(obj.f_I(0,x,V,u)), @(x,V) obj.f_Y(0,x,V)};
         jac = {obj.f_JacobiDx, obj.f_JacobiI, obj.f_JacobiY};
+        nv_arg = [3, 3, 2];    % 機器の出力は u を取らない
     else
         V = [1; 0];
         if isa(obj, "LocalController") && ~isempty(obj.c_Vequilibrium)   % PSS は電圧を保持しない
             V = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)];
+        elseif isa(obj, "GlobalController")   % 全母線の電圧
+            V = tools.vcellfun(@(b) [real(b.c_Vequilibrium); imag(b.c_Vequilibrium)], obj.controlledUnits{1}.a_Bus.a_PowerNetwork.a_Bus);
         end
-        I = zeros(2,1);
-        fcn = {@(x,V,I,u) obj.f_dx(0,x,V,I,u), @(x,V,I,u) obj.f_Y(0,x,V,I,u)};
+        fcn = {@(x,V,u) obj.f_dx(0,x,V,u), @(x,V,u) obj.f_Y(0,x,V,u)};
         jac = {obj.f_JacobiDx, obj.f_JacobiY};
+        nv_arg = [3, 3];
     end
     x = obj.rv_Xequilibrium + 0.01*(1:numel(obj.rv_Xequilibrium))';
     u = obj.rv_Uequilibrium + 0.01*(1:numel(obj.rv_Uequilibrium))';
     V = 1.01*V;
 
-    arg = {x, V, I, u};
     h   = 1e-6;
     err = 0;
     for f = 1:numel(fcn)
-        J = cell(1,4);
-        [J{:}] = jac{f}(0, x, V, I, u);
+        arg = {x, V, u};
+        arg = arg(1:nv_arg(f));
+        J = cell(1,nv_arg(f));
+        [J{:}] = jac{f}(0, arg{:});
         m = numel(fcn{f}(arg{:}));
-        for a = 1:4
+        for a = 1:nv_arg(f)
             n  = numel(arg{a});
             Jn = zeros(m, n);
             for i = 1:n

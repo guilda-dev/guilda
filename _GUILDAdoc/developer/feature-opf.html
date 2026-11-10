@@ -89,8 +89,8 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
           <td lang="en" data-label="Setting and default"><code>MaxIteration = NaN</code> (the solver's default)</td>
           <td lang="ja" data-label="設定と既定値"><code>MaxIteration = NaN</code>（ソルバーの既定値）</td></tr>
         <tr><td><code>Verbose</code></td>
-          <td lang="en" data-label="Setting and default"><code>Display = "default"</code>; <code>true</code> sets <code>"iter"</code>, <code>false</code> sets <code>"none"</code></td>
-          <td lang="ja" data-label="設定と既定値"><code>Display = "default"</code>。<code>true</code> で <code>"iter"</code>、<code>false</code> で <code>"none"</code></td></tr>
+          <td lang="en" data-label="Setting and default"><code>Verbose = false</code>; the solver's <code>Display</code> is <code>"iter"</code> for <code>true</code> and <code>"none"</code> for <code>false</code></td>
+          <td lang="ja" data-label="設定と既定値"><code>Verbose = false</code>。ソルバーの <code>Display</code> は <code>true</code> で <code>"iter"</code>、<code>false</code> で <code>"none"</code></td></tr>
         <tr><td><code>Cost</code></td>
           <td lang="en" data-label="Setting and default">condition (<code>net.solver_OPF</code>); <code>Cost = []</code>: function handle <code>@(v, p)</code> returning a scalar added to the objective (see <a href="class-design.html#opf">Class Design: OPF customization</a>)</td>
           <td lang="ja" data-label="設定と既定値">条件（<code>net.solver_OPF</code>）。<code>Cost = []</code>: 目的関数に加えるスカラーを返す関数ハンドル <code>@(v, p)</code>（<a href="class-design.html#opf">クラス設計: OPF のカスタマイズ</a> を参照）</td></tr>
@@ -104,8 +104,8 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
           <td lang="en" data-label="Setting and default">condition; <code>ReferenceBus = "auto"</code>: bus of <code>tools.slack_bus_index</code> (else the first bus); a bus tag; <code>"none"</code> fixes no angle</td>
           <td lang="ja" data-label="設定と既定値">条件。<code>ReferenceBus = "auto"</code>: <code>tools.slack_bus_index</code> の母線（なければ最初の母線）。母線のタグ、または <code>"none"</code>（位相角を固定しない）</td></tr>
         <tr><td><code>PlotFcn</code></td>
-          <td lang="en" data-label="Setting and default"><code>PlotFcn = "none"</code>: live display during the analysis; only <code>"none"</code> is available (other values: <code>GUILDA:check_plotfcn:InDevelopment</code>); the figure after the analysis: <code>result.Plot()</code></td>
-          <td lang="ja" data-label="設定と既定値"><code>PlotFcn = "none"</code>: 解析中のライブ表示。使用可能なのは <code>"none"</code> のみ（他の値は <code>GUILDA:check_plotfcn:InDevelopment</code>）。解析後の図は <code>result.Plot()</code></td></tr>
+          <td lang="en" data-label="Setting and default"><code>PlotFcn = "none"</code>: live display during the analysis, fmincon only: keys of the plot functions of fmincon, key <code>k</code> → <code>optimplot&lt;k&gt;</code> (<code>"fval"</code>, <code>"constrviolation"</code>, <code>"fvalconstr"</code>, <code>"firstorderopt"</code>, <code>"stepsize"</code>, <code>"funccount"</code>, <code>"x"</code>), or a function handle passed to fmincon as it is; with linprog / quadprog: <code>GUILDA:SolverOPF:PlotFcnUnsupported</code>; the figure after the analysis: <code>result.Plot()</code></td>
+          <td lang="ja" data-label="設定と既定値"><code>PlotFcn = "none"</code>: 解析中のライブ表示（fmincon のみ）。fmincon のプロット関数のキー（キー <code>k</code> → <code>optimplot&lt;k&gt;</code>: <code>"fval"</code>、<code>"constrviolation"</code>、<code>"fvalconstr"</code>、<code>"firstorderopt"</code>、<code>"stepsize"</code>、<code>"funccount"</code>、<code>"x"</code>）、または fmincon にそのまま渡す関数ハンドル。linprog・quadprog では <code>GUILDA:SolverOPF:PlotFcnUnsupported</code>。解析後の図は <code>result.Plot()</code></td></tr>
         <tr><td><code>Export</code></td>
           <td lang="en" data-label="Setting and default">call only; <code>false</code>: call <code>result.Export(...)</code> afterwards</td>
           <td lang="ja" data-label="設定と既定値">呼び出しのみ。<code>false</code>: 実行後に <code>result.Export(...)</code> を呼び出し</td></tr>
@@ -116,8 +116,8 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
           <td lang="en" data-label="Setting and default">call only, not stored; default <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>false</code>; <code>true</code>: <code>"AC OPF"</code> starts from the bus voltages of the last solved <code>"AC OPF"</code> of this network (kept by <code>net.solver_OPF</code>); <code>false</code>, or none kept: flat start (angle 0, magnitude 1; set <code>V</code> at PV and slack buses, set <code>Varg</code> at the slack bus)</td>
           <td lang="ja" data-label="設定と既定値">呼び出しのみ（保存しない）。既定値 <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>false</code>。<code>true</code>: このネットワークで最後に解いた <code>"AC OPF"</code> の母線電圧（<code>net.solver_OPF</code> が保持）から <code>"AC OPF"</code> を開始。<code>false</code>、または保持なし: フラットスタート（角度 0、大きさ 1。PV・slack 母線は指定 <code>V</code>、slack 母線は指定 <code>Varg</code>）</td></tr>
         <tr><td><span lang="en">settings only</span><span lang="ja">設定のみ</span></td>
-          <td lang="en" data-label="Setting and default"><code>Algorithm_linprog = "dual-simplex-highs"</code>, <code>Algorithm_quadprog = "interior-point-convex"</code>, <code>Algorithm_fmincon = "interior-point"</code>, <code>StepTolerance = NaN</code>, <code>MaxFunctionEvaluations = NaN</code>, <code>UseParallel = false</code> (fmincon only)</td>
-          <td lang="ja" data-label="設定と既定値"><code>Algorithm_linprog = "dual-simplex-highs"</code>、<code>Algorithm_quadprog = "interior-point-convex"</code>、<code>Algorithm_fmincon = "interior-point"</code>、<code>StepTolerance = NaN</code>、<code>MaxFunctionEvaluations = NaN</code>、<code>UseParallel = false</code>（fmincon のみ）</td></tr>
+          <td lang="en" data-label="Setting and default">named <code>&lt;Solver&gt;&lt;option&gt;</code>, given only to that solver (NaN: the solver's default): <code>LinprogAlgorithm = "dual-simplex-highs"</code>, <code>QuadprogAlgorithm = "interior-point-convex"</code>, <code>FminconAlgorithm = "interior-point"</code>, <code>QuadprogStepTolerance = NaN</code>, <code>FminconStepTolerance = NaN</code>, <code>FminconMaxFunctionEvaluations = NaN</code>, <code>FminconUseParallel = false</code></td>
+          <td lang="ja" data-label="設定と既定値">名前は <code>&lt;Solver 名&gt;&lt;オプション名&gt;</code>。そのソルバーにだけ渡す（NaN はソルバーの既定値）: <code>LinprogAlgorithm = "dual-simplex-highs"</code>、<code>QuadprogAlgorithm = "interior-point-convex"</code>、<code>FminconAlgorithm = "interior-point"</code>、<code>QuadprogStepTolerance = NaN</code>、<code>FminconStepTolerance = NaN</code>、<code>FminconMaxFunctionEvaluations = NaN</code>、<code>FminconUseParallel = false</code></td></tr>
       </tbody>
     </table>
     <p lang="en">Preconditions:</p>
@@ -233,7 +233,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>c_nv</code>; <code>GUILDA.config("OptimalPowerFlow")</code>; public properties of <code>net.solver_OPF</code></span><span lang="ja"><code>c_nv</code>、<code>GUILDA.config("OptimalPowerFlow")</code>、<code>net.solver_OPF</code> の public プロパティ</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>sct_options</code>: struct with 16 fields (<code>Method</code>, <code>Solver</code>, <code>Algorithm_*</code>, <code>Display</code>, <code>MaxIteration</code>, ..., <code>PlotFcn</code>, <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code>). Solver and settings file unchanged.</span><span lang="ja"><code>sct_options</code>: 16 フィールドの構造体（<code>Method</code>、<code>Solver</code>、<code>Algorithm_*</code>、<code>Display</code>、<code>MaxIteration</code>、…、<code>PlotFcn</code>、<code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code>）。ソルバーと設定ファイルは不変</span></dd>
+          <dd><span lang="en"><code>sct_options</code>: struct with 16 fields (<code>Method</code>, <code>Solver</code>, <code>&lt;Solver&gt;Algorithm</code>, <code>Verbose</code>, <code>MaxIteration</code>, ..., <code>PlotFcn</code>, <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code>). Solver and settings file unchanged.</span><span lang="ja"><code>sct_options</code>: 16 フィールドの構造体（<code>Method</code>、<code>Solver</code>、<code>Algorithm_*</code>、<code>Display</code>、<code>MaxIteration</code>、…、<code>PlotFcn</code>、<code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code>）。ソルバーと設定ファイルは不変</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="OPF-03">
@@ -387,10 +387,12 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
               <li>Picks the solver: <code>solvers(prob)</code> for <code>"auto"</code>; a named solver is checked against the problem.</li>
-              <li>Passes only the settings that differ from the solver's defaults, so the default settings call <code>solve(prob, x0)</code> as it is.</li>
+              <li>Always passes <code>Display</code> from <code>Verbose</code> (<code>"iter"</code> or <code>"none"</code>); the other settings only when they differ from the solver's defaults (NaN: the default).</li>
+              <li><code>PlotFcn</code>: keys as <code>optimplot&lt;key&gt;</code> (key list: <code>private/plot_keys.m</code>), a handle as it is; with linprog / quadprog a value other than <code>"none"</code> stops with <code>GUILDA:SolverOPF:PlotFcnUnsupported</code>.</li>
             </ul><ul lang="ja">
               <li>ソルバーを選択: <code>"auto"</code> では <code>solvers(prob)</code>、名前を指定した場合はその問題を表せるか確認</li>
-              <li>ソルバーの既定値と異なる設定だけを指定。既定の設定のままなら <code>solve(prob, x0)</code> をそのまま呼び出し</li>
+              <li><code>Display</code> は常に <code>Verbose</code> から指定（<code>"iter"</code> または <code>"none"</code>）。他の設定はソルバーの既定値と異なるときだけ指定（NaN は既定値）</li>
+              <li><code>PlotFcn</code>: キーは <code>optimplot&lt;キー&gt;</code>（キーの一覧は <code>private/plot_keys.m</code>）、関数ハンドルはそのまま。linprog・quadprog では <code>"none"</code> 以外で <code>GUILDA:SolverOPF:PlotFcnUnsupported</code></li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>prob</code>, <code>sct_options</code>, <code>optimoptions(solver)</code></span><span lang="ja"><code>prob</code>、<code>sct_options</code>、<code>optimoptions(solver)</code></span></dd>

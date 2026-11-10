@@ -158,7 +158,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
           <path class="dg-sv-line" d="M425 330H543" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="431" y="324"><tspan style="fill:var(--dg-accent)">08</tspan> get_sys(Format="struct")</text>
           <path class="dg-sv-line" d="M545 356H663" marker-end="url(#lin-ah)"/>
-          <text class="is-sm" x="551" y="350"><tspan style="fill:var(--dg-accent)">09</tspan> get_sys(x, V, I, u)</text>
+          <text class="is-sm" x="551" y="350"><tspan style="fill:var(--dg-accent)">09</tspan> get_sys(x, V, u)</text>
           <path class="dg-sv-line" d="M545 366h26v14h-24" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="579" y="377"><tspan style="fill:var(--dg-accent)">10</tspan> linearize_alone + connect_blocks</text>
           <path class="dg-sv-line" d="M300 432H793" marker-end="url(#lin-ah)"/>
@@ -324,12 +324,12 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
               <li>the component with the outputs and voltage its controllers read (LIN-10);</li>
               <li>the controller models (LIN-09);</li>
               <li>extra state outputs for controllers that read states (<code>connect_states</code>).</li>
-              <li>With a <code>Point</code>: <code>point_values</code> splits it into <code>x, V, I, u</code> and the controller inputs.</li>
+              <li>With a <code>Point</code>: <code>point_values</code> splits it into <code>x, V, u</code> and the controller inputs.</li>
             </ul><span lang="ja">すべての局所制御器 (深さ優先) を含む機器のモデル。信号名で行列により接続 (<code>connect_blocks</code>: 入力は同名の出力の和を受け取る。状態はすべて保持):</span><ul lang="ja">
               <li>制御器が読む出力と電圧を持つ機器 (LIN-10)</li>
               <li>制御器のモデル (LIN-09)</li>
               <li>状態を読む制御器のための状態出力 (<code>connect_states</code>)</li>
-              <li><code>Point</code> がある場合: <code>point_values</code> が <code>x, V, I, u</code> と制御器の入力に分割</li>
+              <li><code>Point</code> がある場合: <code>point_values</code> が <code>x, V, u</code> と制御器の入力に分割</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>a_LocalController</code>, <code>iv_obsX</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <span lang="en">equilibrium</span><span lang="ja">平衡点</span></dd>
@@ -338,7 +338,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         </dl>
       </li>
       <li class="fs-step lin-loop" id="LIN-09">
-        <p class="fs-head"><b class="fs-id">LIN-09</b> <span class="fs-call"><code>Component.get_sys</code> → <code>LocalController.get_sys(x, V, I, u, Format="struct", tag=false)</code></span></p>
+        <p class="fs-head"><b class="fs-id">LIN-09</b> <span class="fs-call"><code>Component.get_sys</code> → <code>LocalController.get_sys(x, V, u, Format="struct", tag=false)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Model of one controller, inputs <code>[Vre; Vim; sv_u]</code>, outputs <code>sv_y</code>, from <code>f_JacobiDx</code>, <code>f_JacobiY</code> and <code>f_Mass</code> at its point. The point is given explicitly (the controller's equilibrium, or its values at <code>Point</code>), so the controller does not check its stale tags again.</span><span lang="ja">1 つの制御器のモデル。入力 <code>[Vre; Vim; sv_u]</code>、出力 <code>sv_y</code>。点における <code>f_JacobiDx</code>、<code>f_JacobiY</code>、<code>f_Mass</code> から作成。点は明示して渡す（制御器の平衡点、または <code>Point</code> での値）ので、制御器は stale タグを再確認しない</span></dd>
@@ -349,20 +349,18 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         </dl>
       </li>
       <li class="fs-step lin-loop" id="LIN-10">
-        <p class="fs-head"><b class="fs-id">LIN-10</b> <span class="fs-call"><code>Component.get_sys</code> → <code>linearize_alone(obj, x, V, I, u, port, true)</code></span></p>
+        <p class="fs-head"><b class="fs-id">LIN-10</b> <span class="fs-call"><code>Component.get_sys</code> → <code>linearize_alone(obj, x, V, u, port, true)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Model of the component alone (local function of <code>@Component/get_sys.m</code>; <code>comp.get_sys(Controllers=false)</code> returns it without the controller rows):</span><ul lang="en">
-              <li><code>A = Axx</code>, <code>B = [Bxv, Bxu]</code>, <code>C = Cix</code>, <code>D = [Div, Diu]</code>; for the controllers, the rows <code>Cyx, [Dyv, Dyu]</code> and <code>V</code>.</li>
+              <li><code>A = Axx</code>, <code>B = [Bxv, Bxu]</code>, <code>C = Cix</code>, <code>D = [Div, Diu]</code>; for the controllers, the rows <code>Cyx, [Dyv, 0]</code> (no feedthrough from <code>u</code> to the outputs) and <code>V</code>.</li>
               <li>Empty blocks filled with zeros (<code>shape</code>).</li>
-              <li>Stops when a block of <code>I</code> (<code>Bxi</code>, <code>Dii</code>, <code>Dyi</code>) is not zero.</li>
             </ul><span lang="ja">機器単体のモデル（<code>@Component/get_sys.m</code> のローカル関数。<code>comp.get_sys(Controllers=false)</code> は制御器用の行を除いて返す）:</span><ul lang="ja">
-              <li><code>A = Axx</code>、<code>B = [Bxv, Bxu]</code>、<code>C = Cix</code>、<code>D = [Div, Diu]</code>。制御器のために <code>Cyx, [Dyv, Dyu]</code> と <code>V</code> の行を追加</li>
+              <li><code>A = Axx</code>、<code>B = [Bxv, Bxu]</code>、<code>C = Cix</code>、<code>D = [Div, Diu]</code>。制御器のために <code>Cyx, [Dyv, 0]</code>（<code>u</code> から出力への直達なし）と <code>V</code> の行を追加</li>
               <li>空のブロックは 0 で補完 (<code>shape</code>)</li>
-              <li><code>I</code> のブロック (<code>Bxi</code>、<code>Dii</code>、<code>Dyi</code>) が 0 でなければ停止</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>f_JacobiDx</code>, <code>f_JacobiI</code>, <code>f_JacobiY</code>, <code>f_Mass</code> <span lang="en">at</span><span lang="ja">点</span> <code>(0, x, V, I, u)</code></dd>
+          <dd><code>f_JacobiDx</code>, <code>f_JacobiI</code>, <code>f_JacobiY</code>, <code>f_Mass</code> <span lang="en">at</span><span lang="ja">点</span> <code>(0, x, V, u)</code> (<code>f_JacobiY</code>: <code>(0, x, V)</code>)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en">model struct</span><span lang="ja">モデルの構造体</span> (<code>E = fcn_Mass</code>)</dd>
         </dl>
@@ -371,9 +369,9 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         <p class="fs-head"><b class="fs-id">LIN-11</b> <span class="fs-call"><code>SolverLIN.solve</code> → <code>GlobalController.get_sys("Format", "struct")</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Model of each global controller: inputs, the states <code>sv_u</code> of each controlled unit; outputs, the inputs <code>sv_y</code> they feed. At a <code>Point</code>, the inputs are read from the point (<code>gc_input</code>).</span><span lang="ja">各広域制御器のモデル。入力: 各制御対象の状態 <code>sv_u</code>、出力: それが加わる入力 <code>sv_y</code>。<code>Point</code> のときは入力を点から参照 (<code>gc_input</code>)</span></dd>
+          <dd><span lang="en">Model of each global controller, before the bus models: inputs, the voltages of all buses and, for each controlled unit, the outputs (else the states) named <code>sv_u</code>; outputs, one row for each input they drive, labelled as that input (an input of a local controller of the unit, else of the unit). At a <code>Point</code>, the inputs are computed at the point (<code>gc_input</code>). <code>add_global_controllers</code> then closes the loop: an observed output is a row of the bus models (<code>Cy, Dyv</code>), an output into a local controller acts through the columns of that input in the bus models (<code>c_sysL</code>), and the voltage dependence changes <code>Axv</code> and <code>Avv</code>.</span><span lang="ja">各広域制御器のモデル（母線モデルの前）。入力: 全母線の電圧と、各制御対象の <code>sv_u</code> という名前の出力（なければ状態）。出力: 駆動する入力ごとに 1 行で、その入力の名前（制御対象の局所制御器の入力、なければ制御対象の入力）。<code>Point</code> のときは入力を点で計算 (<code>gc_input</code>)。続いて <code>add_global_controllers</code> がループを閉じる: 観測する出力は母線モデルの行 (<code>Cy, Dyv</code>)、局所制御器への出力は母線モデルのその入力の列 (<code>c_sysL</code>) を通して作用し、電圧への依存は <code>Axv</code> と <code>Avv</code> を変更</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>controlledUnits</code>, <code>f_JacobiDx</code>, <code>f_JacobiY</code>, <code>f_Mass</code></dd>
+          <dd><code>controlledUnits</code>, <code>iv_obsY</code>, <code>iv_obsX</code>, <code>f_JacobiDx</code>, <code>f_JacobiY</code>, <code>f_Mass</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>c_sysGC{k}</code> (<span lang="en">model struct</span><span lang="ja">モデルの構造体</span>)</dd>
         </dl>
@@ -596,7 +594,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         <tr><td><span lang="en">Invalid point (LIN-02, LIN-06)</span><span lang="ja">不正な点 (LIN-02, LIN-06)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:SolverLIN:PointType</code>, <code>PointSize</code>, <code>PointSimType</code>, <code>PointSimSize</code>, <code>PointNotFinite</code>; <code>GUILDA:ResultODE:PointTime</code></td></tr>
         <tr><td><span lang="en">Model not finite at the point (LIN-07, LIN-11)</span><span lang="ja">点でモデルが有限でない (LIN-07, LIN-11)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverLIN:JacobianNotFinite</code></td></tr>
         <tr><td><span lang="en">Equilibrium missing or stale (LIN-04)</span><span lang="ja">平衡点がない、または古い (LIN-04)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverLIN:Stale</code></td></tr>
-        <tr><td><span lang="en">Model structure</span><span lang="ja">モデルの構造</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:Component:CurrentDependence</code> (LIN-10), <code>GUILDA:GlobalController:GlobalControllerPort</code> (LIN-11), <code>GUILDA:SolverLIN:GlobalControllerPort</code>, <code>GUILDA:SolverLIN:VariableMap</code> (LIN-13)</td></tr>
+        <tr><td><span lang="en">Model structure</span><span lang="ja">モデルの構造</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:GlobalController:GlobalControllerPort</code> (LIN-11), <code>GUILDA:SolverLIN:GlobalControllerPort</code>, <code>GUILDA:SolverLIN:VariableMap</code> (LIN-13)</td></tr>
         <tr><td><span lang="en"><code>get_ss</code> arguments and forms (LIN-18)</span><span lang="ja"><code>get_ss</code> の引数と形 (LIN-18)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:ResultLIN:UnknownInput</code>, <code>UnknownOutput</code>, <code>StateNotInModel</code>, <code>NoUnitBus</code>, <code>NoI2V</code>, <code>GlobalControllerPort</code></td></tr>
         <tr><td><span lang="en"><code>Format="ss"</code> without the Control System Toolbox</span><span lang="ja">Control System Toolbox なしで <code>Format="ss"</code></span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:require_toolbox:Unavailable</code></td></tr>
         <tr><td><span lang="en">Invalid option</span><span lang="ja">不正なオプション</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:resolve_options:UnknownName</code></td></tr>
@@ -613,7 +611,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
       <thead><tr><th><span lang="en">Model</span><span lang="ja">モデル</span></th><th><span lang="en">Used by the linearization</span><span lang="ja">近似線形化が使うもの</span></th></tr></thead>
       <tbody>
         <tr><td><code>Component</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_I</code>, <code>Jacobi_Y</code> returning <code>[∂/∂x, ∂/∂V, ∂/∂I, ∂/∂u]</code> (numerical differentiation without them); the blocks of <code>I</code> must be zero. <code>fcn_Mass</code> is <code>E</code>. <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code> name the states, inputs and outputs; an output with a state's name becomes <code>Y_&lt;name&gt;</code>.</span><span lang="ja"><code>[∂/∂x, ∂/∂V, ∂/∂I, ∂/∂u]</code> を返す <code>Jacobi_dx</code>、<code>Jacobi_I</code>、<code>Jacobi_Y</code> (なければ数値微分)。<code>I</code> のブロックは 0 が必須。<code>fcn_Mass</code> が <code>E</code>。<code>sv_x</code>、<code>sv_u</code>、<code>sv_y</code>: 状態・入力・出力の名前。状態と同名の出力は <code>Y_&lt;name&gt;</code></span></td></tr>
-        <tr><td><code>LocalController</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code>, <code>fcn_Mass</code>; connected to the component by the names of <code>sv_u</code> and <code>sv_y</code>, as in the simulation. A controller that keeps its own model (such as <code>controller.local_LQR</code>) can call <code>comp.get_sys(x, V, I, u, Controllers=false, Format="struct")</code>, which does not check the stale tags at an explicit point.</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code>、<code>fcn_Mass</code>。シミュレーションと同じく <code>sv_u</code> と <code>sv_y</code> の名前で機器に接続。独自のモデルを持つ制御器 (<code>controller.local_LQR</code> など) は <code>comp.get_sys(x, V, I, u, Controllers=false, Format="struct")</code> を呼び出し可能。明示した点では stale タグを確認しない</span></td></tr>
+        <tr><td><code>LocalController</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code>, <code>fcn_Mass</code>; connected to the component by the names of <code>sv_u</code> and <code>sv_y</code>, as in the simulation. A controller that keeps its own model (such as <code>controller.local_LQR</code>) can call <code>comp.get_sys(x, V, u, Controllers=false, Format="struct")</code>, which does not check the stale tags at an explicit point.</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code>、<code>fcn_Mass</code>。シミュレーションと同じく <code>sv_u</code> と <code>sv_y</code> の名前で機器に接続。独自のモデルを持つ制御器 (<code>controller.local_LQR</code> など) は <code>comp.get_sys(x, V, u, Controllers=false, Format="struct")</code> を呼び出し可能。明示した点では stale タグを確認しない</span></td></tr>
         <tr><td><code>GlobalController</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code> (only the <code>u</code> columns are used), <code>fcn_Mass</code>; every controlled unit has the states <code>sv_u</code> and the inputs <code>sv_y</code>.</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code> (<code>u</code> の列だけを使う)、<code>fcn_Mass</code>。すべての制御対象が状態 <code>sv_u</code> と入力 <code>sv_y</code> を保持</span></td></tr>
         <tr><td><span lang="en">New reduced form</span><span lang="ja">新しい縮約形</span></td><td><span lang="en">Add a case to <code>ResultLIN.get_ss</code> and to the <code>Method</code> validators of <code>SolverLIN</code>; build it from <code>rm_*</code> and <code>sct_model</code> so that no new linearization is needed.</span><span lang="ja"><code>ResultLIN.get_ss</code> と <code>SolverLIN</code> の <code>Method</code> の検査に場合を追加。新たな線形化が不要なよう、<code>rm_*</code> と <code>sct_model</code> から構築</span></td></tr>
       </tbody>

@@ -93,10 +93,10 @@ classdef (Sealed = true) IEEJ_LPT3 < controller.governor.abstract
     end
 
     methods (Static)
-        Mass = fcn_Mass(t, x, V, I, u, param, omega0)
-        dx = fcn_dx(t, x, V, I, u, param, omega0)
-        y = fcn_y(t, x, V, I, u, param, omega0)
-        [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t, x, V, I, u, param, omega0)
-        [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t, x, V, I, u, param, omega0)
+        Mass = fcn_Mass(t, x, V, u, param, omega0)
+        dx = fcn_dx(t, x, V, u, param, omega0)
+        y = fcn_y(t, x, V, u, param, omega0)
+        [Axx,Bxv,Bxu] = Jacobi_dx(t, x, V, u, param, omega0)
+        [Cyx,Dyv,Dyu] = Jacobi_Y(t, x, V, u, param, omega0)
     end
 end

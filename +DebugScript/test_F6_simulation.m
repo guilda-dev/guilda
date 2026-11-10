@@ -176,6 +176,13 @@ assert(error_id(@() set_property(net.solver_ODE, "Reporter", "none")) ~= "")
 % Plot オプションは廃止 (図は result.Plot)、PlotFcn は "none" のみ
 assert(error_id(@() net.simulate([0,1], ev, Plot=true)) == "GUILDA:resolve_options:UnknownName")
 assert(error_id(@() net.simulate([0,1], ev, PlotFcn="omega")) == "GUILDA:check_plotfcn:InDevelopment")
+% SeparateComplexParts は他の on/off の設定と同じ logical (ode には "on" / "off" で渡す)
+assert(GUILDA.config("TimeSimulation", "SeparateComplexParts") == false)
+sct_ode = net.solver_ODE.get_options({"SeparateComplexParts", true});
+assert(islogical(sct_ode.SeparateComplexParts) && sct_ode.SeparateComplexParts)
+assert(error_id(@() net.solver_ODE.get_options({"SeparateComplexParts", "maybe"})) ~= "")
+sol = net.simulate([0,1], ev, SeparateComplexParts=true);
+assert(sol.l_success && sol.options.SeparateComplexParts == true)
 % Verbose: 区間の一覧と結果を表示する
 str = evalc("net.simulate([0,3], ev, Verbose=true);");
 assert(contains(str, "phase  1") && contains(str, "fault") && contains(str, "reached t = 3"))

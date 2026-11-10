@@ -23,7 +23,7 @@ function sct_options = get_options(obj, nv)
     sct_options.Solver   = string(sct_options.Solver);
     sct_options.Progress = SolverODE.progress_mode(sct_options.Progress);
     sct_options.Verbose  = logical(sct_options.Verbose);
-    sct_options.SeparateComplexParts = matlab.lang.OnOffSwitchState(sct_options.SeparateComplexParts);
+    sct_options.SeparateComplexParts = logical(sct_options.SeparateComplexParts);
     tools.check_plotfcn(sct_options.PlotFcn, "simulate");
 end
 

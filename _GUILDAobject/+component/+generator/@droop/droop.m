@@ -54,10 +54,10 @@ classdef droop < component.generator.abstract
         sv_para = ["D","Xd","Xq"]   % Dynamic parameter names.
     end
     methods        
-        dx = fcn_dx(obj, t, x, V, I, u, param, omega0)
-        I  = fcn_I(obj, t, x, V, I, u, param, omega0)        
-        y  = fcn_Y(obj, t, x, V, I, u, param, omega0)
-        M  = fcn_Mass(obj, t, x, V, I, u, param, omega0)                
+        dx = fcn_dx(obj, t, x, V, u, param, omega0)
+        I  = fcn_I(obj, t, x, V, u, param, omega0)        
+        y  = fcn_Y(obj, t, x, V, param, omega0)
+        M  = fcn_Mass(obj, t, x, V, u, param, omega0)                
     end
 
     methods        
@@ -65,8 +65,8 @@ classdef droop < component.generator.abstract
     end
 
     methods (Static)        
-        [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0);
-        [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0);
-        [Cix,Div,Dii,Diu] = Jacobi_I(t,x,V,I,u,param,omega0);
+        [Axx,Bxv,Bxu] = Jacobi_dx(t,x,V,u,param,omega0);
+        [Cyx,Dyv] = Jacobi_Y(t,x,V,param,omega0);
+        [Cix,Div,Diu] = Jacobi_I(t,x,V,u,param,omega0);
     end
 end

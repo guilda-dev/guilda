@@ -61,6 +61,7 @@ function tab = test_levels()
     % ---- F2_powerflow ----------------------------------------------------------------------------
     "test_F2_powerflow/DynamicMethodReachesTheAlgebraicSolution", "large"
     "test_F2_powerflow/PlotAndExportOfTheResult", "large"
+    "test_F2_powerflow/PlotFcnResidualShowsTheResidualOfEachEquationForEverySolver", "large"
     "test_F2_powerflow/AlgebraicPowerFlowConvergesOn9_busSystem", "medium"
     "test_F2_powerflow/fsolveReachesASmallTolerance", "medium"
     "test_F2_powerflow/SwitchingTheSlackBusLeavesExactlyOne", "medium"
@@ -94,6 +95,8 @@ function tab = test_levels()
     "test_F31_scenario/CSVRoundTripWithSeveralScenariosInOneFile", "medium"
     "test_F31_scenario/IncompleteVerdictAndACustomJudge", "medium"
     "test_F31_scenario/Compatibility_ODEeventWarnsOnceAndGivesTheSameResults", "medium"
+    % ---- F35_controller_signal_routing -----------------------------------------------------------
+    "test_F35_controller_signal_routing/AGlobalControllerReadsAnOutputOfItsUnitBeforeAStateOfTheSameName", "medium"
     % ---- F3_edit_handling ------------------------------------------------------------------------
     "test_F3_edit_handling/LocalControllerAddAndReplaceMakeTheEquilibriumStale", "large"
     "test_F3_edit_handling/NetworkHzEditRedesignsTheLQRGain", "large"
@@ -139,6 +142,7 @@ function tab = test_levels()
     "test_F4_opf/ProblemAndInitialPointSolveAUser_modifiedProblem", "large"
     "test_F4_opf/Network_levelReserveConstraintAndCost", "large"
     "test_F4_opf/IEEJ_WEST10ACOPFNamesItsBranchConstraintsAfterTheTags", "large"
+    "test_F4_opf/PlotFcnDrawsThePlotFunctionsOfFminconInACOPF", "large"
     "test_F4_opf/DCOptimalPowerFlow", "medium"
     "test_F4_opf/ACOptimalPowerFlow", "medium"
     "test_F4_opf/ACOPFRespectsGeneratorLimits", "medium"
@@ -163,6 +167,7 @@ function tab = test_levels()
     "test_F5_cpf/Limits_none_KeepsThePathOfTheContinuationPowerFlow", "large"
     "test_F5_cpf/Limits_Q_SwitchesPVBusesToPQAtTheQLimitsOfTheGenerators", "large"
     "test_F5_cpf/Limits_V_And_S_StopThePathAtTheFirstLimitReached", "large"
+    "test_F5_cpf/PlotFcnPvcurveExtendsThePVCurvesOfAllBusesAtEachStep", "large"
     % ---- F6_simulation ---------------------------------------------------------------------------
     "test_F6_simulation/PlotAndExportOfTheSimulationResult", "large"
     "test_F6_simulation/LoadStepWithGlobalController", "large"

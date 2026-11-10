@@ -38,8 +38,11 @@ assert(isstruct(cf) && isfield(cf, "Progress") && ~isfield(cf, "Reporter"))
 cf = GUILDA.config();
 assert(~isfield(cf, "MethodNewtonRaphson"))
 assert(isequal(sort(string(fieldnames(cf.PowerFlowCalculation))), sort(["Solver";"Tolerance";"MaxIteration"; ...
-    "NewtonStepSize";"GradientStepSize";"FsolveUseParallel";"FsolveMaxFunEvals";"WhenFailed";"WarmStart";"PlotFcn"])))
-assert(cf.PowerFlowCalculation.Tolerance.Value == 1e-8 && cf.PowerFlowCalculation.MaxIteration.Value == 0)
+    "NewtonStepSize";"GradientStepSize";"FsolveUseParallel";"FsolveMaxFunctionEvaluations";"WhenFailed";"Verbose";"WarmStart";"PlotFcn"])))
+% 自動・ソルバーの既定は NaN (全解析で共通)、Verbose は他の解析と同じ logical
+assert(cf.PowerFlowCalculation.Tolerance.Value == 1e-8 && isnan(cf.PowerFlowCalculation.MaxIteration.Value) ...
+    && isnan(cf.PowerFlowCalculation.GradientStepSize.Value) && isnan(cf.PowerFlowCalculation.FsolveMaxFunctionEvaluations.Value) ...
+    && cf.PowerFlowCalculation.Verbose.Value == false)
 assert(cf.ContinuationPowerFlow.CorrectorMaxIteration.Value == 1000 && cf.ContinuationPowerFlow.CorrectorStepSize.Value == 1 ...
     && cf.ContinuationPowerFlow.Increment.Value == 1e-4)
 

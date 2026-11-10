@@ -253,9 +253,9 @@ c_fig2 = onCleanup(@() close(ancestor(ax2, "figure")));
 assert(numel(findobj(ax2, "Type", "line")) == n_bus)
 assert(error_id(@() res.Plot(Bus="B099", Parent=figure("Visible","off"))) == "GUILDA:ResultCPF:UnknownBus")
 close(findall(groot, "Type", "figure", "Visible", "off"))
-% 計算後の図は result.Plot だけ。Plot オプションは廃止、PlotFcn は "none" のみ
+% 計算後の図は result.Plot だけ。Plot オプションは廃止。PlotFcn は計算中の表示 (別のテスト)
 assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=2, Plot=true)) == "GUILDA:resolve_options:UnknownName")
-assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=2, PlotFcn="lambda")) == "GUILDA:check_plotfcn:InDevelopment")
+assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=2, PlotFcn="lambda")) == "GUILDA:check_plotfcn:UnknownKey")
 
 % Export: 経路の表 (lambda, V_<bus>, Varg_<bus>)
 s_dir = tempname; mkdir(s_dir); c_dir = onCleanup(@() rmdir(s_dir, "s"));
@@ -290,6 +290,44 @@ assert(isa(SolverCPF(), "SolverCPF"))
 
 
 % ---- local functions ----
+%% PlotFcn pvcurve extends the PV curves of all buses at each step
+% "pvcurve": 全母線の |V| を λ に対して描き、点が増えるたびに伸ばす。"none" と結果は同じ
+s_tag = "GUILDA:PlotFcn:pvcurve";
+fig = figure("Visible", "off", "Tag", s_tag);      % 同じ Tag の図があればそれを使う
+c_fig = onCleanup(@() close(findall(groot, "Type", "figure", "Tag", s_tag)));
+res0 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=30));
+res1 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=30, PlotFcn="pvcurve"));
+assert(isequal(res1.rm_x, res0.rm_x) && isequal(res1.output.correctorIterations, res0.output.correctorIterations))
+assert(isequal(res1.options.PlotFcn, "pvcurve"))
+assert(isscalar(findall(groot, "Type", "figure", "Tag", s_tag)))
+a_line = findobj(fig, "Type", "line");
+assert(numel(a_line) == n_bus)
+[~, iv] = ismember(string({a_line.DisplayName}), string(net.a_Bus));
+for k = 1:n_bus
+    assert(isequal(a_line(k).XData, res1.rv_lambda) && max(abs(a_line(k).YData - abs(res1.cm_Vbus(iv(k),:)))) < 1e-12)
+end
+assert(contains(string(findobj(fig, "Type", "axes").Title.String), "step 30"))
+% 2 回目は図を作り直して同じ図に描く
+res2 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=5, PlotFcn="pvcurve"));
+assert(isscalar(findall(groot, "Type", "figure", "Tag", s_tag)) && numel(findobj(fig, "Type", "line")) == n_bus)
+assert(all(arrayfun(@(l) numel(l.XData), findobj(fig, "Type", "line")) == numel(res2.rv_lambda)))
+
+% 関数ハンドル: stop = f(x, optimValues, state)。x は母線の複素電圧
+m_log = containers.Map(["state","lambda"], {strings(1,0), []});
+res3 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=10, ...
+                                    PlotFcn=@(x, o, s) cpf_log(m_log, n_bus, x, o, s)));
+sv_state = m_log("state");
+rv_lam   = m_log("lambda");
+assert(sv_state(1) == "init" && sv_state(end) == "done" && sum(sv_state == "iter") == 10)
+assert(isequal(rv_lam(1:end-1), res3.rv_lambda) && rv_lam(end) == res3.rv_lambda(end))
+% stop = true で経路を止める (その点で終わり、メッセージで知らせる)
+res4 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load, PlotFcn=@(x, o, s) o.iteration >= 3));
+assert(numel(res4.rv_lambda) == 4 && contains(res4.output.message, "stopped by PlotFcn") && ~res4.flag)
+assert(isequal(res4.rv_lambda, res0.rv_lambda(1:4)))
+% GUILDA.setting の PlotFcn (select) にキーがある
+assert(isequal(string(GUILDA.config("ContinuationPowerFlow").PlotFcn.options(:)).', ["none","pvcurve"]))
+
+
 function id = error_id(fcn)
 % fcn を実行し、エラーの ID を返す (エラーにならなければ "")
     id = "";
@@ -301,4 +339,13 @@ function id = error_id(fcn)
             id = "(no id)";
         end
     end
+end
+
+
+function stop = cpf_log(m_log, n_bus, x, sct, s_state)
+% PlotFcn の関数ハンドル (連続潮流計算): 呼ばれた state と lambda を m_log に足す
+    assert(isequal(size(x), [n_bus, 1]) && ~isreal(x) && all(isfield(sct, ["iteration","lambda","correctorIterations"])))
+    m_log("state")  = [m_log("state"), string(s_state)];
+    m_log("lambda") = [m_log("lambda"), sct.lambda];
+    stop = false;
 end

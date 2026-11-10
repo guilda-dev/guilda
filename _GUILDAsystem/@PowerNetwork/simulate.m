@@ -30,7 +30,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % - `SolverOptions` — Options of the solver (matlab.ode.Options, e.g. MaxStep), matching Solver; given only in a call or in the Options of a scenario. Default: the options of the Solver.
 % - `Tolerance` — Relative error tolerance. Default: GUILDA.setting (1e-4).
 % - `AbsoluteTolerance` — Absolute error tolerance. Default: GUILDA.setting (1e-6).
-% - `SeparateComplexParts` — SeparateComplexParts of the ode object. Default: GUILDA.setting ("off").
+% - `SeparateComplexParts` — SeparateComplexParts of the ode object (true: "on", false: "off"). Default: GUILDA.setting (false).
 % - `TimeLimit` — Limit of the computation time [s] of the whole run; Inf for no limit. Default: GUILDA.setting (Inf).
 % - `Progress` — "dialog", "disp" or "none"; true = "dialog", false = "none". Default: GUILDA.setting ("dialog").
 % - `Verbose` — Print the phases and the outcome. Default: GUILDA.setting (false).

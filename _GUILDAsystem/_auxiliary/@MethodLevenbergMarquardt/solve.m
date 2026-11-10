@@ -11,6 +11,7 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
         rv_step     % Iteration numbers of rm_history.
     end
     l_iter = startsWith(obj.Display, "iter");
+    l_plot = ~isempty(obj.f_iter);
     x     = obj.InitVal;
     rv_F  = obj.Fcn(x);
     rm_J  = obj.eval_jacobian(x);
@@ -18,13 +19,22 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
     m_eye = speye(numel(x));
     rm_history = x;
     flag = 0;
+    s_fail = "";
+    if l_plot
+        obj.f_iter(x, 0, "init");
+    end
     for k = 0:obj.MaxIter
         r_res = max(abs(rv_F));
         if l_iter
             obj.print_iter("levenberg-marquardt", k, r_res, sprintf("   mu %.1e", r_mu));
         end
+        l_stop = l_plot && obj.f_iter(x, k, "iter");
         if r_res <= obj.ConvTol
             flag = 1;
+            break
+        elseif l_stop
+            flag   = -1;
+            s_fail = '✘ The process was stopped by PlotFcn.';
             break
         elseif k == obj.MaxIter
             break
@@ -42,6 +52,7 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
             r_mu = 10*r_mu;
             if ~(r_mu < 1e20)
                 flag = -2;
+                s_fail = sprintf('✘ No solution was found: the Levenberg-Marquardt iteration stopped at a local minimum of the mismatch (max %.3e).', r_res);
                 break
             end
         end
@@ -51,7 +62,9 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
         rm_history(:,end+1) = x; %#ok<AGROW>
     end
     rv_step = 0:size(rm_history,2)-1;
+    if l_plot
+        obj.f_iter(x, rv_step(end), "done");
+    end
 
-    output = obj.make_output(flag, rv_step(end), r_res, "levenberg-marquardt", "Levenberg-Marquardt iteration", ...
-        sprintf('✘ No solution was found: the Levenberg-Marquardt iteration stopped at a local minimum of the mismatch (max %.3e).', r_res));
+    output = obj.make_output(flag, rv_step(end), r_res, "levenberg-marquardt", "Levenberg-Marquardt iteration", s_fail);
 end

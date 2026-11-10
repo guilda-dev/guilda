@@ -28,11 +28,10 @@ classdef NeedPQGeneratorStub < component.generator.abstract
         end
     end
     methods (Static)
-        function dx = fcn_dx(~, x, ~, ~, u, ~, ~)
+        function dx = fcn_dx(~, x, ~, u, ~, ~)
             arguments (Input)
                 ~
                 x  % 状態
-                ~
                 ~
                 u  % 入力
                 ~
@@ -43,11 +42,10 @@ classdef NeedPQGeneratorStub < component.generator.abstract
             end
             dx = u - x;
         end
-        function I = fcn_I(~, x, ~, ~, ~, ~, ~)
+        function I = fcn_I(~, x, ~, ~, ~, ~)
             arguments (Input)
                 ~
                 x  % 状態
-                ~
                 ~
                 ~
                 ~
