@@ -219,8 +219,8 @@
 
     <!-- ============================== STEPS ============================== -->
     <h2 id="steps"><span lang="en">Processing steps in detail</span><span lang="ja">処理ステップの詳細</span></h2>
-    <p lang="en">Private functions named here: local functions of <code>_GUILDAsystem/@PowerNetwork/initialize.m</code> or <code>@Bus/set_equilibrium.m</code>.</p>
-    <p lang="ja">ここに挙げる非公開の関数は、すべて <code>_GUILDAsystem/@PowerNetwork/initialize.m</code> または <code>@Bus/set_equilibrium.m</code> のローカル関数。</p>
+    <p lang="en">Private functions named here: local functions of <code>_GUILDAsystem/@PowerNetwork/initialize.m</code> or <code>@Bus/set_equilibrium.m</code>; <code>distribute_power</code> is <code>_GUILDAsystem/+tools/distribute_power.m</code>, shared with <code>@SolverPF/private/violation_table.m</code>.</p>
+    <p lang="ja">ここに挙げる非公開の関数は、<code>_GUILDAsystem/@PowerNetwork/initialize.m</code> または <code>@Bus/set_equilibrium.m</code> のローカル関数。<code>distribute_power</code> は <code>_GUILDAsystem/+tools/distribute_power.m</code>（<code>@SolverPF/private/violation_table.m</code> と共用）。</p>
     <ol class="fs-steps">
       <li class="fs-step" id="INIT-01">
         <p class="fs-head"><b class="fs-id">INIT-01</b> <span class="fs-call">user → <code>PowerNetwork.initialize</code><small><code>v3_initialize_args</code>, <code>take_method</code></small></span></p>
@@ -352,7 +352,7 @@
         </dl>
       </li>
       <li class="fs-step" id="INIT-06">
-        <p class="fs-head"><b class="fs-id">INIT-06</b> <span class="fs-call"><code>Bus.set_equilibrium</code> → <code>distribute_power</code></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-06</b> <span class="fs-call"><code>Bus.set_equilibrium</code> → <code>tools.distribute_power</code></span><small><span lang="en">also used by the violation table of the power flow</span><span lang="ja">潮流計算の違反の表も使用</span></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">

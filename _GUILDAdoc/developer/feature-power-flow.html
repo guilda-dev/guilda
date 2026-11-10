@@ -598,14 +598,14 @@
         <tr><td><code>cm_Vhistory</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">n_bus×n_step, <span lang="en">complex</span><span lang="ja">複素数</span> [pu]</td><td data-label="Content" data-label-ja="内容"><span lang="en">Bus voltages at each iteration or ODE step</span><span lang="ja">各反復または各 ODE ステップの母線電圧</span></td></tr>
         <tr><td><code>rv_step</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">1×n_step</td><td data-label="Content" data-label-ja="内容"><span lang="en">Iteration numbers, or virtual times (dynamic)</span><span lang="ja">反復番号、または仮想時刻（dynamic）</span></td></tr>
         <tr><td><code>tab_violation</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">n_violation×6 table</td><td data-label="Content" data-label-ja="内容"><ul lang="en">
-          <li>Operating limits (<code>tab_parameter.operation</code>) the solution violates by more than <code>Tolerance</code>, one row per limit (<code>private/violation_table</code>)</li>
+          <li>Operating limits (<code>tab_parameter.operation</code>) the solution violates by more than <code>Tolerance</code>, one row per limit (<code>private/violation_table</code>; component P, Q from <code>tools.distribute_power</code>, as <code>initialize</code> gives them)</li>
           <li>Columns: <code>Class</code> ("Bus", "Component", "Branch"), <code>Object</code> (tag), <code>Limit</code>, <code>Value</code>, <code>Bound</code>, <code>Excess</code> (= |Value − Bound|)</li>
           <li>Bus: <code>Vmin</code>, <code>Vmax</code> on <code>V</code></li>
           <li>Component: <code>Pmin</code>, <code>Pmax</code>, <code>Qmin</code>, <code>Qmax</code> on the P and Q that <code>initialize</code> would give it</li>
           <li>Branch: <code>Pmax</code>, <code>Qmax</code>, <code>Smax</code>, <code>Imax</code> on the larger of |P|, |Q|, |S|, |I| at its two ends; <code>Vargmax</code> on |Varg_from − Varg_to|</li>
           <li>0 rows when none, or when <code>flag ≠ 1</code>; no warning or error; the power flow never applies the limits</li>
         </ul><ul lang="ja">
-          <li>解が <code>Tolerance</code> を超えて違反する運転制約（<code>tab_parameter.operation</code>）。1 行が 1 つの制約（<code>private/violation_table</code>）</li>
+          <li>解が <code>Tolerance</code> を超えて違反する運転制約（<code>tab_parameter.operation</code>）。1 行が 1 つの制約（<code>private/violation_table</code>。機器の P、Q は <code>initialize</code> と同じ <code>tools.distribute_power</code> の値）</li>
           <li>列: <code>Class</code>（"Bus"、"Component"、"Branch"）、<code>Object</code>（タグ）、<code>Limit</code>、<code>Value</code>、<code>Bound</code>、<code>Excess</code>（= |Value − Bound|）</li>
           <li>母線: <code>V</code> に対する <code>Vmin</code>、<code>Vmax</code></li>
           <li>機器: <code>initialize</code> が与える P・Q に対する <code>Pmin</code>、<code>Pmax</code>、<code>Qmin</code>、<code>Qmax</code></li>
