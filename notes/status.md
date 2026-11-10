@@ -136,7 +136,8 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - `PlotFcn` のキー: 潮流計算 `"residual"`(方程式ごとの残差の棒、全 Solver)、OPF は fmincon のプロット関数(`"fval"` → `optimplotfval` など 7 種。linprog・quadprog は `GUILDA:SolverOPF:PlotFcnUnsupported`)、連続潮流計算 `"pvcurve"`(全母線の PV 曲線を伸ばす)。関数ハンドル `stop = f(x, optimValues, state)` も 3 解析で受け付ける。時間応答シミュレーション・線形化は `"none"` のみのまま。
 - 潮流計算の flag に -1(PlotFcn で停止)を追加。OPF の JSON キー `Display` を `Verbose`(logical、既定 false)に置換し、既定ではソルバーは何も表示しない。
 - `"none"` では結果が変わらない(5 つの Solver、CPF、AC OPF で一致を確認)。
-- **テスト(MATLAB R2026a):** 下の「PlotFcn のテスト結果」を参照。
+- **テスト(MATLAB R2026a):** `DebugScript.run_all('Level','medium')`(`87a17326`)663 件、PASS 661 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、652 s(small の並行実行あり)。small は `dc089366`・`fd10875b` でそれぞれ 492 件、FAIL 0。
+  新しい表示のテスト 3 件(F2・F4・F5 の `PlotFcn*`、3 秒超)は large に登録し、F2・F4・F5・F9・F10 の large で PASS(修正後に個別に再実行)。large 全体は未実行。
 - **要判断:** powerflow-options.md の同節の要判断 1〜4(他のセクションとの名前・型のずれ、flag -1 の通知など)。
 
 ## 入力を固定した平衡点と Solver / Method の名前(2026-11-10)
