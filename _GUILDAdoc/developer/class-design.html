@@ -324,6 +324,7 @@
       <li><span lang="en">Automatic tag: the largest number in use plus one (buses <code>B###</code>, branches <code>###</code>, components per bus).</span><span lang="ja">自動で付くタグ: 使用中の最大の番号 + 1（母線は <code>B###</code>、ブランチは <code>###</code>、機器は母線ごと）</span></li>
       <li><span lang="en">A number is not reused while a larger one exists, so a new tag never names an existing or earlier object.</span><span lang="ja">より大きい番号が存在する間は番号を再利用しない。新しいタグが既存または過去のオブジェクトを指すことはない</span></li>
       <li><span lang="en">Global controller tag: chosen by the user, and must be unique.</span><span lang="ja">グローバル制御器のタグ: ユーザーが選択。一意であること</span></li>
+      <li><span lang="en">Every tag is a valid MATLAB variable name (<code>isvarname</code>: a letter first, then letters, digits and <code>_</code>), because tags name OPF variables and constraints and struct fields; any other tag stops with <code>GUILDA:LayerPackage:InvalidTag</code>. Write <code>LINE20_1</code>, not <code>LINE20-1</code>.</span><span lang="ja">タグはすべて MATLAB の変数名として有効な文字列（<code>isvarname</code>: 英字で始まり、英字・数字・<code>_</code> のみ）。OPF の変数・制約の名前や struct のフィールド名に使うため。それ以外のタグは <code>GUILDA:LayerPackage:InvalidTag</code> で停止。<code>LINE20-1</code> ではなく <code>LINE20_1</code></span></li>
     </ul>
 
     <!-- ============================== SOLVERS ============================== -->

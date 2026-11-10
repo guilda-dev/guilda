@@ -654,10 +654,12 @@ b1.l_isSlack = true;</code></pre>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
+            <li>Tag that is not a valid MATLAB variable name (<code>isvarname</code>), before or after the suffix: stop with <code>GUILDA:LayerPackage:InvalidTag</code>; the tag does not change</li>
             <li>Tag already used by a sibling (<code>parent.children</code>): add a three-digit suffix starting at 002, with an Info line</li>
             <li>Log the rename</li>
             <li>Tags of child layers do not follow</li>
           </ul><ul lang="ja">
+            <li>MATLAB の変数名として無効なタグ（<code>isvarname</code>、接尾辞の付与の前後とも）: <code>GUILDA:LayerPackage:InvalidTag</code> で停止。タグは不変</li>
             <li>兄弟（<code>parent.children</code>）が使用中のタグ: 002 から始まる 3 桁の接尾辞を付与し、Info を表示</li>
             <li>名前の変更を記録</li>
             <li>子の層のタグは追従しない</li>
