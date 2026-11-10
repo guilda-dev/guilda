@@ -364,7 +364,162 @@ DebugScript.helper.quiet(@() net9.initialize);
 assert(isempty(net9.a_Bus{4}.a_Component) && net9.a_Bus{4}.c_Iequilibrium == 0)
 
 
+%% FixedInput with the held inputs keeps the equilibrium
+% 入力を変えなければ同じ平衡点 (スラック母線の位相 0) を反復 0 回で返す
+net = network.IEEE9bus();
+DebugScript.helper.quiet(@() net.initialize);
+V0 = net.cv_Vequilibrium;
+c_X0 = component_values(net, "rv_Xequilibrium");
+[res, flag, output] = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput"));
+assert(flag == 1 && output.iterations == 0 && isa(res, "ResultPF") && res.s_solver == "FixedInput")
+assert(res.options.Method == "FixedInput" && res.options.Solver == "newton" && res.options.Tolerance == 1e-8)
+assert(abs(angle(V0(1))) < 1e-12 && max(abs(net.cv_Vequilibrium - V0)) < 1e-10)
+assert(max(abs(vertcat(c_X0{:}) - cell2mat(component_values(net, "rv_Xequilibrium")))) < 1e-10)
+assert(isempty(net.sct_stale.powerflow) && isempty(net.sct_stale.input))
+
+
+%% set_input makes the inputs stale until FixedInput
+% 入力の編集は記録され、解析と Method なしの initialize は FixedInput を促して止まる
+net = network.IEEE9bus();
+DebugScript.helper.quiet(@() net.initialize);
+ld = net.a_Bus{5}.a_Component{1};
+u0 = ld.rv_Uequilibrium;
+ld.set_input(u0);                                   % 同じ値は記録しない
+assert(isempty(net.sct_stale.input) && isempty(ld.sct_stale.equilibrium))
+ld.set_input(u0/0.95);
+assert(numel(net.sct_stale.input) == 1 && contains(net.sct_stale.input, "rv_Uequilibrium"))
+assert(numel(ld.sct_stale.equilibrium) == 1 && isempty(ld.sct_stale.odefcn))
+assert(isempty(net.sct_stale.powerflow) && isequal(ld.rv_Uequilibrium, u0/0.95))
+assert(DebugScript.helper.msg_id(error_of(@() net.simulate([0 1]))) == "GUILDA:SolverODE:InputEdited")
+assert(DebugScript.helper.msg_id(error_of(@() net.linearize())) == "GUILDA:SolverLIN:InputEdited")
+assert(DebugScript.helper.msg_id(error_of(@() ld.get_sys())) == "GUILDA:Component:InputEdited")
+assert(DebugScript.helper.msg_id(error_of(@() net.a_Bus{5}.get_sys())) == "GUILDA:Bus:InputEdited")
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize())) == "GUILDA:PowerNetwork:InputEdited")
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="equilibrium"))) == "GUILDA:PowerNetwork:InputEdited")
+assert(isequal(ld.rv_Uequilibrium, u0/0.95))
+% 値の検査: 要素数、実数・有限、母線への接続
+assert(DebugScript.helper.msg_id(error_of(@() ld.set_input([1; 2; 3]))) == "GUILDA:Component:InputSize")
+assert(DebugScript.helper.msg_id(error_of(@() ld.set_input([NaN; 1]))) == "MATLAB:validators:mustBeFinite")
+assert(DebugScript.helper.msg_id(error_of(@() ld.set_input([1i; 1]))) == "MATLAB:validators:mustBeReal")
+assert(numel(net.sct_stale.input) == 1)
+net0 = PowerNetwork();
+bus0 = net0.add_bus();
+ld0 = bus0.add_component("load-impedance", P=-0.5, Q=-0.1);
+bus0.remove_component(ld0.s_tag);
+assert(DebugScript.helper.msg_id(error_of(@() ld0.set_input([1; 0]))) == "GUILDA:Component:InputNotConnected")
+
+
+%% FixedInput solves the equilibrium with the edited inputs
+% 負荷を 5 % 減らし (Z / 0.95)、発電機の入力を保ったまま平衡点を解く。スラック母線の Pm だけが変わる
+net = network.IEEE9bus();
+DebugScript.helper.quiet(@() net.initialize);
+c_U0 = component_values(net, "rv_Uequilibrium");
+for i_bus = [5 6 8]
+    ld = net.a_Bus{i_bus}.a_Component{1};
+    ld.set_input(ld.rv_Uequilibrium/0.95);
+end
+c_Uset = component_values(net, "rv_Uequilibrium");
+[res, flag, output] = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput"));
+assert(flag == 1 && output.iterations > 0 && output.iterations <= 10, string(output.iterations))
+c_U = component_values(net, "rv_Uequilibrium");
+gen1 = net.a_Bus{1}.a_Component{1};
+assert(isequal(c_U(2:end), c_Uset(2:end)) && c_U{1}(2) == c_Uset{1}(2))      % スラック発電機の Vfield も固定
+assert(c_U{1}(1) < c_U0{1}(1) - 0.1)                                          % 負荷が減って Pm が下がる
+assert(abs(angle(net.a_Bus{1}.c_Vequilibrium)) < 1e-12)
+assert(max(abs(res.tab_bus.Vphasor - net.cv_Vequilibrium)) < 1e-12)
+assert(isempty(net.sct_stale.input) && isempty(net.sct_stale.powerflow) && isempty(gen1.sct_stale.equilibrium))
+assert(DebugScript.helper.max_state_drift(DebugScript.helper.quiet(@() net.simulate([0 5]))) < 1e-6)
+
+
+%% FixedInput gives the same point with every solver
+% 他の Solver とフラットスタートの初期値も同じ点
+net = network.IEEE9bus();
+DebugScript.helper.quiet(@() net.initialize);
+for i_bus = [5 6 8]
+    ld = net.a_Bus{i_bus}.a_Component{1};
+    ld.set_input(ld.rv_Uequilibrium/0.95);
+end
+DebugScript.helper.quiet(@() net.initialize(Method="FixedInput"));
+V1 = net.cv_Vequilibrium;
+for c = {{"Solver", "levenberg-marquardt"}, {"Solver", "fsolve", "Tolerance", 1e-6}, {"WarmStart", false}}
+    net2 = network.IEEE9bus();
+    DebugScript.helper.quiet(@() net2.initialize);
+    for i_bus = [5 6 8]
+        ld = net2.a_Bus{i_bus}.a_Component{1};
+        ld.set_input(ld.rv_Uequilibrium/0.95);
+    end
+    [~, flag2] = DebugScript.helper.quiet(@() net2.initialize("Method", "FixedInput", c{1}{:}));
+    assert(flag2 == 1 && max(abs(net2.cv_Vequilibrium - V1)) < 1e-5, c{1}{1})
+end
+
+
+%% FixedInput keeps the inputs under local controllers
+% 制御器は方程式に入らず、平衡点の後で参照値を合わせる (外乱なしで動かない)
+net = network.IEEE9bus();
+net.a_Bus{2}.a_Component{1}.add_local_controller("avr-ST1");
+DebugScript.helper.quiet(@() net.initialize);
+gen2 = net.a_Bus{2}.a_Component{1};
+u = gen2.rv_Uequilibrium;
+gen2.set_input([u(1) - 0.05; u(2)]);
+[~, flag] = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput"));
+assert(flag == 1 && isequal(gen2.rv_Uequilibrium, [u(1) - 0.05; u(2)]))
+assert(DebugScript.helper.max_state_drift(DebugScript.helper.quiet(@() net.simulate([0 5]))) < 1e-6)
+
+
+%% Powerflow replaces the edited inputs
+% 明示の Method="powerflow" は編集した入力を潮流解の値で上書きし、INFO で知らせる
+net = network.IEEE9bus();
+DebugScript.helper.quiet(@() net.initialize);
+ld = net.a_Bus{5}.a_Component{1};
+u0 = ld.rv_Uequilibrium;
+ld.set_input(u0/0.95);
+s_log = evalc("net.initialize(Method=""powerflow"");");
+assert(contains(s_log, "replaced the inputs edited with set_input"), s_log)
+assert(max(abs(ld.rv_Uequilibrium - u0)) < 1e-8 && isempty(net.sct_stale.input))
+
+
+%% FixedInput errors leave the network unchanged
+% 収束しない (AVR なしで負荷 +5 %)、Solver の誤り、スラック母線に発電機がない、入力のない機器
+net = network.IEEE9bus();
+DebugScript.helper.quiet(@() net.initialize);
+for i_bus = [5 6 8]
+    ld = net.a_Bus{i_bus}.a_Component{1};
+    ld.set_input(ld.rv_Uequilibrium/1.05);
+end
+[V0, I0, X0, log0, flag0] = snapshot(net);
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="FixedInput"))) == "GUILDA:PowerNetwork:InitializeFixedInputFailed")
+assert_unchanged(net, V0, I0, X0, log0, flag0)
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="FixedInput", Solver="gradient"))) == "GUILDA:PowerNetwork:InitializeFixedInputSolver")
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="FixedInput", Solver="foo"))) == "MATLAB:validators:mustBeMember")
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="FixedInput", Foo=1))) == "GUILDA:resolve_options:UnknownName")
+assert_unchanged(net, V0, I0, X0, log0, flag0)
+
+net = network.IEEE9bus();
+DebugScript.helper.quiet(@() net.initialize);
+DebugScript.helper.quiet(@() set_slack(net.a_Bus{5}));                         % 負荷だけの母線
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="FixedInput"))) == "GUILDA:PowerNetwork:InitializeNoSlackGenerator")
+
+net = network.IEEE9bus();
+DebugScript.helper.quiet(@() net.initialize);
+DebugScript.helper.quiet(@() net.a_Bus{4}.add_component("load-impedance", P=-0.1, Q=0));
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="FixedInput"))) == "GUILDA:PowerNetwork:InitializeInputNotSet")
+
+
 % ---- local functions ----
+function c = component_values(net, s_prop)
+% s_prop of every component, bus by bus
+    c = {};
+    for i = 1:numel(net.a_Bus)
+        for k = 1:numel(net.a_Bus{i}.a_Component)
+            c{end+1,1} = net.a_Bus{i}.a_Component{k}.(s_prop); %#ok<AGROW>
+        end
+    end
+end
+
+function set_slack(bus)
+    bus.l_isSlack = true;
+end
+
 function [V, I, X, tab_log, s_flag] = snapshot(net)
 % 平衡点 (母線の V, I と機器の状態) と古さ
     V = net.cv_Vequilibrium;
