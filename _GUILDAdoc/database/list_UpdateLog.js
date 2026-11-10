@@ -292,5 +292,11 @@ const updateLogData = [
     "date": "2026-11-10",
     "type": "fix",
     "content": "Every tag (network, bus, branch, component, controller; s_tag, Tag and FullTag of add_bus, the FullTag column of CSV data) must be a valid MATLAB variable name (isvarname: a letter first, then letters, digits and underscores); any other tag stops with GUILDA:LayerPackage:InvalidTag. The branches of network.IEEJ_WEST10 are now named like LINE20_1 and G1_TR (were LINE20-1, G1-TR), and the AC OPF of IEEJ_WEST10 now solves."
+  },
+  {
+    "title": "Analysis defaults in GUILDA.setting; PlotFcn replaces Plot",
+    "date": "2026-11-10",
+    "type": "feature",
+    "content": "The defaults of every analysis (power flow, OPF, continuation power flow, time simulation, linearization) are set in GUILDA.setting (new section Linearization); Name-Value options apply to one call. net.solver_OPF keeps only Cost, Constraint, DefaultCost and ReferenceBus, net.solver_CPF only LoadBus; setting other solver properties such as net.solver_ODE.RelativeTolerance or net.solver_OPF.Method stops with an error, so scripts that set them must pass the option in the call instead. Renamed settings: Tolerance (OPF, time simulation) and MaxIteration (continuation power flow); changed values of the old names return to the default. The option Plot=true is removed: draw with result.Plot(). PlotFcn, a live display during the analysis, accepts only \"none\" for now."
   }
 ];

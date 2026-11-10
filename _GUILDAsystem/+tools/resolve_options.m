@@ -15,14 +15,15 @@ function [sct_options, sv_given] = resolve_options(solver, sct_map, nv)
 %
 % <@Examples>
 % ```matlab
-% sct_map = struct("MaxIteration", "MaxIterations", ...
+% sct_def = struct("MaxIteration", 500, "Verbose", false);   % defaults, e.g. of GUILDA.config
+% sct_map = struct("MaxIteration", "MaxIteration", ...
 %                "Verbose",      {{"Verbose", @logical}});
-% opt = tools.resolve_options(net.solver_CPF, sct_map, {"MaxIteration", 50});
-% opt.MaxIterations   % 50; net.solver_CPF.MaxIterations is unchanged
+% opt = tools.resolve_options(sct_def, sct_map, {"MaxIteration", 50});
+% opt.MaxIteration    % 50; sct_def is unchanged
 % ```
     arguments (Input)
-        solver % Holder of the defaults: a solver object (e.g. net.solver_CPF) or a struct. Only read.
-        sct_map (1,1) struct % One field per accepted Name-Value name. The value is the solver field it sets: a string ("MaxIterations"), a string array to set several fields, a dotted path into a struct property ("sct_ode.Events"), or a cell {field, fcn} where fcn converts the given value (e.g. Verbose=true -> Display="iter").
+        solver % Holder of the defaults: a struct (the settings of GUILDA.config and the conditions of the solver, as built by get_options) or a solver object. Only read.
+        sct_map (1,1) struct % One field per accepted Name-Value name. The value is the solver field it sets: a string ("MaxIteration"), a string array to set several fields, a dotted path into a struct property ("sct_ode.Events"), or a cell {field, fcn} where fcn converts the given value (e.g. Verbose=true -> Display="iter").
         nv          = struct() % Overrides of this call: the struct of an arguments block (opt.Name with no default, so only given names are fields) or a cell {Name1, Value1, ...}.
     end
     arguments (Output)

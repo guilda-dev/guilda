@@ -64,57 +64,60 @@
 [prob, x0] = net.build_opf_problem(Name=Value, ..., validate=false)   % the problem only
 result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a modified problem</code></pre>
     <ul lang="en">
-      <li>Defaults: the properties of <code>net.solver_OPF</code> (a <code>SolverOPF</code>).</li>
-      <li>A new solver reads them from <code>GUILDA.config("OptimalPowerFlow")</code>: <code>@GUILDA/config/DefaultOptimalPowerFlow.json</code>, overridden by a file of the same name in <code>@GUILDA/user/</code>.</li>
+      <li>Settings: the OptimalPowerFlow section of <code>GUILDA.setting</code>, read at each run from <code>GUILDA.config("OptimalPowerFlow")</code>: <code>@GUILDA/config/DefaultOptimalPowerFlow.json</code>, overridden by a file of the same name in <code>@GUILDA/user/</code>.</li>
+      <li>Conditions <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code>: the public properties of <code>net.solver_OPF</code> (a <code>SolverOPF</code>), kept between runs.</li>
       <li>A Name-Value option applies to this call only.</li>
     </ul>
     <ul lang="ja">
-      <li>既定値: <code>net.solver_OPF</code>（<code>SolverOPF</code>）のプロパティ</li>
-      <li>ソルバー生成時に <code>GUILDA.config("OptimalPowerFlow")</code> から読み込み: <code>@GUILDA/config/DefaultOptimalPowerFlow.json</code>（<code>@GUILDA/user/</code> の同名ファイルで上書き）</li>
+      <li>設定: <code>GUILDA.setting</code> の OptimalPowerFlow セクション。実行のたびに <code>GUILDA.config("OptimalPowerFlow")</code> から読み込み: <code>@GUILDA/config/DefaultOptimalPowerFlow.json</code>（<code>@GUILDA/user/</code> の同名ファイルで上書き）</li>
+      <li>条件 <code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code>: <code>net.solver_OPF</code>（<code>SolverOPF</code>）の public プロパティ。実行をまたいで保持</li>
       <li>Name-Value オプション: その呼び出しのみに適用</li>
     </ul>
     <table class="dg-table opf-opts">
-      <thead><tr><th lang="en">Option</th><th lang="ja">オプション</th><th lang="en">Solver property and default</th><th lang="ja">ソルバーのプロパティと既定値</th></tr></thead>
+      <thead><tr><th lang="en">Option</th><th lang="ja">オプション</th><th lang="en">Setting or condition and default</th><th lang="ja">設定・条件と既定値</th></tr></thead>
       <tbody>
         <tr><td><code>Method</code></td>
-          <td lang="en" data-label="Property and default"><code>Method = "AC OPF"</code>; <code>"ELD"</code> (economic load dispatch, branches ignored), <code>"DC OPF"</code> (<code>|V| = 1</code>, lossless), <code>"AC OPF"</code> (AC power flow equations)</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>Method = "AC OPF"</code>。<code>"ELD"</code>（経済負荷配分、ブランチは無視）、<code>"DC OPF"</code>（<code>|V| = 1</code>、損失なし）、<code>"AC OPF"</code>（交流の潮流方程式）</td></tr>
+          <td lang="en" data-label="Setting and default"><code>Method = "AC OPF"</code>; <code>"ELD"</code> (economic load dispatch, branches ignored), <code>"DC OPF"</code> (<code>|V| = 1</code>, lossless), <code>"AC OPF"</code> (AC power flow equations)</td>
+          <td lang="ja" data-label="設定と既定値"><code>Method = "AC OPF"</code>。<code>"ELD"</code>（経済負荷配分、ブランチは無視）、<code>"DC OPF"</code>（<code>|V| = 1</code>、損失なし）、<code>"AC OPF"</code>（交流の潮流方程式）</td></tr>
         <tr><td><code>Solver</code></td>
-          <td lang="en" data-label="Property and default"><code>Solver = "auto"</code>: the solver that <code>solve</code> chooses (<code>linprog</code>, <code>quadprog</code>, or <code>fmincon</code>)</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>Solver = "auto"</code>: <code>solve</code> が選ぶソルバー（<code>linprog</code>、<code>quadprog</code>、<code>fmincon</code>）</td></tr>
+          <td lang="en" data-label="Setting and default"><code>Solver = "auto"</code>: the solver that <code>solve</code> chooses (<code>linprog</code>, <code>quadprog</code>, or <code>fmincon</code>)</td>
+          <td lang="ja" data-label="設定と既定値"><code>Solver = "auto"</code>: <code>solve</code> が選ぶソルバー（<code>linprog</code>、<code>quadprog</code>、<code>fmincon</code>）</td></tr>
         <tr><td><code>Tolerance</code></td>
-          <td lang="en" data-label="Property and default"><code>OptimalityTolerance = NaN</code> (the solver's default)</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>OptimalityTolerance = NaN</code>（ソルバーの既定値）</td></tr>
+          <td lang="en" data-label="Setting and default"><code>Tolerance = NaN</code>: <code>OptimalityTolerance</code> of the solver (NaN: the solver's default)</td>
+          <td lang="ja" data-label="設定と既定値"><code>Tolerance = NaN</code>: ソルバーの <code>OptimalityTolerance</code>（NaN: ソルバーの既定値）</td></tr>
         <tr><td><code>MaxIteration</code></td>
-          <td lang="en" data-label="Property and default"><code>MaxIteration = NaN</code> (the solver's default)</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>MaxIteration = NaN</code>（ソルバーの既定値）</td></tr>
+          <td lang="en" data-label="Setting and default"><code>MaxIteration = NaN</code> (the solver's default)</td>
+          <td lang="ja" data-label="設定と既定値"><code>MaxIteration = NaN</code>（ソルバーの既定値）</td></tr>
         <tr><td><code>Verbose</code></td>
-          <td lang="en" data-label="Property and default"><code>Display = "default"</code>; <code>true</code> sets <code>"iter"</code>, <code>false</code> sets <code>"none"</code></td>
-          <td lang="ja" data-label="プロパティと既定値"><code>Display = "default"</code>。<code>true</code> で <code>"iter"</code>、<code>false</code> で <code>"none"</code></td></tr>
+          <td lang="en" data-label="Setting and default"><code>Display = "default"</code>; <code>true</code> sets <code>"iter"</code>, <code>false</code> sets <code>"none"</code></td>
+          <td lang="ja" data-label="設定と既定値"><code>Display = "default"</code>。<code>true</code> で <code>"iter"</code>、<code>false</code> で <code>"none"</code></td></tr>
         <tr><td><code>Cost</code></td>
-          <td lang="en" data-label="Property and default"><code>Cost = []</code>: function handle <code>@(v, p)</code> returning a scalar added to the objective (see <a href="class-design.html#opf">Class Design: OPF customization</a>)</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>Cost = []</code>: 目的関数に加えるスカラーを返す関数ハンドル <code>@(v, p)</code>（<a href="class-design.html#opf">クラス設計: OPF のカスタマイズ</a> を参照）</td></tr>
+          <td lang="en" data-label="Setting and default">condition (<code>net.solver_OPF</code>); <code>Cost = []</code>: function handle <code>@(v, p)</code> returning a scalar added to the objective (see <a href="class-design.html#opf">Class Design: OPF customization</a>)</td>
+          <td lang="ja" data-label="設定と既定値">条件（<code>net.solver_OPF</code>）。<code>Cost = []</code>: 目的関数に加えるスカラーを返す関数ハンドル <code>@(v, p)</code>（<a href="class-design.html#opf">クラス設計: OPF のカスタマイズ</a> を参照）</td></tr>
         <tr><td><code>Constraint</code></td>
-          <td lang="en" data-label="Property and default"><code>Constraint = []</code>: function handle <code>@(v, p)</code> returning <code>struct(name, constraint, ...)</code>; field <code>&lt;name&gt;</code> → <code>prob.Constraints.&lt;name&gt;</code></td>
-          <td lang="ja" data-label="プロパティと既定値"><code>Constraint = []</code>: <code>struct(name, constraint, ...)</code> を返す関数ハンドル <code>@(v, p)</code>。フィールド <code>&lt;name&gt;</code> → <code>prob.Constraints.&lt;name&gt;</code></td></tr>
+          <td lang="en" data-label="Setting and default">condition; <code>Constraint = []</code>: function handle <code>@(v, p)</code> returning <code>struct(name, constraint, ...)</code>; field <code>&lt;name&gt;</code> → <code>prob.Constraints.&lt;name&gt;</code></td>
+          <td lang="ja" data-label="設定と既定値">条件。<code>Constraint = []</code>: <code>struct(name, constraint, ...)</code> を返す関数ハンドル <code>@(v, p)</code>。フィールド <code>&lt;name&gt;</code> → <code>prob.Constraints.&lt;name&gt;</code></td></tr>
         <tr><td><code>DefaultCost</code></td>
-          <td lang="en" data-label="Property and default"><code>DefaultCost = true</code>; <code>false</code> leaves out the <code>tab_parameter.OPF</code> costs of all components</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>DefaultCost = true</code>。<code>false</code> で全機器の <code>tab_parameter.OPF</code> のコストを除外</td></tr>
+          <td lang="en" data-label="Setting and default">condition; <code>DefaultCost = true</code>; <code>false</code> leaves out the <code>tab_parameter.OPF</code> costs of all components</td>
+          <td lang="ja" data-label="設定と既定値">条件。<code>DefaultCost = true</code>。<code>false</code> で全機器の <code>tab_parameter.OPF</code> のコストを除外</td></tr>
         <tr><td><code>ReferenceBus</code></td>
-          <td lang="en" data-label="Property and default"><code>ReferenceBus = "auto"</code>: bus of <code>tools.slack_bus_index</code> (else the first bus); a bus tag; <code>"none"</code> fixes no angle</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>ReferenceBus = "auto"</code>: <code>tools.slack_bus_index</code> の母線（なければ最初の母線）。母線のタグ、または <code>"none"</code>（位相角を固定しない）</td></tr>
-        <tr><td><code>Plot</code>, <code>Export</code></td>
-          <td lang="en" data-label="Property and default"><code>false</code>: call <code>result.Plot()</code> / <code>result.Export(...)</code> afterwards</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>false</code>: 実行後に <code>result.Plot()</code> / <code>result.Export(...)</code> を呼び出し</td></tr>
+          <td lang="en" data-label="Setting and default">condition; <code>ReferenceBus = "auto"</code>: bus of <code>tools.slack_bus_index</code> (else the first bus); a bus tag; <code>"none"</code> fixes no angle</td>
+          <td lang="ja" data-label="設定と既定値">条件。<code>ReferenceBus = "auto"</code>: <code>tools.slack_bus_index</code> の母線（なければ最初の母線）。母線のタグ、または <code>"none"</code>（位相角を固定しない）</td></tr>
+        <tr><td><code>PlotFcn</code></td>
+          <td lang="en" data-label="Setting and default"><code>PlotFcn = "none"</code>: live display during the analysis; only <code>"none"</code> is available (other values: <code>GUILDA:check_plotfcn:InDevelopment</code>); the figure after the analysis: <code>result.Plot()</code></td>
+          <td lang="ja" data-label="設定と既定値"><code>PlotFcn = "none"</code>: 解析中のライブ表示。使用可能なのは <code>"none"</code> のみ（他の値は <code>GUILDA:check_plotfcn:InDevelopment</code>）。解析後の図は <code>result.Plot()</code></td></tr>
+        <tr><td><code>Export</code></td>
+          <td lang="en" data-label="Setting and default">call only; <code>false</code>: call <code>result.Export(...)</code> afterwards</td>
+          <td lang="ja" data-label="設定と既定値">呼び出しのみ。<code>false</code>: 実行後に <code>result.Export(...)</code> を呼び出し</td></tr>
         <tr><td><code>Problem</code>, <code>InitialPoint</code></td>
-          <td lang="en" data-label="Property and default">call only, not stored: an <code>optimproblem</code> from <code>net.build_opf_problem</code> (same <code>Method</code>, possibly modified) to solve as it is; the initial point (default: the <code>x0</code> of OPF-04, with <code>WarmStart</code> applied)</td>
-          <td lang="ja" data-label="プロパティと既定値">呼び出しのみ（保存しない）: そのまま解く <code>net.build_opf_problem</code> の <code>optimproblem</code>（同じ <code>Method</code>、変更可）、初期点（既定: <code>WarmStart</code> を反映した OPF-04 の <code>x0</code>）</td></tr>
+          <td lang="en" data-label="Setting and default">call only, not stored: an <code>optimproblem</code> from <code>net.build_opf_problem</code> (same <code>Method</code>, possibly modified) to solve as it is; the initial point (default: the <code>x0</code> of OPF-04, with <code>WarmStart</code> applied)</td>
+          <td lang="ja" data-label="設定と既定値">呼び出しのみ（保存しない）: そのまま解く <code>net.build_opf_problem</code> の <code>optimproblem</code>（同じ <code>Method</code>、変更可）、初期点（既定: <code>WarmStart</code> を反映した OPF-04 の <code>x0</code>）</td></tr>
         <tr><td><code>WarmStart</code></td>
-          <td lang="en" data-label="Property and default">call only, not stored; default <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>false</code>; <code>true</code>: <code>"AC OPF"</code> starts from the bus voltages of the last solved <code>"AC OPF"</code> of this network (kept by <code>net.solver_OPF</code>); <code>false</code>, or none kept: flat start (angle 0, magnitude 1; set <code>V</code> at PV and slack buses, set <code>Varg</code> at the slack bus)</td>
-          <td lang="ja" data-label="プロパティと既定値">呼び出しのみ（保存しない）。既定値 <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>false</code>。<code>true</code>: このネットワークで最後に解いた <code>"AC OPF"</code> の母線電圧（<code>net.solver_OPF</code> が保持）から <code>"AC OPF"</code> を開始。<code>false</code>、または保持なし: フラットスタート（角度 0、大きさ 1。PV・slack 母線は指定 <code>V</code>、slack 母線は指定 <code>Varg</code>）</td></tr>
-        <tr><td><span lang="en">properties only</span><span lang="ja">プロパティのみ</span></td>
-          <td lang="en" data-label="Property and default"><code>Algorithm_linprog = "dual-simplex-highs"</code>, <code>Algorithm_quadprog = "interior-point-convex"</code>, <code>Algorithm_fmincon = "interior-point"</code>, <code>StepTolerance = NaN</code>, <code>MaxFunctionEvaluations = NaN</code>, <code>UseParallel = false</code> (fmincon only)</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>Algorithm_linprog = "dual-simplex-highs"</code>、<code>Algorithm_quadprog = "interior-point-convex"</code>、<code>Algorithm_fmincon = "interior-point"</code>、<code>StepTolerance = NaN</code>、<code>MaxFunctionEvaluations = NaN</code>、<code>UseParallel = false</code>（fmincon のみ）</td></tr>
+          <td lang="en" data-label="Setting and default">call only, not stored; default <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>false</code>; <code>true</code>: <code>"AC OPF"</code> starts from the bus voltages of the last solved <code>"AC OPF"</code> of this network (kept by <code>net.solver_OPF</code>); <code>false</code>, or none kept: flat start (angle 0, magnitude 1; set <code>V</code> at PV and slack buses, set <code>Varg</code> at the slack bus)</td>
+          <td lang="ja" data-label="設定と既定値">呼び出しのみ（保存しない）。既定値 <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>false</code>。<code>true</code>: このネットワークで最後に解いた <code>"AC OPF"</code> の母線電圧（<code>net.solver_OPF</code> が保持）から <code>"AC OPF"</code> を開始。<code>false</code>、または保持なし: フラットスタート（角度 0、大きさ 1。PV・slack 母線は指定 <code>V</code>、slack 母線は指定 <code>Varg</code>）</td></tr>
+        <tr><td><span lang="en">settings only</span><span lang="ja">設定のみ</span></td>
+          <td lang="en" data-label="Setting and default"><code>Algorithm_linprog = "dual-simplex-highs"</code>, <code>Algorithm_quadprog = "interior-point-convex"</code>, <code>Algorithm_fmincon = "interior-point"</code>, <code>StepTolerance = NaN</code>, <code>MaxFunctionEvaluations = NaN</code>, <code>UseParallel = false</code> (fmincon only)</td>
+          <td lang="ja" data-label="設定と既定値"><code>Algorithm_linprog = "dual-simplex-highs"</code>、<code>Algorithm_quadprog = "interior-point-convex"</code>、<code>Algorithm_fmincon = "interior-point"</code>、<code>StepTolerance = NaN</code>、<code>MaxFunctionEvaluations = NaN</code>、<code>UseParallel = false</code>（fmincon のみ）</td></tr>
       </tbody>
     </table>
     <p lang="en">Preconditions:</p>
@@ -215,22 +218,22 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         <p class="fs-head"><b class="fs-id">OPF-01</b> <span class="fs-call">user → <code>PowerNetwork.optimize_powerflow</code></span><small><code>v3_opf_args</code>, <code>take_call_options</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Maps the deprecated option <code>methods</code> to <code>Method</code>; separates the call-only options <code>Plot</code>, <code>Export</code>, <code>Problem</code>, <code>InitialPoint</code>, <code>WarmStart</code> from the solver options; <code>WarmStart</code> is added to <code>sct_options</code> after OPF-02.</span><span lang="ja">非推奨オプション <code>methods</code> を <code>Method</code> に変換。呼び出しのみのオプション <code>Plot</code>、<code>Export</code>、<code>Problem</code>、<code>InitialPoint</code>、<code>WarmStart</code> をソルバーのオプションから分離。<code>WarmStart</code> は OPF-02 の後に <code>sct_options</code> へ追加</span></dd>
+          <dd><span lang="en">Maps the deprecated option <code>methods</code> to <code>Method</code>; separates the call-only options <code>Export</code>, <code>Problem</code>, <code>InitialPoint</code>, <code>WarmStart</code> from the solver options; <code>WarmStart</code> is added to <code>sct_options</code> after OPF-02.</span><span lang="ja">非推奨オプション <code>methods</code> を <code>Method</code> に変換。呼び出しのみのオプション <code>Export</code>、<code>Problem</code>、<code>InitialPoint</code>、<code>WarmStart</code> をソルバーのオプションから分離。<code>WarmStart</code> は OPF-02 の後に <code>sct_options</code> へ追加</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>varargin</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>c_nv</code>, <code>opt</code> (<code>Plot</code>, <code>Export</code>, <code>Problem</code>, <code>InitialPoint</code>, <code>WarmStart</code>)</dd>
+          <dd><code>c_nv</code>, <code>opt</code> (<code>Export</code>, <code>Problem</code>, <code>InitialPoint</code>, <code>WarmStart</code>)</dd>
         </dl>
       </li>
       <li class="fs-step" id="OPF-02">
         <p class="fs-head"><b class="fs-id">OPF-02</b> <span class="fs-call"><code>optimize_powerflow</code> → <code>SolverOPF.get_options</code></span><small>→ <code>tools.resolve_options</code>, <code>validate_options</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Maps the Name-Value names through <code>OptionMap</code>, checks the values, fills the rest from the solver.</span><span lang="ja">Name-Value の名前を <code>OptionMap</code> で対応づけ、値を検査。残りの設定はソルバーから補完</span></dd>
+          <dd><span lang="en">Maps the Name-Value names through <code>OptionMap</code>, checks the values (<code>PlotFcn</code>: <code>tools.check_plotfcn</code>), fills the rest from the OptimalPowerFlow section of <code>GUILDA.setting</code> and the conditions of the solver.</span><span lang="ja">Name-Value の名前を <code>OptionMap</code> で対応づけ、値を検査（<code>PlotFcn</code>: <code>tools.check_plotfcn</code>）。残りは <code>GUILDA.setting</code> の OptimalPowerFlow セクションとソルバーの条件から補完</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>c_nv</code>; public properties of <code>net.solver_OPF</code></span><span lang="ja"><code>c_nv</code>、<code>net.solver_OPF</code> の public プロパティ</span></dd>
+          <dd><span lang="en"><code>c_nv</code>; <code>GUILDA.config("OptimalPowerFlow")</code>; public properties of <code>net.solver_OPF</code></span><span lang="ja"><code>c_nv</code>、<code>GUILDA.config("OptimalPowerFlow")</code>、<code>net.solver_OPF</code> の public プロパティ</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>sct_options</code>: struct with 15 fields (<code>Method</code>, <code>Solver</code>, <code>Algorithm_*</code>, <code>Display</code>, <code>MaxIteration</code>, ..., <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code>). Solver unchanged.</span><span lang="ja"><code>sct_options</code>: 15 フィールドの構造体（<code>Method</code>、<code>Solver</code>、<code>Algorithm_*</code>、<code>Display</code>、<code>MaxIteration</code>、…、<code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code>）。ソルバーは不変</span></dd>
+          <dd><span lang="en"><code>sct_options</code>: struct with 16 fields (<code>Method</code>, <code>Solver</code>, <code>Algorithm_*</code>, <code>Display</code>, <code>MaxIteration</code>, ..., <code>PlotFcn</code>, <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code>). Solver and settings file unchanged.</span><span lang="ja"><code>sct_options</code>: 16 フィールドの構造体（<code>Method</code>、<code>Solver</code>、<code>Algorithm_*</code>、<code>Display</code>、<code>MaxIteration</code>、…、<code>PlotFcn</code>、<code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code>）。ソルバーと設定ファイルは不変</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="OPF-03">
@@ -384,10 +387,10 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
               <li>Picks the solver: <code>solvers(prob)</code> for <code>"auto"</code>; a named solver is checked against the problem.</li>
-              <li>Passes only the settings that differ from the solver's defaults, so the stored defaults call <code>solve(prob, x0)</code> as it is.</li>
+              <li>Passes only the settings that differ from the solver's defaults, so the default settings call <code>solve(prob, x0)</code> as it is.</li>
             </ul><ul lang="ja">
               <li>ソルバーを選択: <code>"auto"</code> では <code>solvers(prob)</code>、名前を指定した場合はその問題を表せるか確認</li>
-              <li>ソルバーの既定値と異なる設定だけを指定。保存された既定値のままなら <code>solve(prob, x0)</code> をそのまま呼び出し</li>
+              <li>ソルバーの既定値と異なる設定だけを指定。既定の設定のままなら <code>solve(prob, x0)</code> をそのまま呼び出し</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>prob</code>, <code>sct_options</code>, <code>optimoptions(solver)</code></span><span lang="ja"><code>prob</code>、<code>sct_options</code>、<code>optimoptions(solver)</code></span></dd>
@@ -437,14 +440,14 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         </dl>
       </li>
       <li class="fs-step" id="OPF-16">
-        <p class="fs-head"><b class="fs-id">OPF-16</b> <span class="fs-call"><code>optimize_powerflow</code> → user</span><small><code>result.Plot</code>, <code>result.Export</code>, <code>legacy_output</code></small></p>
+        <p class="fs-head"><b class="fs-id">OPF-16</b> <span class="fs-call"><code>optimize_powerflow</code> → user</span><small><code>result.Export</code>, <code>legacy_output</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>Runs <code>Plot</code> / <code>Export</code> when asked.</li>
+              <li>Runs <code>Export</code> when asked.</li>
               <li>With 6 outputs: the deprecated tuple <code>[powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob]</code> through <code>v3_optimize_powerflow</code>, with a deprecation warning.</li>
             </ul><ul lang="ja">
-              <li>指定があれば <code>Plot</code> / <code>Export</code> を実行</li>
+              <li>指定があれば <code>Export</code> を実行</li>
               <li>出力 6 個の呼び出し: <code>v3_optimize_powerflow</code> が非推奨の出力 <code>[powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob]</code> を警告付きで返却</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
