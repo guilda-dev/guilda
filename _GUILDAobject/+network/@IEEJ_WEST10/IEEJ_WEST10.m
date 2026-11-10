@@ -23,9 +23,9 @@ classdef IEEJ_WEST10 < PowerNetwork
 %
 % - Lines are pi branches with the per-circuit `R`, `X` of the input data and `C = YC`
 %   (the input data give the charging at each end, `YC = Y/2`). A card with two circuits
-%   is two branches, named with `-1` and `-2`, so that one circuit can be opened
-%   (Scenario.add_open_branch). The bus voltages and angles are the same as with one branch of
-%   `R/2`, `X/2`, `2*C` per card (within 1e-14).
+%   is two branches, named with `_1` and `_2` (e.g. `LINE20_1`, `LINE20_2`), so that one
+%   circuit can be opened (Scenario.add_open_branch). The bus voltages and angles are the
+%   same as with one branch of `R/2`, `X/2`, `2*C` per card (within 1e-14).
 % - Transformers are pi_transformer branches with the input `X` (0.14 pu on the machine
 %   rating), `R = 0`, `C = 0`, `tap = 1`, `phase = 0`.
 % - Generators have `P = PG`, `Q = NaN`, and the rating `baseMVA = GMVA` of the section.
@@ -104,7 +104,7 @@ classdef IEEJ_WEST10 < PowerNetwork
 % res   = net.calculate_powerflow();
 % sc    = Scenario("fault-open", Time=[0,20]);
 % sc.add_fault("B004", [0.1,0.17]);
-% sc.add_open_branch("LINE50-1", [0.17,20]);
+% sc.add_open_branch("LINE50_1", [0.17,20]);
 % net.add_scenario(sc);
 % sol   = net.simulate(sc);
 % ```

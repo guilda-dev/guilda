@@ -26,11 +26,14 @@ classdef LayerPackage < handle
 % - `sct_stale` has public GetAccess (Hidden) because the DebugScript tests, which are
 %   scripts, read it.
 %
-% Tags: `s_tag` identifies the layer within the layer structure; a tag that already exists
-% among the siblings is renamed with a number suffix. A rename is an edit with the tag
-% "Tag", which makes nothing stale. Tags are permanent IDs, so the tags of existing
-% child layers do not follow: after renaming bus B002 to BX, its component SG1B002 keeps
-% its tag and a component added later is SG2BX.
+% Tags: `s_tag` identifies the layer within the layer structure. A tag must be a valid
+% MATLAB variable name (isvarname: a letter first, then letters, digits and underscores, at
+% most namelengthmax characters, not a keyword), because tags name OPF constraints and
+% struct fields; any other tag stops with GUILDA:LayerPackage:InvalidTag. A tag that
+% already exists among the siblings is renamed with a number suffix (checked again). A
+% rename is an edit with the tag "Tag", which makes nothing stale. Tags are permanent
+% IDs, so the tags of existing child layers do not follow: after renaming bus B002 to BX,
+% its component SG1B002 keeps its tag and a component added later is SG2BX.
 %
 % <@Examples>
 % ```matlab
@@ -64,7 +67,7 @@ classdef LayerPackage < handle
     
     %% Tag
     properties % Tag
-        s_tag                                             % User-defined tag of the layer, unique among its siblings (see the class help). <@Type> string
+        s_tag                                             % User-defined tag of the layer: a valid variable name (isvarname), unique among its siblings (see the class help). <@Type> string
     end
 
     methods(Access=protected)
@@ -79,8 +82,12 @@ classdef LayerPackage < handle
         doc(obj)
 
         function set.s_tag(obj,s_newtag)
+            % A tag must be a valid MATLAB variable name (OPF constraint names, struct fields).
             % A tag that already exists among the siblings gets a number suffix
             s_newtag = string(s_newtag);
+            if ~isscalar(s_newtag) || ismissing(s_newtag) || ~isvarname(char(s_newtag))
+                error(msg("GUILDA:LayerPackage:InvalidTag", char(join(string(s_newtag), ", ")), namelengthmax))
+            end
             if ~isempty(obj.parent)
                 a_sameLayer = obj.parent.children;
                 l_me  = tools.vcellfun(@(a) a==obj, a_sameLayer);
@@ -91,6 +98,9 @@ classdef LayerPackage < handle
                     while ismember(s_modified, sv_sameLayer)
                         id = id+1;
                         s_modified = s_newtag+num2str(id,"%.3d");
+                    end
+                    if ~isvarname(char(s_modified))
+                        error(msg("GUILDA:LayerPackage:InvalidTag", char(s_modified), namelengthmax))
                     end
                     fprintf("Info : Tag changed due to overlaps detected")
                     disp(['[ "',char(s_newtag),'" >> "',char(s_modified),'"]'])

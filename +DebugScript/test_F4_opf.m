@@ -21,6 +21,7 @@
 %     平衡点を古くしないこと
 %   - 上下限を ±Inf (送電線は NaN も) にすると既定の制約が外れる
 %   - build_opf_problem の問題を変更して Problem / InitialPoint で解く
+%   - IEEJ_WEST10 (送電線のタグが制約名になる系統) の AC OPF が解ける
 % 費用関数は機器の tab_parameter.OPF、制約は各クラスの tab_parameter.operation で設定する。
 % 利用者の費用・制約は optimize_powerflow / build_opf_problem の Cost, Constraint で追加する。
 %
@@ -1020,6 +1021,16 @@ assert(error_id(@() net.initialize(Method="OPF")) == "GUILDA:require_toolbox:Una
 [~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());
 assert(flag == 1)
 
+
+%% IEEJ_WEST10 AC OPF names its branch constraints after the tags
+% 制約名は送電線などのタグから作られる。IEEJ_WEST10 の LINE20_1 や G1_TR (定義ファイルは
+% 変数名として有効なタグ) で AC OPF が解ける (昼間断面。夜間断面も解けるが時間がかかる)
+net = DebugScript.helper.quiet(@() network.IEEJ_WEST10());
+sv_bra = string(net.a_Branch);
+assert(all(arrayfun(@(s) isvarname(char(s)), sv_bra)) && ismember("LINE20_1", sv_bra) && ismember("G1_TR", sv_bra))
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+assert(flag > 0)
+assert(abs(sum(res.tab_bus.P) - real(DebugScript.helper.branch_losses(net, res.tab_bus.Vphasor))) < 1e-4)
 
 % ---- local functions ----
 function net = build_loop3()
