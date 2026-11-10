@@ -4,5 +4,6 @@ function validate_options(opt)
         opt.Method (1,1) string {mustBeMember(opt.Method, ["Kron","Feedback","DAE"])}
         opt.Point
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])}
+        opt.PlotFcn                     % checked by tools.check_plotfcn
     end
 end

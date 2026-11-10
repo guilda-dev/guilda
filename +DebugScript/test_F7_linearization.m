@@ -798,7 +798,7 @@ x(iv_V)    = x(iv_V) * 1.03;
 x(iv_u(1)) = x(iv_u(1)) + 0.1;
 xe = gen.rv_Xequilibrium;
 res1 = net.linearize("Point", x);
-assert(isequal(gen.rv_Xequilibrium, xe) && isempty(net.solver_LIN.Point), "モデルまたは解法が変わった")
+assert(isequal(gen.rv_Xequilibrium, xe) && isempty(net.solver_LIN.get_options().Point), "モデルまたは解法が変わった")
 assert(norm(res1.rm_Axx(iv_x,iv_x) - res0.rm_Axx(iv_x,iv_x), 1) > 1e-6, "ずらしても行列が変わらない")
 % 期待値: その点での f_JacobiDx / f_JacobiI (I は fcn_I から)
 xg = x(iv_x);  Vg = x(iv_V);  ug = x(iv_u);
@@ -984,11 +984,17 @@ res = net.linearize("Method", "Kron");
 assert(isequal(net.solver_LIN.get_options(), sct_before))
 assert(res.options.Method == "Kron")
 assert(isequal(res.get_ss(), res.get_ss("Kron")))
-% 既定値の変更は残る
+% 既定値は GUILDA.setting の Linearization。変えると以後の呼び出しに効く (solver_LIN は設定を持たない)
 n_x = size(res.rm_Axx,1);
-net.solver_LIN.Method = "DAE";
+assert(GUILDA.config("Linearization", "Method") == "Feedback" && ~isprop(net.solver_LIN, "Method") && ~isprop(net.solver_LIN, "Point"))
+c_cfg = DebugScript.helper.user_config("Linearization", struct("Method", "DAE"));
 assert(size(net.get_sys().A,1) > n_x)
-net.solver_LIN.Method = "Feedback";
+clear c_cfg
+% Plot オプションは廃止 (図は result.Plot)、PlotFcn は "none" のみ
+assert(error_id(@() net.linearize(Plot=true)) == "GUILDA:resolve_options:UnknownName")
+assert(error_id(@() net.get_sys(Plot=true)) == "GUILDA:resolve_options:UnknownName")
+assert(error_id(@() net.linearize(PlotFcn="eig")) == "GUILDA:check_plotfcn:InDevelopment")
+assert(net.linearize(PlotFcn="none").options.PlotFcn == "none")
 % 知らない名前は受け付ける名前を示すエラー
 try
     net.linearize("Methd", "Kron");
@@ -1185,10 +1191,10 @@ close(ancestor(ax, "figure"))
 
 
 %% Plot draws the algorithm of the options
-% 既定は options.Method。Plot=true でも同じで、Method を渡せばそちらを描く
+% 既定は options.Method。Method を渡せばそちらを描く
 for alg = ["Feedback", "Kron", "DAE"]
-    DebugScript.helper.quiet(@() net.linearize("Method", alg, "Plot", true));
-    ax = gca;
+    res = DebugScript.helper.quiet(@() net.linearize("Method", alg));
+    ax = res.Plot();
     assert(ax.Title.String == "Eigenvalues (" + alg + ")", ax.Title.String)
     close(ancestor(ax, "figure"))
 end
@@ -1198,7 +1204,8 @@ assert(ax.Title.String == "Eigenvalues (DAE)", ax.Title.String)
 close(ancestor(ax, "figure"))
 % Feedback で描けない NonUnit は get_ss と同じエラー
 try
-    net.linearize("Method", "Feedback", "NonUnit", [7 2], "Plot", true);
+    res = DebugScript.helper.quiet(@() net.linearize("Method", "Feedback", "NonUnit", [7 2]));
+    res.Plot();
     error("DebugScript:NoError", "状態のある母線の NonUnit がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus", DebugScript.helper.msg_id(ME))
@@ -1267,19 +1274,19 @@ end
 
 
 %% Coordinate is an option of linearize and get_sys
-% Coordinate は solver_LIN の設定で、呼び出しごとに上書きできる。保存された既定は変わらない
+% Coordinate は GUILDA.setting の Linearization の設定で、呼び出しごとに上書きできる。既定は変わらない
 net = new_net();
 DebugScript.helper.quiet(@() net.initialize);
-assert(net.solver_LIN.Coordinate == "theta&rho")
+assert(GUILDA.config("Linearization", "Coordinate") == "theta&rho")
 sD0 = net.get_sys(Method="DAE");
 assert(any(string(sD0.StateName) == "rho1"))
 sD = net.get_sys(Method="DAE", Coordinate="theta&V");
-assert(any(string(sD.StateName) == "V1") && net.solver_LIN.Coordinate == "theta&rho")
+assert(any(string(sD.StateName) == "V1") && GUILDA.config("Linearization", "Coordinate") == "theta&rho")
 assert(isequal(net.get_sys(Method="DAE", Coordinate="theta&V", Format="ss"), net.linearize(Coordinate="theta&V").get_ss("DAE")))
 assert(isequal(net.get_sys(Method="DAE", Format="struct"), net.linearize(Coordinate="theta&V").get_ss("DAE", Coordinate="theta&rho", Format="struct")))
-net.solver_LIN.Coordinate = "Vre&Vim";
+c_cfg = DebugScript.helper.user_config("Linearization", struct("Coordinate", "Vre&Vim"));
 assert(any(string(net.get_sys(Method="DAE").StateName) == "Vre1"))
-net.solver_LIN.Coordinate = "theta&rho";
+clear c_cfg
 try
     net.get_sys(Coordinate="polar");
     error("DebugScript:NoError", "不正な Coordinate がエラーにならない")
@@ -1498,4 +1505,18 @@ clear c_tmp
 function run_task_linearization()
 % スクリプトの変数がテストの変数と混ざらないように関数の中で実行する
     DebugScript.Task_linearization
+end
+
+
+function id = error_id(fcn)
+% fcn を実行し、エラーの ID を返す (エラーにならなければ "")
+    id = "";
+    try
+        DebugScript.helper.quiet(fcn);
+    catch ME
+        id = string(DebugScript.helper.msg_id(ME));
+        if id == ""
+            id = "(no id)";
+        end
+    end
 end

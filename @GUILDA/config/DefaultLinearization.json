@@ -1,0 +1,30 @@
+{
+    "Method":{
+        "Value": "Feedback",
+        "Type": "select",
+        "options":[
+            "Kron",
+            "Feedback",
+            "DAE"
+        ],
+        "Description": "Reduction of result.get_ss() and net.get_sys: 'Kron' (eliminate the bus voltages), 'Feedback' (bus models connected through the admittance matrix) or 'DAE' (descriptor form)"
+    },
+    "Coordinate":{
+        "Value": "theta&rho",
+        "Type": "select",
+        "options":[
+            "theta&rho",
+            "theta&V",
+            "Vre&Vim"
+        ],
+        "Description": "Bus variables of the 'DAE' reduction: 'theta&rho' (angle and log magnitude), 'theta&V' (angle and magnitude) or 'Vre&Vim' (real and imaginary parts)"
+    },
+    "PlotFcn":{
+        "Value": "none",
+        "Type": "select",
+        "options": [
+            "none"
+        ],
+        "Description": "Live display during the analysis ('none'; other displays are under development). The figure after the analysis: result.Plot()"
+    }
+}

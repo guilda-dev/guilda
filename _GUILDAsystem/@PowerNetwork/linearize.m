@@ -5,13 +5,13 @@ function [result, flag, output] = linearize(obj, varargin)
 % the order of net.get_variable_map()) as a ResultLIN, whose properties A, B, C, D, E,
 % StateName, InputName and OutputName hold the reduced model of Method;
 % result.get_ss(Method) gives it for another algorithm or with other channels. The
-% linearization needs no toolbox. The settings are the stored defaults of
-% net.solver_LIN; Name-Value options override them for this call only (net.solver_LIN is
-% not changed). Neither is the network: a Point away from the equilibrium is used only
+% linearization needs no toolbox. The settings are the Linearization section of
+% GUILDA.setting; Name-Value options override them for this call only (the settings file
+% is not changed). Neither is the network: a Point away from the equilibrium is used only
 % for this call.
 % The network must be initialized (net.initialize()); otherwise this stops with
 % GUILDA:SolverLIN:Stale, which asks for it.
-% Accepted options are the names in SolverLIN.OptionMap plus Plot; any other name
+% Accepted options are the names in SolverLIN.OptionMap; any other name
 % stops with GUILDA:resolve_options:UnknownName.
 % A Point with NaN or Inf (such as a tripped unit in {sim, t}) stops with
 % GUILDA:SolverLIN:PointNotFinite, and a model that is not finite at the point with
@@ -19,16 +19,16 @@ function [result, flag, output] = linearize(obj, varargin)
 %
 % Name-Value options:
 %
-% - `Method` — Default form of result.get_ss() (net.solver_LIN.Method).
+% - `Method` — Default form of result.get_ss(). Default: GUILDA.setting ("Feedback").
 % - `Point` — Point of the linearization: [] for the equilibrium, the values in the order
 %   of net.get_variable_map(), or {sim, t} for the state of a simulation result at time t
 %   (sim.get_point(t); {sim, t, "before"} at a phase boundary takes the value before the
-%   event) (net.solver_LIN.Point). It sets the variables only: the admittance matrix stays
+%   event). Default: [] (given in a call only). It sets the variables only: the admittance matrix stays
 %   the one of the model, also inside a fault. A zero bus voltage is reported with an INFO
 %   message and output.sv_faultBus.
 % - `Coordinate` — Default bus variables of result.get_ss("DAE"): "theta&rho", "theta&V" or
-%   "Vre&Vim" (net.solver_LIN.Coordinate).
-% - `Plot` — Call result.Plot (eigenvalue map) after the linearization. Default: false.
+%   "Vre&Vim". Default: GUILDA.setting ("theta&rho").
+% - `PlotFcn` — Live display during the linearization: "none" (the other displays are under development; draw the eigenvalue map with result.Plot()). Default: GUILDA.setting ("none").
 %
 % <@Examples>
 % ```matlab
@@ -56,35 +56,7 @@ function [result, flag, output] = linearize(obj, varargin)
         flag     % True when the result is usable: all Jacobian entries are finite and Avv is invertible.
         output   % output.message describes the outcome; s_issue is its reason when flag is false; l_equilibrium, n_x, n_v, n_u, rcond_Avv, sv_faultBus (buses with zero voltage at the point).
     end
-    [c_nv, opt] = take_call_options(varargin);
-    sct_options = obj.solver_LIN.get_options(c_nv);
+    sct_options = obj.solver_LIN.get_options(varargin);
 
     [result, flag, output] = obj.solver_LIN.solve(obj, sct_options);
-
-    if opt.Plot
-        result.Plot();
-    end
-end
-
-
-function [c_nv, opt] = take_call_options(c_in)
-% Separates the options of this call (Plot) from the solver options
-    c_nv = c_in;
-    opt  = struct("Plot", false);
-    if mod(numel(c_in), 2) ~= 0
-        return              % not Name-Value pairs: tools.resolve_options reports it
-    end
-    lv_call = false(size(c_in));
-    for k = 1:2:numel(c_in)
-        lv_call(k:k+1) = (ischar(c_in{k}) || isstring(c_in{k})) && strcmpi(c_in{k}, "Plot");
-    end
-    c_call = c_in(lv_call);
-    c_nv   = c_in(~lv_call);
-    opt    = call_options(c_call{:});
-end
-
-function opt = call_options(opt)
-    arguments (Input)
-        opt.Plot (1,1) logical = false
-    end
 end
