@@ -6,7 +6,7 @@ function c_restore = user_config(s_section, sct_value)
 %   clear c            % 元のファイルに戻して設定を読み直す
     arguments (Input)
         s_section (1,1) string  % セクション (ファイル名の Default と .json を除いた部分)
-        sct_value (1,1) struct  % 書くキーと値 (ほかのキーは既定値)
+        sct_value (1,1) struct  % 書くキーと値 (ほかのキーは既定値)。version は既定ファイルのものを付ける
     end
     arguments (Output)
         c_restore  % onCleanup: 元のファイルに戻して設定を読み直す
@@ -18,6 +18,11 @@ function c_restore = user_config(s_section, sct_value)
         s_old = string(missing);
     end
     c_restore = onCleanup(@() restore(s_file, s_old));
+    % 既定ファイルと同じ version を書く (違うと get_config が既定値で上書きする)
+    sct_def = jsondecode(fileread(fullfile(GUILDA.pwd, "@GUILDA", "config", "Default" + s_section + ".json")));
+    if isfield(sct_def, "version")
+        sct_value.version = sct_def.version;
+    end
     writelines(jsonencode(sct_value), s_file);
     GUILDA.config([], [], "reset", true);
 end

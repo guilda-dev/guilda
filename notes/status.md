@@ -129,6 +129,17 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **Q1(2026-11-10):** OPF・連続潮流計算・時間応答シミュレーション・線形化の設定も GUILDA.setting(OptimalPowerFlow、ContinuationPowerFlow、TimeSimulation、新設の Linearization)から `get_options` が実行ごとに読む。`net.solver_*` に残るのは条件だけ(`solver_OPF` の `Cost`・`Constraint`・`DefaultCost`・`ReferenceBus`、`solver_CPF` の `LoadBus`)で、削除したプロパティへの代入と v3 互換の `net.solver_ODE.Reporter` はエラー(互換なし)。
 - JSON キーを Name-Value 名にそろえた(`OptimalityTolerance`・`RelativeTolerance` → `Tolerance`、`MaxIterations` → `MaxIteration`。ユーザー設定の旧キーは変換せず捨てる)。全解析の呼び出しオプション `Plot` を廃止し、解析中のライブ表示 `PlotFcn` に置換(当面 `"none"` のみ、`tools.check_plotfcn`)。図は `result.Plot()`。移行の説明は [v4-migration.md](v4-migration.md)「解析の設定は GUILDA.setting、`net.solver_*` は条件だけ」。
 
+## GUILDA.setting のコマンドと設定ファイルの version(2026-11-10)
+
+ブランチは `feature/setting-command`(未 push)。
+
+- `GUILDA.setting("カテゴリ", 名前=値, ...)` で、ウィンドウを開かずに設定を変更できる。値は既定の JSON の `Type`(`double`・`logical`・`string`・`select` と `options`)で検証し、未知のカテゴリ・名前や不正な値は何も変えずにエラー(`GUILDA:GUILDA:UnknownSettingCategory`・`UnknownSettingName`・`SettingNameValue`・`InvalidSettingValue`)。保存はウィンドウの Apply と同じ `set_config` で、`GUILDA.config` のキャッシュも読み直す。
+- カテゴリ名・設定名の Tab 補完はしない。MATLAB は `@GUILDA` の補完を隣の `resources` フォルダ(リポジトリルート)からしか読まず、ルートにフォルダを増やさないとメンテナーが判断した(2026-11-10)。
+- 利用者の JSON には既定ファイルの `version` を書く。`version` が違う・無いカテゴリは既定値で書き直し、INFO(`GUILDA:GUILDA:ConfigReset`)で知らせる。既定値・キー名・構造を変えたら `version` を上げる(class-design.html「設定ファイルとその版」)。これで潮流計算の手順 B の要判断「既定値が既存の環境に届かない件」も、version を上げれば解消する。
+- `v3_user_config`(利用者設定の旧キーの変換)は削除した。既定ファイルに `version` が入ると、version のない利用者の JSON はすべて既定値に戻るため、変換の働く場面がない。
+- 各 `Default*.json` に `"version": 1` を追加(`feature/plotfcn` のマージ後)。version のない利用者の JSON は既定値に戻るため、PlotFcn の節の移行の注意(保存済みの `MaxIteration` 0 で潮流計算が失敗する)は起きない(F9 で確認)。
+- 設定ウィンドウに Type `"string"`(連続潮流計算の `Limits`)の入力欄(カンマ区切り)を追加。これまでは入力欄がなく、前の行の入力欄が動いていた。
+
 ## PlotFcn の実装と OPF の `Verbose`(2026-11-10)
 
 仕様と実装の記録は [powerflow-options.md](powerflow-options.md) にあります(「PlotFcn の実装と OPF の `Verbose`」節)。ブランチは `feature/plotfcn`(未 push)。

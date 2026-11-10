@@ -212,8 +212,7 @@ assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "Sol
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "get_options.m")) == 2, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "solve.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@ResultLIN", "get_ss.m")) == 1, join(sv_hook, ", "))
-assert(sum(sv_file == fullfile("@GUILDA", "private", "get_config.m")) == 1, join(sv_hook, ", "))
-assert(numel(sv_hook) == 17, join(sv_hook, ", "))
+assert(numel(sv_hook) == 16, join(sv_hook, ", "))
 
 
 % ---- local functions ----

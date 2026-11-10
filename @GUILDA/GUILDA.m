@@ -9,7 +9,7 @@ classdef GUILDA < handle
 % >> GUILDA.rmpath()     : Remove paths for use of this software
 % >> GUILDA.addpath()    : Add paths for use of this software
 % >> GUILDA.gitpull()    : Get new version from GitHub
-% >> GUILDA.setting()    : Launch settings window (GUI launches)
+% >> GUILDA.setting()    : Launch settings window (GUI launches); GUILDA.setting(Category, Name=Value) changes settings
 % >> GUILDA.tutorial()   : open Tutorial
 % >> GUILDA.doc()        : open documentation on browser
 % >> GUILDA.publish_doc(): publish documentation to GitHub Pages (gh-pages)
@@ -50,8 +50,7 @@ classdef GUILDA < handle
 
             GUILDApath = fullfile(obj.pwd,"@GUILDA","config");
             has_desktop = usejava('desktop');   % false in -batch / -nodisplay
-            addpath(fullfile(obj.pwd,"_GUILDAsystem","_VersionSupport"))  % used by get_config before obj.addpath
-            cf_all     = get_config();
+            [cf_all, sv_reset] = get_config();
             cf         = cf_all.EnvStartup;
             set_config(cf_all);
             % disp GUILDA LOGO
@@ -64,6 +63,10 @@ classdef GUILDA < handle
             end
             % add GUILDA path
             obj.addpath
+            % user settings reset by a new version of their defaults (show_msg needs the path)
+            for s_reset = sv_reset'
+                show_msg("info", "GUILDA:GUILDA:ConfigReset", s_reset)
+            end
             % check required Toolbox
             if cf.CheckRequirement.Value
                 check_requirement
@@ -101,7 +104,7 @@ classdef GUILDA < handle
 
         newclass()
         tutorial(mode)
-        setting()
+        setting(s_category, varargin)
         gitpull()
         addpath()
         rmpath() 

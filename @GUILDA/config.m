@@ -10,7 +10,11 @@ function data = config(category,parameter,option)
     
     persistent cache
     if isempty(cache) || option.reset
-        cache = get_config();
+        [cache, sv_reset] = get_config();
+        for s_reset = sv_reset'
+            % after the cache is set: show_msg reads the Message settings through GUILDA.config
+            show_msg("info", "GUILDA:GUILDA:ConfigReset", s_reset)
+        end
     end
     
     data = cache;

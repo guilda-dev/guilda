@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "port_vw":{
         "Value": "[Vre,Vim] to [-Iim,Ire]",
         "Type": "select",
