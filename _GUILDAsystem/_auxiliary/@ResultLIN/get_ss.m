@@ -1,4 +1,4 @@
-function sys = get_ss(obj, Algorithm, opt)
+function sys = get_ss(obj, Method, opt)
 % Get a reduced linear model (Kron / Feedback / DAE).
 %
 % Returns the linear model of the result (E dx/dt = A x + B u, y = C x + D u). Format
@@ -50,7 +50,7 @@ function sys = get_ss(obj, Algorithm, opt)
 %
 % For an object-level result (comp.get_sys, bus.get_sys, con.get_sys, gc.get_sys), get_ss
 % returns the port model held in the result; Input and Output take names of its inputs
-% and outputs, and Algorithm and Coordinate do not apply.
+% and outputs, and Method and Coordinate do not apply.
 %
 % A result with flag false (output.s_issue) stops with an error that repeats output.message:
 % GUILDA:ResultLIN:NotFinite for every algorithm, and GUILDA:ResultLIN:SingularAvv
@@ -69,7 +69,7 @@ function sys = get_ss(obj, Algorithm, opt)
 % See also PowerNetwork.get_sys, ResultLIN.Plot
     arguments (Input)
         obj
-        Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = default_algorithm(obj) % Form of the model.
+        Method (1,1) string {mustBeMember(Method, ["Kron","Feedback","DAE"])} = default_algorithm(obj) % Form of the model.
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = default_coordinate(obj) % Bus variables of "DAE": angle and log magnitude (rho), angle and magnitude, or real and imaginary parts. Default: options.Coordinate of the result.
         opt.Input (1,:) string % Inputs of the model: "u" or Labels. Default: all inputs.
         opt.Output (1,:) string % Outputs of the model: "x", "V", "I", "y" or names. Default: as described for each algorithm.
@@ -92,10 +92,10 @@ function sys = get_ss(obj, Algorithm, opt)
     end
     if obj.output.s_issue == "NotFinite"
         error(msg("GUILDA:ResultLIN:NotFinite", obj.output.message))
-    elseif obj.output.s_issue == "SingularAvv" && Algorithm ~= "DAE"
-        error(msg("GUILDA:ResultLIN:SingularAvv", obj.output.message, Algorithm))
+    elseif obj.output.s_issue == "SingularAvv" && Method ~= "DAE"
+        error(msg("GUILDA:ResultLIN:SingularAvv", obj.output.message, Method))
     end
-    switch Algorithm
+    switch Method
         case "Kron"
             sys = via_kron(obj);
         case "Feedback"
@@ -104,7 +104,7 @@ function sys = get_ss(obj, Algorithm, opt)
             sys = via_dae(obj, opt.Coordinate);
     end
     if isfield(opt, "Output")
-        sys = select_output(obj, sys, Algorithm, opt.Coordinate, opt.Output);
+        sys = select_output(obj, sys, Method, opt.Coordinate, opt.Output);
     end
     if isfield(opt, "Input")
         sys = input_by_index(sys, input_index(sys, opt.Input));
@@ -157,8 +157,8 @@ end
 
 function str = default_algorithm(obj)
     str = "Feedback";
-    if isfield(obj.options, "Algorithm")
-        str = obj.options.Algorithm;
+    if isfield(obj.options, "Method")
+        str = obj.options.Method;
     end
 end
 
@@ -283,7 +283,7 @@ function [filt_o, filt_i, sv_busvar] = coordinate_filter(Vc_st, s_coordinate)
 end
 
 
-function sys = select_output(obj, sys, Algorithm, s_coordinate, sv_select)
+function sys = select_output(obj, sys, Method, s_coordinate, sv_select)
 % Replaces the outputs of the model by the selected ones: y = Cx x + Cv v + Du u of the
 % unreduced DAE, written with the states and inputs of the model
     tab  = obj.tab_variable;
@@ -321,13 +321,13 @@ function sys = select_output(obj, sys, Algorithm, s_coordinate, sv_select)
     end
     lv_missing = ismember(sv_name, sv_x) & ~ismember(sv_name, sv_model);
     if any(lv_missing)
-        error(msg("GUILDA:ResultLIN:StateNotInModel", sv_name(find(lv_missing,1)), Algorithm))
+        error(msg("GUILDA:ResultLIN:StateNotInModel", sv_name(find(lv_missing,1)), Method))
     end
     Cx = Cx(iv_all,:);
     Cv = Cv(iv_all,:);
     Du = Du(iv_all,:);
 
-    if Algorithm == "DAE"
+    if Method == "DAE"
         [~, filt_i] = coordinate_filter(obj.sct_model.cv_V, s_coordinate);
         p = legacy_order(obj);
         C = [Cx(:,p), Cv(:,[1:2:n_v, 2:2:n_v]) * filt_i];

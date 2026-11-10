@@ -459,7 +459,7 @@ function [r_err, r_max] = error_to_linear(net, s_unit, comp, r_step)
             end
         end
     end
-    sys = net.get_sys("Algorithm", "Kron");
+    sys = net.get_sys("Method", "Kron");
     i_u = string(sys.InputName) == unit.attach_tag("Pmech");
     i_x = string(sys.StateName) == comp.attach_tag("omega");
     assert(nnz(i_u) == 1 && nnz(i_x) == 1)

@@ -102,7 +102,7 @@ classdef PowerNetwork < PowerSystemModel
         solver_OPF SolverOPF {mustBeScalarOrEmpty}  % Solver of optimize_powerflow (returns a ResultOPF); stored defaults: Method, Solver, Display, MaxIteration, ... <@Type> SolverOPF <@Stale> nothing
         solver_CPF SolverCPF {mustBeScalarOrEmpty}  % Solver of calculate_continuation_powerflow (returns a ResultCPF); stored defaults: LoadBus, MaxIterations, StepSize, ... <@Type> SolverCPF <@Stale> nothing
         solver_ODE SolverODE {mustBeScalarOrEmpty}  % Solver of simulate (returns a ResultODE); stored defaults: Solver, RelativeTolerance, AbsoluteTolerance, Progress, TimeLimit, ... <@Type> SolverODE <@Stale> nothing
-        solver_LIN SolverLIN {mustBeScalarOrEmpty}  % Solver of linearize and get_sys (returns a ResultLIN); stored defaults: Algorithm, Point, Coordinate. <@Type> SolverLIN <@Stale> nothing
+        solver_LIN SolverLIN {mustBeScalarOrEmpty}  % Solver of linearize and get_sys (returns a ResultLIN); stored defaults: Method, Point, Coordinate. <@Type> SolverLIN <@Stale> nothing
     end
     properties(SetAccess=private, GetAccess={?PowerNetwork,?SolverPF,?SolverOPF}) % Revisions
         n_revY (1,1) double = 0                     % Revision of the bus admittance matrix, increased by handle_edit (see there); compared by the caches of the solvers.
