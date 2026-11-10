@@ -5,7 +5,7 @@
 
 - 決定: 2026-11-10、メンテナー(1 節。未決 1〜5 の決定も同日)。
 - 基準コミット: `84e0a421`(`refactor/design-alignment`、手順 A・B のマージ後)。「現状」はこのコミットのコード。
-- 状態: 仕様の段階。コードは未変更。実装は別のセッションで行い、その指示書がこのノートを引用する。
+- 状態: `feature/fixed-input` で実装(2026-11-10)。記録は末尾の「実装」節。
 - 区別: **決定**(メンテナーの決定)、**現状**(コードで確認済み)、**測定**(MATLAB R2026a で確認)、**提案**(このノートの推奨。未承認)、**未決**(末尾の一覧)。
 - 関連: [powerflow-options.md](powerflow-options.md)(`MethodBase`、ウォームスタート、改訂カウンタ。要判断 2 はこのノートの 1 節で解消)。
 - 経緯: 初版(`8b9bc319`、`notes/operating-point.md`)は Method="Xconst" / "Uconst" の案。Xconst は廃止(7 節)、Uconst は FixedInput に改名。
@@ -338,3 +338,70 @@ Xconst(x を固定して u・V・I を解く)の方程式は、機器ごとに�
 3 線形化の旧名 `Algorithm` の互換(1 節、6 節)、4 `rv_Uequilibrium` の編集は公開メソッド(1 節、5 節)、5 負荷の `obj.Z` / `obj.PQ_st` の廃止(1 節、5 節)。
 
 指示書で確定する名前: `set_input`(または `set_input_equilibrium`)、5 節のメッセージ ID、`Bus.set_equilibrium` / `Component.set_equilibrium` の新しい引数名、`Deprecated` の新しい ID。
+
+## 実装(`feature/fixed-input`、2026-11-10)
+
+**現状**(実装後のコード)
+
+- 改名: 潮流計算の `Method` → `Solver`(JSON キー、`SolverPF.OptionMap`、`get_options`、`validate_options`、`solve`、`ResultPF.options`、`Plot` の題名、
+  `v3_powerflow_args`、`Deprecated.xml`、`ListToolbox.json`、ヘルプ、テスト)。`v3_user_config` は変えていない。
+  線形化の `Algorithm` → `Method`(`SolverLIN` のプロパティと `OptionMap`、`ResultLIN.get_ss` / `Plot` の引数、`ResultLIN.options`、メッセージ)。
+  旧名 `Algorithm=` は `v3_linearize_args` が `Method` に変換し `GUILDA:Deprecated:LinearizeAlgorithm` を警告(1 セッション 1 回)。
+- 負荷の `Z` / `PQ_st` を削除。`get_equilibrium` は x、u を返すだけ。
+- `Component.set_input(rv_u)`(`@Component/set_input.m`): 実数・有限・要素数 `numel(sv_u)`(`GUILDA:Component:InputSize`)、
+  母線への接続(`GUILDA:Component:InputNotConnected`)を検査し、同じ値なら何もしない。
+  `log_edit("edit rv_Uequilibrium: <旧> -> <新>", "input")`。
+- stale: `Component.handle_edit` は `"input"` で equilibrium、`PowerNetwork.handle_edit` は機器の `"input"` で `sct_stale.input`(新しいフィールド、初期値は空)。改訂カウンタは不変。
+- 解析前のチェック: `SolverODE.initialize_index`、`SolverLIN.solve`、`SolverCPF.solve`(`check_network`)、`Bus` / `Component` / `GlobalController` / `LocalController` の `get_sys`、
+  `LocalController.validate` が、他の stale より先に `sct_stale.input` を見て `GUILDA:<クラス>:InputEdited` で止まる
+  (`msg` は呼び出し元のクラスの ID しか使えないため、クラスごとに ID を持つ)。
+- `initialize`: `sct_stale.input` が空でないとき、Method なしと `"equilibrium"` は `GUILDA:PowerNetwork:InputEdited`。
+  `"powerflow"` / `"OPF"` は求解して INFO `GUILDA:PowerNetwork:InputOverwritten`。成功時に `sct_stale.input` を空にする。
+- FixedInput: `@PowerNetwork/private/solve_fixed_input.m`(方程式、ブロック疎のヤコビアン、初期値、オプション)。
+  `initialize.m` の `solve_fixed`(スラック母線の自動選択と失敗時の解除、島の検査、未収束のエラー)と `write_fixed_input`(書き戻し)。
+  - 書き戻し: `Bus.set_equilibrium(..., "rm_PQ", rm_PQ, "c_XU", c_XU)`、`Component.set_equilibrium(..., "c_XU", {x, u})`。`c_XU` があれば `get_equilibrium` を呼ばない。
+  - 結果: `ResultPF`(`s_solver` = `"FixedInput"`、`options` = Method、Solver、Tolerance、MaxIteration、WarmStart。ブランチの潮流なし)。
+  - エラー ID: `InitializeFixedInputFailed`、`InitializeFixedInputSolver`、`InitializeFixedInputIsland`、`InitializeNoSlackGenerator`、`InitializeInputNotSet`(すべて `GUILDA:PowerNetwork:`)。
+  - 初期値: `WarmStart=true` で全機器が平衡点を持てば保持値(スラック母線の位相が 0 になるよう全体を回転)。
+    それ以外は `calculate_powerflow(WarmStart=...)`(書き込まない)の母線電圧と、機器ごとの P、Q(設定値、Q = NaN の機器に残りを等分、スラック母線の残りの P は 1 台目の発電機)からの `get_equilibrium`。
+    4 節の「x のない機器の母線だけ潮流解から」は簡単のため採らず、1 台でも欠ければ全体を潮流解から始める。
+- `Solver` の自動の `MaxIteration`(0)は newton 50、levenberg-marquardt 100、fsolve 400。newton の `StepSize` は PowerFlowCalculation の `NewtonStepSize`、fsolve の並列と評価回数も同じセクション。
+
+**仕様との違い**
+
+- ブランチ名: 指示は `feat/fixed-input` だったが、git-workflow の規約(種別 `feature`)に合わせて `feature/fixed-input`。
+- `InputEdited` の ID はクラスごと(5 節の例は `SolverODE:InputEdited` だけ)。`Method="equilibrium"` も `InputEdited` で止める(求解しないので、編集した u が `get_equilibrium` の再計算で黙って消えるため)。
+- `WarmStart=false` の内部の潮流計算は `WarmStart=false`(フラットスタート)、`true` で x のない機器があるときは `WarmStart=true`。
+
+**測定**(MATLAB R2026a、`initialize()` の後、負荷の入力を `set_input` で変えて `initialize(Method="FixedInput")`。impedance は Z/k、power は PQ·k)
+
+| 系統 | 入力そのまま | 負荷 ×0.95 | ×0.98 | ×0.99 | ×1.002 | ×1.005 | ×1.02 | ×1.05 |
+|---|---|---|---|---|---|---|---|---|
+| IEEE9bus(one_axis、impedance) | 0 反復 | 5 | 5 | 4 | 3 | 5 | 解なし | 解なし |
+| IEEE68bus(one_axis、impedance) | 0 | 5 | – | – | – | 3 | 4 | 解なし |
+| IEEJ_EAST10(park、impedance、調速機あり) | 0 | 調速機の上限で停止 | 調速機の上限で停止 | 5 | 4 | 解なし | 解なし | 解なし |
+| IEEE14bus(park、load-power) | 0 | 3 | – | – | – | 2 | 3 | 3 |
+
+- 反復は newton(`Tolerance` 1e-8)。1 回 0.03〜0.2 s。「入力そのまま」は母線電圧の差 0(IEEE9 / 68 / EAST10 / 14 とも)。
+- 解いた点から外乱なしで 5 s のシミュレーション: 状態の変化は IEEE9 ×0.95 で 1.1e-9、IEEE68 ×0.95 で 2.5e-10、IEEE14 ×0.95 で 5.8e-9。
+- levenberg-marquardt / fsolve は解ける場合に newton と同じ点(F3 のテストで 1e-5 以内)。LM は遅い(IEEE68 ×1.02 で 62 反復、×0.95 は 100 反復で未収束)。
+  fsolve は IEEE9 ×0.95 で exitflag 1 のまま最大不平衡 1.7e-7 で止まり flag -2(powerflow-options.md 要判断 5 と同じ現象)。
+- 「解なし」: AVR があっても FixedInput では Vfield が固定され、励磁の制御が効かない。IEEE9 では負荷 ×1.005 付近でヤコビアンの最小特異値が 6e-3 まで下がり(×1.000 で 2.6e-2)、
+  ×1.006 付近で平衡点が消える(静的な安定限界)。IEEJ_EAST10 も ×1.004 で解けない。発散ではなく平衡点がない。
+- IEEJ_EAST10 では負荷を減らすとスラック発電機の Pm が増える(×0.99 で 5.63 → 5.89)。電圧が上がり定インピーダンス負荷の消費が増えるため(未検証の解釈)。
+  ×0.98 以下では、解いた後の調速機(`IEEJ_LPT4`)の `get_equilibrium` がサーボ位置の上限でエラーになる。求解そのものは収束している。
+- IEEE68 では負荷を増やすとスラックの Pm が減る(×1.02 で 33.80 → 33.40)。同じく電圧低下による負荷の減少。
+
+**テスト**(`+DebugScript/test_F3_initialize.m`)
+
+- 追加: `FixedInputWithTheHeldInputsKeepsTheEquilibrium`、`set_inputMakesTheInputsStaleUntilFixedInput`、`FixedInputSolvesTheEquilibriumWithTheEditedInputs`、
+  `FixedInputGivesTheSamePointWithEverySolver`(large)、`FixedInputKeepsTheInputsUnderLocalControllers`、`PowerflowReplacesTheEditedInputs`、`FixedInputErrorsLeaveTheNetworkUnchanged`。
+- F7 に `DeprecatedAlgorithmOptionIsMethod`。F22 の負荷の `Z` の確認は「`Z` プロパティがない」に変更。
+
+**要判断**(実装では決めていない)
+
+1. FixedInput は AVR の Vfield も固定するため、負荷を少し増やすだけで平衡点がなくなる系統がある(上の測定)。
+   「制御器の参照値(Vref、Pref)を固定し、制御器を含めて解く」別の Method が要るかは用途次第。
+2. 解いた後に制御器の `get_equilibrium` が上下限で失敗すると、従来の `initialize` と同じく `sct_stale.powerflow` に記録して止まり、平衡点は部分的に書き換わったまま(stale)。
+   求解前に制御器の上下限を確かめるかは未決。
+3. fsolve の `Tolerance` 1e-8 での早期停止(上の測定)。

@@ -41,7 +41,7 @@
 >   `[bus, cub, flag] = net.optimize_powerflow()` now gives
 >   `bus = ResultOPF`, `cub = flag`, `flag = output`. Only the 6-output form
 >   returns the old tuple (with a warning) (1.9).
-> - **DAE `B` sign.** `get_sys(Algorithm="DAE")` / `get_ss("DAE")` returns
+> - **DAE `B` sign.** `get_sys(Method="DAE")` / `get_ss("DAE")` returns
 >   `B` with the opposite sign on the algebraic rows (the bus current
 >   balance). v3 had the wrong sign there, so its DAE model did not match
 >   Kron (1.12).
@@ -376,16 +376,16 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 | v3 | v4 |
 |----|----|
 | `tab = net.calculate_powerflow()` | `res = net.calculate_powerflow(); tab = res.tab_bus` |
-| `[tab, flag, output] = net.calculate_powerflow("dynamic")` | `[res, flag, output] = net.calculate_powerflow(Method="dynamic")` |
-| `net.calculate_powerflow("dynamic", "export", true, "filename", f)` | `net.calculate_powerflow(Method="dynamic", Export=f)` or `res.Export(f)` (`.json`) |
+| `[tab, flag, output] = net.calculate_powerflow("dynamic")` | `[res, flag, output] = net.calculate_powerflow(Solver="dynamic")` |
+| `net.calculate_powerflow("dynamic", "export", true, "filename", f)` | `net.calculate_powerflow(Solver="dynamic", Export=f)` or `res.Export(f)` (`.json`) |
 | `net.solver_PF.rm_response`, `rr_step`, `i_iteration` | `res.cm_Vhistory`, `res.rv_step` |
 
-- オプション: `Method`(`"newton"` | `"gradient"` | `"levenberg-marquardt"` | `"fsolve"` | `"dynamic"`)、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`、`Plot`、`Export`。v3 の潮流計算(fsolve)は `Method="fsolve"` で、Optimization Toolbox が必要です。
+- オプション: `Solver`(`"newton"` | `"gradient"` | `"levenberg-marquardt"` | `"fsolve"` | `"dynamic"`。開発版の `Method` から改名)、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`、`Plot`、`Export`。v3 の潮流計算(fsolve)は `Solver="fsolve"` で、Optimization Toolbox が必要です。
 - **設定は GUILDA.setting に置きます。** 既定値は PowerFlowCalculation セクション(`@GUILDA/config/DefaultPowerFlowCalculation.json`)にあり、Name-Value はその呼び出しだけを上書きします(JSON には書きません)。`net.solver_PF` は数値の設定を持ちません。`net.solver_PF.Method = ...`、`.Tolerance`、`.MaxIterations`、`.Display`、`.WhenFailed`、`.gradient`、`.dynamic` などは存在しないプロパティへの代入としてエラーになります。
 
   | 旧(`net.solver_PF` / JSON キー) | 新(PowerFlowCalculation のキー / Name-Value) |
   |----|----|
-  | `Method` | `Method` |
+  | `Method` | `Solver` |
   | `Tolerance`(0 = 手法の既定) | `Tolerance`(全手法で最大 P/Q 不平衡 [pu]、既定 1e-8) |
   | `MaxIterations` | `MaxIteration`(0 = 自動: newton 50、gradient 1e6、levenberg-marquardt 100、fsolve 400) |
   | `Display` | なし(Name-Value `Verbose`) |
@@ -406,7 +406,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   the old output table), `tab_branch` (branch flows), `cm_Vhistory`,
   `rv_step`; `Plot` draws the voltage profile, `Export` writes the bus or
   branch table (`.csv`, Excel) or the history (`.json`, GridSpring viewer).
-- Behavior: `Method="dynamic"` no longer writes the JSON history by default
+- Behavior: `Solver="dynamic"` no longer writes the JSON history by default
   (v3 did). The network is not changed, except that a slack bus is selected
   when none is set.
 - **Silent change: the automatic slack bus.** v3 always took the first bus. Now
@@ -708,16 +708,16 @@ Option names:
 
 | v3 | v4 |
 |----|----|
-| `[sys, lin] = net.get_sys(NonUnit=n, Algorithm=a)` | `sys = net.get_sys(Algorithm=a)`; `[sys, flag, output] = ...`, `output.result` is the `ResultLIN` |
+| `[sys, lin] = net.get_sys(NonUnit=n, Algorithm=a)` | `sys = net.get_sys(Method=a)` (`Algorithm=a` still works with `GUILDA:Deprecated:LinearizeAlgorithm`); `[sys, flag, output] = ...`, `output.result` is the `ResultLIN` |
 | `lin = odeLinearizer(net, n, Algorithm=a); sys = lin.get_sys` | `res = net.linearize(); sys = res.get_ss(a)` |
 | `lin.Kxx`, `lin.Kxv`, `lin.Kvx`, `lin.Kvv`, `lin.get_DAE` | `res.rm_Axx`, `rm_Axv`, `rm_Bx`, `rm_Avx`, `rm_Avv`, `rm_Bv`, `rm_E` (unreduced DAE in the order of `res.tab_variable`) |
 | – | `net.linearize(Point=x)` or `Point={sim, t}`: linearize away from the equilibrium |
 | – | `net.get_variable_map()`, `bus.get_variable_map()`, `comp.get_variable_map()` |
 
-- Options: `Algorithm` (`"Kron"` | `"Feedback"` | `"DAE"`, default
+- Options: `Method` (`"Kron"` | `"Feedback"` | `"DAE"`, default
   `"Feedback"` as in v3), `Point`, `Plot` (eigenvalue map).
   Defaults in `net.solver_LIN`.
-- `res.get_ss(Algorithm)` gives the same A, E, C, D and names as v3
+- `res.get_ss(Method)` gives the same A, E, C, D and names as v3
   `get_sys` for every algorithm (checked against a copy of the v3 code in
   F7); `get_ss("DAE", Coordinate=...)` chooses `"theta&rho"` (default),
   `"theta&V"` or `"Vre&Vim"` for the bus variables.
@@ -785,8 +785,8 @@ Option names:
   | `"struct"` | 同じ 8 フィールドの構造体(名前は string の列) | 不要 |
   | `"ss"` | 記述子形式の状態空間モデル(`dss`、v3 と同じ) | Control System Toolbox |
 
-  - `net.get_sys` の `ResultLIN` は `net.linearize` の結果で、`A` … `OutputName` は `Algorithm` と `Input`/`Output` で選んだモデル(`result.options` に保持)。`[sys, flag, output]` の `flag`、`output` は以前と同じ。
-  - `res.get_ss(Algorithm, Format=...)` は既定 `"ss"`、`"struct"` なら Toolbox 不要。`net.linearize` の結果の `A` … `OutputName` は `get_ss(options.Algorithm)`(全入力、既定の出力)。
+  - `net.get_sys` の `ResultLIN` は `net.linearize` の結果で、`A` … `OutputName` は `Method` と `Input`/`Output` で選んだモデル(`result.options` に保持)。`[sys, flag, output]` の `flag`、`output` は以前と同じ。
+  - `res.get_ss(Method, Format=...)` は既定 `"ss"`、`"struct"` なら Toolbox 不要。`net.linearize` の結果の `A` … `OutputName` は `get_ss(options.Method)`(全入力、既定の出力)。
   - 行列は以前の実装と一致(1030 モデル、最大相対誤差 2e-14)。
   - 書き換え例: `sys = net.get_sys(); eig(sys)` → `res = net.get_sys(); eig(res.A, res.E)`、または `sys = net.get_sys(Format="ss")`。
   - LQR 制御器(`controller.local_LQR`、`local_LQR_retrofit`、`+controller/+modeling/get_environment`)は引き続き Control System Toolbox が必要(1.14)。
@@ -845,13 +845,13 @@ Option names:
 
 ### 1.14 Toolbox はすべて任意
 
-- 必須は MATLAB のみ。潮流計算の既定 `Method="newton"` は Toolbox なしで動きます。
+- 必須は MATLAB のみ。潮流計算の既定 `Solver="newton"` は Toolbox なしで動きます。
 - 起動時の確認(`check_requirement`)は `@GUILDA/config/ListToolbox.json` の
   Toolbox ごとに「ok」か、無いときに使えない機能(`Warning`)を 1 行ずつ表示します。
   `ListToolbox.txt` は廃止し、「Required Toolbox components ... missing」の文も出しません。
   キーは `tools.require_toolbox` の短縮名(`optim`/`control`/`symbolic`)で、
   `tools.require_toolbox` も Toolbox 名とライセンス名をこのファイルから読みます。
-- Optimization Toolbox: 潮流計算の `Method="fsolve"` と OPF(`optimize_powerflow`、
+- Optimization Toolbox: 潮流計算の `Solver="fsolve"` と OPF(`optimize_powerflow`、
   `initialize(Method="OPF")`)。無いと `tools.require_toolbox` が
   `GUILDA:require_toolbox:Unavailable` で止めます。
 - Control System Toolbox: 線形化の `ss` 出力(`Format="ss"`)と LQR 制御器
@@ -921,6 +921,7 @@ there.
 | `net.initialize("methods", "powerflow calculation")` | `net.initialize(Method="powerflow")` (default) |
 | `net.initialize("methods", "optimal powerflow")` | `net.initialize(Method="OPF")` |
 | `net.initialize("methods", "calculate from Xequilibrium")` | `net.initialize(Method="equilibrium")` |
+| – | `comp.set_input(u)`, then `net.initialize(Method="FixedInput")` (the equilibrium with the inputs held) |
 
 - `result` is a `ResultPF` (`"powerflow"`, and `"equilibrium"` with
   `s_solver = "equilibrium"` and no branch flows) or a `ResultOPF`
@@ -929,8 +930,21 @@ there.
   `optimize_powerflow` (e.g. `net.initialize(Method="OPF",
   Solver="fmincon")`, `net.initialize(MaxIteration=50)`); unknown names stop
   with `GUILDA:resolve_options:UnknownName`. `"equilibrium"` takes no other
-  option. The power-flow formulation is the `Method` of the PowerFlowCalculation
-  section of GUILDA.setting. `WarmStart` is passed on like the other options.
+  option. `Solver` chooses the algorithm of that analysis (for the power flow,
+  default: the `Solver` of the PowerFlowCalculation section of GUILDA.setting). `WarmStart` is passed on like the other options.
+- **`Method="FixedInput"`** (new): the inputs of the components
+  (`rv_Uequilibrium`) are held; the states, bus voltages, currents and the
+  `Pmech` of the first generator of the slack bus are solved, with the slack
+  bus angle 0. Controllers are not in the equations: they take their
+  equilibria afterwards (an AVR or governor shifts its reference). Options:
+  `Solver` (`"newton"` (default), `"levenberg-marquardt"`, `"fsolve"`),
+  `Tolerance`, `MaxIteration` (default: PowerFlowCalculation), `Verbose`,
+  `WarmStart`. Inputs are edited with `comp.set_input(u)`: the edit is stale
+  (`net.sct_stale.input`), so the analyses and `net.initialize()` stop with
+  `InputEdited` until `Method="FixedInput"`; `Method="powerflow"` or `"OPF"`
+  replaces the edited inputs (INFO `GUILDA:PowerNetwork:InputOverwritten`).
+- **Load properties removed:** `component.load.impedance.Z` and
+  `component.load.power.PQ_st` (the same values are `rv_Uequilibrium`).
 - **Output order** (silent change, see the box at the top).
 - **Failure is an error.** A power flow that does not converge, an
   infeasible OPF, or stored equilibria that do not satisfy the network
@@ -1215,7 +1229,7 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 |----------|----|----------|
 | `net.add_bus(..., "baseMVA", x)` with x = system base | `GUILDA:Deprecated:BusBaseMVA` | warning; ignored |
 | `net.add_bus(..., "baseMVA", x)` with x ≠ system base | `GUILDA:Deprecated:BusBaseMVAMismatch` | warning; ignored, system base used |
-| `calculate_powerflow(mode, ...)` (positional `"algebraic"` / `"dynamic"`) | `GUILDA:Deprecated:CalculatePowerflowMode` | warning; becomes `Method=mode` (`"algebraic"` → `Method="fsolve"`) |
+| `calculate_powerflow(mode, ...)` (positional `"algebraic"` / `"dynamic"`) | `GUILDA:Deprecated:CalculatePowerflowMode` | warning; becomes `Solver=mode` (`"algebraic"` → `Solver="fsolve"`) |
 | `calculate_powerflow(..., "export", l, "filename", f)` | `GUILDA:Deprecated:CalculatePowerflowExport` | warning; becomes `Export=fullfile(GUILDA.pwd, f)` |
 | `optimize_powerflow("methods", m)` | `GUILDA:Deprecated:OptimizePowerflowMethods` | warning; becomes `Method=m` |
 | `build_opf_problem("methods", m)` | `GUILDA:Deprecated:BuildOpfProblemMethods` | warning; becomes `Method=m` |
@@ -1226,6 +1240,7 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `GUILDA:Deprecated:SimulateOptionName` | warning; becomes `Progress` / `Tolerance` |
 | user settings key `TimeSimulation.Reporter` (`@GUILDA/user/DefaultTimeSimulation.json`) | – | no warning; read as `Progress` (an existing `Progress` wins); the startup writes the file back with the new key |
 | `SolverLIN(net, NonUnit, Name, Value)` | `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` | error |
+| `net.linearize` / `net.get_sys` の `Algorithm=a` | `GUILDA:Deprecated:LinearizeAlgorithm` | 警告。`Method=a` として扱う |
 | `net.linearize` / `net.get_sys` の `NonUnit=n` | `GUILDA:Deprecated:LinearizeNonUnit` | 警告。状態のない母線は無視。状態のある母線は `Feedback` で `GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus`、存在しない母線は `GUILDA:v3_nonunit_range:NonUnit` のエラー |
 | `net.solver_LIN.NonUnit` への空でない値の代入 | `GUILDA:Deprecated:SolverLinNonUnit` | 警告(`.mat` の読み込みでも代入されるので、空の値では出さない)。値は Hidden のプロパティに残り、以後の実行で `NonUnit=n` と同じ扱い(呼び出しの指定が優先)。読み出しは保存した値を返し、警告なし |
 | `initialize("methods", m)` | `GUILDA:Deprecated:InitializeMethods` | warning; becomes `Method=m` |

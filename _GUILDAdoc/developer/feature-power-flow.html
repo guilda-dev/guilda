@@ -83,7 +83,7 @@
     <table class="dg-table fpf-opts">
       <thead><tr><th><span lang="en">Option</span><span lang="ja">オプション</span></th><th><span lang="en">Default (source)</span><span lang="ja">既定値（出所）</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th></tr></thead>
       <tbody>
-        <tr><td><code>Method</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>"newton"</code><small><code>GUILDA.config("PowerFlowCalculation")</code></small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
+        <tr><td><code>Solver</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>"newton"</code><small><code>GUILDA.config("PowerFlowCalculation")</code></small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li><code>"newton"</code>: Newton-Raphson method (<code>MethodNewtonRaphson</code>) with the analytic Jacobian</li>
           <li><code>"gradient"</code>: discrete gradient steps <code>θ += α·ΔP</code>, <code>V += α·ΔQ/V</code> (<code>MethodGradient</code>)</li>
           <li><code>"levenberg-marquardt"</code>: damped Gauss-Newton steps with the analytic Jacobian (<code>MethodLevenbergMarquardt</code>)</li>
@@ -307,8 +307,8 @@
         <li><b>PF-11</b> <code>SolverPF</code>: <code>WhenFailed</code></li>
         <li><b>PF-12</b> <code>PowerNetwork</code> → <code>ResultPF.Plot</code> / <code>Export</code></li>
       </ol>
-      <figcaption lang="en">Numbers: step IDs of the list below. Solid arrows: calls; dashed arrows: returns. PF-03 runs only when no bus has <code>l_isSlack = true</code>. PF-07 and PF-08: alternatives selected by <code>Method</code>.</figcaption>
-      <figcaption lang="ja">番号: 下のリストのステップ ID。実線は呼び出し、破線は戻り値。PF-03 は <code>l_isSlack = true</code> の母線がないときだけ実行。PF-07 と PF-08 は <code>Method</code> でどちらか一方を選択。</figcaption>
+      <figcaption lang="en">Numbers: step IDs of the list below. Solid arrows: calls; dashed arrows: returns. PF-03 runs only when no bus has <code>l_isSlack = true</code>. PF-07 and PF-08: alternatives selected by <code>Solver</code>.</figcaption>
+      <figcaption lang="ja">番号: 下のリストのステップ ID。実線は呼び出し、破線は戻り値。PF-03 は <code>l_isSlack = true</code> の母線がないときだけ実行。PF-07 と PF-08 は <code>Solver</code> でどちらか一方を選択。</figcaption>
     </figure>
 
     <!-- ============================== 3. STEPS ============================== -->
@@ -347,7 +347,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>GUILDA.config("PowerFlowCalculation")</code>, <code>c_nv</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>sct_options</code> <span lang="en">(1×1 struct: Method, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunEvals, WhenFailed, WarmStart, Display); solver and settings file unchanged</span><span lang="ja">（1×1 構造体: Method, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunEvals, WhenFailed, WarmStart, Display）。ソルバーと設定ファイルは変更なし</span></dd>
+          <dd><code>sct_options</code> <span lang="en">(1×1 struct: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunEvals, WhenFailed, WarmStart, Display); solver and settings file unchanged</span><span lang="ja">（1×1 構造体: Method, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunEvals, WhenFailed, WarmStart, Display）。ソルバーと設定ファイルは変更なし</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-03">
@@ -704,7 +704,7 @@
           <li>PF-11 により警告（既定値 <code>"WARN"</code>）、エラー、メッセージ表示、何もしない、のいずれか</li>
         </ul></td></tr>
         <tr><td><span lang="en">dynamic stop reasons</span><span lang="ja">dynamic の停止理由</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en"><code>output.message</code>: converged (flag 1); voltage collapse, phase angle instability or integration failure (flag −2); virtual time 1e4 reached without convergence (flag 0)</span><span lang="ja"><code>output.message</code>: 収束（flag 1）。電圧崩壊、位相角の不安定、積分の失敗（flag −2）。収束せずに仮想時間 1e4 に到達（flag 0）</span></td></tr>
-        <tr><td><span lang="en"><code>Method="fsolve"</code> without Optimization Toolbox</span><span lang="ja">Optimization Toolbox なしの <code>Method="fsolve"</code></span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:require_toolbox:Unavailable</code></td></tr>
+        <tr><td><span lang="en"><code>Solver="fsolve"</code> without Optimization Toolbox</span><span lang="ja">Optimization Toolbox なしの <code>Solver="fsolve"</code></span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:require_toolbox:Unavailable</code></td></tr>
         <tr><td><span lang="en">Unknown option name / odd argument list</span><span lang="ja">未知のオプション名・引数が対にならない</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><ul lang="en">
           <li><code>GUILDA:resolve_options:UnknownName</code> (lists the accepted names) / <code>GUILDA:resolve_options:InvalidPairs</code></li>
           <li>Invalid value: stops with the MATLAB validation error of <code>validate_options</code></li>
@@ -757,7 +757,7 @@
       </li>
       <li><b>Method</b>: add
         <ul>
-          <li>the name to the <code>options</code> of <code>Method</code> in <code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> and to <code>validate_options</code></li>
+          <li>the name to the <code>options</code> of <code>Solver</code> in <code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> and to <code>validate_options</code></li>
           <li>a <code>Method*</code> class in <code>_auxiliary/</code> (settings as public properties set by Name-Value in the constructor, then <code>solve</code>)</li>
           <li>a case in <code>run_method</code> of <code>SolverPF.solve</code> that creates it and maps its results to <code>[cv_Vbus, flag, output, cm_Vhistory, rv_step]</code></li>
         </ul>
@@ -788,7 +788,7 @@
       </li>
       <li><b>計算方法</b>: 追加するもの
         <ul>
-          <li><code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> の <code>Method</code> の <code>options</code> と <code>validate_options</code> への名前</li>
+          <li><code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> の <code>Solver</code> の <code>options</code> と <code>validate_options</code> への名前</li>
           <li><code>_auxiliary/</code> の <code>Method*</code> クラス（設定はコンストラクタの Name-Value で与える public プロパティ、その後 <code>solve</code>）</li>
           <li>それを作成し、結果を <code>[cv_Vbus, flag, output, cm_Vhistory, rv_step]</code> に変換する <code>SolverPF.solve</code> の <code>run_method</code> の分岐</li>
         </ul>
