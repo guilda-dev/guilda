@@ -18,6 +18,7 @@
 
 - [opf-requirements.md](opf-requirements.md): OPF の要件、ロードマップ、未決の設計事項。
 - [powerflow-options.md](powerflow-options.md): 潮流計算のオプション、Method クラス、ウォームスタートとキャッシュ、`V0`/`Varg0` の廃止、`operation` 制約の扱いの仕様。
+- [operating-point.md](operating-point.md): `initialize` の Method="Xconst" / "Uconst"(状態または入力を固定した平衡点)と、アルゴリズムの選択の `Solver` への改名の仕様。
 
 ## 調査と改善案
 

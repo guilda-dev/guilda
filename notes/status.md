@@ -124,6 +124,7 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - 設定は GUILDA.setting の PowerFlowCalculation セクション、`Tolerance` の既定は全手法で 1e-8、`WarmStart` の既定は true、母線の `V0` / `Varg0` は廃止、`ResultPF.tab_violation` を追加。
 - **数値の変化:** フラットスタート・既定の設定で、変更前の解との差は newton で最大 1.4e-10、levenberg-marquardt で 1.1e-8(EAST10 夜間)、dynamic で 3.1e-7(以前の既定 `Tolerance` 1e-5 よりは代数解に近い)。連続潮流計算は変わらない(IEEE14 で λ の差 4e-12)。
 - **要判断:** powerflow-options.md の「要判断」1〜6。
+- **次の仕様(2026-11-10、未実装):** `initialize` の Method="Xconst" / "Uconst" と、全解析でアルゴリズムの選択を `Solver` に統一する改名は [operating-point.md](operating-point.md)(未決 1〜12)。要判断 2 は改名で解消。
 
 ## 未決事項
 
