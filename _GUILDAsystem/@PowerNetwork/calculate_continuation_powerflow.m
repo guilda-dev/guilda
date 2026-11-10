@@ -23,7 +23,7 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
 % - `UseInternalState` — Solve with the internal states of the generators. Default: GUILDA.setting (false).
 % - `Verbose` — Print lambda at each step. Default: GUILDA.setting (false).
 % - `Limits` — Operating limits applied along the path: a subset of "Q" (PV to PQ at the Q limits of the generators), "V" (stop at Vmin/Vmax of a bus), "S" (stop at Smax of a branch), or "all" / "none". Default: GUILDA.setting ("none"). See ResultCPF.tab_switch and tab_stop.
-% - `PlotFcn` — Live display during the calculation: "none" (the other displays are under development; draw the result with result.Plot()). Default: GUILDA.setting ("none").
+% - `PlotFcn` — Live display during the calculation: "pvcurve" draws |V| of every bus against lambda and extends the lines at each step; a function handle is called at the starting point and each step as stop = f(x, optimValues, state) (x the complex bus voltages; optimValues.iteration, .lambda, .correctorIterations; state "init", "iter", "done"), and a true stop ends the path there; "none" draws nothing. The PV curves after the calculation: result.Plot(). Default: GUILDA.setting ("none").
 % - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
 %
 % <@Examples>

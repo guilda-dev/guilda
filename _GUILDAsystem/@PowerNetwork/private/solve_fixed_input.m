@@ -11,8 +11,7 @@ function [result, flag, output, sct_point] = solve_fixed_input(net, c_nv)
 %
 % Options (Name-Value): Solver ("newton", "levenberg-marquardt" or "fsolve"; default
 % "newton"), Tolerance and MaxIteration (default: the PowerFlowCalculation section of
-% GUILDA.setting), Verbose (default false), WarmStart (default: the PowerFlowCalculation
-% section). WarmStart=true starts from the held equilibrium when every component holds
+% GUILDA.setting), Verbose and WarmStart (default: the PowerFlowCalculation section). WarmStart=true starts from the held equilibrium when every component holds
 % one; otherwise, and for WarmStart=false, from a power flow (not written) and the
 % get_equilibrium of each component.
     arguments (Input)
@@ -46,7 +45,7 @@ function [result, flag, output, sct_point] = solve_fixed_input(net, c_nv)
                 MaxIter=auto(sct.MaxIteration, 100), Display=s_display).solve();
         case "fsolve"
             [z, flag, output] = MethodFsolve(Fcn=f_F, Jac=f_J, InitVal=z0, ConvTol=sct.Tolerance, ...
-                MaxIter=auto(sct.MaxIteration, 400), MaxFunEvals=cfg.FsolveMaxFunEvals.Value, ...
+                MaxIter=auto(sct.MaxIteration, 400), MaxFunEvals=auto(cfg.FsolveMaxFunctionEvaluations.Value, 0), ...
                 UseParallel=cfg.FsolveUseParallel.Value, Display=s_display, ...
                 Feature='Method="FixedInput" of initialize').solve();
     end
@@ -67,11 +66,11 @@ end
 
 
 function sct = options(c_nv)
-% Effective options: GUILDA.setting (PowerFlowCalculation) for Tolerance, MaxIteration and
-% WarmStart, "newton" for Solver, false for Verbose; the Name-Value options override them
+% Effective options: GUILDA.setting (PowerFlowCalculation) for Tolerance, MaxIteration,
+% Verbose and WarmStart, "newton" for Solver; the Name-Value options override them
     cfg = GUILDA.config("PowerFlowCalculation");
     sct = struct("Solver", "newton", "Tolerance", cfg.Tolerance.Value, ...
-                 "MaxIteration", cfg.MaxIteration.Value, "Verbose", false, ...
+                 "MaxIteration", cfg.MaxIteration.Value, "Verbose", logical(cfg.Verbose.Value), ...
                  "WarmStart", logical(cfg.WarmStart.Value));
     sct_map = struct("Solver", "Solver", "Tolerance", "Tolerance", "MaxIteration", "MaxIteration", ...
                      "Verbose", "Verbose", "WarmStart", "WarmStart");
@@ -92,9 +91,18 @@ function validate(sct)
     arguments (Input)
         sct.Solver       (1,1) string  {mustBeMember(sct.Solver, ["newton","levenberg-marquardt","fsolve"])}
         sct.Tolerance    (1,1) double  {mustBePositive}
-        sct.MaxIteration (1,1) double  {mustBeNonnegative, mustBeInteger}
+        sct.MaxIteration (1,1) double  {mustBeIntegerOrNaN}
         sct.Verbose      (1,1) logical
         sct.WarmStart    (1,1) logical
+    end
+end
+
+
+function mustBeIntegerOrNaN(r)
+% NaN (the automatic value) or a nonnegative integer
+    if ~isnan(r)
+        mustBeNonnegative(r)
+        mustBeInteger(r)
     end
 end
 
@@ -343,8 +351,8 @@ end
 
 
 function n = auto(n, n_auto)
-% MaxIteration 0 is the automatic value of the solver
-    if n == 0
+% NaN is the automatic value of the setting (n_auto: the value given to the method)
+    if isnan(n)
         n = n_auto;
     end
 end

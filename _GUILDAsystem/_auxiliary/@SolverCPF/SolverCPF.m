@@ -31,8 +31,13 @@ classdef SolverCPF < auxiliary
 % - `OptionMap` is the input of tools.resolve_options. MaxIteration, Tolerance, Verbose
 %   Limits and PlotFcn are common names; LoadBus, InitialLambda, StepSize, ArcLength and
 %   UseInternalState have no common equivalent. Each name is also the key of the setting
-%   (LoadBus: the property). PlotFcn (live display) is "none" only (tools.check_plotfcn);
-%   result.Plot() draws the PV curves.
+%   (LoadBus: the property).
+% - `PlotFcn` (live display): "pvcurve" draws |V| of every bus against lambda and extends
+%   the lines at each step (one reused figure); a function handle is called at the
+%   starting point ("init"), each step ("iter") and the end ("done") as
+%   stop = f(x, optimValues, state), x the complex bus voltages, optimValues.iteration
+%   (step), .lambda and .correctorIterations; a true stop ends the path there.
+%   result.Plot() draws the PV curves after the analysis.
 %
 % <@Examples>
 % ```matlab

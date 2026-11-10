@@ -11,7 +11,7 @@ classdef (Abstract) MethodBase < auxiliary
 % - `solve` returns `[x, flag, output, rm_history, rv_step]`. flag is 1 converged, 0
 %   `MaxIter` reached, -2 diverged or no solution. output has the fields iterations,
 %   algorithm, residual (largest |F|) and message; the message is printed unless `Display`
-%   is "none".
+%   is "none". flag -1: stopped by the live display of the power flow (PlotFcn).
 % - Without `Jac`, the Jacobian is computed by central differences (tools.fd_jacobian)
 %   with the step `Increment`.
 %
@@ -34,6 +34,10 @@ classdef (Abstract) MethodBase < auxiliary
         MaxIter (1,1) double {mustBeNonnegative}    % Maximum number of iterations.
         Display (1,1) string {mustBeMember(Display,["none","iter","iter-detailed","final","final-detailed"])} = "none"  % "iter"/"iter-detailed" print each iteration; any value but "none" prints the final message.
         Increment (1,1) double {mustBePositive} = 1e-4  % Step of the numerical Jacobian (x +- Increment).
+    end
+
+    properties (Access={?MethodBase, ?SolverPF}) % Live display
+        f_iter = []                             % Called at each iterate as stop = f_iter(x, k, state), state "init", "iter" or "done" (PlotFcn of SolverPF); [] for none. A true stop ends solve with flag -1.
     end
 
     methods (Abstract)

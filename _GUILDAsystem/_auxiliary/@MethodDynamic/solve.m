@@ -80,9 +80,19 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve(obj)
                      'Mass', MassMat, ...
                      'Events', event_func, ...
                      'JPattern', J_pattern);
+    l_plot = ~isempty(obj.f_iter);
+    l_stop = false;
+    if l_plot
+        options = odeset(options, 'OutputFcn', ode_output(obj.f_iter));
+    end
     if max_mismatch(Y0, cm_Y, tab_PFcondition, N) <= tol
         % already converged (e.g. a warm start): the event would never cross
         t_out = 0;  Y_out = Y0.';  ie = 1;
+        if l_plot
+            obj.f_iter(Y0, 0, "init");
+            obj.f_iter(Y0, 0, "iter");
+            obj.f_iter(Y0, 0, "done");
+        end
     else
         s_warn = lastwarn();
         w = warning("off", "MATLAB:ode15s:IntegrationTolNotMet");
@@ -102,6 +112,9 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve(obj)
     elseif any(ie == 3)
         flag = -2;
         s_msg = '✘ The process was terminated: Phase angle instability detected.';
+    elseif l_stop
+        flag = -1;
+        s_msg = '✘ The process was stopped by PlotFcn.';
     elseif t_out(end) >= r_tEnd
         flag = 0;
         s_msg = sprintf('✘ The virtual bus dynamics did not converge within the virtual time %g (largest mismatch %.3e).', r_tEnd, r_res);
@@ -119,6 +132,31 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve(obj)
     rv_Vsol = Y_out(end, (1:N)+2*N).';
     rv_Tsol = Y_out(end, (1:N)    ).';
     cv_Vbus = rv_Vsol .* exp(1j*rv_Tsol);
+
+    function f_out = ode_output(f_iter)
+    % OutputFcn of ode15s that passes each step to f_iter (the last state again at "done")
+        Y_last = Y0;
+        t_last = 0;
+        f_out  = @output_step;
+        function stop = output_step(t, Y, s_flag)
+            switch s_flag
+                case 'init'
+                    stop = f_iter(Y(:), t(1), "init");
+                case ''
+                    for k = 1:numel(t)
+                        Y_last = Y(:,k);
+                        t_last = t(k);
+                        stop   = f_iter(Y_last, t_last, "iter");
+                        if stop
+                            break
+                        end
+                    end
+                    l_stop = l_stop || stop;
+                otherwise
+                    stop = f_iter(Y_last, t_last, "done");
+            end
+        end
+    end
 end
 
 % =========================================================

@@ -17,6 +17,9 @@ function o = makeODE(sct_options)
 
     sct_ode = sct_options;
     sct_ode.RelativeTolerance = sct_options.Tolerance;    % Name-Value option and setting Tolerance
+    if isfield(sct_ode, "SeparateComplexParts")
+        sct_ode.SeparateComplexParts = matlab.lang.OnOffSwitchState(sct_ode.SeparateComplexParts);   % logical setting -> "on" / "off"
+    end
     if isempty(sct_ode.SolverOptions)
         sct_ode = rmfield(sct_ode, "SolverOptions");      % the options of the Solver
     end

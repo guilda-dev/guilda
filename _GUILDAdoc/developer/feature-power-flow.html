@@ -107,16 +107,16 @@
           <li>fsolve: 2 乗を <code>FunctionTolerance</code>（二乗和の許容値）と <code>OptimalityTolerance</code> としても指定</li>
           <li>dynamic: ODE の許容誤差 <code>AbsTol = min(Tolerance, 1e-5)</code>、<code>RelTol = min(100·Tolerance, 1e-4)</code> も設定</li>
         </ul></td></tr>
-        <tr><td><code>MaxIteration</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>0</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
+        <tr><td><code>MaxIteration</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>NaN</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li>Maximum number of iterations</li>
-          <li><code>0</code>: method default (newton: 50; gradient: 1e6; levenberg-marquardt: 100; fsolve: 400)</li>
+          <li><code>NaN</code>: method default (newton: 50; gradient: 1e6; levenberg-marquardt: 100; fsolve: 400)</li>
           <li>Unused by <code>"dynamic"</code></li>
         </ul><ul lang="ja">
           <li>反復回数の上限</li>
-          <li><code>0</code>: 計算方法の既定値（newton: 50、gradient: 1e6、levenberg-marquardt: 100、fsolve: 400）</li>
+          <li><code>NaN</code>: 計算方法の既定値（newton: 50、gradient: 1e6、levenberg-marquardt: 100、fsolve: 400）</li>
           <li><code>"dynamic"</code> では未使用</li>
         </ul></td></tr>
-        <tr><td><code>Verbose</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small><code>get_options</code>: <code>Display = "none"</code></small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>Display</code> for this call: <code>"iter"</code> (true, one line per iteration) or <code>"none"</code> (false)</span><span lang="ja">この呼び出しの <code>Display</code>: <code>"iter"</code>（true、反復ごとに 1 行）または <code>"none"</code>（false）</span></td></tr>
+        <tr><td><code>Verbose</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Print each iteration and the final message; <code>get_options</code> sets <code>Display</code> of the Method class: <code>"iter"</code> (true) or <code>"none"</code> (false)</span><span lang="ja">反復ごとの表示と終了時のメッセージ。<code>get_options</code> が Method クラスの <code>Display</code> を設定: <code>"iter"</code>（true）または <code>"none"</code>（false）</span></td></tr>
         <tr><td><code>WarmStart</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>true</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li><code>true</code>: starts from the last converged solution of this network, kept by <code>net.solver_PF</code></li>
           <li><code>false</code>, or no kept solution: flat start (angle 0, magnitude 1; set <code>V</code> at PV and slack buses, set <code>Varg</code> at the slack bus)</li>
@@ -126,7 +126,17 @@
           <li><code>false</code>、または保持した解なし: フラットスタート（角度 0、大きさ 1。PV・slack 母線は指定 <code>V</code>、slack 母線は指定 <code>Varg</code>）</li>
           <li>gradient・dynamic: 固定値（slack の角度・電圧、PV の電圧）は常に指定値から開始</li>
         </ul></td></tr>
-        <tr><td><code>PlotFcn</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>"none"</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Live display during the calculation; only <code>"none"</code> is available (other values: <code>GUILDA:check_plotfcn:InDevelopment</code>). The figure after the calculation: <code>result.Plot()</code></span><span lang="ja">計算中のライブ表示。使用可能なのは <code>"none"</code> のみ（他の値は <code>GUILDA:check_plotfcn:InDevelopment</code>）。計算後の図は <code>result.Plot()</code></span></td></tr>
+        <tr><td><code>PlotFcn</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>"none"</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
+          <li>Live display during the calculation, every Solver</li>
+          <li><code>"residual"</code>: one bar per power equation (two per bus: P or the slack angle; Q or |V| at PV and slack buses), height |residual| at the iterate, log scale, Tolerance as a line; one reused figure (Tag <code>GUILDA:PlotFcn:residual</code>), redrawn at most every 0.2 s and at the end (dynamic: along the virtual time)</li>
+          <li>Function handle: <code>stop = f(x, optimValues, state)</code> at every iterate; <code>x</code> complex bus voltages, <code>optimValues.iteration</code>, <code>.fval</code> (residuals), <code>.residual</code> (largest), <code>.time</code> (dynamic); a true <code>stop</code> ends with flag -1</li>
+          <li>The figure after the calculation: <code>result.Plot()</code></li>
+        </ul><ul lang="ja">
+          <li>計算中のライブ表示。全 Solver 共通</li>
+          <li><code>"residual"</code>: 電力方程式 1 本につき棒 1 本（母線あたり 2 本: P または slack の角度、Q または PV・slack の |V|）。高さはその反復の |残差|（対数軸、Tolerance を破線）。図は 1 枚を使い回し（Tag <code>GUILDA:PlotFcn:residual</code>）、再描画は最短 0.2 秒ごとと終了時（dynamic は仮想時間に沿って更新）</li>
+          <li>関数ハンドル: 反復ごとに <code>stop = f(x, optimValues, state)</code>。<code>x</code> は母線の複素電圧、<code>optimValues.iteration</code>、<code>.fval</code>（残差）、<code>.residual</code>（最大値）、<code>.time</code>（dynamic）。<code>stop</code> が true なら flag -1 で終了</li>
+          <li>計算後の図は <code>result.Plot()</code></li>
+        </ul></td></tr>
         <tr><td><code>Export</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small><span lang="en">call option</span><span lang="ja">呼び出しオプション</span></small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li><code>true</code>: calls <code>result.Export()</code> with the default file name</li>
           <li>String: the file name</li>
@@ -143,8 +153,9 @@
       <li>Other settings: no Name-Value option; set in <code>GUILDA.setting</code>
         <ul>
           <li><code>NewtonStepSize</code> (<code>1</code>; newton)</li>
-          <li><code>GradientStepSize</code> (<code>0</code>: <code>α = 0.5/(max|Y_ii|·Vmax²)</code>, Vmax the largest set bus voltage or 1; gradient)</li>
-          <li><code>FsolveUseParallel</code> (<code>false</code>), <code>FsolveMaxFunEvals</code> (<code>0</code>: the fsolve default) (fsolve)</li>
+          <li><code>GradientStepSize</code> (<code>NaN</code>: <code>α = 0.5/(max|Y_ii|·Vmax²)</code>, Vmax the largest set bus voltage or 1; gradient)</li>
+          <li><code>FsolveUseParallel</code> (<code>false</code>), <code>FsolveMaxFunctionEvaluations</code> (<code>NaN</code>: the fsolve default) (fsolve)</li>
+          <li>Names: <code>&lt;Solver&gt;&lt;option&gt;</code> for a setting of one Solver; <code>NaN</code> is the automatic value of every setting that has one</li>
           <li><code>WhenFailed</code> (<code>"WARN"</code>)</li>
         </ul>
       </li>
@@ -158,8 +169,9 @@
       <li>その他の設定: Name-Value なし。<code>GUILDA.setting</code> で設定
         <ul>
           <li><code>NewtonStepSize</code>（<code>1</code>。newton）</li>
-          <li><code>GradientStepSize</code>（<code>0</code>: <code>α = 0.5/(max|Y_ii|·Vmax²)</code>。Vmax は指定母線電圧の最大値、なければ 1。gradient）</li>
-          <li><code>FsolveUseParallel</code>（<code>false</code>）、<code>FsolveMaxFunEvals</code>（<code>0</code>: fsolve の既定値）（fsolve）</li>
+          <li><code>GradientStepSize</code>（<code>NaN</code>: <code>α = 0.5/(max|Y_ii|·Vmax²)</code>。Vmax は指定母線電圧の最大値、なければ 1。gradient）</li>
+          <li><code>FsolveUseParallel</code>（<code>false</code>）、<code>FsolveMaxFunctionEvaluations</code>（<code>NaN</code>: fsolve の既定値）（fsolve）</li>
+          <li>名前: 1 つの Solver の設定は <code>&lt;Solver 名&gt;&lt;オプション名&gt;</code>。自動の値がある設定はすべて <code>NaN</code> が自動</li>
           <li><code>WhenFailed</code>（<code>"WARN"</code>）</li>
         </ul>
       </li>
@@ -347,7 +359,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>GUILDA.config("PowerFlowCalculation")</code>, <code>c_nv</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>sct_options</code> <span lang="en">(1×1 struct: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunEvals, WhenFailed, WarmStart, PlotFcn, Display); solver and settings file unchanged</span><span lang="ja">（1×1 構造体: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunEvals, WhenFailed, WarmStart, PlotFcn, Display）。ソルバーと設定ファイルは変更なし</span></dd>
+          <dd><code>sct_options</code> <span lang="en">(1×1 struct: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunctionEvaluations, WhenFailed, Verbose, WarmStart, PlotFcn, Display); solver and settings file unchanged</span><span lang="ja">（1×1 構造体: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunctionEvaluations, WhenFailed, Verbose, WarmStart, PlotFcn, Display）。ソルバーと設定ファイルは変更なし</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-03">
@@ -462,7 +474,7 @@
             <li>各反復の値を記録（gradient: 1000 回目までは毎回、以降は 1000 回ごとと最後）</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options</code> (<code>Tolerance</code>, <code>MaxIteration</code>, <code>Display</code>, <code>NewtonStepSize</code>, <code>GradientStepSize</code>, <code>FsolveMaxFunEvals</code>, <code>FsolveUseParallel</code>)</dd>
+          <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options</code> (<code>Tolerance</code>, <code>MaxIteration</code>, <code>Display</code>, <code>NewtonStepSize</code>, <code>GradientStepSize</code>, <code>FsolveMaxFunctionEvaluations</code>, <code>FsolveUseParallel</code>)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>cv_Vbus</code> <span lang="en">(n_bus×1 complex [pu])</span><span lang="ja">（n_bus×1 の複素数 [pu]）</span>, <code>flag</code> <span lang="en">(1 converged, 0 MaxIteration reached, −2 diverged or no solution)</span><span lang="ja">（1 収束、0 反復回数の上限、−2 発散または解なし）</span>, <code>output</code> <span lang="en">(iterations, algorithm, residual, message; fsolve: also exitflag)</span><span lang="ja">（iterations, algorithm, residual, message。fsolve: exitflag も）</span>, <code>cm_Vhistory</code> (n_bus×n_step), <code>rv_step</code></dd>
         </dl>
@@ -758,8 +770,10 @@
           <li>the name to the <code>options</code> of <code>Solver</code> in <code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> and to <code>validate_options</code></li>
           <li>a <code>Method*</code> class in <code>_auxiliary/</code> (settings as public properties set by Name-Value in the constructor, then <code>solve</code>)</li>
           <li>a case in <code>run_method</code> of <code>SolverPF.solve</code> that creates it and maps its results to <code>[cv_Vbus, flag, output, cm_Vhistory, rv_step]</code></li>
+          <li>for <code>PlotFcn</code>: calls of <code>f_iter(x, k, state)</code> (<code>"init"</code>, each iterate <code>"iter"</code>, <code>"done"</code>; a true return ends with flag -1) and the map of its iterate <code>x</code> to the bus voltages in <code>voltage</code> of <code>@SolverPF/private/live_residual.m</code></li>
         </ul>
       </li>
+      <li><b>Live display</b>: a new key in the <code>options</code> of <code>PlotFcn</code> (<code>DefaultPowerFlowCalculation.json</code>), in the key list given to <code>tools.check_plotfcn</code> by <code>SolverPF.get_options</code>, and its drawing in <code>live_residual</code></li>
       <li><b>Controllers</b>: no part in the power flow</li>
     </ul>
     <ul lang="ja">
@@ -789,8 +803,10 @@
           <li><code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> の <code>Solver</code> の <code>options</code> と <code>validate_options</code> への名前</li>
           <li><code>_auxiliary/</code> の <code>Method*</code> クラス（設定はコンストラクタの Name-Value で与える public プロパティ、その後 <code>solve</code>）</li>
           <li>それを作成し、結果を <code>[cv_Vbus, flag, output, cm_Vhistory, rv_step]</code> に変換する <code>SolverPF.solve</code> の <code>run_method</code> の分岐</li>
+          <li><code>PlotFcn</code> 用: <code>f_iter(x, k, state)</code> の呼び出し（<code>"init"</code>、反復ごとの <code>"iter"</code>、<code>"done"</code>。true が返れば flag -1 で終了）と、<code>@SolverPF/private/live_residual.m</code> の <code>voltage</code> での反復値 <code>x</code> から母線電圧への変換</li>
         </ul>
       </li>
+      <li><b>ライブ表示</b>: <code>PlotFcn</code> の <code>options</code>（<code>DefaultPowerFlowCalculation.json</code>）、<code>SolverPF.get_options</code> が <code>tools.check_plotfcn</code> に渡すキーの一覧、<code>live_residual</code> の描画に新しいキーを追加</li>
       <li><b>制御器</b>: 潮流計算に関与しない</li>
     </ul>
     <p lang="en">Model contracts: <a href="model-implementation.html#contracts">Model Implementation</a>.</p>

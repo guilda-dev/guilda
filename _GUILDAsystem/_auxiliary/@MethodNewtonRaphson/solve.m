@@ -11,6 +11,7 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
         rv_step     % Iteration numbers of rm_history.
     end
     l_iter = startsWith(obj.Display, "iter");
+    l_plot = ~isempty(obj.f_iter);
     Gamma  = obj.StepSize;
     f_F    = obj.Fcn;
 
@@ -18,14 +19,22 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
     rm_history = x;
     flag   = 0;
     s_fail = "";
+    if l_plot
+        obj.f_iter(x, 0, "init");
+    end
     for k = 0:obj.MaxIter
         rv_F  = f_F(x);
         r_res = full(max(abs(rv_F)));
         if l_iter
             obj.print_iter("newton", k, r_res);
         end
+        l_stop = l_plot && obj.f_iter(x, k, "iter");
         if r_res <= obj.ConvTol
             flag = 1;
+            break
+        elseif l_stop
+            flag   = -1;
+            s_fail = '✘ The process was stopped by PlotFcn.';
             break
         elseif ~(isfinite(r_res) && all(isfinite(x)))
             flag   = -2;
@@ -59,6 +68,9 @@ function [x, flag, output, rm_history, rv_step] = solve(obj)
         rm_history(:,end+1) = x; %#ok<AGROW>
     end
     rv_step = 0:size(rm_history,2)-1;
+    if l_plot
+        obj.f_iter(x, rv_step(end), "done");
+    end
     output  = obj.make_output(flag, rv_step(end), r_res, "newton", "Newton-Raphson iteration", s_fail);
 
     if nargout < 2 && flag == 0

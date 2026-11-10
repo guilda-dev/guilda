@@ -9,7 +9,7 @@ classdef SolverPF < auxiliary
 % - `Solver`: the algorithm that solves the power equations (see the table). Every
 %   solver except "fsolve" runs on MATLAB alone; "fsolve" needs Optimization Toolbox.
 %
-%   | Solver                | Class (algorithm)                                       | MaxIteration 0 (automatic) |
+%   | Solver                | Class (algorithm)                                       | MaxIteration NaN (auto)    |
 %   |-----------------------|---------------------------------------------------------|----------------------------|
 %   | "newton"              | MethodNewtonRaphson (analytic Jacobian)                 | 50                         |
 %   | "gradient"            | MethodGradient (theta += alpha*dP, V += alpha*dQ./V)    | 1e6                        |
@@ -31,21 +31,31 @@ classdef SolverPF < auxiliary
 %   matched by object, not by tag), the bus admittance matrix and the power equations
 %   (rebuilt after the edits that change them, see PowerNetwork.handle_edit).
 %   net.reset_solver() discards them.
-% - Settings of one method: NewtonStepSize (StepSize of MethodNewtonRaphson),
-%   GradientStepSize (alpha of MethodGradient; 0 uses 0.5/(max|Y_ii|*Vmax^2), Vmax the
-%   largest set bus voltage or 1), FsolveUseParallel and FsolveMaxFunEvals (fsolve).
+% - Settings of one method, named <Solver><option>: NewtonStepSize (StepSize of
+%   MethodNewtonRaphson), GradientStepSize (alpha of MethodGradient; NaN uses
+%   0.5/(max|Y_ii|*Vmax^2), Vmax the largest set bus voltage or 1), FsolveUseParallel and
+%   FsolveMaxFunctionEvaluations (fsolve; NaN keeps the fsolve default). NaN is the
+%   automatic value of every setting that has one (MaxIteration too).
 %   "gradient" converges linearly: it needs thousands of iterations on 10-bus networks.
 % - For "newton", a singular Jacobian (an island without a slack bus) gives minimum norm
 %   steps. A non-slack bus without branches has no determined voltage: every method
 %   returns flag -2 without solving. "gradient" fixes the slack angle and voltage and the
 %   PV voltages, and updates the angle only at PV buses.
-% - `Verbose` (Display): "iter" prints one line per iteration for "newton", "gradient"
+% - `Verbose` (setting; Display "iter" or "none" of the Method class): true prints one line per iteration for "newton", "gradient"
 %   and "levenberg-marquardt" (the fsolve display for "fsolve"), and the final message.
 % - flag: 1 converged, 0 MaxIteration reached (for "dynamic", its virtual time limit),
-%   -2 diverged or no solution found; the Method classes set flag and output (see
-%   MethodBase).
-% - `OptionMap` is the input of tools.resolve_options. Verbose=true sets Display="iter",
-%   Verbose=false sets Display="none".
+%   -1 stopped by PlotFcn, -2 diverged or no solution found; the Method classes set flag
+%   and output (see MethodBase).
+% - `PlotFcn` (live display, every Solver): "residual" draws one bar per power equation
+%   (two per bus: P, or the angle at the slack bus; Q, or |V| at PV and slack buses) with
+%   its |residual| at the iterate, on a log scale with Tolerance as a line, in one reused
+%   figure updated during the iterations ("dynamic": along the virtual time). A function
+%   handle is called at every iterate as stop = f(x, optimValues, state): x the complex
+%   bus voltages, optimValues.iteration, .fval (residuals), .residual (largest |residual|)
+%   and, for "dynamic", .time (virtual time); state "init", "iter" or "done". A true stop
+%   ends the calculation with flag -1. "none" leaves the calculation as it is.
+% - `OptionMap` is the input of tools.resolve_options; each name is also the key of the
+%   setting. get_options adds Display ("iter" for Verbose true, "none" for false).
 %
 % <@Examples>
 % ```matlab
@@ -63,7 +73,7 @@ classdef SolverPF < auxiliary
             "Solver",       "Solver", ...
             "Tolerance",    "Tolerance", ...
             "MaxIteration", "MaxIteration", ...
-            "Verbose",      {{"Display", @(l) replace(string(logical(l)), ["true","false"], ["iter","none"])}}, ...
+            "Verbose",      "Verbose", ...
             "WarmStart",    "WarmStart", ...
             "PlotFcn",      "PlotFcn")      % Name-Value options of net.calculate_powerflow and the setting each one sets (see the class help). <@Type> struct
     end

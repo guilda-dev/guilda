@@ -34,7 +34,7 @@ function varargout = optimize_powerflow(obj, varargin)
 % - `Solver` — Optimization solver; "auto" lets solve choose. Default: GUILDA.setting ("auto").
 % - `Tolerance` — OptimalityTolerance of the solver; NaN = solver default. Default: GUILDA.setting (NaN).
 % - `MaxIteration` — MaxIterations of the solver; NaN = solver default. Default: GUILDA.setting (NaN).
-% - `Verbose` — Print solver progress (sets Display to "iter" or "none"). Default: the Display of GUILDA.setting ("default").
+% - `Verbose` — Print the progress of the solver (Display "iter"; false: "none"). Default: GUILDA.setting (false).
 % - `Cost` — Function handle @(v, p) returning a scalar added to the objective (net.solver_OPF.Cost; [] = none). v holds the variables by tag: v.Component.(tag).P/.Q, v.Bus.(tag).Varg/.V, v.Branch.(tag).Pfrom/.Pto/...; p holds p.Method and p.base (see SolverOPF).
 % - `Constraint` — Function handle @(v, p) returning struct(name1, constraint1, ...); field <name> becomes prob.Constraints.<name> and result.lambda.Constraints.<name> (net.solver_OPF.Constraint; [] = none).
 % - `DefaultCost` — false leaves out the costs HP, fP, HQ, fQ of tab_parameter.OPF of all components (net.solver_OPF.DefaultCost).
@@ -42,7 +42,7 @@ function varargout = optimize_powerflow(obj, varargin)
 % - `Problem` — optimproblem to solve instead of building one, e.g. from net.build_opf_problem with the same Method, modified by the user; Cost, Constraint, DefaultCost and ReferenceBus are not applied to it. Default: none.
 % - `InitialPoint` — Initial point (struct of values by variable name). Default: the x0 of net.build_opf_problem for the same Method; give it when Problem has added variables.
 % - `WarmStart` — true starts "AC OPF" from the bus voltages of the last solved "AC OPF" of this network (kept by net.solver_OPF); false from the flat start (see SolverOPF). Default: GUILDA.setting OptimalPowerFlow (false).
-% - `PlotFcn` — Live display during the calculation: "none" (the other displays are under development; draw the result with result.Plot()). Default: GUILDA.setting ("none").
+% - `PlotFcn` — Live display during the calculation, fmincon only ("AC OPF"): keys of the plot functions of fmincon, key k for optimplot<k> ("fval", "constrviolation", "fvalconstr", "firstorderopt", "stepsize", "funccount", "x"), or a function handle stop = f(x, optimValues, state) passed to fmincon as it is; "none" draws nothing. With linprog or quadprog ("ELD", "DC OPF") a value other than "none" stops with GUILDA:SolverOPF:PlotFcnUnsupported. The figure after the calculation: result.Plot(). Default: GUILDA.setting ("none").
 % - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
 %
 % <@Examples>

@@ -61,6 +61,7 @@ function tab = test_levels()
     % ---- F2_powerflow ----------------------------------------------------------------------------
     "test_F2_powerflow/DynamicMethodReachesTheAlgebraicSolution", "large"
     "test_F2_powerflow/PlotAndExportOfTheResult", "large"
+    "test_F2_powerflow/PlotFcnResidualShowsTheResidualOfEachEquationForEverySolver", "large"
     "test_F2_powerflow/AlgebraicPowerFlowConvergesOn9_busSystem", "medium"
     "test_F2_powerflow/fsolveReachesASmallTolerance", "medium"
     "test_F2_powerflow/SwitchingTheSlackBusLeavesExactlyOne", "medium"
@@ -141,6 +142,7 @@ function tab = test_levels()
     "test_F4_opf/ProblemAndInitialPointSolveAUser_modifiedProblem", "large"
     "test_F4_opf/Network_levelReserveConstraintAndCost", "large"
     "test_F4_opf/IEEJ_WEST10ACOPFNamesItsBranchConstraintsAfterTheTags", "large"
+    "test_F4_opf/PlotFcnDrawsThePlotFunctionsOfFminconInACOPF", "large"
     "test_F4_opf/DCOptimalPowerFlow", "medium"
     "test_F4_opf/ACOptimalPowerFlow", "medium"
     "test_F4_opf/ACOPFRespectsGeneratorLimits", "medium"
@@ -165,6 +167,7 @@ function tab = test_levels()
     "test_F5_cpf/Limits_none_KeepsThePathOfTheContinuationPowerFlow", "large"
     "test_F5_cpf/Limits_Q_SwitchesPVBusesToPQAtTheQLimitsOfTheGenerators", "large"
     "test_F5_cpf/Limits_V_And_S_StopThePathAtTheFirstLimitReached", "large"
+    "test_F5_cpf/PlotFcnPvcurveExtendsThePVCurvesOfAllBusesAtEachStep", "large"
     % ---- F6_simulation ---------------------------------------------------------------------------
     "test_F6_simulation/PlotAndExportOfTheSimulationResult", "large"
     "test_F6_simulation/LoadStepWithGlobalController", "large"
