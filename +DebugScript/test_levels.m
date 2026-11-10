@@ -151,6 +151,9 @@ function tab = test_levels()
     "test_F5_cpf/COMPATV3Continuation_Power_FlowAndSolverCPFConstructor", "large"
     "test_F5_cpf/Name_ValueOptionsOverrideSolverDefaultsForOneCallOnly", "medium"
     "test_F5_cpf/FailedPreconditionsAndUnknownOptionsStopWithAnError", "medium"
+    "test_F5_cpf/Limits_none_KeepsThePathOfTheContinuationPowerFlow", "large"
+    "test_F5_cpf/Limits_Q_SwitchesPVBusesToPQAtTheQLimitsOfTheGenerators", "large"
+    "test_F5_cpf/Limits_V_And_S_StopThePathAtTheFirstLimitReached", "large"
     % ---- F6_simulation ---------------------------------------------------------------------------
     "test_F6_simulation/PlotAndExportOfTheSimulationResult", "large"
     "test_F6_simulation/LoadStepWithGlobalController", "large"

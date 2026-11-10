@@ -17,12 +17,19 @@ classdef SolverCPF < auxiliary
 %   (getCompPQ) and all loads are scaled; when false, the components inject their
 %   equilibrium powers. True stops with GUILDA:build_layout:MissingGetCompPQ if a component
 %   has no getCompPQ.
+% - `Limits` applies the operating limits (tab_parameter.operation) along the path; Inf
+%   and NaN limits are none. "Q": a PV bus whose generators (the components with Q = NaN
+%   in powerflow) leave the sum of their Qmin/Qmax becomes a PQ bus with Q fixed at that
+%   bound (never back to PV; not with UseInternalState, not the slack bus). "V": the trace
+%   stops where the voltage of a bus reaches Vmin or Vmax. "S": it stops where the larger
+%   |S| of the two ends of a branch reaches Smax. The switches are in
+%   ResultCPF.tab_switch, the stop in ResultCPF.tab_stop; nothing is written to the model.
 % - The Newton-Raphson corrector takes CorrectorMaxIteration and CorrectorStepSize, and
 %   the predictor and the corrector the numerical Jacobian step Increment, from the
 %   ContinuationPowerFlow section of GUILDA.setting.
-% - `OptionMap` is the input of tools.resolve_options. MaxIteration, Tolerance and Verbose
-%   are common names; LoadBus, InitialLambda, StepSize, ArcLength and UseInternalState have
-%   no common equivalent.
+% - `OptionMap` is the input of tools.resolve_options. MaxIteration, Tolerance, Verbose
+%   and Limits are common names; LoadBus, InitialLambda, StepSize, ArcLength and
+%   UseInternalState have no common equivalent.
 %
 % <@Examples>
 % ```matlab
@@ -31,6 +38,7 @@ classdef SolverCPF < auxiliary
 % net.solver_CPF.LoadBus = ["B009","B014"];       % stored default, kept between runs
 % result = net.calculate_continuation_powerflow();
 % result = net.calculate_continuation_powerflow(StepSize=0.1, Verbose=true);   % this call only
+% result = net.calculate_continuation_powerflow(Limits="all");   % Q limits, stop at V / S limits
 % ```
 %
 % See also ResultCPF, PowerNetwork.calculate_continuation_powerflow
@@ -44,6 +52,7 @@ classdef SolverCPF < auxiliary
         Tolerance (1,1) double {mustBePositive} = 1e-5                   % Tolerance of the largest residual of the Newton-Raphson corrector (its ConvTol).
         UseInternalState (1,1) logical = false                           % Solve the power flow with the internal states of the generators (see the class help).
         Verbose (1,1) logical = false                                    % Print lambda at each step.
+        Limits (1,:) string = "none"                                     % Operating limits applied along the path: a subset of "Q", "V", "S", or "all" / "none" (see the class help).
     end
 
     properties (Constant) % Settings
@@ -55,7 +64,8 @@ classdef SolverCPF < auxiliary
             "ArcLength",        "ArcLength", ...
             "InitialLambda",    "InitialLambda", ...
             "UseInternalState", "UseInternalState", ...
-            "Verbose",          "Verbose")                               % Name-Value options of net.calculate_continuation_powerflow and the property each one sets. <@Type> struct
+            "Verbose",          "Verbose", ...
+            "Limits",           {{"Limits", @(s) reshape(string(s), 1, [])}})                               % Name-Value options of net.calculate_continuation_powerflow and the property each one sets. <@Type> struct
     end
 
     methods
@@ -82,6 +92,7 @@ classdef SolverCPF < auxiliary
             obj.Tolerance        = sct.Tolerance.Value;
             obj.UseInternalState = sct.UseInternalState.Value;
             obj.Verbose          = sct.Verbose.Value;
+            obj.Limits           = reshape(string(sct.Limits.Value), 1, []);
         end
 
         sct_options = get_options(obj, nv)

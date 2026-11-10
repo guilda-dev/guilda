@@ -6,10 +6,10 @@ function sct_options = get_options(obj, nv)
 % an invalid value stops with the validation error of the option.
     arguments (Input)
         obj % Solver holding the defaults (net.solver_CPF).
-        nv (1,:) cell = {} % Name-Value overrides: LoadBus, MaxIteration, Tolerance, StepSize, ArcLength, InitialLambda, UseInternalState, Verbose.
+        nv (1,:) cell = {} % Name-Value overrides: LoadBus, MaxIteration, Tolerance, StepSize, ArcLength, InitialLambda, UseInternalState, Verbose, Limits.
     end
     arguments (Output)
-        sct_options % One field per setting (LoadBus, InitialLambda, MaxIterations, StepSize, ArcLength, Tolerance, UseInternalState, Verbose).
+        sct_options % One field per setting (LoadBus, InitialLambda, MaxIterations, StepSize, ArcLength, Tolerance, UseInternalState, Verbose, Limits).
     end
     sct_given = tools.resolve_options(obj, SolverCPF.OptionMap, nv);
     validate_options(nv{:});
@@ -25,4 +25,5 @@ function sct_options = get_options(obj, nv)
         end
     end
     sct_options.LoadBus = reshape(string(sct_options.LoadBus), 1, []);
+    validate_options(Limits=sct_options.Limits);    % also a stored default set directly
 end

@@ -1,6 +1,8 @@
 function func = pf_equation(net,w,sv_load,useInt,x,Ymat)
 % Power flow equations of the CPF at x = [unknowns; lambda] (layout w, see build_layout).
 % The loads of the buses sv_load (all loads when useInt) are scaled by (1 + lambda).
+% On a bus with w.rv_Qfix not NaN (switched to PQ by Limits "Q"), the components of
+% w.c_lvFree inject Q = w.rv_Qfix in place of their own Q.
     arguments (Input)
         net                   % Analysed network.
         w       (1,1) struct  % Variable layout (output of build_layout).
@@ -56,8 +58,26 @@ function func = pf_equation(net,w,sv_load,useInt,x,Ymat)
             end
         end
 
+        if ~isnan(w.rv_Qfix(i))
+            PQC(2) = w.rv_Qfix(i) + fixed_q(i_Bus, w.c_lvFree{i}, V_Bus, lambda * ismember(i_Bus.s_tag, sv_load));
+        end
+
         func{i} = [ [real(PQ(i));imag(PQ(i))] - PQC; f_Comp{:} ];
     end
 
     func = w.rm_BusRM * vertcat(func{:});
+end
+
+
+function r_Q = fixed_q(i_Bus, lv_free, V_Bus, r_scale)
+% Q of the components of the bus that are not generators (Q given in powerflow), scaled
+% by (1 + r_scale) as in pf_equation (Limits "Q" is used only without useInt: the
+% components inject their equilibrium powers)
+    r_Q = 0;
+    a_Comp = i_Bus.a_Component;
+    for j = find(~lv_free(:)).'
+        i_Comp = a_Comp{j};
+        PQ_j = i_Comp.f_PQ2Bus([], V_Bus, i_Comp.rv_Uequilibrium);
+        r_Q  = r_Q + PQ_j(2) * (1 + r_scale);
+    end
 end

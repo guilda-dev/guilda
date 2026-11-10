@@ -9,5 +9,20 @@ function validate_options(opt)
         opt.InitialLambda    (1,1) double
         opt.UseInternalState (1,1) logical
         opt.Verbose          (1,1) logical
+        opt.Limits           {mustBeLimits}
+    end
+end
+
+
+function mustBeLimits(sv)
+% Limits: distinct members of "Q", "V", "S", or "all" / "none" alone
+    l_ok = (isstring(sv) || ischar(sv) || iscellstr(sv)) && ~isempty(sv);
+    if l_ok
+        sv = reshape(string(sv), 1, []);
+        l_ok = all(ismember(sv, ["Q","V","S"])) && numel(unique(sv)) == numel(sv) ...
+               || isscalar(sv) && ismember(sv, ["all","none"]);
+    end
+    if ~l_ok
+        error(msg("GUILDA:SolverCPF:InvalidLimits"));
     end
 end
