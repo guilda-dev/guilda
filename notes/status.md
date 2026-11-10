@@ -119,11 +119,13 @@ matlab -batch "DebugScript.run_all('Level','small')"
 
 ## 潮流計算のオプション(手順 B、2026-11-10)
 
-仕様と実装の記録は [powerflow-options.md](powerflow-options.md) にあります(「手順 B の実装」節)。
+仕様と実装の記録は [powerflow-options.md](powerflow-options.md) にあります(「手順 B の実装」節、「Q3〜Q6 の実装」節)。
 
 - 設定は GUILDA.setting の PowerFlowCalculation セクション、`Tolerance` の既定は全手法で 1e-8、`WarmStart` の既定は true、母線の `V0` / `Varg0` は廃止、`ResultPF.tab_violation` を追加。
 - **数値の変化:** フラットスタート・既定の設定で、変更前の解との差は newton で最大 1.4e-10、levenberg-marquardt で 1.1e-8(EAST10 夜間)、dynamic で 3.1e-7(以前の既定 `Tolerance` 1e-5 よりは代数解に近い)。連続潮流計算は変わらない(IEEE14 で λ の差 4e-12)。
-- **要判断:** powerflow-options.md の「要判断」1〜6。
+- **Q3〜Q6(2026-11-10):** OPF の `WarmStart` の既定は false。`SolverOPF` は OPF の問題をキャッシュし、`PowerNetwork.n_revOPF` で照合(IEEE68 DC OPF 1.0 → 0.2 s、AC OPF 22 → 19 s)。
+  fsolve の `FunctionTolerance` は `Tolerance^2`(flag -2 は解消せず、原因は `OptimalityTolerance`)。機器の P・Q の配分は `tools.distribute_power` に統一。
+- **要判断:** powerflow-options.md の「手順 B の実装」の要判断 1・2、「Q3〜Q6 の実装」の要判断 1〜3。
 
 ## 入力を固定した平衡点と Solver / Method の名前(2026-11-10)
 
