@@ -386,12 +386,21 @@ function sys = via_feedback(obj)
         l_isU(i) = ~s.lv_nonUnit(i) && has_I2V(s.c_sysBus{i});
     end
 
-    ssFromBus = tools.cellfun(@i2v_full, s.c_sysBus(l_isU));
+    % The bus models with the outputs of their components and the inputs of local
+    % controllers that global controllers drive (sct_model.c_sysY, c_sysL)
+    c_aug = cell(n_bus,1);
+    for i = 1:n_bus
+        S = s.c_sysBus{i};  Y = s.c_sysY{i};  L = s.c_sysL{i};
+        c_aug{i} = model(S.A, [S.B, L.B], [S.C; Y.C], [S.D, L.D(1:2,:); Y.D, L.D(3:end,:)], S.E, ...
+                         S.StateName, [S.InputName; L.InputName], [S.OutputName; Y.OutputName]);
+    end
+    ssFromBus = tools.cellfun(@i2v_full, c_aug(l_isU));
 
     busInames = tools.cellfun(@(S) S.InputName(1:2),  ssFromBus);
-    busVnames = tools.cellfun(@(S) S.OutputName(end-1:end), ssFromBus);
+    busVnames = tools.cellfun(@(S) S.OutputName(numel(S.StateName)+(1:2)), ssFromBus);
 
     input  = obj.tab_variable.Label(obj.tab_variable.Kind == "u");
+    sv_l   = tools.vcellfun(@(L) reshape(string(L.InputName), [], 1), s.c_sysL);
 
     % Non-unit buses n have no states, so Div_n V_n + Diu_n u_n is their current and
     % I_u = (Y_uu - Y_un Ybar_nn^-1 Y_nu) V_u + Y_un Ybar_nn^-1 Diu_n u_n, with Ybar_nn = Y_nn - Div_n
@@ -404,15 +413,33 @@ function sys = via_feedback(obj)
     ssN = model(zeros(0), zeros(0,size(Ymat,2)+size(Hmat,2)), zeros(size(Ymat,1),0), [Ymat, Hmat], zeros(0), ...
                 strings(0,1), [vertcat(busVnames{:}); vertcat(strings(0,1), nonUnames{:})], vertcat(busInames{:}));
 
-    % The bus models and the network connected by name; outputs: the states of the bus models
+    % The bus models and the network connected by name; outputs: the states of the bus models,
+    % then the voltages, component outputs and states that global controllers read;
+    % inputs: the component inputs, then the inputs of local controllers they drive
     sv_x   = tools.cellfun(@(S) S.StateName, ssFromBus);
-    sysODE = connect_by_name([ssFromBus(:); {ssN}], input, vertcat(strings(0,1), sv_x{:}));
+    sv_x   = vertcat(strings(0,1), sv_x{:});
+    sv_blk = tools.cellfun(@(S) string(S.OutputName), [ssFromBus(:); {ssN}]);
+    % Inputs of the global controllers that act (a column of B or D other than 0): a
+    % controller that does not use the voltages does not need them as outputs here
+    c_sysGC = s.c_sysGC;
+    for k = 1:numel(c_sysGC)
+        lv_used = reshape(any(c_sysGC{k}.B ~= 0, 1) | any(c_sysGC{k}.D ~= 0, 1), [], 1);
+        c_sysGC{k}.B = c_sysGC{k}.B(:, lv_used);
+        c_sysGC{k}.D = c_sysGC{k}.D(:, lv_used);
+        c_sysGC{k}.InputName = c_sysGC{k}.InputName(lv_used);
+    end
+    sv_gcIn = tools.vcellfun(@(S) reshape(string(S.InputName), [], 1), c_sysGC);
+    sv_gcIn = unique(string(sv_gcIn(ismember(string(sv_gcIn), vertcat(strings(0,1), sv_blk{:})))), "stable");
+    sv_gcIn = sv_gcIn(~ismember(sv_gcIn, sv_x));
+    sysODE = connect_by_name([ssFromBus(:); {ssN}], [input; sv_l], [sv_x; sv_gcIn]);
     sysODE = remove_unreachable_states(sysODE);
 
-    % Global controllers (all of them, one after another, as in Kron and DAE):
-    % their inputs are component outputs (e.g. omega) and their outputs add to component inputs (e.g. Pmech)
-    for k = 1:numel(s.c_sysGC)
-        sysGC = s.c_sysGC{k};
+    % Global controllers (all of them, one after another, as in Kron and DAE): their
+    % inputs are bus voltages and component outputs or states (e.g. omega), and their
+    % outputs add to component inputs (e.g. Pmech) or drive inputs of local controllers.
+    % A voltage of a bus without an I-to-V form is not an output here.
+    for k = 1:numel(c_sysGC)
+        sysGC = c_sysGC{k};
         [lv_out, feedout] = ismember(sysGC.InputName,  sysODE.OutputName);
         [lv_in,  feedin ] = ismember(sysGC.OutputName, sysODE.InputName);
         if ~all(lv_out) || ~all(lv_in)
@@ -420,7 +447,11 @@ function sys = via_feedback(obj)
         end
         sysODE = positive_feedback(sysODE, sysGC, feedin, feedout);
     end
-    sys = sysODE;
+    % Only the component inputs and the states of the bus models stay
+    iv_in  = 1:numel(input);
+    iv_out = 1:numel(sv_x);
+    sys = model(sysODE.A, sysODE.B(:,iv_in), sysODE.C(iv_out,:), sysODE.D(iv_out,iv_in), sysODE.E, ...
+                sysODE.StateName, sysODE.InputName(iv_in), sysODE.OutputName(iv_out));
 
     function [rm_Ymat, rm_Hmat] = complex2matrix(Ymat, Div, Diu)
         rm_Ymat = cell2mat( arrayfun(@(M) [real(M), -imag(M); imag(M), real(M)], Ymat, 'UniformOutput', false) );
@@ -441,14 +472,15 @@ end
 
 function sys = i2v_full(sysV2I)
 % I-to-V form of a bus model (Bus.get_sys("port","I2V") with the states as outputs) from
-% its V-to-I form, with the same operations as Bus.get_sys
+% its V-to-I form, with the same operations as Bus.get_sys. The rows after the current
+% (outputs y = Cy x + Dyv V + Dyu u of the components) become outputs after V.
     Ax = sysV2I.A;
     Bv = sysV2I.B(:,1:2);
     Bu = sysV2I.B(:,3:end);
 
-    inv_Dv = sysV2I.D(:,1:2)^-1;
-    inv_Cx = sysV2I.C;
-    inv_Du = sysV2I.D(:,3:end);
+    inv_Dv = sysV2I.D(1:2,1:2)^-1;
+    inv_Cx = sysV2I.C(1:2,:);
+    inv_Du = sysV2I.D(1:2,3:end);
     inv_Ax = Ax - Bv * inv_Dv * inv_Cx;
     inv_Bv = Bv * inv_Dv;
     inv_Bu = Bu - Bv * inv_Dv * inv_Du;
@@ -459,11 +491,16 @@ function sys = i2v_full(sysV2I)
     nx = size(A,1);
     nu = size(B,2);
 
-    C  = [  eye(nx,nx); -inv_Dv*inv_Cx];
-    D  = [zeros(nx,nu); [inv_Dv, -inv_Dv*inv_Du]];
+    % V = -inv_Dv Cx x + inv_Dv I - inv_Dv Du u, and y with this V
+    Cy  = sysV2I.C(3:end,:);
+    Dyv = sysV2I.D(3:end,1:2);
+    Dyu = sysV2I.D(3:end,3:end);
+    C  = [  eye(nx,nx); -inv_Dv*inv_Cx; Cy - Dyv*inv_Dv*inv_Cx];
+    D  = [zeros(nx,nu); [inv_Dv, -inv_Dv*inv_Du]; [Dyv*inv_Dv, Dyu - Dyv*inv_Dv*inv_Du]];
 
     sys = model(A, B, C, D, sysV2I.E, sysV2I.StateName, ...
-                [sysV2I.OutputName; sysV2I.InputName(3:end)], [sysV2I.StateName; sysV2I.InputName(1:2)]);
+                [sysV2I.OutputName(1:2); sysV2I.InputName(3:end)], ...
+                [sysV2I.StateName; sysV2I.InputName(1:2); sysV2I.OutputName(3:end)]);
 end
 
 function sys = connect_by_name(c_blk, sv_input, sv_output)

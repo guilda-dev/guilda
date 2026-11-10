@@ -10,7 +10,6 @@ classdef BadControllerStub < LocalController
 %   jacsize    : Axx の大きさが誤り
 %   xsize      : 平衡点の x が 2 要素
 %   massx      : fcn_Mass が x を使う
-%   currentdep : fcn_dx が I に依存する
 %   residual   : fcn_dx が平衡点で 0 にならない
 %   output     : 出力が発電機の入力と合わない
 %   input      : 入力の平衡点が発電機の出力と合わない
@@ -28,7 +27,7 @@ classdef BadControllerStub < LocalController
         l_xsizeLater (1,1) logical = false                                                               % 次の get_equilibrium から xsize にする (initialize の後で validate を試す)
     end
     properties (Constant, Hidden)
-        sr_bad = ["none","jacobian","jacsize","xsize","massx","currentdep","residual","output","input"]  % 入れられる誤りの種類 ("none" は誤りなし)
+        sr_bad = ["none","jacobian","jacsize","xsize","massx","residual","output","input"]  % 入れられる誤りの種類 ("none" は誤りなし)
     end
     methods
         function obj = BadControllerStub(tag, opt)
@@ -60,12 +59,11 @@ classdef BadControllerStub < LocalController
         end
     end
     methods (Static)
-        function dx = fcn_dx(~, ~, ~, I, u, param, ~)
+        function dx = fcn_dx(~, ~, ~, u, param, ~)
             arguments (Input)
                 ~
                 ~
                 ~
-                I      % [pu] 母線電流 [real; imag]
                 u      % 入力
                 param  % 動的パラメータ (sv_para の順)
                 ~
@@ -74,17 +72,14 @@ classdef BadControllerStub < LocalController
                 dx  % 状態方程式の右辺
             end
             dx = u(1);
-            if DebugScript.helper.BadControllerStub.sr_bad(param) == "currentdep"
-                dx = dx + 1e-3*I(1);
-            elseif DebugScript.helper.BadControllerStub.sr_bad(param) == "residual"
+            if DebugScript.helper.BadControllerStub.sr_bad(param) == "residual"
                 dx = dx + 0.1;
             end
         end
-        function y = fcn_y(~, x, ~, ~, ~, param, ~)
+        function y = fcn_y(~, x, ~, ~, param, ~)
             arguments (Input)
                 ~
                 x      % 状態
-                ~
                 ~
                 ~
                 param  % 動的パラメータ (sv_para の順)
@@ -98,11 +93,10 @@ classdef BadControllerStub < LocalController
                 y = y + 0.1;
             end
         end
-        function M = fcn_Mass(~, x, ~, ~, ~, param, ~)
+        function M = fcn_Mass(~, x, ~, ~, param, ~)
             arguments (Input)
                 ~
                 x      % 状態
-                ~
                 ~
                 ~
                 param  % 動的パラメータ (sv_para の順)
@@ -116,9 +110,8 @@ classdef BadControllerStub < LocalController
                 M = 1 + x(1)^2;
             end
         end
-        function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(~, ~, ~, ~, ~, param, ~)
+        function [Axx,Bxv,Bxu] = Jacobi_dx(~, ~, ~, ~, param, ~)
             arguments (Input)
-                ~
                 ~
                 ~
                 ~
@@ -129,19 +122,17 @@ classdef BadControllerStub < LocalController
             arguments (Output)
                 Axx  % fcn_dx の x によるヤコビアン
                 Bxv  % fcn_dx の V によるヤコビアン
-                Bxi  % fcn_dx の I によるヤコビアン
                 Bxu  % fcn_dx の u によるヤコビアン
             end
-            Axx = 0;  Bxv = zeros(1,2);  Bxi = zeros(1,2);  Bxu = [1, 0];
+            Axx = 0;  Bxv = zeros(1,2);  Bxu = [1, 0];
             if DebugScript.helper.BadControllerStub.sr_bad(param) == "jacobian"
                 Axx = 5;
             elseif DebugScript.helper.BadControllerStub.sr_bad(param) == "jacsize"
                 Axx = zeros(2);
             end
         end
-        function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(~, ~, ~, ~, ~, ~, ~)
+        function [Cyx,Dyv,Dyu] = Jacobi_Y(~, ~, ~, ~, ~, ~)
             arguments (Input)
-                ~
                 ~
                 ~
                 ~
@@ -152,10 +143,9 @@ classdef BadControllerStub < LocalController
             arguments (Output)
                 Cyx  % fcn_y の x によるヤコビアン
                 Dyv  % fcn_y の V によるヤコビアン
-                Dyi  % fcn_y の I によるヤコビアン
                 Dyu  % fcn_y の u によるヤコビアン
             end
-            Cyx = 1;  Dyv = zeros(1,2);  Dyi = zeros(1,2);  Dyu = zeros(1,2);
+            Cyx = 1;  Dyv = zeros(1,2);  Dyu = zeros(1,2);
         end
     end
 end

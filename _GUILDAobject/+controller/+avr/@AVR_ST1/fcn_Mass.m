@@ -1,6 +1,6 @@
-function Mass = fcn_Mass(t, x, V, I, u, param, omega0)
+function Mass = fcn_Mass(t, x, V, u, param, omega0)
     % Return the mass matrix of the AVR_ST1 state equation.
-    % The state equation is `M*dx/dt = f(t, x, V, I, u)`. The diagonal of `M` holds the time constants [s];
+    % The state equation is `M*dx/dt = f(t, x, V, u)`. The diagonal of `M` holds the time constants [s];
     % a zero time constant makes the corresponding equation algebraic.
     %
     % See also controller.avr.AVR_ST1.fcn_dx
@@ -8,7 +8,6 @@ function Mass = fcn_Mass(t, x, V, I, u, param, omega0)
         t      double        % [s] Time (unused).
         x      double        % [pu] State `[Vtr; Vap; Vst]`: transducer output, amplifier output and stabilizer feedback.
         V      double        % [pu] Terminal voltage of the generator as `[real; imag]`.
-        I      double        % [pu] Terminal current of the generator as `[real; imag]` (unused).
         u      double        % [pu] Input `[Vref; Vpss]`: voltage reference and PSS output.
         param  double        % Parameter vector in the order of `sv_para`.
         omega0 (1,1) double  % [Hz] Nominal frequency (unused).

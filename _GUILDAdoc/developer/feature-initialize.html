@@ -475,12 +475,12 @@
             <li>Evaluates every model at the point at <code>t = 0</code></li>
             <li>Evaluated: <code>f_dx</code>, <code>f_I</code>, and <code>f_Y</code> of each component; <code>f_dx</code> and <code>f_Y</code> of each local controller (depth first) and of each global controller</li>
             <li>An input driven by a local controller: compared with the controller's output. An input of a local controller: compared with the observed output or state (<code>iv_obsY</code>, <code>iv_obsX</code>)</li>
-            <li>Global controller: inputs are the states named <code>sv_u</code> of its controlled units; outputs must be zero</li>
+            <li>Global controller: inputs are the outputs (else the states) named <code>sv_u</code> of its controlled units and the voltages of all buses; outputs must be zero</li>
           </ul><ul lang="ja">
             <li>すべてのモデルを運転点の <code>t = 0</code> で評価</li>
             <li>評価対象: 各機器の <code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、各局所制御器（深さ優先）と各広域制御器の <code>f_dx</code> と <code>f_Y</code></li>
             <li>局所制御器が駆動する入力はその制御器の出力と比較。局所制御器の入力は観測する出力または状態（<code>iv_obsY</code>、<code>iv_obsX</code>）と比較</li>
-            <li>広域制御器: 入力は制御対象の <code>sv_u</code> と同じ名前の状態。出力はゼロが必要</li>
+            <li>広域制御器: 入力は制御対象の <code>sv_u</code> と同じ名前の出力（なければ状態）と全母線の電圧。出力はゼロが必要</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, <code>c_Vequilibrium</code>, <code>c_Iequilibrium</code>; <code>f_*</code> handles; <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code></span><span lang="ja"><code>rv_Xequilibrium</code>、<code>rv_Uequilibrium</code>、<code>c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>f_*</code> ハンドル、<code>sv_x</code>、<code>sv_u</code>、<code>sv_y</code></span></dd>

@@ -67,7 +67,7 @@ DebugScript.helper.quiet(@() net.initialize);
 flag = comp.a_LocalController{1}.validate(false);
 lv = flag.contract.status == "FAIL";
 assert(~any(lv), "%s", join(flag.contract.Properties.RowNames(lv), ", "))
-for fn = ["Axx","Bxv","Bxi","Bxu","Cyx","Dyv","Dyi","Dyu"]
+for fn = ["Axx","Bxv","Bxu","Cyx","Dyv","Dyu"]
     if isfield(flag, fn) && ~isempty(flag.(fn)) && width(flag.(fn)) > 0
         r = max(flag.(fn){:,:}, [], "all");
         assert(r < 1e-5, "%s %g", fn, r);
@@ -78,30 +78,30 @@ end
 %% Jacobi_dx matches finite differences inside and at the limits
 avr = controller.avr.AVR_DC1("avr1", kap=20, Vfld_max=4, Vfld_min=0);
 param = avr.tab_parameter.dynamics{:, cellstr(avr.sv_para)}';
-V = [1.0; 0.1];  I = [0.5; -0.2];  u = [1.1; 0];
+V = [1.0; 0.1];  u = [1.1; 0];
 % 制限の内側: 有限差分と一致する
 x = [1.0; 2.0; 2.0; 0.0];
-Axx = controller.avr.AVR_DC1.Jacobi_dx(0, x, V, I, u, param, 60);
-assert(norm(Axx - fd_jacobian(x, V, I, u, param), "inf") < 1e-5)
+Axx = controller.avr.AVR_DC1.Jacobi_dx(0, x, V, u, param, 60);
+assert(norm(Axx - fd_jacobian(x, V, u, param), "inf") < 1e-5)
 % 上限で外へ向かう (制限なしの dVfld/dt > 0): dVfld/dt = 0 で行は 0
 x = [1.0; 20.0; 4.0; 0.0];
 assert(-(param(6) + param(7)*exp(param(9)*x(3)))*x(3) + x(2) > 0)
-dx = controller.avr.AVR_DC1.fcn_dx(0, x, V, I, u, param, 60);
-Axx = controller.avr.AVR_DC1.Jacobi_dx(0, x, V, I, u, param, 60);
+dx = controller.avr.AVR_DC1.fcn_dx(0, x, V, u, param, 60);
+Axx = controller.avr.AVR_DC1.Jacobi_dx(0, x, V, u, param, 60);
 assert(dx(3) == 0 && all(Axx(3,:) == 0))
 % 下限で外へ向かう
 x = [1.0; -1.0; 0.0; 0.0];
-dx = controller.avr.AVR_DC1.fcn_dx(0, x, V, I, u, param, 60);
-Axx = controller.avr.AVR_DC1.Jacobi_dx(0, x, V, I, u, param, 60);
+dx = controller.avr.AVR_DC1.fcn_dx(0, x, V, u, param, 60);
+Axx = controller.avr.AVR_DC1.Jacobi_dx(0, x, V, u, param, 60);
 assert(dx(3) == 0 && all(Axx(3,:) == 0))
 % 上限で内へ戻る: 制限は効かない
 x = [1.0; 1.0; 4.0; 0.0];
-dx = controller.avr.AVR_DC1.fcn_dx(0, x, V, I, u, param, 60);
+dx = controller.avr.AVR_DC1.fcn_dx(0, x, V, u, param, 60);
 assert(dx(3) < 0)
 % 止まっている間は安定化回路にも dVfld/dt = 0 が入る (質量行列の -kst の項)
-M = controller.avr.AVR_DC1.fcn_Mass(0, x, V, I, u, param, 60);
+M = controller.avr.AVR_DC1.fcn_Mass(0, x, V, u, param, 60);
 x = [1.0; 20.0; 4.0; 0.3];
-dx = controller.avr.AVR_DC1.fcn_dx(0, x, V, I, u, param, 60);
+dx = controller.avr.AVR_DC1.fcn_dx(0, x, V, u, param, 60);
 r_dx = M \ dx;
 assert(r_dx(3) == 0 && abs(r_dx(4) - (-x(4)/param(11))) < 1e-12)
 
@@ -160,13 +160,13 @@ function check_error(ME, s_tag, s_limits)
     assert(contains(str, "Widen Vfld_min and Vfld_max"), str)
 end
 
-function A = fd_jacobian(x, V, I, u, param)
+function A = fd_jacobian(x, V, u, param)
 % fcn_dx の x についての中心差分
     h = 1e-6;
     A = zeros(numel(x));
     for k = 1:numel(x)
         e = zeros(size(x));  e(k) = h;
-        A(:,k) = (controller.avr.AVR_DC1.fcn_dx(0, x+e, V, I, u, param, 60) ...
-                - controller.avr.AVR_DC1.fcn_dx(0, x-e, V, I, u, param, 60)) / (2*h);
+        A(:,k) = (controller.avr.AVR_DC1.fcn_dx(0, x+e, V, u, param, 60) ...
+                - controller.avr.AVR_DC1.fcn_dx(0, x-e, V, u, param, 60)) / (2*h);
     end
 end

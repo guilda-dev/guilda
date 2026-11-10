@@ -50,12 +50,11 @@ classdef ObserveStub < LocalController
         end
     end
     methods (Static)
-        function dx = fcn_dx(t, x, V, I, u, param, omega0)
+        function dx = fcn_dx(t, x, V, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
                 V       % [pu] 母線電圧 [real; imag]
-                I       % [pu] 母線電流 [real; imag]
                 u       % 入力
                 param   % 動的パラメータ (sv_para の順)
                 omega0  % [Hz] 系統周波数
@@ -65,12 +64,11 @@ classdef ObserveStub < LocalController
             end
             dx = zeros(0,1);
         end
-        function y = fcn_y(t, x, V, I, u, param, omega0)
+        function y = fcn_y(t, x, V, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
                 V       % [pu] 母線電圧 [real; imag]
-                I       % [pu] 母線電流 [real; imag]
                 u       % 入力
                 param   % 動的パラメータ (sv_para の順)
                 omega0  % [Hz] 系統周波数
@@ -80,12 +78,11 @@ classdef ObserveStub < LocalController
             end
             y = zeros(0,1);
         end
-        function M = fcn_Mass(t, x, V, I, u, param, omega0)
+        function M = fcn_Mass(t, x, V, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
                 V       % [pu] 母線電圧 [real; imag]
-                I       % [pu] 母線電流 [real; imag]
                 u       % 入力
                 param   % 動的パラメータ (sv_para の順)
                 omega0  % [Hz] 系統周波数
@@ -95,12 +92,11 @@ classdef ObserveStub < LocalController
             end
             M = zeros(0,0);
         end
-        function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t, x, V, I, u, param, omega0)
+        function [Axx,Bxv,Bxu] = Jacobi_dx(t, x, V, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
                 V       % [pu] 母線電圧 [real; imag]
-                I       % [pu] 母線電流 [real; imag]
                 u       % 入力
                 param   % 動的パラメータ (sv_para の順)
                 omega0  % [Hz] 系統周波数
@@ -108,17 +104,15 @@ classdef ObserveStub < LocalController
             arguments (Output)
                 Axx  % fcn_dx の x によるヤコビアン
                 Bxv  % fcn_dx の V によるヤコビアン
-                Bxi  % fcn_dx の I によるヤコビアン
                 Bxu  % fcn_dx の u によるヤコビアン
             end
-            Axx = zeros(0,0);  Bxv = zeros(0,2);  Bxi = zeros(0,2);  Bxu = zeros(0,numel(u));
+            Axx = zeros(0,0);  Bxv = zeros(0,2);  Bxu = zeros(0,numel(u));
         end
-        function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t, x, V, I, u, param, omega0)
+        function [Cyx,Dyv,Dyu] = Jacobi_Y(t, x, V, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
                 V       % [pu] 母線電圧 [real; imag]
-                I       % [pu] 母線電流 [real; imag]
                 u       % 入力
                 param   % 動的パラメータ (sv_para の順)
                 omega0  % [Hz] 系統周波数
@@ -126,10 +120,9 @@ classdef ObserveStub < LocalController
             arguments (Output)
                 Cyx  % fcn_y の x によるヤコビアン
                 Dyv  % fcn_y の V によるヤコビアン
-                Dyi  % fcn_y の I によるヤコビアン
                 Dyu  % fcn_y の u によるヤコビアン
             end
-            Cyx = zeros(0,0);  Dyv = zeros(0,2);  Dyi = zeros(0,2);  Dyu = zeros(0,numel(u));
+            Cyx = zeros(0,0);  Dyv = zeros(0,2);  Dyu = zeros(0,numel(u));
         end
     end
 end

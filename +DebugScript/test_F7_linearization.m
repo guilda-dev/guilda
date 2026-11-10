@@ -574,19 +574,19 @@ gen.add_local_controller("avr-ST1");
 gen.add_local_controller("pss-PSS1");
 DebugScript.helper.quiet(@() net.initialize);
 x = gen.rv_Xequilibrium;  V = [real(gen.c_Vequilibrium); imag(gen.c_Vequilibrium)];
-I = [real(gen.c_Iequilibrium); imag(gen.c_Iequilibrium)];  u = gen.rv_Uequilibrium;
+u = gen.rv_Uequilibrium;
 nx = numel(gen.sv_x);  nu = numel(gen.sv_u);
-[Axx, Bxv, ~, Bxu] = gen.f_JacobiDx(0, x, V, I, u);
-[Cix, Div, ~, Diu] = gen.f_JacobiI(0, x, V, I, u);
+[Axx, Bxv, Bxu] = gen.f_JacobiDx(0, x, V, u);
+[Cix, Div, Diu] = gen.f_JacobiI(0, x, V, u);
 Axx = reshape(full(Axx), nx, nx);  Bxv = reshape(full(Bxv), nx, 2);  Bxu = reshape(full(Bxu), nx, nu);
 Cix = reshape(full(Cix), 2, nx);   Div = reshape(full(Div), 2, 2);   Diu = reshape(full(Diu), 2, nu);
-E   = reshape(full(gen.f_Mass(0, x, V, I, u)), nx, nx);
+E   = reshape(full(gen.f_Mass(0, x, V, u)), nx, nx);
 
 s = gen.get_sys(Controllers=false, Format="struct", tag=false);
 assert(isequal(s.A, Axx) && isequal(s.B, [Bxv, Bxu]) && isequal(s.C, Cix) && isequal(s.D, [Div, Diu]) && isequal(s.E, E))
 assert(isequal(s.StateName, reshape(gen.sv_x, [], 1)) && isequal(s.InputName, ["Vre";"Vim";reshape(gen.sv_u, [], 1)]) ...
        && isequal(s.OutputName, ["Ire";"Iim"]))
-assert(isequal(gen.get_sys(x, V, I, u, Controllers=false, Format="struct", tag=false), s))   % 平衡点を与えても同じ
+assert(isequal(gen.get_sys(x, V, u, Controllers=false, Format="struct", tag=false), s))   % 平衡点を与えても同じ
 
 % I2V は V2I の D の電圧の列を解いた形
 s2 = gen.get_sys(Controllers=false, Format="struct", tag=false, port="I2V");
@@ -800,11 +800,10 @@ xe = gen.rv_Xequilibrium;
 res1 = net.linearize("Point", x);
 assert(isequal(gen.rv_Xequilibrium, xe) && isempty(net.solver_LIN.get_options().Point), "モデルまたは解法が変わった")
 assert(norm(res1.rm_Axx(iv_x,iv_x) - res0.rm_Axx(iv_x,iv_x), 1) > 1e-6, "ずらしても行列が変わらない")
-% 期待値: その点での f_JacobiDx / f_JacobiI (I は fcn_I から)
+% 期待値: その点での f_JacobiDx / f_JacobiI
 xg = x(iv_x);  Vg = x(iv_V);  ug = x(iv_u);
-Ig = gen.f_I(0, xg, Vg, zeros(2,1), ug);  Ig = [real(Ig); imag(Ig)];
-[Axx, Bxv, ~, Bxu] = gen.f_JacobiDx(0, xg, Vg, Ig, ug);
-[Cix, Div, ~, Diu] = gen.f_JacobiI(0, xg, Vg, Ig, ug);
+[Axx, Bxv, Bxu] = gen.f_JacobiDx(0, xg, Vg, ug);
+[Cix, Div, Diu] = gen.f_JacobiI(0, xg, Vg, ug);
 iv_v = iv_V - sum(tab.Kind == "x");   iv_uu = iv_u - sum(tab.Kind ~= "u");
 assert(norm(res1.rm_Axx(iv_x,iv_x) - Axx, 1) < 1e-10)
 assert(norm(res1.rm_Axv(iv_x,iv_v) - Bxv, 1) < 1e-10)
@@ -817,8 +816,7 @@ for j = 2:numel(net.a_Bus{2}.a_Component)
     cj = net.a_Bus{2}.a_Component{j};
     xj = x(tab.Owner == cj.s_tag & tab.Bus == "B002" & tab.Kind == "x");
     uj = x(tab.Owner == cj.s_tag & tab.Bus == "B002" & tab.Kind == "u");
-    Ij = cj.f_I(0, xj, Vg, zeros(2,1), uj);  Ij = [real(Ij); imag(Ij)];
-    [~, Divj] = cj.f_JacobiI(0, xj, Vg, Ij, uj);
+    [~, Divj] = cj.f_JacobiI(0, xj, Vg, uj);
     Div_sum = Div_sum + reshape(full(Divj), 2, 2);
 end
 Y = tools.complex2matrix(net.get_admittance_matrix.Variables);
@@ -953,9 +951,8 @@ iv_x = find(tab.Owner == gen.s_tag & tab.Kind == "x");
 iv_V = find(tab.Bus == "B003" & (tab.Kind == "Vre" | tab.Kind == "Vim"));
 iv_u = find(tab.Owner == gen.s_tag & tab.Kind == "u");
 xg = x(iv_x);  Vg = x(iv_V);  ug = x(iv_u);
-Ig = gen.f_I(0, xg, Vg, zeros(2,1), ug);  Ig = [real(Ig); imag(Ig)];
-[Axx, Bxv, ~, Bxu] = gen.f_JacobiDx(0, xg, Vg, Ig, ug);
-[Cix, ~, ~, Diu]   = gen.f_JacobiI(0, xg, Vg, Ig, ug);
+[Axx, Bxv, Bxu] = gen.f_JacobiDx(0, xg, Vg, ug);
+[Cix, ~, Diu]   = gen.f_JacobiI(0, xg, Vg, ug);
 iv_v = iv_V - sum(tab.Kind == "x");   iv_uu = iv_u - sum(tab.Kind ~= "u");
 assert(norm(res.rm_Axx(iv_x,iv_x) - Axx, 1) < 1e-10)
 assert(norm(res.rm_Axv(iv_x,iv_v) - Bxv, 1) < 1e-10)
@@ -1265,7 +1262,7 @@ catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:GconPorts", DebugScript.helper.msg_id(ME))
 end
 try
-    agc.get_sys(0, zeros(2,1), zeros(2,1), 0);
+    agc.get_sys(0, zeros(2,1), 0);
     error("DebugScript:NoError", "エラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:GlobalController:GlobalControllerPort", DebugScript.helper.msg_id(ME))
@@ -1443,12 +1440,12 @@ end
 
 
 %% Hessian contract of a class that overrides it
-% Hessian_dx を定義したクラスは n_x x n_z x n_z (z = [x; V; I; u]) を返す。Hessian_I が無ければ H_I は要求したときだけエラー
+% Hessian_dx を定義したクラスは n_x x n_z x n_z (z = [x; V; u]) を返す。Hessian_I が無ければ H_I は要求したときだけエラー
 c = DebugScript.helper.HessianStub();
-x = [0.3; 0.7];  V = [1.01; 0.05];  I = [0.2; -0.1];  u = 0.4;
-H = c.get_hessian(x, V, I, u);
-assert(isequal(size(H), [2 7 7]))
-assert(H(1,1,1) == 2*V(1) && H(1,1,3) == 2*x(1) && H(1,3,1) == 2*x(1) && H(2,1,7) == 1 && H(2,7,1) == 1)
+x = [0.3; 0.7];  V = [1.01; 0.05];  u = 0.4;
+H = c.get_hessian(x, V, u);
+assert(isequal(size(H), [2 5 5]))
+assert(H(1,1,1) == 2*V(1) && H(1,1,3) == 2*x(1) && H(1,3,1) == 2*x(1) && H(2,1,5) == 1 && H(2,5,1) == 1)
 assert(nnz(H) == 5)
 % H(k,:,:) は対称
 for k = 1:2
@@ -1456,7 +1453,7 @@ for k = 1:2
     assert(isequal(Hk, Hk.'))
 end
 try
-    [~, ~] = c.get_hessian(x, V, I, u);
+    [~, ~] = c.get_hessian(x, V, u);
     error("DebugScript:NoError", "Hessian_I が無いのにエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:HessianNotSupported" && contains(ME.message, "Hessian_I"), DebugScript.helper.msg_id(ME))

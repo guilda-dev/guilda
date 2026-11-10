@@ -63,12 +63,29 @@ function [result, flag, output] = solve(obj, net, sct_options)
         error(msg("GUILDA:SolverLIN:PointNotFinite", list_labels(tab_map.Label(lv_bad))))
     end
 
-    % Bus models (V -> I) and global controller models at the point. The network model
-    % has the bus voltages and the component inputs (Kind "u" of the variable map) as
-    % inputs, and the currents as outputs: the inputs and outputs of the controllers in
-    % the bus models are left out.
+    % Global controller models at the point: their inputs are the bus voltages and outputs
+    % or states of the components, and their outputs are named by the inputs they drive
+    % (inputs of components, or of local controllers: sv_l)
+    c_sysGC = cell(numel(a_gc),1);
+    for k = 1:numel(a_gc)
+        if l_eq
+            f_sys = @() a_gc{k}.get_sys("Format","struct");
+        else
+            f_sys = @() a_gc{k}.get_sys(rv_point(c_idxGC{k}), rv_point(tab_map.Kind == "Vre" | tab_map.Kind == "Vim"), ...
+                                        gc_input(a_gc{k}, tab_map, rv_point), "Format","struct");
+        end
+        c_sysGC{k} = model_at_point(f_sys, "global controller " + a_gc{k}.s_tag);
+    end
+    sv_l = tools.vcellfun(@(S) reshape(string(S.OutputName), [], 1), c_sysGC);
+    sv_l = unique(string(sv_l(~ismember(string(sv_l), tab_map.Label(tab_map.Kind == "u")))), "stable");
+
+    % Bus models (V -> I) at the point. The network model has the bus voltages and the
+    % component inputs (Kind "u" of the variable map) as inputs, and the currents as
+    % outputs: the other inputs and outputs of the controllers in the bus models are left
+    % out, except the inputs of local controllers that a global controller drives (c_sysL).
     c_sysBus = cell(n_bus,1);
     c_sysY   = cell(n_bus,1);
+    c_sysL   = cell(n_bus,1);
     for i = 1:n_bus
         if l_eq
             f_sys = @() a_bus{i}.get_sys("port","V2I","Format","struct");
@@ -80,16 +97,7 @@ function [result, flag, output] = solve(obj, net, sct_options)
         [~, iv_u] = ismember(sv_u, sys_i.InputName);
         c_sysBus{i} = channels(sys_i, 1:2, [1, 2, reshape(iv_u, 1, [])]);
         c_sysY{i}   = channels(sys_i, 3:numel(sys_i.OutputName), [1, 2, reshape(iv_u, 1, [])]);
-    end
-    c_sysGC = cell(numel(a_gc),1);
-    for k = 1:numel(a_gc)
-        if l_eq
-            f_sys = @() a_gc{k}.get_sys("Format","struct");
-        else
-            f_sys = @() a_gc{k}.get_sys(rv_point(c_idxGC{k}), zeros(2,1), zeros(2,1), ...
-                                        gc_input(a_gc{k}, tab_map, rv_point), "Format","struct");
-        end
-        c_sysGC{k} = model_at_point(f_sys, "global controller " + a_gc{k}.s_tag);
+        c_sysL{i}   = channels(sys_i, 1:numel(sys_i.OutputName), reshape(find(ismember(sys_i.InputName, sv_l)), 1, []));
     end
 
     cm_Y = net.get_admittance_matrix.Variables;
@@ -111,11 +119,28 @@ function [result, flag, output] = solve(obj, net, sct_options)
     sv_u  = tab_map.Label(tab_map.Kind == "u");
     % The outputs of the bus models depend on the global controllers as the currents do
     Cyx = tools.dcellfun(@(S) S.C         , c_sysY);
+    Dyv = tools.dcellfun(@(S) S.D(:,1:2)  , c_sysY);
     Dyu = tools.dcellfun(@(S) S.D(:,3:end), c_sysY);
+    sv_v = tab_map.Label(tab_map.Kind == "Vre" | tab_map.Kind == "Vim");
+    sv_yBus = tools.vcellfun(@(S) reshape(string(S.OutputName), [], 1), c_sysY);
+    % Inputs of local controllers driven by global controllers: their columns in the states,
+    % the currents and the outputs of the bus models (rows I of each bus, then its outputs)
+    c_B  = tools.cellfun(@(S) S.B, c_sysL);
+    c_Di = tools.cellfun(@(S) S.D(1:2,:), c_sysL);
+    c_Dy = tools.cellfun(@(S) S.D(3:end,:), c_sysL);
+    Bxl = blkdiag(zeros(0,0), c_B{:});
+    Dl  = [blkdiag(zeros(0,0), c_Di{:}); blkdiag(zeros(0,0), c_Dy{:})];
+    sv_lBus = tools.vcellfun(@(S) reshape(string(S.InputName), [], 1), c_sysL);
     n_i = size(Cix,1);
-    [Axx, Axv, Bxu, Cix, Ex, sv_z] = add_global_controllers(c_sysGC, a_gc, sv_x, sv_u, Axx, Axv, Bxu, [Cix; Cyx], [Diu; Dyu], Ex);
-    Cyx = Cix(n_i+1:end,:);
-    Cix = Cix(1:n_i,:);
+    sct_net = struct("Axx", Axx, "Axv", Axv, "Bxu", Bxu, "Bxl", Bxl, "C", [Cix; Cyx], "Dv", [Div; Dyv], ...
+                     "Du", [Diu; Dyu], "Dl", Dl, "E", Ex, "sv_x", sv_x, "sv_v", sv_v, "sv_u", sv_u, ...
+                     "sv_l", string(sv_lBus), "sv_y", string(sv_yBus), "Cy", Cyx, "Dyv", Dyv);
+    [sct_net, sv_z] = add_global_controllers(c_sysGC, a_gc, sct_net);
+    [Axx, Axv, Bxu, Ex] = deal(sct_net.Axx, sct_net.Axv, sct_net.Bxu, sct_net.E);
+    Cyx = sct_net.C(n_i+1:end,:);
+    Cix = sct_net.C(1:n_i,:);
+    Dyv = sct_net.Dv(n_i+1:end,:);
+    Div = sct_net.Dv(1:n_i,:);
 
     if ~isequal([sv_x; sv_z], tab_map.Label(tab_map.Kind == "x"))
         error(msg("GUILDA:SolverLIN:VariableMap"))
@@ -129,11 +154,11 @@ function [result, flag, output] = solve(obj, net, sct_options)
     sv_I = tools.cellfun(@(S) string(S.OutputName), c_sysBus);
     sv_y = tools.cellfun(@(S) string(S.OutputName), c_sysY);
     sct_output = struct( ...
-        "Cx", Cyx, "Cv", tools.dcellfun(@(S) S.D(:,1:2), c_sysY), "Du", Dyu, ...
+        "Cx", Cyx, "Cv", Dyv, "Du", Dyu, ...
         "sv_name", vertcat(strings(0,1), sv_y{:}));
     sct_model = struct( ...
         "sct_output", sct_output, "sv_I", vertcat(sv_I{:}), ...
-        "c_sysBus", {c_sysBus}, "c_sysGC", {c_sysGC}, "cm_Y", cm_Y, ...
+        "c_sysBus", {c_sysBus}, "c_sysY", {c_sysY}, "c_sysL", {c_sysL}, "c_sysGC", {c_sysGC}, "cm_Y", cm_Y, ...
         "lv_nonUnit", tools.vcellfun(@(b) isempty(b.a_Component), a_bus), ...
         "cv_V", cv_V);
 
@@ -220,28 +245,40 @@ end
 
 
 function u = gc_input(gc, tab_map, rv_point)
-% Inputs of a global controller at the point: the states of its controlled units
+% Inputs of a global controller at the point: the outputs (fcn_Y at the states and the bus
+% voltage of the point) or the states of its controlled units
     a_unit = gc.controlledUnits;
-    c_u = cell(numel(a_unit),1);
+    n_u = numel(gc.sv_u);
+    u = zeros(numel(a_unit)*n_u, 1);
     for idx = 1:numel(a_unit)
         unit = a_unit{idx};
-        sv_label = string(unit.attach_tag(unit.sv_x(unit.sv_x == gc.sv_u)));
-        [~, iv] = ismember(sv_label(:), tab_map.Label);
-        c_u{idx} = rv_point(iv);
+        x_unit = rv_point(tab_map.Kind == "x" & tab_map.Owner == string(unit.s_tag));
+        iv_k = (idx-1)*n_u + (1:n_u)';
+        lv_Y = gc.iv_obsY(iv_k) > 0;
+        lv_X = gc.iv_obsX(iv_k) > 0;
+        if any(lv_Y)
+            s_bus = string(unit.a_Bus.s_tag);
+            V_unit = rv_point((tab_map.Kind == "Vre" | tab_map.Kind == "Vim") & tab_map.Bus == s_bus);
+            y_unit = unit.f_Y(0, x_unit, V_unit);
+            u(iv_k(lv_Y)) = y_unit(gc.iv_obsY(iv_k(lv_Y)));
+        end
+        u(iv_k(lv_X)) = x_unit(gc.iv_obsX(iv_k(lv_X)));
     end
-    u = vertcat(zeros(0,1), c_u{:});
 end
 
 
-function [Axx, Bxv, Bxu, Cix, E, sv_z] = add_global_controllers(c_sysGC, a_GC, sv_x, sv_u, Axx, Bxv, Bxu, Cix, Diu, E)
+function [s, sv_z] = add_global_controllers(c_sysGC, a_GC, s)
 % Adds the global controllers to the linear model of the components
 %
-%   E dx/dt = Axx x + Bxv v + Bxu u,   i = Cix x + ... + Diu u
-%   x: component states (names sv_x), u: component inputs (names sv_u)
+%   E dx/dt = Axx x + Axv v + Bxu u + Bxl l,   w = C x + Dv v + Du u + Dl l
+%   x: component states (sv_x), v: bus voltages (sv_v), u: component inputs (sv_u),
+%   l: inputs of local controllers (sv_l, not inputs of the network model), w: the
+%   currents and then the outputs (sv_y) of the bus models (Cy, Dyv: those outputs)
 %
-% Global controller k:  E_k dz_k/dt = A_k z_k + B_k w_k,  y_k = C_k z_k + D_k w_k
-%   its inputs w_k are component states (InputName in sv_x): w_k = S_k x
-%   its outputs y_k add to component inputs (OutputName in sv_u): u <- u + T_k y_k
+% Global controller k:  E_k dz_k/dt = A_k z_k + B_k [v; r_k],  y_k = C_k z_k + D_k [v; r_k]
+%   its inputs r_k are component outputs (sv_y, no feedthrough: r = Cy x + Dyv v) or
+%   component states (sv_x); its outputs y_k add to component inputs (sv_u) or drive
+%   inputs of local controllers (sv_l): u <- u + T_k y_k, l = L_k y_k
 %
 % The states z of all controllers are put after x, in the order of a_GlobalController
 % (the order of the variable map). The returned matrices are for [x; z]; Bxu keeps the
@@ -250,41 +287,66 @@ function [Axx, Bxv, Bxu, Cix, E, sv_z] = add_global_controllers(c_sysGC, a_GC, s
     if isempty(c_sysGC)
         return
     end
-    nx = size(Axx,1);
-    nv = size(Bxv,2);
-    nu = size(Bxu,2);
+    nx = size(s.Axx,1);
+    nv = numel(s.sv_v);
+    nu = numel(s.sv_u);
+    nl = numel(s.sv_l);
 
-    Az    = cell(numel(c_sysGC),1);
-    Bzx   = cell(numel(c_sysGC),1);
-    Cuz   = cell(1,numel(c_sysGC));
-    Ez    = cell(numel(c_sysGC),1);
-    sv_z  = cell(numel(c_sysGC),1);  % cell while collecting
-    Dux   = zeros(nu,nx);
+    Az   = cell(numel(c_sysGC),1);
+    Bzx  = cell(numel(c_sysGC),1);
+    Bzv  = cell(numel(c_sysGC),1);
+    Cuz  = cell(1,numel(c_sysGC));
+    Clz  = cell(1,numel(c_sysGC));
+    Ez   = cell(numel(c_sysGC),1);
+    sv_z = cell(numel(c_sysGC),1);  % cell while collecting
+    Dux  = zeros(nu,nx);  Duv = zeros(nu,nv);
+    Dlx  = zeros(nl,nx);  Dlv = zeros(nl,nv);
     for k = 1:numel(c_sysGC)
         sysGC = c_sysGC{k};
-        [lv_w, iw] = ismember(string(sysGC.InputName),  sv_x);
-        [lv_y, iy] = ismember(string(sysGC.OutputName), sv_u);
-        if ~all(lv_w) || ~all(lv_y)
+        sv_in = string(sysGC.InputName);
+        sv_out = string(sysGC.OutputName);
+        % r_k = Wx x + Wv v: voltages, component outputs and states by label
+        [lv_v, iv_v] = ismember(sv_in, s.sv_v);
+        [lv_y, iv_y] = ismember(sv_in, s.sv_y);
+        [lv_x, iv_x] = ismember(sv_in, s.sv_x);
+        lv_x = lv_x & ~lv_v & ~lv_y;
+        [lv_u, iu] = ismember(sv_out, s.sv_u);
+        [lv_l, il] = ismember(sv_out, s.sv_l);
+        if ~all(lv_v | lv_y | lv_x) || ~all(lv_u | lv_l)
             error(msg("GUILDA:SolverLIN:GlobalControllerPort", a_GC{k}.s_tag))
         end
-        S = zeros(numel(iw), nx);  S(sub2ind(size(S), 1:numel(iw), iw(:)')) = 1;
-        T = zeros(nu, numel(iy));  T(sub2ind(size(T), iy(:)', 1:numel(iy))) = 1;
-        Az{k}    = sysGC.A;
-        Bzx{k}   = sysGC.B * S;
-        Cuz{k}   = T * sysGC.C;
-        Dux      = Dux + T * sysGC.D * S;
-        Ez{k}    = sysGC.E;
+        Wx = zeros(numel(sv_in), nx);  Wv = zeros(numel(sv_in), nv);
+        Wv(sub2ind(size(Wv), find(lv_v), iv_v(lv_v))) = 1;
+        Wx(lv_y,:) = s.Cy(iv_y(lv_y),:);
+        Wv(lv_y,:) = s.Dyv(iv_y(lv_y),:);
+        Wx(sub2ind(size(Wx), find(lv_x), iv_x(lv_x))) = 1;
+        T = zeros(nu, numel(sv_out));  T(sub2ind(size(T), iu(lv_u), find(lv_u))) = 1;
+        L = zeros(nl, numel(sv_out));  L(sub2ind(size(L), il(lv_l), find(lv_l))) = 1;
+        Az{k}   = sysGC.A;
+        Bzx{k}  = sysGC.B * Wx;
+        Bzv{k}  = sysGC.B * Wv;
+        Cuz{k}  = T * sysGC.C;
+        Clz{k}  = L * sysGC.C;
+        Dux = Dux + T * sysGC.D * Wx;   Duv = Duv + T * sysGC.D * Wv;
+        Dlx = Dlx + L * sysGC.D * Wx;   Dlv = Dlv + L * sysGC.D * Wv;
+        Ez{k}   = sysGC.E;
         sv_z{k} = string(sysGC.StateName);
     end
-    Az    = blkdiag(Az{:});
-    Bzx   = vertcat(Bzx{:});
-    Cuz   = horzcat(Cuz{:});
-    sv_z  = [string.empty(0,1); vertcat(sv_z{:})];
-    nz    = size(Az,1);
+    Az   = blkdiag(Az{:});
+    Bzx  = vertcat(Bzx{:});
+    Bzv  = vertcat(Bzv{:});
+    Cuz  = horzcat(Cuz{:});
+    Clz  = horzcat(Clz{:});
+    sv_z = [string.empty(0,1); vertcat(sv_z{:})];
+    nz   = size(Az,1);
 
-    Axx = [Axx + Bxu*Dux, Bxu*Cuz; Bzx, Az];
-    Bxv = [Bxv; zeros(nz,nv)];
-    Bxu = [Bxu; zeros(nz,nu)];
-    Cix = [Cix + Diu*Dux, Diu*Cuz];
-    E   = blkdiag(E, Ez{:});
+    % x' and w with u <- u + Dux x + Duv v + Cuz z and l = Dlx x + Dlv v + Clz z
+    Kx = s.Bxu*Dux + s.Bxl*Dlx;  Kv = s.Bxu*Duv + s.Bxl*Dlv;  Kz = s.Bxu*Cuz + s.Bxl*Clz;
+    Mx = s.Du*Dux  + s.Dl*Dlx;   Mv = s.Du*Duv  + s.Dl*Dlv;   Mz = s.Du*Cuz  + s.Dl*Clz;
+    s.Axx = [s.Axx + Kx, Kz; Bzx, Az];
+    s.Axv = [s.Axv + Kv; Bzv];
+    s.Bxu = [s.Bxu; zeros(nz,nu)];
+    s.C   = [s.C + Mx, Mz];
+    s.Dv  = s.Dv + Mv;
+    s.E   = blkdiag(s.E, Ez{:});
 end

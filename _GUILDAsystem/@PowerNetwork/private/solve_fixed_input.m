@@ -173,8 +173,8 @@ function F = residual(eq, z)
         iv_Vk = eq.iv_V(2*eq.iv_bus(k) + (-1:0));
         V = z(iv_Vk);
         u = input_of(eq, k, z);
-        dx  = comp.f_dx(0, x, V, I, u);
-        c_I = comp.f_I(0, x, V, I, u);
+        dx  = comp.f_dx(0, x, V, u);
+        c_I = comp.f_I(0, x, V, u);
         F_comp{k} = [reshape(dx, [], 1); real(c_I) - I(1); imag(c_I) - I(2)];
         rv_Isum(iv_Vk - eq.iv_V(1) + 1) = rv_Isum(iv_Vk - eq.iv_V(1) + 1) + I;
     end
@@ -194,19 +194,18 @@ function J = residual_jacobian(eq, z)
         ix = eq.c_ix{k};
         iI = eq.c_iI{k};
         iv_Vk = eq.iv_V(2*eq.iv_bus(k) + (-1:0));
-        x = z(ix); I = z(iI); V = z(iv_Vk);
+        x = z(ix); V = z(iv_Vk);
         u = input_of(eq, k, z);
-        [Axx, Bxv, Bxi, Bxu] = comp.f_JacobiDx(0, x, V, I, u);
-        [Cix, Div, Dii, Diu] = comp.f_JacobiI(0, x, V, I, u);
+        [Axx, Bxv, Bxu] = comp.f_JacobiDx(0, x, V, u);
+        [Cix, Div, Diu] = comp.f_JacobiI(0, x, V, u);
         n_x = numel(ix);
         rows_x = i_row + (1:n_x)';
         rows_I = i_row + n_x + (1:2)';
         i_row  = i_row + n_x + 2;
         c_blk = {rows_x, ix,    Axx;
-                 rows_x, iI,    Bxi;
                  rows_x, iv_Vk, Bxv;
                  rows_I, ix,    Cix;
-                 rows_I, iI,    Dii - eye(2);
+                 rows_I, iI,    -eye(2);
                  rows_I, iv_Vk, Div};
         if k == eq.k_slack
             c_blk = [c_blk; {rows_x, eq.i_zPm, Bxu(:,eq.i_Pm); rows_I, eq.i_zPm, Diu(:,eq.i_Pm)}]; %#ok<AGROW>

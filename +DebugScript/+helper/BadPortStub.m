@@ -36,9 +36,8 @@ classdef BadPortStub < Component
         end
     end
     methods (Static)
-        function dx = fcn_dx(~, ~, ~, ~, ~, ~, ~)
+        function dx = fcn_dx(~, ~, ~, ~, ~, ~)
             arguments (Input)
-                ~
                 ~
                 ~
                 ~
@@ -51,9 +50,8 @@ classdef BadPortStub < Component
             end
             dx = zeros(0,1);
         end
-        function I = fcn_I(~, ~, ~, ~, ~, ~, ~)
+        function I = fcn_I(~, ~, ~, ~, ~, ~)
             arguments (Input)
-                ~
                 ~
                 ~
                 ~
@@ -66,10 +64,8 @@ classdef BadPortStub < Component
             end
             I = 0j;
         end
-        function y = fcn_Y(~, ~, ~, ~, ~, ~, ~)
+        function y = fcn_Y(~, ~, ~, ~, ~)
             arguments (Input)
-                ~
-                ~
                 ~
                 ~
                 ~
@@ -81,9 +77,8 @@ classdef BadPortStub < Component
             end
             y = zeros(0,1);
         end
-        function M = fcn_Mass(~, ~, ~, ~, ~, ~, ~)
+        function M = fcn_Mass(~, ~, ~, ~, ~, ~)
             arguments (Input)
-                ~
                 ~
                 ~
                 ~

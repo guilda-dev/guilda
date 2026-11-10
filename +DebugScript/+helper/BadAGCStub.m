@@ -56,12 +56,11 @@ classdef BadAGCStub < GlobalController
         end
     end
     methods (Static)
-        function dx = fcn_dx(t, x, V, I, u, param, omega0)
+        function dx = fcn_dx(t, x, V, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
                 V       % ポート (使わない)
-                I       % ポート (使わない)
                 u       % 入力
                 param   % 動的パラメータ (sv_para の順)
                 omega0  % [Hz] 系統周波数
@@ -69,14 +68,13 @@ classdef BadAGCStub < GlobalController
             arguments (Output)
                 dx  % 状態方程式の右辺
             end
-            dx = controller.agc.broadcast_PI_AGC.fcn_dx(t, x, V, I, u, param, omega0);
+            dx = controller.agc.broadcast_PI_AGC.fcn_dx(t, x, V, u, param, omega0);
         end
-        function y = fcn_y(t, x, V, I, u, param, omega0)
+        function y = fcn_y(t, x, V, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
                 V       % ポート (使わない)
-                I       % ポート (使わない)
                 u       % 入力
                 param   % 動的パラメータ (sv_para の順)
                 omega0  % [Hz] 系統周波数
@@ -84,14 +82,13 @@ classdef BadAGCStub < GlobalController
             arguments (Output)
                 y  % 出力
             end
-            y = controller.agc.broadcast_PI_AGC.fcn_y(t, x, V, I, u, param, omega0);
+            y = controller.agc.broadcast_PI_AGC.fcn_y(t, x, V, u, param, omega0);
         end
-        function M = fcn_Mass(t, x, V, I, u, param, omega0)
+        function M = fcn_Mass(t, x, V, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
                 V       % ポート (使わない)
-                I       % ポート (使わない)
                 u       % 入力
                 param   % 動的パラメータ (sv_para の順)
                 omega0  % [Hz] 系統周波数
@@ -99,14 +96,13 @@ classdef BadAGCStub < GlobalController
             arguments (Output)
                 M  % 質量行列
             end
-            M = controller.agc.broadcast_PI_AGC.fcn_Mass(t, x, V, I, u, param, omega0);
+            M = controller.agc.broadcast_PI_AGC.fcn_Mass(t, x, V, u, param, omega0);
         end
-        function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t, x, V, I, u, param, omega0)
+        function [Axx,Bxv,Bxu] = Jacobi_dx(t, x, V, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
                 V       % ポート (使わない)
-                I       % ポート (使わない)
                 u       % 入力
                 param   % 動的パラメータ (sv_para の順)
                 omega0  % [Hz] 系統周波数
@@ -114,17 +110,15 @@ classdef BadAGCStub < GlobalController
             arguments (Output)
                 Axx  % fcn_dx の x によるヤコビアン
                 Bxv  % fcn_dx の V によるヤコビアン
-                Bxi  % fcn_dx の I によるヤコビアン
                 Bxu  % fcn_dx の u によるヤコビアン
             end
-            [Axx,Bxv,Bxi,Bxu] = controller.agc.broadcast_PI_AGC.Jacobi_dx(t, x, V, I, u, param, omega0);
+            [Axx,Bxv,Bxu] = controller.agc.broadcast_PI_AGC.Jacobi_dx(t, x, V, u, param, omega0);
         end
-        function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t, x, V, I, u, param, omega0)
+        function [Cyx,Dyv,Dyu] = Jacobi_Y(t, x, V, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
                 V       % ポート (使わない)
-                I       % ポート (使わない)
                 u       % 入力
                 param   % 動的パラメータ (sv_para の順)
                 omega0  % [Hz] 系統周波数
@@ -132,10 +126,9 @@ classdef BadAGCStub < GlobalController
             arguments (Output)
                 Cyx  % fcn_y の x によるヤコビアン
                 Dyv  % fcn_y の V によるヤコビアン
-                Dyi  % fcn_y の I によるヤコビアン
                 Dyu  % fcn_y の u によるヤコビアン
             end
-            [Cyx,Dyv,Dyi,Dyu] = controller.agc.broadcast_PI_AGC.Jacobi_Y(t, x, V, I, u, param, omega0);
+            [Cyx,Dyv,Dyu] = controller.agc.broadcast_PI_AGC.Jacobi_Y(t, x, V, u, param, omega0);
         end
     end
 end

@@ -34,11 +34,11 @@ function set_odefcn(obj)
         param.x0 = obj.rv_Uequilibrium;
         param.u0 = obj.rv_u0;
     end
-    obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, param, omega0);
-    obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, param, omega0);
-    obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, param, omega0);
-    obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
-    obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
+    obj.f_dx   = @(t,x,V,u) obj.fcn_dx(t, x, V, u, param, omega0);
+    obj.f_Mass = @(t,x,V,u) obj.fcn_Mass(t, x, V, u, param, omega0);
+    obj.f_Y    = @(t,x,V,u) obj.fcn_y(t, x, V, u, param, omega0);
+    obj.f_JacobiDx = @(t,x,V,u) obj.Jacobi_dx(t,x,V,u,param,omega0);
+    obj.f_JacobiY  = @(t,x,V,u) obj.Jacobi_Y(t,x,V,u,param,omega0);
     obj.r_odefcnHz = omega0;
     obj.sct_stale.odefcn = strings(0,1);
 end

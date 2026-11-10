@@ -1,4 +1,4 @@
-function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)
+function [Axx,Bxv,Bxu] = Jacobi_dx(t,x,V,u,param,omega0)
     % Return the Jacobians of the PSS1 state equation.
     % The derivatives of the right-hand side `f` of fcn_dx are taken with respect to
     % the state, the voltage, the current and the input.
@@ -8,7 +8,6 @@ function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)
         t      double        % [s] Time (unused).
         x      double        % [pu] State `[xiWS; xi1; xi2]` of the washout filter and the two lead-lag blocks.
         V      double        % [pu] Terminal voltage as `[real; imag]` (unused).
-        I      double        % [pu] Terminal current as `[real; imag]` (unused).
         u      double        % [pu] Frequency deviation `omega` of the generator.
         param  double        % Parameter vector in the order of `sv_para`.
         omega0 (1,1) double  % [Hz] Nominal frequency (unused).
@@ -16,7 +15,6 @@ function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)
     arguments (Output)
         Axx  % Derivative of `f` with respect to `x`.
         Bxv  % Derivative of `f` with respect to `V` (`[real; imag]`).
-        Bxi  % Derivative of `f` with respect to `I` (`[real; imag]`).
         Bxu  % Derivative of `f` with respect to `u`.
     end
     tn1 = param(3);
@@ -37,7 +35,6 @@ function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)
     nx  = numel(x);
     Bxv = zeros(nx,2);
     
-    Bxi = zeros(nx,2);
 
     nu = numel(u);
 

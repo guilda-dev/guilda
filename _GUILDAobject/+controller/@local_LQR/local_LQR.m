@@ -126,10 +126,10 @@ classdef local_LQR < LocalController
     end
 
     methods (Static)
-        dx = fcn_dx(t, x, V, I, u, param, omega0)
-        y = fcn_y(t, x, V, I, u, param, omega0)
-        M = fcn_Mass(t, x, V, I, u, param, omega0)
-        [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t, x, V, I, u, param, omega0)
-        [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t, x, V, I, u, param, omega0)
+        dx = fcn_dx(t, x, V, u, param, omega0)
+        y = fcn_y(t, x, V, u, param, omega0)
+        M = fcn_Mass(t, x, V, u, param, omega0)
+        [Axx,Bxv,Bxu] = Jacobi_dx(t, x, V, u, param, omega0)
+        [Cyx,Dyv,Dyu] = Jacobi_Y(t, x, V, u, param, omega0)
     end
 end

@@ -10,7 +10,6 @@ classdef BadComponentStub < Component
 %   currentreal : fcn_I が [re; im] を返す
 %   massx       : fcn_Mass が x を使う
 %   needpq      : get_equilibrium の r_P, r_Q が必須
-%   currentdep  : fcn_dx が I に依存する
 %   dxsize      : fcn_dx が 3 要素を返す
 %   ysize       : fcn_Y が 2 要素を返す
 %   masssize    : fcn_Mass が正方でない
@@ -21,7 +20,7 @@ classdef BadComponentStub < Component
         sv_u = ["u1";"u2"]                                                                                                         % 入力の名前
         sv_y = "x1"                                                                                                                % 出力の名前
         sv_para = "bad"                                                                                                            % 動的パラメータの名前
-        sr_bad = ["none","equilibrium","xsize","currentreal","massx","needpq","currentdep","dxsize","ysize","masssize","dxerror"]  % 入れられる誤りの種類 ("none" は誤りなし)
+        sr_bad = ["none","equilibrium","xsize","currentreal","massx","needpq","dxsize","ysize","masssize","dxerror"]  % 入れられる誤りの種類 ("none" は誤りなし)
     end
 
     methods
@@ -74,12 +73,11 @@ classdef BadComponentStub < Component
     end
 
     methods (Static)
-        function dx = fcn_dx(~, x, ~, I, u, param, ~)
+        function dx = fcn_dx(~, x, ~, u, param, ~)
             arguments (Input)
                 ~
                 x      % 状態
                 ~
-                I      % [pu] 母線電流 [real; imag]
                 u      % 入力
                 param  % 動的パラメータ (sv_para の順)
                 ~
@@ -88,19 +86,16 @@ classdef BadComponentStub < Component
                 dx  % 状態方程式の右辺
             end
             dx = u - x;
-            if DebugScript.helper.BadComponentStub.sr_bad(param) == "currentdep"
-                dx = dx + 1e-3*I(1);
-            elseif DebugScript.helper.BadComponentStub.sr_bad(param) == "dxsize"
+            if DebugScript.helper.BadComponentStub.sr_bad(param) == "dxsize"
                 dx = [dx; 0];
             elseif DebugScript.helper.BadComponentStub.sr_bad(param) == "dxerror"
                 error("test:BadComponentStub", "stub stopped")
             end
         end
-        function I = fcn_I(~, x, ~, ~, ~, param, ~)
+        function I = fcn_I(~, x, ~, ~, param, ~)
             arguments (Input)
                 ~
                 x      % 状態
-                ~
                 ~
                 ~
                 param  % 動的パラメータ (sv_para の順)
@@ -114,12 +109,10 @@ classdef BadComponentStub < Component
                 I = [x(1); x(2)];
             end
         end
-        function y = fcn_Y(~, x, ~, ~, ~, param, ~)
+        function y = fcn_Y(~, x, ~, param, ~)
             arguments (Input)
                 ~
                 x      % 状態
-                ~
-                ~
                 ~
                 param  % 動的パラメータ (sv_para の順)
                 ~
@@ -132,11 +125,10 @@ classdef BadComponentStub < Component
                 y = [x(1); x(2)];
             end
         end
-        function M = fcn_Mass(~, x, ~, ~, ~, param, ~)
+        function M = fcn_Mass(~, x, ~, ~, param, ~)
             arguments (Input)
                 ~
                 x      % 状態
-                ~
                 ~
                 ~
                 param  % 動的パラメータ (sv_para の順)

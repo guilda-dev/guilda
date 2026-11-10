@@ -78,13 +78,13 @@
         </tr>
         <tr>
           <td><span lang="en">Output function</span><span lang="ja">出力関数</span></td>
-          <td><span lang="en"><code>fcn_Y</code>, and <code>fcn_I</code> for the current</span><span lang="ja"><code>fcn_Y</code>、および電流用の <code>fcn_I</code></span></td>
+          <td><span lang="en"><code>fcn_Y</code> without <code>u</code>, and <code>fcn_I</code> for the current</span><span lang="ja"><code>u</code> を取らない <code>fcn_Y</code>、および電流用の <code>fcn_I</code></span></td>
           <td><code>fcn_y</code></td>
           <td><code>fcn_y</code></td>
         </tr>
         <tr>
           <td><span lang="en">Mass matrix</span><span lang="ja">質量行列</span></td>
-          <td colspan="3"><span lang="en"><code>fcn_Mass</code>: constant and square. <code>simulate</code> calls it with empty <code>t, x, V, I, u</code>; a matrix that uses them stops with <code>GUILDA:read_mass:NotConstant</code>.</span><span lang="ja"><code>fcn_Mass</code>: 定数の正方行列。<code>simulate</code> は空の <code>t, x, V, I, u</code> で呼び出し、これらを使う行列は <code>GUILDA:read_mass:NotConstant</code> で停止。</span></td>
+          <td colspan="3"><span lang="en"><code>fcn_Mass</code>: constant and square. <code>simulate</code> calls it with empty <code>t, x, V, u</code>; a matrix that uses them stops with <code>GUILDA:read_mass:NotConstant</code>.</span><span lang="ja"><code>fcn_Mass</code>: 定数の正方行列。<code>simulate</code> は空の <code>t, x, V, u</code> で呼び出し、これらを使う行列は <code>GUILDA:read_mass:NotConstant</code> で停止。</span></td>
         </tr>
         <tr>
           <td><span lang="en">Jacobians</span><span lang="ja">ヤコビ行列</span></td>
@@ -94,7 +94,7 @@
         </tr>
         <tr>
           <td><span lang="en">Equilibrium</span><span lang="ja">平衡点</span></td>
-          <td><code>[x,u] = get_equilibrium(obj,V,I,P,Q)</code><small><span lang="en">Always called with the four arguments. A trip of <code>simulate</code> passes <code>I = P = Q = 0</code>.</span><span lang="ja">常に 4 つの引数で呼び出し。<code>simulate</code> の解列（トリップ）では <code>I = P = Q = 0</code>。</span></small></td>
+          <td><code>[x,u] = get_equilibrium(obj,V,I,P,Q)</code><small><span lang="en">Always called with the four arguments; <code>I</code> is the current that the component injects. A trip of <code>simulate</code> passes <code>I = P = Q = 0</code>.</span><span lang="ja">常に 4 つの引数で呼び出し。<code>I</code> は機器の注入電流。<code>simulate</code> の解列（トリップ）では <code>I = P = Q = 0</code>。</span></small></td>
           <td><code>get_equilibrium(obj,V,u)</code><small><span lang="en"><code>u</code> is the equilibrium input of the component. No output: write <code>rv_Xequilibrium</code> and <code>rv_Uequilibrium</code>, and call the nested controller.</span><span lang="ja"><code>u</code> は機器の平衡点での入力。出力なし。<code>rv_Xequilibrium</code> と <code>rv_Uequilibrium</code> に書き込み、入れ子の制御器を呼び出す。</span></small></td>
           <td><code>[x,u] = get_equilibrium(obj)</code><small><span lang="en">Called after the components are set.</span><span lang="ja">機器の平衡点の設定後に呼び出し。</span></small></td>
         </tr>
@@ -114,19 +114,19 @@
           <td><span lang="en">Inputs come from</span><span lang="ja">入力の取得元</span></td>
           <td><span lang="en">Controllers and input disturbances, by name</span><span lang="ja">制御器と入力外乱（名前で接続）</span></td>
           <td><span lang="en">By name <code>sv_u</code>: an output of the component, then a state, then an output of the nested controller. Other names stay at the equilibrium.</span><span lang="ja">名前 <code>sv_u</code> で、機器の出力 → 状態 → 入れ子の制御器の出力の順に検索。それ以外の名前は平衡点の値のまま。</span></td>
-          <td><span lang="en">The states named <code>sv_u</code> of each controlled unit</span><span lang="ja">各制御対象の、<code>sv_u</code> という名前の状態</span></td>
+          <td><span lang="en">By name <code>sv_u</code> on each controlled unit: an output, then a state. The voltages of all buses come in <code>V</code>.</span><span lang="ja">各制御対象で名前 <code>sv_u</code> により、出力 → 状態の順に検索。全母線の電圧は <code>V</code> で受け取り。</span></td>
         </tr>
         <tr>
           <td><span lang="en">Outputs go to</span><span lang="ja">出力の行き先</span></td>
           <td><span lang="en"><code>I</code> to the bus; <code>y</code> to the controllers</span><span lang="ja"><code>I</code> は母線へ、<code>y</code> は制御器へ</span></td>
           <td><span lang="en">The inputs named <code>sv_y</code> of the component, or of the AVR for a PSS</span><span lang="ja">機器（PSS の場合は AVR）の、<code>sv_y</code> という名前の入力</span></td>
-          <td><span lang="en">Added to the inputs named <code>sv_y</code> of each controlled unit</span><span lang="ja">各制御対象の、<code>sv_y</code> という名前の入力に加算</span></td>
+          <td><span lang="en">Per controlled unit, by name <code>sv_y</code>: to every local controller of the unit with an input of that name (added to what the input reads), otherwise added to the input of the unit</span><span lang="ja">制御対象ごとに名前 <code>sv_y</code> で、同名の入力を持つその機器のすべてのローカル制御器へ（入力が読む値に加算）。ない場合は機器の同名の入力に加算</span></td>
         </tr>
         <tr>
           <td><span lang="en">Check</span><span lang="ja">確認</span></td>
           <td><code>comp.validate</code></td>
           <td><code>con.validate</code></td>
-          <td><span lang="en">No <code>validate</code>; check with <code>agc.get_sys</code> and a simulation</span><span lang="ja"><code>validate</code> なし。<code>agc.get_sys</code> とシミュレーションで確認</span></td>
+          <td><span lang="en">No <code>validate</code>; check with <code>agc.get_sys</code> and a simulation. <code>net.add_global_controller</code> shows where each output goes (INFO).</span><span lang="ja"><code>validate</code> なし。<code>agc.get_sys</code> とシミュレーションで確認。<code>net.add_global_controller</code> が各出力の接続先を表示（INFO）</span></td>
         </tr>
         <tr>
           <td><span lang="en">Example</span><span lang="ja">例</span></td>
@@ -138,8 +138,8 @@
     </table>
 
     <h3><span lang="en">Arguments of the model functions</span><span lang="ja">モデル関数の引数</span></h3>
-    <p lang="en">Each model function has the arguments <code>(t, x, V, I, u, param, omega0)</code>.</p>
-    <p lang="ja">各モデル関数の引数は <code>(t, x, V, I, u, param, omega0)</code>。</p>
+    <p lang="en">Each model function has the arguments <code>(t, x, V, u, param, omega0)</code>. The output function <code>fcn_Y</code> of a component has <code>(t, x, V, param, omega0)</code>: a component output does not depend on <code>u</code>.</p>
+    <p lang="ja">各モデル関数の引数は <code>(t, x, V, u, param, omega0)</code>。機器の出力関数 <code>fcn_Y</code> は <code>(t, x, V, param, omega0)</code>: 機器の出力は <code>u</code> に依存しない。</p>
     <table class="mi-table">
       <thead>
         <tr><th><span lang="en">Argument</span><span lang="ja">引数</span></th><th><span lang="en">Value</span><span lang="ja">値</span></th></tr>
@@ -147,7 +147,7 @@
       <tbody>
         <tr><td><code>t</code></td><td><span lang="en">Time in seconds.</span><span lang="ja">時間（秒）。</span></td></tr>
         <tr><td><code>x</code>, <code>u</code></td><td><span lang="en">Column vectors in the order of <code>sv_x</code> and <code>sv_u</code>.</span><span lang="ja"><code>sv_x</code> と <code>sv_u</code> の順の列ベクトル。</span></td></tr>
-        <tr><td><code>V</code>, <code>I</code></td><td><span lang="en"><code>[re; im]</code> in per unit. <code>I</code> is the current injected into the bus. A global controller has no port: do not use them.</span><span lang="ja">単位法の <code>[re; im]</code>。<code>I</code> は母線への注入電流。グローバル制御器はポートがないため使用不可。</span></td></tr>
+        <tr><td><code>V</code></td><td><span lang="en"><code>[re; im]</code> in per unit: the voltage of the bus of the component (for a local controller, of the component it observes). A global controller receives the voltages of all buses <code>[Vre1; Vim1; Vre2; ...]</code> in the order of <code>net.a_Bus</code>.</span><span lang="ja">単位法の <code>[re; im]</code>: 機器の母線の電圧（ローカル制御器は観測する機器の母線）。グローバル制御器は全母線の電圧 <code>[Vre1; Vim1; Vre2; ...]</code>（<code>net.a_Bus</code> の順）。</span></td></tr>
         <tr><td><code>param</code></td><td><span lang="en">The dynamic parameters in the order of <code>sv_para</code>.</span><span lang="ja"><code>sv_para</code> の順の動特性パラメータ。</span></td></tr>
         <tr><td><code>omega0</code></td><td><span lang="en">The nominal frequency in Hz. Multiply by <code>2*pi</code> in the model.</span><span lang="ja">Hz 単位の定格周波数。モデルの中で <code>2*pi</code> を掛ける。</span></td></tr>
       </tbody>
@@ -161,7 +161,9 @@
 
     <h3><span lang="en">Rules that apply to every model</span><span lang="ja">すべてのモデルに適用されるルール</span></h3>
     <ul>
-      <li><span lang="en">The model functions must not depend on <code>I</code>: <code>simulate</code> accepts it, but the linearization does not.</span><span lang="ja">モデル関数は <code>I</code> に依存しない。<code>simulate</code> は受け付けるが、近似線形化は不可。</span></li>
+      <li><span lang="en">No model function receives the bus current: it is the sum of all the components of the bus. A model computes its own current from its states, <code>V</code> and <code>u</code>.</span><span lang="ja">モデル関数は母線電流を受け取らない（母線の全機器の和のため）。モデル自身の電流は状態、<code>V</code>、<code>u</code> から計算。</span></li>
+      <li><span lang="en">A component output depends only on <code>x</code> and <code>V</code>, so no algebraic loop runs through the inputs. A current that depends on <code>u</code> (a classical generator, a load) cannot be an output; a controller computes it from <code>V</code> and the states.</span><span lang="ja">機器の出力は <code>x</code> と <code>V</code> だけに依存し、入力を通る代数ループは不発生。<code>u</code> に依存する電流（古典モデルの発電機、負荷）は出力にできない。制御器が <code>V</code> と状態から計算。</span></li>
+      <li><span lang="en">The outputs of a global controller are 0 at its equilibrium: they add to inputs whose equilibrium is set.</span><span lang="ja">グローバル制御器の出力は平衡点で 0: 平衡点の決まった入力に加算されるため。</span></li>
       <li><span lang="en"><code>sv_u</code> must not contain the port names <code>Vre</code>, <code>Vim</code>, <code>Ire</code>, <code>Iim</code>.</span><span lang="ja"><code>sv_u</code> にポート名 <code>Vre</code>、<code>Vim</code>、<code>Ire</code>、<code>Iim</code> を含めない。</span></li>
       <li><span lang="en"><code>net.initialize</code> evaluates the point that <code>get_equilibrium</code> returns. A wrong size or an error in a model function stops it (<code>GUILDA:PowerNetwork:InitializeEquilibriumSize</code>, <code>InitializeModelSize</code>, <code>InitializeModelFailed</code>). A point where the state moves gives the warning <code>GUILDA:PowerNetwork:EquilibriumResidual</code>.</span><span lang="ja"><code>net.initialize</code> は <code>get_equilibrium</code> が返す点を評価。サイズの誤りやモデル関数のエラーで停止（<code>GUILDA:PowerNetwork:InitializeEquilibriumSize</code>、<code>InitializeModelSize</code>、<code>InitializeModelFailed</code>）。状態が動く点では警告 <code>GUILDA:PowerNetwork:EquilibriumResidual</code>。</span></li>
       <li><span lang="en">A controller can use the input names <code>"Xall"</code> and <code>"Yall"</code> to observe all the states or outputs of the component. It must then override <code>set_inputs</code>; see <code>controller.local_LQR</code>. The names <code>"X"</code> and <code>"Y"</code> are errors.</span><span lang="ja">制御器は入力名 <code>"Xall"</code> と <code>"Yall"</code> で、機器のすべての状態またはすべての出力を観測可能。その場合は <code>set_inputs</code> のオーバーライドが必要（<code>controller.local_LQR</code> を参照）。名前 <code>"X"</code>、<code>"Y"</code> はエラー。</span></li>
@@ -200,21 +202,21 @@
         end
     end
     methods (Static)
-        function dx = fcn_dx(~, x, V, ~, u, p, omega0)
+        function dx = fcn_dx(~, x, V, u, p, omega0)
             % Return the state derivatives.
             c_E = u(2)*exp(1j*x(1));
             c_I = (c_E - [1,1j]*V)/(1j*p(3));
             dx  = [2*pi*omega0*x(2); -p(2)*x(2) - real(c_E*conj(c_I)) + u(1)];
         end
-        function c_I = fcn_I(~, x, V, ~, u, p, ~)
+        function c_I = fcn_I(~, x, V, u, p, ~)
             % Return the current injected into the bus as a complex number.
             c_I = (u(2)*exp(1j*x(1)) - [1,1j]*V)/(1j*p(3));
         end
-        function y = fcn_Y(~, x, ~, ~, ~, ~, ~)
-            % Return the outputs.
+        function y = fcn_Y(~, x, ~, ~, ~)
+            % Return the outputs (no input u).
             y = x(2);
         end
-        function M = fcn_Mass(~, ~, ~, ~, ~, p, ~)
+        function M = fcn_Mass(~, ~, ~, ~, p, ~)
             % Return the constant mass matrix.
             M = diag([1, p(1)]);
         end
@@ -299,30 +301,28 @@ sys = net.get_sys();
         end
     end
     methods (Static)
-        function dx = fcn_dx(~, x, V, ~, u, p, ~)
+        function dx = fcn_dx(~, x, V, u, p, ~)
             % Return the state derivative.
             dx = -x + p(1)*(u(1) + u(2) - norm(V));
         end
-        function y = fcn_y(~, x, ~, ~, ~, ~, ~)
+        function y = fcn_y(~, x, ~, ~, ~, ~)
             % Return the output.
             y = x;
         end
-        function M = fcn_Mass(~, ~, ~, ~, ~, p, ~)
+        function M = fcn_Mass(~, ~, ~, ~, p, ~)
             % Return the constant mass matrix.
             M = p(2);
         end
-        function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(~, ~, V, ~, ~, p, ~)
-            % Return the Jacobians of fcn_dx with respect to x, V, I and u.
+        function [Axx,Bxv,Bxu] = Jacobi_dx(~, ~, V, ~, p, ~)
+            % Return the Jacobians of fcn_dx with respect to x, V and u.
             Axx = -1;
             Bxv = -p(1)*V.'/norm(V);
-            Bxi = zeros(1,2);
             Bxu = [p(1), p(1)];
         end
-        function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(~, ~, ~, ~, ~, ~, ~)
-            % Return the Jacobians of fcn_y with respect to x, V, I and u.
+        function [Cyx,Dyv,Dyu] = Jacobi_Y(~, ~, ~, ~, ~, ~)
+            % Return the Jacobians of fcn_y with respect to x, V and u.
             Cyx = 1;
             Dyv = zeros(1,2);
-            Dyi = zeros(1,2);
             Dyu = zeros(1,2);
         end
     end
@@ -359,7 +359,7 @@ s.inputs          % Vref: "equilibrium (not connected)", Vpss: "output of CP2SG1
         <tr><th><span lang="en">Field</span><span lang="ja">フィールド</span></th><th><span lang="en">What to look for</span><span lang="ja">確認する点</span></th></tr>
       </thead>
       <tbody>
-        <tr><td><code>contract</code></td><td><span lang="en">Sizes of <code>x</code>, <code>u</code>, and the model functions; <code>fcn_I</code> complex; <code>fcn_Mass</code> constant and square; no dependence on <code>I</code>; no port names in <code>sv_u</code>; whether <code>getCompPQ</code> is defined.</span><span lang="ja"><code>x</code>、<code>u</code>、モデル関数のサイズ、<code>fcn_I</code> が複素数であること、<code>fcn_Mass</code> が定数の正方行列であること、<code>I</code> に依存しないこと、<code>sv_u</code> にポート名がないこと、<code>getCompPQ</code> が定義されているかどうか。</span></td></tr>
+        <tr><td><code>contract</code></td><td><span lang="en">Sizes of <code>x</code>, <code>u</code>, and the model functions; <code>fcn_I</code> complex; <code>fcn_Mass</code> constant and square; no port names in <code>sv_u</code>; whether <code>getCompPQ</code> is defined.</span><span lang="ja"><code>x</code>、<code>u</code>、モデル関数のサイズ、<code>fcn_I</code> が複素数であること、<code>fcn_Mass</code> が定数の正方行列であること、<code>sv_u</code> にポート名がないこと、<code>getCompPQ</code> が定義されているかどうか。</span></td></tr>
         <tr><td><code>inputs</code></td><td><span lang="en">The source of each input. A misspelled input name is not an error when the controller is attached; it appears here as <code>equilibrium (not connected)</code>.</span><span lang="ja">各入力の取得元。入力名の綴りの誤りは制御器の接続時にはエラーにならず、ここに <code>equilibrium (not connected)</code> と表示。</span></td></tr>
         <tr><td><code>dx</code>, <code>I</code></td><td><span lang="en">The residuals at the point. They should be close to zero at an equilibrium.</span><span lang="ja">その点での残差。平衡点ではほぼ 0。</span></td></tr>
         <tr><td><code>Axx</code>, <code>Bxv</code>, ...</td><td><span lang="en">The absolute difference between each analytic Jacobian and finite differences. A component without <code>Jacobi_*</code> has nothing to compare.</span><span lang="ja">解析的なヤコビ行列と有限差分との差の絶対値。<code>Jacobi_*</code> のない機器は比較対象なし。</span></td></tr>

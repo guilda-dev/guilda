@@ -186,7 +186,7 @@ assert(contains(sv, "GUILDA:LocalController:ValidateNotAttached"))
 DebugScript.helper.quiet(@() net.initialize);
 flag = comp.validate(false);
 fn = string(fieldnames(flag));
-assert(all(ismember(["dx","I","Axx","Bxv","Bxi","Bxu","Cix","Div","Dii","Diu","Cyx","Dyv","Dyi","Dyu","contract","inputs"], fn)))
+assert(all(ismember(["dx","I","Axx","Bxv","Bxu","Cix","Div","Diu","Cyx","Dyv","contract","inputs"], fn)))
 
 
 %% validate does not change the equilibrium
@@ -245,10 +245,12 @@ assert(all(flag.contract.status ~= "FAIL"))
 assert(max(flag.dx.diff) < 1e-12)
 
 
-%% Dependence on I is detected
-flag = DebugScript.helper.BadComponentStub("currentdep").validate(false);
-assert_only_fail(flag, "no dependence on I");
-assert(abs(str2double(flag.contract{"no dependence on I","detail"}) - 1e-3) < 1e-6)
+%% The model functions take no bus current and the output takes no input
+% fcn_dx(t,x,V,u), fcn_I(t,x,V,u), fcn_Y(t,x,V): no Jacobian block of I, none of fcn_Y by u
+flag = DebugScript.helper.BadComponentStub("none").validate(false);
+assert(~any(isfield(flag, ["Bxi","Dii","Dyi","Dyu"])))
+assert(~ismember("no dependence on I", string(flag.contract.Properties.RowNames)))
+assert(all(flag.contract.status ~= "FAIL"))
 
 
 %% Wrong sizes of fcn_dx, fcn_Y and fcn_Mass are detected
@@ -324,7 +326,7 @@ assert(flag.inputs{"delta","source"} == "state of " + comp.s_tag)
 
 %% Controller contract violations are detected
 c_stub = DebugScript.helper.register_stub("BadControllerStub", "controller.test_bad_controller");
-c_case = ["jacsize","Jacobi_dx sizes"; "massx","fcn_Mass constant and square"; "currentdep","no dependence on I"];
+c_case = ["jacsize","Jacobi_dx sizes"; "massx","fcn_Mass constant and square"];
 for k = 1:height(c_case)
     [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
     comp.add_local_controller("test-bad-controller", parameter=struct(bad=c_case(k,1)));
@@ -403,7 +405,7 @@ function assert_only_fail(flag, s_check)
 end
 
 function assert_jacobians_close(flag, tol, s_name)
-    for fn = ["Axx","Bxv","Bxi","Bxu","Cix","Div","Dii","Diu","Cyx","Dyv","Dyi","Dyu"]
+    for fn = ["Axx","Bxv","Bxu","Cix","Div","Diu","Cyx","Dyv","Dyu"]
         if isfield(flag, fn) && ~isempty(flag.(fn)) && width(flag.(fn)) > 0
             r = max(flag.(fn){:,:}, [], "all");
             assert(r < tol, "%s: %s %g", s_name, fn, r);

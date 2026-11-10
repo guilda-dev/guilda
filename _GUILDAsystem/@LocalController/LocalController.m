@@ -30,7 +30,7 @@ classdef LocalController < PowerSystemModel
 %   "Xall" / "Yall" (`sr_reserved`) and sets where each input sv_u(k) is read on the observed component: iv_obsY(k) is its
 %   index in sv_y, iv_obsX(k) its index in sv_x, and both are 0 for an input that is not
 %   observed (its equilibrium value, or the output of a nested controller of the same name).
-% - The handles `f_*` @(t,x,V,I,u) bind param and omega0 (there is no f_I);
+% - The handles `f_*` @(t,x,V,u) bind param and omega0 (there is no f_I);
 %   `set_odefcn` builds them, called by `initialize` when they are stale
 %   (`sct_stale.odefcn`, or a network frequency other than `r_odefcnHz`).
 % - Stale tags (`sct_stale`): `equilibrium` (its dynamics, a nested controller, its
@@ -77,9 +77,9 @@ classdef LocalController < PowerSystemModel
         a_LocalController = cell(0,1)              % Nested controller (the PSS under an AVR), 0x1 or 1x1. <@Stale> equilibrium
     end
     properties(SetAccess=protected) % Cached function handles
-        f_Mass                                     % Mass matrix function @(t,x,V,I,u) with the parameters bound.
-        f_dx                                       % State equation function @(t,x,V,I,u) with the parameters bound.
-        f_Y                                        % Output function @(t,x,V,I,u) with the parameters bound.
+        f_Mass                                     % Mass matrix function @(t,x,V,u) with the parameters bound.
+        f_dx                                       % State equation function @(t,x,V,u) with the parameters bound.
+        f_Y                                        % Output function @(t,x,V,u) with the parameters bound.
         f_JacobiDx                                 % Jacobian function of f_dx.
         f_JacobiY                                  % Jacobian function of f_Y.
     end
@@ -133,24 +133,24 @@ classdef LocalController < PowerSystemModel
         % Return the state derivatives of the controller.
         %
         % The arguments of all model functions are the time t [s], the states x, the
-        % parent voltage V = [Vre; Vim] [pu] and current I = [Ire; Iim] [pu], the inputs u,
+        % voltage V = [Vre; Vim] [pu] of the bus of the observed component, the inputs u,
         % the dynamic parameters param (in the order of sv_para) and the nominal frequency
         % omega0 [Hz]. A subclass may define them as ordinary methods instead, with obj before t.
-        dx = fcn_dx(t, x, V, I, u, param, omega0)
+        dx = fcn_dx(t, x, V, u, param, omega0)
 
         % Return the outputs of the controller.
-        y  = fcn_y(t, x, V, I, u, param, omega0)
+        y  = fcn_y(t, x, V, u, param, omega0)
 
         % Return the mass matrix of the state equation.
         %
-        % It must be constant: simulate calls it with empty t, x, V, I and u.
-        M  = fcn_Mass(t, x, V, I, u, param, omega0)
+        % It must be constant: simulate calls it with empty t, x, V and u.
+        M  = fcn_Mass(t, x, V, u, param, omega0)
 
-        % Return the Jacobians of fcn_dx with respect to x, V, I and u.
-        [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)        
+        % Return the Jacobians of fcn_dx with respect to x, V and u.
+        [Axx,Bxv,Bxu] = Jacobi_dx(t,x,V,u,param,omega0)
 
-        % Return the Jacobians of fcn_y with respect to x, V, I and u.
-        [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0)
+        % Return the Jacobians of fcn_y with respect to x, V and u.
+        [Cyx,Dyv,Dyu] = Jacobi_Y(t,x,V,u,param,omega0)
     end   
     
 %% Constructor    
@@ -186,7 +186,7 @@ classdef LocalController < PowerSystemModel
         resolve_observe(obj)
 
         % get dx and y
-        [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
+        [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, obs, y_GC, DAEvec)
 
     end
 
@@ -211,7 +211,7 @@ classdef LocalController < PowerSystemModel
 %% Analysis
     methods
         % get sys (public: the linear model of the controller alone)
-        [sys, varargout] = get_sys(obj,x,V,I,u,opt)
+        [sys, varargout] = get_sys(obj,x,V,u,opt)
     end
 
 %% Get Methods    
