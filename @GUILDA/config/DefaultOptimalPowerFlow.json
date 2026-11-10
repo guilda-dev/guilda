@@ -20,7 +20,7 @@
         ],
         "Description": "Optimization solver ('auto': the solver that 'solve' chooses for the problem)"
     },
-    "Algorithm_linprog":{
+    "LinprogAlgorithm":{
         "Value": "dual-simplex-highs",
         "Type": "select",
         "options":[
@@ -28,9 +28,9 @@
             "interior-point",
             "dual-simplex-highs"
         ],
-        "Description": "algorithm option @linprog"
+        "Description": "'Algorithm' option @linprog"
     },
-    "Algorithm_quadprog":{
+    "QuadprogAlgorithm":{
         "Value": "interior-point-convex",
         "Type": "select",
         "options":[
@@ -38,9 +38,9 @@
             "trust-region-reflective",
             "interior-point-convex"
         ],
-        "Description": "algorithm option @quadprog"
+        "Description": "'Algorithm' option @quadprog"
     },
-    "Algorithm_fmincon":{
+    "FminconAlgorithm":{
         "Value": "interior-point",
         "Type": "select",
         "options":[
@@ -50,7 +50,7 @@
             "trust-region-reflective",
             "interior-point"
         ],
-        "Description": "algorithm option @fmincon"
+        "Description": "'Algorithm' option @fmincon"
     },
     "Verbose":{
         "Value": false,
@@ -60,27 +60,32 @@
     "MaxIteration":{
         "Value": NaN,
         "Type": "double",
-        "Description": "'MaxIterations' option of solver (If NaN, use default value.)"
+        "Description": "'MaxIterations' option of the solver (NaN: the default of the solver)"
     },
     "Tolerance":{
         "Value": NaN,
         "Type": "double",
         "Description": "'OptimalityTolerance' option of the solver (NaN: the default of the solver)"
     },
-    "StepTolerance":{
+    "QuadprogStepTolerance":{
         "Value": NaN,
         "Type": "double",
-        "Description": "'StepTolerance' option of solver (If NaN, use default value.)"
+        "Description": "'StepTolerance' option @quadprog (NaN: the default of quadprog)"
     },
-    "MaxFunctionEvaluations":{
+    "FminconStepTolerance":{
         "Value": NaN,
         "Type": "double",
-        "Description": "'MaxFunctionEvaluations' option of solver (If NaN, use default value.)"
+        "Description": "'StepTolerance' option @fmincon (NaN: the default of fmincon)"
     },
-    "UseParallel":{
+    "FminconMaxFunctionEvaluations":{
+        "Value": NaN,
+        "Type": "double",
+        "Description": "'MaxFunctionEvaluations' option @fmincon (NaN: the default of fmincon)"
+    },
+    "FminconUseParallel":{
         "Value": false,
         "Type": "logical",
-        "Description": "'UseParallel' option of solver"
+        "Description": "'UseParallel' option @fmincon"
     },
     "WarmStart":{
         "Value": false,

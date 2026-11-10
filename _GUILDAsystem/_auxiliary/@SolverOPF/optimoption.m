@@ -3,7 +3,9 @@ function [s_solver, c_nv] = optimoption(obj, prob, sct_options)
 %
 % Returns the Name-Value arguments of solve (Optimization Toolbox) for the effective settings.
 % Display follows Verbose ("iter" or "none"); the other settings are passed only when they
-% differ from the defaults of the solver (NaN: the default). PlotFcn becomes the PlotFcn
+% differ from the defaults of the solver (NaN: the default). MaxIteration and Tolerance go
+% to every solver; a setting <Solver><option> (LinprogAlgorithm, QuadprogStepTolerance,
+% FminconUseParallel, ...) only to that solver. PlotFcn becomes the PlotFcn
 % option of fmincon (keys k as optimplot<k>, a handle as it is); with linprog or quadprog,
 % a PlotFcn other than "none" stops with GUILDA:SolverOPF:PlotFcnUnsupported.
     arguments (Input)
@@ -23,7 +25,8 @@ function [s_solver, c_nv] = optimoption(obj, prob, sct_options)
     end
 
     c_opt = {};
-    s_alg = "Algorithm_" + s_solver;
+    s_pre = upper(extractBefore(s_solver, 2)) + extractAfter(s_solver, 1);    % key prefix of the solver: "Fmincon"
+    s_alg = s_pre + "Algorithm";
     if isfield(sct_options, s_alg)
         o_def = optimoptions(s_solver);
         if sct_options.(s_alg) ~= string(o_def.Algorithm)
@@ -45,14 +48,19 @@ function [s_solver, c_nv] = optimoption(obj, prob, sct_options)
             c_opt = [c_opt, {"PlotFcn", cellstr("optimplot" + sct_options.PlotFcn)}];
         end
     end
-    sct_num = struct("MaxIteration","MaxIterations", "Tolerance","OptimalityTolerance", ...
-                   "StepTolerance","StepTolerance", "MaxFunctionEvaluations","MaxFunctionEvaluations");
+    % common settings (every solver), then the settings <Solver><option> of this solver
+    sct_num = struct("MaxIteration","MaxIterations", "Tolerance","OptimalityTolerance");
+    for s_opt = ["StepTolerance","MaxFunctionEvaluations"]
+        if isfield(sct_options, s_pre + s_opt)
+            sct_num.(s_pre + s_opt) = s_opt;
+        end
+    end
     for s_name = string(fieldnames(sct_num)).'
         if ~isnan(sct_options.(s_name))
             c_opt = [c_opt, {sct_num.(s_name), sct_options.(s_name)}]; %#ok<AGROW>
         end
     end
-    if sct_options.UseParallel && s_solver == "fmincon"
+    if isfield(sct_options, s_pre + "UseParallel") && sct_options.(s_pre + "UseParallel")
         c_opt = [c_opt, {"UseParallel", true}];
     end
 

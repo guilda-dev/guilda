@@ -1090,6 +1090,35 @@ assert(flag > 0)
 assert(abs(sum(res.tab_bus.P) - real(DebugScript.helper.branch_losses(net, res.tab_bus.Vphasor))) < 1e-4)
 
 % ---- local functions ----
+%% Settings of one solver go only to that solver
+% キーは <Solver 名><MATLAB のオプション名>。共通の MaxIteration・Tolerance は全ソルバー
+net = DebugScript.helper.build_9bus();
+sct_cfg = GUILDA.config("OptimalPowerFlow");
+sv_key = string(fieldnames(sct_cfg)).';
+assert(all(ismember(["LinprogAlgorithm","QuadprogAlgorithm","FminconAlgorithm","QuadprogStepTolerance", ...
+    "FminconStepTolerance","FminconMaxFunctionEvaluations","FminconUseParallel"], sv_key)))
+assert(~any(ismember(["Algorithm_linprog","StepTolerance","MaxFunctionEvaluations","UseParallel","Display"], sv_key)))
+c_cfg = DebugScript.helper.user_config("OptimalPowerFlow", struct("FminconStepTolerance", 1e-12, ...
+    "FminconMaxFunctionEvaluations", 30, "QuadprogStepTolerance", 1e-13, "FminconAlgorithm", "sqp"));
+% fmincon の設定は linprog・quadprog (ELD、DC OPF) には渡らない (渡ると optimoptions のエラー)
+[s_solver, c_nv] = net.solver_OPF.optimoption(net.build_opf_problem(Method="ELD"), net.solver_OPF.get_options({"Method","ELD"}));
+o_opt = c_nv{find(cellfun(@(c) isequal(c, "Options"), c_nv)) + 1};
+assert(s_solver ~= "fmincon" && class(o_opt) == "optim.options." + upper(extractBefore(s_solver, 2)) + extractAfter(s_solver, 1))
+assert(~isprop(o_opt, "StepTolerance") || o_opt.StepTolerance == 1e-13)    % quadprog: its own QuadprogStepTolerance
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", Solver="quadprog"));
+assert(res.l_success && res.output.solver == "quadprog")
+% AC OPF の fmincon には渡る: 関数評価 30 回で止まる
+[s_solver, c_nv] = net.solver_OPF.optimoption(net.build_opf_problem(Method="AC OPF"), net.solver_OPF.get_options());
+o_opt = c_nv{find(cellfun(@(c) isequal(c, "Options"), c_nv)) + 1};
+assert(s_solver == "fmincon" && o_opt.MaxFunctionEvaluations == 30 && o_opt.StepTolerance == 1e-12 && o_opt.Algorithm == "sqp")
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+assert(double(flag) == 0 && ~res.l_success)      % exitflag 0: MaxFunctionEvaluations reached
+clear c_cfg
+% Name-Value の MaxIteration・Tolerance の NaN はソルバーの既定
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD", MaxIteration=NaN, Tolerance=NaN));
+assert(res.l_success && isnan(res.options.MaxIteration))
+
+
 %% PlotFcn draws the plot functions of fmincon in AC OPF
 % キー k は fmincon の optimplot<k>。"none" と結果は同じ
 net = DebugScript.helper.build_9bus();
