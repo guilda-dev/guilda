@@ -124,6 +124,7 @@
   | セクション | 旧キー | 新キー |
   |---|---|---|
   | OptimalPowerFlow | `OptimalityTolerance` | `Tolerance` |
+  | OptimalPowerFlow | `Display`(select、既定 `"default"` = ソルバーの既定) | `Verbose`(logical、既定 false。ソルバーの `Display` は true で `"iter"`、false で `"none"`) |
   | ContinuationPowerFlow | `MaxIterations` | `MaxIteration` |
   | ContinuationPowerFlow | `LoadBus` | なし(`net.solver_CPF.LoadBus` の条件か Name-Value `LoadBus`) |
   | TimeSimulation | `RelativeTolerance` | `Tolerance` |
@@ -133,7 +134,11 @@
 
   結果の `res.options` のフィールドも新しい名前です(`res.options.Tolerance`、`res.options.MaxIteration` など)。
 - **`SolverOptions` と `Point` は呼び出しだけ。** 時間応答シミュレーションの `SolverOptions`(`matlab.ode.Options`)は呼び出しかシナリオの `Options` でだけ与えます。与えなければ `ode` オブジェクトは `Solver` のオプションを使います。優先順位は `GUILDA.setting` < `sc.Options` < 呼び出しの Name-Value です。線形化の `Point` も呼び出しだけで(既定 `[]` = 平衡点)、保存しません。
-- **`Plot` オプションを `PlotFcn` に置き換えました。** `calculate_powerflow`、`optimize_powerflow`、`calculate_continuation_powerflow`、`simulate`、`linearize`、`get_sys` の `Plot`(解析後に `result.Plot()` を呼ぶ)は廃止し、渡すと `GUILDA:resolve_options:UnknownName` で止まります。解析後の図は `result.Plot()` で描いてください。`PlotFcn`(MATLAB の `optimoptions` / `odeset` と同じ名前)は解析中のライブ表示で、値は `"none"`、表示キーの string 配列、または関数ハンドルです。いま使えるのは `"none"` だけで、既定は各セクションのキー `PlotFcn`(select、選択肢は `"none"` のみ)です。ほかの値は `GUILDA:check_plotfcn:InDevelopment`、別の型の値は `GUILDA:check_plotfcn:InvalidValue` で止まります(`tools.check_plotfcn`)。`Export` は変わりません。
+- **`Plot` オプションを `PlotFcn` に置き換えました。** `calculate_powerflow`、`optimize_powerflow`、`calculate_continuation_powerflow`、`simulate`、`linearize`、`get_sys` の `Plot`(解析後に `result.Plot()` を呼ぶ)は廃止し、渡すと `GUILDA:resolve_options:UnknownName` で止まります。解析後の図は `result.Plot()` で描いてください。`PlotFcn`(MATLAB の `optimoptions` / `odeset` と同じ名前)は解析中のライブ表示で、値は `"none"`、表示キーの string 配列、または関数ハンドルです。既定は各セクションのキー `PlotFcn`(select、選択肢は `"none"` と各解析のキー)です。
+  - 潮流計算 `"residual"`(方程式ごとの残差の棒グラフ。全 Solver)、OPF は fmincon のプロット関数(`"fval"` → `optimplotfval` など。linprog・quadprog では `GUILDA:SolverOPF:PlotFcnUnsupported`)、連続潮流計算 `"pvcurve"`(全母線の PV 曲線を伸ばす)。
+  - 関数ハンドルは `stop = f(x, optimValues, state)`(optimoptions と同じ形。OPF は fmincon にそのまま渡す)。
+  - 時間応答シミュレーションと線形化は `"none"` のみ(ほかの値は `GUILDA:check_plotfcn:InDevelopment`)。未知のキーは `GUILDA:check_plotfcn:UnknownKey`、別の型の値は `GUILDA:check_plotfcn:InvalidValue` で止まります(`tools.check_plotfcn`)。
+  - OPF の既定の表示: 既定(`Verbose` false)ではソルバーは何も表示しません(以前の `Display` `"default"` はソルバーの終了メッセージを表示)。`Export` は変わりません。
 
 ---
 
@@ -401,7 +406,9 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 - Plotting and writing files are methods of the result: `result.Plot()`,
   `result.Export(filename)`, or the option `Export=true|filename` of the
   analysis call. The option `Plot` is removed; `PlotFcn` is the live display
-  during the analysis (only `"none"` for now; see "解析の設定は GUILDA.setting"). A relative file name is
+  during the analysis (keys `"residual"` for the power flow, the fmincon plot
+  functions such as `"fval"` for the OPF, `"pvcurve"` for the continuation power
+  flow, or a function handle; see "解析の設定は GUILDA.setting"). A relative file name is
   relative to the **current folder** (v3 wrote to `GUILDA.pwd`).
 - The solvers hold no settings: they keep at most the conditions of their
   network (`solver_OPF`, `solver_CPF`), warm start solutions and caches, and no
@@ -429,7 +436,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   | `MaxIterations` | `MaxIteration`(0 = 自動: newton 50、gradient 1e6、levenberg-marquardt 100、fsolve 400) |
   | `Display` | なし(Name-Value `Verbose`) |
   | `MaxFunEvals`、`UseParallel` | `FsolveMaxFunEvals`、`FsolveUseParallel` |
-  | `PlotFcn` | `PlotFcn`(解析中のライブ表示。`"none"` のみ) |
+  | `PlotFcn` | `PlotFcn`(解析中のライブ表示。`"none"` か `"residual"`) |
   | `gradient.StepSize` | `GradientStepSize`(0 = 自動) |
   | JSON MethodNewtonRaphson `StepSize` | `NewtonStepSize` |
   | `dynamic.Mass`、`Damper`、`foh_PQ`、`t_span` | なし(`MethodDynamic` が自動で決める) |
@@ -494,9 +501,10 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 - Options: `Method` (`"ELD"` | `"DC OPF"` | `"AC OPF"`, default
   `"AC OPF"`), `Solver` (`"auto"` | `"linprog"` | `"quadprog"` |
   `"fmincon"`), `Tolerance` (`OptimalityTolerance`), `MaxIteration`,
-  `Verbose` (sets `Display`), `PlotFcn`, `Export`. Settings in the
-  OptimalPowerFlow section of `GUILDA.setting` (key `Tolerance`, was
-  `OptimalityTolerance`); the conditions `Cost`, `Constraint`, `DefaultCost`,
+  `Verbose` (the `Display` of the solver: `"iter"` or `"none"`), `PlotFcn`
+  (fmincon only), `Export`. Settings in the OptimalPowerFlow section of
+  `GUILDA.setting` (keys `Tolerance`, was `OptimalityTolerance`; `Verbose`,
+  was `Display`); the conditions `Cost`, `Constraint`, `DefaultCost`,
   `ReferenceBus` in `net.solver_OPF` (`SolverOPF`, new; it was empty in v3).
 - `ResultOPF`: `Plot` draws the component outputs and, for DC/AC OPF, the
   bus voltages; `Export` writes the bus, connection or branch table.

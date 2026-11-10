@@ -464,7 +464,7 @@
 | 解析(セクション) | 設定(JSON キー = Name-Value 名) | 条件 | 呼び出しのみ |
 |---|---|---|---|
 | 潮流計算(PowerFlowCalculation) | `Solver`、`Tolerance`、`MaxIteration`、`WarmStart`、`PlotFcn`(新)、ほか手順 B のキー | – | `Verbose`、`Export` |
-| OPF(OptimalPowerFlow) | `Method`、`Solver`、`Algorithm_*`、`Display`、`MaxIteration`、`Tolerance`(旧 `OptimalityTolerance`)、`StepTolerance`、`MaxFunctionEvaluations`、`UseParallel`、`WarmStart`、`PlotFcn`(新) | `Cost`、`Constraint`、`DefaultCost`、`ReferenceBus` | `Verbose`(→ `Display`)、`Problem`、`InitialPoint`、`Export` |
+| OPF(OptimalPowerFlow) | `Method`、`Solver`、`Algorithm_*`、`Display`(→ `Verbose`、「PlotFcn の実装」節)、`MaxIteration`、`Tolerance`(旧 `OptimalityTolerance`)、`StepTolerance`、`MaxFunctionEvaluations`、`UseParallel`、`WarmStart`、`PlotFcn`(新) | `Cost`、`Constraint`、`DefaultCost`、`ReferenceBus` | `Verbose`(→ `Display`)、`Problem`、`InitialPoint`、`Export` |
 | 連続潮流計算(ContinuationPowerFlow) | `InitialLambda`、`MaxIteration`(旧 `MaxIterations`)、`StepSize`、`ArcLength`、`Tolerance`、`Corrector*`、`Increment`、`Limits`、`UseInternalState`、`Verbose`、`PlotFcn`(新)。`LoadBus` は廃止 | `LoadBus` | `Export` |
 | 時間応答シミュレーション(TimeSimulation) | `Solver`(新)、`Tolerance`(旧 `RelativeTolerance`)、`AbsoluteTolerance`、`SeparateComplexParts`、`Progress`、`TimeLimit`、`Verbose`(新)、`PlotFcn`(新) | – | `SolverOptions`、`Export` |
 | 線形化(Linearization、新) | `Method`("Feedback")、`Coordinate`("theta&rho")、`PlotFcn` | – | `Point`(`get_sys` は `Input`、`Output`、`Format` も) |
@@ -489,7 +489,63 @@
 **要判断**
 
 1. `v3_user_config` は PowerFlowCalculation の利用者設定のキー `PlotFcn`(v3 の fsolve の PlotFcn)を削除する。今は `"none"` しかないので影響はないが、`PlotFcn` が表示の種類を受け付けるようになったら、利用者が設定した値も消える(次の `version` の作業で扱うか)。
-2. OPF の `Display` と `Verbose` の名前の不一致を残すか(上記)。
+2. OPF の `Display` と `Verbose` の名前の不一致を残すか(上記)。 → 解決(「PlotFcn の実装」節。JSON キーを `Verbose` に置換)。
+
+## PlotFcn の実装と OPF の `Verbose`(`feature/plotfcn`、2026-11-10)
+
+**決定**(メンテナー、2026-11-10)
+
+- `PlotFcn` の中身を潮流計算・OPF・連続潮流計算に 1 種類ずつ実装する。時間応答シミュレーション・線形化は `"none"` のみのまま(他の値は `GUILDA:check_plotfcn:InDevelopment`)。
+- 関数ハンドルは optimoptions の PlotFcn と同じ形 `stop = f(x, optimValues, state)`(state は `"init"` / `"iter"` / `"done"`)。OPF は fmincon にそのまま渡す。
+- 図は 1 枚を使い回して更新し、描画で計算が大きく遅くならないようにする。`"none"` では計算速度と結果が変わらない。
+- OPF の JSON キー `Display`(select)を `Verbose`(logical、既定 false)に置き換え、Name-Value の `Verbose` と同じ名前・型にする。旧キーは変換しない。
+
+**キー**
+
+| 解析 | キー | 表示 | 関数ハンドルの `x` / `optimValues` |
+|---|---|---|---|
+| 潮流計算(全 Solver) | `"residual"` | 電力方程式ごとの \|残差\| の棒(母線あたり 2 本: P または slack の角度、Q または PV・slack の \|V\|)。対数軸、`Tolerance` を破線。反復ごとに更新(dynamic は ode15s の OutputFcn で仮想時間に沿って) | 母線の複素電圧 / `iteration`、`fval`(残差 2n 本)、`residual`(最大)、dynamic は `time`(仮想時間。`iteration` は ODE のステップ数) |
+| OPF(fmincon のみ) | `"fval"`、`"constrviolation"`、`"fvalconstr"`、`"firstorderopt"`、`"stepsize"`、`"funccount"`、`"x"` | キー k → fmincon の `optimplot<k>`(MATLAB の関数名から `optimplot` を除いた名前) | fmincon のまま |
+| 連続潮流計算 | `"pvcurve"` | 全母線の \|V\| を λ に対して描き、ステップごとに線を伸ばす | 母線の複素電圧 / `iteration`(ステップ。初期点 0)、`lambda`、`correctorIterations` |
+
+**現状**(実装後のコード)
+
+- `tools.check_plotfcn(PlotFcn, s_analysis, sv_key)`: 第 3 引数(解析のキー)を追加し、値を正規化して返す("none"、重複のないキーの行、または関数ハンドル)。`sv_key` が空なら従来どおり `InDevelopment`。
+  未知のキーは新しい `GUILDA:check_plotfcn:UnknownKey`(解析のキーを列挙)、`"none"` とキーの混在・空配列は `InvalidValue`。
+- 潮流計算: `MethodBase` に `f_iter`(`Access={?MethodBase, ?SolverPF}`、公開ではない)を追加し、newton・levenberg-marquardt・gradient が `"init"`、各反復の `"iter"`、`"done"` で呼ぶ。fsolve は既存の OutputFcn(`record`)から呼ぶ。
+  `MethodDynamic` にも同じ `f_iter`(`Access={?MethodDynamic, ?SolverPF}`)を追加し、`odeset` の `OutputFcn` を `f_iter` があるときだけ設定(入れ子関数 `ode_output`)。
+  表示は `@SolverPF/private/live_residual.m`(各 Method の反復値を母線電圧に直し、`power_equation` の `f_res` で残差を計算)。`SolverPF.solve` の `run_method` は Method を作ってから `f_iter` を設定して `solve`。
+- `stop` が true: 新しい flag -1、`output.message` は `✘ The process was stopped by PlotFcn.`(`WhenFailed` の通知は flag ≤ 0 なのでこれも対象)。
+- OPF: `optimoption` が `Display` を常に `Verbose` から渡し(以前は `Display` が `"default"` 以外のときだけ)、`PlotFcn` を `optimplot<key>` の cell(またはハンドル)で渡す。
+  linprog・quadprog(ELD・DC OPF の auto、または指定)では `"none"` 以外を `GUILDA:SolverOPF:PlotFcnUnsupported`(Solver 名と Method を表示)。キーの一覧は `@SolverOPF/private/plot_keys.m`。
+  `sct_options` は `Display` の代わりに `Verbose`。`OptionMap` の `Verbose` は変換なしの `"Verbose"`。
+- 連続潮流計算: `@SolverCPF/private/live_pvcurve.m`。`solve` が初期点で `"init"`、各ステップの後で `"iter"`、終了時に `"done"` を呼ぶ。`stop` が true ならその点で経路を終え、`output.message` は `The path was stopped by PlotFcn at lambda = ... (step k).`(flag は通常どおり先端を越えたかどうか)。
+- 図: Tag `GUILDA:PlotFcn:residual` / `GUILDA:PlotFcn:pvcurve` の図があれば `clf` して使い回し、なければ作る(OPF は fmincon が自分の図を使い回す)。
+  再描画は最短 0.2 秒ごとと終了時(`drawnow limitrate`、終了時は `drawnow`)。潮流計算は描画しない反復では残差も計算しない。図を閉じても計算は続く(表示だけ止まる)。
+- JSON: 3 つのセクションの `PlotFcn` の `options` にキーを追加。OptimalPowerFlow の `Display` を `Verbose`(logical、false)に置換。
+- `"none"` での一致: IEEE14、5 つの Solver で `tab_bus` と反復回数が `"residual"` と同じ(`f_iter` が空のときは分岐 1 つだけ)。CPF(B009〜B014、30 ステップ)の `rm_x` と修正子の反復回数が `"pvcurve"` と一致。AC OPF の `r_cost`・`tab_bus` が一致。
+
+**計算時間**(MATLAB R2026a、`matlab -batch`、不可視の図)
+
+- 連続潮流計算(IEEE14、LoadBus B009・B014、362 点): `"none"` 約 12.1 s、`"pvcurve"` 約 14〜15 s(2 回目。1 回目は図の初期化を含み約 17〜20 s)。再描画の間隔 0.05 s では約 16.5 s、0.25 s では約 13.9 s。
+- AC OPF(IEEE14): `"none"` 3.9 s、4 つのキー 4.5 s(fmincon 自身の描画)。
+
+**OPF 以外の名前・型のずれ**(各解析のセクションの比較。今回は揃えていない)
+
+1. 潮流計算の `Verbose` は JSON キーがない(呼び出しのみ、既定 false)。他の 3 解析(OPF・連続潮流計算・時間応答シミュレーション)は JSON キー。
+   揃えるなら `SolverPF.OptionMap` の `Verbose` を設定にし、`Display` を内部で決める(`initialize` の FixedInput も同じセクションを読む)。
+2. 「ソルバーの既定」の印: 潮流計算は `MaxIteration` / `FsolveMaxFunEvals` の 0、OPF は `MaxIteration`・`Tolerance`・`StepTolerance`・`MaxFunctionEvaluations` の NaN。
+3. 関数評価の上限: 潮流計算 `FsolveMaxFunEvals`(略記)と OPF `MaxFunctionEvaluations`(MATLAB の名前)。並列: 潮流計算 `FsolveUseParallel` と OPF `UseParallel`。
+   手法ごとの設定の付け方: 潮流計算は接頭辞(`NewtonStepSize`、`FsolveUseParallel`)、OPF は接尾辞(`Algorithm_fmincon`)。改名には `_VersionSupport/v3_user_config.m`(今回は編集不可)の変換表も関わる。
+4. 時間応答シミュレーションの `SeparateComplexParts` は select(`"on"` / `"off"`、ode のプロパティと同じ)で、他の on/off の設定(`UseParallel`、`WarmStart`、`Verbose`)は logical。
+5. 連続潮流計算の `Limits` は Type `"string"`(複数の値を取るため select ではない)。
+
+**要判断**
+
+1. 上の「ずれ」1〜4 を揃えるか。推奨は 1(潮流計算の `Verbose` を設定にする)だけ。2〜4 は MATLAB の各ソルバーの名前・型に合わせた結果。
+2. flag -1(PlotFcn で停止)を潮流計算の flag に加えた(MATLAB の exitflag -1 と同じ意味)。`WhenFailed="WARN"` では停止でも警告が出る。停止を通知の対象から外すか。
+3. 潮流計算の関数ハンドルの `optimValues` のフィールド名(`fval` = 残差のベクトル、`residual` = 最大値)。fsolve の optimValues の `fval` に合わせ、`residual` は `output.residual` に合わせた。
+4. `v3_user_config` は PowerFlowCalculation の利用者設定の `PlotFcn` を削除する(Q1 の要判断 1)。今は `"residual"` を保存しても読み込み時に消える。
 
 ## 未決
 

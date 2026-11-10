@@ -129,6 +129,16 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **Q1(2026-11-10):** OPF・連続潮流計算・時間応答シミュレーション・線形化の設定も GUILDA.setting(OptimalPowerFlow、ContinuationPowerFlow、TimeSimulation、新設の Linearization)から `get_options` が実行ごとに読む。`net.solver_*` に残るのは条件だけ(`solver_OPF` の `Cost`・`Constraint`・`DefaultCost`・`ReferenceBus`、`solver_CPF` の `LoadBus`)で、削除したプロパティへの代入と v3 互換の `net.solver_ODE.Reporter` はエラー(互換なし)。
 - JSON キーを Name-Value 名にそろえた(`OptimalityTolerance`・`RelativeTolerance` → `Tolerance`、`MaxIterations` → `MaxIteration`。ユーザー設定の旧キーは変換せず捨てる)。全解析の呼び出しオプション `Plot` を廃止し、解析中のライブ表示 `PlotFcn` に置換(当面 `"none"` のみ、`tools.check_plotfcn`)。図は `result.Plot()`。移行の説明は [v4-migration.md](v4-migration.md)「解析の設定は GUILDA.setting、`net.solver_*` は条件だけ」。
 
+## PlotFcn の実装と OPF の `Verbose`(2026-11-10)
+
+仕様と実装の記録は [powerflow-options.md](powerflow-options.md) にあります(「PlotFcn の実装と OPF の `Verbose`」節)。ブランチは `feature/plotfcn`(未 push)。
+
+- `PlotFcn` のキー: 潮流計算 `"residual"`(方程式ごとの残差の棒、全 Solver)、OPF は fmincon のプロット関数(`"fval"` → `optimplotfval` など 7 種。linprog・quadprog は `GUILDA:SolverOPF:PlotFcnUnsupported`)、連続潮流計算 `"pvcurve"`(全母線の PV 曲線を伸ばす)。関数ハンドル `stop = f(x, optimValues, state)` も 3 解析で受け付ける。時間応答シミュレーション・線形化は `"none"` のみのまま。
+- 潮流計算の flag に -1(PlotFcn で停止)を追加。OPF の JSON キー `Display` を `Verbose`(logical、既定 false)に置換し、既定ではソルバーは何も表示しない。
+- `"none"` では結果が変わらない(5 つの Solver、CPF、AC OPF で一致を確認)。
+- **テスト(MATLAB R2026a):** 下の「PlotFcn のテスト結果」を参照。
+- **要判断:** powerflow-options.md の同節の要判断 1〜4(他のセクションとの名前・型のずれ、flag -1 の通知など)。
+
 ## 入力を固定した平衡点と Solver / Method の名前(2026-11-10)
 
 仕様と実装の記録は [fixed-input.md](fixed-input.md) にあります(「実装」節)。ブランチは `feature/fixed-input`(未 push)。

@@ -298,5 +298,11 @@ const updateLogData = [
     "date": "2026-11-10",
     "type": "feature",
     "content": "The defaults of every analysis (power flow, OPF, continuation power flow, time simulation, linearization) are set in GUILDA.setting (new section Linearization); Name-Value options apply to one call. net.solver_OPF keeps only Cost, Constraint, DefaultCost and ReferenceBus, net.solver_CPF only LoadBus; setting other solver properties such as net.solver_ODE.RelativeTolerance or net.solver_OPF.Method stops with an error, so scripts that set them must pass the option in the call instead. Renamed settings: Tolerance (OPF, time simulation) and MaxIteration (continuation power flow); changed values of the old names return to the default. The option Plot=true is removed: draw with result.Plot(). PlotFcn, a live display during the analysis, accepts only \"none\" for now."
+  },
+  {
+    "title": "Watch an analysis while it runs with PlotFcn",
+    "date": "2026-11-10",
+    "type": "feature",
+    "content": "PlotFcn shows the progress of an analysis in a figure. net.calculate_powerflow(PlotFcn=\"residual\") draws the residual of each power equation at every iteration (every Solver). net.optimize_powerflow(PlotFcn=[\"fval\",\"constrviolation\"]) shows the plot functions of fmincon (optimplotfval, optimplotconstrviolation, ...; AC OPF, or Solver=\"fmincon\"). net.calculate_continuation_powerflow(PlotFcn=\"pvcurve\") extends the PV curves of all buses at each step. A function handle stop = f(x, optimValues, state), as in optimoptions, is called instead and can stop the analysis. The default is set by PlotFcn in GUILDA.setting. The OPF setting Display is replaced by Verbose (false by default: the solver prints nothing; true: each iteration)."
   }
 ];
