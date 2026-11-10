@@ -183,6 +183,39 @@ assert(isequal(sys.OutputName, [gen.a_LocalController{2}.attach_tag("omega"); ge
                                  gen.attach_tag("Vfield")]), join(sys.OutputName, ", "))
 
 
+%% Feedback lets a global controller read the voltage of an eliminated bus
+% B004 は機器のない母線で、Feedback はネットワークと一緒に消去する。GC は B004 の電圧を読む
+% (以前は GUILDA:ResultLIN:GlobalControllerPort で止まった)。固有値は Kron、DAE、simulate と同じ
+[net, gen] = DebugScript.helper.build_3bus("gen-1axis");
+net.add_bus();
+net.add_branch("pi",[3,4], "R",0.010, "X",0.050);
+gen.add_local_controller("avr-ST1");
+gen.add_local_controller("gov-LPT1", parameter=struct(PLM=5));
+DebugScript.helper.quiet(@() net.initialize);
+V0 = abs(net.a_Bus{4}.c_Vequilibrium);
+c_vb4 = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_routing_gc_vb4", ...
+                                         Replace=["V(1:2)", "V(7:8)"; "Bxv(1:2)", "Bxv(7:8)"]);
+gc = DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-vb4", {gen}, ...
+                                                            parameter=struct(alpha=0.2, beta=3, gV=0.5, V0=V0)));
+DebugScript.helper.quiet(@() net.initialize);
+res = net.linearize();
+e_sim = probe(net, @(o) finite_eigs_ode(o));
+for s_method = ["Kron","Feedback","DAE"]
+    e_lin = DebugScript.helper.finite_eigs(res.get_ss(s_method, Format="struct"));
+    assert(DebugScript.helper.same_eigs(e_lin, e_sim, 1e-6), "%s: %s / %s", s_method, mat2str(e_lin,4), mat2str(e_sim,4))
+end
+% 電圧は GC の観測に使うだけで、既定の出力には加えない
+sysF = res.get_ss("Feedback", Format="struct");
+assert(~any(contains(sysF.OutputName, "B004")), join(sysF.OutputName, ", "))
+% B004 の電圧が GC に届いている: gV = 0 の GC とは固有値が違う
+net.remove_global_controller(gc.s_tag);
+DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-vb4", {gen}, ...
+                                                       parameter=struct(alpha=0.2, beta=3, gV=0, V0=V0)));
+DebugScript.helper.quiet(@() net.initialize);
+e_0 = DebugScript.helper.finite_eigs(net.linearize().get_ss("Feedback", Format="struct"));
+assert(~DebugScript.helper.same_eigs(e_0, DebugScript.helper.finite_eigs(sysF), 1e-6), "B004 の電圧が GC に届かない")
+
+
 function F = probe(net, f)
 % 第 1 区間 (外乱なし) の ode に f を適用した値
     c = probe_all(net, [0,0.1], {DebugScript.helper.noop_event(net,[0,0.1])}, f);
