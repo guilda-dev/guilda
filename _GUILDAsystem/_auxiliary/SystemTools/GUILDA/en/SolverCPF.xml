@@ -5,5 +5,6 @@
         <entry key="UnknownLoadBus">LoadBus names buses that are not in the network: {0}. Use the bus tags of the network (string(net.a_Bus)).</entry>
         <entry key="NoEquilibrium">The continuation power flow starts from the equilibrium, but component {0} has none. Run net.initialize first.</entry>
         <entry key="Stale">The continuation power flow stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
+        <entry key="InputEdited">The continuation power flow stopped: inputs of components of ''{0}'' were edited ({1}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
     </message>
 </rsccat>

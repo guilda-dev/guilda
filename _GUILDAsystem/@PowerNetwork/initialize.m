@@ -21,6 +21,11 @@ function [result, flag, output] = initialize(obj, varargin)
 % nothing stale, initialize changes nothing but the equilibria of the global controllers,
 % which are always recomputed. The stale tags of the network are cleared at the end.
 %
+% Inputs edited with Component.set_input (net.sct_stale.input) are kept only by
+% Method="FixedInput". Without Method, or with Method="equilibrium", initialize stops with
+% GUILDA:PowerNetwork:InputEdited; Method="powerflow" or "OPF" replaces them with the
+% values of the solution (INFO GUILDA:PowerNetwork:InputOverwritten).
+%
 % Name-Value options:
 %
 % - `Method` — How the operating point is obtained when it is solved. Default:
@@ -88,6 +93,10 @@ function [result, flag, output] = initialize(obj, varargin)
 
     varargin = v3_initialize_args(varargin);                  % COMPAT(v3)
     [s_method, c_nv, l_given] = take_method(varargin);
+    sv_input = unique(obj.sct_stale.input, "stable");     % inputs edited with set_input
+    if ~isempty(sv_input) && (~l_given || s_method == "equilibrium")
+        error(msg("GUILDA:PowerNetwork:InputEdited", char(stale_list(sv_input))))
+    end
 
     l_solve = s_method ~= "equilibrium" && (l_given || ~isempty(obj.sct_stale.powerflow));
     switch s_method
@@ -149,6 +158,10 @@ function [result, flag, output] = initialize(obj, varargin)
     end
     obj.sct_stale.powerflow = strings(0,1);
     obj.sct_stale.odefcn    = strings(0,1);
+    obj.sct_stale.input     = strings(0,1);
+    if ~isempty(sv_input) && s_method ~= "FixedInput"
+        show_msg("info", "GUILDA:PowerNetwork:InputOverwritten", char(s_method), char(stale_list(sv_input)))
+    end
 
     if s_residual ~= ""
         show_msg("warning", "GUILDA:PowerNetwork:EquilibriumResidual", char(string(equilibrium_tolerance())), char(s_residual))
@@ -285,6 +298,15 @@ function [n_island, s_island] = network_islands(obj)
     s_island = join(sv, ", ");
     if n_island > n_show
         s_island = s_island + ", ...";
+    end
+end
+
+
+function s_list = stale_list(sv)
+% The first messages of sv as one text
+    s_list = join(sv(1:min(end,3)), "; ");
+    if numel(sv) > 3
+        s_list = s_list + "; ...";
     end
 end
 

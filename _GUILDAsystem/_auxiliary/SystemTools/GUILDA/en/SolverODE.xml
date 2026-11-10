@@ -8,5 +8,6 @@
         <entry key="OpenBranchIsland">Phase {0} (t = [{1}, {2}] s): the open branches {3} leave the buses {4} connected to no component, so their voltages are undetermined. Open branches so that every bus stays connected to a component, or remove those buses from the network.</entry>
         <entry key="NoPropName">This property does not exist.</entry>        
         <entry key="Stale">net.simulate stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
+        <entry key="InputEdited">net.simulate stopped: inputs of components of ''{0}'' were edited ({1}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
     </message>
 </rsccat>

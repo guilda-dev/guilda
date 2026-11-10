@@ -11,6 +11,8 @@ function handle_edit(obj, a_layer, tag, log)
 %                     replaced or removed)
 %     a branch        dynamics
 %     a component     powerflow
+% - The stale tag input is marked for an edit of the inputs of a component (set_input):
+%   only initialize(Method="FixedInput") keeps them; no revision counter changes.
 % - The revision counters are increased for the same edits; the solvers compare them with
 %   the values their warm start and cache were made with:
 %     n_revY         the network base (baseMVA) and Topology, bus dynamics (shunt), branch
@@ -50,6 +52,9 @@ function handle_edit(obj, a_layer, tag, log)
     elseif isa(a_layer, "Component")
         l_Y         = false;
         l_powerflow = tag == "powerflow";
+        if tag == "input"
+            obj.sct_stale.input(end+1,1) = log;
+        end
     else
         l_Y         = false;
         l_powerflow = false;

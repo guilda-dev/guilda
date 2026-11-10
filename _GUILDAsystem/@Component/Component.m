@@ -95,7 +95,7 @@ classdef Component < PowerSystemModel
     end
     properties(SetAccess=protected) % Steady State
         rv_Xequilibrium = zeros(0,1)         % State equilibrium.
-        rv_Uequilibrium = zeros(0,1)         % Input equilibrium.
+        rv_Uequilibrium = zeros(0,1)         % Input equilibrium (edited by set_input; held by initialize(Method="FixedInput")).
         c_Iequilibrium                       % [pu] Current injected into the bus at the equilibrium (complex).
     end
     properties (SetAccess={?SolverODE, ?Component}, Hidden) % Simulation working data
@@ -235,6 +235,9 @@ classdef Component < PowerSystemModel
 
         % get dx, I and y
         DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
+
+        % Steady State
+        set_input(obj, rv_u)
 
     end
     methods(Hidden)

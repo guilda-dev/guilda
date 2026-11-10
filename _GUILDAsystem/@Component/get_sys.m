@@ -84,6 +84,10 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     elseif l_default
         % stale tags of the network, the component and its controllers
         net = obj.a_Bus.a_PowerNetwork;
+        if ~isempty(net.sct_stale.input)   % edited inputs: initialize(Method="FixedInput")
+            sv_in = unique(net.sct_stale.input, "stable");
+            error(msg("GUILDA:Component:InputEdited", char(net.s_tag), char(join(sv_in(1:min(end,3)), "; "))))
+        end
         sv  = [net.sct_stale.powerflow; net.sct_stale.odefcn; obj.sct_stale.equilibrium; obj.sct_stale.odefcn];
         for k = 1:numel(a_LC)
             sv = [sv; a_LC{k}.sct_stale.equilibrium; a_LC{k}.sct_stale.odefcn]; %#ok<AGROW>

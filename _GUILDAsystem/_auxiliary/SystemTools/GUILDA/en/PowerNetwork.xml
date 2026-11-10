@@ -33,6 +33,8 @@
         <entry key="InitializeModelFailed">net.initialize stopped: {1} of ''{0}'' failed at the equilibrium: {2}&#xA;The equilibrium is out of date. Fix the model.</entry>
         <entry key="EquilibriumResidual">The models do not hold the operating point (residuals of {0} or more), so their states move without a disturbance:&#xA;{1}&#xA;Check get_equilibrium and the model functions, e.g. with comp.validate().</entry>
         <entry key="InitializeNoEquilibrium">net.initialize(Method="equilibrium") stopped: the equilibrium of ''{0}'' is not set.&#xA;The network was not changed. Run net.initialize(Method="powerflow") or net.initialize(Method="OPF") first.</entry>
+        <entry key="InputEdited">net.initialize stopped: inputs of components were edited ({0}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
+        <entry key="InputOverwritten">net.initialize(Method="{0}") replaced the inputs edited with set_input by the values of its solution ({1}).</entry>
         <entry key="SimulateArguments">net.simulate takes the time span, then the scenarios (Scenario), then Name-Value options: net.simulate([t0, tend], sc1, sc2, ..., Name, Value) or net.simulate(sc, Name, Value). Argument {0} is a {1}.</entry>
         <entry key="ControllersNotSaved">export_csv does not write controllers, so the CSV model of ''{0}'' does not include them.&#xA;Local ({1}): {2}&#xA;Global ({3}): {4}&#xA;Add them again after PowerNetwork.import_csv.</entry>
         <entry key="SimulateExport">Export of net.simulate does not support the extension ''{0}''. Use a scalar file name with .csv, .txt, .xlsx, .xls or .mat.</entry>

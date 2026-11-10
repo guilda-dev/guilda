@@ -133,7 +133,7 @@ classdef PowerNetwork < PowerSystemModel
                 obj   % New PowerNetwork without buses.
             end
             obj.s_tag     = tag;
-            obj.sct_stale = struct("powerflow", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
+            obj.sct_stale = struct("powerflow", obj.s_notInitialized, "odefcn", obj.s_notInitialized, "input", strings(0,1));
             % tab_parameter column base: Hz [Hz]: nominal frequency, read with get_Hz() and
             % passed as omega0; baseMVA [MVA]: system base of all per-unit values (default 100)
             a_Pb = Parameter(obj, "base", struct( ...
