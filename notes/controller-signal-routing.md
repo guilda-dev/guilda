@@ -156,7 +156,8 @@ Jacobian(`getODEJacobian`): 上の順に、
 | 2 | `af2e642a` | GC の観測(出力 → 状態、全母線の V)、出力の振り分け、INFO、評価順、Jacobian、平衡点の検査、`get_sys`、線形化。テスト `test_F35_controller_signal_routing` |
 | 3 | `6bb9c7d0` | `notes/v4-migration.md`、For Developer のページ |
 | 修正 | `5e4c3f4b` | `get_ss("Feedback")` で使わない GC 入力(全母線の V)を落とす(medium の F7 で発見) |
-| 修正 | `f0f0f02b` | `get_ss("Feedback")` で GC が消去した母線の電圧と機器の出力を読めるようにした(ブランチ `fix/feedback-eliminated-bus-observation`)。テストは F35 に追加 |
+| 修正 | `f0f0f02b` | `get_ss("Feedback")` で GC が消去した母線の電圧と機器の出力を読めるようにした(ブランチ `fix/feedback-eliminated-bus-observation`)。テストは F35 に追加(電圧の場合だけ) |
+| 試験 | (ブランチ `test/feedback-eliminated-bus-output`) | 消去した母線の機器の出力を GC が読む場合のテストを F35 に追加。機器は出力 `Vabs` を持つ定電流負荷のスタブ `DebugScript.helper.OutputLoadStub`(同梱の負荷に出力を持つモデルがないため)。`get_ss.m` の変更は不要だった |
 
 **現状**(実装後のコード)
 

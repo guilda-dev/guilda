@@ -226,6 +226,41 @@ e_0 = DebugScript.helper.finite_eigs(net.linearize().get_ss("Feedback", Format="
 assert(~DebugScript.helper.same_eigs(e_0, DebugScript.helper.finite_eigs(sysF), 1e-6), "B004 の電圧が GC に届かない")
 
 
+%% Feedback lets a global controller read the output of a component on an eliminated bus
+% B004 の負荷 (DebugScript.helper.OutputLoadStub) は状態がなく、電流が V によらない (I-to-V の形がない)
+% ので、Feedback はこの母線をネットワークと一緒に消去する。GC はこの負荷の出力 Vabs (= |V_4|) を読み、
+% 負荷の入力 Ire へ返す。固有値は Kron、DAE、simulate と同じ
+c_ld = DebugScript.helper.register_stub("OutputLoadStub", "component.load.test_output_load");
+[net, gen] = DebugScript.helper.build_3bus("gen-1axis");
+bus4 = net.add_bus();
+net.add_branch("pi",[3,4], "R",0.010, "X",0.050);
+ld = bus4.add_component("test-output-load");
+gen.add_local_controller("avr-ST1");
+gen.add_local_controller("gov-LPT1", parameter=struct(PLM=5));
+DebugScript.helper.quiet(@() net.initialize);
+c_ly = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_routing_gc_ly", ...
+                                        Replace=["sv_u = ""omega""", "sv_u = ""Vabs"""; "sv_y = ""Pmech""", "sv_y = ""Ire"""]);
+gc = DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-ly", {ld}, ...
+                                                            parameter=struct(alpha=0.5, beta=3, gV=0)));
+DebugScript.helper.quiet(@() net.initialize);
+res = net.linearize();
+e_sim = probe(net, @(o) finite_eigs_ode(o));
+for s_method = ["Kron","Feedback","DAE"]
+    e_lin = DebugScript.helper.finite_eigs(res.get_ss(s_method, Format="struct"));
+    assert(DebugScript.helper.same_eigs(e_lin, e_sim, 1e-6), "%s: %s / %s", s_method, mat2str(e_lin,4), mat2str(e_sim,4))
+end
+% 出力は GC の観測に使うだけで、既定の出力には加えない
+sysF = res.get_ss("Feedback", Format="struct");
+assert(~any(contains(sysF.OutputName, [ld.s_tag, "B004"])), join(sysF.OutputName, ", "))
+% 負荷の出力が GC に届いている: beta = 0 の GC とは固有値が違う
+net.remove_global_controller(gc.s_tag);
+DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-ly", {ld}, ...
+                                                       parameter=struct(alpha=0.5, beta=0, gV=0)));
+DebugScript.helper.quiet(@() net.initialize);
+e_0 = DebugScript.helper.finite_eigs(net.linearize().get_ss("Feedback", Format="struct"));
+assert(~DebugScript.helper.same_eigs(e_0, DebugScript.helper.finite_eigs(sysF), 1e-6), "B004 の負荷の出力が GC に届かない")
+
+
 function iv = zpos(net, owner, s_kind, s_name)
 % simulate の変数ベクトル z = [x; V; I; u; uc] での owner の行の位置 (変数表の順。u と uc は母線電流 I の後)
     tab = net.get_variable_map();
