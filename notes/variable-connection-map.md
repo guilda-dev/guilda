@@ -146,8 +146,51 @@ z = [ x(表の順) ; V(母線ごとに Vre, Vim) ; I(母線ごとに Ire, Iim) ;
 
 ## 7. 未決
 
-- なし(実装後の記録は 8 節)。
+- 8.3 節の「確認してほしい点」。
 
 ## 8. 実装
 
-(実装後に記録する)
+### 8.1 コミット
+
+| 段階 | コミット | 内容 |
+|---|---|---|
+| 0 | `a53c6976` | このノート |
+| 1 | `6965c2bd` | 変数表(uc、y、yc、`Role`)と接続表。線形化と `ResultODE` は先頭の x、V、u だけを使う |
+| 2 | `e458838b` | `SolverODE.build_index`、ブロックごとの右辺と Jacobian、ctx の相の状態。モデルの作業用プロパティと `get_dx_algebraic` を削除 |
+| 3 | `5b9d7ad6` | `add_global_controller`、`GlobalController.get_sys`、`Component.validate`、`LocalController.validate` が接続表を読む。`sv_route` を削除し、INFO を LC の編集へ |
+| 4 | (このコミットの後) | `notes/v4-migration.md`、`notes/controller-signal-routing.md`、For Developer のページ |
+
+### 8.2 現状(実装後のコード)
+
+- 新しいメンバー: `SolverODE.build_index`(`Static, Access=private`)。`get_variable_map` の出力 `tab_connection` と列 `Role`。
+  ほかに補助関数のファイル `@Component/private/gc_routes.m`(LC の編集の前後の接続表の比較と INFO。`add_local_controller` と `remove_local_controller` の両方が使うので private のファイルにした)と、`solve.m` の局所関数 `set_phase`。
+- 削除したメンバー: 5.2 節の一覧のプロパティ、`SolverODE.initialize_index`、`get_units`、`set_offsets`、`set_gc_connect`、`restore_working_data`、
+  private の `getXM`、`getTM`、`getStateTags`、`controllers_depth_first`、`Component.get_dx_algebraic`、`LocalController.get_dx_algebraic`。メッセージ `GUILDA:SolverODE:GconRouteChanged`(`GUILDA:Component:GconRouteChanged` へ移した)。
+- 変えたシグネチャ: `SolverODE.initial_condition(ctx, ph, x0, M0)`、`phase_result(ctx, ph, sct_sol)`。`bus.get_variable_map` は `[tab, c_idx, tab_connection]`、`comp.get_variable_map` は `[tab, tab_connection]`。
+- `add_global_controller` は GC を一覧に加え、`a_PowerNetwork` を設定してから網の表を作る(GC の Label は網のタグを含むため)。検査に失敗すると両方を元に戻す。
+- `ResultODE.get_point` に表の uc、y、yc の行を渡すと `GUILDA:ResultODE:UnknownVariable`。テストは先頭の x、V、u の行に切ってから渡す。
+- `LocalController.validate` の `flag.inputs` にも同じ規則の写しがあったので、接続表を読むようにした(4 か所の一覧の外)。
+- `Scenario.compile` は変えていない(相ごとの `c_Xoffset`、`c_Uoffset` を `set_phase` と `initial_condition` が ctx へ読む)。
+- Jacobian は今と同じく密行列で組み立ててから疎にする。
+
+### 8.3 測定
+
+MATLAB R2026a。各ケースは `Scenario`(`Time=[0,10]`)、`a_Bus{min(8,end)}` の地絡 [1, 1.05] s。
+
+| ケース | 変更前の点数 / 変更後の点数 | 軌道の差の最大(変更前の時刻、境界の近くを除く) | 最終値の差の最大 |
+|---|---|---|---|
+| IEEE14 既定 | 377 / 377 | 8.9e-06 | 1.4e-07 |
+| IEEE68 既定(AVR+PSS) | 683 / 683 | 1.9e-06 | 2.4e-06 |
+| IEEE14 + AGC(`agc-PI`、全発電機) | 351 / 351 | 1.0e-07 | 2.6e-09 |
+| IEEE14 + 調速機 `gov-LPT1`(Prate=5)+ AGC | 1085 / 1106 | 1.1e-04 | 1.2e-05 |
+
+- IEEE68 の `simulate`(1 スレッド、5 回の中央値): 変更前 0.948 s、変更後 0.712 s(-25%)。
+- 変数の数(IEEE68): 変更前 566(x 144、u 150(機器 102 + LC 48)、母線の V と I 272)。変更後 566(x 144、V 136、I 136、u 102、uc 48)。信号(変数でない)は y 16、yc 32。
+  入力の残差を `S_sig`、`S_var` の疎行列の積でまとめて計算し、入れ子の再帰と名前の照合がなくなった分だけ速い。
+
+**確認してほしい点**(提案、未承認)
+
+- `@Component/private/gc_routes.m` は「method ファイルの中の局所関数」ではなく private フォルダの関数ファイル。2 つのメソッドで共有するためにこうした。局所関数を 2 つの写しにするほうがよければ直す。
+- 網にない GC の `get_sys` は振り分けが決まらないので、出力を制御対象ごとの GC 自身の出力(Label は表の yc)とした(以前は LC の木をたどって名前を付けていた)。
+- `SolverLIN.solve` の局所関数 `gc_input` は点での GC の入力の値を `iv_obsY` / `iv_obsX` から計算している(値の評価で、振り分けではないので残した)。
+- `notes/simulate-review-measurements.m`(測定用のスクリプト)は削除したプロパティを読んでおり、そのままでは動かない。

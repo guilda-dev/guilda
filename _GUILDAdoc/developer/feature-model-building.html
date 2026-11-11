@@ -395,6 +395,7 @@ b1.l_isSlack = true;</code></pre>
               </ul>
             </li>
             <li>Attach: set <code>con.a_Component</code> (writable only by <code>Component</code> and <code>LocalController</code>), resolve the observed signals (<code>resolve_observe</code>: expand <code>"Xall"</code> / <code>"Yall"</code>, set <code>iv_obsY</code> / <code>iv_obsX</code>), report a <code>"Topology"</code> edit on the controller ("attached to &lt;parent&gt;"): its <code>equilibrium</code> becomes stale. Detach: <code>[]</code> only</li>
+            <li>When a global controller controls the component: compare the <code>"global"</code> rows of the connection map (<code>net.get_variable_map()</code>) before and after the edit, and list the outputs that go elsewhere now in an INFO message (<code>GUILDA:Component:GconRouteChanged</code>; <code>-&gt; (no input)</code> when none)</li>
             <li>Return the new controller</li>
           </ul><ul lang="ja">
             <li>1 回の呼び出しで制御器を 1 つ作成: <code>Key</code>（生成済みのキー一覧で検査）のクラスをコンストラクタ <code>(tag, Name=Value)</code> で作成。Name=Value は <code>parameter</code>（struct または 1 行の table）、省略したものはクラスの既定値</li>
@@ -414,6 +415,7 @@ b1.l_isSlack = true;</code></pre>
               </ul>
             </li>
             <li>接続: <code>con.a_Component</code> を代入（書き込めるのは <code>Component</code> と <code>LocalController</code> だけ）、観測する信号を解決（<code>resolve_observe</code>: <code>"Xall"</code> / <code>"Yall"</code> を展開、<code>iv_obsY</code> / <code>iv_obsX</code> を設定）、制御器の <code>"Topology"</code> の編集として報告（"attached to &lt;parent&gt;"）: 制御器の <code>equilibrium</code> が古くなる。切り離し: <code>[]</code> の代入のみ</li>
+            <li>グローバル制御器がこの機器を制御する場合: 接続マップ（<code>net.get_variable_map()</code>）の <code>"global"</code> の行を編集の前後で比較し、接続先が変わった出力を INFO で表示（<code>GUILDA:Component:GconRouteChanged</code>。接続先がなければ <code>-&gt; (no input)</code>）</li>
             <li>新しい制御器を返す</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -452,32 +454,32 @@ b1.l_isSlack = true;</code></pre>
               <ul>
                 <li>the tag is unused</li>
                 <li>every unit belongs to this network (handle comparison through <code>unit.a_Bus.a_PowerNetwork</code>)</li>
-                <li><code>sv_u</code> are outputs or states of every unit, and each <code>sv_y</code> is an input of the unit or of one of its local controllers</li>
               </ul>
             </li>
             <li>Append the controller</li>
             <li>Set <code>gc.a_PowerNetwork = net</code> (writable only by <code>PowerNetwork</code>)</li>
+            <li>Check in the connection map of <code>net.get_variable_map()</code> that, for every unit, each input of the controller has an <code>"observe"</code> connection (an output or state of the unit) and each output a <code>"global"</code> connection (an input of a local controller of the unit, else of the unit); otherwise remove the controller again and stop with <code>GUILDA:PowerNetwork:GconPorts</code></li>
             <li>Report a <code>"Topology"</code> edit on the controller (not on the network): its <code>equilibrium</code> becomes stale, the power flow stays up to date</li>
-            <li>Record where each output goes in <code>gc.sv_route</code> (to the local controllers of the unit with an input of that name, else to the input of the unit) and show it as an INFO message</li>
+            <li>Show the <code>"global"</code> connections of the controller as <code>Source -&gt; Target</code> (labels) in an INFO message (<code>GUILDA:PowerNetwork:GconRoute</code>); nothing is stored on the controller</li>
             <li>Return the controller</li>
           </ul><ul lang="ja">
             <li>検査:
               <ul>
                 <li>タグが未使用</li>
                 <li>すべての制御対象がこのネットワークに所属（<code>unit.a_Bus.a_PowerNetwork</code> によるハンドル比較）</li>
-                <li><code>sv_u</code> が各対象の出力または状態、各 <code>sv_y</code> が対象またはその局所制御器の入力</li>
               </ul>
             </li>
             <li>制御器を追加</li>
             <li><code>gc.a_PowerNetwork = net</code> を代入（書き込めるのは <code>PowerNetwork</code> だけ）</li>
+            <li><code>net.get_variable_map()</code> の接続マップで、各対象について制御器の各入力に <code>"observe"</code> の接続（対象の出力または状態）、各出力に <code>"global"</code> の接続（対象のローカル制御器の入力、ない場合は対象の入力）があるか確認。なければ制御器を外して <code>GUILDA:PowerNetwork:GconPorts</code> で停止</li>
             <li>制御器（ネットワークではない）の <code>"Topology"</code> の編集として報告: 制御器の <code>equilibrium</code> が古くなり、潮流は最新のまま</li>
-            <li>各出力の接続先（同名の入力を持つ対象の局所制御器、ない場合は対象の入力）を <code>gc.sv_route</code> に記録し、INFO で表示</li>
+            <li>制御器の <code>"global"</code> の接続を <code>Source -&gt; Target</code>（ラベル）で INFO に表示（<code>GUILDA:PowerNetwork:GconRoute</code>）。制御器には保存しない</li>
             <li>制御器を返す</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>gc.s_tag</code>, <code>gc.controlledUnits</code>, <code>gc.sv_u</code>, <code>gc.sv_y</code>, <span lang="en">unit</span><span lang="ja">対象の</span> <code>sv_x</code>, <code>sv_y</code>, <code>sv_u</code>, <code>a_LocalController</code></dd>
+          <dd><code>gc.s_tag</code>, <code>gc.controlledUnits</code>, <code>gc.sv_u</code>, <code>gc.sv_y</code>, <code>net.get_variable_map()</code> (<code>tab</code>, <code>c_idxGC</code>, <code>tab_connection</code>)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>gc</code>; <code>net.a_GlobalController</code>, <code>gc.a_PowerNetwork</code>, <code>gc.sct_stale</code>, <code>gc.sv_route</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+          <dd><code>gc</code>; <code>net.a_GlobalController</code>, <code>gc.a_PowerNetwork</code>, <code>gc.sct_stale</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-08">
@@ -546,7 +548,7 @@ b1.l_isSlack = true;</code></pre>
             <li>編集した層から <code>parent</code> をたどる各層の <code>handle_edit(a_layer, tag, log)</code> を呼び出し（最初の initialize の前も）。<code>a_layer</code> は編集した層（<code>Parameter</code> コンテナの場合は所有者）</li>
             <li>各層は <code>a_layer == obj</code> とタグを比べ、編集が影響する自分の stale タグにメッセージを追加（例 <code>obj.sct_stale.equilibrium(end+1,1) = log</code>）</li>
             <li>ネットワーク（<code>PowerNetwork.handle_edit</code>）: slack 母線を 1 つに維持。baseMVA、母線とブランチのトポロジー、母線のパラメータ（powerflow、dynamics）、slack 母線、機器の接続・置き換え・削除、ブランチの dynamics、機器の powerflow で <code>powerflow</code> を印付け</li>
-            <li>機器、局所・広域制御器: 自分の dynamics で <code>equilibrium</code> と <code>odefcn</code>、自分の <code>"Topology"</code>（制御器の追加・置き換え・削除）で <code>equilibrium</code> を印付け</li>
+            <li>機器、局所・グローバル制御器: 自分の dynamics で <code>equilibrium</code> と <code>odefcn</code>、自分の <code>"Topology"</code>（制御器の追加・置き換え・削除）で <code>equilibrium</code> を印付け</li>
             <li>ネットワークの <code>Hz</code> の編集はネットワークの <code>odefcn</code> のみ印付け（baseMVA とは <code>base</code> コンテナの <code>s_lastEdited</code> で区別）。<code>initialize</code> で各モデルが <code>r_odefcnHz</code> と <code>get_Hz()</code> を比較</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -641,9 +643,11 @@ b1.l_isSlack = true;</code></pre>
           <dd><ul lang="en">
             <li>Remove by tag the top controller (with its PSS only when <code>RemoveNested=true</code>) or the PSS alone</li>
             <li>Detach the removed controllers (<code>a_Component = []</code>); <code>add_local_controller</code> builds a new controller instead of attaching them again</li>
+            <li>When a global controller controls the component: INFO <code>GUILDA:Component:GconRouteChanged</code> for the outputs that go elsewhere now, as in MB-05</li>
           </ul><ul lang="ja">
             <li>タグで最上位の制御器（<code>RemoveNested=true</code> のときだけその PSS も）または PSS だけを削除</li>
             <li>削除した制御器を切り離し（<code>a_Component = []</code>）。再接続ではなく、<code>add_local_controller</code> で新しい制御器を作成</li>
+            <li>グローバル制御器がこの機器を制御する場合: 接続先が変わった出力を INFO <code>GUILDA:Component:GconRouteChanged</code> で表示（MB-05 と同じ）</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>a_LocalController</code>, <span lang="en">tags</span><span lang="ja">タグ</span></dd>
@@ -793,15 +797,15 @@ b1.l_isSlack = true;</code></pre>
     <ul lang="en">
       <li><b>Before the first <code>initialize</code></b>: every stale tag holds "initialize has not been run" from the constructor, so edits add no message. <code>handle_edit</code> still keeps a single slack bus</li>
       <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: Handling of model edits</a> appends its message to the stale tags it affects; <code>simulate</code>, <code>linearize</code> and <code>get_sys</code> then stop with their stale errors (e.g. <code>GUILDA:SolverODE:Stale</code>) until <code>initialize</code> runs again. Operation, OPF, graph and tag edits: nothing stale</li>
-      <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (they stay empty). <code>initialize</code> builds the stale ones (<code>set_odefcn</code>, see <a href="feature-initialize.html">Initialization</a>); analyses only check. A direct call of a model function (<code>get_dx_algebraic</code>) after an edit without <code>initialize</code> uses the previous handles; it builds them only when they are empty</li>
+      <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (they stay empty). <code>initialize</code> builds the stale ones (<code>set_odefcn</code>, see <a href="feature-initialize.html">Initialization</a>); analyses only check. Outside <code>initialize</code>, only <code>get_sys</code> of a layer without a network builds handles, and only when they are empty; after an edit without <code>initialize</code> it uses the previous ones</li>
       <li><b>Detached objects</b>: a removed object keeps its <code>sct_stale</code>; the removal is a <code>"Topology"</code> edit of the parent (a removed global controller: nothing). Its later edits do not reach the network. Attaching it to a new parent is a <code>"Topology"</code> edit of the object, which marks its <code>equilibrium</code> stale until the next <code>initialize</code>; its handles are rebuilt there when <code>r_odefcnHz</code> differs from the new network frequency</li>
       <li><b>Copies</b>: no deep-copy method; <code>b = a</code> copies a handle. For an independent network, save and load through a MAT file or CSV export. A loaded network, or a lower layer saved alone, keeps its parameter tables, so its edits are checked and logged as before saving</li>
     </ul>
     <ul lang="ja">
       <li><b>最初の <code>initialize</code> の前</b>: すべての stale タグがコンストラクタの "initialize has not been run" を保持するため、編集はメッセージを追加しない。<code>handle_edit</code> は slack 母線を 1 つに維持</li>
       <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>で古くなるとされる編集は影響する stale タグにメッセージを追加し、<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> は再び <code>initialize</code> を実行するまでそれぞれの stale のエラー（例 <code>GUILDA:SolverODE:Stale</code>）で停止。operation・OPF・graph・タグの編集: 何も古くしない</li>
-      <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作らない（空のまま）。古いものは <code>initialize</code> が作成（<code>set_odefcn</code>、<a href="feature-initialize.html">初期化</a>参照）、解析は確認のみ。編集の後に <code>initialize</code> を挟まずモデル関数を直接呼ぶ場合（<code>get_dx_algebraic</code>）は以前のハンドルを使用し、空のときだけ構築</li>
-      <li><b>切り離されたオブジェクト</b>: 削除されたオブジェクトは自分の <code>sct_stale</code> を保持。削除は親の <code>"Topology"</code> の編集（広域制御器の削除: なし）。その後の編集はネットワークに届かない。新しい親への接続はそのオブジェクトの <code>"Topology"</code> の編集で、次の <code>initialize</code> まで <code>equilibrium</code> を古いと印付け。<code>r_odefcnHz</code> が新しいネットワークの周波数と異なれば、そこでハンドルを再構築</li>
+      <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作らない（空のまま）。古いものは <code>initialize</code> が作成（<code>set_odefcn</code>、<a href="feature-initialize.html">初期化</a>参照）、解析は確認のみ。<code>initialize</code> 以外でハンドルを作るのはネットワークのない層の <code>get_sys</code> のみで、空のときだけ構築。<code>initialize</code> を挟まない編集の後は以前のハンドルを使用</li>
+      <li><b>切り離されたオブジェクト</b>: 削除されたオブジェクトは自分の <code>sct_stale</code> を保持。削除は親の <code>"Topology"</code> の編集（グローバル制御器の削除: なし）。その後の編集はネットワークに届かない。新しい親への接続はそのオブジェクトの <code>"Topology"</code> の編集で、次の <code>initialize</code> まで <code>equilibrium</code> を古いと印付け。<code>r_odefcnHz</code> が新しいネットワークの周波数と異なれば、そこでハンドルを再構築</li>
       <li><b>コピー</b>: ディープコピーのメソッドはなし。<code>b = a</code> はハンドルのコピー。独立したネットワークには MAT ファイルへの保存と読み込み、または CSV への書き出しを使用。読み込んだネットワークや単独で保存した下の層もパラメータの表を保持し、編集の検査と記録は保存前と同じ</li>
     </ul>
 

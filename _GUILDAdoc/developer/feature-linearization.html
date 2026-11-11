@@ -60,8 +60,8 @@
 
     <!-- ============================== ENTRY ============================== -->
     <h2 id="entry"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></h2>
-    <p lang="en">Result: the linear DAE in deviations from the point, in the order of <code>net.get_variable_map()</code> (see <a href="class-design.html#variables">Class Design: Order of state and input variables</a>); <code>x</code> states, <code>v = [Vre1; Vim1; Vre2; …]</code> bus voltages, <code>u</code> component inputs:</p>
-    <p lang="ja">結果: 点からの偏差で表した線形 DAE。並びは <code>net.get_variable_map()</code> の順 (<a href="class-design.html#variables">クラス設計: 状態・入力変数の順序</a> を参照)。<code>x</code> は状態、<code>v = [Vre1; Vim1; Vre2; …]</code> は母線電圧、<code>u</code> は機器の入力。</p>
+    <p lang="en">Result: the linear DAE in deviations from the point, in the order of the leading rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code> of <code>net.get_variable_map()</code> (see <a href="class-design.html#variables">Class Design: Order of state and input variables</a>; the controller inputs <code>uc</code> are eliminated by the models of the layers, and the signals are not variables); <code>x</code> states, <code>v = [Vre1; Vim1; Vre2; …]</code> bus voltages, <code>u</code> component inputs:</p>
+    <p lang="ja">結果: 点からの偏差で表した線形 DAE。並びは <code>net.get_variable_map()</code> の先頭の行 <code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> の順 (<a href="class-design.html#variables">クラス設計: 状態・入力変数の順序</a> を参照。制御器の入力 <code>uc</code> は各層のモデルが消去、信号は変数ではない)。<code>x</code> は状態、<code>v = [Vre1; Vim1; Vre2; …]</code> は母線電圧、<code>u</code> は機器の入力。</p>
 <pre class="lin-sig"><code>E dx/dt = Axx x + Axv v + Bx u
       0 = Avx x + Avv v + Bv u      % current balance Y v − I of each bus</code></pre>
 <pre class="lin-sig"><code>[result, flag, output] = net.linearize(Name, Value)
@@ -279,11 +279,11 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         <p class="fs-head"><b class="fs-id">LIN-05</b> <span class="fs-call"><code>SolverLIN.solve</code> → <code>PowerNetwork.get_variable_map</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Gets the order of all variables and the rows of each bus and global controller.</span><span lang="ja">全変数の順序と、母線・広域制御器ごとの行を取得</span></dd>
+          <dd><span lang="en">Gets the order of all variables and the rows of each bus and global controller, and keeps the leading rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code>: the variables of the linearization. The controller inputs <code>uc</code> are eliminated by the models of the layers; the signals <code>y</code>, <code>yc</code> are not variables.</span><span lang="ja">全変数の順序と、母線・広域制御器ごとの行を取得し、先頭の行 <code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> を保持: 近似線形化の変数。制御器の入力 <code>uc</code> は各層のモデルが消去、信号 <code>y</code>、<code>yc</code> は変数ではない</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>sv_x</code>, <code>sv_u</code>, <span lang="en">tags</span><span lang="ja">タグ</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>tab_map</code> (<code>(n_x + n_v + n_u) × 6</code>), <code>c_idxBus</code>, <code>c_idxGC</code></dd>
+          <dd><code>tab_map</code> (<code>(n_x + n_v + n_u) × 7</code>), <code>c_idxBus</code>, <code>c_idxGC</code> (<span lang="en">restricted to these rows</span><span lang="ja">これらの行に制限</span>)</dd>
         </dl>
       </li>
       <li class="fs-step" id="LIN-06">
@@ -514,7 +514,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
     <table class="dg-table">
       <thead><tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Size</span><span lang="ja">サイズ</span></th><th><span lang="en">Contents</span><span lang="ja">内容</span></th></tr></thead>
       <tbody>
-        <tr><td><code>tab_variable</code></td><td><code>(n_x + n_v + n_u) × 6</code></td><td><span lang="en">Variable map at the time of the analysis.</span><span lang="ja">解析時の変数マップ。</span></td></tr>
+        <tr><td><code>tab_variable</code></td><td><code>(n_x + n_v + n_u) × 7</code></td><td><span lang="en">Leading rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code> of the variable map at the time of the analysis.</span><span lang="ja">解析時の変数マップの先頭の行 <code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code>。</span></td></tr>
         <tr><td><code>rv_point</code></td><td><code>(n_x + n_v + n_u) × 1</code></td><td><span lang="en">Point of the linearization.</span><span lang="ja">線形化した点。</span></td></tr>
         <tr><td><code>rm_Axx</code>, <code>rm_E</code></td><td><code>n_x × n_x</code></td><td><span lang="en">∂f/∂x and the mass matrix.</span><span lang="ja">∂f/∂x と質量行列。</span></td></tr>
         <tr><td><code>rm_Axv</code></td><td><code>n_x × n_v</code></td><td>∂f/∂v</td></tr>

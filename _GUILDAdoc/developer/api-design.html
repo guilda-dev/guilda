@@ -208,9 +208,8 @@
     <p lang="en">The only exceptions: internal analysis caches and per-run working data.</p>
     <p lang="ja">例外は解析の内部キャッシュと実行ごとの作業データだけ。</p>
     <ul>
-      <li><span lang="en"><code>simulate</code> writes working data during a run (see <a href="class-design.html#classes">Class Design: Per-class responsibilities</a>).</span><span lang="ja"><code>simulate</code> は実行中に作業データを書き込み（<a href="class-design.html#classes">クラス設計: クラスごとの責務</a> を参照）。</span></li>
-      <li><span lang="en">On every exit, also after an error: <code>Bus.l_isFault</code> → false, <code>l_isConnect</code> of components and global controllers → true, <code>Component.rv_Xoffset</code> / <code>rv_Uoffset</code> → empty.</span><span lang="ja">終了時は、エラーで終わった場合も含めて必ず: <code>Bus.l_isFault</code> → false、機器と大域制御器の <code>l_isConnect</code> → true、<code>Component.rv_Xoffset</code> / <code>rv_Uoffset</code> → 空。</span></li>
-      <li><span lang="en">The index data (<code>iv_ode*</code>, <code>lv_odeUfromLC</code>) stays until the next run overwrites it.</span><span lang="ja">インデックスのデータ（<code>iv_ode*</code>、<code>lv_odeUfromLC</code>）は次の実行で上書きされるまで残る。</span></li>
+      <li><span lang="en"><code>simulate</code> writes nothing to the models: the positions of the run and the trips, faults and input events of each phase live in the run context <code>ctx</code> of <code>SolverODE</code> (see <a href="class-design.html#working-data">Class Design: Working data of analyses</a>).</span><span lang="ja"><code>simulate</code> はモデルに何も書き込まない: 実行の位置と、フェーズごとのトリップ・地絡・入力イベントは <code>SolverODE</code> の実行の文脈 <code>ctx</code> に保持（<a href="class-design.html#working-data">クラス設計: 解析の作業データ</a> を参照）。</span></li>
+      <li><span lang="en">Nothing to restore on exit, also after an error: the models are unchanged.</span><span lang="ja">終了時は、エラーで終わった場合も含めて復元は不要: モデルは不変。</span></li>
     </ul>
     <p lang="en">A failed simulation ends in one of these ways, and neither changes model values:</p>
     <p lang="ja">失敗したシミュレーションの終わり方は次の 2 つ。いずれもモデルの値は不変。</p>

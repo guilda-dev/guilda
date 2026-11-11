@@ -5,6 +5,9 @@
 - 決定: 2026-11-10、メンテナー(1〜6 節の規則)。このノートの 7 節以降は実装上の詰め(**提案**)。
 - 基準コミット: `4a2f7f25`(`refactor/design-alignment`)。「現状」はこのコミットのコード。
 - 状態: `refactor/controller-signal-routing` で実装(2026-11-10)。記録は末尾の「10. 実装」節。
+- 更新(2026-11-11): 規則(2 節)は変えずに、振り分けを `net.get_variable_map` の接続表 `tab_connection` に一元化し、
+  制御器の入力を DAE の変数にした(`refactor/variable-connection-map`、`notes/variable-connection-map.md`)。
+  6 節の `sv_route`、7 節の評価順と `get_dx_algebraic`、10 節の `get_units` はその時点の記録で、現在のコードではない(11 節)。
 - 区別: **決定**(メンテナーの決定)、**現状**(コードで確認済み)、**提案**(このノートの詰め。未承認)、**未決**。
 - 記法: 機器の状態 x_mac、入力 u_mac、出力 y_mac、注入電流 i_mac、母線電圧 v_bus。局所制御器 LC、大域制御器 GC。
 
@@ -169,7 +172,24 @@ Jacobian(`getODEJacobian`): 上の順に、
 
 **確認してほしい点**(提案、未承認)
 
-- 振り分けの規則(LC の木をたどる)は `add_global_controller`、`SolverODE.get_units`、`GlobalController.get_sys`、`Component.validate` の 4 か所に数行ずつ同じ形で書いた(新しい補助関数を足さないため)。共通の関数にまとめるかは判断待ち。
-- `sv_route` は「`add_global_controller` で表示した記録」に加え、実行時に変化を表示した後は新しい接続で上書きする(同じ変化を毎回表示しないため)。
+- 振り分けの規則(LC の木をたどる)は `add_global_controller`、`SolverODE.get_units`、`GlobalController.get_sys`、`Component.validate` の 4 か所に数行ずつ同じ形で書いた(新しい補助関数を足さないため)。共通の関数にまとめるかは判断待ち。→ 2026-11-11 に接続表へ一元化(11 節)。
+- `sv_route` は「`add_global_controller` で表示した記録」に加え、実行時に変化を表示した後は新しい接続で上書きする(同じ変化を毎回表示しないため)。→ 2026-11-11 に廃止(11 節)。
 - GC の出力が LC の入力に入るときの値は「GC がないときの値 + 出力」(観測入力なら y_mac + y_gcon、入れ子の LC の出力が駆動する入力ならその出力 + y_gcon、それ以外は平衡値 + y_gcon)。
 - `GlobalController.get_sys` と `get_hessian` の既定の V は全母線の平衡点の電圧。GC の `get_equilibrium(obj)` は引数なしのまま(観測した出力の平衡値は `PowerNetwork.initialize` のモデル残差の検査で使う)。
+
+## 11. 接続表への一元化(2026-11-11)
+
+ブランチ `refactor/variable-connection-map`。仕様は `notes/variable-connection-map.md`。2 節の規則は変わらない。
+
+- **振り分け**: `[tab, ~, ~, tab_connection] = net.get_variable_map()` の接続表だけが決める。GC の出力は `Kind = "global"` の行
+  (源 = GC の出力の行 `yc`、先 = LC の入力 `uc` か機器の入力 `u`)。GC の入力は `Kind = "observe"` の行(源 = 機器の出力 `y` か状態 `x`)。
+  `add_global_controller`(検査と INFO)、`GlobalController.get_sys`(入力名・出力名)、`Component.validate` と `LocalController.validate`(`flag.inputs`)、
+  `SolverODE.build_index`(実行の接続の行列)はこれを読む。木をたどるのは `PowerNetwork.get_variable_map` の中だけ。
+- **記録しない**: `GlobalController.sv_route` は削除した。INFO は `add_global_controller`(`GconRoute`、「源 -> 先」を Label で)と、
+  `Component.add_local_controller` / `remove_local_controller` が編集の前後の接続表を比べて変わった出力を示すもの(`GUILDA:Component:GconRouteChanged`、
+  先のなくなった出力は `-> (no input)`)。`simulate` は何も表示しない。`GUILDA:SolverODE:GconRouteChanged` は削除した。
+  先のない出力は今と同じく `simulate` が `GUILDA:SolverODE:GconNoTarget` で止まる。
+- **評価**: LC と GC の入力は DAE の代数変数(残差 `u - Σ 源 = 0`)。各ブロック(機器、LC、GC)は自分の x、V、u だけから `f_dx`、`f_Y` を評価し、
+  入れ子を先に評価する合成と「GC が先」の順はなくなった。`Component.get_dx_algebraic`、`LocalController.get_dx_algebraic`、`SolverODE.get_units` は削除した。
+- **ラベル**: 接続表の INFO と `get_sys` の名前は変数表の `Label`。GC の出力の行は制御対象ごとにあるので `gc.attach_tag(名前 + "_" + 制御対象のタグ)`。
+
