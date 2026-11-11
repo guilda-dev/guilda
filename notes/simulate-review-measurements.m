@@ -257,9 +257,9 @@ function section_bottleneck()
             fprintf("%d|%s|%d|%.3f|%.1f|%.3f\n", k, names(m), ft(m).NumCalls, selft(m), 100*selft(m)/t_all, total(m));
         end
         fprintf("主要処理(total)|呼出数|total[s]|total[%%]\n");
-        for s_pat = ["require_equilibrium","check_edit","get_admittance_matrix","initialize_index","odeEventSet.table", ...
+        for s_pat = ["require_equilibrium","check_edit","get_admittance_matrix","build_index","odeEventSet.table", ...
                        "makeODE","CalculateInitialCondition","setEventCondition","getInitialCondition","getNextPhase","Event2State", ...
-                       "odeSimulationResult.odeSimulationResult","ode.solve","getODEFunction","getODEJacobian","get_dx_algebraic","time_keeper"]
+                       "odeSimulationResult.odeSimulationResult","ode.solve","getODEFunction","getODEJacobian","time_keeper"]
             for m = find(contains(names, s_pat))
                 fprintf("%s|%d|%.3f|%.1f\n", names(m), ft(m).NumCalls, total(m), 100*total(m)/t_all);
             end
@@ -285,8 +285,6 @@ function section_bottleneck()
             "gen.f_dx",        @() gen.f_dx(0,x,V,I,u), nc; ...
             "gen.f_I",         @() gen.f_I(0,x,V,I,u),  nc; ...
             "gen.f_Y",         @() gen.f_Y(0,x,V,I,u),  nc; ...
-            "gen.rv_Uoffset",  @() gen.rv_Uoffset(0),   nc; ...
-            "gen.iv_odeX 読取", @() gen.iv_odeX,         3*nc; ...
             "net.a_Bus 読取",   @() net.a_Bus,           1; ...
             "bus.a_Component 読取", @() net.a_Bus{1}.a_Component, nb};
         for k = 1:size(c_ben,1)
@@ -366,7 +364,6 @@ function section_edit()
     probe_set("net.a_Bus = ...",           @() set_prop(net, "a_Bus", net.a_Bus));
     probe_set("net.solver_ODE = ...",      @() set_prop(net, "solver_ODE", []));
     probe_set("bus.c_Vequilibrium = ...",  @() set_prop(net.a_Bus{2}, "c_Vequilibrium", 1));
-    probe_set("gen.rv_Xoffset = ... (Hidden, public)", @() set_prop(g, "rv_Xoffset", g.rv_Xoffset));
 end
 
 function n = edit_net(s_base)
@@ -641,6 +638,7 @@ function section_side_effects()
     % 事故中のエラー: 事故母線 / trip が残るか
     net = mk2();
     ref = net.simulate([0,3], fault(net,"B008"));
+    s0  = snapshot(net);
     ev_f = fault(net,"B008",[0.4,0.6]);
     ev_t = odeEventSet("trip", net, "TimeSpan", [0.4,0.6], "TripUnit", ["SG1B003";"agc"]);
     try
@@ -649,9 +647,7 @@ function section_side_effects()
     catch me
         fprintf("事故+trip 中のエラー: %s\n", me.identifier);
     end
-    gc = net.a_GlobalController{1};
-    fprintf("  エラー直後: bus B008 l_isFault=%d, SG1B003 l_isConnect=%d, agc l_isConnect=%d\n", ...
-        get_private(net.a_Bus{8},"l_isFault"), get_private(net.a_Bus{3}.a_Component{1},"l_isConnect"), get_private(gc,"l_isConnect"));
+    fprintf("  エラー直後のモデルの差分 (trip・地絡は SolverODE の ctx にだけある): %s\n", snap_diff(s0, snapshot(net)));
     rerun = net.simulate([0,3], fault(net,"B008"));
     fprintf("  再実行: flag=%d, 基準と完全一致=%d, 最大差=%.3e\n", rerun.flag, isequaln(rerun.rm_variable, ref.rm_variable), mat_diff(rerun,ref));
 
@@ -697,14 +693,17 @@ function section_side_effects()
     fprintf("次の外乱なし実行: 初期値の差(1回目初期値比)=%.3e, 全体の drift=%.3e, 制御器 drift=%.3e\n", ...
         max(abs(res_after.rm_variable(1,:) - res_fault.rm_variable(1,:))), pre_drift(res_after,3.1), max(abs(res_after.rm_variable(:,lv_c) - res_after.rm_variable(1,lv_c)), [], "all"));
     net = mk();
+    s0  = snapshot(net);
     net.simulate([0,3], odeEventSet("trip", net, "TimeSpan", [1,5], "TripUnit", "agc"));
-    fprintf("AGC を最後まで trip した直後の l_isConnect=%d (onCleanup で戻す設計)\n", get_private(net.a_GlobalController{1},"l_isConnect"));
+    fprintf("AGC を最後まで trip した後のモデルの差分: %s\n", snap_diff(s0, snapshot(net)));
     net = mk2();
+    s0  = snapshot(net);
     net.simulate([0,3], odeEventSet("trip", net, "TimeSpan", [1,5], "TripUnit", "SG1B002"));
-    fprintf("SG1B002 を最後まで trip した直後の l_isConnect=%d\n", get_private(net.a_Bus{2}.a_Component{1},"l_isConnect"));
+    fprintf("SG1B002 を最後まで trip した後のモデルの差分: %s\n", snap_diff(s0, snapshot(net)));
     net = mk();
+    s0  = snapshot(net);
     net.simulate([0,3], fault(net,"B008",[1,5]));
-    fprintf("B008 を最後まで fault した直後の l_isFault=%d\n", get_private(net.a_Bus{8},"l_isFault"));
+    fprintf("B008 を最後まで fault した後のモデルの差分: %s\n", snap_diff(s0, snapshot(net)));
 
     % 4-7 事象オブジェクトの使い回し
     fprintf("### 4-7 事象オブジェクトの使い回しと別ネットワーク\n");
@@ -742,8 +741,7 @@ function section_side_effects()
             fprintf("%s 既定|AVR+PSS|[0.5,1]|OK flag=%d n_t=%d message=%s\n", s_net, flag, numel(sol.rv_t), first_line(sol.output.message));
         catch me
             fprintf("%s 既定|AVR+PSS|[0.5,1]|ERROR id='%s' %s (スタック先頭 %s:%d)\n", s_net, me.identifier, first_line(me.message), me.stack(1).name, me.stack(1).line);
-            g = net.a_Bus{2}.a_Component{1};
-            fprintf("  エラー直後 l_isConnect=%d; 外乱なしの再実行 flag=", get_private(g,"l_isConnect"));
+            fprintf("  外乱なしの再実行 flag=");
             [~, s2, f2] = evalc_sim(@() net.simulate([0,2]));
             fprintf("%d drift=%.3e\n", f2, pre_drift(s2,2.1));
         end
@@ -810,13 +808,6 @@ function s = solver_state(so)
     end
 end
 
-function v = get_private(obj, str)
-    w = warning("off", "MATLAB:structOnObject");
-    c = onCleanup(@() warning(w));
-    s = builtin("struct", obj);      % struct はオーバーロードされている
-    v = s.(str);
-end
-
 function S = snapshot(net)
     w = warning("off", "MATLAB:structOnObject");
     c = onCleanup(@() warning(w));
@@ -854,13 +845,6 @@ function S = snapshot(net)
             S(end).acc  = acc;
             S(end).val  = norm_val(s.(f));
         end
-        if isprop(o, "rv_Uoffset") && isa(o.rv_Uoffset, "function_handle")
-            S(end+1).key = cls + "#" + i + ".rv_Uoffset(0)"; %#ok
-            S(end).cls  = cls;
-            S(end).prop = "rv_Uoffset(0)の値";
-            S(end).acc  = "public/Hidden";
-            S(end).val  = o.rv_Uoffset(0);
-        end
     end
 end
 
@@ -885,7 +869,7 @@ function v = norm_val(x)
 end
 
 function str = snap_diff(a, b)
-    % key で対応を取る (rv_Uoffset(0) は最初の実行の後にだけある)
+    % key で対応を取る
     ka = string({a.key});
     kb = string({b.key});
     labels = strings(0,1);
