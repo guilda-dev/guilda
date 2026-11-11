@@ -49,7 +49,7 @@ classdef ResultODE < ResultBase
 
     properties (SetAccess=private) % Result
         rv_t (:,1) double = zeros(0,1)      % [s] Output times, ascending; a phase boundary appears twice (end of one phase, start of the next).
-        tab_variable table = table()        % Variable map at the time of the simulation: its rows are the columns of rm_variable. <@Type> table ((n_x + n_v + n_u) x 6)
+        tab_variable table = table()        % Variable map at the time of the simulation: its rows are the columns of rm_variable. <@Type> table ((n_x + n_v + n_u) x 7)
         rm_variable double = zeros(0,0)     % Trajectory of all variables: row k at rv_t(k), column m the variable tab_variable(m,:). <@Type> double (n_t x (n_x + n_v + n_u))
         rm_I double = zeros(0,0)            % [pu] Currents injected into the buses: Ireal, Iimag of each bus in the order of sv_bus. <@Type> double (n_t x 2 n_bus)
         sv_bus (:,1) string = strings(0,1)  % Bus tags, in the order of odeResults.Bus.
@@ -94,7 +94,8 @@ classdef ResultODE < ResultBase
             obj.sv_bus      = string(a_bus(:));
             obj.c_component = cellfun(@(b) string(b.a_Component(:)), a_bus(:), 'UniformOutput', false);
 
-            obj.tab_variable = net.get_variable_map();
+            tab = net.get_variable_map();
+            obj.tab_variable = tab(ismember(tab.Kind, ["x","Vre","Vim","u"]), :);   % the variables of the linearization
             [iv_sim, obj.c_index] = simulator_columns(net, obj.tab_variable);
             if isempty(c_phase)
                 obj.rv_t = zeros(0,1);

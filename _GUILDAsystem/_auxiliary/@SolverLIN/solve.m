@@ -56,7 +56,13 @@ function [result, flag, output] = solve(obj, net, sct_options)
     n_bus = numel(a_bus);
     v3_nonunit_range(sct_options, n_bus);        % COMPAT(v3)
 
+    % The variables of the linearization: the leading rows x, Vre, Vim, u of the map (the
+    % controller inputs uc are eliminated by the models of the layers)
     [tab_map, c_idxBus, c_idxGC] = net.get_variable_map();
+    n_lin    = sum(ismember(tab_map.Kind, ["x","Vre","Vim","u"]));
+    tab_map  = tab_map(1:n_lin,:);
+    c_idxBus = cellfun(@(iv) iv(iv <= n_lin), c_idxBus, 'UniformOutput', false);
+    c_idxGC  = cellfun(@(iv) iv(iv <= n_lin), c_idxGC, 'UniformOutput', false);
     [rv_point, l_eq] = SolverLIN.point_vector(net, sct_options.Point);
     lv_bad = ~isfinite(rv_point);
     if any(lv_bad)

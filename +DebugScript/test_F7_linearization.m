@@ -787,6 +787,9 @@ end
 net = new_net();
 DebugScript.helper.quiet(@() net.initialize);
 [tab, c_idxBus] = net.get_variable_map();
+n_lin = sum(ismember(tab.Kind, ["x","Vre","Vim","u"]));   % 線形化の変数は表の先頭の行
+tab = tab(1:n_lin,:);
+c_idxBus = cellfun(@(iv) iv(iv <= n_lin), c_idxBus, 'UniformOutput', false);
 res0 = net.linearize();
 x = res0.rv_point;
 gen  = net.a_Bus{2}.a_Component{1};
@@ -824,6 +827,7 @@ assert(norm(res1.rm_Avv(iv_v,iv_v) - (Y(iv_v,iv_v) - Div_sum), 1) < 1e-10)
 % 機器の get_sys(Point=...) も同じ点で評価する
 [~, c_idxC] = net.a_Bus{2}.get_variable_map();
 xb = x(c_idxBus{2});
+c_idxC = cellfun(@(iv) iv(iv <= numel(xb)), c_idxC, 'UniformOutput', false);
 sc = gen.get_sys("Point", xb(c_idxC{1}));
 assert(norm(sc.A - Axx, 1) < 1e-10)
 % Point の長さが違うと、変数の表を案内するエラー

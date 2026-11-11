@@ -47,6 +47,7 @@ function [iv_sim, c_index] = simulator_columns(net, tab)
     for i = 1:n_bus
         a_comp = a_bus{i}.a_Component;
         iv_bus = c_idxBus{i};
+        iv_bus = iv_bus(iv_bus <= height(tab));   % its rows x, Vre, Vim, u
         iv_bx  = iv_bus(tab.Kind(iv_bus) == "x");
         s = struct();
         s.iv_V = iv_bus(tab.Kind(iv_bus) == "Vre" | tab.Kind(iv_bus) == "Vim");

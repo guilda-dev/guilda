@@ -14,7 +14,7 @@ ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.1,0.15], "FaultBus
 s_dir = tempname;  mkdir(s_dir);
 c_dir = onCleanup(@() rmdir(s_dir, "s"));
 tab_ctrl = net.get_variable_map();
-tab_ctrl = tab_ctrl(ismember(tab_ctrl.Owner, [avr1.s_tag, pss1.s_tag, avr2.s_tag, agc.s_tag]), :);
+tab_ctrl = tab_ctrl(ismember(tab_ctrl.Owner, [avr1.s_tag, pss1.s_tag, avr2.s_tag, agc.s_tag]) & tab_ctrl.Kind == "x", :);
 
 
 c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)

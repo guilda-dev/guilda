@@ -177,7 +177,7 @@ classdef PowerNetwork < PowerSystemModel
         % Static Analysis
         [result, flag, output] = linearize(obj, varargin)
         [sys, flag, output] = get_sys(obj, varargin)
-        [tab, c_idxBus, c_idxGC] = get_variable_map(obj)
+        [tab, c_idxBus, c_idxGC, tab_connection] = get_variable_map(obj, s_form)
         tab_Ybus2bus = get_admittance_matrix(obj)
         
         % Time simulation

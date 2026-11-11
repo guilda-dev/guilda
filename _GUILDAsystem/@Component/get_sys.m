@@ -127,7 +127,7 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
             % the rows of the variable map of the component itself (not its controllers)
             tab = obj.get_variable_map();
             nx  = numel(obj.sv_x);
-            tab = tab([1:nx, height(tab)-numel(obj.sv_u)-1:height(tab)], :);
+            tab = tab([1:nx, find(ismember(tab.Kind, ["Vre","Vim","u"]))'], :);
             tab.Index = (1:height(tab))';
             rv_point = [x; V; u];
             l_eq = ~isempty(obj.a_Bus) && isequal(rv_point, [reshape(obj.rv_Xequilibrium, [], 1); ...
@@ -180,7 +180,8 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
 
     if opt.Format ~= "struct"
         l_eq = l_equilibrium && ~isempty(obj.a_Bus) && isequal(rv_point, SolverLIN.point_vector(obj, []));
-        sys  = object_result(sys, obj.get_variable_map(), rv_point, l_eq, t0);
+        tab  = obj.get_variable_map();
+        sys  = object_result(sys, tab(ismember(tab.Kind, ["x","Vre","Vim","u"]), :), rv_point, l_eq, t0);
         if opt.Format == "ss"
             sys = sys.get_ss(Format="ss");
         end
