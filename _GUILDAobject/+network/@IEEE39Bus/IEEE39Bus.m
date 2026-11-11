@@ -1,8 +1,37 @@
 
 classdef IEEE39Bus < PowerNetwork
+% IEEE 39-bus test system (New England 10-machine) without controllers.
+% The 39-bus, 10-machine New England system with its data written in the class file.
+% It has 39 buses, 46 branches (34 lines and 12 transformers), 10 generators and
+% 19 loads; 60 Hz.
+%
+% Bus types:
+%
+% - Slack bus: bus 31
+% - PV buses: bus 30 and buses 32 to 39
+% - PQ buses: buses 1 to 29
+%
+% Data:
+%
+% - Lines are pi lines with the line charging given at each end (`C = b/2`);
+%   transformers are two_winding_transformer branches with `C = 0` and their tap.
+% - Generators are gen-2axis models; `M = 2H/omega0`, `D = 2` and the subtransient
+%   values equal the transient ones.
+% - Loads are load-power models. The buses without a generator or a load have a
+%   load-power model with `P = Q = 0`.
+% - The network is initialized at the end of the constructor.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE39Bus();
+% res = net.calculate_powerflow();
+% ```
+%
+% See also network.IEEE68bus, network.IEEE9bus
 
     methods
         function obj = IEEE39Bus()
+            % Create the network from the data in the class file.
             omega0 = 2*pi*60;
             
 
