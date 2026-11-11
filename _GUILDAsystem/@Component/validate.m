@@ -251,30 +251,21 @@ function [flag, contract] = compare_jacobian(flag, contract, s_method, f_num, f_
 end
 
 function sv_src = input_sources(obj)
-    % Who drives each input, as in SolverODE: the outputs of the local controllers of the
-    % same name, and those of the global controllers that no local controller of the
-    % component (nested ones included) takes as an input; the other inputs stay at the
-    % equilibrium.
-    a_con = obj.a_LocalController(:).';
-    c_all = cell(0,1);                       % all its local controllers, depth first
-    c_todo = obj.a_LocalController(:);
-    while ~isempty(c_todo)
-        c_all = [c_all; c_todo(1)]; %#ok<AGROW>
-        c_todo = [c_todo{1}.a_LocalController(:); c_todo(2:end)];
-    end
-    c_GC = {};
+    % Who drives each input, from the connection map (of the network when the component is
+    % on one, otherwise of the component): the outputs of the local controllers of the same
+    % name, and those of the global controllers that no local controller of the component
+    % takes as an input; the other inputs stay at the equilibrium.
     if ~isempty(obj.a_Bus) && ~isempty(obj.a_Bus.a_PowerNetwork)
-        c_GC = obj.a_Bus.a_PowerNetwork.a_GlobalController;
-        lv_GC = cellfun(@(gc) any(cellfun(@(c) c == obj, gc.controlledUnits)), c_GC);
-        c_GC = reshape(c_GC(lv_GC),1,[]);
+        [tab, ~, ~, tab_c] = obj.a_Bus.a_PowerNetwork.get_variable_map();
+    else
+        [tab, tab_c] = obj.get_variable_map();
     end
+    iv_u = find(tab.Kind == "u" & tab.Owner == string(obj.s_tag));
     sv_src = repmat("equilibrium (not connected)", numel(obj.sv_u), 1);
-    for k = 1:numel(obj.sv_u)
-        s_in = obj.sv_u(k);
-        lv_GC = cellfun(@(c) any(c.sv_y == s_in), c_GC) & ~any(cellfun(@(c) any(c.sv_u == s_in), c_all));
-        a_src = [a_con(cellfun(@(c) any(c.sv_y == s_in), a_con)), c_GC(lv_GC)];
-        if ~isempty(a_src)
-            sv_src(k) = "output of " + join(cellfun(@(c) string(c.s_tag), a_src), ", ");
+    for k = 1:numel(iv_u)
+        iv_c = find(tab_c.TargetIndex == iv_u(k) & tab_c.Kind ~= "equilibrium");
+        if ~isempty(iv_c)
+            sv_src(k) = "output of " + join(unique(tab.Owner(tab_c.SourceIndex(iv_c)), "stable"), ", ");
         end
     end
 end

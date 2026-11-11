@@ -7,6 +7,9 @@ function remove_local_controller(obj, s_tag, opt)
 % which removes the PSS too. Remove the PSS alone by its own tag. The removed controllers
 % no longer refer to this component or to each other.
 % The removal is a "Topology" edit, so the equilibrium of the component becomes stale.
+% When a global controller controls the component and the edit changes where one of its
+% outputs goes (the "global" rows of net.get_variable_map), an INFO message
+% (GUILDA:Component:GconRouteChanged) lists the outputs that go elsewhere now.
 %
 % <@Examples>
 % ```matlab
@@ -30,6 +33,7 @@ function remove_local_controller(obj, s_tag, opt)
     end
     a_top = obj.a_LocalController;
     sv_top = string(cellfun(@(con) char(con.s_tag), a_top, 'UniformOutput', false));
+    sm_route = gc_routes(obj);      % connections of the global controllers before the edit
     k_top = find(sv_top == s_tag, 1);
 
     if ~isempty(k_top)
@@ -51,6 +55,7 @@ function remove_local_controller(obj, s_tag, opt)
         for m = 1:numel(a_nested)
             a_nested{m}.a_Component = [];
         end
+        gc_routes(obj, sm_route);   % INFO when an output of a global controller goes elsewhere now
         return
     end
 
@@ -61,6 +66,7 @@ function remove_local_controller(obj, s_tag, opt)
             obj.log_edit(obj.s_tag+" ---remove->> "+s_tag, "Topology");
             top.remove_local_controller();
             a_nested{1}.a_Component = [];
+            gc_routes(obj, sm_route);
             return
         end
     end

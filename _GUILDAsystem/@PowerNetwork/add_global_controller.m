@@ -9,12 +9,12 @@ function con = add_global_controller(obj, Key, a_Unit, opt)
 % e.g. "AGC1IEEE9bus".
 %
 % Each controlled unit must have the inputs `sv_u` of the controller as outputs or states,
-% and each output `sv_y` as an input of the unit or of one of its local controllers. An
-% output goes to every local controller of the unit (nested ones included) with an input
-% of that name, otherwise to the input of the unit; an INFO message lists where each
-% output goes (`sv_route` of the controller). The addition is a "Topology" edit of the
-% controller: its own equilibrium and handles are stale until net.initialize(); the power
-% flow is not.
+% and each output `sv_y` as an input of the unit or of one of its local controllers. Where
+% each output goes is read from the connection map (net.get_variable_map, rows "global"):
+% to every local controller of the unit (nested ones included) with an input of that
+% name, otherwise to the input of the unit. An INFO message lists these connections
+% (source -> target, by Label). The addition is a "Topology" edit of the controller: its
+% own equilibrium and handles are stale until net.initialize(); the power flow is not.
 %
 % <@Examples>
 % ```matlab
@@ -60,40 +60,45 @@ function con = add_global_controller(obj, Key, a_Unit, opt)
     if ismember(con.s_tag, string(obj.a_GlobalController))
         error(msg("GUILDA:PowerNetwork:GconTagInUse", char(con.s_tag), char(obj.s_tag)))
     end
-    sv_route = strings(0,1);
     for idx = 1:numel(con.controlledUnits)
         unit = con.controlledUnits{idx};
         % Compare handles: isequal would accept an identical copy of the network
         if isempty(unit.a_Bus) || isempty(unit.a_Bus.a_PowerNetwork) || unit.a_Bus.a_PowerNetwork ~= obj
             error(msg("GUILDA:PowerNetwork:GconOtherNetwork", char(con.s_tag), char(unit.s_tag), char(obj.s_tag)))
         end
-        % All local controllers of the unit, nested ones included, depth first
-        c_LC = cell(0,1);
-        c_todo = unit.a_LocalController(:);
-        while ~isempty(c_todo)
-            c_LC = [c_LC; c_todo(1)]; %#ok<AGROW>
-            c_todo = [c_todo{1}.a_LocalController(:); c_todo(2:end)];
-        end
-        sv_inLC = string(tools.vcellfun(@(c) reshape(string(c.sv_u), [], 1), c_LC));
-        sv_missing = ["output or state "+con.sv_u(~ismember(con.sv_u, [unit.sv_y(:); unit.sv_x(:)])); ...
-                       "input "+con.sv_y(~ismember(con.sv_y, [unit.sv_u(:); sv_inLC(:)]))];
-        if ~isempty(sv_missing)
-            error(msg("GUILDA:PowerNetwork:GconPorts", char(con.s_tag), char(unit.s_tag), class(unit), char(strjoin(sv_missing, ", "))))
-        end
-        % Where each output goes (SolverODE.get_units makes the same lines for a run)
-        for m = 1:numel(con.sv_y)
-            lv_LC = cellfun(@(c) any(c.sv_u == con.sv_y(m)), c_LC);
-            if any(lv_LC)
-                s_to = "to the input of " + join(cellfun(@(c) string(c.s_tag), c_LC(lv_LC)), ", ");
-            else
-                s_to = "directly to the component input";
-            end
-            sv_route = [sv_route; con.sv_y(m) + " of " + unit.s_tag + " goes " + s_to]; %#ok<AGROW>
-        end
     end
+
+    % The connections of the controller, from the map of the network with it: each input
+    % must observe its unit ("observe") and each output drive an input ("global")
+    % (with the network set: the labels of the controller carry its tag)
     obj.a_GlobalController = [obj.a_GlobalController; {con}];
     con.a_PowerNetwork = obj;
-    con.sv_route = sv_route;
+    try
+        [tab, ~, c_idxGC, tab_c] = obj.get_variable_map();
+    catch ME
+        obj.a_GlobalController(end) = [];
+        con.a_PowerNetwork = [];
+        rethrow(ME)
+    end
+    iv_gc = c_idxGC{end};
+    iv_uc = iv_gc(tab.Kind(iv_gc) == "uc");
+    iv_yc = iv_gc(tab.Kind(iv_gc) == "yc");
+    lv_glob = tab_c.Kind == "global" & ismember(tab_c.SourceIndex, iv_yc);
+    lv_in   = ismember(iv_uc, tab_c.TargetIndex(tab_c.Kind == "observe"));
+    lv_out  = ismember(iv_yc, tab_c.SourceIndex(lv_glob));
+    n_u = numel(con.sv_u);
+    n_o = numel(con.sv_y);
+    for idx = 1:numel(con.controlledUnits)
+        lv_i = lv_in((idx-1)*n_u + (1:n_u));
+        lv_o = lv_out((idx-1)*n_o + (1:n_o));
+        if ~all(lv_i) || ~all(lv_o)
+            obj.a_GlobalController(end) = [];
+            con.a_PowerNetwork = [];
+            unit = con.controlledUnits{idx};
+            sv_missing = ["output or state " + reshape(con.sv_u(~lv_i), [], 1); "input " + reshape(con.sv_y(~lv_o), [], 1)];
+            error(msg("GUILDA:PowerNetwork:GconPorts", char(con.s_tag), char(unit.s_tag), class(unit), char(strjoin(sv_missing, ", "))))
+        end
+    end
     con.log_edit("added to " + obj.s_tag, "Topology");
-    show_msg("info", "GUILDA:PowerNetwork:GconRoute", con.s_tag, join(sv_route, "; "))
+    show_msg("info", "GUILDA:PowerNetwork:GconRoute", con.s_tag, join(tab_c.Source(lv_glob) + " -> " + tab_c.Target(lv_glob), "; "))
 end

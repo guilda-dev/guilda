@@ -3,7 +3,9 @@
 % 大域制御器 (GC) は制御対象の出力 (同名の状態より優先) と状態を名前で観測し、全母線の電圧を V で
 % 受け取る。GC の出力は、制御対象の局所制御器 (LC、入れ子を含む) に同名の入力があればそのすべてへ
 % (観測入力なら機器の出力との和)、なければ機器の同名の入力へ足される。
-% add_global_controller は接続先を INFO で示し、LC の変更で接続先が変わると simulate が INFO で示す。
+% 接続は net.get_variable_map の接続表 (Kind "global") だけが決める。add_global_controller は接続を INFO で示し、
+% LC の編集 (add/remove_local_controller) で接続先が変わると、その編集が INFO で示す (simulate は何も示さない)。
+% simulate の変数ベクトルは z = [x; V; I; u; uc] (変数表の順、u と uc は母線電流 I の後)。
 % 右辺の値は PhaseProbe で ode の右辺から確かめ、ヤコビアンは右辺の中心差分と比べる。
 % 試験用の GC は DebugScript.helper.RoutingGCStub。sv_u と sv_y は register_stub の Replace で変え、
 % 変えた写しはそれぞれ別のクラス名で登録する (インスタンスのあるクラスは定義を読み直せないため)。
@@ -33,8 +35,8 @@ net.remove_global_controller(gc.s_tag);
 gc_obs = DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc", {gen}, parameter=struct(beta=2)));
 DebugScript.helper.quiet(@() net.initialize);
 d_w = 1e-3;
-F = probe(net, @(o) shifted_rhs(o, gen.iv_odeX(gen.sv_x == "omega"), d_w));
-assert(abs(F(gc_obs.iv_odeX) - 2*d_w) < 1e-12, "dz/dt = %g", F(gc_obs.iv_odeX))
+F = probe(net, @(o) shifted_rhs(o, zpos(net, gen, "x", "omega"), d_w));
+assert(abs(F(zpos(net, gc_obs, "x")) - 2*d_w) < 1e-12, "dz/dt = %g", F(zpos(net, gc_obs, "x")))
 [sol, flag] = net.simulate([0,2], DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003"));
 assert(flag == 1 && isa(sol, "ResultODE"))
 
@@ -46,22 +48,22 @@ gov = gen.add_local_controller("gov-LPT1", parameter=struct(PLM=5));
 c_pref = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_routing_gc_pref", ...
                                           Replace=["sv_y = ""Pmech""", "sv_y = ""Pref"""]);
 s_info = evalc("gc = net.add_global_controller(""test-routing-gc-pref"", {gen}, parameter=struct(alpha=3));");
-assert(contains(s_info, "INFO: ") && contains(s_info, "Pref of " + gen.s_tag + " goes to the input of " + gov.s_tag), s_info)
-assert(isequal(gc.sv_route, "Pref of " + gen.s_tag + " goes to the input of " + gov.s_tag), gc.sv_route)
+assert(contains(s_info, "INFO: ") && contains(s_info, ysrc(gc, gen, "Pref") + " -> " + gov.attach_tag("Pref")), s_info)
+assert(isequal(gc_targets(net, gc), string(gov.attach_tag("Pref"))), join(gc_targets(net, gc), ", "))
 DebugScript.helper.quiet(@() net.initialize);
 d_z = 1e-2;
-F = probe(net, @(o) shifted_rhs(o, gc.iv_odeX, d_z));
+F = probe(net, @(o) shifted_rhs(o, zpos(net, gc, "x"), d_z));
 % 残差 u - (平衡値 + y_GC): y_GC = -alpha z
-assert(abs(F(gov.iv_odeU(gov.sv_u == "Pref")) - 3*d_z) < 1e-12, "Pref の残差 %g", F(gov.iv_odeU(gov.sv_u == "Pref")))
-assert(abs(F(gen.iv_odeU(gen.sv_u == "Pmech"))) < 1e-12, "Pmech の残差 %g", F(gen.iv_odeU(gen.sv_u == "Pmech")))
+assert(abs(F(zpos(net, gov, "uc", "Pref")) - 3*d_z) < 1e-12, "Pref の残差 %g", F(zpos(net, gov, "uc", "Pref")))
+assert(abs(F(zpos(net, gen, "u", "Pmech"))) < 1e-12, "Pmech の残差 %g", F(zpos(net, gen, "u", "Pmech")))
 % Pmech を出す GC は機器の入力に足される (調速機の出力との和)
 c_stub = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_routing_gc");
 s_info = evalc("gc2 = net.add_global_controller(""test-routing-gc"", {gen}, parameter=struct(alpha=2));");
-assert(contains(s_info, "Pmech of " + gen.s_tag + " goes directly to the component input"), s_info)
+assert(contains(s_info, ysrc(gc2, gen, "Pmech") + " -> " + gen.attach_tag("Pmech")), s_info)
 net.remove_global_controller(gc.s_tag);
 DebugScript.helper.quiet(@() net.initialize);
-F = probe(net, @(o) shifted_rhs(o, gc2.iv_odeX, d_z));
-assert(abs(F(gen.iv_odeU(gen.sv_u == "Pmech")) - 2*d_z) < 1e-12, "Pmech の残差 %g", F(gen.iv_odeU(gen.sv_u == "Pmech")))
+F = probe(net, @(o) shifted_rhs(o, zpos(net, gc2, "x"), d_z));
+assert(abs(F(zpos(net, gen, "u", "Pmech")) - 2*d_z) < 1e-12, "Pmech の残差 %g", F(zpos(net, gen, "u", "Pmech")))
 
 
 %% An observation input receives the sum of the component output and the global controller
@@ -73,22 +75,23 @@ gov = gen.add_local_controller("gov-LPT1", parameter=struct(PLM=5));
 c_omega = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_routing_gc_omega", ...
                                            Replace=["sv_y = ""Pmech""", "sv_y = ""omega"""]);
 s_info = evalc("gc = net.add_global_controller(""test-routing-gc-omega"", {gen}, parameter=struct(alpha=3));");
-assert(contains(s_info, "omega of " + gen.s_tag + " goes to the input of " + pss.s_tag + ", " + gov.s_tag), s_info)
+assert(contains(s_info, ysrc(gc, gen, "omega") + " -> " + pss.attach_tag("omega")) && ...
+       contains(s_info, ysrc(gc, gen, "omega") + " -> " + gov.attach_tag("omega")), s_info)
 s_run = evalc("net.initialize(); net.simulate([0,0.1], DebugScript.helper.noop_event(net,[0,0.1]));");
-assert(~contains(s_run, "now goes"), "経路が変わっていないのに表示した: " + s_run)
+assert(~contains(s_run, "elsewhere"), "simulate が振り分けを表示した: " + s_run)
 DebugScript.helper.quiet(@() net.initialize);
 d_z = 1e-2;  d_w = 4e-3;
-F = probe(net, @(o) shifted_rhs(o, [gc.iv_odeX; gen.iv_odeX(gen.sv_x == "omega")], [d_z; d_w]));
+F = probe(net, @(o) shifted_rhs(o, [zpos(net, gc, "x"); zpos(net, gen, "x", "omega")], [d_z; d_w]));
 % 残差 u - (omega + y_GC) = 0 - (d_w - 3 d_z)
 r_expected = 3*d_z - d_w;
 for con = {pss, gov}
-    r = F(con{1}.iv_odeU(con{1}.sv_u == "omega"));
+    r = F(zpos(net, con{1}, "uc", "omega"));
     assert(abs(r - r_expected) < 1e-12, "%s の omega の残差 %g (期待 %g)", con{1}.s_tag, r, r_expected)
 end
 
 
 %% Two local controllers with the same input name both receive the output
-% 接続先は制御対象ごとの記録 sv_route と、LC の validate の inputs に現れる
+% 接続先は接続表 (Kind "global") と、LC の validate の inputs に現れる
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 gen.add_local_controller("avr-ST1");
 pss = gen.add_local_controller("pss-PSS1");
@@ -96,7 +99,7 @@ gov = gen.add_local_controller("gov-LPT1", parameter=struct(PLM=5));
 c_omega = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_routing_gc_omega", ...
                                            Replace=["sv_y = ""Pmech""", "sv_y = ""omega"""]);
 gc = DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-omega", {gen}));
-assert(isequal(gc.sv_route, "omega of " + gen.s_tag + " goes to the input of " + pss.s_tag + ", " + gov.s_tag), gc.sv_route)
+assert(isequal(gc_targets(net, gc), string([pss.attach_tag("omega"); gov.attach_tag("omega")])), join(gc_targets(net, gc), ", "))
 DebugScript.helper.quiet(@() net.initialize);
 for con = {pss, gov}
     flag = con{1}.validate(false);
@@ -105,30 +108,34 @@ end
 
 
 %% A changed routing after remove_local_controller is reported once
-% LC の入力 Pmech (試験用の LC) に入っていた出力は、LC を外すと機器の入力 Pmech へ直接入る
+% LC の入力 Pmech (試験用の LC) に入っていた出力は、LC を外すと機器の入力 Pmech へ直接入る。
+% 変化は remove_local_controller が 1 度だけ示し、simulate は示さない (振り分けを記録しない)
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 c_lc = DebugScript.helper.register_stub("ObserveStub", "controller.test_observe");
 lc = gen.add_local_controller("test-observe", parameter=struct(Input="Pmech"));
 c_stub = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_routing_gc");
 s_info = evalc("gc = net.add_global_controller(""test-routing-gc"", {gen});");
-assert(contains(s_info, "Pmech of " + gen.s_tag + " goes to the input of " + lc.s_tag), s_info)
+assert(contains(s_info, ysrc(gc, gen, "Pmech") + " -> " + lc.attach_tag("Pmech")), s_info)
 DebugScript.helper.quiet(@() net.initialize);
 s_run = evalc("net.simulate([0,0.1], DebugScript.helper.noop_event(net,[0,0.1]));");
-assert(~contains(s_run, "now goes"), s_run)
-gen.remove_local_controller(lc.s_tag);
+assert(~contains(s_run, "elsewhere"), s_run)
+s_rm = evalc("gen.remove_local_controller(lc.s_tag);");
+assert(contains(s_rm, "INFO: ") && contains(s_rm, "elsewhere now") && ...
+       contains(s_rm, ysrc(gc, gen, "Pmech") + " -> " + gen.attach_tag("Pmech")), s_rm)
+assert(isequal(gc_targets(net, gc), string(gen.attach_tag("Pmech"))), join(gc_targets(net, gc), ", "))
 DebugScript.helper.quiet(@() net.initialize);
 s_run = evalc("net.simulate([0,0.1], DebugScript.helper.noop_event(net,[0,0.1]));");
-assert(contains(s_run, "INFO: ") && contains(s_run, "Pmech of " + gen.s_tag + " now goes directly to the component input"), s_run)
-assert(isequal(gc.sv_route, "Pmech of " + gen.s_tag + " goes directly to the component input"), gc.sv_route)
-s_run = evalc("net.simulate([0,0.1], DebugScript.helper.noop_event(net,[0,0.1]));");
-assert(~contains(s_run, "now goes"), "同じ変化を 2 度表示した: " + s_run)
-% 接続先がなくなった出力はエラー (Pref は調速機にしかない)
+assert(~contains(s_run, "elsewhere"), "simulate が振り分けを表示した: " + s_run)
+% 振り分けの変わらない編集は何も示さない (調速機は Pmech を入力に持たない)
+s_add = evalc("gov = gen.add_local_controller(""gov-LPT1"", parameter=struct(PLM=5));");
+assert(~contains(s_add, "elsewhere"), s_add)
+% 接続先がなくなった出力は編集で示し、simulate はエラー (Pref は調速機にしかない)
 c_pref = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_routing_gc_pref", ...
                                           Replace=["sv_y = ""Pmech""", "sv_y = ""Pref"""]);
-gov = gen.add_local_controller("gov-LPT1", parameter=struct(PLM=5));
 net.remove_global_controller(gc.s_tag);
 gc = DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-pref", {gen}));
-gen.remove_local_controller(gov.s_tag);
+s_rm = evalc("gen.remove_local_controller(gov.s_tag);");
+assert(contains(s_rm, ysrc(gc, gen, "Pref") + " -> (no input)"), s_rm)
 DebugScript.helper.quiet(@() net.initialize);
 ME = caught(@() net.simulate([0,0.1], DebugScript.helper.noop_event(net,[0,0.1])));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:GconNoTarget", DebugScript.helper.msg_id(ME))
@@ -153,8 +160,8 @@ c_err = probe_all(net, [0,1.2], {DebugScript.helper.scenario("fault", net, "Time
 err = [c_err{:}];
 assert(numel(err) == 3 && max(err) < 1e-5, "誤差 " + mat2str(err,3))
 % 全母線の電圧に依存すること (gV) が右辺に現れる
-F = probe(net, @(o) shifted_rhs(o, net.a_Bus{1}.iv_odeX(1), 1e-3));
-assert(abs(F(gc.iv_odeX)) > 1e-5, "母線 1 の電圧が GC に届かない: %g", F(gc.iv_odeX))
+F = probe(net, @(o) shifted_rhs(o, zpos(net, net.a_Bus{1}, "Vre"), 1e-3));
+assert(abs(F(zpos(net, gc, "x"))) > 1e-5, "母線 1 の電圧が GC に届かない: %g", F(zpos(net, gc, "x")))
 
 
 %% The linear model agrees with the Jacobian of the simulation
@@ -215,6 +222,31 @@ DebugScript.helper.quiet(@() net.initialize);
 e_0 = DebugScript.helper.finite_eigs(net.linearize().get_ss("Feedback", Format="struct"));
 assert(~DebugScript.helper.same_eigs(e_0, DebugScript.helper.finite_eigs(sysF), 1e-6), "B004 の電圧が GC に届かない")
 
+
+function iv = zpos(net, owner, s_kind, s_name)
+% simulate の変数ベクトル z = [x; V; I; u; uc] での owner の行の位置 (変数表の順。u と uc は母線電流 I の後)
+    tab = net.get_variable_map();
+    lv = tab.Owner == string(owner.s_tag) & tab.Kind == s_kind;
+    if nargin > 3
+        lv = lv & tab.Name == s_name;
+    end
+    iv = find(lv);
+    if ismember(s_kind, ["u","uc"])
+        iv = iv + 2*numel(net.a_Bus);
+    end
+end
+
+function s = ysrc(gc, unit, s_name)
+% 制御対象 unit への gc の出力 s_name の Label (変数表の yc の行)
+    s = string(gc.attach_tag(s_name + "_" + unit.s_tag));
+end
+
+function sv = gc_targets(net, gc)
+% 接続表で gc の出力が入る入力 (Label)
+    [tab, ~, ~, tab_c] = net.get_variable_map();
+    lv = tab_c.Kind == "global" & tab.Owner(max(tab_c.SourceIndex,1)) == string(gc.s_tag);
+    sv = tab_c.Target(lv);
+end
 
 function F = probe(net, f)
 % 第 1 区間 (外乱なし) の ode に f を適用した値

@@ -4,11 +4,13 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
 % Linear model of the controller alone: the inputs are the voltages of all buses
 % [Vre; Vim] of each bus in the order of a_Bus (labelled as in net.get_variable_map())
 % and the inputs u, and the outputs are the outputs y, one row for each input they drive.
-% An input that reads an output of a unit is labelled as that output in the model of the
-% unit (Component.get_sys: "Y_" + name when the unit has a state of that name), an input
-% that reads a state as the state. An output that goes to local controllers of the unit has
-% one row for each of their inputs (labelled with the controller tag), otherwise one row
-% labelled as the input of the unit.
+% The names come from the connection map of the network (net.get_variable_map): an input
+% is labelled as the output or state of the unit it observes (Component.get_sys: "Y_" +
+% name for an output with the name of a state), and an output has one row for each input
+% it drives (a "global" connection), labelled as that input (of a local controller or of
+% the unit). A controller that is not on a network has no connections: its inputs and
+% outputs are labelled as its own rows uc and yc of the map (gc.attach_tag(name + "_" +
+% unit tag)), one output row per unit and output.
 %
 % A controller on a network stops with the error GUILDA:GlobalController:Stale
 % when net.initialize() is needed (a stale tag of the network or the controller); a controller without a network builds its stale
@@ -44,44 +46,46 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
     t0 = tic;
 
     % Names of the inputs and of the outputs, one row for each input they drive (the
-    % routing of SolverODE.get_units)
+    % connection map of the network)
     a_Comp = obj.controlledUnits;
     n_u = numel(obj.sv_u);
-    uNames = strings(0,1);
-    yNames = strings(0,1);
-    iv_row = zeros(0,1);
+    n_o = numel(obj.sv_y);
+    net_units = a_Comp{1}.a_Bus.a_PowerNetwork;
+    lv_in  = obj.iv_obsY > 0 | obj.iv_obsX > 0;
+    k_gc = [];
+    if ~isempty(obj.a_PowerNetwork)
+        k_gc = find(cellfun(@(g) g == obj, obj.a_PowerNetwork.a_GlobalController), 1);
+    end
+    if isempty(k_gc)
+        % Not on a network: no connections, its own labels
+        sv_l   = @(sv) reshape(string(obj.attach_tag(reshape(repmat(reshape(sv, [], 1), 1, numel(a_Comp)) + "_" + ...
+                         repmat(reshape(string(a_Comp), 1, []), numel(sv), 1), [], 1))), [], 1);
+        uNames = sv_l(obj.sv_u);
+        yNames = sv_l(obj.sv_y);
+        iv_row = (1:numel(a_Comp)*n_o)';
+        lv_out = true(numel(a_Comp)*n_o, 1);
+    else
+        [tab, ~, c_idxGC, tab_c] = obj.a_PowerNetwork.get_variable_map();
+        iv_gc = c_idxGC{k_gc};
+        iv_uc = iv_gc(tab.Kind(iv_gc) == "uc");
+        iv_yc = iv_gc(tab.Kind(iv_gc) == "yc");
+        [lv_obs, iv_c] = ismember(iv_uc, tab_c.TargetIndex(tab_c.Kind == "observe"));
+        sv_src = tab_c.Source(tab_c.Kind == "observe");
+        uNames = tab.Label(iv_uc);
+        uNames(lv_obs) = sv_src(iv_c(lv_obs));
+        tab_g  = tab_c(tab_c.Kind == "global" & ismember(tab_c.SourceIndex, iv_yc), :);
+        [~, iv_ord] = sort(tab_g.SourceIndex);       % by output (stable: targets in map order)
+        tab_g  = tab_g(iv_ord, :);
+        yNames = tab_g.Target;
+        iv_row = tab_g.SourceIndex - iv_yc(1) + 1;
+        lv_out = ismember(iv_yc, tab_g.SourceIndex);
+    end
     for k = 1:numel(a_Comp)
-        s = a_Comp{k};
-        c_LC = cell(0,1);                       % its local controllers, depth first
-        c_todo = s.a_LocalController(:);
-        while ~isempty(c_todo)
-            c_LC = [c_LC; c_todo(1)]; %#ok<AGROW>
-            c_todo = [c_todo{1}.a_LocalController(:); c_todo(2:end)];
-        end
-        iv_k = (k-1)*n_u + (1:n_u)';
-        sv_name = obj.sv_u(:);
-        lv_Y = obj.iv_obsY(iv_k) > 0;
-        sv_name(lv_Y & ismember(sv_name, s.sv_x)) = "Y_" + sv_name(lv_Y & ismember(sv_name, s.sv_x));
-        lv_missing = ~(lv_Y | obj.iv_obsX(iv_k) > 0);
-        for m = 1:numel(obj.sv_y)
-            lv_LC = cellfun(@(c) any(c.sv_u == obj.sv_y(m)), c_LC);
-            if any(lv_LC)
-                sv_to = reshape(string(cellfun(@(c) c.attach_tag(obj.sv_y(m)), c_LC(lv_LC))), [], 1);
-            elseif any(s.sv_u == obj.sv_y(m))
-                sv_to = string(s.attach_tag(obj.sv_y(m)));
-            else
-                lv_missing(end+1) = true; %#ok<AGROW>
-                sv_to = strings(0,1);
-            end
-            yNames = [yNames; sv_to];                                            %#ok<AGROW>
-            iv_row = [iv_row; repmat((k-1)*numel(obj.sv_y) + m, numel(sv_to), 1)]; %#ok<AGROW>
-        end
-        if any(lv_missing)
+        if ~all(lv_in((k-1)*n_u + (1:n_u))) || ~all(lv_out((k-1)*n_o + (1:n_o)))
+            s = a_Comp{k};
             error(msg("GUILDA:GlobalController:GlobalControllerPort", obj.s_tag, join(obj.sv_u, " "), join(obj.sv_y, " "), s.s_tag, class(s), join([s.sv_y(:); s.sv_x(:)], " "), join(s.sv_u, " ")))
         end
-        uNames = [uNames; reshape(string(s.attach_tag(sv_name)), [], 1)]; %#ok<AGROW>
     end
-    net_units = a_Comp{1}.a_Bus.a_PowerNetwork;
     vNames = tools.vcellfun(@(b) reshape(string(b.attach_tag(["Vre";"Vim"])), [], 1), net_units.a_Bus);
 
     if ~isempty(obj.a_PowerNetwork)

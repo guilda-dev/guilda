@@ -7,6 +7,7 @@
         <entry key="InvalidControllerKey">Local controller ''{0}'' has the role (s_role) ''{1}''. The role must be ''avr'', ''pss'', ''local'' or ''governor''.</entry>
         <entry key="ControllerOutput">Output ''{0}'' of ''{1}'' matches no input of ''{2}'' (inputs: {3}).</entry>
         <entry key="ControllerOutputOverlap">Governor ''{0}'' and ''{1}'' of ''{3}'' both drive {2}. The top-level controllers of a component must drive different inputs: give the local controller other inputs (e.g. local_LQR with Input="Vfield"), or remove one of them first.</entry>
+        <entry key="GconRouteChanged">The outputs of the global controller ''{0}'' go elsewhere now: {1}.</entry>
         <entry key="ControllerNotFound">No local controller with the tag ''{0}'' was found in ''{1}''.</entry>
         <entry key="ControllerHasNested">Local controller ''{0}'' still has ''{1}'' under it.&#xA;Remove it first with comp.remove_local_controller(TAG), or remove them together with&#xA;  &gt;&gt; comp.remove_local_controller(CONTROLLER_TAG, "RemoveNested", true)</entry>
         <entry key="MissingParameter">Parameter ''{0}'' of ''{1}'' is missing from {2}. Pass a table with these columns as the parameter argument.</entry>
