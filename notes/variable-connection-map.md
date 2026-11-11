@@ -158,7 +158,10 @@ z = [ x(表の順) ; V(母線ごとに Vre, Vim) ; I(母線ごとに Ire, Iim) ;
 | 1 | `6965c2bd` | 変数表(uc、y、yc、`Role`)と接続表。線形化と `ResultODE` は先頭の x、V、u だけを使う |
 | 2 | `e458838b` | `SolverODE.build_index`、ブロックごとの右辺と Jacobian、ctx の相の状態。モデルの作業用プロパティと `get_dx_algebraic` を削除 |
 | 3 | `5b9d7ad6` | `add_global_controller`、`GlobalController.get_sys`、`Component.validate`、`LocalController.validate` が接続表を読む。`sv_route` を削除し、INFO を LC の編集へ |
-| 4 | (このコミットの後) | `notes/v4-migration.md`、`notes/controller-signal-routing.md`、For Developer のページ |
+| 修正 | `0a283402` | medium の F7、F35 を新しい変数表に合わせた。`GUILDA:SolverLIN:PointSize` の文を「先頭の x、V、u の行」に |
+| 4 | `9d7b61a5` | `notes/v4-migration.md`、`notes/controller-signal-routing.md`、For Developer のページ |
+
+テスト: small は各段階で 0 FAIL。medium(最後に 1 回)は 675 件中 FAIL 2 → 修正後に F7、F35 を medium で再実行して 0 FAIL(KNOWN 1 は既存の AVR_DC1)。
 
 ### 8.2 現状(実装後のコード)
 
