@@ -1106,7 +1106,7 @@ catch ME
     assert(~contains(ME.message, tab.Label(6) + ","), ME.message)
 end
 try
-    n14.linearize("Point", nan(height(tab),1));
+    n14.linearize("Point", nan(numel(x),1));
     error("DebugScript:NoError", "NaN の Point がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))

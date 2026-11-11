@@ -35,7 +35,10 @@ net.remove_global_controller(gc.s_tag);
 gc_obs = DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc", {gen}, parameter=struct(beta=2)));
 DebugScript.helper.quiet(@() net.initialize);
 d_w = 1e-3;
+% GC の入力 omega は DAE の変数: 出力 omega をずらすとその残差 u - omega が -d_w、入力をずらすと dz/dt が beta * d_w
 F = probe(net, @(o) shifted_rhs(o, zpos(net, gen, "x", "omega"), d_w));
+assert(abs(F(zpos(net, gc_obs, "uc", "omega")) + d_w) < 1e-12, "u の残差 %g", F(zpos(net, gc_obs, "uc", "omega")))
+F = probe(net, @(o) shifted_rhs(o, zpos(net, gc_obs, "uc", "omega"), d_w));
 assert(abs(F(zpos(net, gc_obs, "x")) - 2*d_w) < 1e-12, "dz/dt = %g", F(zpos(net, gc_obs, "x")))
 [sol, flag] = net.simulate([0,2], DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003"));
 assert(flag == 1 && isa(sol, "ResultODE"))
