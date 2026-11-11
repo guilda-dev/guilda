@@ -1,5 +1,17 @@
 const updateLogData = [
   {
+    "title": "Model functions without the bus current",
+    "date": "2026-11-11",
+    "type": "model",
+    "content": "No model function receives the bus current I any more. A component has fcn_dx, fcn_I and fcn_Mass (t, x, V, u, param, omega0) and fcn_Y (t, x, V, param, omega0), so its outputs do not depend on u; controllers have (t, x, V, u, param, omega0). The Jacobians and the f_* handles drop I too. Model classes written for the old arguments need updating."
+  },
+  {
+    "title": "Global controllers observe outputs and route by name",
+    "date": "2026-11-11",
+    "type": "feature",
+    "content": "A global controller reads the outputs (else the states) of its units and the voltages of all buses. Each output goes to every local controller of the unit with an input of that name, else to the unit input; add_global_controller prints where each output goes, and an edit of the local controllers that changes it prints the change. net.get_variable_map also lists the controller inputs and the outputs (column Role) and returns the connection map as its fourth output. With the Feedback method, get_sys lets a global controller read the voltages and component outputs of the buses that the method eliminates."
+  },
+  {
     "title": "Change settings by command",
     "date": "2026-11-10",
     "type": "feature",
