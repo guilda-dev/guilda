@@ -3,8 +3,10 @@ function s_file = Export(obj, filename)
 %
 % Writes the trajectories to a file. The format follows the extension of filename:
 % .csv, .txt, .xlsx, .xls write one table (column t, then <bus>_Vreal, <bus>_Vimag,
-% <bus>_Ireal, <bus>_Iimag, <bus>_P, <bus>_Q of each bus and <component>_<name> of each
-% state and input); .mat saves odeResults, options, flag and output. A relative filename is
+% <bus>_Ireal, <bus>_Iimag, <bus>_P, <bus>_Q of each bus, <component>_<name> of each
+% state and input, and one column per controller state named by the Label of
+% tab_variable); .mat saves odeResults, rm_variable, tab_variable, options, flag and
+% output, so the controller states (in rm_variable only) are kept. A relative filename is
 % relative to the current folder. simulate(..., Export=filename) calls it.
     arguments (Input)
         obj
