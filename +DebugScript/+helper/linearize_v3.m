@@ -285,7 +285,7 @@ function sys = get_LTI_viaFeedback(obj)
     % Global controllers (all of them, one after another, as in Kron and DAE):
     % their inputs are component outputs (e.g. omega) and their outputs add to component inputs (e.g. Pmech)
     for k = 1:numel(net.a_GlobalController)
-        sysGC = net.a_GlobalController{k}.get_sys("full",true);
+        sysGC = gc_v3_ports(net.a_GlobalController{k}, string(sysODE.OutputName));
         [lv_out, feedout] = ismember(string(sysGC.InputName),  string(sysODE.OutputName));
         [lv_in,  feedin ] = ismember(string(sysGC.OutputName), string(sysODE.InputName));
         if ~all(lv_out) || ~all(lv_in)
@@ -310,6 +310,27 @@ function sys = get_LTI_viaFeedback(obj)
         rm_Ymat = rm_Ymat(lv_Unit,lv_Unit) - rm_Ymat(lv_Unit,~lv_Unit) * rm_Ymat(~lv_Unit,~lv_Unit)^-1 * rm_Ymat(~lv_Unit,lv_Unit);
     end
 
+end
+
+function sys = gc_v3_ports(gc, sv_x)
+% v4 の制御器の線形モデルを v3 の入力にそろえる。v3 の制御器は電圧を読まず状態を読んだので、
+% 母線電圧の入力を除き、機器の出力 "Y_" + 状態名の入力を状態名に戻す
+    arguments (Input)
+        gc    % 広域制御器
+        sv_x  % 状態の名前
+    end
+    arguments (Output)
+        sys  % v3 と同じ入力の線形モデル (ss)
+    end
+    sys  = gc.get_sys("Format", "ss");
+    lv_V = startsWith(string(sys.InputName), ["Vre_","Vim_"]);
+    assert(~any(sys.B(:,lv_V), "all") && ~any(sys.D(:,lv_V), "all"), ...
+           "The global controller '%s' reads bus voltages, which v3 cannot compare.", gc.s_tag)
+    sys  = sys(:, ~lv_V);
+    sv_w = string(sys.InputName);
+    lv_Y = startsWith(sv_w, "Y_") & ismember(extractAfter(sv_w, 2), sv_x);
+    sv_w(lv_Y) = extractAfter(sv_w(lv_Y), 2);
+    sys.InputName = cellstr(sv_w);
 end
 
 function tf = has_I2V(bus)
@@ -370,7 +391,7 @@ function [Axx, Bxv, Bxu, Cix, E, sv_z] = add_global_controllers(net, sv_x, sv_u,
     sv_z  = cell(numel(a_GC),1);  % (cell while collecting)
     Dux   = zeros(nu,nx);
     for k = 1:numel(a_GC)
-        sysGC = a_GC{k}.get_sys("full",true);
+        sysGC = gc_v3_ports(a_GC{k}, sv_x);
         [lv_w, iw] = ismember(string(sysGC.InputName),  sv_x);
         [lv_y, iy] = ismember(string(sysGC.OutputName), sv_u);
         if ~all(lv_w) || ~all(lv_y)
@@ -410,7 +431,7 @@ function sys = v3_ports(bus, s_port)
     arguments (Output)
         sys  % v3 と同じ入出力の母線モデル
     end
-    sys  = bus.get_sys("port", s_port);
+    sys  = bus.get_sys("port", s_port, "Format", "ss");
     sv_u = tools.cellfun(@(c) string(c.attach_tag(c.sv_u)), bus.a_Component);
     [~, iv_u] = ismember(vertcat(strings(0,1), sv_u{:}), string(sys.InputName));
     sys  = sys(1:2, [1, 2, reshape(iv_u, 1, [])]);
