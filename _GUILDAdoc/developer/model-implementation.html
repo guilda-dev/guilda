@@ -113,7 +113,7 @@
         <tr>
           <td><span lang="en">Inputs come from</span><span lang="ja">入力の取得元</span></td>
           <td><span lang="en">Controllers and input disturbances, by name</span><span lang="ja">制御器と入力外乱（名前で接続）</span></td>
-          <td><span lang="en">By name <code>sv_u</code>: an output of the component, then a state, then an output of the nested controller. Other names stay at the equilibrium.</span><span lang="ja">名前 <code>sv_u</code> で、機器の出力 → 状態 → 入れ子の制御器の出力の順に検索。それ以外の名前は平衡点の値のまま。</span></td>
+          <td><span lang="en">By name <code>sv_u</code>: an output of the nested controller, then an output of the component, then a state. Other names stay at the equilibrium. A global controller output of the same name is added.</span><span lang="ja">名前 <code>sv_u</code> で、入れ子の制御器の出力 → 機器の出力 → 状態の順に検索。それ以外の名前は平衡点の値のまま。同名のグローバル制御器の出力を加算。</span></td>
           <td><span lang="en">By name <code>sv_u</code> on each controlled unit: an output, then a state. The voltages of all buses come in <code>V</code>.</span><span lang="ja">各制御対象で名前 <code>sv_u</code> により、出力 → 状態の順に検索。全母線の電圧は <code>V</code> で受け取り。</span></td>
         </tr>
         <tr>
@@ -366,7 +366,7 @@ s.inputs          % Vref: "equilibrium (not connected)", Vpss: "output of CP2SG1
       </tbody>
     </table>
     <ul>
-      <li><span lang="en">A component is checked at its equilibrium; before <code>net.initialize</code>, at a random point with unit <code>V</code> and <code>I</code>, where the residuals are not zero.</span><span lang="ja">機器は平衡点で確認。<code>net.initialize</code> の前は大きさ 1 の <code>V</code>、<code>I</code> を持つランダムな点で確認するため、残差は 0 にならない。</span></li>
+      <li><span lang="en">A component is checked at its equilibrium; before <code>net.initialize</code>, at a random point with unit <code>V</code> and injected current, where the residuals are not zero.</span><span lang="ja">機器は平衡点で確認。<code>net.initialize</code> の前は大きさ 1 の <code>V</code> と注入電流を持つランダムな点で確認するため、残差は 0 にならない。</span></li>
       <li><span lang="en">A local controller must be attached to a component on an initialized network.</span><span lang="ja">ローカル制御器は、初期化済みのネットワーク上の機器への接続が必要。</span></li>
     </ul>
 
