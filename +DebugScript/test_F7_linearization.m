@@ -161,22 +161,22 @@ assert(~isprop(net.solver_LIN, "Algorithm"))
 s_id = "GUILDA:Deprecated:LinearizeNonUnit";
 clear Deprecated
 lastwarn("");
-sys_nu = net.get_sys("Method", "Feedback", "NonUnit", 7);
+sys_nu = net.get_sys("Method", "Feedback", "NonUnit", 7, "Format", "struct");
 id = DebugScript.helper.msg_id();
 assert(string(id) == s_id, id)
-assert(isequal(sys_nu, net.get_sys("Method", "Feedback")))
+assert(isequal(sys_nu, net.get_sys("Method", "Feedback", "Format", "struct")))
 % 1 セッションに 1 回。名前の大文字小文字は問わない
 lastwarn("");
-sys_nu = net.get_sys("Method", "Feedback", "nonunit", 7);
+sys_nu = net.get_sys("Method", "Feedback", "nonunit", 7, "Format", "struct");
 id = DebugScript.helper.msg_id();
 assert(string(id) == "", id)
-assert(isequal(sys_nu, net.get_sys("Method", "Feedback")))
+assert(isequal(sys_nu, net.get_sys("Method", "Feedback", "Format", "struct")))
 % 状態のない母線の指定は、負荷があっても Method によらず結果を変えない (B009 は負荷あり)
 lv_static = tools.vcellfun(@(b) sum(cellfun(@(c) numel(c.sv_x), b.a_Component)) == 0, net.a_Bus);
 for nu = {[], [7 9], find(lv_static(:)')}
     for alg = ["Kron", "Feedback", "DAE"]
-        sys_ref = net.get_sys("Method", alg);
-        assert(isequal(net.get_sys("Method", alg, "NonUnit", nu{1}), sys_ref), alg)
+        sys_ref = net.get_sys("Method", alg, "Format", "struct");
+        assert(isequal(net.get_sys("Method", alg, "NonUnit", nu{1}, "Format", "struct"), sys_ref), alg)
     end
 end
 % 結果の options には、指定したときだけ残る
@@ -222,14 +222,14 @@ end
 %% Deprecated solver_LIN.NonUnit warns and acts as the option
 net_d = new_net();
 DebugScript.helper.quiet(@() net_d.initialize);
-sys_ref = net_d.get_sys("Method", "Feedback");
+sys_ref = net_d.get_sys("Method", "Feedback", "Format", "struct");
 clear Deprecated
 lastwarn("");
 net_d.solver_LIN.NonUnit = [7 9];
 id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:SolverLinNonUnit", id)
 assert(isequal(net_d.solver_LIN.NonUnit, [7 9]))
-assert(isequal(net_d.get_sys("Method", "Feedback"), sys_ref))
+assert(isequal(net_d.get_sys("Method", "Feedback", "Format", "struct"), sys_ref))
 % 状態のある母線と存在しない母線は、オプションと同じエラー
 for c = {{2, "GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus"}, {99, "GUILDA:v3_nonunit_range:NonUnit"}}
     net_d.solver_LIN.NonUnit = c{1}{1};
@@ -241,7 +241,7 @@ for c = {{2, "GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus"}, {99, "GUILDA:v3_non
     end
 end
 % 呼び出しの指定が優先し、値は解法に保存しない
-assert(isequal(net_d.get_sys("Method", "Feedback", "NonUnit", 7), sys_ref))
+assert(isequal(net_d.get_sys("Method", "Feedback", "NonUnit", 7, "Format", "struct"), sys_ref))
 assert(isequal(net_d.solver_LIN.NonUnit, 99))
 % 空の値は警告しない (.mat の読み込みでも代入される)
 clear Deprecated
