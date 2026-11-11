@@ -49,9 +49,6 @@ classdef Bus < PowerSystemModel
     properties % Power Flow
         l_isSlack (1,1) logical = false;  % True for the slack bus (at most one per network; setting it requires a component). <@Stale> powerflow
     end
-    properties (Access={?SolverODE}) % Simulation working data
-        l_isFault (1,1) logical = false   % True while an active fault of a scenario is applied at the bus (simulation working data).
-    end
 
     properties (SetAccess={?PowerNetwork}) % Layer Structure
         a_PowerNetwork = []               % PowerNetwork the bus belongs to ([] when removed). <@Type> PowerNetwork
@@ -63,11 +60,6 @@ classdef Bus < PowerSystemModel
     properties (Dependent, Access=protected) % Layer Structure
         parent                            % Parent in the layer structure: the network.
         children                          % Children in the layer structure: the components, then the Parameter objects.
-    end
-    properties (SetAccess={?SolverODE, ?Component}, Hidden) % Simulation working data
-        iv_odeX = zeros(0,1);             % Positions of the bus voltage [Vre; Vim] in the simulation vector.
-        iv_odeI = zeros(0,1);             % Positions of the bus current [Ire; Iim] in the simulation vector.
-        iv_odeU = zeros(0,1);             % Not set by the simulation (a bus has no inputs).
     end
     properties (SetAccess={?SolverCPF}) % Continuation Power Flow
         iv_CPFV = zeros(0,1)              % Indices of the bus voltage in the CPF variable vector (CPF working data).

@@ -458,8 +458,8 @@ end
 
 
 function [rv_source, c_row] = nested_outputs(parent, rv_source, x_obs, y_obs, V)
-% Replaces the inputs of parent driven by its local controllers with their outputs, as in
-% get_dx_algebraic, and adds the rows of those controllers
+% Replaces the inputs of parent driven by its local controllers with their outputs (the
+% "local" connections of net.get_variable_map), and adds the rows of those controllers
     c_row = cell(0,1);
     for k = 1:numel(parent.a_LocalController)
         con = parent.a_LocalController{k};

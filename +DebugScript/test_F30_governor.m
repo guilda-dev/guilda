@@ -320,6 +320,7 @@ sol = net.simulate([0,2], ev, Progress="none", TimeLimit=120);
 assert(sol.flag == 1, sol.output.message)
 assert(isequal(net.rv_Xequilibrium, rv_eq))
 tab = gen.get_variable_map();
+tab = tab(ismember(tab.Kind, ["x","Vre","Vim","u"]), :);   % the variables in the result
 val = sol.get_point(1.2, tab, Side="after");
 for c_lc = {gen.a_LocalController{1}, gen.a_LocalController{1}.a_LocalController{1}, gov}
     lc = c_lc{1};

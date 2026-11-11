@@ -102,12 +102,7 @@ assert(flag == -1 && isfile(s_csv))
 
 %% Working data is restored after a failed phase
 run(net, [0,2], ev_trip_later);
-for i = 1:numel(net.a_Bus)
-    for j = 1:numel(net.a_Bus{i}.a_Component)
-        comp = net.a_Bus{i}.a_Component{j};
-        assert(get_private(comp, "l_isConnect"), comp.s_tag)
-    end
-end
+% the trips are in the context of the run only (see I61): the next run starts connected
 ref = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() ref.initialize);
 
@@ -211,11 +206,4 @@ function u = own_solver(t)
     if t > 0.5
         ode15s(@(s,x) -x, [0,1], 1, odeset("Mass", 0));
     end
-end
-
-function v = get_private(obj, str)
-    w = warning("off", "MATLAB:structOnObject");
-    c = onCleanup(@() warning(w));
-    s = builtin("struct", obj);      % struct はオーバーロードされている
-    v = s.(str);
 end

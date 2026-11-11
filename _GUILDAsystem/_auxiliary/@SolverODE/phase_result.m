@@ -1,36 +1,25 @@
-function sct_out = phase_result(net, ph, sct_sol, Ymat)
-% Trajectory of one phase (t, x, bus currents i) for ResultODE; the states of the
-% tripped units are NaN.
+function sct_out = phase_result(ctx, ph, sct_sol)
+% Trajectory of one phase for ResultODE: the variables x, V, u in the order of the variable
+% map (ctx.iv_lin), and the bus currents; the states of the tripped units are NaN.
     arguments (Input)
-        net      % Network of the run.
+        ctx      % Context of the run (Ymat of the phase).
         ph       % Data of the phase (an element of the output of Scenario.compile).
         sct_sol  % Solution of the phase (fields Time and Solution, full state vector).
-        Ymat     % [pu] Real admittance matrix of the phase (I = Y*V).
     end
     arguments (Output)
         sct_out  % Trajectory of the phase (fields t, x, i).
     end
-    a_bus = net.a_Bus;
-    a_cmp = cellfun(@(bi) bi.a_Component, a_bus, 'UniformOutput', false);
-    a_cmp = vertcat(a_cmp{:});
-
-    % Tripped units by tag (getStateTags also lists local controllers, so its
-    % positions do not match a_cmp); a tripped global controller is marked too
-    a_unit   = [a_cmp; net.a_GlobalController];
-    lv_Ctagi = ismember(string(a_unit), ph.sv_trip);
-
-    B_sti = cell2mat( cellfun(@(bi) bi.iv_odeX, a_bus, 'UniformOutput', false) );
-    C_sti = cell2mat( cellfun(@(ci) ci.iv_odeX, a_unit(lv_Ctagi), 'UniformOutput', false) );
-
-    Time = sct_sol.Time;
     xsol = sct_sol.Solution;
 
-    if any(lv_Ctagi)
-        xsol(:, C_sti) = NaN;
+    % States of the tripped components and global controllers (not of local controllers)
+    sv_trip = reshape(string(ph.sv_trip), [], 1);
+    if ~isempty(sv_trip)
+        c_unit = [ctx.c_comp; ctx.c_gc];
+        lv = cellfun(@(b) ismember(b.s_tag, sv_trip), c_unit);
+        iv = tools.vcellfun(@(b) b.iv_x, c_unit(lv));
+        xsol(:, iv) = NaN;
     end
 
-    Vsol = xsol(:, B_sti);
-    Isol = Ymat * Vsol.';
-
-    sct_out = struct('t', Time, 'x', xsol, 'i', Isol.');
+    Isol = ctx.Ymat * xsol(:, ctx.iv_V).';
+    sct_out = struct('t', sct_sol.Time, 'x', xsol(:, ctx.iv_lin), 'i', Isol.');
 end

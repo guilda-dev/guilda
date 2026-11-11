@@ -84,13 +84,6 @@ classdef LocalController < PowerSystemModel
         f_JacobiY                                  % Jacobian function of f_Y.
     end
     properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
-        iv_odeX = zeros(0,1);                      % Positions of the states in the simulation vector.
-        iv_odeU = zeros(0,1);                      % Positions of the inputs in the simulation vector.
-        iv_odeY = zeros(0,1);                      % Positions of the parent inputs driven by the outputs sv_y, matched by name.
-        lv_odeUfromLC = false(0,1);                % Inputs driven by an output of a nested controller.
-        iv_odeYtoU = zeros(0,1);                   % Index of each such input in the outputs of the nested controllers, stacked in order.
-        rv_Xoffset = 0                             % State offset added to the initial state (0 for a local controller).
-        rv_Uoffset = @(t) 0                        % Input change over time (zero for a local controller).
         l_hasController (1,1) logical = false      % Whether a nested controller is attached.
     end
     properties (SetAccess=private, Hidden) % Layer Structure
@@ -184,9 +177,6 @@ classdef LocalController < PowerSystemModel
         set_odefcn(obj)
 
         resolve_observe(obj)
-
-        % get dx and y
-        [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, obs, y_GC, DAEvec)
 
     end
 

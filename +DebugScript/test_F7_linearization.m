@@ -673,10 +673,30 @@ net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
 net.add_global_controller("agc-PI", ["SG1B001", "SG1B002"]);
 DebugScript.helper.quiet(@() net.initialize);
-[tab, c_idxBus, c_idxGC] = net.get_variable_map();
+[tab_all, c_idxAll, c_idxGCAll, tab_c] = net.get_variable_map();
+% 表は変数 (x, Vre, Vim, u, uc) の後に信号 (y, yc)。線形化の変数は先頭の x, Vre, Vim, u
+assert(isequal(string(tab_all.Properties.VariableNames), ["Index","Kind","Role","Owner","Name","Label","Bus"]))
+sv_kind = ["x","Vre","Vim","u","uc","y","yc"];
+[~, iv_k] = ismember(tab_all.Kind, sv_kind);
+iv_k(iv_k == 3) = 2;                       % Vre, Vim は母線ごとに交互
+assert(all(iv_k > 0) && issorted(iv_k), "Kind の順")
+assert(isequal(tab_all.Role == "signal", ismember(tab_all.Kind, ["y","yc"])))
+% 接続表: 先は入力 (u, uc)、源は信号か状態。行は先の順
+assert(all(ismember(tab_all.Kind(tab_c.TargetIndex), ["u","uc"])) && issorted(tab_c.TargetIndex))
+assert(all(tab_c.SourceIndex(tab_c.Kind == "equilibrium") == 0))
+lv_src = tab_c.Kind ~= "equilibrium";
+assert(all(ismember(tab_all.Kind(tab_c.SourceIndex(lv_src)), ["x","y","yc"])))
+assert(isequal(tab_c.Source(lv_src), tab_all.Label(tab_c.SourceIndex(lv_src))) && isequal(tab_c.Target, tab_all.Label(tab_c.TargetIndex)))
+% AGC の出力は機器の入力 Pmech へ (Kind "global")
+s_gc = net.a_GlobalController{1}.s_tag;
+lv_g = tab_c.Kind == "global";
+assert(nnz(lv_g) == 2 && all(tab_all.Owner(tab_c.SourceIndex(lv_g)) == s_gc) && all(tab_all.Name(tab_c.TargetIndex(lv_g)) == "Pmech"))
+n_lin = sum(ismember(tab_all.Kind, ["x","Vre","Vim","u"]));
+tab = tab_all(1:n_lin,:);
+c_idxBus = cellfun(@(iv) iv(iv <= n_lin), c_idxAll, 'UniformOutput', false);
+c_idxGC  = cellfun(@(iv) iv(iv <= n_lin), c_idxGCAll, 'UniformOutput', false);
 res = net.linearize();
 assert(isequal(res.tab_variable, tab))
-assert(isequal(string(tab.Properties.VariableNames), ["Index","Kind","Owner","Name","Label","Bus"]))
 assert(isequal(tab.Index, (1:height(tab))'))
 n_x = size(res.rm_Axx,1);  n_v = size(res.rm_Avv,1);  n_u = size(res.rm_Bx,2);
 assert(sum(tab.Kind == "x") == n_x && sum(tab.Kind == "Vre" | tab.Kind == "Vim") == n_v && sum(tab.Kind == "u") == n_u)
@@ -687,7 +707,6 @@ assert(isequal(size(res.rm_Axv), [n_x n_v]) && isequal(size(res.rm_Avx), [n_v n_
 sK = res.get_ss("Kron");
 assert(isequal(sort(tab.Label(tab.Kind == "x")), sort(string(sK.StateName))))
 assert(isequal(tab.Label(tab.Kind == "u"), string(sK.InputName)))
-s_gc = net.a_GlobalController{1}.s_tag;
 assert(any(tab.Owner == s_gc) && all(tab.Bus(tab.Owner == s_gc) == "") && isequal(tab.Label(c_idxGC{1}), tab.Label(tab.Owner == s_gc)))
 % 制御器の状態は機器の直後 (AVR, その下の PSS の順)
 iv = find(tab.Bus == "B001" & tab.Kind == "x");
@@ -697,7 +716,7 @@ assert(isequal(tab.Owner(iv), [repmat("SG1B001",numel(net.a_Bus{1}.a_Component{1
 % 母線・機器の変数の表は系統の表の該当行と同じ順
 for i = 1:numel(net.a_Bus)
     [tab_b, c_idxC] = net.a_Bus{i}.get_variable_map();
-    assert(isequal(tab_b(:,2:end), tab(c_idxBus{i},2:end)), "bus " + i)
+    assert(isequal(tab_b(:,2:end), tab_all(c_idxAll{i},2:end)), "bus " + i)
     for j = 1:numel(c_idxC)
         tab_c = net.a_Bus{i}.a_Component{j}.get_variable_map();
         assert(isequal(tab_c(:,2:end), tab_b(c_idxC{j},2:end)), "bus " + i + " comp " + j)
@@ -731,6 +750,9 @@ for alg = ["Kron","Feedback","DAE"]
 end
 % 機器・母線の get_sys も同じ
 [tab, c_idxBus] = net.get_variable_map();
+n_lin = sum(ismember(tab.Kind, ["x","Vre","Vim","u"]));   % 線形化の変数は表の先頭の行
+tab = tab(1:n_lin,:);
+c_idxBus = cellfun(@(iv) iv(iv <= n_lin), c_idxBus, 'UniformOutput', false);
 bus = net.a_Bus{1};
 s0 = bus.get_sys();  s1 = bus.get_sys("Point", res0.rv_point(c_idxBus{1}));
 assert(norm(s0.A - s1.A, 1) < 1e-8 * norm(s0.A, 1) && isequal(s0.StateName, s1.StateName))
@@ -940,6 +962,10 @@ t   = 0.9;
 res0 = net.linearize();
 res  = net.linearize("Point", {sim, t});
 [tab, c_idxBus, c_idxGC] = net.get_variable_map();
+n_lin = sum(ismember(tab.Kind, ["x","Vre","Vim","u"]));   % 線形化の変数は表の先頭の行
+tab = tab(1:n_lin,:);
+c_idxBus = cellfun(@(iv) iv(iv <= n_lin), c_idxBus, 'UniformOutput', false);
+c_idxGC = cellfun(@(iv) iv(iv <= n_lin), c_idxGC, 'UniformOutput', false);
 x   = sim.get_point(t);
 assert(isequal(res.rv_point, x))
 assert(all(isfinite(x)))
@@ -967,6 +993,7 @@ assert(norm(res.rm_Bv(iv_v,iv_uu) + Diu, 1) < 1e-10)
 gen1 = net.a_Bus{1}.a_Component{1};
 [~, c_idxC] = net.a_Bus{1}.get_variable_map();
 iv_b = c_idxBus{1};
+c_idxC = cellfun(@(iv) iv(iv <= numel(iv_b)), c_idxC, 'UniformOutput', false);
 iv_c = iv_b(c_idxC{1});
 iv_cx = iv_c(tab.Kind(iv_c) == "x");
 sc = gen1.get_sys("Point", {sim, t});
@@ -1126,8 +1153,11 @@ end
 % トリップ中でも、トリップしていない機器は単独で線形化できる
 x = sim.get_point(1.2);
 gen3 = n14.a_Bus{3}.a_Component{1};
-[~, c_idxBus] = n14.get_variable_map();
+[tab, c_idxBus] = n14.get_variable_map();
 [~, c_idxC] = n14.a_Bus{3}.get_variable_map();
+n_lin = numel(x);
+c_idxBus = cellfun(@(iv) iv(iv <= n_lin), c_idxBus, 'UniformOutput', false);
+c_idxC = cellfun(@(iv) iv(iv <= numel(c_idxBus{3})), c_idxC, 'UniformOutput', false);
 iv = c_idxBus{3}(c_idxC{1});
 sc = gen3.get_sys("Point", {sim, 1.2});
 assert(all(isfinite(sc.A), "all") && isequal(sc.A, gen3.get_sys("Point", x(iv)).A))

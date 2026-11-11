@@ -2,10 +2,12 @@ function rv = get_point(obj, t, tab_map, opt)
 % Get the values of the variable map at a time of the simulation.
 %
 % Returns the values of the variables at time t, in the order of the rows of tab_map
-% (by default the whole variable map tab_variable, so rv is a point for
-% net.linearize(Point=rv)). tab_map may be the variable map of a bus or component of
-% the simulated network (bus.get_variable_map(), comp.get_variable_map()); its rows are
-% found by Kind, Owner, Name and Bus.
+% (by default the whole tab_variable, so rv is a point for net.linearize(Point=rv)).
+% tab_map may be any part of tab_variable, e.g. the rows x, Vre, Vim, u of the variable
+% map of a bus or component of the simulated network (bus.get_variable_map(),
+% comp.get_variable_map()); its rows are found by Kind, Owner, Name and Bus. The other
+% rows of a variable map (the controller inputs uc and the signals y, yc) are not in the
+% result and stop with GUILDA:ResultODE:UnknownVariable.
 %
 % Between two output times the values are interpolated linearly. At a phase boundary,
 % where the time appears twice in rv_t, Side chooses the value: "after" (default) the
@@ -17,7 +19,7 @@ function rv = get_point(obj, t, tab_map, opt)
 % ```matlab
 % sc = Scenario("fault");  sc.add_fault("B008", [1,1.05]);  net.add_scenario(sc);
 % sim = net.simulate([0,5], sc);
-% x  = sim.get_point(2);                    % order of net.get_variable_map()
+% x  = sim.get_point(2);                    % rows x, Vre, Vim, u of net.get_variable_map()
 % x0 = sim.get_point(1.05, Side="before");  % end of the fault
 % res = net.linearize(Point={sim, 2});      % same point as Point=x
 % ```
