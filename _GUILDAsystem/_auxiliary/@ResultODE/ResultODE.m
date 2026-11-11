@@ -17,7 +17,8 @@ classdef ResultODE < ResultBase
 % Excel) or as a MAT-file.
 %
 % - `tab_variable` has one row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"),
-%   Owner, Name, Label and Bus (see PowerNetwork.get_variable_map).
+%   Role, Owner, Name, Label and Bus: the leading rows of net.get_variable_map() (its
+%   rows uc, y and yc, the controller inputs and the signals, are not variables here).
 % - In `rm_variable` the states of a tripped unit are NaN while it is tripped. The inputs u
 %   are the inputs applied to the components (steady value, outputs of the controllers and
 %   event inputs).
@@ -49,7 +50,7 @@ classdef ResultODE < ResultBase
 
     properties (SetAccess=private) % Result
         rv_t (:,1) double = zeros(0,1)      % [s] Output times, ascending; a phase boundary appears twice (end of one phase, start of the next).
-        tab_variable table = table()        % Variable map at the time of the simulation: its rows are the columns of rm_variable. <@Type> table ((n_x + n_v + n_u) x 6)
+        tab_variable table = table()        % Variable map at the time of the simulation: its rows are the columns of rm_variable. <@Type> table ((n_x + n_v + n_u) x 7)
         rm_variable double = zeros(0,0)     % Trajectory of all variables: row k at rv_t(k), column m the variable tab_variable(m,:). <@Type> double (n_t x (n_x + n_v + n_u))
         rm_I double = zeros(0,0)            % [pu] Currents injected into the buses: Ireal, Iimag of each bus in the order of sv_bus. <@Type> double (n_t x 2 n_bus)
         sv_bus (:,1) string = strings(0,1)  % Bus tags, in the order of odeResults.Bus.
@@ -69,10 +70,9 @@ classdef ResultODE < ResultBase
         function obj = ResultODE(net, solver, options, flag, output, elapsed, c_phase)
         % Create a time simulation result.
         %
-        % Collects the trajectories of the integration phases and reorders the state of the
-        % simulator (SolverODE order: each component with its inputs and local controllers,
-        % the global controllers, then the voltage and current of each bus) into the order of
-        % net.get_variable_map(). Created by SolverODE.solve.
+        % Collects the trajectories of the integration phases: the variables x, Vre, Vim, u
+        % of net.get_variable_map() (its leading rows; SolverODE.phase_result takes them
+        % from the DAE vector) and the bus currents. Created by SolverODE.solve.
             arguments (Input)
                 net             = [] % Analysed network; see ResultBase.
                 solver          = "SolverODE" % Solver object or its class name; see ResultBase.
@@ -94,12 +94,13 @@ classdef ResultODE < ResultBase
             obj.sv_bus      = string(a_bus(:));
             obj.c_component = cellfun(@(b) string(b.a_Component(:)), a_bus(:), 'UniformOutput', false);
 
-            obj.tab_variable = net.get_variable_map();
-            [iv_sim, obj.c_index] = simulator_columns(net, obj.tab_variable);
+            tab = net.get_variable_map();
+            obj.tab_variable = tab(ismember(tab.Kind, ["x","Vre","Vim","u"]), :);   % the variables of the linearization
+            obj.c_index = simulator_columns(net, obj.tab_variable);
             if isempty(c_phase)
                 obj.rv_t = zeros(0,1);
                 obj.rm_I = zeros(0, 2*numel(a_bus));
-                obj.rm_variable = zeros(0, numel(iv_sim));
+                obj.rm_variable = zeros(0, height(obj.tab_variable));
                 return
             end
 
@@ -107,7 +108,7 @@ classdef ResultODE < ResultBase
             obj.rv_t = cell2mat( cellfun(@(T) T.t, sol, 'UniformOutput', false) );
             X        = cell2mat( cellfun(@(T) T.x, sol, 'UniformOutput', false) );
             obj.rm_I = cell2mat( cellfun(@(T) T.i, sol, 'UniformOutput', false) );
-            obj.rm_variable = X(:, iv_sim);
+            obj.rm_variable = X;
         end
 
         function s = get.odeResults(obj)

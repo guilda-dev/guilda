@@ -105,6 +105,7 @@ DebugScript.helper.quiet(@() net.initialize);
 [gen, bus] = layers(net);
 [~, c_idx] = bus.get_variable_map();
 rv_point = SolverLIN.point_vector(bus, []);
+c_idx = cellfun(@(iv) iv(iv <= numel(rv_point)), c_idx, 'UniformOutput', false);   % the rows x, Vre, Vim, u
 A0 = gen.get_sys("Point", rv_point(c_idx{1})).A;
 A0_bus = bus.get_sys("Point", rv_point).A;
 

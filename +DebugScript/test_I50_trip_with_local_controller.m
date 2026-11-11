@@ -102,6 +102,7 @@ end
 function assert_restart(sol, gen, t2)
 % 復帰時の制御器の微分状態が、保持済みの平衡点に一致する
     tab = gen.get_variable_map();
+    tab = tab(ismember(tab.Kind, ["x","Vre","Vim","u"]), :);   % the variables in the result
     val = sol.get_point(t2, tab, Side="after");
     a_LC = gen.a_LocalController;
     if ~isempty(a_LC)

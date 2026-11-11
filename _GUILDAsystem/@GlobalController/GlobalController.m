@@ -25,9 +25,11 @@ classdef GlobalController < PowerSystemModel
 %   and then not to the component; the controller input receives the sum of what it reads
 %   without the global controller (an output or a state of the component, the output of a
 %   nested controller, or its equilibrium) and the output. Otherwise the output is added to
-%   the input of that name of the component. `sv_route` records where each output goes;
-%   `PowerNetwork.add_global_controller` shows it, and a simulation shows what changed
-%   (e.g. after a local controller is removed) as an INFO message.
+%   the input of that name of the component. These connections are the rows "global" of
+%   the connection map (`net.get_variable_map`); `PowerNetwork.add_global_controller`
+%   shows them, and an edit of the local controllers of a unit that changes them
+%   (`Component.add_local_controller`, `remove_local_controller`) shows what changed as
+%   an INFO message.
 %   For example, `controller.agc.broadcast_PI_AGC` reads the speed "omega" of each
 %   generator and adds to its input "Pmech".
 % - The outputs must be 0 at the equilibrium (net.initialize checks it), as they add to
@@ -79,15 +81,6 @@ classdef GlobalController < PowerSystemModel
         controlledUnits                            % Controlled components, in the order given to the constructor.
         iv_obsY (:,1) double = zeros(0,1)          % Index in sv_y of its unit of each input (0: not read from sv_y), units in order.
         iv_obsX (:,1) double = zeros(0,1)          % Index in sv_x of its unit of each input (0: not read from sv_x), units in order.
-    end
-    properties (SetAccess={?PowerNetwork, ?SolverODE}, Hidden) % Layer Structure
-        sv_route (:,1) string = strings(0,1)       % Where each output goes, one line per unit and output (shown by add_global_controller, updated by simulate).
-    end
-    properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
-        iv_odeX (:,1) double = zeros(0,1);         % Positions of the states in the simulation vector.
-        rv_Xoffset = 0                             % State offset added to the initial state (0 for a global controller).
-        rv_Uoffset = @(t) 0                        % Input change over time (zero for a global controller).
-        l_isConnect (1,1) logical = true           % False while an active trip of a scenario names the controller (set by SolverODE); its output is then zero.
     end
     properties(SetAccess=protected, Hidden) % Cached function handles
         r_odefcnHz double = []                     % [Hz] Network frequency bound into the f_* handles (empty: never built).

@@ -4,10 +4,11 @@ function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
 % Runs the time simulation of net over time with the scenarios c_events and the
 % effective settings sct_options, and returns the trajectories as an
 % ResultODE. The solver is only read: nothing is written back into it.
-% The simulation working data of the models (iv_odeX, iv_odeU, iv_odeY, iv_odeI) is
-% rebuilt for this run. Called by net.simulate; calling it directly is for advanced
-% use. Like net.simulate, it stops with the error GUILDA:SolverODE:Stale when
-% net.initialize() is needed (initialize_index).
+% Nothing is written to the models: the positions of the run (build_index, from the
+% variable map and the connection map) and the trips, faults and input events of each
+% phase are kept in the context of the run. Called by net.simulate; calling it directly
+% is for advanced use. Like net.simulate, it stops with the error GUILDA:SolverODE:Stale
+% when net.initialize() is needed (build_index).
 % flag is 1 when the simulation reached the end time, 0 when it stopped because the
 % run exceeded TimeLimit, and -1 when the solver stopped before the end time or could
 % not solve a phase (output.message has the reason; output.exception has the error
@@ -32,21 +33,12 @@ function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
     % Phases of the run: checks the scenarios, builds the data of each phase once
     [tab_phase, sct_phase] = Scenario.compile(c_events, net, time);
     check_islands(net, {sct_phase.sv_open}.', tab_phase);
-    c_restore = onCleanup(@() SolverODE.restore_working_data(net));
-    SolverODE.initialize_index(net);    % also stops when net.initialize() is needed
-
-    ctx = struct();
+    ctx = SolverODE.build_index(net);   % also stops when net.initialize() is needed
     ctx.net     = net;
     ctx.l_sparse = true;              % until the solver rejects the sparse matrices (see use_dense)
     ctx.Ybus    = net.get_admittance_matrix.Variables;   % complex, all branches closed
     ctx.sv_open = strings(0,1);       % open branches of ctx.Ymat (see set_admittance)
     ctx         = SolverODE.set_admittance(ctx, strings(0,1), true);
-    ctx.rv_odeV = cell2mat(tools.cellfun(@(b) b.iv_odeX, net.a_Bus));
-    ctx.iv_busV = reshape(ctx.rv_odeV, [], 1);
-    ctx.iv_busI = reshape(cell2mat(tools.cellfun(@(b) b.iv_odeI, net.a_Bus)), [], 1);
-    ctx.l_GC    = ~isempty(net.a_GlobalController);
-    [ctx.c_unit, ctx.c_gc] = SolverODE.get_units(net);   % also reports a changed routing of the global controllers
-    ctx.n_y     = sum(cellfun(@(c) numel(c.idx_Y), ctx.c_unit));
 
     o = makeODE(sct_options);
     options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);
@@ -74,8 +66,8 @@ function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
         % Faults, trips, open branches, offsets and inputs of the phase (Scenario.compile)
         ph = sct_phase(tp);
 
-        % A tripped global controller gives no output (TripUnit names it)
-        SolverODE.set_gc_connect(net, ph.sv_trip);
+        % Trips (a tripped global controller gives no output), faults and input events
+        ctx = set_phase(ctx, ph);
 
         t1 = ph.t1;
         t2 = ph.t2;
@@ -83,9 +75,7 @@ function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
         % Y of the phase: without the branches opened in it (OpenBranch)
         ctx = SolverODE.set_admittance(ctx, ph.sv_open, false);
 
-        SolverODE.set_offsets(net, ph);
-
-        [EM, RM, lv_FBorTC, x0, Mass] = SolverODE.initial_condition(net, ph, x0, Mass);
+        [EM, RM, lv_FBorTC, x0, Mass] = SolverODE.initial_condition(ctx, ph, x0, Mass);
 
         if ~ctx.l_sparse
             Mass = full(Mass);
@@ -187,7 +177,7 @@ function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
             lastwarn(s_warn0, id_warn0);
         end
 
-        c_phase{tp} = SolverODE.phase_result(net, ph, struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), ctx.Ymat);
+        c_phase{tp} = SolverODE.phase_result(ctx, ph, struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'));
         if sol.Time(end) < (t2-t1)
             if odeProg.ToBeContinue
                 flag = -1;
@@ -239,4 +229,22 @@ function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
     end
 
     result = ResultODE(net, obj, sct_options, flag, output, t0, c_phase);
+end
+
+
+function ctx = set_phase(ctx, ph)
+% The trips, faults and input events of a phase in the context (the models are not changed).
+% An input of a global controller that observes a tripped component reads 0.
+    sv_trip = reshape(string(ph.sv_trip), [], 1);
+    ctx.lv_compOn = ~ismember(ctx.sv_comp, sv_trip);
+    ctx.lv_gcOn   = ~ismember(ctx.sv_gc, sv_trip);
+    ctx.lv_fault  = ismember(ctx.sv_bus, reshape(string(ph.sv_fault), [], 1));
+    w = ones(numel(ctx.iv_in), 1);
+    w(ctx.iv_gateIn) = ctx.lv_compOn(ctx.iv_gateComp);
+    ctx.S_sig = w .* ctx.S_sig0;
+    ctx.S_var = w .* ctx.S_var0;
+    c_off = reshape(ph.c_Uoffset, [], 1);
+    lv = ~cellfun(@isempty, c_off);
+    i0 = ctx.iv_in(1) - 1;           % the input events act on the rows of the inputs (iv_in)
+    ctx.c_offset = cellfun(@(b, f) {b.iv_u - i0, f}, ctx.c_comp(lv), c_off(lv), 'UniformOutput', false);
 end

@@ -31,7 +31,8 @@ classdef ResultLIN < ResultBase
 % and Method and Coordinate do not apply.
 %
 % - `tab_variable` has one row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"),
-%   Owner, Name, Label and Bus (see PowerNetwork.get_variable_map).
+%   Role, Owner, Name, Label and Bus: the leading rows of net.get_variable_map() (its
+%   rows uc, y and yc, the controller inputs and the signals, are not variables here).
 % - `sct_model` holds the bus models (V2I, at the point), the global controller models, the
 %   admittance matrix, the non-unit buses and the bus voltages at the point: used by
 %   get_ss("Feedback") and the coordinates of get_ss("DAE"). The Output option of get_ss

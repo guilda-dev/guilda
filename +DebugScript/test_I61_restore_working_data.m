@@ -1,7 +1,8 @@
-% I61 シミュレーション後の作業データの復元と書き込み制限
+% I61 シミュレーションはモデルに何も書かない
 %
-%   復元 : trip・地絡が終端まで続いた後、例外の後も、作業データは実行前の値に戻る
-%   制限 : Component の rv_Xoffset / rv_Uoffset は解析クラスだけが書ける
+%   trip・地絡・入力・オフセットの状態と変数の位置は SolverODE の実行コンテキスト (ctx) にだけあり、
+%   終端まで続く外乱の後も、例外の後も、モデルのオブジェクトは実行前と同じ。
+%   モデルには作業用のプロパティ (iv_ode*, l_isConnect, l_isFault, rv_Xoffset, rv_Uoffset) が無い
 %
 % 実行: runtests("DebugScript.test_I61_restore_working_data")  または  DebugScript.run_all("Features","I61")
 
@@ -14,28 +15,32 @@ gen = net.a_Bus{2}.a_Component{1};
 c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
 
 %% Unit stays connected after a trip lasting to the end time
+c_before = snapshot(net);
 ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,5], "TripUnit", "SG1B002");
 DebugScript.helper.quiet(@() net.simulate([0,2], ev));
-assert_restored(net)
+assert_untouched(net, c_before)
 
 
 %% Bus has no fault after a fault lasting to the end time
+c_before = snapshot(net);
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,5], "FaultBus", "B008");
 DebugScript.helper.quiet(@() net.simulate([0,2], ev));
-assert_restored(net)
+assert_untouched(net, c_before)
 
 
 %% Offsets are cleared after an input and an offset
+c_before = snapshot(net);
 ev_os = DebugScript.helper.scenario("offset", net, "TimeSpan", 1, "OffsetUnit", "SG1B002", "OffsetState", "delta", "OffsetValue", 0.01);
 ev_in = DebugScript.helper.scenario("input", net, "TimeSpan", [1,2], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0.01);
 DebugScript.helper.quiet(@() net.simulate([0,2], ev_os, ev_in));
-assert_restored(net)
+assert_untouched(net, c_before)
 
 
 %% Working data is restored after an error during a fault and trips
 net = DebugScript.helper.build_ieee14();
 agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"], parameter=struct(kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
+c_before = snapshot(net);
 ev_fault = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.4,5], "FaultBus", "B008");
 ev_trip  = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.4,5], "TripUnit", ["SG1B003";agc.s_tag]);
 ev_error = DebugScript.helper.scenario("input", net, "TimeSpan", [0.4,5], "InputUnit", "SG1B002", "InputName", "Pmech", ...
@@ -47,7 +52,7 @@ catch me
     s_id = DebugScript.helper.msg_id(me);
 end
 assert(s_id == "GUILDA:SolverODE:PhaseFailed", "入力関数のエラーで止まる: " + s_id)
-assert_restored(net)
+assert_untouched(net, c_before)
 
 
 %% Rerun after a trip matches a run on a fresh network
@@ -61,18 +66,12 @@ ref = DebugScript.helper.quiet(@() net2.simulate([0,2]));
 assert(isequaln(sol.rm_variable, ref.rm_variable))
 
 
-%% Offsets of a component cannot be written from outside
-assert(~can_write(gen, "rv_Xoffset"))
-assert(~can_write(gen, "rv_Uoffset"))
-
-
-%% Offsets of a component stay readable
-assert(isempty(gen.rv_Xoffset) && isempty(gen.rv_Uoffset))
-
-
-%% Local controller has no connection flag
-mc = ?LocalController;
-assert(~ismember("l_isConnect", string({mc.PropertyList.Name})))
+%% Models have no simulation working data
+sv_work = ["iv_odeX","iv_odeU","iv_odeY","iv_odeI","lv_odeUfromLC","iv_odeYtoU","l_isConnect","l_isFault","rv_Xoffset","rv_Uoffset","sv_route"];
+for mc = [?Component, ?LocalController, ?GlobalController, ?Bus]
+    sv_prop = string({mc.PropertyList.Name});
+    assert(~any(ismember(sv_work, sv_prop)), mc.Name + ": " + join(intersect(sv_work, sv_prop), ", "))
+end
 
 
 function v = bad_input(t)
@@ -82,34 +81,34 @@ function v = bad_input(t)
     v = 0;
 end
 
-function assert_restored(net)
-    a_gc = net.a_GlobalController;
-    for k = 1:numel(a_gc)
-        assert(a_gc{k}.l_isConnect, "大域制御器 " + a_gc{k}.s_tag)
-    end
+function c = snapshot(net)
+% すべての母線・機器・局所制御器・大域制御器のプロパティの値
+    a_obj = [net.a_Bus; net.a_GlobalController];
     for i = 1:numel(net.a_Bus)
-        bus = net.a_Bus{i};
-        assert(~get_private(bus, "l_isFault"), "母線 " + bus.s_tag)
-        for j = 1:numel(bus.a_Component)
-            comp = bus.a_Component{j};
-            assert(get_private(comp, "l_isConnect"), "機器 " + comp.s_tag)
-            assert(isempty(comp.rv_Xoffset) && isempty(comp.rv_Uoffset), "機器 " + comp.s_tag)
+        for j = 1:numel(net.a_Bus{i}.a_Component)
+            comp = net.a_Bus{i}.a_Component{j};
+            a_obj = [a_obj; {comp}; controllers(comp)]; %#ok<AGROW>
+        end
+    end
+    w = warning("off", "MATLAB:structOnObject");
+    c_w = onCleanup(@() warning(w));
+    c = cellfun(@(o) builtin("struct", o), a_obj, 'UniformOutput', false);   % struct はオーバーロードされている
+end
+
+function assert_untouched(net, c_before)
+    c_after = snapshot(net);
+    assert(numel(c_after) == numel(c_before))
+    for k = 1:numel(c_before)
+        sv = string(fieldnames(c_before{k}))';
+        for s = sv
+            assert(isequaln(c_before{k}.(s), c_after{k}.(s)), "simulate が " + s + " を書き換えた")
         end
     end
 end
 
-function v = get_private(obj, str)
-    w = warning("off", "MATLAB:structOnObject");
-    c = onCleanup(@() warning(w));
-    s = builtin("struct", obj);      % struct はオーバーロードされている
-    v = s.(str);
-end
-
-function l = can_write(obj, str)
-    try
-        obj.(str) = [];
-        l = true;
-    catch
-        l = false;
+function list = controllers(parent)
+    list = cell(0,1);
+    for k = 1:numel(parent.a_LocalController)
+        list = [list; parent.a_LocalController(k); controllers(parent.a_LocalController{k})]; %#ok<AGROW>
     end
 end

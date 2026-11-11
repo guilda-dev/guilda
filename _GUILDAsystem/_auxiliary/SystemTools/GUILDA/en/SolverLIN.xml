@@ -2,7 +2,7 @@
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
         <entry key="PointType">Point must be [] (the equilibrium), a real vector in the order of get_variable_map(), or {sim, t} with a simulation result sim and a time t (e.g. Point={sim, 1.5}); {sim, t, "before"} takes the value before the event at a phase boundary.</entry>
-        <entry key="PointSize">Point has {0} values, but the variable map of ''{1}'' has {2} rows. Give the values in the order of {3}.get_variable_map().</entry>
+        <entry key="PointSize">Point has {0} values, but the variable map of ''{1}'' has {2} rows x, Vre, Vim and u. Give the values in the order of these rows of {3}.get_variable_map() (its leading rows).</entry>
         <entry key="PointSimType">Point='{'sim, t'}' needs a simulation result with a get_point method (ResultODE), not a {0}.</entry>
         <entry key="PointSimSize">{0}.get_point returned {1} values for {2} rows of the variable map.</entry>
         <entry key="PointLayer">Point is defined for a PowerNetwork, Bus or Component, not a {0}.</entry>

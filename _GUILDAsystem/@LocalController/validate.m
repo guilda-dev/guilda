@@ -233,31 +233,26 @@ function [flag, contract] = compare_jacobian(flag, contract, s_method, f_valid, 
 end
 
 function sv_src = input_sources(obj, comp)
-    % Where each input is read, as in get_dx_algebraic: on the observed component
-    % (iv_obsY / iv_obsX), then replaced by the output of a nested controller of the same
-    % name; the other inputs stay at the equilibrium. The outputs of global controllers
-    % of the component with the name of the input add to it.
-    c_GC = {};
-    if ~isempty(comp.a_Bus) && ~isempty(comp.a_Bus.a_PowerNetwork)
-        c_GC = comp.a_Bus.a_PowerNetwork.a_GlobalController;
-        c_GC = c_GC(cellfun(@(gc) any(cellfun(@(c) c == comp, gc.controlledUnits)), c_GC));
-    end
-    nu = numel(obj.sv_u);
-    sv_src = repmat("equilibrium (not connected)", nu, 1);
-    for k = 1:nu
-        if obj.iv_obsY(k) > 0
-            sv_src(k) = "output of " + comp.s_tag;
-        elseif obj.iv_obsX(k) > 0
-            sv_src(k) = "state of " + comp.s_tag;
-        end
-        for m = 1:numel(obj.a_LocalController)
-            if any(obj.a_LocalController{m}.sv_y == obj.sv_u(k))
-                sv_src(k) = "output of " + obj.a_LocalController{m}.s_tag;
+    % Where each input is read, from the connection map of the network: an output or a
+    % state of the observed component, or the output of a nested controller of the same
+    % name; the other inputs stay at the equilibrium. The outputs of the global controllers
+    % that drive the input add to it.
+    [tab, ~, ~, tab_c] = comp.a_Bus.a_PowerNetwork.get_variable_map();
+    iv_uc = find(tab.Kind == "uc" & tab.Owner == string(obj.s_tag));
+    sv_src = repmat("equilibrium (not connected)", numel(obj.sv_u), 1);
+    for k = 1:numel(iv_uc)
+        lv_c = tab_c.TargetIndex == iv_uc(k);
+        iv_p = tab_c.SourceIndex(lv_c & ismember(tab_c.Kind, ["observe","local"]));
+        if ~isempty(iv_p)
+            s_what = "output of ";
+            if tab.Kind(iv_p(1)) == "x"
+                s_what = "state of ";
             end
+            sv_src(k) = s_what + tab.Owner(iv_p(1));
         end
-        lv_GC = cellfun(@(gc) any(gc.sv_y == obj.sv_u(k)), c_GC);
-        if any(lv_GC)
-            sv_src(k) = sv_src(k) + " + output of " + join(cellfun(@(gc) string(gc.s_tag), c_GC(lv_GC)), ", ");
+        iv_g = tab_c.SourceIndex(lv_c & tab_c.Kind == "global");
+        if ~isempty(iv_g)
+            sv_src(k) = sv_src(k) + " + output of " + join(unique(tab.Owner(iv_g), "stable"), ", ");
         end
     end
 end

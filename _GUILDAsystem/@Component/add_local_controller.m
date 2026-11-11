@@ -35,6 +35,9 @@ function con = add_local_controller(obj, Key, opt)
 % A misspelled input is not an error, because it has the same form as an input left
 % unconnected on purpose.
 % Each addition is a "Topology" edit, so the equilibrium of the component becomes stale.
+% When a global controller controls the component and the edit changes where one of its
+% outputs goes (the "global" rows of net.get_variable_map), an INFO message
+% (GUILDA:Component:GconRouteChanged) lists the outputs that go elsewhere now.
 %
 % <@Examples>
 % ```matlab
@@ -77,6 +80,7 @@ function con = add_local_controller(obj, Key, opt)
     % Checked before anything changes, so a rejected call leaves the component as it was
     check_role(new_con);
     check_outputs(obj, new_con);
+    sm_route = gc_routes(obj);      % connections of the global controllers before the edit
 
     switch new_con.s_role
         case {"avr", "local"}
@@ -147,6 +151,7 @@ function con = add_local_controller(obj, Key, opt)
 
     obj.l_hasController = ~isempty(obj.a_LocalController);
     con = new_con;
+    gc_routes(obj, sm_route);       % INFO when an output of a global controller goes elsewhere now
 end
 
 function con = chain_of(comp)

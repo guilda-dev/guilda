@@ -2,8 +2,9 @@ function [rv_point, l_equilibrium] = point_vector(layer, Point)
 % Get the values of the variable map at the Point option.
 %
 % Returns the values of the variables of layer (a PowerNetwork, Bus or Component) at the
-% point given by the Point option, as a column vector in the order of
-% layer.get_variable_map().
+% point given by the Point option, as a column vector in the order of the rows x, Vre,
+% Vim, u of layer.get_variable_map() (its leading rows; the controller inputs and the
+% signals are not variables of the linearization).
 %
 % - `[]`: the equilibrium (states, inputs and bus voltages set by net.initialize);
 %   l_equilibrium is true.
@@ -23,7 +24,7 @@ function [rv_point, l_equilibrium] = point_vector(layer, Point)
         Point          % Point option ([], a vector, {sim, t} or {sim, t, Side}).
     end
     arguments (Output)
-        rv_point       % Values in the order of layer.get_variable_map().
+        rv_point       % Values in the order of the rows x, Vre, Vim, u of layer.get_variable_map().
         l_equilibrium  % True when Point is [] (the equilibrium).
     end
     SolverLIN.check_point(Point);
@@ -41,6 +42,7 @@ function [rv_point, l_equilibrium] = point_vector(layer, Point)
     else
         sim = Point{1};
         tab_map = layer.get_variable_map();
+        tab_map = tab_map(1:n_var,:);
         t   = Point{2};
         if ~ismethod(sim, "get_point")
             error(msg("GUILDA:SolverLIN:PointSimType", class(sim)))
@@ -66,7 +68,7 @@ function rv = assemble(layer, f_comp, f_bus, f_gc)
         [c_rows, c_idx] = layer.get_variable_map("rows");
         rv = zeros(n_rows(c_rows),1);
         for j = 1:numel(c_idx)
-            rv(c_idx{j}) = f_comp(layer.a_Component{j});
+            rv(lin(c_idx{j}, c_rows)) = f_comp(layer.a_Component{j});
         end
         if isempty(c_idx)
             rv(size(c_rows{1},1) + (1:2)) = f_bus(layer);
@@ -75,10 +77,10 @@ function rv = assemble(layer, f_comp, f_bus, f_gc)
         [c_rows, c_idxBus, c_idxGC] = layer.get_variable_map("rows");
         rv = zeros(n_rows(c_rows),1);
         for i = 1:numel(c_idxBus)
-            rv(c_idxBus{i}) = assemble(layer.a_Bus{i}, f_comp, f_bus, f_gc);
+            rv(lin(c_idxBus{i}, c_rows)) = assemble(layer.a_Bus{i}, f_comp, f_bus, f_gc);
         end
         for k = 1:numel(c_idxGC)
-            rv(c_idxGC{k}) = f_gc(layer.a_GlobalController{k});
+            rv(lin(c_idxGC{k}, c_rows)) = f_gc(layer.a_GlobalController{k});
         end
     else
         error(msg("GUILDA:SolverLIN:PointLayer", class(layer)))
@@ -86,7 +88,13 @@ function rv = assemble(layer, f_comp, f_bus, f_gc)
 end
 
 function n = n_rows(c_rows)
-    n = sum(cellfun(@(m) size(m,1), c_rows));
+    % Rows x, Vre, Vim, u (the first three cells of the rows form)
+    n = sum(cellfun(@(m) size(m,1), c_rows(1:3)));
+end
+
+function iv = lin(iv, c_rows)
+    % The rows of iv among the variables of the linearization (the leading rows)
+    iv = iv(iv <= n_rows(c_rows));
 end
 
 % ---- equilibrium ----

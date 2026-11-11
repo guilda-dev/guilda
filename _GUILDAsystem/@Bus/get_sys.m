@@ -76,7 +76,8 @@ function [sys, varargout] = get_sys(obj, opt)
         [~, c_idx] = obj.get_variable_map();
         sys = cell(size(obj.a_Component));
         for j = 1:numel(obj.a_Component)
-            sys{j} = obj.a_Component{j}.get_sys("port", "V2I", "Point", rv_point(c_idx{j}), "Format", "struct");
+            iv_j = c_idx{j}(c_idx{j} <= numel(rv_point));   % its rows x, Vre, Vim, u
+            sys{j} = obj.a_Component{j}.get_sys("port", "V2I", "Point", rv_point(iv_j), "Format", "struct");
         end
     end
     if isempty(sys)     % no components: no states, and the bus takes no current (I = 0)
@@ -160,6 +161,7 @@ end
 function result = object_result(obj, sct_sys, opt, rv_point, l_eq, t0)
 % ResultLIN holding the port model, the variable map and the Jacobian blocks
     tab = obj.get_variable_map();
+    tab = tab(ismember(tab.Kind, ["x","Vre","Vim","u"]), :);    % the variables of the linearization
     if l_eq
         rv_point = SolverLIN.point_vector(obj, []);
     end

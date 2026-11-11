@@ -64,6 +64,10 @@ DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 sol = net.simulate([0,2], ev);
 [tab, c_idxBus, c_idxGC] = net.get_variable_map();
+n_lin = sum(ismember(tab.Kind, ["x","Vre","Vim","u"]));   % 結果の変数は表の先頭の x, Vre, Vim, u
+tab = tab(1:n_lin,:);
+c_idxBus = cellfun(@(iv) iv(iv <= n_lin), c_idxBus, 'UniformOutput', false);
+c_idxGC  = cellfun(@(iv) iv(iv <= n_lin), c_idxGC, 'UniformOutput', false);
 nt  = numel(sol.rv_t);
 assert(isequal(sol.tab_variable, tab))
 assert(isequal(size(sol.rm_variable), [nt, height(tab)]))
@@ -89,9 +93,13 @@ assert(max(abs(sol.rm_variable(:, c_idxGC{1})), [], "all") > 1e-6)
 % get_point: 変数の表の順の列ベクトル。母線・機器の表を与えるとその行だけ
 x = sol.get_point(1.5);
 assert(isequal(size(x), [height(tab), 1]))
-assert(isequal(sol.get_point(1.5, net.a_Bus{1}.get_variable_map()), x(c_idxBus{1})))
-assert(isequal(sol.get_point(1.5, net.a_Bus{1}.a_Component{1}.get_variable_map()), ...
-               x(c_idxBus{1}(1:height(net.a_Bus{1}.a_Component{1}.get_variable_map())))))
+lin = @(T) T(ismember(T.Kind, ["x","Vre","Vim","u"]), :);
+assert(isequal(sol.get_point(1.5, lin(net.a_Bus{1}.get_variable_map())), x(c_idxBus{1})))
+assert(isequal(sol.get_point(1.5, lin(net.a_Bus{1}.a_Component{1}.get_variable_map())), ...
+               x(c_idxBus{1}(1:height(lin(net.a_Bus{1}.a_Component{1}.get_variable_map()))))))
+% 制御器の入力 uc は結果に無い
+tab_c1 = net.a_Bus{1}.a_Component{1}.get_variable_map();
+expect_error(@() sol.get_point(1.5, tab_c1(tab_c1.Kind == "uc", :)), "GUILDA:ResultODE:UnknownVariable")
 % 範囲外の時刻、結果にない変数はエラー
 expect_error(@() sol.get_point(3), "GUILDA:ResultODE:PointTime")
 tab_bad = tab(1,:);  tab_bad.Owner = "nobody";
@@ -639,7 +647,7 @@ lv  = inwin(r.t, 5, 10);
 assert(any(lv))
 assert(max(abs(Pm(lv) - Pm(1))) < 1e-8, "解列した AGC の出力 (比例項) が機器の入力に加わっている")
 assert(max(abs(Pm(inwin(r.t, 1, 5)) - Pm(1))) > 1e-3)    % 解列前は AGC が働く
-assert(agc.l_isConnect, "シミュレーション後は接続状態に戻る")
+assert(~isprop(agc, "l_isConnect"), "解列の状態はモデルに書かない (SolverODE の ctx)")
 
 
 %% Two global controllers act together

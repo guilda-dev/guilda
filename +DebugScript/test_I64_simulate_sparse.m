@@ -57,14 +57,13 @@ assert(sol.rv_t(end) < 1)
 
 
 %% Input event on a phase after phases without one
-% 入力イベントのない区間は rv_Uoffset が空で、イベントのある区間だけ入力が効く
+% 入力イベントのない区間は入力の関数が無く、イベントのある区間だけ入力が効く
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [0.5,1], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0.05);
 sol = net.simulate([0,1.5], ev, Progress="none");
 ref = net.simulate([0,1.5], Progress="none");
 assert(max(abs(sol.rm_variable(end,:) - ref.rm_variable(end,:))) > 1e-4)
-assert(isempty(net.a_Bus{2}.a_Component{1}.rv_Uoffset))
 
 
 function net = ring(N)

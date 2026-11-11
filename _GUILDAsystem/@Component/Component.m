@@ -102,13 +102,6 @@ classdef Component < PowerSystemModel
         rv_Uequilibrium = zeros(0,1)         % Input equilibrium (edited by set_input; held by initialize(Method="FixedInput")).
         c_Iequilibrium                       % [pu] Current injected into the bus at the equilibrium (complex).
     end
-    properties (SetAccess={?SolverODE, ?Component}, Hidden) % Simulation working data
-        iv_odeX = [];                        % Positions of the states in the simulation vector.
-        iv_odeU = [];                        % Positions of the inputs in the simulation vector.
-        iv_odeY = [];                        % Not set for a component (stays []); read by the Jacobian of the simulation.
-        lv_odeUfromLC = false(0,1);          % Inputs driven by an output of a top-level local controller.
-        iv_odeYtoU = zeros(0,1);             % Index of each such input in the outputs of the top-level controllers, stacked in order.
-    end
     properties(Dependent) % Steady State
         c_Vequilibrium                       % [pu] Terminal voltage at the equilibrium (= a_Bus.c_Vequilibrium; [] without a bus).
         rv_Xequilibrium_all                  % State equilibrium of the component, then of its controllers depth first (the order of get_variable_map).
@@ -119,11 +112,6 @@ classdef Component < PowerSystemModel
     end
     properties (Access={?SolverODE, ?Component}) % Simulation working data
         l_hasController = false;             % Whether a local controller is attached.
-        l_isConnect = true                   % False while an active trip of a scenario names the component (simulation working data).
-    end
-    properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
-        rv_Xoffset                           % State offset of the active disturbances in the current phase (built by Scenario.compile).
-        rv_Uoffset                           % Input change of the active disturbances in the current phase (built by Scenario.compile).
     end
     properties (SetAccess={?SolverCPF}) % Continuation Power Flow
         iv_CPFX = zeros(0,1)                 % Indices of the states in the CPF variable vector (CPF working data).
@@ -235,9 +223,6 @@ classdef Component < PowerSystemModel
 
         % get_sys
         [sys, varargout] = get_sys(obj, x, V, u, opt)
-
-        % get dx, I and y
-        DAEvec = get_dx_algebraic(obj, t, x, Vi, u, y, y_GC, DAEvec)
 
         % Steady State
         set_input(obj, rv_u)

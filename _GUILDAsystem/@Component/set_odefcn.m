@@ -2,8 +2,8 @@ function set_odefcn(obj)
 % Bind the parameters and the network frequency into the f_* function handles.
 % Does nothing when they are up to date: the stale tag odefcn is empty and the network
 % frequency equals r_odefcnHz. Otherwise builds them, clears odefcn and stores the
-% frequency in r_odefcnHz. Called by initialize, and by get_dx_algebraic when the
-% handles were never built.
+% frequency in r_odefcnHz. Called by initialize (and by get_sys of a layer without a
+% network).
 %
 % <@Group> Called by analyses
     arguments (Input)

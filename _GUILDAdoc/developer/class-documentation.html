@@ -297,7 +297,7 @@
       <thead><tr><th><span lang="en">Function</span><span lang="ja">関数</span></th><th><span lang="en">Allowed in its arguments blocks</span><span lang="ja">arguments ブロックで使えるもの</span></th></tr></thead>
       <tbody>
         <tr><td><span lang="en">Entry point and public API, e.g. <code>simulate</code>, <code>add_component</code></span><span lang="ja">入口と公開 API。例: <code>simulate</code>、<code>add_component</code></span></td><td data-label="Allowed in its arguments blocks" data-label-ja="arguments ブロックで使えるもの"><span lang="en">Full validation: size, class, validator functions, defaults and name-value arguments.</span><span lang="ja">すべての検証: サイズ、クラス、検証関数、既定値、名前と値の引数。</span></td></tr>
-        <tr><td><span lang="en">Hot path, called per ODE right-hand side evaluation, Newton iteration or time step, e.g. <code>get_dx_*</code>, model <code>fcn_*</code> / <code>Jacobi_*</code>, power-flow mismatch</span><span lang="ja">ホットパス関数: ODE 右辺の評価、Newton 反復、時間ステップごとに呼ばれる関数。例: <code>get_dx_*</code>、モデルの <code>fcn_*</code> / <code>Jacobi_*</code>、潮流のミスマッチ</span></td><td data-label="Allowed in its arguments blocks" data-label-ja="arguments ブロックで使えるもの"><span lang="en">Size and class with a comment. No validator functions (<code>{mustBe...}</code>) and no name-value arguments (<code>opt.Name</code>): range checks belong at the analysis entry, done once.</span><span lang="ja">サイズとクラス、コメント。検証関数（<code>{mustBe...}</code>）と名前と値の引数（<code>opt.Name</code>）は不可: 範囲の検査は解析の入口で一度だけ。</span></td></tr>
+        <tr><td><span lang="en">Hot path, called per ODE right-hand side evaluation, Newton iteration or time step, e.g. <code>SolverODE.getODEFunction</code>, model <code>fcn_*</code> / <code>Jacobi_*</code>, power-flow mismatch</span><span lang="ja">ホットパス関数: ODE 右辺の評価、Newton 反復、時間ステップごとに呼ばれる関数。例: <code>SolverODE.getODEFunction</code>、モデルの <code>fcn_*</code> / <code>Jacobi_*</code>、潮流のミスマッチ</span></td><td data-label="Allowed in its arguments blocks" data-label-ja="arguments ブロックで使えるもの"><span lang="en">Size and class with a comment. No validator functions (<code>{mustBe...}</code>) and no name-value arguments (<code>opt.Name</code>): range checks belong at the analysis entry, done once.</span><span lang="ja">サイズとクラス、コメント。検証関数（<code>{mustBe...}</code>）と名前と値の引数（<code>opt.Name</code>）は不可: 範囲の検査は解析の入口で一度だけ。</span></td></tr>
       </tbody>
     </table>
     <ul lang="en">
@@ -308,19 +308,18 @@
       <li>理由: 検証関数と名前と値の引数の解析は呼び出しのたびに実行、サイズとクラスの検査はほぼ無負担。</li>
       <li>サイズとクラスの宣言による入力の変換: 行ベクトルは列ベクトル、<code>single</code> は <code>double</code> に。宣言するサイズはすべての呼び出し元が渡す形のみ。形が一定でなければクラスだけ、またはコメントだけ。</li>
     </ul>
-<pre class="cd-code"><span class="cd-k">function</span> DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
-<span class="cd-c">% Add the equations of the component to the DAE residual.</span>
+<pre class="cd-code"><span class="cd-k">function</span> odeX = getODEFunction(ctx, t, x, RM, EM, lg)
+<span class="cd-c">% Right-hand side of the DAE of one phase, evaluated block by block.</span>
     <span class="cd-k">arguments</span> (Input)
-        obj
-        t      (1,1) double  <span class="cd-c">% [s] Time.</span>
-        x      (:,1) double  <span class="cd-c">% Variables of the network DAE.</span>
-        Vi     (2,1) double  <span class="cd-c">% [pu] Bus voltage [real; imag].</span>
-        Ii     (2,1) double  <span class="cd-c">% [pu] Bus current [real; imag].</span>
-        u      (:,1) double  <span class="cd-c">% Input values of the component.</span>
-        DAEvec (:,1) double  <span class="cd-c">% DAE residual of the network so far.</span>
+        ctx                 <span class="cd-c">% Context of the run.</span>
+        t    (1,1) double   <span class="cd-c">% [s] Time from the start of the phase.</span>
+        x    (:,1) double   <span class="cd-c">% Reduced state vector.</span>
+        RM                  <span class="cd-c">% Reduction matrix of the phase.</span>
+        EM                  <span class="cd-c">% Expansion matrix of the phase.</span>
+        lg   (:,1) logical  <span class="cd-c">% True for the entries of the full state vector that are solved.</span>
     <span class="cd-k">end</span>
     <span class="cd-k">arguments</span> (Output)
-        DAEvec (:,1) double  <span class="cd-c">% Updated DAE residual of the network.</span>
+        odeX (:,1) double   <span class="cd-c">% Right-hand side of the reduced DAE.</span>
     <span class="cd-k">end</span></pre>
 
     <!-- ============================== CLASS PAGE ============================== -->

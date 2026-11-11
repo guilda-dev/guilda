@@ -341,14 +341,23 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
     its equilibrium) and the global controller output;
   - otherwise to the component input of that name, as before. An input driven
     by both a local and a global controller receives the sum.
-  - `add_global_controller` prints an INFO line per unit and output (e.g.
-    `Pmech of SG1B001 goes directly to the component input`), kept in
-    `gc.sv_route`. When a local controller is added, removed or replaced, the
-    next `simulate` prints the outputs that go elsewhere now (`... now goes
-    ...`) once. An output that has no input left stops `simulate` with
+  - The routing is decided in one place, the connection map
+    `[~, ~, ~, tab_connection] = net.get_variable_map()` (rows of `Kind`
+    `"global"`, see 1.12). `add_global_controller` prints these connections
+    as an INFO line (`Source -> Target` by Label, e.g.
+    `Pmech_SG1B001_AGC1IEEE9bus -> Pmech_SG1B001_B001_IEEE9bus`). Nothing is
+    stored on the controller (`gc.sv_route` is removed). When
+    `comp.add_local_controller` or `comp.remove_local_controller` changes
+    where an output of a global controller of that component goes, the edit
+    prints the outputs that go elsewhere now (`GUILDA:Component:GconRouteChanged`;
+    `-> (no input)` for an output left without an input); `simulate` prints
+    nothing. An output that has no input left stops `simulate` with
     `GUILDA:SolverODE:GconNoTarget`. `Message.ShowInfo` hides the INFO lines.
   - `gc.get_sys` has the bus voltages and the observed signals as inputs, and
-    one output row for each input an output drives (labelled as that input).
+    one output row for each input an output drives (labelled as that input),
+    both read from the connection map. A controller not added to a network has
+    no connections: its inputs and outputs are labelled with its own rows of
+    the map (`gc.attach_tag(name + "_" + unit tag)`).
 - **Controller inputs are wired by name.** A local controller reads the
   component it is attached to (directly, or through the controller above
   it) by the names of its inputs `sv_u`: a name in the component's `sv_y`
@@ -668,11 +677,20 @@ Option names:
   settings.
 - `ResultODE` stores the trajectory once, in the order of
   `net.get_variable_map()`: `res.rv_t` (times), `res.tab_variable` (the
-  map at the time of the run) and `res.rm_variable` (row k at `rv_t(k)`,
-  one column per map row, **including the states of local and global
-  controllers**; states of a tripped unit are NaN), plus `res.rm_I` (bus
-  currents). `res.get_point(t, tab_map, Side=)` gives the values at a time
-  (linear interpolation; `tab_map` may be a bus or component map). At a
+  rows `x`, `Vre`, `Vim`, `u` of the map at the time of the run, which are its
+  leading rows) and `res.rm_variable` (row k at `rv_t(k)`,
+  one column per row of `tab_variable`, **including the states of local and
+  global controllers**; states of a tripped unit are NaN), plus `res.rm_I`
+  (bus currents). `res.get_point(t, tab_map, Side=)` gives the values at a time
+  (linear interpolation; `tab_map` is a part of `tab_variable`, e.g. the rows
+  `x`, `Vre`, `Vim`, `u` of a bus or component map; a row that is not in the
+  result, such as a controller input `uc`, stops with
+  `GUILDA:ResultODE:UnknownVariable`).
+- `simulate` writes nothing to the models. The DAE vector follows the
+  variable map: `z = [x; V; I; u; uc]` (states, bus voltages, then the bus
+  currents `I`, which are not in the map, then the component inputs and the
+  controller inputs). The positions, the trips, faults and input events of
+  each phase are in the run context of `SolverODE` only. At a
   phase boundary the time appears twice; `Side="after"` (default) takes the
   start of the later phase (after the event), `"before"` the end of the
   earlier one.
@@ -798,7 +816,7 @@ Option names:
 | `lin = odeLinearizer(net, n, Algorithm=a); sys = lin.get_sys` | `res = net.linearize(); sys = res.get_ss(a)` |
 | `lin.Kxx`, `lin.Kxv`, `lin.Kvx`, `lin.Kvv`, `lin.get_DAE` | `res.rm_Axx`, `rm_Axv`, `rm_Bx`, `rm_Avx`, `rm_Avv`, `rm_Bv`, `rm_E` (unreduced DAE in the order of `res.tab_variable`) |
 | – | `net.linearize(Point=x)` or `Point={sim, t}`: linearize away from the equilibrium |
-| – | `net.get_variable_map()`, `bus.get_variable_map()`, `comp.get_variable_map()` |
+| – | `net.get_variable_map()`, `bus.get_variable_map()`, `comp.get_variable_map()` (also the signals and the connection map, see below) |
 
 - Options: `Method` (`"Kron"` | `"Feedback"` | `"DAE"`, default
   `"Feedback"` as in v3), `Point` (call only), `Coordinate`, `PlotFcn`; the
@@ -1257,7 +1275,6 @@ there.
   - 自分でハンドルを作っていたモデル(`set_odefcn` をオーバーライドしていたクラス)は、
     `set_odefcn` をオーバーライドし、最後に `r_odefcnHz` を設定して
     `obj.sct_stale.odefcn = strings(0,1);` とします(例: `controller.local_LQR`)。
-  - `get_dx_algebraic` はハンドルが空のときだけ `set_odefcn` を呼びます。
 - **Equilibrium:** `get_equilibrium(obj, c_V, c_I, r_P, r_Q)`; do not store
   copies of V or I (see 1.2).
 - **Controllers:** local controllers receive their parent through
@@ -1271,17 +1288,21 @@ there.
   outputs of a global controller must be 0 at its equilibrium.
 - **Inputs driven by a controller.** A controller output does not overwrite
   the component input in `simulate`: an input event or a global controller on
-  it adds (see 1.6). `LocalController.get_dx_algebraic` returns
-  `[DAEvec, y]`; the third output `y_name` is removed (the names are `sv_y`).
-  `Component.get_dx_algebraic(t, x, Vi, u, y, y_GC, DAEvec)` receives the outputs
-  `y` of the component and the global controller outputs `y_GC` (summed at the
-  inputs they drive), computed first by `SolverODE` (order: component outputs,
-  global controllers, local controllers, inputs, states and currents).
-- **Working data of a simulation.** `LocalController.l_isConnect` is removed.
-  `Component.rv_Xoffset` / `rv_Uoffset` can only be written by `SolverODE`,
-  and are empty after a run. `rv_Uoffset` is also empty
-  during a run for a component without an input event, so do not call it
-  from a model.
+  it adds (see 1.6). `Component.get_dx_algebraic` and
+  `LocalController.get_dx_algebraic` are removed: `SolverODE` evaluates each
+  block (component, local controller, global controller) from its own `x`,
+  `V` and `u` with the `f_*` handles. Every controller input is an algebraic
+  variable of the DAE, like a component input, with the residual
+  `u - (sum of its sources) = 0` built from the connection map; the outputs
+  `y` are computed from `x`, `V` (and `u` for a controller) at each evaluation.
+  A component output still takes no `u`, so the DAE stays index 1.
+- **Working data of a simulation.** The models hold none: `iv_odeX`,
+  `iv_odeU`, `iv_odeY`, `iv_odeI`, `lv_odeUfromLC`, `iv_odeYtoU`,
+  `Component.l_isConnect`, `Bus.l_isFault`, `rv_Xoffset`, `rv_Uoffset` (of
+  components and controllers) and `GlobalController.l_isConnect` are
+  removed. `SolverODE.build_index` builds the positions of a run from the
+  variable map and the connection map, and the trips, faults and input events
+  of each phase stay in the run context. A model must not read any of them.
 - **モデルへの要求の明文化。**
   - `get_equilibrium` は常に `c_V`, `c_I`, `r_P`, `r_Q` の 4 引数で呼ばれます。解列のときは `c_I = r_P = r_Q = 0` です。`nargin` で分岐しているモデルは 4 引数で動くように直してください。`LocalController` と `GlobalController` でも `get_equilibrium` は `Abstract` として宣言されています。
   - `fcn_Mass` は定数です。`simulate` は `t, x, V, u` を空にして呼びます。これらを使う `fcn_Mass` は `GUILDA:read_mass:NotConstant` で止まり、機器や制御器のタグを示します。
@@ -1294,11 +1315,23 @@ there.
   `comp.validate` は平衡点で、未設定なら単位長の V と I の乱数点で評価します。乱数点では値を保持するモデル(負荷など)がその点の値を保持するので、後で `net.initialize()` を実行してください。`con.validate` は系統上の機器に付いて初期化された制御器が対象で、そうでなければ `GUILDA:LocalController:ValidateNotAttached` で止まります。
 - **AVR の範囲外のエラー。** `AVR_ST1` と `AVR_DC1` の平衡点が範囲外のときは `GUILDA:AVR_ST1:InvalidValueRange`、`GUILDA:AVR_DC1:InvalidValueRange` で止まり、必要な出力と上下限を示します。
 - **Variable map.** `net.get_variable_map()` (and `bus.` / `comp.`) is the
-  single definition of the variable order: states (per bus, per component,
-  then its local controllers depth first; then the global controllers),
-  bus voltages `Vre`, `Vim` interleaved per bus, then the inputs. The
-  `Label` column equals the StateName / InputName of `get_sys`. Do not
-  rely on any other ordering.
+  single definition of the variable order and lists every signal: `x`
+  (per bus, per component, then its local controllers depth first; then the
+  global controllers), bus voltages `Vre`, `Vim` interleaved per bus, `u`
+  (component inputs), `uc` (inputs of the local controllers, then of the
+  global controllers, one set per controlled unit), then the signals `y`
+  (component outputs) and `yc` (controller outputs). The new column `Role`
+  is `"variable"` (`x`, `Vre`, `Vim`, `u`, `uc`) or `"signal"` (`y`, `yc`).
+  The rows `x`, `Vre`, `Vim`, `u` come first, unchanged: they are the
+  variables of the linearization (`Point`, `ResultLIN.tab_variable`). The
+  `Label` column equals the StateName / InputName / OutputName of `get_sys`.
+  Do not rely on any other ordering.
+- **Connection map.** The fourth output of `net.get_variable_map()` (the
+  second of `comp.`, the third of `bus.`) is `tab_connection`, one row per
+  connection: `Kind` (`"local"`, `"observe"`, `"equilibrium"`, `"global"`),
+  `Source`, `Target` (Labels), `SourceIndex`, `TargetIndex` (rows of the
+  map). It is the only place where routing is decided; `simulate`,
+  `add_global_controller`, `gc.get_sys` and `validate` read it.
 - **Hessians (optional).** `get_hessian` on `Component`, `LocalController`
   and `GlobalController` defines the contract: a class that supports it
   adds static `Hessian_dx` (required), `Hessian_I`, `Hessian_Y` with the
