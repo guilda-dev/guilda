@@ -68,10 +68,12 @@
 | `disp_branch` | 枝ごとの From・To の母線、両端の P・Q、損失、負荷率(両端の大きいほうの \|S\| / Smax。Smax が無限なら NaN) | `Branch`(枝タグ)、`Unit`、`Sort`(`"tag"` / `"loss"` / `"loading"`。大きい順) | 実装 |
 | `disp_violation` | `tab_violation` を種類(Bus・Component・Branch)ごとにまとめた表。0 件なら 1 行 | `Class`(`"Bus"` / `"Component"` / `"Branch"` の絞り込み) | 実装 |
 | `plot_voltage` | 母線電圧の大きさと位相の棒グラフ(旧 `Plot`)。有限の Vmin・Vmax を破線(Tag `"Vmin"`・`"Vmax"`)で重ねる | `Parent`、`Quantity`(`"magnitude"` / `"angle"` / `"both"`)、`Limit`(既定 true) | 実装 |
-| `plot_branch` | 枝ごとの潮流の棒グラフ | `Parent`、`Quantity`(`"P"` / `"Q"` / `"S"` / `"loading"` / `"loss"`) | 後で |
-| `plot_convergence` | 反復(dynamic では仮想時間)ごとの最大残差と電圧の変化(`cm_Vhistory`、`rv_step`) | `Parent`、`Bus` | 後で |
-| `plot_network` | 系統図(スナップショットの `graph` パラメータの座標)に母線電圧を色で、枝潮流を矢印で重ねる | `Parent`、`Color`、`Arrow` | 後で |
+| `plot_branch` | 枝ごとの棒グラフ。`"P"`・`"Q"` は `Pfrom`・`Qfrom`、`"S"` は両端の大きいほうの \|S\|、`"loading"` は \|S\|/Smax(Smax が無限なら棒なし)と 1 の破線(Tag `"Limit"`)、`"loss"` は `Ploss` | `Parent`、`Quantity`(`"P"` / `"Q"` / `"S"` / `"loading"` / `"loss"`、既定 `"P"`) | 実装 |
+| `plot_convergence` | `cm_Vhistory` の各点での電力方程式の最大残差(対数軸、横軸は `rv_step`。dynamic では仮想時間)と `Tolerance` の破線。残差は `SolverPF` の方程式と同じ定義で、保存した `tab_PFcondition` と `cm_Y` から計算します(最後の点は `output.residual` と一致) | `Parent`、`Bus`(指定すると、その母線の \|V\| の推移を 2 段目に描く) | 実装 |
+| `plot_network` | MATLAB の graph plot で、母線の色を \|V\|(または位相)、枝を P(または Q)が入る端からの矢印にし、線幅を \|P\|(\|Q\|)に比例させる | `Parent`、`Color`(`"V"` / `"angle"`)、`Arrow`(`"P"` / `"Q"` / `"none"`) | 実装 |
 
+- **`plot_network` の座標:** スナップショットの各母線の `graph` パラメータの `Xaxis`・`Yaxis` を使います。1 つでも NaN の母線があると、与えられた座標は使わず、全母線を MATLAB の graph plot の `"force"` レイアウトで置きます(一部だけ座標を補う方法は、座標の尺度が系統ごとに違うため採りませんでした)。各枝の向きは `Pfrom`(`Qfrom`)の符号で決め、`digraph` の辺の並びから枝を対応づけ、返す `GraphPlot` の `UserData` に辺ごとの枝タグを入れています。
+- 3 つの図(`plot_branch`・`plot_convergence`・`plot_network`)は 2026-11-12 に追加しました(ユーザーの依頼)。結果のない値には `GUILDA:ResultPF:NoHistory`(条件・Y・履歴のない結果での `plot_convergence`)と `GUILDA:ResultPF:NoNetworkSnapshot`(スナップショットのない結果での `plot_network`)で止まります。
 - 未知のタグは `GUILDA:ResultPF:UnknownTag`、スナップショットのない結果での `Unit="SI"` は `GUILDA:ResultPF:NoBase` です。
 - **`Plot` の廃止(ユーザーの決定、2026-11-12):** すべての結果クラスの `Plot` を、中身を変えずに `plot_*` に改名しました(別名なし)。`ResultPF.plot_voltage`(制約の線を追加)、`ResultOPF.plot_dispatch`、`ResultCPF.plot_pvcurve`、`ResultODE.plot_trajectory`、`ResultLIN.plot_eigenvalue` です。`ResultBase.Plot` は削除しました。`GUILDA:ResultBase:Unsupported` は `export` がまだ使うので残しています。
 - **未対応:** `_GUILDAtutorial/*.mlx` は保留中のチュートリアルの作業に含まれるため、`Plot` の呼び出しを変えていません。

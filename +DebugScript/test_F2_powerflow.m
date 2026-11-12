@@ -440,6 +440,48 @@ assert(isequal(h.XData(:), res_d.rv_step(:)) && contains(get(get(findobj(f, "Typ
 clear c_f
 
 
+%% plot_network colors the buses and draws the flows as arrows
+% 色は |V| (または位相)、矢印は P (Q) が枝に入る端から、線幅は |P| とともに太くなる。座標がないと force レイアウト
+net = DebugScript.helper.build_9bus();
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+tab = res.tab_branch;
+f = figure("Visible", "off"); c_f = onCleanup(@() close(f));
+h = res.plot_network(Parent=f);
+assert(isa(h, "matlab.graphics.chart.primitive.GraphPlot") && numel(h.XData) == numel(net.a_Bus) && numel(h.LineWidth) == height(tab))
+assert(max(abs(h.NodeCData(:) - res.tab_bus.V)) < 1e-12 && numel(findobj(f, "Type", "colorbar")) == 1 && h.ShowArrows)
+% 一番太い矢印は |P| が最大の枝、細い順も |P| の順
+rv_P = max(abs([tab.Pfrom, tab.Pto]), [], 2);
+[~, iv_e] = ismember(h.UserData, string(tab.Properties.RowNames));
+assert(isequal(sort(iv_e(:))', 1:height(tab)))
+[~, i_e] = max(h.LineWidth);
+[~, i_b] = max(rv_P);
+assert(iv_e(i_e) == i_b && max(abs(h.LineWidth(:) - (0.5 + 4.5*rv_P(iv_e)/max(rv_P)))) < 1e-12)
+% 座標: スナップショットの Xaxis, Yaxis を使う。NaN があれば全母線を force レイアウトで置く
+sct = res.sct_network;
+for k = 1:numel(sct.a_Bus)
+    sct.a_Bus{k}.tab_parameter.graph.Xaxis = k;
+    sct.a_Bus{k}.tab_parameter.graph.Yaxis = -k;
+end
+tab_pf = table(res.tab_bus.Vphasor, res.tab_bus.Iphasor, res.tab_bus.P, res.tab_bus.Q, ...
+               'VariableNames', ["V","I","P","Q"], 'RowNames', res.tab_bus.Properties.RowNames);
+res_xy = ResultPF(tab_pf, res.cm_Y, sct, struct("flag", 1, "options", res.options));
+clf(f); h = res_xy.plot_network(Parent=f);
+assert(isequal(h.XData(:)', 1:9) && isequal(h.YData(:)', -(1:9)))
+sct.a_Bus{3}.tab_parameter.graph.Xaxis = NaN;
+clf(f); h = ResultPF(tab_pf, res.cm_Y, sct, struct("flag", 1)).plot_network(Parent=f);
+assert(all(isfinite(h.XData)) && ~isequal(h.XData(:)', 1:9))
+% Color="angle" は位相 [deg]、Arrow="none" は矢印なし
+clf(f); h = res.plot_network(Parent=f, Color="angle", Arrow="none");
+assert(max(abs(h.NodeCData(:) - rad2deg(res.tab_bus.Varg))) < 1e-12 && ~h.ShowArrows && all(h.LineWidth == 1))
+clf(f); h = res.plot_network(Parent=f, Arrow="Q");
+rv_Q = max(abs([tab.Qfrom, tab.Qto]), [], 2);
+[~, iv_e] = ismember(h.UserData, string(tab.Properties.RowNames));
+assert(max(abs(h.LineWidth(:) - (0.5 + 4.5*rv_Q(iv_e)/max(rv_Q)))) < 1e-12)
+assert(error_id(@() res.plot_network(Parent=f, Color="P")) == "MATLAB:validators:mustBeMember")
+assert(error_id(@() ResultPF().plot_network(Parent=f)) == "GUILDA:ResultPF:NoNetworkSnapshot")
+clear c_f
+
+
 %% Branch flows of the result use the admittance matrix in the snapshot
 % Branch.struct はスナップショットに枝のアドミタンス行列 cm_Y を加え、ResultPF はそれで枝潮流を求める
 net = PowerNetwork();
