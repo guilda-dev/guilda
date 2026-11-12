@@ -6,9 +6,9 @@ function varargout = disp_connection(obj, opt)
 % each bus, its components and their local controllers (depth first), then the global
 % controllers. Under each owner, every input (Kind "u" or "uc" of the variable map) is
 % listed first with its sources, then the components or controllers it holds. The tips
-% tell them apart: `┠──` / `┖──` for an input port, `┣━━` / `┗━━` (as in
-% `LayerPackage.disp_tree`) for a held object. Each source is marked by the kind of the
-% connection:
+% of the tree lines (the heavy lines of `LayerPackage.disp_tree`) tell them apart:
+% `┣━━←` / `┗━━←` for an input port, `┣━━●` / `┗━━●` for a held object. Each source is
+% marked by the kind of the connection:
 %
 % - `local`: an output of a local controller into its parent
 % - `global`: an output of a global controller into a unit or its local controllers
@@ -16,7 +16,8 @@ function varargout = disp_connection(obj, opt)
 % - `equilibrium`: the input keeps its equilibrium value
 %
 % A source is shown as "output <name> of <tag>" (an output y or yc) or "state <name> of
-% <tag>" (a state x). An input with several sources is their sum (`◀┳`). An input of a
+% <tag>" (a state x). An input with one source is joined to it by `━━`; an input
+% with several sources is their sum, forked by `━┳`, `┣` and `┗`. An input of a
 % global controller is shown as "<name> (<unit tag>)", one per controlled unit. Owners
 % without a shown input are left out, and so are the buses without one; a last line counts
 % the connections that the option Kind hides. The bus voltages that controllers read
@@ -89,7 +90,7 @@ function varargout = disp_connection(obj, opt)
     end
 
     s_head = " Signal connections of " + obj.s_tag + " " + link(obj) + newline ...
-           + " ┠── input port ◀ sources (◀┳: summed), ┣━━ held object; Kind: " + join(opt.Kind, ", ") + newline ...
+           + " ←: input port, ●: held object; several sources are summed (━┳); Kind: " + join(opt.Kind, ", ") + newline ...
            + " Bus voltages that controllers read directly are not connections and are not listed." + newline;
     s_foot = "";
     sv_hidden = setdiff(["local","global","observe","equilibrium"], opt.Kind, "stable");
@@ -135,11 +136,11 @@ function sv_lines = block(owner, ctx)
     n_item = numel(c_item);
     for k = 1:n_item
         l_last = k == n_item;
-        % held object: heavy tip as in disp_tree; input port: light tip on the heavy line
+        % heavy lines as in disp_tree; the tip is ● for a held object, ← for an input port
         if c_item{k}.l_owner
-            sv_tip = ["   ┣━━ ", "   ┗━━ "];  sv_next = ["   ┃  ", "      "];
+            sv_tip = ["   ┣━━● ", "   ┗━━● "];  sv_next = ["   ┃  ", "      "];
         else
-            sv_tip = ["   ┠── ", "   ┖── "];  sv_next = ["   ┃   ", "       "];
+            sv_tip = ["   ┣━━← ", "   ┗━━← "];  sv_next = ["   ┃    ", "        "];
         end
         s_branch = sv_tip(1 + l_last);
         s_next   = sv_next(1 + l_last);
@@ -148,7 +149,7 @@ function sv_lines = block(owner, ctx)
 end
 
 function c_item = input_items(owner, ctx)
-    % One item per shown input of owner: "name ◀━ source  [kind]", the names and the
+    % One item per shown input of owner: "name ━━ source  [kind]", the names and the
     % sources aligned within the owner
     tab  = ctx.tab;
     conn = ctx.conn;
@@ -181,10 +182,10 @@ function c_item = input_items(owner, ctx)
         sv_line = pad(c_src{k}, n_src) + "  [" + c_kind{k} + "]";
         n = numel(sv_line);
         if n == 1
-            s_first = pad(sv_name(k), n_name) + " ◀━ " + sv_line(1);
+            s_first = pad(sv_name(k), n_name) + " ━━ " + sv_line(1);
             sv_more = strings(0,1);
         else
-            s_first = pad(sv_name(k), n_name) + " ◀┳ " + sv_line(1);
+            s_first = pad(sv_name(k), n_name) + " ━┳ " + sv_line(1);
             sv_mark = [repmat(" ┣ ", n-2, 1); " ┗ "];
             sv_more = string(blanks(n_name + 1)) + sv_mark + sv_line(2:end);
         end
