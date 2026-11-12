@@ -97,14 +97,14 @@
         <tr>
           <td><code>Format</code></td>
           <td lang="en" data-label="Values and default"><ul>
-            <li>Form of the first output, as for <code>calculate_powerflow</code>; <code>flag</code> and <code>output</code> stay the 2nd and 3rd outputs</li>
+            <li>Form of the first output, with the values of <code>calculate_powerflow</code> (whose default is <code>"GUILDAorigin"</code>); <code>flag</code> and <code>output</code> stay the 2nd and 3rd outputs</li>
             <li><code>"V"</code> (default): complex bus voltages of the operating point, a column in <code>net.a_Bus</code> order</li>
             <li><code>"powerflow(mat)"</code>: n_bus × 4 complex double; columns <code>V</code>, <code>I</code> (phasors), <code>P</code>, <code>Q</code> (real) [pu]</li>
             <li><code>"powerflow(tab)"</code>: the same as a table with variables <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code>; row names = bus tags</li>
             <li><code>"GUILDAorigin"</code>: the result object; <code>ResultPF</code> (<code>"powerflow"</code>, <code>"FixedInput"</code>, <code>"equilibrium"</code>) or <code>ResultOPF</code> (<code>"OPF"</code>)</li>
           </ul><small>Taken out by <code>take_format</code> before the other options are passed on</small></td>
           <td lang="ja" data-label="値と既定値"><ul>
-            <li>最初の出力の形です。<code>calculate_powerflow</code> と同じ値を取ります。<code>flag</code> と <code>output</code> は、どの値でも 2 番目と 3 番目の出力です。</li>
+            <li>最初の出力の形です。<code>calculate_powerflow</code> と同じ値を取ります（<code>calculate_powerflow</code> の既定は <code>"GUILDAorigin"</code>）。<code>flag</code> と <code>output</code> は、どの値でも 2 番目と 3 番目の出力です。</li>
             <li><code>"V"</code>（既定）: 運転点の母線の複素電圧です。<code>net.a_Bus</code> の順の列ベクトルです。</li>
             <li><code>"powerflow(mat)"</code>: n_bus × 4 の複素数の行列です。列は <code>V</code>、<code>I</code>（フェーザ）、<code>P</code>、<code>Q</code>（実数）[pu] です。</li>
             <li><code>"powerflow(tab)"</code>: 同じ内容の table です。変数は <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code>、行名は母線のタグです。</li>

@@ -10,7 +10,7 @@ classdef ___MODEL_NAME___ < PowerNetwork
 % <@Examples>
 % ```matlab
 % net = ___MODEL_NAME___();
-% V   = net.calculate_powerflow();
+% res = net.calculate_powerflow();
 % ```
 %
 % See also PowerNetwork.import_csv, PowerNetwork.export_csv

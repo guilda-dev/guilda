@@ -38,7 +38,7 @@ assert(DebugScript.helper.edit_flag(net) == "initialized")
 
 %% Initialize sets bus and component equilibria
 net = DebugScript.helper.build_9bus();
-tab = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin").tab_bus);
+tab = DebugScript.helper.quiet(@() net.calculate_powerflow().tab_bus);
 DebugScript.helper.quiet(@() net.initialize);
 
 % 母線の平衡点 = 潮流計算の解

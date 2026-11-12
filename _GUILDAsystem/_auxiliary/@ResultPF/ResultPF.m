@@ -1,5 +1,5 @@
 classdef ResultPF < ResultBase
-% Result of net.calculate_powerflow(Format="GUILDAorigin").
+% Result of net.calculate_powerflow (its default Format "GUILDAorigin").
 %
 % Holds the bus voltages, currents and power injections of the solution, the branch flows,
 % the violated operating limits and the voltages at each iteration (or time step of the
@@ -32,7 +32,7 @@ classdef ResultPF < ResultBase
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
-% [result, flag, output] = net.calculate_powerflow(Format="GUILDAorigin");
+% [result, flag, output] = net.calculate_powerflow();
 % result.tab_bus           % Varg, V, P, Q, Vphasor, Iphasor of each bus
 % result.tab_branch        % flows and losses of each branch
 % result.tab_violation     % violated operating limits (0 rows when none)

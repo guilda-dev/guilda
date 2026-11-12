@@ -75,7 +75,7 @@ classdef IEEE14bus_NoTap < PowerNetwork
 %
 % ```matlab
 % net = network.IEEE14bus_NoTap();
-% V   = net.calculate_powerflow();
+% res = net.calculate_powerflow();
 % sc  = Scenario("fault");
 % sc.add_fault("B008", [1,1.05]);
 % net.add_scenario(sc);

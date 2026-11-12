@@ -10,7 +10,7 @@ classdef Txt3Bus < PowerNetwork
 %
 % ```matlab
 % net = network.Txt3Bus();
-% V   = net.calculate_powerflow();
+% res = net.calculate_powerflow();
 % sc  = Scenario("fault");
 % sc.add_fault("B002", [1,1.05]);
 % net.add_scenario(sc);

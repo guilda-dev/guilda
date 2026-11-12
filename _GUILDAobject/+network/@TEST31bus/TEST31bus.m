@@ -75,7 +75,7 @@ classdef TEST31bus < PowerNetwork
 %
 % ```matlab
 % net = network.TEST31bus();
-% V   = net.calculate_powerflow();
+% res = net.calculate_powerflow();
 % sc  = Scenario("offset");
 % sc.add_offset("B001SG1", "delta", 0.1, 1);
 % net.add_scenario(sc);

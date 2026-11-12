@@ -77,7 +77,7 @@ classdef PowerNetwork < PowerSystemModel
 % net.a_Bus{3}.add_component("load-power", P=-0.5, Q=0);
 % net.a_Bus{1}.l_isSlack = true;
 %
-% V   = net.calculate_powerflow();          % complex bus voltages (Format="GUILDAorigin": ResultPF)
+% res = net.calculate_powerflow();          % ResultPF
 % net.initialize();                         % equilibrium for the dynamic analyses
 % sc  = Scenario("fault", Time=[0,10]);
 % sc.add_fault("B003", [1,1.05]);

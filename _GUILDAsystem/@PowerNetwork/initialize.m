@@ -49,7 +49,7 @@ function [result, flag, output] = initialize(obj, varargin)
 %   - "equilibrium": never solved; the equilibria the components already hold (from an
 %     earlier initialize) are kept, and buses without components get the voltage of
 %     Y*V = I. A stale power flow stops with an error: use net.initialize().
-% - `Format` — Form of the first output, as for calculate_powerflow. Default: "V".
+% - `Format` — Form of the first output, with the values of calculate_powerflow. Default: "V" (calculate_powerflow: "GUILDAorigin").
 %   - "V": complex bus voltages of the operating point [pu], a column in net.a_Bus order.
 %   - "powerflow(mat)": n-by-4 complex double; columns V, I (complex phasors), P, Q
 %     (real injections into the network) [pu]; rows in bus order.

@@ -135,12 +135,12 @@ check_failure_text(net, ["12 islands", "[B010], ..."]);
 
 %% calculate_powerflow alone reports nothing about islands
 net = balanced_island();
-[s_id, ~, res] = warning_of(@() net.calculate_powerflow(Format="GUILDAorigin"));
+[s_id, ~, res] = warning_of(@() net.calculate_powerflow());
 assert(s_id == "" && res.l_success)
 
 net = connected_network();
 net.add_bus();
-[s_id, ~, res] = warning_of(@() net.calculate_powerflow(Format="GUILDAorigin"));
+[s_id, ~, res] = warning_of(@() net.calculate_powerflow());
 % 収束しない警告 (PowerNetwork:PowerflowNotConverged) だけで、島の警告はない
 assert(s_id == "GUILDA:PowerNetwork:PowerflowNotConverged" && ~res.l_success, s_id)
 

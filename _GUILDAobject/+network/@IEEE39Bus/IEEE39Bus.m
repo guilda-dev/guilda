@@ -24,7 +24,7 @@ classdef IEEE39Bus < PowerNetwork
 % <@Examples>
 % ```matlab
 % net = network.IEEE39Bus();
-% V   = net.calculate_powerflow();
+% res = net.calculate_powerflow();
 % ```
 %
 % See also network.IEEE68bus, network.IEEE9bus

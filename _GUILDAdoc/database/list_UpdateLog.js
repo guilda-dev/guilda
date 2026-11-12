@@ -3,7 +3,7 @@ const updateLogData = [
     "title": "Choose the output of the power flow",
     "date": "2026-11-12",
     "type": "feature",
-    "content": "net.calculate_powerflow and net.initialize take the option Format for their first output: \"V\" (the default) gives the complex bus voltages, \"powerflow(mat)\" and \"powerflow(tab)\" give V, I, P and Q of each bus as a matrix or a table, and \"GUILDAorigin\" gives the result object (ResultPF; ResultOPF for initialize with Method=\"OPF\"). Scripts that read res.tab_bus need Format=\"GUILDAorigin\". Files are written only by the result: res = net.calculate_powerflow(Format=\"GUILDAorigin\"); res.Export(filename). The old form calculate_powerflow(\"dynamic\") and the options export, filename and Export are removed: use Solver=\"dynamic\" and res.Export."
+    "content": "net.calculate_powerflow and net.initialize take the option Format for their first output: \"GUILDAorigin\" gives the result object (ResultPF; ResultOPF for initialize with Method=\"OPF\"), \"V\" gives the complex bus voltages, and \"powerflow(mat)\" and \"powerflow(tab)\" give V, I, P and Q of each bus as a matrix or a table. The default is \"GUILDAorigin\" for calculate_powerflow and \"V\" for initialize. Files are written only by the result: res = net.calculate_powerflow(); res.Export(filename). The old form calculate_powerflow(\"dynamic\") and the options export, filename and Export are removed: use Solver=\"dynamic\" and res.Export."
   },
   {
     "title": "Show the signal connections",

@@ -66,9 +66,9 @@ classdef SolverPF < auxiliary
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
-% V = net.calculate_powerflow();                                       % GUILDA.setting
-% V = net.calculate_powerflow(Solver="dynamic", Verbose=true);         % this call only
-% V = net.calculate_powerflow(WarmStart=false);                        % flat start
+% res = net.calculate_powerflow();                                       % GUILDA.setting
+% res = net.calculate_powerflow(Solver="dynamic", Verbose=true);         % this call only
+% res = net.calculate_powerflow(WarmStart=false);                        % flat start
 % % the solver alone: admittance matrix, conditions and settings assembled by the caller
 % tab = tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus);
 % tab_Y = net.get_admittance_matrix;

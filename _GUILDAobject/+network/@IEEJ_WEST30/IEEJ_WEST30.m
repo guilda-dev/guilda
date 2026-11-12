@@ -90,7 +90,7 @@ classdef IEEJ_WEST30 < PowerNetwork
 %
 % ```matlab
 % net = network.IEEJ_WEST30(Section="night");
-% V   = net.calculate_powerflow();
+% res = net.calculate_powerflow();
 % sc  = Scenario("fault-open", Time=[0,10]);
 % sc.add_fault("B1220", [0.1,0.17]);
 % sc.add_open_branch("EL042", [0.17,10]);

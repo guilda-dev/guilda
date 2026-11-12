@@ -47,8 +47,8 @@
   <main>
     <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Power Flow Feature Design</span><span lang="ja">潮流計算機能の設計</span></h1>
-    <p class="page-lead" lang="en"><code>net.calculate_powerflow()</code>: bus voltages from the power-flow settings of the buses and components. The network assembles the admittance matrix and the bus conditions; <code>SolverPF</code> only solves them. The first output takes the form of <code>Format</code> (complex voltages by default, a <code>ResultPF</code> for <code>"GUILDAorigin"</code>); nothing is written to the model.</p>
-    <p class="page-lead" lang="ja"><code>net.calculate_powerflow()</code> は、母線と機器の潮流設定から母線電圧を求めます。アドミタンス行列と母線の潮流条件はネットワークが組み立て、<code>SolverPF</code> は数値計算だけを行います。最初の出力の形は <code>Format</code> で決まり、既定では複素電圧、<code>"GUILDAorigin"</code> では <code>ResultPF</code> です。モデルには書き込みません。</p>
+    <p class="page-lead" lang="en"><code>net.calculate_powerflow()</code>: bus voltages from the power-flow settings of the buses and components. The network assembles the admittance matrix and the bus conditions; <code>SolverPF</code> only solves them. The first output takes the form of <code>Format</code> (a <code>ResultPF</code> by default; complex voltages or V, I, P, Q for the other values); nothing is written to the model.</p>
+    <p class="page-lead" lang="ja"><code>net.calculate_powerflow()</code> は、母線と機器の潮流設定から母線電圧を求めます。アドミタンス行列と母線の潮流条件はネットワークが組み立て、<code>SolverPF</code> は数値計算だけを行います。最初の出力の形は <code>Format</code> で決まり、既定では <code>ResultPF</code>、ほかの値では複素電圧または V・I・P・Q です。モデルには書き込みません。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#entry"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></a>
@@ -137,18 +137,20 @@
           <li>関数ハンドルを渡すと、反復ごとに <code>stop = f(x, optimValues, state)</code> を呼び出します。<code>x</code> は母線の複素電圧です。<code>optimValues</code> には <code>optimValues.iteration</code>、<code>.fval</code>（残差）、<code>.residual</code>（最大値）、<code>.time</code>（dynamic のみ）が入ります。<code>stop</code> に true を返すと、flag -1 で終わります。</li>
           <li>計算後の図は、<code>Format="GUILDAorigin"</code> の結果の <code>result.Plot()</code> で描きます。</li>
         </ul></td></tr>
-        <tr><td><code>Format</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>"V"</code><small><span lang="en">call option</span><span lang="ja">呼び出しオプション</span></small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
+        <tr><td><code>Format</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>"GUILDAorigin"</code><small><span lang="en">call option</span><span lang="ja">呼び出しオプション</span></small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li>Form of the first output; <code>flag</code> and <code>output</code> stay the 2nd and 3rd outputs</li>
           <li><code>"V"</code>: complex bus voltages [pu], a column in <code>net.a_Bus</code> order</li>
           <li><code>"powerflow(mat)"</code>: n_bus×4 complex matrix, columns V, I (phasors), P, Q (injections into the network) [pu]</li>
           <li><code>"powerflow(tab)"</code>: the same as a table with the variables <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code>; row names = bus tags</li>
-          <li><code>"GUILDAorigin"</code>: a <code>ResultPF</code> (see <a href="#data">Data produced</a>)</li>
+          <li><code>"GUILDAorigin"</code> (default): a <code>ResultPF</code> (see <a href="#data">Data produced</a>)</li>
+          <li>The other values build no <code>ResultPF</code> and no snapshot</li>
         </ul><ul lang="ja">
           <li>最初の出力の形です。<code>flag</code> と <code>output</code> は、どの値でも 2 番目と 3 番目の出力です。</li>
           <li><code>"V"</code>: 母線の複素電圧 [pu] を、<code>net.a_Bus</code> の順に並べた列ベクトルです。</li>
           <li><code>"powerflow(mat)"</code>: n_bus×4 の複素行列です。列は V、I（フェーザ）、P、Q（ネットワークへの注入）[pu] です。</li>
           <li><code>"powerflow(tab)"</code>: 同じ内容の table です。変数は <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code> で、行名は母線のタグです。</li>
-          <li><code>"GUILDAorigin"</code>: <code>ResultPF</code> を返します（<a href="#data">生成されるデータ</a>を参照）。</li>
+          <li><code>"GUILDAorigin"</code>（既定）: <code>ResultPF</code> を返します（<a href="#data">生成されるデータ</a>を参照）。</li>
+          <li>ほかの値では、<code>ResultPF</code> もスナップショットも作りません。</li>
         </ul></td></tr>
       </tbody>
     </table>
@@ -321,12 +323,12 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>The <code>arguments</code> block checks the seven options; defaults from <code>GUILDA.config("PowerFlowCalculation", ...)</code>, <code>Format = "V"</code></li>
+            <li>The <code>arguments</code> block checks the seven options; defaults from <code>GUILDA.config("PowerFlowCalculation", ...)</code>, <code>Format = "GUILDAorigin"</code></li>
             <li>Unknown name or invalid value: the MATLAB error of the <code>arguments</code> block</li>
             <li>Local <code>solver_options</code>: struct of the <code>Value</code> of every setting of the section, overwritten by the call options <code>Solver</code>, <code>Tolerance</code>, <code>MaxIteration</code>, <code>Verbose</code>, <code>WarmStart</code></li>
             <li>Adds <code>PlotFcn</code> checked by <code>tools.check_plotfcn</code> and <code>Display</code> (<code>"iter"</code> for Verbose true, <code>"none"</code> for false)</li>
           </ul><ul lang="ja">
-            <li><code>arguments</code> ブロックが 7 つのオプションを検査します。既定値は <code>GUILDA.config("PowerFlowCalculation", ...)</code> から読み、<code>Format</code> は <code>"V"</code> です。</li>
+            <li><code>arguments</code> ブロックが 7 つのオプションを検査します。既定値は <code>GUILDA.config("PowerFlowCalculation", ...)</code> から読み、<code>Format</code> は <code>"GUILDAorigin"</code> です。</li>
             <li>未知の名前や不正な値は、<code>arguments</code> ブロックによる MATLAB のエラーになります。</li>
             <li>内部関数 <code>solver_options</code> は、セクションの各設定の <code>Value</code> で構造体を作り、呼び出しのオプション <code>Solver</code>、<code>Tolerance</code>、<code>MaxIteration</code>、<code>Verbose</code>、<code>WarmStart</code> で上書きします。</li>
             <li>さらに、<code>tools.check_plotfcn</code> で検査した <code>PlotFcn</code> と、<code>Display</code>（Verbose が true なら <code>"iter"</code>、false なら <code>"none"</code>）を加えます。</li>
@@ -556,13 +558,13 @@
     <h2 id="data"><span lang="en">4. Data the feature produces</span><span lang="ja">4. この機能が生成するデータ</span></h2>
     <ul lang="en">
       <li><code>result</code>: the form of <code>Format</code>; <code>"V"</code>, <code>"powerflow(mat)"</code> and <code>"powerflow(tab)"</code> are listed in the <a href="#entry">options table</a></li>
-      <li><code>Format="GUILDAorigin"</code>: a <code>ResultPF</code> (subclass of <code>ResultBase</code>) with the properties below</li>
+      <li><code>Format="GUILDAorigin"</code> (default): a <code>ResultPF</code> (subclass of <code>ResultBase</code>) with the properties below</li>
       <li>Rows follow the order of <code>net.a_Bus</code> and <code>net.a_Branch</code>; row names are the tags</li>
       <li>Sizes for <code>network.IEEE9bus</code>: <code>tab_bus</code> 9×6, <code>tab_branch</code> 9×8, <code>cm_Vhistory</code> 9×n_iter (one column per iteration) or 9×n_time (dynamic)</li>
     </ul>
     <ul lang="ja">
       <li><code>result</code> の形は <code>Format</code> で決まります。<code>"V"</code>、<code>"powerflow(mat)"</code>、<code>"powerflow(tab)"</code> は<a href="#entry">オプションの表</a>にあります。</li>
-      <li><code>Format="GUILDAorigin"</code> では、<code>result</code> は <code>ResultBase</code> のサブクラスである <code>ResultPF</code> で、次のプロパティを持ちます。</li>
+      <li><code>Format="GUILDAorigin"</code>（既定）では、<code>result</code> は <code>ResultBase</code> のサブクラスである <code>ResultPF</code> で、次のプロパティを持ちます。</li>
       <li>行は <code>net.a_Bus</code> と <code>net.a_Branch</code> の順に並び、行名はタグです。</li>
       <li><code>network.IEEE9bus</code> では、<code>tab_bus</code> が 9×6、<code>tab_branch</code> が 9×8、<code>cm_Vhistory</code> が 9×n_iter（反復ごとに 1 列）、dynamic では 9×n_time になります。</li>
     </ul>

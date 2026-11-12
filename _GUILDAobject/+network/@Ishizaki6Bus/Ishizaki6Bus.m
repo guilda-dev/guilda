@@ -18,7 +18,7 @@ classdef Ishizaki6Bus < PowerNetwork
 % ```matlab
 % net = network.Ishizaki6Bus();                % R = X on lines 4-5, 5-6; no 2-3, 4-6
 % net = network.Ishizaki6Bus(0.1, line="None"); % R = 0.1*X; all 7 lines
-% V   = net.calculate_powerflow();
+% res = net.calculate_powerflow();
 % sc  = Scenario("offset");
 % sc.add_offset("B001SG1", "delta", 0.1, 1);
 % net.add_scenario(sc);

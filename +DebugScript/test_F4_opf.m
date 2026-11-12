@@ -149,7 +149,7 @@ end
 J_AC = DebugScript.helper.opf_cost(net, tab_cub);
 tab_cub_ELD = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD")).tab_cub;
 assert(J_AC >= DebugScript.helper.opf_cost(net, tab_cub_ELD) - 1e-6)
-tab_PF = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin").tab_bus);
+tab_PF = DebugScript.helper.quiet(@() net.calculate_powerflow().tab_bus);
 assert(all(tab_PF.V >= 0.95 & tab_PF.V <= 1.05))   % 潮流解が OPF の制約を満たすことの確認
 assert(J_AC <= DebugScript.helper.opf_cost(net, DebugScript.helper.pf_component_power(net, tab_PF)) + 1e-6)
 
@@ -286,7 +286,7 @@ assert(all(tab_bus.V >= Vmin - tol & tab_bus.V <= Vmax + tol))
 J_AC  = DebugScript.helper.opf_cost(net, tab_cub);
 tab_cub_ELD = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD")).tab_cub;
 assert(J_AC >= DebugScript.helper.opf_cost(net, tab_cub_ELD) - 1e-6)
-tab_PF = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin").tab_bus);
+tab_PF = DebugScript.helper.quiet(@() net.calculate_powerflow().tab_bus);
 assert(J_AC <= DebugScript.helper.opf_cost(net, DebugScript.helper.pf_component_power(net, tab_PF)) + 1e-6)
 
 

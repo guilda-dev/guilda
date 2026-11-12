@@ -31,16 +31,18 @@
 
 | 値 | 最初の出力 |
 |---|---|
-| `"V"`(既定) | 母線の複素電圧(`net.a_Bus` の順の列) |
+| `"V"` | 母線の複素電圧(`net.a_Bus` の順の列) |
 | `"powerflow(mat)"` | n×4 の複素行列。列は V、I(複素フェーザ)、P、Q(実数) |
 | `"powerflow(tab)"` | 同じ内容の table(変数 `V`・`I`・`P`・`Q`、行名は母線タグ) |
-| `"GUILDAorigin"` | `ResultPF` |
+| `"GUILDAorigin"`(既定) | `ResultPF` |
+
+- **既定値(ユーザーの決定、2026-11-12):** `calculate_powerflow` の既定は `"GUILDAorigin"` です。最初の実装は `"V"` でした。`initialize` の既定は `"V"` のままで、確認中です。
 
 - `flag` と `output` はどの Format でも 2 番目・3 番目の出力です。
 - **Export(ユーザーの決定、2026-11-12):** `calculate_powerflow` に `Export` オプションはありません。書き出しは `res.Export(...)` だけです(`initialize` も受け付けません)。最初の実装では、ほかの Format でも書き出しのためだけに `ResultPF` を作っていましたが、オプションごと削除しました。`ResultPF.Export` の名前(`export` か `Export` か)は確認中です。
-- `initialize` にも同じ `Format`(既定 `"V"`)を加えました。潮流計算・FixedInput・平衡点からの計算は解いた点を、OPF は `"GUILDAorigin"` で `ResultOPF`、それ以外で AC OPF の解の母線 V・I・P・Q を返します。
+- `initialize` にも同じ値の `Format`(既定 `"V"`)を加えました。潮流計算・FixedInput・平衡点からの計算は解いた点を、OPF は `"GUILDAorigin"` で `ResultOPF`、それ以外で AC OPF の解の母線 V・I・P・Q を返します。
 - 内部の呼び出しは必要なものだけを求めます。`initialize` の潮流計算と `solve_fixed_input` の初期点は `Format="powerflow(tab)"` です。`initialize` は `Format="GUILDAorigin"` のときだけ `ResultPF` を作ります。
-- 書き換えた呼び出し元: DebugScript(結果を読むテストに `Format="GUILDAorigin"` を追加)、同梱ネットワークのヘルプの例(`res = ...` → `V = ...`)、`PowerNetwork`・`ResultBase`・`SolverPF` のヘルプの例。`_GUILDAverification`、`Scenario`、CPF、OPF は `calculate_powerflow` の結果を読んでいません。
+- 書き換えた呼び出し元: DebugScript(`initialize` の結果を読むテストに `Format="GUILDAorigin"` を追加。`calculate_powerflow` では既定なので書かない)、`calculate_powerflow`・`initialize`・`SolverPF` のヘルプの例。同梱ネットワークのヘルプの例(`res = net.calculate_powerflow()`)は元のままです。`_GUILDAverification`、`Scenario`、CPF、OPF は `calculate_powerflow` の結果を読んでいません。
 - **未対応:** `_GUILDAtutorial/*.mlx` は保留中のチュートリアルの作業(Issue #113)に含まれるため、変えていません。
 
 ### 4. データから作る `ResultPF`
