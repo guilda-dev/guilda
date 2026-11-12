@@ -4,9 +4,10 @@ function s_file = export(obj, filename)
 % Writes the trajectories to a file. The format follows the extension of filename:
 % .csv, .txt, .xlsx, .xls write one table (column t, then <bus>_Vreal, <bus>_Vimag,
 % <bus>_Ireal, <bus>_Iimag, <bus>_P, <bus>_Q of each bus, <component>_<name> of each
-% state and input, and one column per controller state named by the Label of
-% tab_variable); .mat saves odeResults, rm_variable, tab_variable, options, flag and
-% output, so the controller states (in rm_variable only) are kept. A relative filename is
+% state and input, one column per controller state named by the Label of tab_variable,
+% and one column per output named by the Label of tab_output); .mat saves odeResults,
+% rm_variable, tab_variable, rm_output, tab_output, options, flag and output, so the
+% controller states and outputs (in rm_variable and rm_output only) are kept. A relative filename is
 % relative to the current folder. simulate(..., Export=filename) calls it.
     arguments (Input)
         obj
@@ -25,10 +26,13 @@ function s_file = export(obj, filename)
             odeResults   = obj.odeResults;
             rm_variable  = obj.rm_variable;
             tab_variable = obj.tab_variable;
+            rm_output  = obj.rm_output;
+            tab_output = obj.tab_output;
             options    = obj.options;
             flag       = obj.flag;
             output     = obj.output;
-            save(s_file, "odeResults", "rm_variable", "tab_variable", "options", "flag", "output");
+            save(s_file, "odeResults", "rm_variable", "tab_variable", "rm_output", "tab_output", ...
+                 "options", "flag", "output");
         otherwise
             error(msg("GUILDA:ResultODE:ExportFormat", char(s_ext)));
     end
@@ -53,6 +57,7 @@ function tab = wide_table(obj)
     tab_map = obj.tab_variable;
     lv_ctrl = tab_map.Kind == "x" & ~ismember(tab_map.Owner, vertcat(obj.c_component{:}));
     tab = [tab, array2table(obj.rm_variable(:, lv_ctrl), 'VariableNames', tab_map.Label(lv_ctrl))];
+    tab = [tab, array2table(obj.rm_output, 'VariableNames', obj.tab_output.Label)];
 end
 
 function tab = prefixed(tab, s_tag)

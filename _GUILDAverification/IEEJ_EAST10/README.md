@@ -31,7 +31,7 @@ Sequence (from the equilibrium of the section, `t = 0` to `20 s`):
 Criterion (the footnote of the report): a generator is out of step when the absolute
 value of its rotor angle relative to the reference generator exceeds 360 degrees at any
 time up to 20 s. The reference is the slack generator (G3 at peak, G6 at night), which is
-`Scenario.out_of_step` with its defaults (`Reference="slack"`, `Threshold=360`). A case is
+`result.judge_out_of_step()` with its defaults (`Reference="slack"`, `Threshold=360`). A case is
 out-of-step when any generator is out of step, otherwise stable; "incomplete" when the
 solver stops early without an out-of-step generator. The report's "sustained
 oscillation" (peak, card 36) has no out-of-step generator and counts as stable.

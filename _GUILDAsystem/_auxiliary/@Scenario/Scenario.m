@@ -148,7 +148,6 @@ classdef (Sealed = true) Scenario < LayerPackage
     end
 
     methods (Static)
-        verdict = out_of_step(result, opt)
         c_scenario = import_csv(path, opt)
         path = export_csv(path, scenarios, opt)
     end

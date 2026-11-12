@@ -31,8 +31,8 @@ branch, which stays open to the end at 20 s (the report's cut-off time).
 
 As in the note of table 4.13: a machine is out of step when the absolute difference of
 its rotor angle from that of the reference machine G15 (bus B3150, the slack bus) exceeds
-360 degrees. This is `Scenario.out_of_step` with its defaults (`Reference="slack"`,
-`Threshold=360`), applied by `sc.judge(result)`.
+360 degrees. This is `result.judge_out_of_step()` with its defaults (`Reference="slack"`,
+`Threshold=360`).
 
 - The report's cases "out of step" and "divergent oscillation" are unstable, and agree
   with the GUILDA verdict `"out-of-step"`.

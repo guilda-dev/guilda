@@ -10,7 +10,7 @@ function [tab, r_agree] = compare_table4_9(opt)
 %
 % For each section the network is built (network.IEEJ_EAST30 with Section and Governor),
 % the scenarios are imported into it with Scenario.import_csv(..., Network=net), and each
-% selected scenario is simulated and judged by Scenario.out_of_step with the reference
+% selected scenario is simulated and judged by ResultODE.judge_out_of_step with the reference
 % B3010SG1 (G18, the slack) and the threshold 360 degrees. A simulation that stops early
 % without an out-of-step ("incomplete") is run again with the relative tolerance
 % RetryTolerance; if it is incomplete again the case does not agree.
@@ -25,7 +25,7 @@ function [tab, r_agree] = compare_table4_9(opt)
 % tab = compare_table4_9(Sections="night", Circuits=2);
 % ```
 %
-% See also network.IEEJ_EAST30, Scenario, Scenario.out_of_step, PowerNetwork.simulate
+% See also network.IEEJ_EAST30, Scenario, ResultODE.judge_out_of_step, PowerNetwork.simulate
     arguments (Input)
         opt.Governor  (1,1) logical = true % true for the default network with governors; false for exciters only.
         opt.Sections  (1,:) string {mustBeMember(opt.Sections, ["peak","night"])} = ["peak","night"] % Sections to run.
@@ -77,14 +77,13 @@ function [tab, r_agree] = compare_table4_9(opt)
             sv_tag = cellfun(@(s) s.s_tag, c_sc);
         end
         sc = c_sc{sv_tag == tab.Scenario(k)};
-        sc.Judge = @(r) Scenario.out_of_step(r, Reference=s_ref, Threshold=360);
         tab.Tolerance(k) = GUILDA.config("TimeSimulation", "Tolerance");
         result = run_case(net, sc, opt);
-        v = sc.judge(result);
+        v = result.judge_out_of_step(Reference=s_ref, Threshold=360);
         if v.Verdict == "incomplete" && opt.RetryTolerance < tab.Tolerance(k)
             tab.Tolerance(k) = opt.RetryTolerance;
             result = run_case(net, sc, opt, "Tolerance", opt.RetryTolerance);
-            v = sc.judge(result);
+            v = result.judge_out_of_step(Reference=s_ref, Threshold=360);
         end
         [sv_gen, rv_t, rm_deg] = generators(result, s_ref);
         tab.Verdict(k) = v.Verdict;

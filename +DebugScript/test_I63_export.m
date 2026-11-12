@@ -58,7 +58,10 @@ tab = readtable(s_csv, "VariableNamingRule", "preserve");
 sv  = string(tab.Properties.VariableNames);
 assert(height(tab) == numel(sol.rv_t))
 assert(numel(unique(sv)) == numel(sv))
-assert(isequal(sv(end-height(tab_ctrl)+1:end), tab_ctrl.Label'))
+n_out = height(sol.tab_output);
+assert(isequal(sv(end-n_out-height(tab_ctrl)+1:end-n_out), tab_ctrl.Label'))
+% 出力 y, yc の列 (tab_output の Label) が最後
+assert(isequal(sv(end-n_out+1:end), sol.tab_output.Label'))
 for k = 1:height(tab_ctrl)
     rv = sol.rm_variable(:, tab_ctrl.Index(k));
     assert(max(abs(tab.(tab_ctrl.Label(k)) - rv)) < 1e-10, tab_ctrl.Label(k))
@@ -83,7 +86,7 @@ for i = 1:n_bus
         end
     end
 end
-assert(width(tab0) == 1 + 6*n_bus + n_comp)
+assert(width(tab0) == 1 + 6*n_bus + n_comp + height(sol0.tab_output))
 
 
 %% MAT file has the controller states
@@ -93,3 +96,4 @@ s = load(s_mat);
 assert(isequal(s.rm_variable, sol.rm_variable) && isequal(s.tab_variable, sol.tab_variable))
 assert(isequal(s.odeResults.t, sol.odeResults.t) && s.flag == sol.flag)
 assert(all(ismember(tab_ctrl.Label, s.tab_variable.Label)))
+assert(isequaln(s.rm_output, sol.rm_output) && isequal(s.tab_output, sol.tab_output))

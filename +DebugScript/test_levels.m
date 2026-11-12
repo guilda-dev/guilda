@@ -90,6 +90,13 @@ function tab = test_levels()
     "test_F31_scenario/StoredTimeAndOptions_TheCallWins", "medium"
     "test_F31_scenario/ChildrenOfTheNetwork_Create_Rename_Copy_Remove", "medium"
     "test_F31_scenario/UnknownTagsAtAddAndAtRunTime", "medium"
+    % ---- F38_result_judge --------------------------------------------------------------------------
+    "test_F38_result_judge/DefaultJudge_StableAndOut_of_stepOnIEEE9bus", "large"
+    "test_F38_result_judge/IncompleteVerdictAndAJudgeFunctionOfTheUser", "medium"
+    "test_F38_result_judge/JudgeOfARunStoppedByStopOnOutOfStep_flag2_", "medium"
+    "test_F38_result_judge/TheResultWorksAfterTheNetworkIsDeleted", "medium"
+    "test_F38_result_judge/OutputsYOfTheComponentsAndControllers", "medium"
+    "test_F38_result_judge/ErrorsOfTheJudge", "medium"
     % ---- F35_controller_signal_routing -----------------------------------------------------------
     "test_F35_controller_signal_routing/AGlobalControllerReadsAnOutputOfItsUnitBeforeAStateOfTheSameName", "medium"
     % ---- F36_tutorial_all_models -----------------------------------------------------------------
