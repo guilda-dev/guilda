@@ -1,7 +1,9 @@
 classdef ResultLIN < ResultBase
-% Result of net.linearize.
+% Result of get_sys.
 %
-% Holds the unreduced linear DAE of the network at one point,
+% Holds the linear model of a layer at one point, as connected by SolverLIN.solve from the
+% linear blocks of its model objects. For the network (output.s_layer "PowerNetwork") it is
+% the unreduced linear DAE
 %
 % ```
 % rm_E dx/dt = rm_Axx x + rm_Axv v + rm_Bx u
@@ -13,37 +15,35 @@ classdef ResultLIN < ResultBase
 % of the analysis). The algebraic equations are the current balance of each bus,
 % 0 = (Y v - I of the components), in the order of v. The values are deviations from the
 % point rv_point. Y is the admittance matrix of the model, also at a point inside a fault.
-% get_ss returns a reduced model (Kron / Feedback / DAE); plot_eigenvalue draws the eigenvalue map.
+% get_ss returns a reduced model ("Kron" or "DAE"); plot_eigenvalue draws the eigenvalue map.
 %
 % The properties A, B, C, D, E, StateName, InputName and OutputName hold one linear model
 % (E dx/dt = A x + B u, y = C x + D u) with the names of the states, inputs and outputs, as
-% in a state-space (ss) object, without the Control System Toolbox. For net.linearize it is
-% get_ss(options.Method) (all inputs and the default outputs); net.get_sys with Input or
-% Output keeps them in options and selects them here. They are empty when get_ss stops for
-% that Method (flag false, or "Feedback" without a bus to connect); get_ss gives the
-% reason.
+% in a state-space (ss) object, without the Control System Toolbox: get_ss(options.Method)
+% with the Input and Output of get_sys. They are empty when get_ss stops (flag false);
+% get_ss gives the reason.
 %
-% comp.get_sys, bus.get_sys, con.get_sys and gc.get_sys also return a ResultLIN (an
-% object-level result, output.s_layer "Component", "Bus", "LocalController" or
-% "GlobalController"; "PowerNetwork" for net.linearize). It holds the port model of the
-% layer in A ... OutputName, the point rv_point and the Jacobian blocks that apply
-% (rm_Axx, rm_Axv, rm_Bx, rm_E; see the help of each get_sys); get_ss returns that model,
-% and Method and Coordinate do not apply.
+% A result of comp.get_sys, bus.get_sys, con.get_sys or gc.get_sys (output.s_layer
+% "Component", "Bus", "LocalController" or "GlobalController") holds the port model of the
+% layer in A ... OutputName (see PowerSystemModel.get_sys), the point rv_point and the
+% blocks rm_Axx, rm_Axv (the voltage inputs), rm_Bx (the other inputs of tab_variable)
+% and rm_E; with Port "I2V" only rm_E. get_ss returns that model (the bus voltage of the
+% port "I2V" eliminated), and Method and Coordinate do not apply.
 %
-% - `tab_variable` has one row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"),
-%   Role, Owner, Name, Label and Bus: the leading rows of net.get_variable_map() (its
-%   rows uc, y and yc, the controller inputs and the signals, are not variables here).
-% - `sct_model` holds the bus models (V2I, at the point), the global controller models, the
-%   admittance matrix, the non-unit buses and the bus voltages at the point: used by
-%   get_ss("Feedback") and the coordinates of get_ss("DAE"). The Output option of get_ss
-%   also uses the names of the bus currents (sv_I) and the outputs of the bus models
-%   (sct_output). The result holds computed values only; the network is not changed.
+% - `tab_variable` has one row per variable with Index, Kind, Role, Owner, Name, Label and
+%   Bus: the leading rows x, Vre, Vim, u of the variable map of the layer (for a
+%   controller: its x, the voltages and its uc), the order of rv_point.
+% - `sct_model` holds the connected model (field sct_sys: the descriptor model over
+%   [x; v] with its outputs, from SolverLIN.solve) and, for the network, the admittance
+%   matrix, the bus voltages at the point and the names of the bus currents: used by the
+%   coordinates of get_ss("DAE") and its Output option. The result holds computed values
+%   only; the network is not changed.
 %
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
 % net.initialize();
-% [result, flag] = net.linearize();
+% [result, flag] = net.get_sys();
 % eig(full(result.rm_Axx))          % Jacobian blocks of the unreduced DAE
 % eig(result.A, result.E)           % model of options.Method
 % sct = result.get_ss("Kron", Format="struct");   % reduced model as a struct
@@ -51,7 +51,7 @@ classdef ResultLIN < ResultBase
 % result.plot_eigenvalue();                    % eigenvalue map
 % ```
 %
-% See also SolverLIN, ResultBase
+% See also SolverLIN, ResultBase, PowerSystemModel.get_sys
 
     properties (SetAccess=private) % Result
         tab_variable table = table()           % Variable map at the time of the analysis: the order of the rows and columns of the Jacobian blocks.
@@ -65,35 +65,35 @@ classdef ResultLIN < ResultBase
         rm_E double = zeros(0,0)               % Mass matrix of the state equations (the algebraic equations have none).
     end
     properties (SetAccess=private) % Model
-        A double = zeros(0,0)                  % State matrix of the model (E dx/dt = A x + B u, y = C x + D u): get_ss(options.Method), or the port model of an object-level result.
+        A double = zeros(0,0)                  % State matrix of the model (E dx/dt = A x + B u, y = C x + D u): get_ss(options.Method) with the Input and Output of get_sys.
         B double = zeros(0,0)                  % Input matrix of the model.
         C double = zeros(0,0)                  % Output matrix of the model.
         D double = zeros(0,0)                  % Feedthrough matrix of the model.
         E double = zeros(0,0)                  % Mass matrix of the model (singular for "DAE").
         StateName (:,1) string = strings(0,1)  % Names of the states of the model.
         InputName (:,1) string = strings(0,1)  % Names of the inputs of the model.
-        OutputName (:,1) string = strings(0,1) % Names of the outputs of the model ("Kron" has none by default).
+        OutputName (:,1) string = strings(0,1) % Names of the outputs of the model (the network has none by default).
     end
     properties (SetAccess=private, Hidden) % Model data
-        sct_model struct = struct()            % Model data of get_ss: bus and global controller models, admittance matrix, ... (see the class help).
+        sct_model struct = struct()            % Data of get_ss: the connected model sct_sys and, for the network, cm_Y, cv_V, sv_I (see the class help).
     end
 
     methods
-        function obj = ResultLIN(net, solver, options, flag, output, elapsed, tab_variable, rv_point, sct_block, sct_model)
+        function obj = ResultLIN(net, solver, options, flag, output, elapsed, tab_variable, rv_point, sct_sys)
         % Create a linearization result.
         %
-        % Stores the computed values of a linearization.
+        % Stores the computed values of a linearization: the connected model sct_sys of
+        % SolverLIN.solve and its blocks.
             arguments (Input)
                 net                 = [] % Analysed network; see ResultBase.
                 solver              = "SolverLIN" % Solver object or its class name; see ResultBase.
                 options      struct = struct() % Effective settings; see ResultBase.
                 flag                = false % Success or convergence flag; see ResultBase.
-                output       struct = struct() % Solver details; see ResultBase.
+                output       struct = struct() % Solver details (n_x, n_v, s_layer, ...); see ResultBase.
                 elapsed             = NaN % [s] Elapsed time or tic value; see ResultBase.
-                tab_variable table  = table() % Variable map.
+                tab_variable table  = table() % Variable map (leading rows).
                 rv_point     double = zeros(0,1) % Point in the order of tab_variable.
-                sct_block    struct = struct() % Fields Axx, Axv, Bx, Avx, Avv, Bv, E.
-                sct_model    struct = struct() % Data for get_ss (bus and controller models, Y, non-unit buses, V), or the port model (field sct_sys) of an object-level result.
+                sct_sys      struct = struct() % Connected model (SolverLIN.solve); for the network also cm_Y, cv_V, sv_I.
             end
             arguments (Output)
                 obj % The result object.
@@ -101,35 +101,50 @@ classdef ResultLIN < ResultBase
             obj@ResultBase(net, solver, options, flag, output, elapsed);
             obj.tab_variable = tab_variable;
             obj.rv_point     = rv_point(:);
-            for str = ["Axx","Axv","Bx","Avx","Avv","Bv","E"]
-                if isfield(sct_block, str)
-                    obj.("rm_" + str) = sct_block.(str);
-                end
+            obj.sct_model    = struct("sct_sys", sct_sys);
+            if ~isfield(sct_sys, "A")
+                return
             end
-            obj.sct_model = sct_model;
-
-            % The model: the port model of an object-level result, or get_ss(Method)
-            if isfield(sct_model, "sct_sys")
-                sct_sys = sct_model.sct_sys;
-            elseif isfield(options, "Method") && isfield(sct_model, "c_sysBus")
-                c_nv = cell(1,0);       % Input and Output of net.get_sys
-                for str = ["Input","Output"]
-                    if isfield(options, str)
-                        c_nv = [c_nv, {str, options.(str)}]; %#ok<AGROW>
-                    end
-                end
-                try
-                    sct_sys = obj.get_ss(options.Method, c_nv{:}, Format="struct");
-                catch
-                    sct_sys = [];   % flag false or no model for this Method: get_ss gives the reason
+            n_x = size(sct_sys.A,1) - sct_sys.n_v;
+            ix  = 1:n_x;
+            iv  = n_x+1:size(sct_sys.A,1);
+            if sct_sys.n_v > 0
+                if isfield(options, "Port") && options.Port == "I2V"
+                    obj.rm_E = sct_sys.E(ix,ix);
+                else
+                    obj.rm_Axx = sct_sys.A(ix,ix);  obj.rm_Axv = sct_sys.A(ix,iv);  obj.rm_Bx = sct_sys.B(ix,:);
+                    obj.rm_Avx = sct_sys.A(iv,ix);  obj.rm_Avv = sct_sys.A(iv,iv);  obj.rm_Bv = sct_sys.B(iv,:);
+                    obj.rm_E   = sct_sys.E(ix,ix);
                 end
             else
-                sct_sys = [];
+                % a port model: the voltage inputs and the other inputs of tab_variable
+                lv_V = ismember(sct_sys.InputName, tab_variable.Label(tab_variable.Kind == "Vre" | tab_variable.Kind == "Vim"));
+                lv_u = ismember(sct_sys.InputName, tab_variable.Label) & ~lv_V;
+                obj.rm_Axx = sct_sys.A;
+                obj.rm_Axv = sct_sys.B(:,lv_V);
+                obj.rm_Bx  = sct_sys.B(:,lv_u);
+                obj.rm_E   = sct_sys.E;
             end
-            if ~isempty(sct_sys)
-                for str = ["A","B","C","D","E","StateName","InputName","OutputName"]
-                    obj.(str) = sct_sys.(str);
+            for s = ["cm_Y","cv_V","sv_I"]
+                if isfield(sct_sys, s)
+                    obj.sct_model.(s) = sct_sys.(s);
                 end
+            end
+
+            % The model: get_ss(Method) with the Input and Output of get_sys
+            c_nv = cell(1,0);
+            for str = ["Input","Output"]
+                if isfield(options, str)
+                    c_nv = [c_nv, {str, options.(str)}]; %#ok<AGROW>
+                end
+            end
+            try
+                sct = obj.get_ss(c_nv{:}, Format="struct");
+                for str = ["A","B","C","D","E","StateName","InputName","OutputName"]
+                    obj.(str) = sct.(str);
+                end
+            catch
+                % flag false or no model for these channels: get_ss gives the reason
             end
         end
 

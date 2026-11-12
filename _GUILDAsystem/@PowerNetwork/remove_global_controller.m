@@ -2,7 +2,7 @@ function remove_global_controller(obj, sr_GconTag)
 % Remove global controllers by tag.
 %
 % The removed controllers are deleted, so a handle to them becomes invalid. A removal makes nothing stale:
-% it changes no equilibrium, and simulate and linearize take the controllers the network
+% it changes no equilibrium, and simulate and get_sys take the controllers the network
 % has.
 %
 % <@Examples>

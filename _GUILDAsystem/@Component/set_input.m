@@ -5,7 +5,7 @@ function set_input(obj, rv_u)
 % which solves the states, the bus voltages and the currents with these inputs (only the
 % Pmech of the first generator of the slack bus is solved too). The edit is logged
 % (LayerPackage.log_edit, tag "input"): it makes the equilibrium of the component stale
-% and is listed in net.sct_stale.input, so the analyses (simulate, linearize, get_sys,
+% and is listed in net.sct_stale.input, so the analyses (simulate, get_sys,
 % the continuation power flow) and net.initialize() stop until
 % net.initialize(Method="FixedInput") is run. net.initialize(Method="powerflow") or
 % Method="OPF" replaces the edited inputs with the values of their solution.

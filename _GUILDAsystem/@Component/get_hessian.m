@@ -17,7 +17,7 @@ function varargout = get_hessian(obj, x, V, u)
 % two dimensions). A method may return [] for an all-zero Hessian. Hessian_dx is
 % required; Hessian_I and Hessian_Y are needed only when their output is requested.
 %
-% See also Component.get_sys
+% See also PowerSystemModel.get_sys
 %
 % <@Group> Queries and checks
     arguments (Input)

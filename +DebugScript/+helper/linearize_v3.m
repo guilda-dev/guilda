@@ -1,12 +1,13 @@
 function sys = linearize_v3(net, NonUnit, Algorithm)
-% v3 の SolverLIN (get_sys / get_DAE / get_LTI_viaKron / get_LTI_viaFeedback) をそのまま
-% 写したもの。v4 の net.linearize / result.get_ss の行列を比べる基準にする (テスト専用)。
+% v3 の SolverLIN (get_sys / get_DAE / get_LTI_viaKron) をそのまま写したもの。v4 の
+% net.get_sys / result.get_ss の行列を比べる基準にする (テスト専用)。v3 の Feedback は v4 で
+% 廃止したので写さない。
 % 変更点は、obj.odeNetwork を net に、bus.l_isNonUnit をこの関数内の配列にしたことだけ
 % (母線の l_isNonUnit は書き換えない)。
     arguments (Input)
         net
         NonUnit (1,:) double = []
-        Algorithm (1,1) string = "Feedback"
+        Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","DAE"])} = "Kron"
     end
     arguments (Output)
         sys  % v3 の SolverLIN と同じ線形化モデル
@@ -21,8 +22,6 @@ function sys = linearize_v3(net, NonUnit, Algorithm)
     switch Algorithm
         case "Kron"
             sys = get_LTI_viaKron(obj);
-        case "Feedback"
-            sys = get_LTI_viaFeedback(obj);
         case "DAE"
             sys = get_DAE(obj);
     end
@@ -248,73 +247,10 @@ function sys = get_LTI_viaKron(obj)
 
 end
 
-function sys = get_LTI_viaFeedback(obj)  
-    arguments (Input)
-        obj
-    end
-    arguments (Output)
-        sys  % フィードバック結合で求めた線形化モデル
-    end
-    net = obj.odeNetwork;
-    bus = net.a_Bus;
-
-    % A bus without states whose current does not depend on V in an invertible way (e.g. a load
-    % with P = Q = 0) has no I-to-V form, so it is eliminated with the network like a non-unit bus
-    l_isU = ~obj.lv_nonUnit & cellfun(@(b) has_I2V(b), bus);    
-
-    ssFromBus = tools.cellfun(@(bs) v3_ports(bs, "I2V"), bus(l_isU));    
-    ssG = blkdiag(ssFromBus{:});
-    
-    busInames = cell2mat( tools.cellfun(@(bi) bi.attach_tag(["Ire";"Iim"]), bus(l_isU)) );
-    busVnames = cell2mat( tools.cellfun(@(bi) bi.attach_tag(["Vre";"Vim"]), bus(l_isU)) );
-
-    input  = cellfun(@(s) string(s), ssG.InputName);
-    output = cellfun(@(s) string(s), ssG.OutputName);
-
-    lv_input  = ismember(input, busInames);
-    lv_output = ismember(output,busVnames);
-
-    Ymat = net.get_admittance_matrix.Variables;
-    Ymat = complex2matrix(Ymat);
-    ssN  = ss(Ymat);
-    ssN.InputName  = vertcat(busVnames{:});
-    ssN.OutputName = vertcat(busInames{:});
-
-    sysODE = connect(ssG, ssN, input(~lv_input), output(~lv_output));
-
-    % Global controllers (all of them, one after another, as in Kron and DAE):
-    % their inputs are component outputs (e.g. omega) and their outputs add to component inputs (e.g. Pmech)
-    for k = 1:numel(net.a_GlobalController)
-        sysGC = gc_v3_ports(net.a_GlobalController{k}, string(sysODE.OutputName));
-        [lv_out, feedout] = ismember(string(sysGC.InputName),  string(sysODE.OutputName));
-        [lv_in,  feedin ] = ismember(string(sysGC.OutputName), string(sysODE.InputName));
-        if ~all(lv_out) || ~all(lv_in)
-            error("GUILDA:SolverLIN:GlobalControllerPort", ...
-                  "The ports of the global controller '%s' are not found in the linearized system.", net.a_GlobalController{k}.s_tag)
-        end
-        sysODE = feedback(sysODE, sysGC, feedin, feedout, +1);
-    end
-
-    A = sysODE.A;
-    B = sysODE.B;
-    C = sysODE.C;
-    D = sysODE.D;
-    E = sysODE.E;
-
-    sys = sysODE;
-
-    function rm_Ymat = complex2matrix(Ymat)
- 
-        rm_Ymat = cell2mat( arrayfun(@(M) [real(M), -imag(M); imag(M), real(M)], Ymat, 'UniformOutput', false) );                             
-        lv_Unit = logical( kron(l_isU,ones(2,1)) );
-        rm_Ymat = rm_Ymat(lv_Unit,lv_Unit) - rm_Ymat(lv_Unit,~lv_Unit) * rm_Ymat(~lv_Unit,~lv_Unit)^-1 * rm_Ymat(~lv_Unit,lv_Unit);
-    end
-
-end
-
 function sys = gc_v3_ports(gc, sv_x)
-% v4 の制御器の線形モデルを v3 の入力にそろえる。v3 の制御器は電圧を読まず状態を読んだので、
-% 母線電圧の入力を除き、機器の出力 "Y_" + 状態名の入力を状態名に戻す
+% v4 の制御器の線形モデルを v3 の入出力にそろえる。v4 の入出力は自分の uc・yc の Label なので、
+% 接続表で入力を観測する源の名前に、出力を駆動する入力ごとの行 (先の名前) にする。v3 の制御器は
+% 電圧を読まず状態を読んだので、母線電圧の入力を除き、機器の出力 "Y_" + 状態名の入力を状態名に戻す
     arguments (Input)
         gc    % グローバル制御器
         sv_x  % 状態の名前
@@ -323,25 +259,24 @@ function sys = gc_v3_ports(gc, sv_x)
         sys  % v3 と同じ入力の線形モデル (ss)
     end
     sys  = gc.get_sys("Format", "ss");
+    [~, ~, ~, tab_c] = gc.a_PowerNetwork.get_variable_map();
     lv_V = startsWith(string(sys.InputName), ["Vre_","Vim_"]);
     assert(~any(sys.B(:,lv_V), "all") && ~any(sys.D(:,lv_V), "all"), ...
            "The global controller '%s' reads bus voltages, which v3 cannot compare.", gc.s_tag)
     sys  = sys(:, ~lv_V);
     sv_w = string(sys.InputName);
+    tab_o = tab_c(tab_c.Kind == "observe", :);
+    [lv_o, iv_o] = ismember(sv_w, tab_o.Target);
+    sv_w(lv_o) = tab_o.Source(iv_o(lv_o));
+    tab_g = tab_c(tab_c.Kind == "global" & ismember(tab_c.Source, string(sys.OutputName)), :);
+    [~, iv_ord] = sort(tab_g.SourceIndex);
+    tab_g = tab_g(iv_ord, :);
+    [~, iv_y] = ismember(tab_g.Source, string(sys.OutputName));
+    sys  = sys(iv_y, :);
+    sys.OutputName = cellstr(tab_g.Target);
     lv_Y = startsWith(sv_w, "Y_") & ismember(extractAfter(sv_w, 2), sv_x);
     sv_w(lv_Y) = extractAfter(sv_w(lv_Y), 2);
     sys.InputName = cellstr(sv_w);
-end
-
-function tf = has_I2V(bus)
-    arguments (Input)
-        bus  % 母線
-    end
-    arguments (Output)
-        tf  % I2V ポートの母線なら true
-    end
-    sys = bus.get_sys("port","V2I","full",false);
-    tf  = ~isempty(sys.A) || rcond(sys.D(:,1:2)) > 1e-12;
 end
 
 function [Axx, Bxv, Bxu, Cix, E, sv_z] = add_global_controllers(net, sv_x, sv_u, Axx, Bxv, Bxu, Cix, Diu, E)

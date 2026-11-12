@@ -168,7 +168,7 @@ assert(abs(F(zpos(net, gc, "x"))) > 1e-5, "母線 1 の電圧が GC に届かな
 
 
 %% The linear model agrees with the Jacobian of the simulation
-% net.linearize (Kron, Feedback, DAE) の有限な固有値は、simulate の DAE の Jacobian の有限な固有値と同じ
+% net.get_sys (Kron, DAE) の有限な固有値は、simulate の DAE の Jacobian の有限な固有値と同じ
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 gen.add_local_controller("avr-ST1");
 gen.add_local_controller("gov-LPT1", parameter=struct(PLM=5));
@@ -179,23 +179,26 @@ c_three = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_rou
 gc = DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-three", {gen}, ...
                                                             parameter=struct(alpha=0.2, beta=3, gV=0.5, V0=V0)));
 DebugScript.helper.quiet(@() net.initialize);
-res = net.linearize();
+res = net.get_sys();
 e_sim = probe(net, @(o) finite_eigs_ode(o));
-for s_method = ["Kron","Feedback","DAE"]
+for s_method = ["Kron","DAE"]
     e_lin = DebugScript.helper.finite_eigs(res.get_ss(s_method, Format="struct"));
     assert(DebugScript.helper.same_eigs(e_lin, e_sim, 1e-6), "%s: %s / %s", s_method, mat2str(e_lin,4), mat2str(e_sim,4))
 end
-% GC の get_sys: 入力は全母線の電圧と観測した出力、出力は駆動する入力ごとの行
+% GC の get_sys: 入力は全母線の電圧と自分の入力 (変数表の uc)、出力は自分の出力 (yc)。
+% どこを観測し、どこへ返すかは接続表にある
 sys = gc.get_sys(Format="struct");
 assert(numel(sys.InputName) == 2*numel(net.a_Bus) + 1)
-assert(sys.InputName(end) == gen.attach_tag("Y_omega"), sys.InputName(end))
-assert(isequal(sys.OutputName, [gen.a_LocalController{2}.attach_tag("omega"); gen.a_LocalController{2}.attach_tag("Pref"); ...
-                                 gen.attach_tag("Vfield")]), join(sys.OutputName, ", "))
+assert(sys.InputName(end) == gc.attach_tag("omega_" + gen.s_tag), sys.InputName(end))
+assert(isequal(sys.OutputName, reshape(gc.attach_tag(["omega";"Pref";"Vfield"] + "_" + gen.s_tag), [], 1)), join(sys.OutputName, ", "))
+[~, ~, ~, tab_c] = net.get_variable_map();
+tab_g = tab_c(tab_c.Kind == "global", :);
+assert(isequal(sort(tab_g.Target), sort([gen.a_LocalController{2}.attach_tag("omega"); gen.a_LocalController{2}.attach_tag("Pref"); ...
+                                        gen.attach_tag("Vfield")])), join(tab_g.Target, ", "))
 
 
-%% Feedback lets a global controller read the voltage of an eliminated bus
-% B004 は機器のない母線で、Feedback はネットワークと一緒に消去する。GC は B004 の電圧を読む
-% (以前は GUILDA:ResultLIN:GlobalControllerPort で止まった)。固有値は Kron、DAE、simulate と同じ
+%% A global controller reads the voltage of a bus without components
+% B004 は機器のない母線。GC は B004 の電圧を読む。固有値は Kron、DAE、simulate で同じ
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 net.add_bus();
 net.add_branch("pi",[3,4], "R",0.010, "X",0.050);
@@ -208,28 +211,25 @@ c_vb4 = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_routi
 gc = DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-vb4", {gen}, ...
                                                             parameter=struct(alpha=0.2, beta=3, gV=0.5, V0=V0)));
 DebugScript.helper.quiet(@() net.initialize);
-res = net.linearize();
+res = net.get_sys();
 e_sim = probe(net, @(o) finite_eigs_ode(o));
-for s_method = ["Kron","Feedback","DAE"]
+for s_method = ["Kron","DAE"]
     e_lin = DebugScript.helper.finite_eigs(res.get_ss(s_method, Format="struct"));
     assert(DebugScript.helper.same_eigs(e_lin, e_sim, 1e-6), "%s: %s / %s", s_method, mat2str(e_lin,4), mat2str(e_sim,4))
 end
-% 電圧は GC の観測に使うだけで、既定の出力には加えない
-sysF = res.get_ss("Feedback", Format="struct");
-assert(~any(contains(sysF.OutputName, "B004")), join(sysF.OutputName, ", "))
+sysK = res.get_ss("Kron", Format="struct");
 % B004 の電圧が GC に届いている: gV = 0 の GC とは固有値が違う
 net.remove_global_controller(gc.s_tag);
 DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-vb4", {gen}, ...
                                                        parameter=struct(alpha=0.2, beta=3, gV=0, V0=V0)));
 DebugScript.helper.quiet(@() net.initialize);
-e_0 = DebugScript.helper.finite_eigs(net.linearize().get_ss("Feedback", Format="struct"));
-assert(~DebugScript.helper.same_eigs(e_0, DebugScript.helper.finite_eigs(sysF), 1e-6), "B004 の電圧が GC に届かない")
+e_0 = DebugScript.helper.finite_eigs(net.get_sys(Method="Kron", Format="struct"));
+assert(~DebugScript.helper.same_eigs(e_0, DebugScript.helper.finite_eigs(sysK), 1e-6), "B004 の電圧が GC に届かない")
 
 
-%% Feedback lets a global controller read the output of a component on an eliminated bus
-% B004 の負荷 (DebugScript.helper.OutputLoadStub) は状態がなく、電流が V によらない (I-to-V の形がない)
-% ので、Feedback はこの母線をネットワークと一緒に消去する。GC はこの負荷の出力 Vabs (= |V_4|) を読み、
-% 負荷の入力 Ire へ返す。固有値は Kron、DAE、simulate と同じ
+%% A global controller reads the output of a component without states
+% B004 の負荷 (DebugScript.helper.OutputLoadStub) は状態がなく、電流が V によらない (I-to-V の形がない)。
+% GC はこの負荷の出力 Vabs (= |V_4|) を読み、負荷の入力 Ire へ返す。固有値は Kron、DAE、simulate で同じ
 c_ld = DebugScript.helper.register_stub("OutputLoadStub", "component.load.test_output_load");
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 bus4 = net.add_bus();
@@ -243,22 +243,20 @@ c_ly = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_routin
 gc = DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-ly", {ld}, ...
                                                             parameter=struct(alpha=0.5, beta=3, gV=0)));
 DebugScript.helper.quiet(@() net.initialize);
-res = net.linearize();
+res = net.get_sys();
 e_sim = probe(net, @(o) finite_eigs_ode(o));
-for s_method = ["Kron","Feedback","DAE"]
+for s_method = ["Kron","DAE"]
     e_lin = DebugScript.helper.finite_eigs(res.get_ss(s_method, Format="struct"));
     assert(DebugScript.helper.same_eigs(e_lin, e_sim, 1e-6), "%s: %s / %s", s_method, mat2str(e_lin,4), mat2str(e_sim,4))
 end
-% 出力は GC の観測に使うだけで、既定の出力には加えない
-sysF = res.get_ss("Feedback", Format="struct");
-assert(~any(contains(sysF.OutputName, [ld.s_tag, "B004"])), join(sysF.OutputName, ", "))
+sysK = res.get_ss("Kron", Format="struct");
 % 負荷の出力が GC に届いている: beta = 0 の GC とは固有値が違う
 net.remove_global_controller(gc.s_tag);
 DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-ly", {ld}, ...
                                                        parameter=struct(alpha=0.5, beta=0, gV=0)));
 DebugScript.helper.quiet(@() net.initialize);
-e_0 = DebugScript.helper.finite_eigs(net.linearize().get_ss("Feedback", Format="struct"));
-assert(~DebugScript.helper.same_eigs(e_0, DebugScript.helper.finite_eigs(sysF), 1e-6), "B004 の負荷の出力が GC に届かない")
+e_0 = DebugScript.helper.finite_eigs(net.get_sys(Method="Kron", Format="struct"));
+assert(~DebugScript.helper.same_eigs(e_0, DebugScript.helper.finite_eigs(sysK), 1e-6), "B004 の負荷の出力が GC に届かない")
 
 
 function iv = zpos(net, owner, s_kind, s_name)

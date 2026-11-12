@@ -5,13 +5,10 @@
         <entry key="PointSize">Point has {0} values, but the variable map of ''{1}'' has {2} rows x, Vre, Vim and u. Give the values in the order of these rows of {3}.get_variable_map() (its leading rows).</entry>
         <entry key="PointSimType">Point='{'sim, t'}' needs a simulation result with a get_point method (ResultODE), not a {0}.</entry>
         <entry key="PointSimSize">{0}.get_point returned {1} values for {2} rows of the variable map.</entry>
-        <entry key="PointLayer">Point is defined for a PowerNetwork, Bus or Component, not a {0}.</entry>
+        <entry key="PointLayer">Point is defined for a PowerNetwork, Bus, Component, LocalController or GlobalController, and Point='{'sim, t'}' for the first three only, not for a {0}.</entry>
         <entry key="PointNotFinite">Point is not finite at {0}. In Point='{'sim, t'}', the states of a tripped unit are NaN during the trip.</entry>
-        <entry key="VariableMap">The states of the bus models do not follow net.get_variable_map(); report this as a bug.</entry>
+        <entry key="VariableMap">The linear blocks name {0}, which is not a row of the variable map of the layer; report this as a bug.</entry>
         <entry key="JacobianNotFinite">The Jacobian of {0} is not finite at the point, so it cannot be linearized there. Check the voltage and states of the point.</entry>
-        <entry key="GlobalControllerPort">The ports of the global controller ''{0}'' are not found in the linearized system.</entry>
-        <entry key="Stale">net.linearize / net.get_sys stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
-        <entry key="InputEdited">net.linearize / net.get_sys stopped: inputs of components of ''{0}'' were edited ({1}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
-        <entry key="GroundFault">The voltage of {0} is zero at the point, as in a ground fault: the admittance matrix does not include the fault, and get_ss("DAE") needs Coordinate="Vre&amp;Vim" there.</entry>
+        <entry key="AlgebraicLoop">The linear blocks form an algebraic loop: an output depends on itself through the connections (I - D K is singular), so the model cannot be connected.</entry>
     </message>
 </rsccat>

@@ -2,7 +2,7 @@ function [result, flag, output] = initialize(obj, varargin)
 % Bring every layer of the network up to date: the power flow, the equilibria and the function handles.
 %
 % Only initialize brings the layers up to date (LayerPackage `sct_stale`); the analyses
-% that need the equilibrium (simulate, linearize, get_sys, the continuation power flow)
+% that need the equilibrium (simulate, get_sys, the continuation power flow)
 % only check them. It is one of the few analysis methods that change the model. Steps:
 %
 % 1. The operating point is solved when Method is given ("powerflow", "OPF" or

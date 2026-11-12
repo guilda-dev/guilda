@@ -1,12 +1,12 @@
 classdef OutputLoadStub < component.load.abstract
-% 出力を持つ定電流負荷 (テスト専用。Feedback が消去する母線の機器の出力を GC が読むことを確かめるため)
+% 出力を持つ定電流負荷 (テスト専用。状態がなく I-to-V の形がない機器の出力を GC が読むことを確かめるため)
 %
 %   c  = DebugScript.helper.register_stub("OutputLoadStub", "component.load.test_output_load");
 %   ld = net.a_Bus{4}.add_component("test-output-load");
 %
 % 状態はない。入力 u = [Ire; Iim] は母線への注入電流、出力 Vabs は母線電圧の大きさ:
 %   I = Ire + j*Iim,   y = |V|
-% 電流は V によらない (Div = 0) ので I-to-V の形がなく、Feedback はこの母線をネットワークと一緒に消去する。
+% 電流は V によらない (Div = 0) ので I-to-V の形がない。
     properties (Constant)
         key = "test-output-load"   % 機器の種類のキー (register_stub が写しのクラス名に置き換える)
         sv_x = strings(0,1)        % 状態の名前

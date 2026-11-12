@@ -5,7 +5,7 @@ function v3_linearizer_constructor(c_args)
 % odeLinearizer(net, NonUnit, Algorithm=...) built a linearizer that held the network and
 % its matrices (lin.get_sys, lin.odeLinearSystem); in v4 the solver holds defaults only
 % (net.solver_LIN) and is created as SolverLIN(). Any argument stops with
-% GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor, which names net.linearize and net.get_sys.
+% GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor, which names net.get_sys.
 %
 % See also SolverLIN
     arguments (Input)

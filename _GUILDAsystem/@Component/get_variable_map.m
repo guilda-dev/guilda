@@ -25,7 +25,7 @@ function [tab, tab_connection] = get_variable_map(obj, s_form)
 % tab(tab.Kind == "x", :)
 % ```
 %
-% See also PowerNetwork.get_variable_map, Component.get_sys
+% See also PowerNetwork.get_variable_map, PowerSystemModel.get_sys
 %
 % <@Group> Called by analyses
     arguments (Input)

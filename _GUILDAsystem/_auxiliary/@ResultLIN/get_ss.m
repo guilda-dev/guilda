@@ -1,33 +1,15 @@
 function sys = get_ss(obj, Method, opt)
-% Get a reduced linear model (Kron / Feedback / DAE).
+% Get a reduced linear model (Kron / DAE).
 %
 % Returns the linear model of the result (E dx/dt = A x + B u, y = C x + D u). Format
 % chooses its form: "ss" (default) is a descriptor state-space model (dss) with
 % StateName, InputName and OutputName and needs the Control System Toolbox; "struct" is
 % a struct with the fields A, B, C, D, E, StateName, InputName, OutputName (string
-% columns) and needs no toolbox. The matrices are the same as those of net.get_sys
-% in v3 for each algorithm, including the state order: "Kron" and "DAE" put the states of
-% the global controllers first, then the components; "Feedback" puts the components first,
-% then the global controllers (in the order they were added). Use StateName to find a state.
-% The exception is "Feedback" with a non-unit bus that has components: v3 dropped them, here
-% they are absorbed into the admittance matrix, which can change the matrices and adds inputs.
+% columns) and needs no toolbox. For the network, "Kron" and "DAE" put the states of the
+% global controllers first, then the components (as in v3). Use StateName to find a state.
 %
 % - "Kron": the bus voltages are eliminated from the DAE. States: all states.
 %   Inputs: the inputs u. Outputs: the states, in their order, without output names.
-% - "Feedback": the bus models in I-to-V form are connected through the admittance
-%   matrix, then the global controllers are closed (positive feedback). Non-unit buses (buses without
-%   components, and buses without states that have no I-to-V form) are detected automatically
-%   and eliminated with the network: their linearized current is absorbed into the admittance
-%   matrix and their inputs are kept, so the model is equivalent to "Kron". A global controller
-%   can read the voltage of an eliminated bus and the outputs of its components: the network
-%   gives them from the voltages of the other buses and the inputs. It cannot drive an input of
-%   a local controller there (GUILDA:ResultLIN:GlobalControllerPort). A network without
-%   states has nothing to connect, which is an error (GUILDA:ResultLIN:NoUnitBus).
-%   Inputs: the inputs u, in the same order as "Kron". States: the connection removes the
-%   states that no input reaches through the nonzero pattern of the model (such as Vst of an
-%   AVR without a PSS), so there can be fewer than in "Kron". Outputs: the
-%   states of the components and local controllers, including a row for each removed state
-%   and leaving out the states of the global controllers, so they differ from the states.
 % - "DAE": not reduced: the bus voltages are kept as algebraic states (E is singular), in
 %   the coordinates given by Coordinate. Outputs: the dynamic states.
 %
@@ -36,32 +18,30 @@ function sys = get_ss(obj, Method, opt)
 % names, in any mix, and the outputs follow the given order (a repeated one is kept once):
 %
 % - "x": all states of the model, in the order of sys.StateName (for "DAE", the dynamic
-%   states). "Feedback" has no state that its connection removes;
-%   naming one stops with the error GUILDA:ResultLIN:StateNotInModel, and
-%   "Kron" has them all. Its default outputs are not "x": they leave out the states of the
-%   global controllers and keep a row for a removed state.
+%   states).
 % - "V": the bus voltages Vre, Vim of each bus (also in "DAE", whatever the Coordinate).
 % - "I": the currents Ire, Iim that the components inject at each bus (Y v).
-% - "y": the outputs of the components and of their local controllers. An output with the
-%   name of a state of its owner is "Y_" + name, as in Bus.get_sys.
-% - a name: Label of net.get_variable_map() for x and V, or a name of the kinds "I" and "y"
-%   as in the OutputName of the kinds above.
+% - "y": the outputs of the components and of the local and global controllers (rows y
+%   and yc of the variable map). An output with the name of a state of its owner is
+%   "Y_" + name.
+% - a name: Label of net.get_variable_map() for x, V and y, or a name of the kind "I" as
+%   in the OutputName of that kind.
 %
 % Input takes "u" (all inputs) or Labels of the inputs, and the inputs follow the given
 % order. An unknown name stops with GUILDA:ResultLIN:UnknownInput; an unknown Output name
 % stops with GUILDA:ResultLIN:UnknownOutput.
 %
-% For an object-level result (comp.get_sys, bus.get_sys, con.get_sys, gc.get_sys), get_ss
-% returns the port model held in the result; Input and Output take names of its inputs
-% and outputs, and Method and Coordinate do not apply.
+% For a result of comp.get_sys, bus.get_sys, con.get_sys or gc.get_sys, get_ss returns the
+% port model (the bus voltage of the port "I2V" eliminated as in "Kron"); Input and Output
+% take names of its inputs and outputs, and Method and Coordinate do not apply.
 %
 % A result with flag false (output.s_issue) stops with an error that repeats output.message:
 % GUILDA:ResultLIN:NotFinite for every algorithm, and GUILDA:ResultLIN:SingularAvv
-% for "Kron" and "Feedback", which eliminate the bus voltages. "DAE" keeps them and still works.
+% for "Kron", which eliminates the bus voltages. "DAE" keeps them and still works.
 %
 % <@Examples>
 % ```matlab
-% res = net.linearize();
+% res = net.get_sys();
 % sysK = res.get_ss("Kron");                    % ss (Control System Toolbox)
 % sysD = res.get_ss("DAE");
 % eig(sysK.A, sysK.E)
@@ -69,10 +49,10 @@ function sys = get_ss(obj, Method, opt)
 % sct  = res.get_ss("Kron", Format="struct");   % matrices and names, no toolbox
 % ```
 %
-% See also PowerNetwork.get_sys, ResultLIN.plot_eigenvalue
+% See also PowerSystemModel.get_sys, ResultLIN.plot_eigenvalue
     arguments (Input)
         obj
-        Method (1,1) string {mustBeMember(Method, ["Kron","Feedback","DAE"])} = default_algorithm(obj) % Form of the model.
+        Method (1,1) string {mustBeMember(Method, ["Kron","DAE"])} = default_algorithm(obj) % Form of the model.
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = default_coordinate(obj) % Bus variables of "DAE": angle and log magnitude (rho), angle and magnitude, or real and imaginary parts. Default: options.Coordinate of the result.
         opt.Input (1,:) string % Inputs of the model: "u" or Labels. Default: all inputs.
         opt.Output (1,:) string % Outputs of the model: "x", "V", "I", "y" or names. Default: as described for each algorithm.
@@ -81,9 +61,12 @@ function sys = get_ss(obj, Method, opt)
     arguments (Output)
         sys % Linear model in the form of Format, with StateName, InputName and OutputName.
     end
-    if isfield(obj.sct_model, "sct_sys")
+    if ~is_network(obj)
         % Object-level result: its port model
-        sys = obj.sct_model.sct_sys;
+        if isfield(obj.output, "s_issue") && obj.output.s_issue == "NotFinite"
+            error(msg("GUILDA:ResultLIN:NotFinite", obj.output.message))
+        end
+        sys = port_model(obj.sct_model.sct_sys);
         if isfield(opt, "Output")
             sys = output_by_name(sys, opt.Output);
         end
@@ -101,8 +84,6 @@ function sys = get_ss(obj, Method, opt)
     switch Method
         case "Kron"
             sys = via_kron(obj);
-        case "Feedback"
-            sys = via_feedback(obj);
         case "DAE"
             sys = via_dae(obj, opt.Coordinate);
     end
@@ -158,8 +139,31 @@ function sys = output_by_name(sys, sv_select)
 end
 
 
+function tf = is_network(obj)
+    tf = isfield(obj.output, "s_layer") && obj.output.s_layer == "PowerNetwork";
+end
+
+
+function sys = port_model(S)
+% The connected model of a layer without its algebraic variables (eliminated as in Kron)
+    n_x = size(S.A,1) - S.n_v;
+    ix = 1:n_x;
+    iv = n_x+1:size(S.A,1);
+    if S.n_v == 0
+        sys = model(S.A, S.B, S.C, S.D, S.E, S.StateName, S.InputName, S.OutputName);
+        return
+    end
+    Avv = S.A(iv,iv);
+    Kx  = Avv \ S.A(iv,ix);
+    Ku  = Avv \ S.B(iv,:);
+    sys = model(S.A(ix,ix) - S.A(ix,iv)*Kx, S.B(ix,:) - S.A(ix,iv)*Ku, ...
+                S.C(:,ix) - S.C(:,iv)*Kx, S.D - S.C(:,iv)*Ku, S.E(ix,ix), ...
+                S.StateName(ix), S.InputName, S.OutputName);
+end
+
+
 function str = default_algorithm(obj)
-    str = "Feedback";
+    str = "Kron";
     if isfield(obj.options, "Method")
         str = obj.options.Method;
     end
@@ -173,8 +177,7 @@ function str = default_coordinate(obj)
 end
 
 function [p, sv_x, sv_u] = legacy_order(obj)
-% State order of Kron and DAE: global controllers first, then the components
-% (Feedback appends the global controllers after the components, as in v3)
+% State order of Kron and DAE: global controllers first, then the components (as in v3)
     tab   = obj.tab_variable;
     tab_x = tab(tab.Kind == "x", :);
     p     = [find(tab_x.Bus == ""); find(tab_x.Bus ~= "")];
@@ -296,16 +299,16 @@ function sys = select_output(obj, sys, Method, s_coordinate, sv_select)
     n_x  = numel(sv_x);
     n_v  = numel(sv_v);
     n_u  = numel(sv_u);
-    sct_y = obj.sct_model.sct_output;
-    sv_model = sys.StateName;
-    sv_model = sv_model(ismember(sv_model, sv_x));
+    S    = obj.sct_model.sct_sys;     % outputs y and yc over [x; v] and u
+    sv_y = S.OutputName;
+    sv_I = obj.sct_model.sv_I;
 
     % Every output, in the order of the kinds x, V, I, y
-    c_kind = {["x";"V";"I";"y"], {sv_model; sv_v; obj.sct_model.sv_I; sct_y.sv_name}};
-    sv_all = [sv_x; sv_v; obj.sct_model.sv_I; sct_y.sv_name];
-    Cx = [eye(n_x); zeros(2*n_v, n_x); sct_y.Cx];
-    Cv = [zeros(n_x, n_v); eye(n_v); tools.complex2matrix(obj.sct_model.cm_Y); sct_y.Cv];
-    Du = [zeros(n_x+2*n_v, n_u); sct_y.Du];
+    c_kind = {["x";"V";"I";"y"], {sys.StateName(ismember(sys.StateName, sv_x)); sv_v; sv_I; sv_y}};
+    sv_all = [sv_x; sv_v; sv_I; sv_y];
+    Cx = [eye(n_x); zeros(2*n_v, n_x); S.C(:,1:n_x)];
+    Cv = [zeros(n_x, n_v); eye(n_v); tools.complex2matrix(obj.sct_model.cm_Y); S.C(:,n_x+1:end)];
+    Du = [zeros(n_x+2*n_v, n_u); S.D];
 
     sv_name = strings(0,1);
     for str = sv_select(:)'
@@ -322,10 +325,6 @@ function sys = select_output(obj, sys, Method, s_coordinate, sv_select)
     if ~all(lv_known)
         error(msg("GUILDA:ResultLIN:UnknownOutput", sv_name(find(~lv_known,1))))
     end
-    lv_missing = ismember(sv_name, sv_x) & ~ismember(sv_name, sv_model);
-    if any(lv_missing)
-        error(msg("GUILDA:ResultLIN:StateNotInModel", sv_name(find(lv_missing,1)), Method))
-    end
     Cx = Cx(iv_all,:);
     Cv = Cv(iv_all,:);
     Du = Du(iv_all,:);
@@ -336,8 +335,8 @@ function sys = select_output(obj, sys, Method, s_coordinate, sv_select)
         C = [Cx(:,p), Cv(:,[1:2:n_v, 2:2:n_v]) * filt_i];
         D = Du;
     else
-        % The voltages are eliminated; "Feedback" has the same states, except those it removes
-        [~, iv_x] = ismember(sv_model, sv_x);
+        % The voltages are eliminated
+        [~, iv_x] = ismember(sys.StateName, sv_x);
         C = Cx(:,iv_x) - Cv * (obj.rm_Avv \ obj.rm_Avx(:,iv_x));
         D = Du - Cv * (obj.rm_Avv \ obj.rm_Bv);
     end
@@ -365,246 +364,4 @@ function iv = input_index(sys, sv_select)
     if ~all(lv_known)
         error(msg("GUILDA:ResultLIN:UnknownInput", sv_name(find(~lv_known,1))))
     end
-end
-
-
-function sys = via_feedback(obj)
-    s     = obj.sct_model;
-    n_bus = numel(s.c_sysBus);
-
-    v3_nonunit_dynamic(obj.options, s.c_sysBus);    % COMPAT(v3)
-    if all(tools.vcellfun(@(S) isempty(S.A), s.c_sysBus))
-        error(msg("GUILDA:ResultLIN:NoUnitBus"))
-    end
-
-    lv_noI2V = tools.vcellfun(@(S) ~isempty(S.A) && ~is_invertible(S.D(:,1:2)), s.c_sysBus);
-    if any(lv_noI2V)
-        error(msg("GUILDA:ResultLIN:NoI2V", num2str(find(lv_noI2V(:)'))))
-    end
-
-    % A bus without states whose current does not depend on V in an invertible way (e.g. a load
-    % with P = Q = 0) has no I-to-V form, so it is eliminated with the network like a non-unit bus
-    l_isU = false(n_bus,1);
-    for i = 1:n_bus
-        l_isU(i) = ~s.lv_nonUnit(i) && has_I2V(s.c_sysBus{i});
-    end
-
-    % The bus models with the outputs of their components and the inputs of local
-    % controllers that global controllers drive (sct_model.c_sysY, c_sysL)
-    c_aug = cell(n_bus,1);
-    for i = 1:n_bus
-        S = s.c_sysBus{i};  Y = s.c_sysY{i};  L = s.c_sysL{i};
-        c_aug{i} = model(S.A, [S.B, L.B], [S.C; Y.C], [S.D, L.D(1:2,:); Y.D, L.D(3:end,:)], S.E, ...
-                         S.StateName, [S.InputName; L.InputName], [S.OutputName; Y.OutputName]);
-    end
-    ssFromBus = tools.cellfun(@i2v_full, c_aug(l_isU));
-
-    busInames = tools.cellfun(@(S) S.InputName(1:2),  ssFromBus);
-    busVnames = tools.cellfun(@(S) S.OutputName(numel(S.StateName)+(1:2)), ssFromBus);
-
-    input  = obj.tab_variable.Label(obj.tab_variable.Kind == "u");
-    sv_l   = tools.vcellfun(@(L) reshape(string(L.InputName), [], 1), s.c_sysL);
-
-    % Non-unit buses n have no states, so Div_n V_n + Diu_n u_n is their current and
-    % I_u = (Y_uu - Y_un Ybar_nn^-1 Y_nu) V_u + Y_un Ybar_nn^-1 Diu_n u_n, with Ybar_nn = Y_nn - Div_n
-    sysNon = s.c_sysBus(~l_isU);
-    Div = tools.dcellfun(@(S) S.D(:,1:2)  , sysNon);
-    Diu = tools.dcellfun(@(S) S.D(:,3:end), sysNon);
-    nonUnames = tools.cellfun(@(S) S.InputName(3:end), sysNon);
-
-    % Inputs of the global controllers that act (a column of B or D other than 0): a
-    % controller that does not use the voltages does not need them as outputs here
-    c_sysGC = s.c_sysGC;
-    for k = 1:numel(c_sysGC)
-        lv_used = reshape(any(c_sysGC{k}.B ~= 0, 1) | any(c_sysGC{k}.D ~= 0, 1), [], 1);
-        c_sysGC{k}.B = c_sysGC{k}.B(:, lv_used);
-        c_sysGC{k}.D = c_sysGC{k}.D(:, lv_used);
-        c_sysGC{k}.InputName = c_sysGC{k}.InputName(lv_used);
-    end
-    sv_gcIn = tools.vcellfun(@(S) reshape(string(S.InputName), [], 1), c_sysGC);
-
-    % The network block: the currents of the unit buses, then the voltages of the eliminated buses
-    % and the outputs of their components that global controllers read, by the KCL on those buses
-    % V_n = Ybar_nn^-1 (Diu_n u_n - Y_nu V_u), and y_n = Dyv_n V_n + Dyu_n u_n (no states there)
-    [Ymat, Hmat, Vmat] = complex2matrix(s.cm_Y, Div, Diu);
-    [Cn, sv_n] = eliminated_outputs(s.c_sysY(~l_isU), sysNon, Vmat, size(Ymat,2));
-    lv_n = ismember(sv_n, string(sv_gcIn));
-    ssN = model(zeros(0), zeros(0,size(Ymat,2)+size(Hmat,2)), zeros(size(Ymat,1)+nnz(lv_n),0), [Ymat, Hmat; Cn(lv_n,:)], zeros(0), ...
-                strings(0,1), [vertcat(busVnames{:}); vertcat(strings(0,1), nonUnames{:})], [vertcat(busInames{:}); sv_n(lv_n)]);
-
-    % The bus models and the network connected by name; outputs: the states of the bus models,
-    % then the voltages, component outputs and states that global controllers read;
-    % inputs: the component inputs, then the inputs of local controllers they drive
-    sv_x   = tools.cellfun(@(S) S.StateName, ssFromBus);
-    sv_x   = vertcat(strings(0,1), sv_x{:});
-    sv_blk = tools.cellfun(@(S) string(S.OutputName), [ssFromBus(:); {ssN}]);
-    sv_gcIn = unique(string(sv_gcIn(ismember(string(sv_gcIn), vertcat(strings(0,1), sv_blk{:})))), "stable");
-    sv_gcIn = sv_gcIn(~ismember(sv_gcIn, sv_x));
-    sysODE = connect_by_name([ssFromBus(:); {ssN}], [input; sv_l], [sv_x; sv_gcIn]);
-    sysODE = remove_unreachable_states(sysODE);
-
-    % Global controllers (all of them, one after another, as in Kron and DAE): their
-    % inputs are bus voltages and component outputs or states (e.g. omega), and their
-    % outputs add to component inputs (e.g. Pmech) or drive inputs of local controllers.
-    % The voltages and component outputs of eliminated buses are outputs of the network block;
-    % an input of a local controller on an eliminated bus is not an input here.
-    for k = 1:numel(c_sysGC)
-        sysGC = c_sysGC{k};
-        [lv_out, feedout] = ismember(sysGC.InputName,  sysODE.OutputName);
-        [lv_in,  feedin ] = ismember(sysGC.OutputName, sysODE.InputName);
-        if ~all(lv_out) || ~all(lv_in)
-            error(msg("GUILDA:ResultLIN:GlobalControllerPort", join(sysGC.StateName, ", ")))
-        end
-        sysODE = positive_feedback(sysODE, sysGC, feedin, feedout);
-    end
-    % Only the component inputs and the states of the bus models stay
-    iv_in  = 1:numel(input);
-    iv_out = 1:numel(sv_x);
-    sys = model(sysODE.A, sysODE.B(:,iv_in), sysODE.C(iv_out,:), sysODE.D(iv_out,iv_in), sysODE.E, ...
-                sysODE.StateName, sysODE.InputName(iv_in), sysODE.OutputName(iv_out));
-
-    function [rm_Ymat, rm_Hmat, rm_Vmat] = complex2matrix(Ymat, Div, Diu)
-        rm_Ymat = cell2mat( arrayfun(@(M) [real(M), -imag(M); imag(M), real(M)], Ymat, 'UniformOutput', false) );
-        lv_Unit = logical( kron(l_isU,ones(2,1)) );
-        inv_Ynn = (rm_Ymat(~lv_Unit,~lv_Unit) - Div)^-1;
-        rm_Vmat = inv_Ynn * [-rm_Ymat(~lv_Unit,lv_Unit), Diu];     % V_n from [V_u; u_n]
-        rm_Hmat = rm_Ymat(lv_Unit,~lv_Unit) * inv_Ynn * Diu;
-        rm_Ymat = rm_Ymat(lv_Unit,lv_Unit) - rm_Ymat(lv_Unit,~lv_Unit) * inv_Ynn * rm_Ymat(~lv_Unit,lv_Unit);
-    end
-end
-
-function [Cn, sv_n] = eliminated_outputs(c_sysY, c_sysNon, Vmat, n_vu)
-% Voltages of the eliminated buses and outputs of their components as rows in the inputs
-% [V_u; u_n] of the network block (n_vu: number of V_u), named as in the bus models
-    arguments (Input)
-        c_sysY   cell    % Outputs of the components of each eliminated bus (sct_model.c_sysY)
-        c_sysNon cell    % Bus models of the eliminated buses (V to I)
-        Vmat     double  % V_n of all eliminated buses from [V_u; u_n]
-        n_vu     (1,1) double  % Number of the voltages of the unit buses
-    end
-    arguments (Output)
-        Cn   double  % Rows of the voltages, then of the component outputs
-        sv_n string  % Names of the rows
-    end
-    sv_V = tools.vcellfun(@(S) reshape(string(S.InputName(1:2)), [], 1), c_sysNon);
-    c_Cy = cell(numel(c_sysY),1);   c_y = cell(numel(c_sysY),1);
-    i_u = n_vu;
-    for i = 1:numel(c_sysY)
-        Y   = c_sysY{i};
-        n_u = size(Y.D,2) - 2;
-        Su  = zeros(n_u, size(Vmat,2));
-        Su(:, i_u+(1:n_u)) = eye(n_u);                       % u_i from [V_u; u_n]
-        c_Cy{i} = Y.D(:,1:2) * Vmat(2*i-1:2*i,:) + Y.D(:,3:end) * Su;
-        c_y{i}  = reshape(string(Y.OutputName), [], 1);
-        i_u = i_u + n_u;
-    end
-    Cn   = [Vmat; vertcat(zeros(0,size(Vmat,2)), c_Cy{:})];
-    sv_n = [vertcat(strings(0,1), sv_V); vertcat(strings(0,1), c_y{:})];
-end
-
-function tf = has_I2V(sys)
-    tf = ~isempty(sys.A) || is_invertible(sys.D(:,1:2));
-end
-
-function tf = is_invertible(D)
-    tf = rcond(D) > 1e-12;
-end
-
-function sys = i2v_full(sysV2I)
-% I-to-V form of a bus model (Bus.get_sys("port","I2V") with the states as outputs) from
-% its V-to-I form, with the same operations as Bus.get_sys. The rows after the current
-% (outputs y = Cy x + Dyv V + Dyu u of the components) become outputs after V.
-    Ax = sysV2I.A;
-    Bv = sysV2I.B(:,1:2);
-    Bu = sysV2I.B(:,3:end);
-
-    inv_Dv = sysV2I.D(1:2,1:2)^-1;
-    inv_Cx = sysV2I.C(1:2,:);
-    inv_Du = sysV2I.D(1:2,3:end);
-    inv_Ax = Ax - Bv * inv_Dv * inv_Cx;
-    inv_Bv = Bv * inv_Dv;
-    inv_Bu = Bu - Bv * inv_Dv * inv_Du;
-
-    A =  inv_Ax;
-    B = [inv_Bv, inv_Bu];
-
-    nx = size(A,1);
-    nu = size(B,2);
-
-    % V = -inv_Dv Cx x + inv_Dv I - inv_Dv Du u, and y with this V
-    Cy  = sysV2I.C(3:end,:);
-    Dyv = sysV2I.D(3:end,1:2);
-    Dyu = sysV2I.D(3:end,3:end);
-    C  = [  eye(nx,nx); -inv_Dv*inv_Cx; Cy - Dyv*inv_Dv*inv_Cx];
-    D  = [zeros(nx,nu); [inv_Dv, -inv_Dv*inv_Du]; [Dyv*inv_Dv, Dyu - Dyv*inv_Dv*inv_Du]];
-
-    sys = model(A, B, C, D, sysV2I.E, sysV2I.StateName, ...
-                [sysV2I.OutputName(1:2); sysV2I.InputName(3:end)], ...
-                [sysV2I.StateName; sysV2I.InputName(1:2); sysV2I.OutputName(3:end)]);
-end
-
-function sys = connect_by_name(c_blk, sv_input, sv_output)
-% Connects the blocks by name, keeping the states in the order of the blocks: an input
-% takes the sum of the outputs of the same name and the external input of the same name.
-% sv_input and sv_output name the external inputs and the outputs.
-    A = tools.cellfun(@(S) S.A, c_blk);  B = tools.cellfun(@(S) S.B, c_blk);
-    C = tools.cellfun(@(S) S.C, c_blk);  D = tools.cellfun(@(S) S.D, c_blk);
-    E = tools.cellfun(@(S) S.E, c_blk);
-    A = blkdiag(A{:});  B = blkdiag(B{:});  C = blkdiag(C{:});  D = blkdiag(D{:});  E = blkdiag(E{:});
-    sv_x   = tools.cellfun(@(S) S.StateName,  c_blk);   sv_x   = vertcat(strings(0,1), sv_x{:});
-    sv_in  = tools.cellfun(@(S) S.InputName,  c_blk);   sv_in  = vertcat(strings(0,1), sv_in{:});
-    sv_out = tools.cellfun(@(S) S.OutputName, c_blk);   sv_out = vertcat(strings(0,1), sv_out{:});
-
-    K = double(sv_in == sv_out.');              % K(i,j) = 1: output j feeds input i
-    P = double(sv_in == sv_input(:).');         % external inputs
-    [~, iv_out] = ismember(sv_output, sv_out);
-
-    % u = P w + K y,  y = C x + D u  =>  y = (I - D K) \ (C x + D P w)
-    M  = eye(numel(sv_out)) - D*K;
-    Cy = M \ C;
-    Dy = M \ (D*P);
-    sys = model(A + B*K*Cy, B*(P + K*Dy), Cy(iv_out,:), Dy(iv_out,:), E, sv_x, sv_input, sv_output);
-end
-
-function sys = remove_unreachable_states(sys)
-% Structural reduction, as connect does: removes the states that no input reaches and the
-% states that reach no output, through the nonzero pattern of A, E, B and C. The outputs do
-% not change (a removed state stays at zero).
-    G = (sys.A ~= 0) | (sys.E ~= 0);            % G(i,j): state j acts on state i
-    lv_in = any(sys.B ~= 0, 2);
-    lv_out = reshape(any(sys.C ~= 0, 1), [], 1);
-    n_in = -1;   n_out = -1;
-    while nnz(lv_in) ~= n_in || nnz(lv_out) ~= n_out
-        n_in = nnz(lv_in);   n_out = nnz(lv_out);
-        lv_in  = lv_in  | any(G(:, lv_in), 2);
-        lv_out = lv_out | reshape(any(G(lv_out, :), 1), [], 1);
-    end
-    lv = lv_in & lv_out;
-    sys.A = sys.A(lv,lv);
-    sys.B = sys.B(lv,:);
-    sys.C = sys.C(:,lv);
-    sys.E = sys.E(lv,lv);
-    sys.StateName = sys.StateName(lv);
-end
-
-function sys = positive_feedback(sys1, sys2, feedin, feedout)
-% Positive feedback of sys2 around sys1: the inputs feedin of sys1 add the outputs of sys2,
-% whose inputs are the outputs feedout of sys1. States [x1; x2]; inputs and outputs of sys1.
-    n1 = size(sys1.A,1);   n2 = size(sys2.A,1);
-    S = zeros(numel(feedout), numel(sys1.OutputName));
-    S(sub2ind(size(S), 1:numel(feedout), reshape(feedout,1,[]))) = 1;     % w2 = S y1
-    T = zeros(numel(sys1.InputName), numel(feedin));
-    T(sub2ind(size(T), reshape(feedin,1,[]), 1:numel(feedin))) = 1;       % u1 = v + T z2
-
-    % y1 = C1 x1 + D1 (v + T (C2 x2 + D2 S y1))
-    M  = eye(numel(sys1.OutputName)) - sys1.D*T*sys2.D*S;
-    Cy = M \ [sys1.C, sys1.D*T*sys2.C];
-    Dy = M \ sys1.D;
-    Cz = [zeros(size(sys2.C,1), n1), sys2.C] + sys2.D*S*Cy;           % z2
-    Dz = sys2.D*S*Dy;
-
-    A = [sys1.A, zeros(n1,n2); zeros(n2,n1), sys2.A] + [sys1.B*T*Cz; sys2.B*S*Cy];
-    B = [sys1.B + sys1.B*T*Dz; sys2.B*S*Dy];
-    sys = model(A, B, Cy, Dy, blkdiag(sys1.E, sys2.E), [sys1.StateName; sys2.StateName], ...
-                sys1.InputName, sys1.OutputName);
 end

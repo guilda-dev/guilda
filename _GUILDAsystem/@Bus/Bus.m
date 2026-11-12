@@ -120,11 +120,9 @@ classdef Bus < PowerSystemModel
 
         % PF(powerflow) calculation
         tab_PFcondition = get_pf_condition(obj)
-
-        %get_sys
-        [sys, varargout] = get_sys(obj, opt)
     end
     methods(Access=protected)
+        sct_port = get_linear_port(obj, s_port)
         sct_page = gui_content(obj)
     end
 

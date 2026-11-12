@@ -2,7 +2,7 @@ function rv = get_point(obj, t, tab_map, opt)
 % Get the values of the variable map at a time of the simulation.
 %
 % Returns the values of the variables at time t, in the order of the rows of tab_map
-% (by default the whole tab_variable, so rv is a point for net.linearize(Point=rv)).
+% (by default the whole tab_variable, so rv is a point for net.get_sys(Point=rv)).
 % tab_map may be any part of tab_variable, e.g. the rows x, Vre, Vim, u of the variable
 % map of a bus or component of the simulated network (bus.get_variable_map(),
 % comp.get_variable_map()); its rows are found by Kind, Owner, Name and Bus. The other
@@ -21,7 +21,7 @@ function rv = get_point(obj, t, tab_map, opt)
 % sim = net.simulate([0,5], sc);
 % x  = sim.get_point(2);                    % rows x, Vre, Vim, u of net.get_variable_map()
 % x0 = sim.get_point(1.05, Side="before");  % end of the fault
-% res = net.linearize(Point={sim, 2});      % same point as Point=x
+% res = net.get_sys(Point={sim, 2});       % same point as Point=x
 % ```
 %
 % See also PowerNetwork.get_variable_map, SolverLIN

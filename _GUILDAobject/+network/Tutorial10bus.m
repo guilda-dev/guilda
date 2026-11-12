@@ -4,7 +4,7 @@ classdef Tutorial10bus < PowerNetwork
 % of each generator class), 4 loads (both load classes), every local controller class
 % and an AGC over four generators; 60 Hz, 100 MVA base. Buses 1-5 are generator buses
 % behind a step-up branch; buses 6-10 form a ring. Bus 6 has no component (a non-unit
-% bus, eliminated in linearize("Kron")). The network is built with add_bus, add_branch,
+% bus, eliminated in get_sys(Method="Kron")). The network is built with add_bus, add_branch,
 % add_component, add_local_controller and add_global_controller and is initialized by
 % the constructor.
 %
@@ -49,8 +49,7 @@ classdef Tutorial10bus < PowerNetwork
 %   the PSS and the AGC observe `omega`. gen-droop has no `omega` (no output), so it has no
 %   controller and is not under the AGC; gen-classical has no controller and is under the
 %   AGC only. local-LQR drives `Vfield` only, so that the governor and the AGC keep `Pmech`.
-% - Linearization: all the finite eigenvalues of `get_ss("Kron")`, `get_ss("Feedback")` and
-%   `get_ss("DAE")` agree. One eigenvalue is 0 (to rounding): the mode of the common angle
+% - Linearization: all the finite eigenvalues of `get_ss("Kron")` and `get_ss("DAE")` agree. One eigenvalue is 0 (to rounding): the mode of the common angle
 %   of all the rotors, as no bus voltage is fixed. All the others have a negative real part.
 % - Simulation: a three-phase fault on bus 8 for 50 ms settles. A fault on another bus
 %   stops at the start of the fault, because the constant-power load at bus 8 cannot be
@@ -65,7 +64,7 @@ classdef Tutorial10bus < PowerNetwork
 % ```matlab
 % net = network.Tutorial10bus();
 % net.initialize;
-% sys = net.linearize().get_ss("Kron");
+% sys = net.get_sys(Method="Kron");
 % e   = eig(sys.A);
 % sc  = Scenario("fault", Time=[0,10]);
 % net.add_scenario(sc);

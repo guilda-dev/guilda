@@ -2,7 +2,7 @@ function [tab, c_idxBus, c_idxGC, tab_connection] = get_variable_map(obj, s_form
 % Return the variable map (every variable and signal of the network) and the connection map.
 %
 % Variable map of the network: the single definition of the order of the variables and
-% signals of the network model, used by net.linearize (ResultLIN blocks and Point), by
+% signals of the network model, used by get_sys (ResultLIN blocks and Point), by
 % net.simulate (the order of the DAE vector) and by the other analyses. The order is
 %   1. x: states. For each bus in a_Bus, for each component in a_Component, the states of
 %      the component and then of its local controllers (depth first: the AVR or "local"
@@ -18,7 +18,7 @@ function [tab, c_idxBus, c_idxGC, tab_connection] = get_variable_map(obj, s_form
 %      controller)
 % Rows 1-4 are the variables of the DAE (Role "variable"); rows 5-6 are signals computed
 % from them at each evaluation (Role "signal"). The rows of the kinds x, Vre, Vim and u
-% come first and are the variables of the linearization (net.linearize, get_sys and their
+% come first and are the variables of the linearization (get_sys and its
 % Point); the controller inputs uc are eliminated there. The bus current of the simulation
 % is not in the map: SolverODE places it after the voltages.
 % The map of a bus or a component (bus.get_variable_map, comp.get_variable_map) is the
@@ -59,10 +59,10 @@ function [tab, c_idxBus, c_idxGC, tab_connection] = get_variable_map(obj, s_form
 % [tab, ~, ~, tab_connection] = net.get_variable_map();
 % tab(tab.Kind == "x", ["Owner","Name"])
 % tab_connection(tab_connection.Kind == "global", :)
-% x0 = net.linearize().rv_point;   % values of the rows x, Vre, Vim, u
+% x0 = net.get_sys().rv_point;     % values of the rows x, Vre, Vim, u
 % ```
 %
-% See also PowerNetwork.linearize, PowerNetwork.simulate, Bus.get_variable_map, Component.get_variable_map
+% See also PowerSystemModel.get_sys, PowerNetwork.simulate, Bus.get_variable_map, Component.get_variable_map
 %
 % <@Group> Called by analyses
     arguments (Input)

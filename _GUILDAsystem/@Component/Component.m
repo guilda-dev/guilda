@@ -224,9 +224,6 @@ classdef Component < PowerSystemModel
         con = add_local_controller(obj, Key, opt)
         remove_local_controller(obj, s_tag, opt)
 
-        % get_sys
-        [sys, varargout] = get_sys(obj, x, V, u, opt)
-
         % Steady State
         set_input(obj, rv_u)
 
@@ -234,6 +231,11 @@ classdef Component < PowerSystemModel
     methods(Hidden)
         % Debugger
         flag = validate(obj)
+        % Linearization (get_sys connects the blocks)
+        sct_block = get_linear_block(obj, x, V, u)
+    end
+    methods(Access=protected)
+        sct_port = get_linear_port(obj, s_port)
     end
 
     methods(Access={?Bus})
