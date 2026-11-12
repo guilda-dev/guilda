@@ -1,6 +1,6 @@
 # 線形化の接続器(`SolverLIN`)と共通の `get_sys`(Issue #121)
 
-ブランチは `refactor/121-linearization-connector`(未 push、分岐元 `d41057ba`)です。この文書は手順 0 の仕様です。ユーザーの決定(2026-11-13、§9.1)を受けて実装します。
+ブランチは `refactor/121-linearization-connector`(未 push、分岐元 `d41057ba`)です。この文書は手順 0 の仕様で、ユーザーの決定(2026-11-13、§9.1)を受けて実装しました。実装で仕様と変えた点と結果は §11 にあります。
 
 **ラベル**: 無印または [事実] = コードを読んで確認。[計測] = MATLAB R2026a で実行して確認。[提案] = この文書の提案で、未承認。[未確認] = 調べていない。
 
@@ -67,7 +67,7 @@
 
 1. ブロックを対角に並べます(`blkdiag`)。状態はブロックの順 = 変数表の `x` の順です。
 2. ブロックの各入力 ℓ について、値を次の和とします。
-   - `tab_connection` で `TargetIndex` が ℓ の行の源: `y`・`yc`(ブロックの出力)、`x`(状態の選択)。`"equilibrium"` の行は偏差 0 なので何も足しません。`"global"` の行も同じ扱いです。
+   - `tab_connection` で `TargetIndex` が ℓ の行の源: `y`・`yc`(ブロックの出力)、`x`(状態の選択)。`"local"`、`"observe"`、`"global"` の行を足します。`"equilibrium"` の行は偏差 0 なので何も足しません。
    - ℓ が `sv_input` にあれば外部入力。
    - ℓ が母線電圧で `sv_algebraic` にあれば代数変数 v。そうでなければ外部入力(V2I、LC、GC)。
 3. ブロックの入出力 u_b, y_b を消去します: u_b = K y_b + S_x x + S_v v + P w、y_b = C x + D u_b から (I − D K) y_b = …。`I − D K` が特異なら `GUILDA:SolverLIN:AlgebraicLoop`(新しい ID、§7)。今の `connect_blocks` と同じ式です。
@@ -341,3 +341,36 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 | `v3_get_sys_point` | `_VersionSupport` | 指示で許可 |
 
 これ以外の新しいメンバーはありません。点での制御器の入力、古さの検査、LC・GC の変数表の選択、`tab_current` の作成は `get_sys.m` の局所関数です。`ResultLIN` のコンストラクタの引数は変わりますが、メンバーは増えません(`sct_model` は中身が変わる)。
+
+## 11. 実装の記録(2026-11-13)
+
+ブランチを `refactor/design-alignment`(`8ba7c955`)に追いつかせ(マージ `de2a93f5`)、その上で実装しました。
+
+### 11.1 仕様から変えた点 [事実]
+
+- **ポートの構造体:** `sv_current` の代わりに `tab_bus`(列 `Bus`、`Vre`、`Vim`、`Ire`、`Iim`。層の母線の電圧と電流の Label)を持ちます。`tab_current` は `get_sys` が加え、列は `Label`、`Bus`、`Name`(`"Ire"` か `"Iim"`)です。網の出力 `I` は `Y v`、V2I の母線の出力 `I` は機器の電流の和です。
+- **ブロックの `Owner`:** ブロックの構造体に任意のフィールド `Owner`(「the component B003LPQ1 at bus B003」など)を加えました。`JacobianNotFinite` のメッセージに使います。メンバーではありません。
+- **`PointNotFinite` は `SolverLIN.point_vector` で出します。** `msg` は呼び出し元のクラスの ID しか受け付けないので、`PowerSystemModel.get_sys` からは `GUILDA:SolverLIN:*` を出せません。
+- **新しい ID `GUILDA:PowerSystemModel:PointAndPositional`:** `Point` と位置引数を同時に与えたとき。
+- **位置引数の検証:** `x`、`V`、`u` は `(:,1) {mustBeNumeric, mustBeReal}` です。`double` にすると、削除した名前(`Controllers` など)の文字列が位置引数として数値に変換されて通ってしまうためです。
+- **`StateNotInModel` も削除しました。** Feedback だけが状態を消していたためです(§9.1 の「Feedback だけが使う ID」)。
+- **`GUILDA:LocalController:Stale` と `InputEdited` は残します。** `con.validate` が使います。
+- **手順の分け方:** §10 の手順 2〜7 は 1 つのコミットにしました。手順 2 の「旧 `get_sys` から呼ぶ」途中の形は、旧コードを書き換える捨てるコードになり、手順 3〜5 は `SolverLIN.solve` の署名の変更で互いに依存するためです。各コミットの時点でテストは通ります。
+
+### 11.2 基準値(Q11)[事実]
+
+- `_GUILDAdoc/developer/` の配置の規則(`folder-structure.html`)には、テストのデータファイルの置き場所の規定がありません。テストの補助が置かれている `+DebugScript/+helper/` に `linearization_reference.mat`(約 2.2 MB)を置き、作り方を `+DebugScript/archive/make_linearization_reference.m` に残しました(置き換えた後のコードでは動かないので archive。「参照のために残すコード」の規則)。規則に追記するかはコーディネータの判断です。
+- 中身: 同梱の 13 系統と GC 付きの 2 系統(Ishizaki6Bus、IEEE14bus に AVR_ST1 + PSS1 と agc-PI)、平衡点とずらした点(`rng(1)`)。網の `rm_*`、Kron(状態 150 以下はモデル、すべて固有値)、DAE(`theta&rho`)、機器(LC 付き V2I と I2V、機器単体)、母線(V2I と I2V)、LC、GC のモデル。基準のコミットは `de2a93f5`。
+- 比べるのは `DebugScript.helper.linearization_reference_check` で、名前の変化(機器と LC の電圧の入力、GC の入出力)は対応表で吸収します。F7 の "Linear models match the reference values"(5 系統、medium)と "Linear models of every bundled network match the reference values"(全系統、large)です。
+
+### 11.3 結果 [計測]
+
+- 基準値との一致: 298 項目すべてで相対差の最大は 1.14e-14 です。
+- 基準 `de2a93f5` の small: 517 件、PASS 515 / KNOWN 1 / FAIL 0 / SKIP 1。large の F7・F8 では 3 件(F7 `PointFromASimulationResultAndATime`、F8 `MATFileRoundTripKeepsControllersAndLowerLayers`、`MATPOWERImportReproducesCase14`)が失敗し、実装後も同じメッセージで失敗します。
+- 実装後(`7c4c9702`)の small: 520 件、PASS 518 / KNOWN 1 / FAIL 0 / SKIP 1、436 s。medium: 689 件、PASS 687 / KNOWN 1 / FAIL 0 / SKIP 1、694 s。large は未実行。
+- Kron と DAE の固有値の一致、v3 の行列との一致(F7)、シミュレーションの Jacobian との一致(F35)は以前と同じく通ります。
+- ユーザーの設定ファイルに `Method="Feedback"` が保存されていると、`GUILDA.config` は既定値に変えて読みます(`Auto-change @Method (Feedback >> Kron)`)。
+
+### 11.4 未確認
+
+- チュートリアル(`_GUILDAtutorial/*.mlx`)は書き換えていません。`Step6_GetLinearSystem.mlx` は v2 の `get_sys(false)` を説明しています(チュートリアルの更新は保留中のブランチで扱う)。

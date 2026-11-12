@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "One get_sys for every linear model",
+    "date": "2026-11-13",
+    "type": "feature",
+    "content": "The network, a bus, a component, a local controller and a global controller give their linear model with the same method get_sys and the same options (Point, Method, Coordinate, Input, Output, Format; Port for a bus or component), and return [sys, flag, output]. Each model is built from the linear blocks of the components and controllers, connected along the variable map, so the controllers are linearized at the given point and the names are the labels of the variable map. net.linearize is removed: use net.get_sys(), which returns the result object even when flag is false. The Feedback method is removed; Method is \"Kron\" (the default) or \"DAE\". The options NonUnit, Algorithm, Controllers, tag, full and con are removed. The point as positional arguments, comp.get_sys(x, V, u), still works with a warning: use comp.get_sys(Point=p). Scripts that use linearize or Feedback, or that read the input and output names of a bus or global controller model, need updating."
+  },
+  {
     "title": "More figures of the power flow result",
     "date": "2026-11-12",
     "type": "feature",
