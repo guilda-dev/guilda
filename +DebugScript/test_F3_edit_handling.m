@@ -31,16 +31,16 @@ assert(DebugScript.helper.edit_flag(net) == "unset")
 %% Solvers called directly check the equilibrium
 % net.solver_ODE.solve / net.solver_LIN.solve も simulate / linearize と同じ確認をする
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-assert_stale_error(@() net.solver_ODE.solve(net, [0,1]), "GUILDA:SolverODE:Stale")
+assert_stale_error(@() net.solver_ODE.solve(net, [0,1], {}, DebugScript.helper.ode_options("Progress", "none")), "GUILDA:SolverODE:Stale")
 assert_stale_error(@() net.solver_LIN.solve(net), "GUILDA:SolverLIN:Stale")
 
 DebugScript.helper.quiet(@() net.initialize);
 comp.tab_parameter.dynamics.D = 5;
-assert_stale_error(@() net.solver_ODE.solve(net, [0,1]), "GUILDA:SolverODE:Stale")
+assert_stale_error(@() net.solver_ODE.solve(net, [0,1], {}, DebugScript.helper.ode_options("Progress", "none")), "GUILDA:SolverODE:Stale")
 assert_stale_error(@() net.solver_LIN.solve(net), "GUILDA:SolverLIN:Stale")
 
 DebugScript.helper.quiet(@() net.initialize);
-sol = DebugScript.helper.quiet(@() net.solver_ODE.solve(net, [0,1]));
+sol = DebugScript.helper.quiet(@() net.solver_ODE.solve(net, [0,1], {}, DebugScript.helper.ode_options("Progress", "none")));
 assert(sol.odeResults.t(end) == 1)
 res = DebugScript.helper.quiet(@() net.solver_LIN.solve(net));
 assert(isa(res, "ResultLIN"))
