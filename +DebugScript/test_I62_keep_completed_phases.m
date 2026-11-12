@@ -1,7 +1,7 @@
 % I62 区間を解けないときに完了済みの区間を残す
 %
 %   数値的な失敗 : flag = -1 と部分結果を返し、エラーは output.exception に残る
-%   設定の誤り   : ソルバーの設定のエラーは今までどおり例外になる (入力は時系列のデータで、関数を持たない)
+%   設定の誤り   : 設定の誤りは simulate の arguments ブロックが例外にする (入力は時系列のデータで、関数を持たない)
 %
 % 実行: runtests("DebugScript.test_I62_keep_completed_phases")  または  DebugScript.run_all("Features","I62")
 
@@ -90,16 +90,6 @@ s = load(s_mat);
 assert(s.flag == -1 && DebugScript.helper.msg_id(s.output.exception) == "GUILDA:SolverODE:PhaseFailed")
 
 
-%% Export option works when the first phase fails
-s_dir = tempname;
-mkdir(s_dir);
-c_dir = onCleanup(@() rmdir(s_dir, "s"));
-s_csv = fullfile(s_dir, "opt.csv");
-[~, flag] = run(net, [0,2], ev_trip_first, "Export", s_csv);
-close all
-assert(flag == -1 && isfile(s_csv))
-
-
 %% Working data is restored after a failed phase
 run(net, [0,2], ev_trip_later);
 % the trips are in the context of the run only (see I61): the next run starts connected
@@ -115,9 +105,9 @@ assert(isequaln(sol.rm_variable, sol_ref.rm_variable))
 net2 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net2.initialize);
 
-ME = catch_error(@() run(net2, [0,1], "SolverOptions", matlab.ode.options.ODE45));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:PhaseFailed", DebugScript.helper.msg_id(ME))
-assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:ode45:MassSingularYes", DebugScript.helper.msg_id(ME.cause{1}))
+% DAE を解けないソルバーは選べない (Solver は "ode15s" か "ode23t")
+ME = catch_error(@() run(net2, [0,1], "Solver", "ode45"));
+assert(~isempty(ME) && contains(ME.message, "Solver"), "ode45 を受け付けた")
 
 
 %% Convergence failure of the initial condition returns the completed phases
@@ -128,15 +118,22 @@ assert(DebugScript.helper.msg_id(output.exception.cause{1}) == "GUILDA:SolverODE
 
 
 %% Solver error with ode23t returns the completed phases
-[~, flag, output] = run(net, [0,2], ev_trip_later, "SolverOptions", matlab.ode.options.ODE23t, "Solver", "ode23t");
+[~, flag, output] = run(net, [0,2], ev_trip_later, "Solver", "ode23t");
 assert(flag == -1 && output.tEnd == 1)
 assert(DebugScript.helper.msg_id(output.exception.cause{1}) == "MATLAB:ode23t:MassMatrixAllZero", DebugScript.helper.msg_id(output.exception.cause{1}))
 
 
-function varargout = run(net, varargin)
+function varargout = run(net, time, varargin)
+    % シナリオ (省略すると外乱なし) を時間 time で計算する。残りは simulate の Name-Value
     w = warning("off", "GUILDA:PowerNetwork:SimulationIncomplete");
     c = onCleanup(@() warning(w));
-    [varargout{1:max(nargout,1)}] = net.simulate(varargin{:});
+    if ~isempty(varargin) && isa(varargin{1}, "Scenario")
+        s_tag = varargin{1}.s_tag;
+        varargin = varargin(2:end);
+    else
+        s_tag = DebugScript.helper.no_disturbance(net);
+    end
+    [varargout{1:max(nargout,1)}] = net.simulate(s_tag, varargin{:}, Time=time);
 end
 
 function ME = catch_error(fcn)

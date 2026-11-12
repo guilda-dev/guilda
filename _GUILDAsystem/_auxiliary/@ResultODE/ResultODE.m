@@ -46,10 +46,9 @@ classdef ResultODE < ResultBase
 % ```matlab
 % net = network.IEEE14bus();
 % net.initialize();
-% sc = Scenario("fault");
+% sc = net.add_scenario("fault");
 % sc.add_fault("B008", [1, 1.05]);
-% net.add_scenario(sc);
-% [result, flag] = net.simulate([0, 10], sc);
+% [result, flag] = net.simulate("fault");
 % r = result.odeResults;               % r.t, r.Bus(i).V, r.Bus(i).Component(j).X, ...
 % x = result.get_point(2);             % all variables at t = 2, in variable-map order
 % result.plot_trajectory(Quantity="omega");       % a state of the components

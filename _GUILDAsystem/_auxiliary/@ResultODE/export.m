@@ -8,7 +8,7 @@ function s_file = export(obj, filename)
 % and one column per output named by the Label of tab_output); .mat saves odeResults,
 % rm_variable, tab_variable, rm_output, tab_output, options, flag and output, so the
 % controller states and outputs (in rm_variable and rm_output only) are kept. A relative filename is
-% relative to the current folder. simulate(..., Export=filename) calls it.
+% relative to the current folder.
     arguments (Input)
         obj
         filename (1,1) string = string(datetime("now","Format","uuMMdd_HHmmss")) + "_simulation.csv" % Output file; its extension selects the format.

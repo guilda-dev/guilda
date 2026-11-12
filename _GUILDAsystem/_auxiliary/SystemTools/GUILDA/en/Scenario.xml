@@ -19,7 +19,6 @@
         <entry key="DuplicateRunTag">Several disturbances of this run have the tag "{0}" (scenarios {1}). The tags name the columns of output.phases: give the disturbances of scenarios simulated together different tags.</entry>
         <entry key="ReservedTag">The disturbance tag "{0}" of scenario "{1}" is reserved for the phase table. Use another tag; t1, t2, Properties, Row, Variables, an empty tag, and NoAction followed by digits are not available.</entry>
         <entry key="ScenarioArray">Give scenarios as separate arguments, e.g. net.simulate(time, sc1, sc2), not as an array.</entry>
-        <entry key="UnknownOption">Scenario "{0}": {1} is not an option of net.simulate. Options: {2}.</entry>
         <entry key="DisturbanceNotFound">Scenario "{1}" has no disturbance with the tag {0}.</entry>
         <entry key="CsvNotFound">The scenario file "{0}" does not exist.</entry>
         <entry key="CsvMissingColumn">The scenario file "{0}" has no column Scenario. The columns are Scenario, Description, ScenarioTimeStart, ScenarioTimeEnd, Tag, TimeStart, TimeEnd, FaultBus, TripUnit, OpenBranch, OffsetUnit, OffsetState, OffsetValue, InputUnit, InputName, InputValue.</entry>

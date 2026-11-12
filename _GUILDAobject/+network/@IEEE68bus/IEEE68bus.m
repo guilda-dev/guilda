@@ -46,10 +46,9 @@ classdef IEEE68bus < PowerNetwork
 % ```matlab
 % net = network.IEEE68bus();
 % res = net.calculate_powerflow();
-% sc  = Scenario("fault");
+% sc  = net.add_scenario("fault");
 % sc.add_fault("B001", [1,1.05]);
-% net.add_scenario(sc);
-% sol = net.simulate([0,10], sc);
+% sol = net.simulate("fault");
 % ```
 %
 % See also controller.avr.AVR_ST1, controller.pss.PSS1, network.IEEE9bus

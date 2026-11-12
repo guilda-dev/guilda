@@ -115,7 +115,7 @@ function [sol, avr] = simulate_fault(sct_para)
     avr = comp.add_local_controller("avr-DC1", parameter=sct_para);
     DebugScript.helper.quiet(@() net.initialize);
     ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003");
-    sol = DebugScript.helper.quiet(@() net.simulate([0,5], ev));
+    sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,5]));
 end
 
 function [sol, avr] = simulate_offset(sct_para)
@@ -124,7 +124,7 @@ function [sol, avr] = simulate_offset(sct_para)
     avr = comp.add_local_controller("avr-DC1", parameter=sct_para);
     DebugScript.helper.quiet(@() net.initialize);
     ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 0, "OffsetUnit", comp.s_tag, "OffsetState", "Eq", "OffsetValue", 1);
-    sol = DebugScript.helper.quiet(@() net.simulate([0,5], ev));
+    sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,5]));
 end
 
 function r_eq = field_equilibrium(sct_para)

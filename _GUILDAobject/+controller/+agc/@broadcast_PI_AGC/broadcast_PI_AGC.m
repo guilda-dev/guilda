@@ -33,10 +33,9 @@ classdef broadcast_PI_AGC < GlobalController
 % g2  = net.a_Bus{2}.a_Component{1};
 % agc = net.add_global_controller("agc-PI", {g1, g2}, parameter=struct(kP=100, kI=500));
 % net.initialize;
-% sc  = Scenario("fault");
+% sc  = net.add_scenario("fault");
 % sc.add_fault("B007", [1,1.05]);
-% net.add_scenario(sc);
-% sol = net.simulate([0,10], sc);
+% sol = net.simulate("fault");
 % ```
 %
 % See also GlobalController, PowerNetwork.add_global_controller

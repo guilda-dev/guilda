@@ -123,7 +123,7 @@ DebugScript.helper.quiet(@() net.initialize);
 lqr.Q = ones(1, numel(gen.sv_x) + 1);           % 重みのサイズが違うので set_equilibrium で失敗する
 error_of(@() net.initialize());
 assert(DebugScript.helper.is_stale(net))
-ME = error_of(@() net.simulate([0 1]));
+ME = error_of(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0 1]));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:Stale", DebugScript.helper.msg_id(ME))
 
 
@@ -140,7 +140,7 @@ DebugScript.helper.quiet(@() net.initialize());
 assert(~DebugScript.helper.is_stale(net))
 error_of(@() net.initialize(Method="powerflow"));
 assert(DebugScript.helper.is_stale(net))
-ME = error_of(@() net.simulate([0 1]));
+ME = error_of(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0 1]));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:Stale", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "stopped before it finished"), ME.message)
 
@@ -169,7 +169,7 @@ net = DebugScript.helper.build_9bus();
 ME  = error_of(@() net.initialize(Tolerance=1e3, Format="GUILDAorigin"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))
 assert(DebugScript.helper.is_stale(net))
-assert(DebugScript.helper.msg_id(error_of(@() net.simulate([0 1]))) == "GUILDA:SolverODE:Stale")
+assert(DebugScript.helper.msg_id(error_of(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0 1]))) == "GUILDA:SolverODE:Stale")
 DebugScript.helper.quiet(@() net.initialize);
 assert(~DebugScript.helper.is_stale(net) && kcl_residual(net) < 1e-8)
 
@@ -198,7 +198,7 @@ function r = kcl_residual(net)
 end
 
 function d = drift(net)
-    d = DebugScript.helper.max_state_drift(net.simulate([0 5]));
+    d = DebugScript.helper.max_state_drift(net.simulate(DebugScript.helper.no_disturbance(net), Time=[0 5]));
 end
 
 function cv = component_currents(net)

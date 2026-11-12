@@ -18,7 +18,7 @@ x = g2.rv_Xequilibrium;
 assert(all(isfinite(x)) && all(isfinite(g2.rv_Uequilibrium)))
 assert(abs(x(g2.sv_x == "Ed")) < 1e-14)
 
-X = net.simulate([0,5]).odeResults.Bus(2).Component(1).X;
+X = net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,5]).odeResults.Bus(2).Component(1).X;
 assert(max(abs(X{:,:} - x.'), [], "all") < 1e-9)
 
 res = net.get_sys();

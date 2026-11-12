@@ -91,11 +91,10 @@ classdef IEEJ_WEST30 < PowerNetwork
 % ```matlab
 % net = network.IEEJ_WEST30(Section="night");
 % res = net.calculate_powerflow();
-% sc  = Scenario("fault-open", Time=[0,10]);
+% sc  = net.add_scenario("fault-open", Time=[0,10]);
 % sc.add_fault("B1220", [0.1,0.17]);
 % sc.add_open_branch("EL042", [0.17,10]);
-% net.add_scenario(sc);
-% sol = net.simulate(sc);
+% sol = net.simulate("fault-open");
 % ```
 %
 % See also controller.avr.AVR_DC1, controller.governor.IEEJ_LPT1, controller.governor.IEEJ_LPT3, component.generator.park, component.load.impedance, Scenario

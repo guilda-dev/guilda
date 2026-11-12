@@ -67,10 +67,9 @@ classdef IEEE9bus < PowerNetwork
 % ```matlab
 % net = network.IEEE9bus();
 % res = net.calculate_powerflow();
-% sc  = Scenario("fault");
+% sc  = net.add_scenario("fault");
 % sc.add_fault("B007", [1,1.05]);
-% net.add_scenario(sc);
-% sol = net.simulate([0,10], sc);
+% sol = net.simulate("fault");
 %
 % % Without the AVRs and PSSs
 % net = network.IEEE9bus(LocalController=false);

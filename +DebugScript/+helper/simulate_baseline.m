@@ -176,7 +176,7 @@ end
 
 function [result, flag, output] = run_case(net, sc, time)
 % シナリオを時間 time で計算する
-    [result, flag, output] = DebugScript.helper.quiet(@() net.simulate(time, sc, Progress="none"));
+    [result, flag, output] = DebugScript.helper.quiet(@() net.simulate(sc.s_tag, Time=time, Progress="none"));
 end
 
 

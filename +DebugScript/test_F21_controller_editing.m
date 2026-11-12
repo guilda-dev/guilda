@@ -119,7 +119,7 @@ assert(isempty(gen.a_LocalController) && ~isvalid(avr))
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(gen.rv_Xequilibrium_all) == n0)
 assert(size(net.get_sys().A,1) == nx0)
-sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]);
 assert(sol.flag == 1)
 
 

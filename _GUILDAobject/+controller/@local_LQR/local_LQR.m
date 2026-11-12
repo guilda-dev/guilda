@@ -35,10 +35,9 @@ classdef local_LQR < LocalController
 % net.a_Bus{1}.a_Component{1}.add_local_controller("local-LQR");
 % net.a_Bus{2}.a_Component{1}.add_local_controller("local-LQR", parameter=struct(Input="Vfield", R=2));
 % net.initialize;
-% sc  = Scenario("fault");
+% sc  = net.add_scenario("fault");
 % sc.add_fault("B007", [1,1.05]);
-% net.add_scenario(sc);
-% sol = net.simulate([0,10], sc);
+% sol = net.simulate("fault");
 % ```
 %
 % See also Component.add_local_controller, controller.avr.abstract, controller.local_LQR_retrofit

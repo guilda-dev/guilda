@@ -21,7 +21,8 @@ function remove_scenario(obj, sr_tag)
     sv_have = string(cellfun(@(s) s.s_tag, obj.a_Scenario, 'UniformOutput', false));
     sv_missing = sr_tag(~ismember(sr_tag, sv_have));
     if ~isempty(sv_missing)
-        error(msg("GUILDA:PowerNetwork:ScenarioNotFound", char(join(sv_missing, "', '")), char(obj.s_tag)));
+        error(msg("GUILDA:PowerNetwork:ScenarioNotFound", char(join(sv_missing, "', '")), char(obj.s_tag), ...
+                  char(scenario_hint(sv_have))));
     end
     lv_rm = ismember(sv_have, sr_tag);
     a_rm  = obj.a_Scenario(lv_rm);

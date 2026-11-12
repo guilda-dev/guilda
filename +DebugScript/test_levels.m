@@ -86,8 +86,8 @@ function tab = test_levels()
     "test_F30_governor/replace_componentWithControllers__keep_MovesBothSlots", "medium"
     "test_F30_governor/export_csvNamesTheGovernorItDoesNotWrite", "medium"
     % ---- F31_scenario ----------------------------------------------------------------------------
-    "test_F31_scenario/AFaultThenAPermanentOpeningEqualsTwoOld_styleEvents", "large"
-    "test_F31_scenario/StoredTimeAndOptions_TheCallWins", "medium"
+    "test_F31_scenario/AFaultThenAPermanentOpeningEqualsTheGeneralForm", "large"
+    "test_F31_scenario/StoredTime_TheTimeAndTheSettingsOfTheCallWinForThatCall", "medium"
     "test_F31_scenario/ChildrenOfTheNetwork_Create_Rename_Copy_Remove", "medium"
     "test_F31_scenario/UnknownTagsAtAddAndAtRunTime", "medium"
     % ---- F38_result_judge --------------------------------------------------------------------------
@@ -271,8 +271,7 @@ function tab = test_levels()
     % ---- I53_scalar_timespan ---------------------------------------------------------------------
     "test_I53_scalar_timespan/OffsetAndAnEventWithoutEffectKeepASingleTime", "medium"
     % ---- I54_simulate_time -----------------------------------------------------------------------
-    "test_I54_simulate_time/AScenarioAsTheFirstArgumentRunsWithoutTime", "medium"
-    "test_I54_simulate_time/EmptyTimeTakesTheTimeOfTheScenario", "medium"
+    "test_I54_simulate_time/TheTimeOfTheScenarioIsUsedWithoutTime", "medium"
     % ---- I55_time_limit --------------------------------------------------------------------------
     "test_I55_time_limit/PartialResultWarnsWithAnyNumberOfOutputs", "medium"
     "test_I55_time_limit/PhasesThatEachFitInTheLimitStopWhenTheirSumDoesNot", "medium"

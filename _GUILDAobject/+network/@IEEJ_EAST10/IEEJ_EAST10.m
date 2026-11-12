@@ -85,10 +85,9 @@ classdef IEEJ_EAST10 < PowerNetwork
 % net = network.IEEJ_EAST10(Section="night");
 % res = net.calculate_powerflow();
 % net = network.IEEJ_EAST10();
-% sc  = Scenario("fault");
+% sc  = net.add_scenario("fault");
 % sc.add_fault("B036", [1,1.07]);
-% net.add_scenario(sc);
-% sol = net.simulate([0,10], sc);
+% sol = net.simulate("fault");
 % ```
 %
 % Fault at bus 36 for 70 ms, then open one circuit of the line from bus 36 to 17
@@ -96,11 +95,10 @@ classdef IEEJ_EAST10 < PowerNetwork
 %
 % ```matlab
 % net  = network.IEEJ_EAST10(Governor=false);
-% sc   = Scenario("fault-open", Time=[0,20]);
+% sc   = net.add_scenario("fault-open", Time=[0,20]);
 % sc.add_fault("B036", [0,0.07]);
 % sc.add_open_branch("EL065", [0.07,20]);
-% net.add_scenario(sc);
-% sol  = net.simulate(sc, Tolerance=1e-6, AbsoluteTolerance=1e-6);
+% sol  = net.simulate("fault-open", Tolerance=1e-6, AbsoluteTolerance=1e-6);
 % ```
 %
 % See also controller.avr.AVR_DC1, controller.governor.IEEJ_LPT1, controller.governor.IEEJ_LPT4, component.generator.park, network.IEEE68bus

@@ -93,7 +93,7 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 
 % 外乱なしで 5 秒間シミュレーション → 状態は平衡点から動かない
-sol = net.simulate([0,5], DebugScript.helper.noop_event(net,[0,5]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,5]).s_tag, Time=[0,5]);
 assert(sol.odeResults.t(end) == 5)
 assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 
@@ -111,7 +111,7 @@ DebugScript.helper.quiet(@() net.initialize);
 avr = net.a_Bus{1}.a_Component{1}.a_LocalController{1};
 assert(all(isfinite([avr.rv_Xequilibrium; avr.rv_Uequilibrium])))
 
-sol = net.simulate([0,5], DebugScript.helper.noop_event(net,[0,5]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,5]).s_tag, Time=[0,5]);
 assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 
 
@@ -126,7 +126,7 @@ DebugScript.helper.quiet(@() net.initialize);
 % AGC の平衡点 (積分器 = 0、入力 = 0)
 assert(isequal(agc.rv_Xequilibrium, 0) && isequal(agc.rv_Uequilibrium, [0;0]))
 
-sol = net.simulate([0,5], DebugScript.helper.noop_event(net,[0,5]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,5]).s_tag, Time=[0,5]);
 assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 
 
@@ -135,7 +135,7 @@ assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 DebugScript.helper.quiet(@() net.initialize);
 [r_dx, r_I] = DebugScript.helper.equilibrium_residual(comp);
 assert(r_dx < tol_dx && r_I < tol_dx)
-sol = net.simulate([0,3], DebugScript.helper.noop_event(net,[0,3]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,3]).s_tag, Time=[0,3]);
 assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 
 
@@ -144,7 +144,7 @@ assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 DebugScript.helper.quiet(@() net.initialize);
 [r_dx, r_I] = DebugScript.helper.equilibrium_residual(comp);
 assert(r_dx < tol_dx && r_I < tol_dx)
-sol = net.simulate([0,3], DebugScript.helper.noop_event(net,[0,3]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,3]).s_tag, Time=[0,3]);
 assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 
 
@@ -153,7 +153,7 @@ assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 DebugScript.helper.quiet(@() net.initialize);
 [r_dx, r_I] = DebugScript.helper.equilibrium_residual(comp);
 assert(r_dx < tol_dx && r_I < tol_dx)
-sol = net.simulate([0,3], DebugScript.helper.noop_event(net,[0,3]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,3]).s_tag, Time=[0,3]);
 assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 
 
@@ -162,7 +162,7 @@ assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 DebugScript.helper.quiet(@() net.initialize);
 [r_dx, r_I] = DebugScript.helper.equilibrium_residual(comp);
 assert(r_dx < tol_dx && r_I < tol_dx)
-sol = net.simulate([0,3], DebugScript.helper.noop_event(net,[0,3]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,3]).s_tag, Time=[0,3]);
 assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 
 
@@ -171,7 +171,7 @@ assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 DebugScript.helper.quiet(@() net.initialize);
 [r_dx, r_I] = DebugScript.helper.equilibrium_residual(comp);
 assert(r_dx < tol_dx && r_I < tol_dx)
-sol = net.simulate([0,3], DebugScript.helper.noop_event(net,[0,3]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,3]).s_tag, Time=[0,3]);
 assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 
 
@@ -180,7 +180,7 @@ assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 DebugScript.helper.quiet(@() net.initialize);
 [r_dx, r_I] = DebugScript.helper.equilibrium_residual(comp);
 assert(r_dx < tol_dx && r_I < tol_dx)
-sol = net.simulate([0,3], DebugScript.helper.noop_event(net,[0,3]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,3]).s_tag, Time=[0,3]);
 assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 
 
@@ -189,7 +189,7 @@ assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 DebugScript.helper.quiet(@() net.initialize);
 [r_dx, r_I] = DebugScript.helper.equilibrium_residual(comp);
 assert(r_dx < tol_dx && r_I < tol_dx)
-sol = net.simulate([0,3], DebugScript.helper.noop_event(net,[0,3]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,3]).s_tag, Time=[0,3]);
 assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 
 
@@ -393,7 +393,7 @@ ld.set_input(u0/0.95);
 assert(numel(net.sct_stale.input) == 1 && contains(net.sct_stale.input, "rv_Uequilibrium"))
 assert(numel(ld.sct_stale.equilibrium) == 1 && isempty(ld.sct_stale.odefcn))
 assert(isempty(net.sct_stale.powerflow) && isequal(ld.rv_Uequilibrium, u0/0.95))
-assert(DebugScript.helper.msg_id(error_of(@() net.simulate([0 1]))) == "GUILDA:SolverODE:InputEdited")
+assert(DebugScript.helper.msg_id(error_of(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0 1]))) == "GUILDA:SolverODE:InputEdited")
 assert(DebugScript.helper.msg_id(error_of(@() net.linearize())) == "GUILDA:SolverLIN:InputEdited")
 assert(DebugScript.helper.msg_id(error_of(@() ld.get_sys())) == "GUILDA:Component:InputEdited")
 assert(DebugScript.helper.msg_id(error_of(@() net.a_Bus{5}.get_sys())) == "GUILDA:Bus:InputEdited")
@@ -426,7 +426,7 @@ assert(c_U{1}(1) < c_U0{1}(1) - 0.1)                                          % 
 assert(abs(angle(net.a_Bus{1}.c_Vequilibrium)) < 1e-12)
 assert(max(abs(res.tab_bus.Vphasor - net.cv_Vequilibrium)) < 1e-12)
 assert(isempty(net.sct_stale.input) && isempty(net.sct_stale.powerflow) && isempty(gen1.sct_stale.equilibrium))
-assert(DebugScript.helper.max_state_drift(DebugScript.helper.quiet(@() net.simulate([0 5]))) < 1e-6)
+assert(DebugScript.helper.max_state_drift(DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0 5]))) < 1e-6)
 
 
 %% FixedInput gives the same point with every solver
@@ -462,7 +462,7 @@ u = gen2.rv_Uequilibrium;
 gen2.set_input([u(1) - 0.05; u(2)]);
 [~, flag] = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput"));
 assert(flag == 1 && isequal(gen2.rv_Uequilibrium, [u(1) - 0.05; u(2)]))
-assert(DebugScript.helper.max_state_drift(DebugScript.helper.quiet(@() net.simulate([0 5]))) < 1e-6)
+assert(DebugScript.helper.max_state_drift(DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0 5]))) < 1e-6)
 
 
 %% Powerflow replaces the edited inputs

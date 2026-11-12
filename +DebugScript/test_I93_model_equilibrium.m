@@ -20,7 +20,7 @@ net = network_with("equilibrium");
 assert(s_id == s_warn, s_id)
 assert(contains(s_msg, "|dx| = 0.1") && contains(s_msg, "'" + string(stub(net)) + "'"), s_msg)
 assert(~DebugScript.helper.is_stale(net))
-DebugScript.helper.quiet(@() net.simulate([0 0.1]));
+DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0 0.1]));
 
 % 誤りのない機器は警告しない
 net = network_with("none");

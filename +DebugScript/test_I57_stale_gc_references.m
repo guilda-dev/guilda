@@ -39,7 +39,7 @@ assert(~ismember(s_tag, string(bus3.a_Component)))
 %% A correct controller still simulates
 [net, agc, bus, comp] = build_controlled_network();
 DebugScript.helper.quiet(@() net.initialize);
-[~, flag] = DebugScript.helper.quiet(@() net.simulate([0,0.1]));
+[~, flag] = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,0.1]));
 assert(flag == 1)
 
 

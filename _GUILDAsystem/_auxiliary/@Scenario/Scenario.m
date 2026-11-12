@@ -5,8 +5,8 @@ classdef (Sealed = true) Scenario < LayerPackage
 % (FaultBus), a unit trip (TripUnit), a branch opening (OpenBranch), an offset of the
 % initial states (OffsetUnit, OffsetState, OffsetValue) or an input added to a component
 % (InputUnit, InputName, InputValue, InputMethod). It also holds the simulation time
-% (Time, default [0, 10]), stored simulate options (Options) and a description. It holds
-% data only, no function handles.
+% (Time, default [0, 10]) and a description. It holds data only, no function handles and
+% no settings of the solver (GUILDA.setting, or the Name-Value options of net.simulate).
 %
 % A scenario is a child of one network: `sc = net.add_scenario(tag)` creates it
 % (net.a_Scenario, sc.a_PowerNetwork) and `net.remove_scenario(tag)` deletes it. Its tag
@@ -18,9 +18,8 @@ classdef (Sealed = true) Scenario < LayerPackage
 % it is then. Scenarios are not model data: adding, renaming, editing or removing them makes
 % nothing stale (log_edit does nothing).
 %
-% Run it with `net.simulate(sc)` (the stored Time and Options) or
-% `net.simulate(time, sc1, sc2, ..., Name=Value)`: the disturbances of all the given
-% scenarios are combined, and the simulation is split into phases where the set of active
+% Run it by its tag with `net.simulate(tag)` (over Time) or `net.simulate(tag, Time=[t0,
+% tend], Name=Value)`: the simulation is split into phases where the set of active
 % disturbances does not change.
 %
 % Disturbances:
@@ -51,7 +50,7 @@ classdef (Sealed = true) Scenario < LayerPackage
 % sc = net.add_scenario("case1", Time=[0, 20], Description="fault B008, EL003 opened");
 % sc.add_fault("B008", [0.10, 0.17]);
 % sc.add_open_branch("EL003", [0.17, 20]);
-% [result, flag] = net.simulate(sc, Progress="none");
+% [result, flag] = net.simulate("case1", Progress="none");
 % ```
 %
 % Other disturbances, and a copy for another network:
@@ -60,7 +59,7 @@ classdef (Sealed = true) Scenario < LayerPackage
 % sc2 = net.add_scenario("steps");
 % sc2.add_offset("B001SG1", "delta", 0.1, 0);
 % sc2.add_input("B002SG1", "Pmech", [0, 0; 0.5, 0.005], [1, 1.5]);   % ramp, then held
-% result = net.simulate(sc2);
+% result = net.simulate(sc2.s_tag);
 % other = network.IEEE14bus();
 % other.add_scenario("case1", From=sc);         % sc stays in net
 % ```
@@ -76,8 +75,7 @@ classdef (Sealed = true) Scenario < LayerPackage
     end
 
     properties (Access=public) % Settings
-        Time (1,2) double {mustBeSimulationTime} = [0, 10]   % [s] Simulation time [t0, tend] of net.simulate(sc). <@Type> double (1x2)
-        Options (1,1) struct = struct()                      % Stored Name-Value options of net.simulate, e.g. struct("Tolerance", 1e-6); options of the call replace them.
+        Time (1,2) double {mustBeSimulationTime} = [0, 10]   % [s] Simulation time [t0, tend] of net.simulate(tag); the Time option of the call replaces it for that call. <@Type> double (1x2)
         Description (1,1) string = ""                        % Free text describing the scenario.
     end
 
@@ -119,15 +117,6 @@ classdef (Sealed = true) Scenario < LayerPackage
     end
 
     methods
-        function set.Options(obj, s)
-            sv_ok = [string(fieldnames(SolverODE.OptionMap)); "Export"];
-            for s_name = string(fieldnames(s)).'
-                if ~any(strcmpi(s_name, sv_ok))
-                    error(msg("GUILDA:Scenario:UnknownOption", char(obj.s_tag), char(s_name), char(join(sv_ok, ", "))));
-                end
-            end
-            obj.Options = s;
-        end
         function tab = get.tab_parameter(~)
             tab = table();
         end

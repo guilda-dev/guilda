@@ -5,7 +5,7 @@ function [tab, c_result] = compare_table4_13(opt)
 % `table4_13_report.csv` (Section, Scenario, ReportStable, Report and the case data).
 % Each scenario is a three-phase ground fault at 0.10 s, cleared at 0.17 s by opening the
 % faulted circuits until the end (3LG-O). The network is built per section, the scenarios
-% are imported into it with Scenario.import_csv, simulated with net.simulate(sc) from the
+% are imported into it with Scenario.import_csv, simulated with net.simulate(sc.s_tag) from the
 % equilibrium and judged with result.judge_out_of_step (Reference="slack", the
 % machine G15 at bus B3150, Threshold=360 deg).
 %
@@ -84,7 +84,7 @@ function [tab, c_result] = compare_table4_13(opt)
             sc.Time = [0, opt.TimeEnd];
 
             t_run = tic;
-            [result, flag] = net.simulate(sc, Progress="none", TimeLimit=opt.TimeLimit);
+            [result, flag] = net.simulate(sc.s_tag, Progress="none", TimeLimit=opt.TimeLimit);
             rv_time(k) = toc(t_run);
             rv_flag(k) = flag;
 

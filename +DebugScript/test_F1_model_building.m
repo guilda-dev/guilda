@@ -214,7 +214,7 @@ assert(avr3.s_tag == gen.s_tag + "CA5" && pss3.s_tag == gen.s_tag + "CP6")
 % 置き換え後も平衡点を計算できる
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(pss3.rv_Xequilibrium) == numel(pss3.sv_x))
-sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]);
 assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
 
 

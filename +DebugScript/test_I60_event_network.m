@@ -1,6 +1,7 @@
 % I60 イベントと系統の対応 (Scenario)
 %
 % シナリオが生成時の系統の写しに依存せず、他の系統のシナリオとタグの問題が明示エラーになることを確認する。
+% simulate はその系統のシナリオをタグで 1 つ選ぶ。
 %
 % 実行: runtests("DebugScript.test_I60_event_network")  または  DebugScript.run_all("Features","I60")
 
@@ -16,8 +17,8 @@ args = {"TimeSpan", [1,1.05], "FaultBus", "B008"};
 old = DebugScript.helper.scenario("fault", net, args{:});
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
-r_old = DebugScript.helper.quiet(@() net.simulate([0,2], old));
-r_new = DebugScript.helper.quiet(@() net.simulate([0,2], DebugScript.helper.scenario("fault", net, args{:})));
+r_old = DebugScript.helper.quiet(@() net.simulate(old.s_tag, Time=[0,2]));
+r_new = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.scenario("fault", net, args{:}).s_tag, Time=[0,2]));
 assert(isequaln(r_old.odeResults, r_new.odeResults))
 
 
@@ -25,7 +26,7 @@ assert(isequaln(r_old.odeResults, r_new.odeResults))
 old = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 net.add_global_controller("agc-PI", ["B001SG1","B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
-[~, flag] = DebugScript.helper.quiet(@() net.simulate([0,2], old));
+[~, flag] = DebugScript.helper.quiet(@() net.simulate(old.s_tag, Time=[0,2]));
 assert(flag == 1)
 
 
@@ -33,17 +34,14 @@ assert(flag == 1)
 other = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() other.initialize);
 ev = DebugScript.helper.scenario("fault", other, "TimeSpan", [1,1.05], "FaultBus", "B008");
-assert(error_id(@() net.simulate([0,2], ev)) == "GUILDA:Scenario:OtherNetwork")
-% 2 番目以降のイベントも検査する
-ok = DebugScript.helper.scenario("ok", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-assert(error_id(@() net.simulate([0,2], ok, ev)) == "GUILDA:Scenario:OtherNetwork")
+ev.s_tag = "other_fault";
+assert(error_id(@() net.simulate(ev.s_tag, Time=[0,2])) == "GUILDA:PowerNetwork:ScenarioNotFound")
+assert(error_id(@() net.simulate(ev)) ~= "")
 
 
 %% Duplicate tags
+% 外乱のタグの重なりは、1 つのシナリオの中で追加の時点でエラー
 ev1 = DebugScript.helper.scenario("same", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-ev2 = DebugScript.helper.scenario("same", net, "TimeSpan", [2,2.05], "FaultBus", "B003");
-assert(error_id(@() net.simulate([0,3], ev1, ev2)) == "GUILDA:Scenario:DuplicateRunTag")
-% 1 つのシナリオの中では追加の時点でエラー
 assert(error_id(@() ev1.add_fault("B003", [2,2.05], Tag="same")) == "GUILDA:Scenario:DuplicateTag")
 
 
@@ -53,15 +51,15 @@ for tag = ["t1","t2","NoAction1","NoAction12","Properties","Row","Variables",""]
 end
 % 予約名に似ているだけのタグは使える
 ev = DebugScript.helper.scenario("NoAction", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-[~, flag] = DebugScript.helper.quiet(@() net.simulate([0,2], ev));
+[~, flag] = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,2]));
 assert(flag == 1)
 
 
-%% An event array is rejected
+%% Several scenarios in one call are rejected
 ev1 = DebugScript.helper.scenario("a", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 ev2 = DebugScript.helper.scenario("b", net, "TimeSpan", [2,2.05], "FaultBus", "B003");
-assert(error_id(@() net.simulate([0,3], [ev1,ev2])) == "GUILDA:Scenario:ScenarioArray")
-assert(error_id(@() net.simulate([0,3], ev1, [ev2,ev2])) == "GUILDA:Scenario:ScenarioArray")
+assert(error_id(@() net.simulate([ev1.s_tag, ev2.s_tag])) ~= "")
+assert(error_id(@() net.simulate(ev1.s_tag, ev2.s_tag)) ~= "")
 
 
 function id = error_id(f)

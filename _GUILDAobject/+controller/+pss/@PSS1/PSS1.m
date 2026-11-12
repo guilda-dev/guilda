@@ -33,10 +33,9 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
 % gen.add_local_controller("avr-ST1");
 % gen.add_local_controller("pss-PSS1", parameter=struct(kpss=5));
 % net.initialize;
-% sc  = Scenario("fault");
+% sc  = net.add_scenario("fault");
 % sc.add_fault("B007", [1,1.05]);
-% net.add_scenario(sc);
-% sol = net.simulate([0,10], sc);
+% sol = net.simulate("fault");
 % ```
 %
 % See also controller.avr.AVR_ST1, controller.pss.abstract

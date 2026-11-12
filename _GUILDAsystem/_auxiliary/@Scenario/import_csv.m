@@ -21,14 +21,14 @@ function c_scenario = import_csv(path, opt)
 % The disturbances are checked as in add_disturbance. With Network=net the scenarios are
 % added to net (net.add_scenario), which checks their tags against it first: nothing is
 % added when a check fails. An unknown column gives the warning
-% GUILDA:Scenario:CsvUnknownColumn and is ignored. Options and Judge are not in the file
+% GUILDA:Scenario:CsvUnknownColumn and is ignored. Judge is not in the file
 % (the defaults are used).
 %
 % <@Examples>
 % ```matlab
 % c_sc = Scenario.import_csv("cases.csv", Network=net);   % added to net
 % for k = 1:numel(c_sc)
-%     result  = net.simulate(c_sc{k});
+%     result  = net.simulate(c_sc{k}.s_tag);
 %     verdict = c_sc{k}.judge(result);
 % end
 % ```
