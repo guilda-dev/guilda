@@ -4,7 +4,7 @@ function con = add_local_controller(obj, Key, opt)
 % `Key` is the model key of a local controller class (`keys(GUILDA.keymap("LocalController"))`
 % lists them). `parameter` gives the parameters of the constructor as a struct
 % (or a one-row table) of Name=Value; omitted fields keep the class defaults. The
-% controller tag is the class header, a number and the component tag, e.g. "CA1SG1B001".
+% controller tag is the component tag, the class header and a number, e.g. "B001SG1CA1".
 % One controller is added per call.
 %
 % The role of the controller class (`s_role`) says where it goes:
@@ -65,7 +65,7 @@ function con = add_local_controller(obj, Key, opt)
     for k = 1:numel(obj.a_LocalController)
         a_con = [a_con; obj.a_LocalController{k}.a_LocalController]; %#ok<AGROW>
     end
-    s_index = num2str(tools.next_tag_number(string(a_con), obj.s_tag)) + obj.s_tag;
+    s_index = string(tools.next_tag_number(string(a_con), obj.s_tag));
     sct_para = opt.parameter;
     if istable(sct_para)
         sct_para = table2struct(sct_para);
@@ -76,6 +76,7 @@ function con = add_local_controller(obj, Key, opt)
     dic    = GUILDA.keymap("LocalController");
     mkInst = str2func(dic(string(Key)));
     new_con = mkInst(s_index, c_para{:});
+    new_con.s_tag = obj.s_tag + new_con.s_tag;    % "<component tag><header><number>", e.g. "B001SG1CA1"
 
     % Checked before anything changes, so a rejected call leaves the component as it was
     check_role(new_con);

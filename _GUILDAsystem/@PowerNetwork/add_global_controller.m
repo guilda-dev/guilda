@@ -5,8 +5,8 @@ function con = add_global_controller(obj, Key, a_Unit, opt)
 % lists them). `a_Unit` gives the controlled components of this network, as
 % Component objects (a cell array) or as tags. `parameter` gives the parameters of the
 % constructor as a struct (or a one-row table) of Name=Value; omitted fields keep the
-% class defaults. The controller tag is the class header, a number and the network tag,
-% e.g. "AGC1IEEE9bus".
+% class defaults. The controller tag is the network tag, the class header and a number,
+% e.g. "IEEE9busAGC1".
 %
 % Each controlled unit must have the inputs `sv_u` of the controller as outputs or states,
 % and each output `sv_y` as an input of the unit or of one of its local controllers. Where
@@ -18,7 +18,7 @@ function con = add_global_controller(obj, Key, a_Unit, opt)
 %
 % <@Examples>
 % ```matlab
-% agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"], parameter=struct(kP=100, kI=500));
+% agc = net.add_global_controller("agc-PI", ["B001SG1","B002SG1"], parameter=struct(kP=100, kI=500));
 % g3  = net.a_Bus{3}.a_Component{1};
 % agc = net.add_global_controller("agc-PI", {g3});
 % ```
@@ -38,7 +38,7 @@ function con = add_global_controller(obj, Key, a_Unit, opt)
 
     % Build Instance
     % largest number among the global controllers of this network + 1
-    s_index = num2str(tools.next_tag_number(string(obj.a_GlobalController), obj.s_tag)) + obj.s_tag;
+    s_index = string(tools.next_tag_number(string(obj.a_GlobalController), obj.s_tag));
     if iscell(a_Unit)
         c_unit = a_Unit(:)';
     elseif isstring(a_Unit) || ischar(a_Unit)
@@ -55,7 +55,7 @@ function con = add_global_controller(obj, Key, a_Unit, opt)
     % get controller function
     dic    = GUILDA.keymap("GlobalController");
     mkInst = str2func(dic(string(Key)));
-    con = mkInst(obj, s_index, c_unit{:}, c_para{:});
+    con = mkInst(obj, s_index, c_unit{:}, c_para{:});    % tag "<network tag><header><number>"
 
     if ismember(con.s_tag, string(obj.a_GlobalController))
         error(msg("GUILDA:PowerNetwork:GconTagInUse", char(con.s_tag), char(obj.s_tag)))

@@ -33,7 +33,7 @@ classdef impedance < component.load.abstract
 % net = PowerNetwork();
 % bus = net.add_bus();
 % ld  = bus.add_component("load-impedance", "P", -0.8, "Q", -0.3);
-% ld.s_tag                          % "LRX1B001"
+% ld.s_tag                          % "B001LRX1"
 % ld.sv_u                           % R, X
 % ```
 %
@@ -50,11 +50,11 @@ classdef impedance < component.load.abstract
         function obj = impedance(index, ~, varargin)
             % Create the load; called through `Bus.add_component`.
             %
-            % `index` is the tag suffix (the tag is `"LRX"+index`). The
+            % `index` is the tag suffix (the tag is the bus tag + `"LRX"+index`). The
             % `parameter` argument is ignored, and `varargin` holds the
             % name-value options of `add_component`.
             arguments (Input)
-                index  % Tag suffix.
+                index  % Number of the tag.
                 ~      % Parameter input of Bus.add_component (ignored).
             end
             arguments (Input, Repeating)

@@ -2,8 +2,8 @@ function comp = add_component(obj,Key,opt)
 % Add a component to the bus and return it.
 %
 % `Key` is the model key of a component class (`keys(GUILDA.keymap("Component"))` lists
-% them). The component tag is the class header, a number and the bus tag, e.g.
-% "SG1B001". The addition is a "Topology" edit, which makes the power flow of the network stale.
+% them). The component tag is the bus tag, the class header and a number, e.g.
+% "B001SG1". The addition is a "Topology" edit, which makes the power flow of the network stale.
 %
 % <@Examples>
 % ```matlab
@@ -43,13 +43,14 @@ function comp = add_component(obj,Key,opt)
     % Build Instance
     % largest number on this bus + 1 (after remove_component, numel+1 may already be taken)
     index     = tools.next_tag_number(string(obj.a_Component), obj.s_tag);
-    s_index   = num2str(index)+obj.s_tag;
+    s_index   = string(index);
     para      = opt.parameter;
     opt       = rmfield( opt, "parameter");
 
     % get component function
     dic    = GUILDA.keymap("Component");
     mkInst = str2func(dic(string(Key)));
+    opt.BusTag = obj.s_tag;    % the tag is "<bus tag><header><number>", e.g. "B001SG1" (Component)
     comp = mkInst(s_index,para,opt);
 
     % register

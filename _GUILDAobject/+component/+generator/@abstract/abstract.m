@@ -40,11 +40,11 @@ classdef abstract < Component
             % Create the generator and read its dynamic parameters.
             %
             % Called through `Bus.add_component`. `index` is the tag suffix
-            % (the tag is `"SG"+index`), `parameter` selects the dynamic
+            % (the tag is the bus tag + `"SG"+index`), `parameter` selects the dynamic
             % parameters (see the class description) and `varargin` holds
             % the name-value options of `add_component`.
             arguments (Input)
-                index      % Tag suffix: the tag is "SG"+index.
+                index      % Number of the tag: the tag is the bus tag + "SG" + index.
                 parameter  % Dynamic parameters: a table, a name in parameter.csv ("NGT2", "NGT6", "NGT8"), or NaN for its first row.
             end
             arguments (Input, Repeating)

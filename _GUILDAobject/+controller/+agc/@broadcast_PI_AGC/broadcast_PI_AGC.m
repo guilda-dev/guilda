@@ -52,10 +52,10 @@ classdef broadcast_PI_AGC < GlobalController
     
     methods
         function obj = broadcast_PI_AGC(net, tag, varargin, opt)
-        % Create the AGC with the tag "AGC" + tag for the generators given after the tag.
+        % Create the AGC with the tag net tag + "AGC" + tag for the generators given after the tag.
             arguments (Input)
                 net % PowerNetwork that contains the controlled generators.
-                tag % Tag suffix; the controller tag is "AGC" + tag.
+                tag % Number of the tag; the controller tag is the network tag + "AGC" + tag.
             end
             arguments (Input, Repeating)
                 varargin % Controlled generators, each a generator object or its tag.
