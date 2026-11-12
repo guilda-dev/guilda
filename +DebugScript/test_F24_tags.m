@@ -60,6 +60,19 @@ assert(net.a_Bus{2}.s_tag == "B001002")
 assert(isempty(DebugScript.helper.stale(net)))
 
 
+%% Scenarios share the name space of the other children of the network
+[net, ~] = DebugScript.helper.build_3bus("gen-1axis");
+DebugScript.helper.quiet(@() net.initialize);
+s_out = evalc("sc = net.add_scenario(""B001"");");
+assert(sc.s_tag == "B001002" && contains(s_out, "B001002"), s_out)
+evalc("net.a_Bus{3}.s_tag = ""case1""; sc.s_tag = ""case1"";");
+assert(net.a_Bus{3}.s_tag == "case1" && sc.s_tag == "case1002")
+evalc("net.a_Bus{3}.s_tag = ""case1002"";");
+assert(net.a_Bus{3}.s_tag == "case1002002")
+assert(DebugScript.helper.msg_id(caught(@() set_tag(sc, "not valid"))) == "GUILDA:LayerPackage:InvalidTag")
+assert(isempty(DebugScript.helper.stale(net)))
+
+
 %% Messages of later edits name the new tag
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);

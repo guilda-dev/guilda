@@ -63,7 +63,7 @@ expect_event_error(net, "InvalidTimeSpan", "1.5 1", "TimeSpan", [1.5,1]);
 base = {"TimeSpan", [1,2], "InputUnit", "B002SG1"};
 expect_event_error(net, "ValueCountMismatch", "InputValue", base{:}, "InputName", "Pmech", "InputValue", [0.1;0.2]);
 expect_event_error(net, "ValueCountMismatch", "InputValue", base{:}, "InputName", ["Pmech";"Vfield"], "InputValue", [0.1;0.2;0.3]);
-expect_event_error(net, "ValueCountMismatch", "InputValue", base{:}, "InputName", "Pmech", "InputValue", {0.1; @(t) t});
+expect_event_error(net, "ValueCountMismatch", "InputValue", base{:}, "InputName", "Pmech", "InputValue", [0.1, 0.2, 0.3]);
 expect_event_error(net, "ValueCountMismatch", "InputValue", base{:}, "InputName", "Pmech");
 % 名前なしの値も無視しない
 expect_event_error(net, "ValueCountMismatch", "InputName", base{:}, "InputValue", 0.1);

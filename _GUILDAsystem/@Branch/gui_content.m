@@ -5,7 +5,7 @@ function sct_page = gui_content(obj)
 % end bus), V (`cv_Vequilibrium`) and I (`cv_Iequilibrium`). The table has no rows when
 % the branch has no end buses (removed from the network).
 %
-% See also PowerSystemModel.gui, PowerSystemModel.gui_content
+% See also LayerPackage.gui, LayerPackage.gui_content
     arguments (Input)
         obj
     end

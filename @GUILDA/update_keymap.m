@@ -95,6 +95,8 @@ function c_method = sig_methods()
         "PowerNetwork", "remove_branch",            {"tag",        "string(obj.a_Branch)",            "string"}
         "PowerNetwork", "remove_bus",               {"sr_BusTag",  "string(obj.a_Bus)",               "string"}
         "PowerNetwork", "remove_global_controller", {"sr_GconTag", "string(obj.a_GlobalController)",  "string"}
+        "PowerNetwork", "add_scenario",             cell(0,3)
+        "PowerNetwork", "remove_scenario",          {"sr_tag",     "string(obj.a_Scenario)",          "string"}
         };
 end
 

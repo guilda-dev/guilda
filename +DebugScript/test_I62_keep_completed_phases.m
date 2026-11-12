@@ -1,7 +1,7 @@
 % I62 区間を解けないときに完了済みの区間を残す
 %
 %   数値的な失敗 : flag = -1 と部分結果を返し、エラーは output.exception に残る
-%   利用者の関数 : 入力関数などのエラーは今までどおり例外になる
+%   設定の誤り   : ソルバーの設定のエラーは今までどおり例外になる (入力は時系列のデータで、関数を持たない)
 %
 % 実行: runtests("DebugScript.test_I62_keep_completed_phases")  または  DebugScript.run_all("Features","I62")
 
@@ -111,27 +111,6 @@ sol_ref = run(ref, [0,1]);
 assert(isequaln(sol.rm_variable, sol_ref.rm_variable))
 
 
-%% Input function error is still raised
-ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", @(t) boom(t));
-ME = catch_error(@() run(net, [0,4], ev));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:PhaseFailed", DebugScript.helper.msg_id(ME))
-assert(contains(ME.message, "phase 2") && DebugScript.helper.msg_id(ME.cause{1}) == "DebugScript:boom")
-
-
-%% Input function error with a MATLAB identifier is still raised
-ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", @(t) bad_index(t));
-ME = catch_error(@() run(net, [0,4], ev));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:PhaseFailed", DebugScript.helper.msg_id(ME))
-assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:badsubscript", DebugScript.helper.msg_id(ME.cause{1}))
-
-
-%% Solver error of an input function is still raised
-ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", @(t) own_solver(t));
-ME = catch_error(@() run(net, [0,4], ev));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:PhaseFailed", DebugScript.helper.msg_id(ME))
-assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:ode15s:MassMatrixAllZero", DebugScript.helper.msg_id(ME.cause{1}))
-
-
 %% Wrong solver settings are still raised
 net2 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net2.initialize);
@@ -183,27 +162,5 @@ function sv = generators(net)
                 sv(end+1,1) = comp.s_tag; %#ok<AGROW>
             end
         end
-    end
-end
-
-function u = boom(t)
-    if t > 0.5
-        error("DebugScript:boom", "boom at t = %g", t)
-    end
-    u = 0;
-end
-
-function u = bad_index(t)
-    u = 0;
-    if t > 0.5
-        v = 1:2;
-        u = v(0);
-    end
-end
-
-function u = own_solver(t)
-    u = 0;
-    if t > 0.5
-        ode15s(@(s,x) -x, [0,1], 1, odeset("Mass", 0));
     end
 end

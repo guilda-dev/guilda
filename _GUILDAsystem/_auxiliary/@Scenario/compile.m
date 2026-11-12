@@ -4,8 +4,9 @@ function [tab_phase, sct_phase] = compile(c_scenario, net, time)
 % Checks the scenarios against net (each belongs to it, and the tags of its disturbances
 % exist in it now), combines their disturbances and splits the simulation time into phases
 % in which the set of active disturbances does not change. Without any disturbance, the
-% run has one disturbance "NoAction" at t0 (t0 = 0 without a time), so that time = []
-% gives [0, 10].
+% run has one disturbance "NoAction" at t0. The time is that of the call or of the
+% scenarios (Scenario.Time); time = [] (no scenario and no time) gives [0, 10], the default
+% Time of a scenario. The disturbances do not change the time.
 %
 % tab_phase is output.phases: t1, t2 and one logical column per disturbance (its tag), plus
 % NoAction<k> for a phase k without any active disturbance:
@@ -20,11 +21,12 @@ function [tab_phase, sct_phase] = compile(c_scenario, net, time)
 % cell per component in the order of the buses and their components: the state offset
 % added at the start of the phase (offsets of the disturbances that start there; all active
 % offsets in the first phase) and the input function u(t) of the phase, t from the start
-% of the phase ([] without an input).
+% of the phase ([] without an input). A time series input is interpolated here by its
+% InputMethod (the last value kept after the last point).
     arguments (Input)
         c_scenario cell                 % Scenarios of the run.
         net                             % Network being simulated.
-        time (:,1) double = []          % [s] [t0; tend], or [] for the time span of the disturbances.
+        time (:,1) double = []          % [s] [t0; tend], or [] for [0, 10].
     end
     arguments (Output)
         tab_phase table   % Phase table (output.phases).
@@ -37,14 +39,11 @@ function [tab_phase, sct_phase] = compile(c_scenario, net, time)
     end
     for k = 1:numel(c_scenario)
         sc = c_scenario{k};
-        if isempty(sc.a_PowerNetwork) || sc.a_PowerNetwork ~= net
-            s_owner = "no network";
-            if ~isempty(sc.a_PowerNetwork)
-                s_owner = "network """ + sc.a_PowerNetwork.s_tag + """";
-            end
-            error(msg("GUILDA:Scenario:OtherNetwork", char(sc.s_tag), char(net.s_tag), char(s_owner)));
+        if sc.a_PowerNetwork ~= net
+            error(msg("GUILDA:Scenario:OtherNetwork", char(sc.s_tag), char(net.s_tag), ...
+                      char("network """ + sc.a_PowerNetwork.s_tag + """")));
         end
-        sc.validate(net);
+        sc.validate();
     end
 
     % Disturbances of all the scenarios, in the order of the scenarios
@@ -66,13 +65,12 @@ function [tab_phase, sct_phase] = compile(c_scenario, net, time)
         error(msg("GUILDA:Scenario:DuplicateRunTag", char(s_dup), char(join(unique(sv_sc, 'stable'), ", "))));
     end
 
+    if isempty(time)
+        time = [0; 10];
+    end
     % Without disturbances: an empty one at t0, so that the time table is built as usual
     if isempty(c_dist)
-        t_start = 0;
-        if ~isempty(time)
-            t_start = time(1);
-        end
-        d = Scenario.blank("NoAction", t_start);
+        d = Scenario.blank("NoAction", time(1));
         d.Scenario = "";
         c_dist = {d};
     end
@@ -95,16 +93,14 @@ function [tab_phase, c_dist] = phase_table(c_dist, time)
         end
     end
 
-    if numel(time) >= 2
-        lv_out = times(:,2) < time(1) | times(:,1) > time(end);
-        for k = find(lv_out(:))'
-            ts = times(k,:);
-            if ts(1) == ts(2)
-                ts = ts(1);
-            end
-            show_msg("warning", "GUILDA:Scenario:OutsideTimeSpan", char(c_dist{k}.Tag), char(c_dist{k}.Scenario), ...
-                    mat2str(ts), mat2str(time([1,end]).'));
+    lv_out = times(:,2) < time(1) | times(:,1) > time(end);
+    for k = find(lv_out(:))'
+        ts = times(k,:);
+        if ts(1) == ts(2)
+            ts = ts(1);
         end
+        show_msg("warning", "GUILDA:Scenario:OutsideTimeSpan", char(c_dist{k}.Tag), char(c_dist{k}.Scenario), ...
+                mat2str(ts), mat2str(time([1,end]).'));
     end
 
     all_time = getTimeSpan(times, time);
@@ -190,6 +186,7 @@ function [c_Xoffset, c_Uoffset] = phase_offsets(odeEvents, c_comp, TimePhase, It
     inU = cellfun(@(c) c.InputUnit,  odeEvents);
     inN = cellfun(@(c) c.InputName,  odeEvents, 'UniformOutput', false);
     inV = cellfun(@(c) c.InputValue, odeEvents, 'UniformOutput', false);
+    inM = cellfun(@(c) c.InputMethod, odeEvents);
 
     for j = 1:numel(c_comp)
         comp  = c_comp{j};
@@ -211,15 +208,15 @@ function [c_Xoffset, c_Uoffset] = phase_offsets(odeEvents, c_comp, TimePhase, It
             [lv_N, loc] = ismember(inN{k}, comp.sv_u);
 
             exV = inV{k};
-            if ~iscell(exV)
-                if isa(exV, 'function_handle')
-                    exV = {exV};
-                else
-                    exV = num2cell(exV);
+            if inM(k) == ""
+                exV = num2cell(exV);
+                if isscalar(exV)
+                    exV = repmat(exV, size(inN{k}));
                 end
-            end
-            if isscalar(exV)
-                exV = repmat(exV, size(inN{k}));
+            else
+                % Time series: one per input, made a function of the phase in event2fhandle
+                exV = arrayfun(@(i) struct("rv_t", exV(:,1), "rv_v", exV(:,1+i), "s_method", inM(k)), ...
+                               (1:numel(inN{k})).', 'UniformOutput', false);
             end
 
             for ni = find(lv_N(:))'
@@ -246,14 +243,29 @@ function exV = event2fhandle(exV, oev, TimePhase)
 % A value as a function of the time since the start of the phase
     if isa(exV, 'double')
         exV = @(t) exV;
-    elseif isa(exV, 'function_handle')
-        if nargin(exV) ~= 1
-            error(msg("GUILDA:Scenario:InvalidNargin", char(oev.Tag), char(oev.Scenario)))
-        end
-        % t of each phase starts at 0; the function takes the time since the disturbance start.
-        ts = TimePhase(1) - oev.TimeSpan(1);
-        exV = @(t) exV(t+ts);
     else
-        error(msg("GUILDA:Scenario:InvalidInputType", char(oev.Tag), char(oev.Scenario), class(exV)))
+        % t of each phase starts at 0; the series takes the time since the disturbance start.
+        ts = TimePhase(1) - oev.TimeSpan(1);
+        F  = series_function(exV, TimePhase(2) - oev.TimeSpan(1));
+        exV = @(t) F(t+ts);
+    end
+end
+
+function F = series_function(sct, te)
+% Interpolating function of one input of a time series, of the time since the disturbance
+% start (temporary, until SolverODE interpolates). "foh" is linear and "spline" a cubic
+% spline (griddedInterpolant); outside the points the end values are kept. "zoh" holds the
+% value of the last point at or before the time; at the end te of the phase it keeps the
+% value from the left, so that a point at a phase boundary acts in the next phase. A
+% single point is a constant.
+    rv_t = sct.rv_t;
+    rv_v = sct.rv_v;
+    if isscalar(rv_t)
+        F = @(t) rv_v;
+    elseif sct.s_method == "zoh"
+        F = @(t) rv_v(max(1, nnz(rv_t <= t & rv_t < te)));
+    else
+        sct_method = struct("foh", "linear", "spline", "spline");
+        F = griddedInterpolant(rv_t, rv_v, sct_method.(sct.s_method), "nearest");
     end
 end

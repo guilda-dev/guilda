@@ -8,7 +8,7 @@ function sct_page = gui_content(obj)
 %   magnitude and its angle.
 % - I: current injection at the equilibrium (`c_Iequilibrium`) as a+bj.
 %
-% See also PowerSystemModel.gui, PowerSystemModel.gui_content
+% See also LayerPackage.gui, LayerPackage.gui_content
     arguments (Input)
         obj
     end

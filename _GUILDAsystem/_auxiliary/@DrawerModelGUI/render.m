@@ -12,7 +12,7 @@ function render(obj, a_target)
 % ```
     arguments (Input)
         obj
-        a_target (1,1) PowerSystemModel = obj.a_target  % Model to show (default: the one shown).
+        a_target (1,1) LayerPackage = obj.a_target  % Model to show (default: the one shown).
     end
     arguments (Output)
     end
@@ -82,7 +82,10 @@ function render(obj, a_target)
     else
         h_tabs.Layout.Column = [1 2];
     end
-    build_parameter_tab(h_tabs, a_target, h_header);
+    % A Scenario has no parameters: only the pages of gui_content
+    if isprop(a_target, "a_Parameter")
+        build_parameter_tab(h_tabs, a_target, h_header);
+    end
     for k = 1:numel(sct_model.pages)
         build_page(h_tabs, sct_model.pages(k));
     end

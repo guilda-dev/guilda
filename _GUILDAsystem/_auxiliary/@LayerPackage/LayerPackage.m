@@ -4,8 +4,9 @@ classdef LayerPackage < handle
 % It centralizes parent/children relationships, tag handling, and what is out of date:
 % each layer keeps, per stale tag, the reasons it is stale; only PowerNetwork.initialize
 % brings the layers up to date, and the analyses check them. The network, buses,
-% branches, components, controllers (through PowerSystemModel) and Parameter containers
-% derive from it.
+% branches, components, controllers (through PowerSystemModel), the scenarios and the
+% Parameter containers derive from it. `gui` shows any layer (DrawerModelGUI) with the
+% pages of `gui_content`.
 %
 % Stale state:
 %
@@ -73,10 +74,12 @@ classdef LayerPackage < handle
     methods(Access=protected)
         log_edit(obj, log, tag)
         handle_edit(obj, a_layer, tag, log)
+        sct_page = gui_content(obj)
     end
     methods
         varargout = disp_tree(obj, sr_ignore)
         doc(obj)
+        h = gui(obj, h_container)
 
         function set.s_tag(obj,s_newtag)
             % A tag must be a valid MATLAB variable name (OPF constraint names, struct fields).

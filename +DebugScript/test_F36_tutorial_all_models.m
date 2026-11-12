@@ -81,8 +81,7 @@ assert(nnz(tab_c.Kind == "global") == numel(sv_unit))
 
 
 %% A three-phase fault on bus 8 settles
-sc = Scenario("fault", Time=[0,10]);
-net.add_scenario(sc);
+sc = net.add_scenario("fault", Time=[0,10]);
 sc.add_fault("B008", [1,1.05]);
 [sol, flag] = DebugScript.helper.quiet(@() net.simulate(sc));
 assert(flag == 1 && isa(sol, "ResultODE"))
