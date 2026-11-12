@@ -133,8 +133,8 @@ end
 % タグ: 発電機は "SG", 負荷は "L" + 機種記号 + 母線内番号 + 母線タグ
 i_gen  = find(startsWith(sv_keys, "gen"), 1);
 i_load = find(startsWith(sv_keys, "load"), 1);
-assert(net.a_Bus{i_gen}.a_Component{1}.s_tag == "SG1" + net.a_Bus{i_gen}.s_tag)
-assert(startsWith(net.a_Bus{i_load}.a_Component{1}.s_tag, "L") && endsWith(net.a_Bus{i_load}.a_Component{1}.s_tag, "1" + net.a_Bus{i_load}.s_tag))
+assert(net.a_Bus{i_gen}.a_Component{1}.s_tag == net.a_Bus{i_gen}.s_tag + "SG1")
+assert(startsWith(net.a_Bus{i_load}.a_Component{1}.s_tag, net.a_Bus{i_load}.s_tag + "L") && endsWith(net.a_Bus{i_load}.a_Component{1}.s_tag, "1"))
 
 % 発電機の Q は既定で NaN (PV 母線)、負荷は指定値
 assert(isnan(net.a_Bus{i_gen}.a_Component{1}.tab_parameter.powerflow.Q))
@@ -160,7 +160,7 @@ gen = net.a_Bus{1}.a_Component{1};
 % AVR と PSS をキーで付ける (旧 Task11)。タグは種類の頭文字・番号・機器のタグ
 avr = gen.add_local_controller("avr-ST1");
 pss = gen.add_local_controller("pss-PSS1");
-assert(avr.s_tag == "CA1" + gen.s_tag && pss.s_tag == "CP2" + gen.s_tag)
+assert(avr.s_tag == gen.s_tag + "CA1" && pss.s_tag == gen.s_tag + "CP2")
 
 % 機器には AVR が付き、PSS は AVR の下に付く
 assert(numel(gen.a_LocalController) == 1)
@@ -209,7 +209,7 @@ evalc("pss3 = gen.add_local_controller(""pss-PSS1"")");
 assert(gen.a_LocalController{1} == avr3 && avr3.a_LocalController{1} == pss3)
 assert(isempty(pss2.a_Component) && isempty(avr2.a_LocalController))
 % 番号は使用中の最大 + 1 (外れた制御器の番号は数えない)
-assert(avr3.s_tag == "CA5" + gen.s_tag && pss3.s_tag == "CP6" + gen.s_tag)
+assert(avr3.s_tag == gen.s_tag + "CA5" && pss3.s_tag == gen.s_tag + "CP6")
 
 % 置き換え後も平衡点を計算できる
 DebugScript.helper.quiet(@() net.initialize);
@@ -342,34 +342,34 @@ net = DebugScript.helper.build_ieee14();
 c{1} = net.a_Bus{1}.a_Component{1};
 c{2} = net.a_Bus{2}.a_Component{1};
 agc  = net.add_global_controller("agc-PI", c, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
-assert(agc.key == "agc-PI" && agc.s_role == "agc" && agc.s_tag == "AGC1" + net.s_tag)
+assert(agc.key == "agc-PI" && agc.s_role == "agc" && agc.s_tag == net.s_tag + "AGC1")
 
 assert(numel(net.a_GlobalController) == 1 && net.a_GlobalController{1} == agc)
 assert(agc.a_PowerNetwork == net)                   % 親への参照は add_global_controller が設定する
-assert(isequal(string(agc.controlledUnits)', ["SG1B001","SG1B002"]))
+assert(isequal(string(agc.controlledUnits)', ["B001SG1","B002SG1"]))
 assert(isequal(agc.tab_parameter.dynamics.kI, [500;500]))
 
 % 機器はタグでも指定できる。タグの番号は使用中の最大 + 1
-agc2 = net.add_global_controller("agc-PI", "SG1B003");
-assert(string(agc2.controlledUnits) == "SG1B003" && agc2.s_tag == "AGC2" + net.s_tag)
+agc2 = net.add_global_controller("agc-PI", "B003SG1");
+assert(string(agc2.controlledUnits) == "B003SG1" && agc2.s_tag == net.s_tag + "AGC2")
 
 
 %% AGC default parameters cover all controlled units
 % alpha, beta を省略しても、制御対象の台数分のパラメータが用意されるべき
 net = DebugScript.helper.build_ieee14();
-agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"]);
+agc = net.add_global_controller("agc-PI", ["B001SG1","B002SG1"]);
 tp  = agc.tab_parameter.dynamics;
 assert(height(tp) == 2 && isequal(tp.kP, [100;100]))
 assert(isequal(tp.alpha, [1;1]) && isequal(tp.beta, [1;1]))
 
 % スカラーで与えた alpha, beta も全台に適用される
-agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002","SG1B003"], parameter=struct(alpha=2, beta=0.5));
+agc = net.add_global_controller("agc-PI", ["B001SG1","B002SG1","B003SG1"], parameter=struct(alpha=2, beta=0.5));
 tp  = agc.tab_parameter.dynamics;
 assert(isequal(tp.alpha, [2;2;2]) && isequal(tp.beta, [0.5;0.5;0.5]))
 
 % 台数と合わない長さはエラー
 try
-    net.add_global_controller("agc-PI", ["SG1B001","SG1B002"], parameter=struct(alpha=[1;1;1]));
+    net.add_global_controller("agc-PI", ["B001SG1","B002SG1"], parameter=struct(alpha=[1;1;1]));
     error("DebugScript:noError", "台数と合わない alpha がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:broadcast_PI_AGC:InvalidSize", ME.message)
@@ -378,8 +378,8 @@ end
 
 %% Two global controllers are initialized
 net = DebugScript.helper.build_ieee14();
-agc1 = net.add_global_controller("agc-PI", "SG1B001");
-agc2 = net.add_global_controller("agc-PI", "SG1B002");
+agc1 = net.add_global_controller("agc-PI", "B001SG1");
+agc2 = net.add_global_controller("agc-PI", "B002SG1");
 DebugScript.helper.quiet(@() net.initialize);
 
 % すべての大域制御器に平衡点が設定されるべき
@@ -470,18 +470,18 @@ net = PowerNetwork();
 bus = net.add_bus();
 bus.add_component("load-power");
 bus.add_component("load-power");
-bus.remove_component("LPQ1B001");
+bus.remove_component("B001LPQ1");
 comp = bus.add_component("load-power");
-assert(comp.s_tag == "LPQ3B001")
-assert(isequal(string(bus.a_Component)', ["LPQ2B001","LPQ3B001"]))
+assert(comp.s_tag == "B001LPQ3")
+assert(isequal(string(bus.a_Component)', ["B001LPQ2","B001LPQ3"]))
 
 for i = 1:8
     bus.add_component("gen-classical");
 end
-assert(bus.a_Component{end}.s_tag == "SG11B001")
-bus.remove_component("LPQ2B001");
+assert(bus.a_Component{end}.s_tag == "B001SG11")
+bus.remove_component("B001LPQ2");
 comp = bus.add_component("load-power");
-assert(comp.s_tag == "LPQ12B001")
+assert(comp.s_tag == "B001LPQ12")
 assert(numel(unique(string(bus.a_Component))) == numel(bus.a_Component))
 
 
@@ -489,11 +489,11 @@ assert(numel(unique(string(bus.a_Component))) == numel(bus.a_Component))
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);
 bus = net.a_Bus{5};
-assert(string(bus.a_Component{1}) == "LPQ1B005")
-comp = bus.replace_component("LPQ1B005", "load-impedance");
-assert(comp.s_tag == "LRX1B005")
-comp = bus.replace_component("LRX1B005", "load-power");
-assert(comp.s_tag == "LPQ1B005")
+assert(string(bus.a_Component{1}) == "B005LPQ1")
+comp = bus.replace_component("B005LPQ1", "load-impedance");
+assert(comp.s_tag == "B005LRX1")
+comp = bus.replace_component("B005LRX1", "load-power");
+assert(comp.s_tag == "B005LPQ1")
 
 
 %% Remove bus
@@ -538,7 +538,7 @@ assert(numel(unique(string(net.a_Bus))) == 9 && bus.s_tag == "B010")
 
 % 大域制御器が制御している機器のある母線は削除できない
 net = DebugScript.helper.build_ieee14();
-agc = net.add_global_controller("agc-PI", "SG1B001");
+agc = net.add_global_controller("agc-PI", "B001SG1");
 try
     net.remove_bus("B001", "RemoveBranches", true);
     error("DebugScript:noError", "大域制御器が制御する機器のある母線の削除がエラーにならない")
@@ -550,7 +550,7 @@ assert(numel(net.a_Bus) == 14)
 
 %% Remove global controller
 net = DebugScript.helper.build_ieee14();
-agc = net.add_global_controller("agc-PI", "SG1B001");
+agc = net.add_global_controller("agc-PI", "B001SG1");
 DebugScript.helper.quiet(@() net.initialize);
 net.remove_global_controller(agc.s_tag);
 assert(isempty(net.a_GlobalController))
@@ -601,7 +601,7 @@ assert(isempty(DebugScript.helper.stale(net)))
 comp = net.a_Bus{5}.a_Component{1};
 comp.tab_parameter.powerflow.P = -1.1;
 assert(DebugScript.helper.edit_flag(net) == "editted")
-assert(isequal(net.sct_stale.powerflow, "powerflow/" + string(comp) + "/B005/TestSystem: edit P: -1 -> -1.1"))
+assert(isequal(net.sct_stale.powerflow, "powerflow/" + string(comp) + ": edit P: -1 -> -1.1"))
 assert(isempty(comp.sct_stale.equilibrium) && isempty(comp.sct_stale.odefcn))   % 機器自身は古くならない
 assert(isempty(DebugScript.helper.stale(net.a_Bus{4})))
 
@@ -629,8 +629,8 @@ end
 net.a_Bus{5}.s_tag = "BX";
 sv = net.sct_stale.powerflow;
 assert(numel(sv) == 10)   % 1 回の編集は 1 件 (同じ件を 2 回数えない)
-assert(all(startsWith(sv(1:2:10), "powerflow/"+string(comp5)+"/B005/TestSystem: edit P: ")))   % タグは編集した時点のもの
-assert(all(startsWith(sv(2:2:10), "powerflow/"+string(comp6)+"/B006/TestSystem: edit P: ")))
+assert(all(startsWith(sv(1:2:10), "powerflow/"+string(comp5)+": edit P: ")))   % タグは編集した時点のもの
+assert(all(startsWith(sv(2:2:10), "powerflow/"+string(comp6)+": edit P: ")))
 assert(~any(contains(sv, "rename")))     % 改名は何も古くしない
 assert(isempty(DebugScript.helper.stale(net.a_Bus{5})))    % 母線と機器自身は古くならない
 
@@ -643,7 +643,7 @@ DebugScript.helper.quiet(@() net.initialize);
 
 % 制御器の Parameter の編集は制御器自身の equilibrium と odefcn を古くする
 avr.tab_parameter.dynamics.kap = 31;
-s_msg = "dynamics/" + avr.s_tag + "/" + string(gen1) + "/B001/TestSystem: edit kap: ";
+s_msg = "dynamics/" + avr.s_tag + ": edit kap: ";
 assert(numel(avr.sct_stale.equilibrium) == 1 && startsWith(avr.sct_stale.equilibrium, s_msg))
 assert(isequal(avr.sct_stale.odefcn, avr.sct_stale.equilibrium))
 assert(isempty(gen1.sct_stale.equilibrium) && isempty(net.sct_stale.powerflow) && DebugScript.helper.is_stale(net))

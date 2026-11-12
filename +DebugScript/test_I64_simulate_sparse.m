@@ -60,7 +60,7 @@ assert(sol.rv_t(end) < 1)
 % 入力イベントのない区間は入力の関数が無く、イベントのある区間だけ入力が効く
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
-ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [0.5,1], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0.05);
+ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [0.5,1], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.05);
 sol = net.simulate([0,1.5], ev, Progress="none");
 ref = net.simulate([0,1.5], Progress="none");
 assert(max(abs(sol.rm_variable(end,:) - ref.rm_variable(end,:))) > 1e-4)

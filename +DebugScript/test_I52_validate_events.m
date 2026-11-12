@@ -28,9 +28,9 @@ expect_event_error(net, "UnknownTripUnit", avr.s_tag, "TimeSpan", [1,1.2], "Trip
 
 
 %% TripUnit accepts components and global controllers
-agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"]);
+agc = net.add_global_controller("agc-PI", ["B001SG1","B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
-[~, flag] = net.simulate([0,2], DebugScript.helper.scenario("ev", net, "TimeSpan", [1,1.2], "TripUnit", ["LPQ2B003";agc.s_tag]));
+[~, flag] = net.simulate([0,2], DebugScript.helper.scenario("ev", net, "TimeSpan", [1,1.2], "TripUnit", ["B003LPQ2";agc.s_tag]));
 assert(flag == 1)
 
 
@@ -41,26 +41,26 @@ expect_event_error(net, "UnknownOffsetUnit", "OffsetUnit", "TimeSpan", 0, "Offse
 
 
 %% Unknown OffsetState
-expect_event_error(net, "UnknownOffsetState", ["delt", "delta"], "TimeSpan", 0, "OffsetUnit", "SG1B001", "OffsetState", "delt", "OffsetValue", 0.1);
+expect_event_error(net, "UnknownOffsetState", ["delt", "delta"], "TimeSpan", 0, "OffsetUnit", "B001SG1", "OffsetState", "delt", "OffsetValue", 0.1);
 
 
 %% OffsetValue count
-expect_event_error(net, "ValueCountMismatch", "OffsetValue", "TimeSpan", 0, "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", [0.1;0.2]);
-expect_event_error(net, "ValueCountMismatch", "OffsetValue", "TimeSpan", 0, "OffsetUnit", "SG1B001", "OffsetState", ["delta";"omega"]);
-expect_event_error(net, "ValueCountMismatch", "OffsetState", "TimeSpan", 0, "OffsetUnit", "SG1B001");
+expect_event_error(net, "ValueCountMismatch", "OffsetValue", "TimeSpan", 0, "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", [0.1;0.2]);
+expect_event_error(net, "ValueCountMismatch", "OffsetValue", "TimeSpan", 0, "OffsetUnit", "B001SG1", "OffsetState", ["delta";"omega"]);
+expect_event_error(net, "ValueCountMismatch", "OffsetState", "TimeSpan", 0, "OffsetUnit", "B001SG1");
 
 
 %% Reversed or NaN TimeSpan
 expect_event_error(net, "InvalidTimeSpan", "1.5 1", "TimeSpan", [1.5,1], "FaultBus", "B008");
 expect_event_error(net, "InvalidTimeSpan", "NaN",   "TimeSpan", [NaN,1], "FaultBus", "B008");
 expect_event_error(net, "InvalidTimeSpan", "NaN",   "TimeSpan", [1,NaN], "FaultBus", "B008");
-expect_event_error(net, "InvalidTimeSpan", "NaN",   "TimeSpan", NaN,     "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.1);
+expect_event_error(net, "InvalidTimeSpan", "NaN",   "TimeSpan", NaN,     "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.1);
 % 外乱のないイベントでも同じ
 expect_event_error(net, "InvalidTimeSpan", "1.5 1", "TimeSpan", [1.5,1]);
 
 
 %% Extra or missing InputValue
-base = {"TimeSpan", [1,2], "InputUnit", "SG1B002"};
+base = {"TimeSpan", [1,2], "InputUnit", "B002SG1"};
 expect_event_error(net, "ValueCountMismatch", "InputValue", base{:}, "InputName", "Pmech", "InputValue", [0.1;0.2]);
 expect_event_error(net, "ValueCountMismatch", "InputValue", base{:}, "InputName", ["Pmech";"Vfield"], "InputValue", [0.1;0.2;0.3]);
 expect_event_error(net, "ValueCountMismatch", "InputValue", base{:}, "InputName", "Pmech", "InputValue", {0.1; @(t) t});
@@ -73,10 +73,10 @@ expect_event_error(net, "UnknownInputUnit", "InputUnit", "TimeSpan", [1,2], "Inp
 %% Valid events still run
 % 値が 1 つなら全ての名前に使い、イベントの種類ごとに正しい指定は計算できる
 o = { ...
-    DebugScript.helper.scenario("os", net, "TimeSpan", 0,        "OffsetUnit", "SG1B001", "OffsetState", ["delta";"omega"], "OffsetValue", 1e-3); ...
-    DebugScript.helper.scenario("in", net, "TimeSpan", [1,1.5],  "InputUnit", "SG1B002", "InputName", ["Pmech";"Vfield"], "InputValue", 0.01); ...
+    DebugScript.helper.scenario("os", net, "TimeSpan", 0,        "OffsetUnit", "B001SG1", "OffsetState", ["delta";"omega"], "OffsetValue", 1e-3); ...
+    DebugScript.helper.scenario("in", net, "TimeSpan", [1,1.5],  "InputUnit", "B002SG1", "InputName", ["Pmech";"Vfield"], "InputValue", 0.01); ...
     DebugScript.helper.scenario("fl", net, "TimeSpan", [2,2.02], "FaultBus", "B008"); ...
-    DebugScript.helper.scenario("tr", net, "TimeSpan", [2.5,2.6], "TripUnit", "LPQ2B003"); ...
+    DebugScript.helper.scenario("tr", net, "TimeSpan", [2.5,2.6], "TripUnit", "B003LPQ2"); ...
     DebugScript.helper.scenario("no", net, "TimeSpan", 1)};
 [sol, flag] = net.simulate([0,3], o{:});
 assert(flag == 1 && sol.odeResults.t(end) == 3)

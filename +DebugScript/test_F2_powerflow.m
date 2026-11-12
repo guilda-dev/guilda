@@ -362,7 +362,7 @@ net = DebugScript.helper.build_ieee14();
 res = DebugScript.helper.quiet(@() net.calculate_powerflow());
 % IEEE14 のデータ自体が違反を含む: B006, B007, B008 の V > Vmax = 1.06、スラックの発電機の Q < Qmin = 0
 tab0 = res.tab_violation;
-assert(isequal(sort(tab0.Object + ":" + tab0.Limit), sort(["B006:Vmax";"B007:Vmax";"B008:Vmax";"SG1B001:Qmin"])))
+assert(isequal(sort(tab0.Object + ":" + tab0.Limit), sort(["B006:Vmax";"B007:Vmax";"B008:Vmax";"B001SG1:Qmin"])))
 assert(isequal(string(res.tab_violation.Properties.VariableNames), ["Class","Object","Limit","Value","Bound","Excess"]))
 tab_ref = res.tab_bus;
 s_bus = string(net.a_Bus{14});  s_br = string(net.a_Branch{1});  com = net.a_Bus{2}.a_Component{1};

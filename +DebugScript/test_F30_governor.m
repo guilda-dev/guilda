@@ -11,7 +11,7 @@
 % 共通設定 (各テストの前に毎回実行される)
 c_cls = ["controller.governor.IEEJ_LPT1"; "controller.governor.IEEJ_LPT3"; "controller.governor.IEEJ_LPT4"];
 c_key = ["gov-LPT1"; "gov-LPT3"; "gov-LPT4"];    % c_cls のモデルキー
-r_step = -0.05;    % SG1B001 の Pmech のステップ (負荷の増加と同じ向き)
+r_step = -0.05;    % B001SG1 の Pmech のステップ (負荷の増加と同じ向き)
 
 
 c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
@@ -212,7 +212,7 @@ assert(numel(sys.StateName) == numel(comp0.get_sys().StateName) + 4)
 
 %% A small step matches the linear model with the governor
 [net, comp] = build_full("after");
-[r_err, r_max] = error_to_linear(net, "SG1B001", comp, 1e-3);
+[r_err, r_max] = error_to_linear(net, "B001SG1", comp, 1e-3);
 assert(r_max > 1e-6, "the step has no effect: %g", r_max)
 assert(r_err < 0.01, "relative error %g", r_err)
 
@@ -262,7 +262,7 @@ gov = comp.add_local_controller("gov-LPT1");
 sv_log = DebugScript.helper.stale(net);
 ME = caught(@() comp.add_local_controller("local-LQR"));    % 既定ではすべての入力 (Pmech を含む) を駆動する
 assert(ME.identifier == s_id)
-assert(contains(ME.message, "Pmech") && contains(ME.message, gov.s_tag) && contains(ME.message, "CL2" + comp.s_tag))
+assert(contains(ME.message, "Pmech") && contains(ME.message, gov.s_tag) && contains(ME.message, comp.s_tag + "CL2"))
 assert(same_list(comp.a_LocalController, {gov}) && isequal(DebugScript.helper.stale(net), sv_log))
 % 逆の順でも
 [~, comp] = DebugScript.helper.build_3bus("gen-park");
@@ -307,7 +307,7 @@ assert(contains(str, comp.s_tag + "/" + gov.s_tag), str)
 
 
 %% A trip of the generator restarts its governor from the equilibrium
-% 3母線系統では負荷が発電機1台では賄えないので、I50 と同じ IEEE14 の SG1B003 を解列する
+% 3母線系統では負荷が発電機1台では賄えないので、I50 と同じ IEEE14 の B003SG1 を解列する
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{3}.a_Component{1};
 gen.add_local_controller("avr-ST1");
@@ -339,12 +339,12 @@ s_src = flag.inputs{"Pmech","source"};
 assert(contains(s_src, gov.s_tag) && contains(s_src, agc.s_tag), s_src)
 sol = DebugScript.helper.quiet(@() net.simulate([0,2]));
 assert(sol.flag == 1 && DebugScript.helper.max_state_drift(sol) < 1e-9)
-[r_err, r_max] = error_to_linear(net, "SG1B001", comp, 1e-3);
+[r_err, r_max] = error_to_linear(net, "B001SG1", comp, 1e-3);
 assert(r_max > 1e-6 && r_err < 0.01, "relative error %g", r_err)
 
 
 function [net, comp, avr, pss, gov] = build_full(s_order)
-% 3母線系統の SG1B002 に AVR_DC1 + PSS1 と調速機 IEEJ_LPT1 を付けて initialize する
+% 3母線系統の B002SG1 に AVR_DC1 + PSS1 と調速機 IEEJ_LPT1 を付けて initialize する
 % s_order: "before" 調速機を先に / "after" 後に / "none" 調速機なし
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
     gov = [];
@@ -360,7 +360,7 @@ function [net, comp, avr, pss, gov] = build_full(s_order)
 end
 
 function [net, comp, gov] = build_gov(s_key, sct_para)
-% 3母線系統の SG1B002 に調速機 (モデルキー s_key、パラメータ sct_para) だけを付けて initialize する
+% 3母線系統の B002SG1 に調速機 (モデルキー s_key、パラメータ sct_para) だけを付けて initialize する
     if nargin < 2
         sct_para = struct();
     end
@@ -370,9 +370,9 @@ function [net, comp, gov] = build_gov(s_key, sct_para)
 end
 
 function [sol, comp, gov] = simulate_step(s_key, sct_para, r_step, rv_span, t_end)
-% 調速機 (モデルキー s_key、パラメータ sct_para) を付けた SG1B002 の系統で、SG1B001 の Pmech に r_step を加える
+% 調速機 (モデルキー s_key、パラメータ sct_para) を付けた B002SG1 の系統で、B001SG1 の Pmech に r_step を加える
     [net, comp, gov] = build_gov(s_key, sct_para);
-    ev  = DebugScript.helper.scenario("step", net, "TimeSpan", rv_span, "InputUnit", "SG1B001", "InputName", "Pmech", "InputValue", r_step);
+    ev  = DebugScript.helper.scenario("step", net, "TimeSpan", rv_span, "InputUnit", "B001SG1", "InputName", "Pmech", "InputValue", r_step);
     sol = DebugScript.helper.quiet(@() net.simulate([0,t_end], ev));
 end
 

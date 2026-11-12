@@ -59,7 +59,7 @@ assert(abs(V1 - net.a_Bus{1}.c_Vequilibrium) < 1e-8)
 net = DebugScript.helper.build_ieee14();
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
-net.add_global_controller("agc-PI", ["SG1B001", "SG1B002"]);
+net.add_global_controller("agc-PI", ["B001SG1", "B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 sol = net.simulate([0,2], ev);
@@ -113,7 +113,7 @@ assert(isequal(sol0.odeResults, struct()) && isempty(sol0.rm_variable) && isempt
 % 区間の境界の時刻は 2 回出力される (前の区間の終わり, 次の区間の始まり)。
 % get_point は既定でイベントの後 (Side="after")、Side="before" でイベントの前の値を返す
 gen = net.a_Bus{1}.a_Component{1};
-ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 1, "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.1);
+ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 1, "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.1);
 sol = net.simulate([0,2], ev);
 tab = sol.tab_variable;
 iv_d = find(tab.Owner == gen.s_tag & tab.Name == "delta");
@@ -284,8 +284,8 @@ s_csv = sol.Export(fullfile(s_dir, "sim.csv"));
 tab = readtable(s_csv, "VariableNamingRule", "preserve");
 assert(height(tab) == numel(sol.odeResults.t))
 sv  = string(tab.Properties.VariableNames);
-assert(sv(1) == "t" && any(sv == "B001_Vreal") && any(sv == "SG1B001_omega") && any(sv == "B008_Q"))
-assert(max(abs(tab.SG1B001_omega - sol.odeResults.Bus(1).Component(1).X.omega)) < 1e-10)
+assert(sv(1) == "t" && any(sv == "B001_Vreal") && any(sv == "B001SG1_omega") && any(sv == "B008_Q"))
+assert(max(abs(tab.B001SG1_omega - sol.odeResults.Bus(1).Component(1).X.omega)) < 1e-10)
 s_mat = sol.Export(fullfile(s_dir, "sim.mat"));
 s = load(s_mat);
 assert(isequal(s.odeResults.t, sol.odeResults.t) && s.flag == sol.flag)
@@ -320,8 +320,8 @@ assert(abs(abs(V8_end) - abs(net.a_Bus{8}.c_Vequilibrium)) < 0.05)
 
 
 %% Trip generator
-% 発電機 SG1B002 を 1.00〜1.05 秒に解列 (旧 Task8)
-ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.05], "TripUnit", "SG1B002");
+% 発電機 B002SG1 を 1.00〜1.05 秒に解列 (旧 Task8)
+ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.05], "TripUnit", "B002SG1");
 sol = net.simulate([0,5], ev);
 r   = sol.odeResults;
 X   = r.Bus(2).Component(1).X.Variables;
@@ -336,7 +336,7 @@ assert(all(isfinite(X(r.t < 1,:)), "all"))
 % 局所制御器 (AVR) が付いた系統でも、解列した機器だけの状態が NaN になる
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
-ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.05], "TripUnit", "SG1B002");
+ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.05], "TripUnit", "B002SG1");
 sol = net.simulate([0,5], ev);
 r   = sol.odeResults;
 lv  = inwin(r.t, 1, 1.05);
@@ -349,8 +349,8 @@ end
 
 
 %% Trip load
-% 負荷 LPQ2B003 を 1.00〜1.05 秒に解列 → 母線 B003 の消費電力が減る
-ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.05], "TripUnit", "LPQ2B003");
+% 負荷 B003LPQ2 を 1.00〜1.05 秒に解列 → 母線 B003 の消費電力が減る
+ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.05], "TripUnit", "B003LPQ2");
 sol = net.simulate([0,5], ev);
 r   = sol.odeResults;
 
@@ -361,9 +361,9 @@ assert(min(P3(lv)) - P3(1) > 0.3, "負荷解列中も B003 の消費電力が減
 
 
 %% Offset state at time zero
-% 計算開始時に SG1B001 の内部位相 delta を 0.1 rad ずらす (旧 Task16)
+% 計算開始時に B001SG1 の内部位相 delta を 0.1 rad ずらす (旧 Task16)
 gen = net.a_Bus{1}.a_Component{1};
-ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 0, "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.1);
+ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 0, "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.1);
 sol = net.simulate([0,5], ev);
 r   = sol.odeResults;
 
@@ -375,7 +375,7 @@ assert(max(abs(r.Bus(1).Component(1).X.omega)) > 1e-5)
 %% Offset state after time zero
 % t = 1 秒で delta を 0.1 rad ずらす (旧 Task10 の ev1)
 gen = net.a_Bus{1}.a_Component{1};
-ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 1, "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.1);
+ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 1, "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.1);
 sol = net.simulate([0,5], ev);
 r   = sol.odeResults;
 
@@ -387,8 +387,8 @@ assert(abs(delta(i1) - (gen.rv_Xequilibrium(1) + 0.1)) < 1e-2, "t = 1 のオフ�
 
 %% Offset state during a trip
 % 他の機器の解列中 (区間の初期値の再計算が必要な場合) にもオフセットが残る
-os = DebugScript.helper.scenario("offset", net, "TimeSpan", 1.5, "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.1);
-tr = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,2], "TripUnit", "SG1B002");
+os = DebugScript.helper.scenario("offset", net, "TimeSpan", 1.5, "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.1);
+tr = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,2], "TripUnit", "B002SG1");
 r  = net.simulate([0,3], os, tr).odeResults;
 d  = r.Bus(1).Component(1).X.delta;
 k  = find(abs(r.t - 1.5) < 1e-9);              % 1.5 秒の前後の区間の境界点 (2 点)
@@ -398,8 +398,8 @@ assert(numel(k) == 2 && abs(d(k(2)) - d(k(1)) - 0.1) < 1e-8, "解列中の t = 1
 %% Offset state is applied only once
 % オフセットの期間が他のイベントで分割されても、オフセットは開始時刻に 1 回だけ加わる
 % (分割用のイベントは入力 0 で、応答には影響しない)
-os  = DebugScript.helper.scenario("offset", net, "TimeSpan", [1,3], "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.1);
-cut = DebugScript.helper.scenario("cut", net, "TimeSpan", [2,2.5], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0);
+os  = DebugScript.helper.scenario("offset", net, "TimeSpan", [1,3], "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.1);
+cut = DebugScript.helper.scenario("cut", net, "TimeSpan", [2,2.5], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0);
 r1  = net.simulate([0,4], os).odeResults;
 r2  = net.simulate([0,4], os, cut).odeResults;
 d1  = r1.Bus(1).Component(1).X.delta;
@@ -408,9 +408,9 @@ assert(abs(d2(end) - d1(end)) < 1e-3, "オフセットが分割された区間�
 
 
 %% Input value numeric
-% SG1B002 の機械入力 Pmech に 1〜3 秒の間 0.1 を加える
+% B002SG1 の機械入力 Pmech に 1〜3 秒の間 0.1 を加える
 gen = net.a_Bus{2}.a_Component{1};
-ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0.1);
+ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.1);
 sol = net.simulate([0,5], ev);
 r   = sol.odeResults;
 
@@ -422,10 +422,10 @@ assert(max(abs(r.Bus(2).Component(1).X.omega)) > 1e-5)
 
 
 %% Input value function handle
-% 負荷 LPQ2B002 の Pload に時間関数を加える (旧 Task10 の ev3)
+% 負荷 B002LPQ2 の Pload に時間関数を加える (旧 Task10 の ev3)
 % 関数の引数 t はイベント開始からの経過時間
 load2 = net.a_Bus{2}.a_Component{2};
-ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,3], "InputUnit", "LPQ2B002", ...
+ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,3], "InputUnit", "B002LPQ2", ...
                   "InputName", ["Pload";"Qload"], "InputValue", {@(t) 0.1*t; @(t) 0});
 sol = net.simulate([0,5], ev);
 r   = sol.odeResults;
@@ -441,8 +441,8 @@ assert(max(abs(U.Pload(r.t > 3.01) - P0)) < 1e-8)
 % OffsetState / InputName は sv_x / sv_u と違う順に並べても名前で対応する
 gen = net.a_Bus{1}.a_Component{1};
 g2  = net.a_Bus{2}.a_Component{1};
-os  = DebugScript.helper.scenario("offset", net, "TimeSpan", 0, "OffsetUnit", "SG1B001", "OffsetState", ["omega";"delta"], "OffsetValue", [0.01;0.1]);
-in  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,2], "InputUnit", "SG1B002", "InputName", ["Vfield";"Pmech"], "InputValue", [0.02;0.1]);
+os  = DebugScript.helper.scenario("offset", net, "TimeSpan", 0, "OffsetUnit", "B001SG1", "OffsetState", ["omega";"delta"], "OffsetValue", [0.01;0.1]);
+in  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,2], "InputUnit", "B002SG1", "InputName", ["Vfield";"Pmech"], "InputValue", [0.02;0.1]);
 r   = net.simulate([0,2], os, in).odeResults;
 
 X = r.Bus(1).Component(1).X;
@@ -459,10 +459,10 @@ assert(max(abs(U.Vfield(lv) - (g2.rv_Uequilibrium(g2.sv_u == "Vfield") + 0.02)))
 gen = net.a_Bus{1}.a_Component{1};
 g2  = net.a_Bus{2}.a_Component{1};
 o = cell(4,1);
-o{1} = DebugScript.helper.scenario("os1", net, "TimeSpan", 0,     "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.05);
-o{2} = DebugScript.helper.scenario("os2", net, "TimeSpan", 0,     "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.05);
-o{3} = DebugScript.helper.scenario("in1", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0.1);
-o{4} = DebugScript.helper.scenario("in2", net, "TimeSpan", [2,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) 0.05);
+o{1} = DebugScript.helper.scenario("os1", net, "TimeSpan", 0,     "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.05);
+o{2} = DebugScript.helper.scenario("os2", net, "TimeSpan", 0,     "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.05);
+o{3} = DebugScript.helper.scenario("in1", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.1);
+o{4} = DebugScript.helper.scenario("in2", net, "TimeSpan", [2,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", @(t) 0.05);
 r = net.simulate([0,4], o{:}).odeResults;
 
 assert(abs(r.Bus(1).Component(1).X.delta(1) - (gen.rv_Xequilibrium(gen.sv_x == "delta") + 0.1)) < 1e-8)
@@ -477,7 +477,7 @@ assert(max(abs(Pm(r.t > 3.01) - Pm0)) < 1e-8)
 % 計算時間の外にはみ出すイベントで計算時間は変わらない。関数の引数はイベント開始からの経過時間のまま
 g2  = net.a_Bus{2}.a_Component{1};
 Pm0 = g2.rv_Uequilibrium(g2.sv_u == "Pmech");
-ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,5], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) 0.1*t);
+ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,5], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", @(t) 0.1*t);
 
 r = net.simulate([0,2], ev).odeResults;
 assert(r.t(1) == 0 && r.t(end) == 2)
@@ -491,10 +491,10 @@ assert(max(abs(Pm - (Pm0 + 0.1*(r.t - 1)))) < 1e-8)
 %% Multiple events in one simulation
 % 複数のイベントをまとめて渡す (旧 Task10 の構成を短縮)
 o = cell(4,1);
-o{1} = DebugScript.helper.scenario("ev1", net, "TimeSpan", 0,        "OffsetState", "delta", "OffsetUnit", "SG1B001", "OffsetValue", pi/36);
-o{2} = DebugScript.helper.scenario("ev2", net, "TimeSpan", [1,1.5],  "InputUnit", "SG1B002", "InputName", ["Pmech";"Vfield"], "InputValue", {0.05; @(t) 0.01*t});
+o{1} = DebugScript.helper.scenario("ev1", net, "TimeSpan", 0,        "OffsetState", "delta", "OffsetUnit", "B001SG1", "OffsetValue", pi/36);
+o{2} = DebugScript.helper.scenario("ev2", net, "TimeSpan", [1,1.5],  "InputUnit", "B002SG1", "InputName", ["Pmech";"Vfield"], "InputValue", {0.05; @(t) 0.01*t});
 o{3} = DebugScript.helper.scenario("ev4", net, "TimeSpan", [2,2.02], "FaultBus", "B008");
-o{4} = DebugScript.helper.scenario("ev5", net, "TimeSpan", [3,3.5],  "TripUnit", "LPQ2B003");
+o{4} = DebugScript.helper.scenario("ev5", net, "TimeSpan", [3,3.5],  "TripUnit", "B003LPQ2");
 sol = net.simulate([0,5], o{:});
 r   = sol.odeResults;
 
@@ -613,7 +613,7 @@ c{2} = net.a_Bus{2}.a_Component{1};
 agc  = net.add_global_controller("agc-PI", c, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
 
-ev  = DebugScript.helper.scenario("step", net, "TimeSpan", [1,20], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", -0.1);
+ev  = DebugScript.helper.scenario("step", net, "TimeSpan", [1,20], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", -0.1);
 sol = net.simulate([0,20], ev);
 r   = sol.odeResults;
 
@@ -627,7 +627,7 @@ assert(Pm(end) > Pm(1))
 % 比較: AGC なしでは周波数偏差が残る
 net0 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net0.initialize);
-ev0  = DebugScript.helper.scenario("step", net0, "TimeSpan", [1,20], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", -0.1);
+ev0  = DebugScript.helper.scenario("step", net0, "TimeSpan", [1,20], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", -0.1);
 r0   = net0.simulate([0,20], ev0).odeResults;
 assert(abs(r0.Bus(1).Component(1).X.omega(end)) > 10*abs(omega(end)))
 
@@ -635,10 +635,10 @@ assert(abs(r0.Bus(1).Component(1).X.omega(end)) > 10*abs(omega(end)))
 %% Tripped global controller gives no output
 % 大域制御器を解列すると、解列中の出力は 0 (機器の入力は定常値のまま)
 net = DebugScript.helper.build_ieee14();
-agc = net.add_global_controller("agc-PI", ["SG1B001", "SG1B002"], parameter=struct(kP=100, kI=500));
+agc = net.add_global_controller("agc-PI", ["B001SG1", "B002SG1"], parameter=struct(kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
 
-ev1 = DebugScript.helper.scenario("step", net, "TimeSpan", [1,20], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", -0.1);
+ev1 = DebugScript.helper.scenario("step", net, "TimeSpan", [1,20], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", -0.1);
 ev2 = DebugScript.helper.scenario("trip", net, "TimeSpan", [5,10], "TripUnit", agc.s_tag);
 sol = net.simulate([0,20], ev1, ev2);
 r   = sol.odeResults;
@@ -654,10 +654,10 @@ assert(~isprop(agc, "l_isConnect"), "解列の状態はモデルに書かない 
 % 大域制御器は何台でも扱える。同じ発電機を alpha を半分ずつにした 2 台の AGC で制御すると、
 % 出力の和が 1 台の AGC と等しいので、同じ応答になる
 net1 = DebugScript.helper.build_ieee14();
-net1.add_global_controller("agc-PI", ["SG1B001", "SG1B002"], parameter=struct(alpha=[1;1], kP=100, kI=500));
+net1.add_global_controller("agc-PI", ["B001SG1", "B002SG1"], parameter=struct(alpha=[1;1], kP=100, kI=500));
 net2 = DebugScript.helper.build_ieee14();
-net2.add_global_controller("agc-PI", ["SG1B001", "SG1B002"], parameter=struct(alpha=[0.5;0.5], kP=100, kI=500));
-net2.add_global_controller("agc-PI", ["SG1B001", "SG1B002"], parameter=struct(alpha=[0.5;0.5], kP=100, kI=500));
+net2.add_global_controller("agc-PI", ["B001SG1", "B002SG1"], parameter=struct(alpha=[0.5;0.5], kP=100, kI=500));
+net2.add_global_controller("agc-PI", ["B001SG1", "B002SG1"], parameter=struct(alpha=[0.5;0.5], kP=100, kI=500));
 DebugScript.helper.quiet(@() net1.initialize);
 DebugScript.helper.quiet(@() net2.initialize);
 
@@ -666,8 +666,8 @@ sol = net2.simulate([0,2], DebugScript.helper.noop_event(net2,[0,2]));
 assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
 
 % 負荷を増やしたときの応答が 1 台の場合と一致し、周波数偏差が 0 に戻る
-r1 = net1.simulate([0,20], DebugScript.helper.scenario("step", net1, "TimeSpan", [1,20], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", -0.1)).odeResults;
-r2 = net2.simulate([0,20], DebugScript.helper.scenario("step", net2, "TimeSpan", [1,20], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", -0.1)).odeResults;
+r1 = net1.simulate([0,20], DebugScript.helper.scenario("step", net1, "TimeSpan", [1,20], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", -0.1)).odeResults;
+r2 = net2.simulate([0,20], DebugScript.helper.scenario("step", net2, "TimeSpan", [1,20], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", -0.1)).odeResults;
 t  = linspace(0, 20, 401)';
 [t1, i1] = unique(r1.t);
 [t2, i2] = unique(r2.t);
@@ -707,9 +707,9 @@ assert(abs(ddelta(2) - 2*pi*60*1e-3*0.01) < 0.1 * 2*pi*60*1e-3*0.01)
 
 %% Event input names are checked
 % 存在しない InputUnit / InputName、引数の数が違う関数ハンドルは計算前にエラー
-expect_error(@() DebugScript.helper.scenario("in", net, "TimeSpan", [1,2], "InputUnit", "LPQ2B002", "InputName", ["P";"Q"], "InputValue", 0.1), "GUILDA:Scenario:UnknownInputName")
+expect_error(@() DebugScript.helper.scenario("in", net, "TimeSpan", [1,2], "InputUnit", "B002LPQ2", "InputName", ["P";"Q"], "InputValue", 0.1), "GUILDA:Scenario:UnknownInputName")
 expect_error(@() DebugScript.helper.scenario("in", net, "TimeSpan", [1,2], "InputUnit", "NoSuchUnit", "InputName", "Pload", "InputValue", 0.1), "GUILDA:Scenario:UnknownInputUnit")
-expect_error(@() DebugScript.helper.scenario("in", net, "TimeSpan", [1,2], "InputUnit", "LPQ2B002", "InputName", "Pload", "InputValue", @(t,x) 0.1), "GUILDA:Scenario:InvalidNargin")
+expect_error(@() DebugScript.helper.scenario("in", net, "TimeSpan", [1,2], "InputUnit", "B002LPQ2", "InputName", "Pload", "InputValue", @(t,x) 0.1), "GUILDA:Scenario:InvalidNargin")
 
 
 %% Phase that starts at rest in a large network
@@ -732,7 +732,7 @@ assert(flag == 1, output.message)
 %% Solver stop reports the phase and the solver message
 % 入力が t = 2.5 (イベント開始から 1.5 s) で発散するとソルバーが止まる (flag = -1)。
 % output.message は止まった区間・時刻とソルバーの警告文を示す
-ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) 1/(1.5-t));
+ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", @(t) 1/(1.5-t));
 lastwarn("");
 [~, flag, output] = net.solver_ODE.solve(net, [0,4], {ev}, net.solver_ODE.get_options({}));   % net.simulate の警告で lastwarn が変わらない
 s_warn = lastwarn();
@@ -742,7 +742,7 @@ assert(contains(output.message, "phase 2") && contains(output.message, "t = [1, 
 assert(strlength(s_warn) > 0 && contains(output.message, s_warn), output.message)
 
 % 計算中のエラーは区間を示す GUILDA のエラーになり、元のエラーは cause に残る
-ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) boom(t));
+ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", @(t) boom(t));
 try
     net.simulate([0,4], ev);
     error("DebugScript:noError", "エラーにならない")
@@ -757,7 +757,7 @@ end
 % 区間の境界で微分状態 (質量行列が掛かる状態) は直前の値のまま、代数変数 (母線電圧、
 % 代数状態、入力) だけを新しい区間の網で解き直す。地絡の始まりと終わり、負荷の解列を確かめる
 ev1 = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-ev2 = DebugScript.helper.scenario("trip",  net, "TimeSpan", [1.5,1.7], "TripUnit", "LPQ2B003");
+ev2 = DebugScript.helper.scenario("trip",  net, "TimeSpan", [1.5,1.7], "TripUnit", "B003LPQ2");
 [sol, flag, output] = net.simulate([0,2], ev1, ev2);
 assert(flag == 1, output.message)
 [d_x, d_v] = boundary_jumps(net, sol);

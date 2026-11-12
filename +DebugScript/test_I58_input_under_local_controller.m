@@ -8,7 +8,7 @@
 
 % 共通設定 (各テストの前に毎回実行される)
 r_step = 1e-3;
-s_unit = "SG1B003";
+s_unit = "B003SG1";
 
 
 c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
@@ -39,13 +39,13 @@ assert(r_err < 0.01, "relative error %g", r_err)
 
 
 %% A global controller on a driven input adds to the local controller
-% AGC も LQR も SG1B003 の Pmech を駆動する。加算のときだけ AGC を含む線形モデルと一致する
+% AGC も LQR も B003SG1 の Pmech を駆動する。加算のときだけ AGC を含む線形モデルと一致する
 net = DebugScript.helper.build_ieee14();
 gen = component_of(net, s_unit);
 evalc("gen.add_local_controller(""local-LQR"", parameter=struct(Input=""Pmech""));");
-net.add_global_controller("agc-PI", [s_unit, "SG1B001"]);
+net.add_global_controller("agc-PI", [s_unit, "B001SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
-[r_err, r_max] = error_to_linear(net, "SG1B002", "Pmech", r_step);
+[r_err, r_max] = error_to_linear(net, "B002SG1", "Pmech", r_step);
 assert(r_max > 1e-6, "the step has no effect: %g", r_max)
 assert(r_err < 0.01, "relative error %g", r_err)
 

@@ -7,16 +7,16 @@
 
 %% A valid AGC is accepted, by object and by tag
 net = DebugScript.helper.build_ieee14();
-agc = net.add_global_controller("agc-PI", {net.a_Bus{1}.a_Component{1}, "SG1B002"});
+agc = net.add_global_controller("agc-PI", {net.a_Bus{1}.a_Component{1}, "B002SG1"});
 assert(agc.a_PowerNetwork == net)
-assert(isequal(string(agc.controlledUnits), ["SG1B001";"SG1B002"]))
+assert(isequal(string(agc.controlledUnits), ["B001SG1";"B002SG1"]))
 
 
 %% An unknown tag stops at construction and the message names it
 net = DebugScript.helper.build_ieee14();
 [id, s_msg] = error_info(@() net.add_global_controller("agc-PI", "unknown"));
 assert(id == "GUILDA:GlobalController:InvalidComponent", id)
-assert(contains(s_msg, "'unknown'") && contains(s_msg, "'AGC1"+net.s_tag+"'") && contains(s_msg, "'"+net.s_tag+"'"), s_msg)
+assert(contains(s_msg, "'unknown'") && contains(s_msg, "'"+net.s_tag+"AGC1'") && contains(s_msg, "'"+net.s_tag+"'"), s_msg)
 
 
 %% An object that is not a component stops at construction and the message names its class
@@ -31,7 +31,7 @@ assert(contains(s_msg, "'double'"), s_msg)
 
 %% A network without components has nothing to control
 net = PowerNetwork("T");
-id = error_info(@() net.add_global_controller("agc-PI", "SG1B001"));
+id = error_info(@() net.add_global_controller("agc-PI", "B001SG1"));
 assert(id == "GUILDA:GlobalController:InvalidComponent", id)
 
 
@@ -40,7 +40,7 @@ net   = DebugScript.helper.build_ieee14();
 other = DebugScript.helper.build_ieee14();
 [id, s_msg] = error_info(@() net.add_global_controller("agc-PI", other.a_Bus{1}.a_Component{1}));
 assert(id == "GUILDA:GlobalController:InvalidComponent", id)
-assert(contains(s_msg, "SG1B001"), s_msg)
+assert(contains(s_msg, "B001SG1"), s_msg)
 
 
 %% A generator without omega is rejected at add, not in simulate
@@ -66,8 +66,8 @@ assert(isempty(net.a_GlobalController))
 %% A checked add leaves the tag free for a valid controller
 net = DebugScript.helper.build_ieee14();
 assert(error_info(@() net.add_global_controller("agc-PI", "unknown")) == "GUILDA:GlobalController:InvalidComponent")
-agc = net.add_global_controller("agc-PI", "SG1B001");
-assert(numel(net.a_GlobalController) == 1 && agc.s_tag == "AGC1"+net.s_tag)
+agc = net.add_global_controller("agc-PI", "B001SG1");
+assert(numel(net.a_GlobalController) == 1 && agc.s_tag == net.s_tag + "AGC1")
 
 
 function [id, s_msg] = error_info(fh)

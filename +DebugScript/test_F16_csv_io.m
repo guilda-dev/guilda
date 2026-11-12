@@ -18,8 +18,8 @@ net = DebugScript.helper.quiet(@() network.IEEE9bus());
 [s_dir, c] = temp_folder(); %#ok<ASGLU>
 [s_msg, id, s_path] = export_with_warning(net, fullfile(s_dir, "Net9"));
 assert(id == s_id)
-assert(contains(s_msg, "Local (6): SG1B001/CA1SG1B001, SG1B001/CA1SG1B001/CP2SG1B001"))
-assert(contains(s_msg, "SG1B003/CA1SG1B003/CP2SG1B003"))
+assert(contains(s_msg, "Local (6): B001SG1/B001SG1CA1, B001SG1/B001SG1CA1/B001SG1CP2"))
+assert(contains(s_msg, "B003SG1/B003SG1CA1/B003SG1CP2"))
 assert(contains(s_msg, "Global (0): none"))
 assert(isfile(fullfile(s_path, "bus", "parameter.csv")), "警告の前に書き出しを終える")
 
@@ -31,7 +31,7 @@ assert(size(net2.get_sys().A, 1) == 9)
 
 %% export_csv names the global controllers it does not write
 net = DebugScript.helper.quiet(@() network.IEEE9bus());
-agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"]);
+agc = net.add_global_controller("agc-PI", ["B001SG1","B002SG1"]);
 [s_dir, c] = temp_folder(); %#ok<ASGLU>
 [s_msg, id] = export_with_warning(net, fullfile(s_dir, "Net9"));
 assert(id == s_id)
@@ -93,7 +93,7 @@ assert(isequal(string(net2.a_Branch), sv_tag))
 %% Component tags survive a round trip across model types
 net = tag_network();
 bus = net.a_Bus{1};
-assert(isequal(sort(string(bus.a_Component)), sort(["LPQ1B001"; "SG2B001"])), "機種をまたぐ番号")
+assert(isequal(sort(string(bus.a_Component)), sort(["B001LPQ1"; "B001SG2"])), "機種をまたぐ番号")
 bus.a_Component{2}.s_tag = "Gen9";
 sv_tag = string(bus.a_Component);
 [net2, c] = round_trip(net); %#ok<ASGLU>
@@ -136,7 +136,7 @@ tab.Tag = ["Bus"; "Bus"; "Bus"];
 writetable(tab, s_file);
 net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
 assert(isequal(string(net2.a_Bus), ["Bus001"; "Bus002"; "Bus003"]), "Tag は接頭辞のまま")
-assert(isequal(sort(string(net2.a_Bus{1}.a_Component)), ["LPQ2Bus001"; "SG1Bus001"]))
+assert(isequal(sort(string(net2.a_Bus{1}.a_Component)), ["Bus001LPQ2"; "Bus001SG1"]))
 
 
 %% An empty FullTag keeps the automatic tag

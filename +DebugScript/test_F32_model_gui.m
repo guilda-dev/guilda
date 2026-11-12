@@ -121,7 +121,7 @@ h = net.a_Bus{1}.gui();
 assert(isscalar(h_card) && h_card.UserData == comp && sv_group == "Component (1)")
 assert(isequal(h_card.BackgroundColor, rgb("#F1F5D2")) && contains(strjoin(h_card.Text), class(comp)))
 % The network: buses, branches, then global controllers, each in its own color
-agc = net.add_global_controller("agc-PI", {"SG1B001","SG1B002"});
+agc = net.add_global_controller("agc-PI", {"B001SG1","B002SG1"});
 h.render(net);
 [h_card, sv_group] = cards(h);
 n_bus = numel(net.a_Bus);
@@ -187,10 +187,10 @@ h_dyn.CellEditCallback(h_dyn, []);
 assert(comp.tab_parameter.dynamics.M == tab.M)
 assert(~isempty(stale_messages(comp)) && contains(stale_text(h), "edit M"))
 % Row names of a global controller are shown
-agc = net.add_global_controller("agc-PI", {"SG1B001","SG1B002"});
+agc = net.add_global_controller("agc-PI", {"B001SG1","B002SG1"});
 h.render(agc);
 h_table = parameter_tables(h);
-assert(isequal(string(h_table(1).RowName), ["SG1B001";"SG1B002"]))
+assert(isequal(string(h_table(1).RowName), ["B001SG1";"B002SG1"]))
 
 
 %% A value of another class is refused and the table goes back to the stored values
@@ -259,7 +259,7 @@ assert(isempty(stale_messages(avr)) && contains(stale_text(h), "none"))
 assert(numel(avr.rv_Xequilibrium) > 0 && height(tab) == numel(avr.rv_Xequilibrium) + numel(avr.rv_Uequilibrium) + 2)
 assert(isequal(tab.Name(end-1:end), ["V";"I"]))
 % A global controller: names numbered when the inputs of several units do not match sv_u
-agc = net.add_global_controller("agc-PI", {"SG1B001","SG1B002"});
+agc = net.add_global_controller("agc-PI", {"B001SG1","B002SG1"});
 DebugScript.helper.quiet(@() net.initialize);
 h.render(agc);
 tab = equilibrium_table(h);

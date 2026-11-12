@@ -23,7 +23,7 @@ assert(isequaln(r_old.odeResults, r_new.odeResults))
 
 %% An event created before adding a global controller still works
 old = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-net.add_global_controller("agc-PI", ["SG1B001","SG1B002"]);
+net.add_global_controller("agc-PI", ["B001SG1","B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
 [~, flag] = DebugScript.helper.quiet(@() net.simulate([0,2], old));
 assert(flag == 1)

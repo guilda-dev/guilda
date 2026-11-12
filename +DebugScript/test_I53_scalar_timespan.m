@@ -9,9 +9,9 @@
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 c_fault = {"FaultBus", "B008"};
-c_trip  = {"TripUnit", "LPQ2B003"};
-c_input = {"InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0.01};
-c_os    = {"OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 1e-3};
+c_trip  = {"TripUnit", "B003LPQ2"};
+c_input = {"InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.01};
+c_os    = {"OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 1e-3};
 
 
 c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
@@ -28,7 +28,7 @@ end
 ev_other = DebugScript.helper.scenario("other", net, "TimeSpan", [1.5,2], c_trip{:});
 assert(event_error(@() DebugScript.helper.scenario("fault", net, "TimeSpan", 1, c_fault{:})) == "GUILDA:Scenario:ZeroLengthTimeSpan")
 sc = Scenario("both");
-sc.add_trip("LPQ2B003", [1.5,2]);
+sc.add_trip("B003LPQ2", [1.5,2]);
 assert(event_error(@() sc.add_disturbance("fault", "TimeSpan", 1, c_fault{:})) == "GUILDA:Scenario:ZeroLengthTimeSpan")
 assert(height(sc.tab_disturbance) == 1)
 [~, flag] = net.simulate([0,3], ev_other);

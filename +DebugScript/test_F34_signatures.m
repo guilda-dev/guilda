@@ -45,7 +45,7 @@ c_cleanup = onCleanup(@() evalin("base", "clear sys__F34"));
 assignin("base", "sys__F34", network.IEEE9bus);
 sv_key = keys(GUILDA.keymap("Component"));
 assert(isequal(sort(choices('sys__F34.a_Bus{1}.add_component(')), sort(sv_key(:)')))
-assert(isequal(sort(choices('sys__F34.a_Bus{1}.replace_component("SG1B001", ')), sort(sv_key(:)')))
+assert(isequal(sort(choices('sys__F34.a_Bus{1}.replace_component("B001SG1", ')), sort(sv_key(:)')))
 sv_key = keys(GUILDA.keymap("Branch"));
 assert(isequal(sort(choices('sys__F34.add_branch(')), sort(sv_key(:)')))
 sv_key = keys(GUILDA.keymap("LocalController"));
@@ -58,11 +58,11 @@ assert(isequal(sort(choices('gen__F34.add_local_controller(')), sort(sv_key(:)')
 %% Tag arguments suggest the tags of the current object
 c_cleanup = onCleanup(@() evalin("base", "clear sys__F34"));
 assignin("base", "sys__F34", network.IEEE9bus);
-assert(ismember("SG1B001", choices('sys__F34.a_Bus{1}.replace_component(')))
-assert(~ismember("SG1B001", choices('sys__F34.a_Bus{5}.replace_component(')))
-assert(ismember("LRX1B005", choices('sys__F34.a_Bus{5}.remove_component(')))
+assert(ismember("B001SG1", choices('sys__F34.a_Bus{1}.replace_component(')))
+assert(~ismember("B001SG1", choices('sys__F34.a_Bus{5}.replace_component(')))
+assert(ismember("B005LRX1", choices('sys__F34.a_Bus{5}.remove_component(')))
 assert(ismember("B004", choices('sys__F34.remove_bus(')))
-assert(ismember("SG1B001", choices('replace_component(sys__F34.a_Bus{1}, ')))
+assert(ismember("B001SG1", choices('replace_component(sys__F34.a_Bus{1}, ')))
 % 局所制御器のタグは入れ子 (AVR の下の PSS) も含む
 assignin("base", "gen__F34", evalin("base", "sys__F34.a_Bus{1}.a_Component{1}"));
 c_gen = onCleanup(@() evalin("base", "clear gen__F34"));
@@ -74,7 +74,7 @@ assert(all(ismember(sv_con, choices('gen__F34.remove_local_controller('))))
 c_cleanup = onCleanup(@() evalin("base", "clear sys__F34"));
 assignin("base", "sys__F34", network.IEEE9bus);
 assert(isempty(evalin("base", "sys__F34.a_Bus{4}.a_Component")))
-assert(~ismember("SG1B001", choices('sys__F34.a_Bus{4}.replace_component(')))
+assert(~ismember("B001SG1", choices('sys__F34.a_Bus{4}.replace_component(')))
 assert(ismember("gen-park", choices('sys__F34.a_Bus{4}.replace_component("x", ')))
 
 

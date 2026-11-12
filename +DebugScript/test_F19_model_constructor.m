@@ -23,13 +23,13 @@ assert(isempty(bus.a_Component))
 
 
 %% A model column absent from parameter.csv names the column and the file
-ME = caught(@() DebugScript.helper.GeneratorStub("1B001", nan, default_opt()));
+ME = caught(@() DebugScript.helper.GeneratorStub("1", nan, default_opt("B001")));
 assert(DebugScript.helper.msg_id(ME) == s_miss)
 assert(contains(ME.message, "Zeta") && contains(ME.message, "parameter.csv"))
 
 
 %% A complete table is still accepted, also with extra columns
-gen = DebugScript.helper.GeneratorStub("1B001", table(1, 2, 3, VariableNames=["Zeta", "M", "Note"]), default_opt());
+gen = DebugScript.helper.GeneratorStub("1", table(1, 2, 3, VariableNames=["Zeta", "M", "Note"]), default_opt("B001"));
 assert(gen.tab_parameter.dynamics.Zeta == 1 && gen.tab_parameter.dynamics.M == 2)
 
 
@@ -53,16 +53,16 @@ assert(gen0.tab_parameter.dynamics.Xd == 1.7 && gen0.tab_parameter.dynamics.Xd_p
 
 
 %% A load subclass without a constructor works
-ld = DebugScript.helper.LoadStub("2B003", nan, default_opt());
-assert(ld.s_tag == "L2B003")
+ld = DebugScript.helper.LoadStub("2", nan, default_opt("B003"));
+assert(ld.s_tag == "B003L2")
 assert(isa(ld, "component.load.abstract") && ld.tab_parameter.powerflow.P == 0.5)
 
 
 %% Built-in loads keep their tags
 bus = PowerNetwork().add_bus();
 ld = bus.add_component("load-power", P=-0.8, Q=-0.3);
-assert(startsWith(ld.s_tag, "LPQ1") && ld.tab_parameter.powerflow.Q == -0.3)
-assert(startsWith(bus.add_component("load-impedance", P=-0.1).s_tag, "LRX2"))
+assert(ld.s_tag == bus.s_tag + "LPQ1" && ld.tab_parameter.powerflow.Q == -0.3)
+assert(bus.add_component("load-impedance", P=-0.1).s_tag == bus.s_tag + "LRX2")
 
 
 %% An ignored generator Q warns and is still replaced by NaN
@@ -120,12 +120,12 @@ ME = caught(@() gen.add_local_controller("pss-PSS1"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:NotExtAvr" && contains(ME.message, "Attach an AVR"))
 
 
-function opt = default_opt()
-    % The name-value options of Bus.add_component, as a subclass constructor receives them
+function opt = default_opt(s_bus)
+    % The name-value options of Bus.add_component and the bus tag, as a subclass constructor receives them
     opt = struct("P", 0.5, "Q", 0, "baseMVA", 100, "Pmin", -inf, "Pmax", inf, "Qmin", -inf, "Qmax", inf, ...
                  "OPFinit_P0", 0, "OPFinit_Q0", 0, "OPFcost_HP", nan, "OPFcost_HQ", 0, "OPFcost_fP", nan, ...
                  "OPFcost_fQ", 0, "OPFcost_startup", 0, "OPFcost_shutdown", 0, "Xaxis", nan, "Yaxis", nan, ...
-                 "Marker", "o", "MidXaxis", "", "MidYaxis", "");
+                 "Marker", "o", "MidXaxis", "", "MidYaxis", "", "BusTag", s_bus);
 end
 
 function ME = caught(fcn)

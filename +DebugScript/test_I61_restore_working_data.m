@@ -16,7 +16,7 @@ c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "n
 
 %% Unit stays connected after a trip lasting to the end time
 c_before = snapshot(net);
-ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,5], "TripUnit", "SG1B002");
+ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,5], "TripUnit", "B002SG1");
 DebugScript.helper.quiet(@() net.simulate([0,2], ev));
 assert_untouched(net, c_before)
 
@@ -30,20 +30,20 @@ assert_untouched(net, c_before)
 
 %% Offsets are cleared after an input and an offset
 c_before = snapshot(net);
-ev_os = DebugScript.helper.scenario("offset", net, "TimeSpan", 1, "OffsetUnit", "SG1B002", "OffsetState", "delta", "OffsetValue", 0.01);
-ev_in = DebugScript.helper.scenario("input", net, "TimeSpan", [1,2], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0.01);
+ev_os = DebugScript.helper.scenario("offset", net, "TimeSpan", 1, "OffsetUnit", "B002SG1", "OffsetState", "delta", "OffsetValue", 0.01);
+ev_in = DebugScript.helper.scenario("input", net, "TimeSpan", [1,2], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.01);
 DebugScript.helper.quiet(@() net.simulate([0,2], ev_os, ev_in));
 assert_untouched(net, c_before)
 
 
 %% Working data is restored after an error during a fault and trips
 net = DebugScript.helper.build_ieee14();
-agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"], parameter=struct(kP=100, kI=500));
+agc = net.add_global_controller("agc-PI", ["B001SG1","B002SG1"], parameter=struct(kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
 c_before = snapshot(net);
 ev_fault = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.4,5], "FaultBus", "B008");
-ev_trip  = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.4,5], "TripUnit", ["SG1B003";agc.s_tag]);
-ev_error = DebugScript.helper.scenario("input", net, "TimeSpan", [0.4,5], "InputUnit", "SG1B002", "InputName", "Pmech", ...
+ev_trip  = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.4,5], "TripUnit", ["B003SG1";agc.s_tag]);
+ev_error = DebugScript.helper.scenario("input", net, "TimeSpan", [0.4,5], "InputUnit", "B002SG1", "InputName", "Pmech", ...
                        "InputValue", @bad_input);
 s_id = "";
 try
@@ -56,7 +56,7 @@ assert_untouched(net, c_before)
 
 
 %% Rerun after a trip matches a run on a fresh network
-ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,5], "TripUnit", "SG1B002");
+ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,5], "TripUnit", "B002SG1");
 DebugScript.helper.quiet(@() net.simulate([0,2], ev));
 sol = DebugScript.helper.quiet(@() net.simulate([0,2]));
 
