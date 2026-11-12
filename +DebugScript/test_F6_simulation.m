@@ -1,7 +1,7 @@
 % F6 時間応答シミュレーション (simulate / Scenario / ResultODE)
 %
 % イベントの種類ごとに IEEE14 母線系統の応答を計算し、結果を確認する。
-%   sc  = Scenario("名前");  sc.add_disturbance("名前", "TimeSpan", [t1,t2], <外乱の指定>);  net.add_scenario(sc);
+%   sc  = net.add_scenario("名前");  sc.add_disturbance("名前", "TimeSpan", [t1,t2], <外乱の指定>);
 %   (テストでは ev = DebugScript.helper.scenario("名前", net, "TimeSpan", [t1,t2], <外乱の指定>))
 %   [sol, flag, output] = net.simulate([t0,tend], ev1, ev2, ..., Name, Value);
 %   r   = sol.odeResults;     % r.t, r.Bus(i).V / I / PQ, r.Bus(i).Component(j).X / U
@@ -409,12 +409,12 @@ assert(max(abs(Pm(r.t > 3.01) - Pm0)) < 1e-8)
 assert(max(abs(r.Bus(2).Component(1).X.omega)) > 1e-5)
 
 
-%% Input value function handle
-% 負荷 B002LPQ2 の Pload に時間関数を加える (旧 Task10 の ev3)
-% 関数の引数 t はイベント開始からの経過時間
+%% Input value time series
+% 負荷 B002LPQ2 の Pload に時系列 [t, Pload, Qload] を加える (旧 Task10 の ev3 の関数 0.1*t)
+% 時刻 t はイベント開始からの経過時間。既定の補間 "foh" で線形
 load2 = net.a_Bus{2}.a_Component{2};
 ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,3], "InputUnit", "B002LPQ2", ...
-                  "InputName", ["Pload";"Qload"], "InputValue", {@(t) 0.1*t; @(t) 0});
+                  "InputName", ["Pload";"Qload"], "InputValue", [0, 0, 0; 2, 0.2, 0]);
 sol = net.simulate([0,5], ev);
 r   = sol.odeResults;
 
@@ -450,7 +450,7 @@ o = cell(4,1);
 o{1} = DebugScript.helper.scenario("os1", net, "TimeSpan", 0,     "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.05);
 o{2} = DebugScript.helper.scenario("os2", net, "TimeSpan", 0,     "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.05);
 o{3} = DebugScript.helper.scenario("in1", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.1);
-o{4} = DebugScript.helper.scenario("in2", net, "TimeSpan", [2,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", @(t) 0.05);
+o{4} = DebugScript.helper.scenario("in2", net, "TimeSpan", [2,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.05);
 r = net.simulate([0,4], o{:}).odeResults;
 
 assert(abs(r.Bus(1).Component(1).X.delta(1) - (gen.rv_Xequilibrium(gen.sv_x == "delta") + 0.1)) < 1e-8)
@@ -462,10 +462,10 @@ assert(max(abs(Pm(r.t > 3.01) - Pm0)) < 1e-8)
 
 
 %% Events beyond the simulation time
-% 計算時間の外にはみ出すイベントで計算時間は変わらない。関数の引数はイベント開始からの経過時間のまま
+% 計算時間の外にはみ出すイベントで計算時間は変わらない。時系列の時刻はイベント開始からの経過時間のまま
 g2  = net.a_Bus{2}.a_Component{1};
 Pm0 = g2.rv_Uequilibrium(g2.sv_u == "Pmech");
-ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,5], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", @(t) 0.1*t);
+ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,5], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", [0, 0; 4, 0.4]);
 
 r = net.simulate([0,2], ev).odeResults;
 assert(r.t(1) == 0 && r.t(end) == 2)
@@ -480,7 +480,7 @@ assert(max(abs(Pm - (Pm0 + 0.1*(r.t - 1)))) < 1e-8)
 % 複数のイベントをまとめて渡す (旧 Task10 の構成を短縮)
 o = cell(4,1);
 o{1} = DebugScript.helper.scenario("ev1", net, "TimeSpan", 0,        "OffsetState", "delta", "OffsetUnit", "B001SG1", "OffsetValue", pi/36);
-o{2} = DebugScript.helper.scenario("ev2", net, "TimeSpan", [1,1.5],  "InputUnit", "B002SG1", "InputName", ["Pmech";"Vfield"], "InputValue", {0.05; @(t) 0.01*t});
+o{2} = DebugScript.helper.scenario("ev2", net, "TimeSpan", [1,1.5],  "InputUnit", "B002SG1", "InputName", ["Pmech";"Vfield"], "InputValue", [0, 0.05, 0; 0.5, 0.05, 0.005]);
 o{3} = DebugScript.helper.scenario("ev4", net, "TimeSpan", [2,2.02], "FaultBus", "B008");
 o{4} = DebugScript.helper.scenario("ev5", net, "TimeSpan", [3,3.5],  "TripUnit", "B003LPQ2");
 sol = net.simulate([0,5], o{:});
@@ -694,10 +694,10 @@ assert(abs(ddelta(2) - 2*pi*60*1e-3*0.01) < 0.1 * 2*pi*60*1e-3*0.01)
 
 
 %% Event input names are checked
-% 存在しない InputUnit / InputName、引数の数が違う関数ハンドルは計算前にエラー
+% 存在しない InputUnit / InputName、時刻が 0 から始まらない時系列は計算前にエラー
 expect_error(@() DebugScript.helper.scenario("in", net, "TimeSpan", [1,2], "InputUnit", "B002LPQ2", "InputName", ["P";"Q"], "InputValue", 0.1), "GUILDA:Scenario:UnknownInputName")
 expect_error(@() DebugScript.helper.scenario("in", net, "TimeSpan", [1,2], "InputUnit", "NoSuchUnit", "InputName", "Pload", "InputValue", 0.1), "GUILDA:Scenario:UnknownInputUnit")
-expect_error(@() DebugScript.helper.scenario("in", net, "TimeSpan", [1,2], "InputUnit", "B002LPQ2", "InputName", "Pload", "InputValue", @(t,x) 0.1), "GUILDA:Scenario:InvalidNargin")
+expect_error(@() DebugScript.helper.scenario("in", net, "TimeSpan", [1,2], "InputUnit", "B002LPQ2", "InputName", "Pload", "InputValue", [1, 0; 2, 0.1]), "GUILDA:Scenario:InvalidInputSeries")
 
 
 %% Phase that starts at rest in a large network
@@ -718,9 +718,9 @@ assert(flag == 1, output.message)
 
 
 %% Solver stop reports the phase and the solver message
-% 入力が t = 2.5 (イベント開始から 1.5 s) で発散するとソルバーが止まる (flag = -1)。
+% 入力が t = 1 から 1 s で 1e3 まで増えるとソルバーが止まる (flag = -1)。
 % output.message は止まった区間・時刻とソルバーの警告文を示す
-ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", @(t) 1/(1.5-t));
+ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", [0, 0; 1, 1e3]);
 lastwarn("");
 [~, flag, output] = net.solver_ODE.solve(net, [0,4], {ev}, net.solver_ODE.get_options({}));   % net.simulate の警告で lastwarn が変わらない
 s_warn = lastwarn();
@@ -728,17 +728,6 @@ assert(flag == -1)
 assert(output.tEnd > 1 && output.tEnd < 2.5)
 assert(contains(output.message, "phase 2") && contains(output.message, "t = [1, 3]"), output.message)
 assert(strlength(s_warn) > 0 && contains(output.message, s_warn), output.message)
-
-% 計算中のエラーは区間を示す GUILDA のエラーになり、元のエラーは cause に残る
-ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", @(t) boom(t));
-try
-    net.simulate([0,4], ev);
-    error("DebugScript:noError", "エラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:PhaseFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
-    assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 3]") && contains(ME.message, "boom"), ME.message)
-    assert(DebugScript.helper.msg_id(ME.cause{1}) == "DebugScript:boom")
-end
 
 
 %% Differential states are continuous at the phase boundaries
@@ -794,13 +783,6 @@ assert(flag == 1)
 
 
 % ---- local functions ----
-function u = boom(t)
-    if t > 0.5
-        error("DebugScript:boom", "boom at t = %g", t)
-    end
-    u = 0;
-end
-
 function [d_x, d_v] = boundary_jumps(net, sol)
 % 区間の各境界 (時刻が 2 回現れる行) での、微分状態と母線電圧の最大の変化
 % 解列中の機器 (NaN) の状態は除く。微分状態は機器・制御器の質量行列の非零の列

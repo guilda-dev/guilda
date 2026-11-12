@@ -88,9 +88,8 @@ function tab = test_levels()
     % ---- F31_scenario ----------------------------------------------------------------------------
     "test_F31_scenario/AFaultThenAPermanentOpeningEqualsTwoOld_styleEvents", "large"
     "test_F31_scenario/StoredTimeAndOptions_TheCallWins", "medium"
-    "test_F31_scenario/Ownership_Add_Remove_Move_Copy", "medium"
+    "test_F31_scenario/ChildrenOfTheNetwork_Create_Rename_Copy_Remove", "medium"
     "test_F31_scenario/UnknownTagsAtAddAndAtRunTime", "medium"
-    "test_F31_scenario/CSVRoundTripWithSeveralScenariosInOneFile", "medium"
     % ---- F38_result_judge --------------------------------------------------------------------------
     "test_F38_result_judge/DefaultJudge_StableAndOut_of_stepOnIEEE9bus", "large"
     "test_F38_result_judge/IncompleteVerdictAndAJudgeFunctionOfTheUser", "medium"
@@ -275,7 +274,7 @@ function tab = test_levels()
     "test_I53_scalar_timespan/OffsetAndAnEventWithoutEffectKeepASingleTime", "medium"
     % ---- I54_simulate_time -----------------------------------------------------------------------
     "test_I54_simulate_time/AScenarioAsTheFirstArgumentRunsWithoutTime", "medium"
-    "test_I54_simulate_time/EmptyTimeTakesTheTimeSpanOfTheEvents", "medium"
+    "test_I54_simulate_time/EmptyTimeTakesTheTimeOfTheScenario", "medium"
     % ---- I55_time_limit --------------------------------------------------------------------------
     "test_I55_time_limit/PartialResultWarnsWithAnyNumberOfOutputs", "medium"
     "test_I55_time_limit/PhasesThatEachFitInTheLimitStopWhenTheirSumDoesNot", "medium"

@@ -6,7 +6,8 @@ function h = gui(obj, h_container)
 % runs from the root to this model, and the cards show its children by kind; a click on
 % either shows that model in the same container. The Docs button opens the reference page
 % of the class. The parameter tables are editable; the abstract classes provide the other
-% tables (gui_content), so a model class needs no GUI code. See DrawerModelGUI.
+% tables (gui_content), so a model class needs no GUI code. A Scenario has no parameter
+% tab, only its pages (Disturbances, Settings). See DrawerModelGUI.
 %
 % <@Examples>
 % ```matlab
@@ -23,8 +24,9 @@ function h = gui(obj, h_container)
     arguments (Output)
         h DrawerModelGUI  % The GUI.
     end
-    % Made here so that DrawerModelGUI, an outside class, can read the protected members
-    % (parent, children, gui_content) of every model it shows.
+    % Made here, in the base class of every layer, so that DrawerModelGUI, an outside class,
+    % can read the protected members (parent, children, gui_content) of every layer it shows,
+    % including a Scenario (a LayerPackage that is not a PowerSystemModel).
     f_model = @(o) struct("parent", {o.parent}, "children", {o.children}, "pages", {o.gui_content()});
     h = DrawerModelGUI(obj, h_container, f_model);
 end

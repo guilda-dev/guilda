@@ -12,4 +12,5 @@ function d = get_record(tab, k)
     d.InputUnit   = tab.InputUnit(k);
     d.InputName   = tab.InputName{k};
     d.InputValue  = tab.InputValue{k};
+    d.InputMethod = tab.InputMethod(k);
 end

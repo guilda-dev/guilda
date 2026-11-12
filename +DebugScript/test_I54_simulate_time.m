@@ -41,10 +41,10 @@ end
 
 
 %% A scenario as the first argument runs without time
-% net.simulate(sc) は sc.Time、それがなければ外乱の時間区間を使う
+% net.simulate(sc) は sc.Time (既定 [0, 10]) を使う。外乱の時間区間は時間を変えない
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 [sol, flag] = net.simulate(ev);
-assert(flag == 1 && sol.odeResults.t(end) >= 1.05)
+assert(flag == 1 && sol.odeResults.t(1) == 0 && sol.odeResults.t(end) == 10)
 ev.Time = [0,2];
 [sol, flag] = net.simulate(ev);
 assert(flag == 1 && sol.odeResults.t(end) == 2)
@@ -82,13 +82,14 @@ assert(flag == 1 && sol.odeResults.t(end) == 1)
 assert(flag == 1 && sol.odeResults.t(end) == 1)
 
 
-%% Empty time takes the time span of the events
+%% Empty time takes the Time of the scenario
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev.Time = [0,2];
 [sol, flag] = net.simulate([], ev);
-assert(flag == 1 && sol.odeResults.t(end) >= 1.05)
+assert(flag == 1 && sol.odeResults.t(end) == 2)
+% シナリオも時間もなければシナリオの既定の [0, 10]
+[sol, flag] = net.simulate();
+assert(flag == 1 && sol.odeResults.t(end) == 10)
 
-[~, flag] = net.simulate();
-assert(flag == 1)
-
-[~, flag] = net.simulate([]);
-assert(flag == 1)
+[sol, flag] = net.simulate([]);
+assert(flag == 1 && sol.odeResults.t(end) == 10)

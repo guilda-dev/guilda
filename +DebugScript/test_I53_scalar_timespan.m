@@ -27,7 +27,7 @@ end
 % 長さのない地絡は、他の外乱があってもなくても追加の時点でエラー
 ev_other = DebugScript.helper.scenario("other", net, "TimeSpan", [1.5,2], c_trip{:});
 assert(event_error(@() DebugScript.helper.scenario("fault", net, "TimeSpan", 1, c_fault{:})) == "GUILDA:Scenario:ZeroLengthTimeSpan")
-sc = Scenario("both");
+sc = net.add_scenario("both");
 sc.add_trip("B003LPQ2", [1.5,2]);
 assert(event_error(@() sc.add_disturbance("fault", "TimeSpan", 1, c_fault{:})) == "GUILDA:Scenario:ZeroLengthTimeSpan")
 assert(height(sc.tab_disturbance) == 1)
@@ -39,8 +39,8 @@ assert(flag == 1)
 expect_zero_length(net, "1", "TimeSpan", 1, c_os{:}, c_fault{:});
 
 
-%% A scenario without network checks the duration when the disturbance is added
-sc = Scenario("loose");
+%% A scenario checks the duration when the disturbance is added
+sc = net.add_scenario("loose");
 assert(event_error(@() sc.add_disturbance("ev", "TimeSpan", 1, c_fault{:})) == "GUILDA:Scenario:ZeroLengthTimeSpan")
 assert(event_error(@() sc.add_fault("B008", [1,1])) == "GUILDA:Scenario:ZeroLengthTimeSpan")
 assert(height(sc.tab_disturbance) == 0)

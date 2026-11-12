@@ -1,6 +1,6 @@
 % F29 ブランチの開放 (Scenario の OpenBranch)
 %
-%   sc = Scenario("open");  sc.add_open_branch("EL003", [t1,t2]);  net.add_scenario(sc);
+%   sc = net.add_scenario("open");  sc.add_open_branch("EL003", [t1,t2]);
 %   (テストでは DebugScript.helper.scenario("open", net, "TimeSpan", [t1,t2], "OpenBranch", "EL003"))
 %
 % OpenBranch のブランチは t1 から t2 まで網の Y から除かれ、t2 で再投入される。

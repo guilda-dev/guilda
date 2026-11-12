@@ -8,8 +8,8 @@ function sct_page = gui_content(obj)
 % - `content`: the table.
 %
 % The pages are defined in the abstract classes PowerNetwork, Bus, Branch, Component,
-% LocalController and GlobalController (Summary, Equilibrium); a model class needs no
-% override. An override puts its own pages first, followed by those of its superclass;
+% LocalController and GlobalController (Summary, Equilibrium) and in Scenario
+% (Disturbances, Settings); a model class needs no override. An override puts its own pages first, followed by those of its superclass;
 % declare it in the classdef as `methods(Access=protected) sct_page = gui_content(obj) end`.
 % The meaning of the parameters and the model is in the class reference, opened by the
 % Docs button of the GUI.

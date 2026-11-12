@@ -43,15 +43,14 @@ DebugScript.helper.quiet(@() net.initialize);
 c_before = snapshot(net);
 ev_fault = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.4,5], "FaultBus", "B008");
 ev_trip  = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.4,5], "TripUnit", ["B003SG1";agc.s_tag]);
-ev_error = DebugScript.helper.scenario("input", net, "TimeSpan", [0.4,5], "InputUnit", "B002SG1", "InputName", "Pmech", ...
-                       "InputValue", @bad_input);
-s_id = "";
-try
-    DebugScript.helper.quiet(@() net.simulate([0,2], ev_fault, ev_trip, ev_error));
-catch me
-    s_id = DebugScript.helper.msg_id(me);
-end
-assert(s_id == "GUILDA:SolverODE:PhaseFailed", "入力関数のエラーで止まる: " + s_id)
+% 入力は関数を持たない (時系列のデータ) ので、外乱の区間の初期化を解けない巨大な入力で止める
+ev_error = DebugScript.helper.scenario("input", net, "TimeSpan", [0.4,5], "InputUnit", "B005LPQ1", "InputName", "Pload", ...
+                       "InputValue", 1e6);
+w = warning("off", "GUILDA:PowerNetwork:SimulationIncomplete");
+c_w = onCleanup(@() warning(w));
+[~, flag, output] = DebugScript.helper.quiet(@() net.simulate([0,2], ev_fault, ev_trip, ev_error));
+clear c_w
+assert(flag == -1 && output.tEnd == 0.4 && isfield(output, "exception"), "外乱の区間で止まる: flag " + flag)
 assert_untouched(net, c_before)
 
 
@@ -73,13 +72,6 @@ for mc = [?Component, ?LocalController, ?GlobalController, ?Bus]
     assert(~any(ismember(sv_work, sv_prop)), mc.Name + ": " + join(intersect(sv_work, sv_prop), ", "))
 end
 
-
-function v = bad_input(t)
-    if t > 0.01
-        error("DebugScript:I61", "入力関数のエラー");
-    end
-    v = 0;
-end
 
 function c = snapshot(net)
 % すべての母線・機器・ローカル制御器・グローバル制御器のプロパティの値

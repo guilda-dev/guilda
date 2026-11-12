@@ -12,4 +12,5 @@ function d = blank_record(tag, time)
     d.InputUnit   = "";
     d.InputName   = strings(0,1);
     d.InputValue  = zeros(0,1);
+    d.InputMethod = "";
 end

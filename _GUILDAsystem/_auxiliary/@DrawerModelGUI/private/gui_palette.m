@@ -25,6 +25,7 @@ function sct_color = gui_palette()
         "Component",        hex2rgb("#F1F5D2"), ...  % Lime.
         "LocalController",  hex2rgb("#FBEADB"), ...  % Warm.
         "GlobalController", hex2rgb("#ECE6F5"), ...  % Purple.
+        "Scenario",         hex2rgb("#E0F2EE"), ...  % Teal.
         "Other",            hex2rgb("#ECEFF3"));     % Gray.
 end
 

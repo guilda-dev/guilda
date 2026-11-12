@@ -1,8 +1,8 @@
 <!--This is an XML file containing error messages related to the class 'Scenario'.-->
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
-        <entry key="InvalidInputType">Disturbance "{0}" of scenario "{1}": an InputValue is of class {2}. Give numbers or function handles f(t).</entry>
-        <entry key="InvalidNargin">Disturbance "{0}" of scenario "{1}": the number of input arguments of an InputValue function is invalid. Specify a function of one argument, the time t since the disturbance start, e.g. @(t) 0.1*t.</entry>
+        <entry key="InvalidInputSeries">Disturbance "{0}" of scenario "{1}": the InputValue time series is invalid: {2}. Give [t, v_1, ..., v_n] with one column per input name (t in seconds from t_start: finite, strictly increasing, starting at 0) or a table with the variables Time and the input names.</entry>
+        <entry key="MethodWithoutSeries">Disturbance "{0}" of scenario "{1}": InputMethod "{2}" is given for a constant InputValue. The method interpolates a time series [t, v]; leave it out for a constant.</entry>
         <entry key="UnknownInputUnit">Disturbance "{0}" of scenario "{1}": InputUnit "{2}" is not a component of network "{3}". Specify the tag of a component connected to a bus (see string(net.a_Bus) and the component tags).</entry>
         <entry key="UnknownInputName">Disturbance "{0}" of scenario "{1}": InputName {2} is not an input of "{3}". Available inputs: {4}.</entry>
         <entry key="UnknownFaultBus">Disturbance "{0}" of scenario "{1}": FaultBus {2} is not a bus of network "{3}". Specify bus tags (see string(net.a_Bus)).</entry>
@@ -14,13 +14,12 @@
         <entry key="ZeroLengthTimeSpan">Disturbance "{0}" of scenario "{1}": TimeSpan {2} has no duration, but a fault, trip, branch opening or input needs one. Specify [t_start, t_end] with t_start earlier than t_end, e.g. [1, 1.05]. Only an offset can use a single time.</entry>
         <entry key="ValueCountMismatch">Disturbance "{0}" of scenario "{1}": {2} has {3} element(s) for {4} element(s) of {5}. Give at least one name, and one value per name or a single value for all names.</entry>
         <entry key="OutsideTimeSpan">Disturbance "{0}" of scenario "{1}" (TimeSpan {2}) lies entirely outside the simulation time {3} and has no effect. Change TimeSpan or the simulation time.</entry>
-        <entry key="OtherNetwork">Scenario "{0}" does not belong to network "{1}" (it belongs to {2}). Add it with net.add_scenario(sc), or add a copy with net.add_scenario(sc.copy()).</entry>
+        <entry key="OtherNetwork">Scenario "{0}" does not belong to network "{1}" (it belongs to {2}). Add a copy with net.add_scenario(tag, From=sc).</entry>
         <entry key="DuplicateTag">Scenario "{1}" already has a disturbance with the tag "{0}". Give each disturbance its own tag.</entry>
         <entry key="DuplicateRunTag">Several disturbances of this run have the tag "{0}" (scenarios {1}). The tags name the columns of output.phases: give the disturbances of scenarios simulated together different tags.</entry>
         <entry key="ReservedTag">The disturbance tag "{0}" of scenario "{1}" is reserved for the phase table. Use another tag; t1, t2, Properties, Row, Variables, an empty tag, and NoAction followed by digits are not available.</entry>
         <entry key="ScenarioArray">Give scenarios as separate arguments, e.g. net.simulate(time, sc1, sc2), not as an array.</entry>
         <entry key="UnknownOption">Scenario "{0}": {1} is not an option of net.simulate. Options: {2}.</entry>
-        <entry key="InvalidTime">The Time of a scenario must be [] or [t0, tend] with finite values and t0 &lt; tend: {0}.</entry>
         <entry key="DisturbanceNotFound">Scenario "{1}" has no disturbance with the tag {0}.</entry>
         <entry key="CsvNotFound">The scenario file "{0}" does not exist.</entry>
         <entry key="CsvMissingColumn">The scenario file "{0}" has no column Scenario. The columns are Scenario, Description, ScenarioTimeStart, ScenarioTimeEnd, Tag, TimeStart, TimeEnd, FaultBus, TripUnit, OpenBranch, OffsetUnit, OffsetState, OffsetValue, InputUnit, InputName, InputValue.</entry>

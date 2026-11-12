@@ -25,16 +25,17 @@ h.render(net.a_Branch{1});
 assert(isequal(tab_titles(h), ["Parameter","Equilibrium"]))
 
 
-%% PowerNetwork: Summary counts the buses, branches, components and global controllers
+%% PowerNetwork: Summary counts the buses, branches, components, global controllers and scenarios
 h = net.gui(fig);
 tab = page_table(h, "Summary");
-assert(isequal(tab.Item, ["Bus";"Branch";"Component";"GlobalController"]))
+assert(isequal(tab.Item, ["Bus";"Branch";"Component";"GlobalController";"Scenario"]))
 n_comp = sum(cellfun(@(b) numel(b.a_Component), net.a_Bus));
-assert(isequal(tab.Number, [9; numel(net.a_Branch); n_comp; 0]) && n_comp > 0)
+assert(isequal(tab.Number, [9; numel(net.a_Branch); n_comp; 0; 0]) && n_comp > 0)
 net.add_global_controller("agc-PI", {"B001SG1","B002SG1"});
+net.add_scenario("case1");
 h.render();
 tab = page_table(h, "Summary");
-assert(tab.Number(4) == 1)
+assert(tab.Number(4) == 1 && tab.Number(5) == 1)
 
 
 %% PowerNetwork: Equilibrium has one row per bus, before and after initialize
@@ -56,7 +57,7 @@ assert(~isequal(page_table(h, "Equilibrium").V, cv_old))
 %% PowerNetwork: a network without buses has empty pages
 net0 = DebugScript.helper.quiet(@() PowerNetwork("Empty"));
 h = net0.gui(fig);
-assert(isequal(page_table(h, "Summary").Number, [0;0;0;0]))
+assert(isequal(page_table(h, "Summary").Number, [0;0;0;0;0]))
 assert(height(page_table(h, "Equilibrium")) == 0)
 
 
