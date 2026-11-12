@@ -2,7 +2,7 @@
   "optim": {
     "Name": "Optimization Toolbox",
     "License": "Optimization_Toolbox",
-    "Warning": "Not installed. The power flow with Solver=\"fsolve\" and the OPF (optimize_powerflow, initialize(Method=\"OPF\")) are unavailable."
+    "Warning": "Not installed. The power flow with Solver=\"fsolve\" and the OPF (calculate_optimal_powerflow, initialize(Method=\"OPF\")) are unavailable."
   },
   "control": {
     "Name": "Control System Toolbox",

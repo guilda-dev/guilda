@@ -35,7 +35,7 @@ the end as open questions.
   - 理由: OPF を使う解析はほかにない。動特性（`f_dx` など）は `simulate` と `get_sys`
     が再利用するため、キャッシュしたハンドルをクラスに保持するのとは事情が異なる。
   - 型による分岐は負荷（`component.load.abstract`）の固定だけ。
-- ユーザー定義の項: `net.optimize_powerflow` / `net.build_opf_problem` の
+- ユーザー定義の項: `net.calculate_optimal_powerflow` / `net.build_opf_problem` の
   Name-Value オプション（ネットワーク全体に適用。PyPSA の `extra_functionality`、
   PowerModels の build-then-modify に相当）。`net.solver_OPF` に既定値として保存可能。
   - `Cost = @(v, p) <スカラーの式>`: 目的関数 `GenCost` に加算。
@@ -60,7 +60,7 @@ the end as open questions.
   - 未決: シミュレーションと連続潮流計算での使い方（制約違反の検出・警告・停止、
     リミッターとして動特性に入れるか、連続潮流計算の終了条件にするか）。
 - 変更した問題の求解: `[prob, x0] = net.build_opf_problem(...)` の `prob` を変更し、
-  `net.optimize_powerflow(Problem=prob, InitialPoint=x0)` で求解（呼び出しのみの
+  `net.calculate_optimal_powerflow(Problem=prob, InitialPoint=x0)` で求解（呼び出しのみの
   オプション、保存しない）。結果の表は通常どおり。
 - OPF の設定（`net.solver_OPF`、operation / OPF の編集）は平衡点を古くしない。
 - 負荷の既定のコストは 0。価格応答する負荷は P の上下限と `Cost` を明示。

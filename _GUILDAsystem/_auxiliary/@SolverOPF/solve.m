@@ -4,10 +4,10 @@ function [result,flag,output] = solve(obj, net, sct_options, sct_input)
 % Builds the optimal power flow problem of net with build_problem for the effective
 % settings sct_options, solves it and returns the solution as a ResultOPF. The solver is
 % only read, except that it keeps the bus voltages of a solved "AC OPF" for the next warm
-% start and the built problem for the next run (see SolverOPF). Called by net.optimize_powerflow; calling it
+% start and the built problem for the next run (see SolverOPF). Called by net.calculate_optimal_powerflow; calling it
 % directly is for advanced use. Without Optimization Toolbox it stops with
 % GUILDA:require_toolbox:Unavailable before anything is built.
-% sct_input carries the call-only options Problem and InitialPoint of optimize_powerflow:
+% sct_input carries the call-only options Problem and InitialPoint of calculate_optimal_powerflow:
 % with Problem, that problem is solved as it is instead of a built one (Cost, Constraint,
 % DefaultCost and ReferenceBus are not applied to it). It must have the variables of the
 % sct_options.Method problem of net (e.g. net.build_opf_problem, modified by the user). InitialPoint replaces the initial point; by default it is the x0 of

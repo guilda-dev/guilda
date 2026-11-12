@@ -159,7 +159,7 @@
 
   結果の `res.options` のフィールドも新しい名前です(`res.options.Tolerance`、`res.options.MaxIteration` など)。
 - **`SolverOptions` と `Point` は呼び出しだけ。** 時間応答シミュレーションの `SolverOptions`(`matlab.ode.Options`)は呼び出しかシナリオの `Options` でだけ与えます。与えなければ `ode` オブジェクトは `Solver` のオプションを使います。優先順位は `GUILDA.setting` < `sc.Options` < 呼び出しの Name-Value です。線形化の `Point` も呼び出しだけで(既定 `[]` = 平衡点)、保存しません。
-- **`Plot` オプションを `PlotFcn` に置き換えました。** `calculate_powerflow`、`optimize_powerflow`、`calculate_continuation_powerflow`、`simulate`、`linearize`、`get_sys` の `Plot`(解析後に `result.Plot()` を呼ぶ)は廃止し、渡すと `GUILDA:resolve_options:UnknownName` で止まります。解析後の図は `result.Plot()` で描いてください。`PlotFcn`(MATLAB の `optimoptions` / `odeset` と同じ名前)は解析中のライブ表示で、値は `"none"`、表示キーの string 配列、または関数ハンドルです。既定は各セクションのキー `PlotFcn`(select、選択肢は `"none"` と各解析のキー)です。
+- **`Plot` オプションを `PlotFcn` に置き換えました。** `calculate_powerflow`、`calculate_optimal_powerflow`、`calculate_continuation_powerflow`、`simulate`、`linearize`、`get_sys` の `Plot`(解析後に `result.Plot()` を呼ぶ)は廃止し、渡すと `GUILDA:resolve_options:UnknownName` で止まります。解析後の図は `result.Plot()` で描いてください。`PlotFcn`(MATLAB の `optimoptions` / `odeset` と同じ名前)は解析中のライブ表示で、値は `"none"`、表示キーの string 配列、または関数ハンドルです。既定は各セクションのキー `PlotFcn`(select、選択肢は `"none"` と各解析のキー)です。
   - 潮流計算 `"residual"`(方程式ごとの残差の棒グラフ。全 Solver)、OPF は fmincon のプロット関数(`"fval"` → `optimplotfval` など。linprog・quadprog では `GUILDA:SolverOPF:PlotFcnUnsupported`)、連続潮流計算 `"pvcurve"`(全母線の PV 曲線を伸ばす)。
   - 関数ハンドルは `stop = f(x, optimValues, state)`(optimoptions と同じ形。OPF は fmincon にそのまま渡す)。
   - 時間応答シミュレーションと線形化は `"none"` のみ(ほかの値は `GUILDA:check_plotfcn:InDevelopment`)。未知のキーは `GUILDA:check_plotfcn:UnknownKey`、別の型の値は `GUILDA:check_plotfcn:InvalidValue` で止まります(`tools.check_plotfcn`)。
@@ -524,7 +524,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   whose first bus has such a component is unchanged. Any other network gets
   another slack bus, so its results change; only the INFO message shows it. To
   keep the old choice, set `net.a_Bus{1}.l_isSlack = true`.
-  `net.optimize_powerflow` and `tools.network_to_mpc` use the same bus as their
+  `net.calculate_optimal_powerflow` and `tools.network_to_mpc` use the same bus as their
   reference when none is set, but do not set `l_isSlack`. They keep the first bus
   when no bus has a component. The angles of their results are then relative to
   the new reference bus. `tools.slack_bus_index(net)` returns this bus.
@@ -551,9 +551,11 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 
 | v3 | v4 |
 |----|----|
-| `[bus, cub, flag, output, lambda, prob] = net.optimize_powerflow("methods", "DC OPF")` | `[res, flag, output] = net.optimize_powerflow(Method="DC OPF")` |
+| `[bus, cub, flag, output, lambda, prob] = net.optimize_powerflow("methods", "DC OPF")` | `[res, flag, output] = net.calculate_optimal_powerflow(Method="DC OPF")` |
 | `bus`, `cub`, `lambda`, `prob` | `res.tab_bus`, `res.tab_cub`, `res.lambda`, `res.OPFprob` |
 | (cost computed by hand) | `res.r_cost`; branch flows `res.tab_branch` |
+
+- **Renamed:** `optimize_powerflow` is now `calculate_optimal_powerflow` (2026-11-12, no alias): the old name stops with the MATLAB error of an unknown method. `build_opf_problem` and the GUILDA.setting section `OptimalPowerFlow` keep their names.
 
 - Options: `Method` (`"ELD"` | `"DC OPF"` | `"AC OPF"`, default
   `"AC OPF"`), `Solver` (`"auto"` | `"linprog"` | `"quadprog"` |
@@ -579,7 +581,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   | `net.build_opf_problem("methods", m)` | `GUILDA:Deprecated:BuildOpfProblemMethods` |
 
 - `net.build_opf_problem` takes the same option name as
-  `optimize_powerflow`: `[prob, x0] = net.build_opf_problem(Method="DC OPF",
+  `calculate_optimal_powerflow`: `[prob, x0] = net.build_opf_problem(Method="DC OPF",
   validate=false)`.
 - Fixes (stage 1 and OPF step 1, see [status.md](status.md#opf)): ELD, DC
   and AC OPF run again; loads keep their power-flow P and Q (not
@@ -591,7 +593,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 - New `tools.network_to_mpc(net)` converts a network into a MATPOWER case.
 - **Customizing the problem (options).** `SolverOPF` builds the problem from
   `tab_parameter` of the buses, components and branches; user terms are
-  Name-Value options of `optimize_powerflow` and `build_opf_problem`
+  Name-Value options of `calculate_optimal_powerflow` and `build_opf_problem`
   (conditions kept between runs in `net.solver_OPF`), applied to the whole network:
   - `Cost=@(v, p) <scalar>` is added to the objective; `Constraint=@(v, p)
     struct(name, constraint, ...)` is added, each field becoming
@@ -604,7 +606,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
     `ReferenceBus="auto"|<tag>|"none"` picks the bus with a fixed angle.
   - A default limit of one object is removed by setting it to ±Inf in its
     `tab_parameter.operation` (branch limits: NaN also means none).
-  - `optimize_powerflow(Problem=prob, InitialPoint=x0)` solves a problem from
+  - `calculate_optimal_powerflow(Problem=prob, InitialPoint=x0)` solves a problem from
     `build_opf_problem` modified by the user.
   - Bad handles stop with `GUILDA:SolverOPF:InvalidCost`,
     `InvalidConstraint`, `InvalidConstraintField` or `DuplicateName`, or
@@ -967,7 +969,7 @@ Option names:
   `ListToolbox.txt` は廃止し、「Required Toolbox components ... missing」の文も出しません。
   キーは `tools.require_toolbox` の短縮名(`optim`/`control`/`symbolic`)で、
   `tools.require_toolbox` も Toolbox 名とライセンス名をこのファイルから読みます。
-- Optimization Toolbox: 潮流計算の `Solver="fsolve"` と OPF(`optimize_powerflow`、
+- Optimization Toolbox: 潮流計算の `Solver="fsolve"` と OPF(`calculate_optimal_powerflow`、
   `initialize(Method="OPF")`)。無いと `tools.require_toolbox` が
   `GUILDA:require_toolbox:Unavailable` で止めます。
 - Control System Toolbox: 線形化の `ss` 出力(`Format="ss"`)と LQR 制御器
@@ -1043,7 +1045,7 @@ there.
   `s_solver = "equilibrium"` and no branch flows) or a `ResultOPF`
   (`"OPF"`, which runs AC OPF).
 - Other Name-Value options go unchanged to `calculate_powerflow` or
-  `optimize_powerflow` (e.g. `net.initialize(Method="OPF",
+  `calculate_optimal_powerflow` (e.g. `net.initialize(Method="OPF",
   Solver="fmincon")`, `net.initialize(MaxIteration=50)`); unknown names stop
   with `GUILDA:resolve_options:UnknownName`. `"equilibrium"` takes no other
   option. `Solver` chooses the algorithm of that analysis (for the power flow,

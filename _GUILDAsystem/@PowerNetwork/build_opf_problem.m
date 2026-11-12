@@ -1,9 +1,9 @@
 function varargout = build_opf_problem(obj, varargin)
 % Build the optimization problem of the optimal power flow without solving it.
 %
-% Builds the problem that `net.optimize_powerflow` solves (SolverOPF.build_problem), so
+% Builds the problem that `net.calculate_optimal_powerflow` solves (SolverOPF.build_problem), so
 % that it can be inspected or modified before solving it with
-% net.optimize_powerflow(Problem=prob, InitialPoint=x0). The settings are the
+% net.calculate_optimal_powerflow(Problem=prob, InitialPoint=x0). The settings are the
 % OptimalPowerFlow section of GUILDA.setting and the conditions kept by net.solver_OPF;
 % Name-Value options override them for this call only.
 % With no output the problem is displayed.
@@ -29,10 +29,10 @@ function varargout = build_opf_problem(obj, varargin)
 % % Add a constraint and solve the modified problem
 % [prob, x0] = net.build_opf_problem(Method="DC OPF");
 % prob.Constraints.Cap = prob.Variables.B001SG1 <= 0.4;
-% res = net.optimize_powerflow(Method="DC OPF", Problem=prob, InitialPoint=x0);
+% res = net.calculate_optimal_powerflow(Method="DC OPF", Problem=prob, InitialPoint=x0);
 % ```
 %
-% See also PowerNetwork.optimize_powerflow, SolverOPF.build_problem
+% See also PowerNetwork.calculate_optimal_powerflow, SolverOPF.build_problem
 %
 % <@Group> OPF
     arguments (Input)

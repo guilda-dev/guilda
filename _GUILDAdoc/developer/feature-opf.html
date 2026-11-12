@@ -44,8 +44,8 @@
   <main>
     <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Optimal Power Flow Feature Design</span><span lang="ja">最適潮流計算機能の設計</span></h1>
-    <p class="page-lead" lang="en"><code>net.optimize_powerflow()</code> finds the operating point of least generation cost within the operating limits. <code>SolverOPF</code> reads the parameters of the buses, components, and branches and builds one <code>optimproblem</code>; the Optimization Toolbox solves it. Output: a <code>ResultOPF</code>; the network is unchanged.</p>
-    <p class="page-lead" lang="ja"><code>net.optimize_powerflow()</code> は、運用上の制約を守りながら発電コストが最小になる運転点を求めます。<code>SolverOPF</code> が母線、機器、ブランチのパラメータを読み取って 1 つの <code>optimproblem</code> を組み立て、Optimization Toolbox で解きます。結果は <code>ResultOPF</code> として返し、ネットワークには手を加えません。</p>
+    <p class="page-lead" lang="en"><code>net.calculate_optimal_powerflow()</code> finds the operating point of least generation cost within the operating limits. <code>SolverOPF</code> reads the parameters of the buses, components, and branches and builds one <code>optimproblem</code>; the Optimization Toolbox solves it. Output: a <code>ResultOPF</code>; the network is unchanged.</p>
+    <p class="page-lead" lang="ja"><code>net.calculate_optimal_powerflow()</code> は、運用上の制約を守りながら発電コストが最小になる運転点を求めます。<code>SolverOPF</code> が母線、機器、ブランチのパラメータを読み取って 1 つの <code>optimproblem</code> を組み立て、Optimization Toolbox で解きます。結果は <code>ResultOPF</code> として返し、ネットワークには手を加えません。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#purpose"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></a>
@@ -60,9 +60,9 @@
 
     <!-- ============================== PURPOSE ============================== -->
     <h2 id="purpose"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></h2>
-<pre><code>[result, flag, output] = net.optimize_powerflow(Name=Value, ...)
+<pre><code>[result, flag, output] = net.calculate_optimal_powerflow(Name=Value, ...)
 [prob, x0] = net.build_opf_problem(Name=Value, ..., validate=false)   % the problem only
-result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a modified problem</code></pre>
+result = net.calculate_optimal_powerflow(Problem=prob, InitialPoint=x0)       % solve a modified problem</code></pre>
     <ul lang="en">
       <li>Settings: the OptimalPowerFlow section of <code>GUILDA.setting</code>, read at each run from <code>GUILDA.config("OptimalPowerFlow")</code>: <code>@GUILDA/config/DefaultOptimalPowerFlow.json</code>, overridden by a file of the same name in <code>@GUILDA/user/</code>.</li>
       <li>Conditions <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code>: the public properties of <code>net.solver_OPF</code> (a <code>SolverOPF</code>), kept between runs.</li>
@@ -143,7 +143,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
     <h2 id="sequence"><span lang="en">Call sequence between classes</span><span lang="ja">クラス間の呼び出し順</span></h2>
     <figure class="dg-figure opf-seq">
       <svg class="dg-svg dg-sv" viewBox="0 0 900 676" role="img" aria-labelledby="opf-seq-title">
-        <title id="opf-seq-title">Sequence of net.optimize_powerflow: options, the problem build by SolverOPF with its private helpers build_bus, build_component, build_branch and apply, the solve call of the Optimization Toolbox, and the ResultOPF</title>
+        <title id="opf-seq-title">Sequence of net.calculate_optimal_powerflow: options, the problem build by SolverOPF with its private helpers build_bus, build_component, build_branch and apply, the solve call of the Optimization Toolbox, and the ResultOPF</title>
         <defs>
           <marker id="opf-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
           <marker id="opf-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head is-muted" d="M0 0L10 5L0 10z"/></marker>
@@ -171,7 +171,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         <text class="dg-mono opf-box" x="850" y="37" text-anchor="middle">ResultOPF</text>
 
         <path class="dg-sv-line" d="M50 90H146" marker-end="url(#opf-ah)"/>
-        <text x="54" y="84"><tspan class="opf-num">01</tspan> <tspan class="dg-mono">optimize_powerflow</tspan></text>
+        <text x="54" y="84"><tspan class="opf-num">01</tspan> <tspan class="dg-mono">calculate_optimal_powerflow</tspan></text>
         <path class="dg-sv-line" d="M150 124H246" marker-end="url(#opf-ah)"/>
         <text x="156" y="118"><tspan class="opf-num">02</tspan> <tspan class="dg-mono">get_options</tspan></text>
         <path class="dg-sv-line" d="M150 158H246" marker-end="url(#opf-ah)"/>
@@ -215,7 +215,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
     <p lang="ja">非公開の補助関数は、<code>_GUILDAsystem/_auxiliary/@SolverOPF/private/</code> にある <code>build_bus</code>、<code>build_component</code>、<code>build_branch</code>、<code>apply</code>、<code>variables</code>、<code>param</code> です。それ以外は、呼び出し元のメソッドのファイル（<code>@SolverOPF/solve.m</code>、<code>@SolverOPF/build_problem.m</code> など）にあるローカル関数です。Bus、Component、Branch はパラメータを持つだけで、OPF 用のメソッドはありません。</p>
     <ol class="fs-steps">
       <li class="fs-step" id="OPF-01">
-        <p class="fs-head"><b class="fs-id">OPF-01</b> <span class="fs-call">user → <code>PowerNetwork.optimize_powerflow</code></span><small><code>v3_opf_args</code>, <code>take_call_options</code></small></p>
+        <p class="fs-head"><b class="fs-id">OPF-01</b> <span class="fs-call">user → <code>PowerNetwork.calculate_optimal_powerflow</code></span><small><code>v3_opf_args</code>, <code>take_call_options</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Maps the deprecated option <code>methods</code> to <code>Method</code>; separates the call-only options <code>Export</code>, <code>Problem</code>, <code>InitialPoint</code>, <code>WarmStart</code> from the solver options; <code>WarmStart</code> is added to <code>sct_options</code> after OPF-02.</span><span lang="ja">非推奨のオプション <code>methods</code> を <code>Method</code> に読み替えます。呼び出しのときだけ使うオプション <code>Export</code>、<code>Problem</code>、<code>InitialPoint</code>、<code>WarmStart</code> は、ソルバーのオプションと分けておきます。<code>WarmStart</code> は OPF-02 の後で <code>sct_options</code> に加えます。</span></dd>
@@ -226,7 +226,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         </dl>
       </li>
       <li class="fs-step" id="OPF-02">
-        <p class="fs-head"><b class="fs-id">OPF-02</b> <span class="fs-call"><code>optimize_powerflow</code> → <code>SolverOPF.get_options</code></span><small>→ <code>tools.resolve_options</code>, <code>validate_options</code></small></p>
+        <p class="fs-head"><b class="fs-id">OPF-02</b> <span class="fs-call"><code>calculate_optimal_powerflow</code> → <code>SolverOPF.get_options</code></span><small>→ <code>tools.resolve_options</code>, <code>validate_options</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Maps the Name-Value names through <code>OptionMap</code>, checks the values (<code>PlotFcn</code>: <code>tools.check_plotfcn</code>), fills the rest from the OptimalPowerFlow section of <code>GUILDA.setting</code> and the conditions of the solver.</span><span lang="ja">Name-Value の名前を <code>OptionMap</code> で設定名に対応させ、値を検査します（<code>PlotFcn</code> は <code>tools.check_plotfcn</code> で検査）。指定のない設定は、<code>GUILDA.setting</code> の OptimalPowerFlow セクションとソルバーの条件から埋めます。</span></dd>
@@ -237,7 +237,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         </dl>
       </li>
       <li class="fs-step" id="OPF-03">
-        <p class="fs-head"><b class="fs-id">OPF-03</b> <span class="fs-call"><code>optimize_powerflow</code> → <code>SolverOPF.solve(net, sct_options, sct_input)</code></span></p>
+        <p class="fs-head"><b class="fs-id">OPF-03</b> <span class="fs-call"><code>calculate_optimal_powerflow</code> → <code>SolverOPF.solve(net, sct_options, sct_input)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Checks Optimization Toolbox (<code>tools.require_toolbox("optim", "OPF")</code>); starts the timer; runs OPF-04 to OPF-15.</span><span lang="ja">Optimization Toolbox があるかを確かめます（<code>tools.require_toolbox("optim", "OPF")</code>）。続いてタイマーを動かし、OPF-04〜OPF-15 を実行します。</span></dd>
@@ -442,7 +442,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         </dl>
       </li>
       <li class="fs-step" id="OPF-16">
-        <p class="fs-head"><b class="fs-id">OPF-16</b> <span class="fs-call"><code>optimize_powerflow</code> → user</span><small><code>result.export</code>, <code>legacy_output</code></small></p>
+        <p class="fs-head"><b class="fs-id">OPF-16</b> <span class="fs-call"><code>calculate_optimal_powerflow</code> → user</span><small><code>result.export</code>, <code>legacy_output</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">

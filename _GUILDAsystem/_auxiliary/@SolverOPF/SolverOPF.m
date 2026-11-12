@@ -1,5 +1,5 @@
 classdef SolverOPF < auxiliary
-% Solver of the optimal power flow (net.optimize_powerflow).
+% Solver of the optimal power flow (net.calculate_optimal_powerflow).
 %
 % net.solver_OPF holds one. The settings are the OptimalPowerFlow section of GUILDA.setting
 % (GUILDA.config("OptimalPowerFlow")); the solver keeps only the conditions of its network
@@ -33,7 +33,7 @@ classdef SolverOPF < auxiliary
 %   returns struct(name1, constraint1, ...), and field <name> becomes
 %   prob.Constraints.<name> and result.lambda.Constraints.<name>.
 % - The "AC OPF" starts from the bus voltages of the last solved "AC OPF" of the same
-%   network when the call option WarmStart of optimize_powerflow is true (kept until
+%   network when the call option WarmStart of calculate_optimal_powerflow is true (kept until
 %   buses or branches are added, removed or replaced; buses are matched by object), and
 %   from the flat start otherwise: angle 0 and magnitude 1, with the set V at PV and slack
 %   buses and the set angle at the slack bus. "DC OPF" starts from the angles of the same
@@ -50,12 +50,12 @@ classdef SolverOPF < auxiliary
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
-% result = net.optimize_powerflow(Method="DC OPF");            % this call only
-% result = net.optimize_powerflow(Method="ELD", Verbose=true);
+% result = net.calculate_optimal_powerflow(Method="DC OPF");            % this call only
+% result = net.calculate_optimal_powerflow(Method="ELD", Verbose=true);
 % net.solver_OPF.ReferenceBus = "none";           % condition of this network: no fixed angle
 % ```
 %
-% See also ResultOPF, PowerNetwork.optimize_powerflow, PowerNetwork.build_opf_problem
+% See also ResultOPF, PowerNetwork.calculate_optimal_powerflow, PowerNetwork.build_opf_problem
 
     properties(Access=public) % Conditions
         Cost {mustBeHandleOrEmpty(Cost)} = []                    % User cost @(v, p) added to the objective; [] for none (see the class help).
@@ -75,7 +75,7 @@ classdef SolverOPF < auxiliary
             "Constraint",   "Constraint", ...
             "DefaultCost",  "DefaultCost", ...
             "ReferenceBus", "ReferenceBus", ...
-            "PlotFcn",      "PlotFcn")                                                 % Name-Value options of net.optimize_powerflow (Method, Cost, Constraint, DefaultCost, ReferenceBus also of net.build_opf_problem) and the setting (GUILDA.setting key) or condition (property) each one sets (see the class help). <@Type> struct
+            "PlotFcn",      "PlotFcn")                                                 % Name-Value options of net.calculate_optimal_powerflow (Method, Cost, Constraint, DefaultCost, ReferenceBus also of net.build_opf_problem) and the setting (GUILDA.setting key) or condition (property) each one sets (see the class help). <@Type> struct
     end
 
     properties(Access=private) % Warm start

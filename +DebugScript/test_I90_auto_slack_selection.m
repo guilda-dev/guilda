@@ -121,7 +121,7 @@ mpc = tools.network_to_mpc(net);
 assert(find(mpc.bus(:,2) == 3) == 2)
 assert(isempty(slack_index(net)))
 for s_method = ["DC OPF", "AC OPF"]
-    res = net.optimize_powerflow(Method=s_method, Verbose=false);
+    res = net.calculate_optimal_powerflow(Method=s_method, Verbose=false);
     assert(res.l_success && abs(res.tab_bus.Varg(2)) < 1e-9 && abs(res.tab_bus.Varg(1)) > 1e-3)
     assert(isempty(slack_index(net)))
 end
@@ -138,7 +138,7 @@ evalc("net.a_Bus{3}.l_isSlack = true;");
 assert(tools.slack_bus_index(net) == 3)
 mpc = tools.network_to_mpc(net);
 assert(find(mpc.bus(:,2) == 3) == 3)
-res = net.optimize_powerflow(Method="DC OPF", Verbose=false);
+res = net.calculate_optimal_powerflow(Method="DC OPF", Verbose=false);
 assert(abs(res.tab_bus.Varg(3)) < 1e-9 && abs(res.tab_bus.Varg(1)) > 1e-3)
 
 
@@ -147,7 +147,7 @@ net = three_bus();
 assert(isempty(tools.slack_bus_index(net)))
 mpc = tools.network_to_mpc(net);
 assert(find(mpc.bus(:,2) == 3) == 1)
-res = net.optimize_powerflow(Method="DC OPF", Verbose=false);
+res = net.calculate_optimal_powerflow(Method="DC OPF", Verbose=false);
 assert(res.l_success && isempty(slack_index(net)))
 
 

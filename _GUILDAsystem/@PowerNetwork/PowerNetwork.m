@@ -32,7 +32,7 @@ classdef PowerNetwork < PowerSystemModel
 % components (generators, loads, ...) are added to the buses (`Bus.add_component`) and
 % local controllers to the components. The network runs the analyses:
 %
-% - power flow (`calculate_powerflow`) and optimal power flow (`optimize_powerflow`)
+% - power flow (`calculate_powerflow`) and optimal power flow (`calculate_optimal_powerflow`)
 % - continuation power flow (`calculate_continuation_powerflow`)
 % - equilibrium (`initialize`), time simulation (`simulate`) of the scenarios it holds
 %   (`add_scenario`, `remove_scenario`, `a_Scenario`)
@@ -64,7 +64,7 @@ classdef PowerNetwork < PowerSystemModel
 % and the components (`tab_parameter.powerflow`: P, Q). OPF limits and costs are in
 % `tab_parameter.operation` and `tab_parameter.OPF` of the buses, components and
 % branches; user-defined costs and constraints are the options Cost and Constraint of
-% `optimize_powerflow` (stored defaults in `solver_OPF`).
+% `calculate_optimal_powerflow` (stored defaults in `solver_OPF`).
 %
 % <@Examples>
 % ```matlab
@@ -102,7 +102,7 @@ classdef PowerNetwork < PowerSystemModel
     end
     properties(SetAccess=protected) % Solvers
         solver_PF SolverPF {mustBeScalarOrEmpty}    % Solver of calculate_powerflow (solves from the admittance matrix and the bus conditions the network assembles); keeps the warm start solution, no settings (GUILDA.setting). <@Type> SolverPF <@Stale> nothing
-        solver_OPF SolverOPF {mustBeScalarOrEmpty}  % Solver of optimize_powerflow (returns a ResultOPF); keeps the conditions Cost, Constraint, DefaultCost, ReferenceBus, the warm start and the problem cache; settings in GUILDA.setting. <@Type> SolverOPF <@Stale> nothing
+        solver_OPF SolverOPF {mustBeScalarOrEmpty}  % Solver of calculate_optimal_powerflow (returns a ResultOPF); keeps the conditions Cost, Constraint, DefaultCost, ReferenceBus, the warm start and the problem cache; settings in GUILDA.setting. <@Type> SolverOPF <@Stale> nothing
         solver_CPF SolverCPF {mustBeScalarOrEmpty}  % Solver of calculate_continuation_powerflow (returns a ResultCPF); keeps the condition LoadBus; settings in GUILDA.setting. <@Type> SolverCPF <@Stale> nothing
         solver_ODE SolverODE {mustBeScalarOrEmpty}  % Solver of simulate (returns a ResultODE); no settings (GUILDA.setting). <@Type> SolverODE <@Stale> nothing
         solver_LIN SolverLIN {mustBeScalarOrEmpty}  % Solver of linearize and get_sys (returns a ResultLIN); no settings (GUILDA.setting). <@Type> SolverLIN <@Stale> nothing
@@ -168,7 +168,7 @@ classdef PowerNetwork < PowerSystemModel
         reset_solver(obj);
 
         % OPF(optimal power-flow)
-        varargout = optimize_powerflow(obj, varargin)
+        varargout = calculate_optimal_powerflow(obj, varargin)
         varargout = build_opf_problem(obj, varargin)
 
         % PF(powerflow) calculations

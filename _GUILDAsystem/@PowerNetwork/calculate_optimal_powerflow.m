@@ -1,4 +1,4 @@
-function varargout = optimize_powerflow(obj, varargin)
+function varargout = calculate_optimal_powerflow(obj, varargin)
 % Calculate the optimal power flow of the network and return a ResultOPF.
 %
 % Calculates the optimal power flow of the network: the operating point that minimizes
@@ -47,19 +47,19 @@ function varargout = optimize_powerflow(obj, varargin)
 %
 % <@Examples>
 % ```matlab
-% [res, flag] = net.optimize_powerflow();            % AC OPF (GUILDA.setting)
+% [res, flag] = net.calculate_optimal_powerflow();            % AC OPF (GUILDA.setting)
 % res.tab_bus                                         % Varg, V, P, Q, Vphasor, Iphasor of each bus
 % res.r_cost                                          % optimal cost
-% res = net.optimize_powerflow(Method="ELD", Verbose=false);
+% res = net.calculate_optimal_powerflow(Method="ELD", Verbose=false);
 % res.Plot();
 % % Spinning reserve of two generators; its price is the dual of the named constraint
-% res = net.optimize_powerflow(Method="DC OPF", Constraint=@(v, p) struct("Reserve", ...
+% res = net.calculate_optimal_powerflow(Method="DC OPF", Constraint=@(v, p) struct("Reserve", ...
 %           (2 - v.Component.B001SG1.P) + (2 - v.Component.B002SG1.P) >= 0.5));
 % res.lambda.Constraints.Reserve
 % % Solve a modified problem
 % [prob, x0] = net.build_opf_problem(Method="DC OPF");
 % prob.Constraints.Cap = prob.Variables.B001SG1 <= 0.4;
-% res = net.optimize_powerflow(Method="DC OPF", Problem=prob, InitialPoint=x0);
+% res = net.calculate_optimal_powerflow(Method="DC OPF", Problem=prob, InitialPoint=x0);
 % ```
 %
 % See also ResultOPF, SolverOPF, PowerNetwork.build_opf_problem

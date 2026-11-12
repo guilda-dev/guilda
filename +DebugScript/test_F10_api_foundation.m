@@ -203,7 +203,7 @@ assert(isempty(sv_bad), "フック以外で Deprecated を使用: " + join(sv_ba
 sv_file = extractBefore(sv_hook, ":");
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "add_bus.m")) == 2, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "calculate_powerflow.m")) == 0, join(sv_hook, ", "))
-assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "optimize_powerflow.m")) == 2, join(sv_hook, ", "))
+assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "calculate_optimal_powerflow.m")) == 2, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "build_opf_problem.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "initialize.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverCPF", "SolverCPF.m")) == 1, join(sv_hook, ", "))

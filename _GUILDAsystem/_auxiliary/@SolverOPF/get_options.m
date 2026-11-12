@@ -26,7 +26,7 @@ function sct_options = get_options(obj, nv)
     for s_alg = ["LinprogAlgorithm","QuadprogAlgorithm","FminconAlgorithm"]
         sct_options.(s_alg) = string(sct_options.(s_alg));
     end
-    sct_options.PlotFcn = tools.check_plotfcn(sct_options.PlotFcn, "optimize_powerflow", plot_keys());
+    sct_options.PlotFcn = tools.check_plotfcn(sct_options.PlotFcn, "calculate_optimal_powerflow", plot_keys());
 end
 
 
@@ -37,7 +37,7 @@ function sct = default_options(obj)
     for s_name = string(fieldnames(sct_cfg)).'
         sct.(s_name) = sct_cfg.(s_name).Value;
     end
-    sct = rmfield(sct, intersect("WarmStart", fieldnames(sct)));   % a call option of optimize_powerflow
+    sct = rmfield(sct, intersect("WarmStart", fieldnames(sct)));   % a call option of calculate_optimal_powerflow
     for s_name = ["Cost","Constraint","DefaultCost","ReferenceBus"]
         sct.(s_name) = obj.(s_name);
     end

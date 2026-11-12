@@ -1,5 +1,5 @@
 classdef ResultOPF < ResultBase
-% Result of net.optimize_powerflow.
+% Result of net.calculate_optimal_powerflow.
 %
 % Holds the optimal bus values, the injection of every connection into its bus (components
 % and branch ends), the branch flows, the optimal cost, the Lagrange multipliers and the
@@ -12,11 +12,11 @@ classdef ResultOPF < ResultBase
 %
 % - `tab_bus`: row names = bus tags. "AC OPF": Varg [rad], V [pu], P, Q (injections into
 %   the network) [pu], Vphasor, Iphasor [pu]; "DC OPF": Varg, V, P; "ELD": P. The same
-%   table as the first output of optimize_powerflow in v3.
+%   table as the first output of calculate_optimal_powerflow in v3.
 % - `tab_cub`: rows are the components of each bus (row name "<component>"), then the
 %   branch ends at the bus ("<branch>_<bus>"). "AC OPF": Iphasor, P, Q [pu]; "DC OPF" and
 %   "ELD": P (NaN for branch ends in "ELD"). The same table as the second output of
-%   optimize_powerflow in v3.
+%   calculate_optimal_powerflow in v3.
 % - `tab_branch`: row names = branch tags. "from" is br.a_Bus{1}, "to" is br.a_Bus{2};
 %   values flow into the branch at each end, as in ResultPF.tab_branch. "AC OPF": Pfrom,
 %   Qfrom, Pto, Qto, Ifrom, Ito, Ploss, Qloss; "DC OPF" and "ELD": Pfrom, Pto, Ploss (NaN
@@ -28,12 +28,12 @@ classdef ResultOPF < ResultBase
 %   the same for reactive power. Branch limits are in
 %   lambda.Constraints.Imax_<branch>_<bus> and Smax_<branch>_<bus>; bound multipliers (e.g.
 %   the branch Pmax) are in lambda.Variables.<name>.Lower/Upper.
-% - `OPFprob` is the solved problem: built by SolverOPF.build_problem, or the Problem given to optimize_powerflow.
+% - `OPFprob` is the solved problem: built by SolverOPF.build_problem, or the Problem given to calculate_optimal_powerflow.
 %
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
-% [result, flag] = net.optimize_powerflow(Method="AC OPF");
+% [result, flag] = net.calculate_optimal_powerflow(Method="AC OPF");
 % result.r_cost            % optimal generation cost
 % result.tab_cub           % P, Q of each component and branch end
 % price = -result.lambda.Constraints.balancedP_B001;   % nodal price at bus B001

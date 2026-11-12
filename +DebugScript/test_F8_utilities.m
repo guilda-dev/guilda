@@ -438,7 +438,7 @@ r1  = DebugScript.helper.quiet(@() ref.calculate_powerflow());
 assert(flag > 0)
 assert(max(abs(r2.tab_bus.V - r1.tab_bus.V)) < 1e-8 && max(abs(r2.tab_bus.Varg - r1.tab_bus.Varg)) < 1e-8)
 % OPF は MATPOWER の case14 の最適値 (8081.53 $/hr)
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", Tolerance=1e-10));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", Tolerance=1e-10));
 assert(flag > 0 && abs(res.r_cost - 8081.53) < 0.01, sprintf("AC cost %.4f", res.r_cost))
 
 % 入力の形: 関数ハンドル・ケースファイル・オプション
@@ -550,7 +550,7 @@ end
 assert(flag > 0)
 V_ref = [1.06 1.045 1.01 1.0294893 1.0348827 1.07 1.0558758 1.09 1.0496724 1.045822 1.0542952 1.0546926 1.0494854 1.0315436]';
 assert(max(abs(res.tab_bus.V - V_ref)) < 1e-6)
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
 assert(abs(res.r_cost - 8079.9528) < 1e-2)
 DebugScript.helper.quiet(@() net.initialize);
 e = eig(net.get_sys("Method","Kron").A);
