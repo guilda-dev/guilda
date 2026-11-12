@@ -11,7 +11,7 @@ function [s_solver, c_nv] = optimoption(obj, prob, sct_options)
     arguments (Input)
         obj  %#ok<INUSA>
         prob                       % Problem built by build_opf_problem.
-        sct_options  (1,1) struct  % Effective settings (output of get_options).
+        sct_options  (1,1) struct  % Effective settings of the run (built by calculate_optimal_powerflow).
     end
     arguments (Output)
         s_solver                   % Solver that runs the problem (linprog, quadprog or fmincon).

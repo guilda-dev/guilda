@@ -15,7 +15,7 @@ function [result,flag,output] = solve(obj, net, sct_options, sct_input)
     arguments (Input)
         obj % Solver (net.solver_OPF).
         net % Network to optimize.
-        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+        sct_options (1,1) struct % Effective settings of the run (built by calculate_optimal_powerflow).
         sct_input (1,1) struct = struct() % Call-only options: Problem (optimproblem), InitialPoint (struct of initial values by variable name); either may be absent.
     end
     arguments (Output)

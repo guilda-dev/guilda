@@ -4,6 +4,7 @@
         <entry key="SetAbus">Use the method to add or remove Bus classes from a_Bus.&#xA;&#xA; &lt; When adding a Bus class &gt;&#xA;  &gt;&gt; obj.add_bus(BUS_INSTANCE)&#xA; &lt; When removing a Bus class &gt;&#xA;  &gt;&gt;  obj.aremove_bus('BUS_TAG')</entry> 
         <entry key="SetAbranch">Use the method to add or remove Branch classes from a_Bus.&#xA;&#xA; &lt; When adding a Branch class &gt;&#xA;  &gt;&gt; obj.add_bus(BRANCH_INSTANCE,['BUSi_TAG','BUSj_TAG'])&#xA; &lt; When removing a Bus class &gt;&#xA;  &gt;&gt; obj.aremove_bus('BRANCH_TAG')</entry> 
         <entry key="SetGcon">Use the method to add or remove Global Controller classes from a_Bus.&#xA;&#xA; &lt; When adding a Global Controller class &gt;&#xA;  &gt;&gt; obj.add_bus(GlobalCon_INSTANCE,[ComponentTag])&#xA; &lt; When removing a Global Controller class &gt;&#xA;  &gt;&gt; obj.aremove_bus(GlobalCon_TAG)</entry> 
+        <entry key="InvalidOpfHandle">Cost and Constraint of the optimal power flow must be function handles @(v, p) ... (or [] for none).</entry>
         <entry key="NoBus">''{0}'' has no buses, so the power flow has no slack bus.&#xA;Add buses with net.add_bus() and components with bus.add_component(...).</entry>
         <entry key="NoSlackCandidate">No bus of ''{0}'' has a component, so the power flow cannot select a slack bus.&#xA;Add a generator to a bus with bus.add_component(...). A bus with a component that has Q = NaN is selected first.</entry>
         <entry key="BusNotFound">No bus with the tag ''{0}'' was found in ''{1}''.</entry> 

@@ -23,7 +23,7 @@ function [prob, x0] = build_problem(obj, net, sct_options)
 %
 % <@Examples>
 % ```matlab
-% sct = net.solver_OPF.get_options({"Method", "DC OPF"});
+% sct = struct("Method","DC OPF", "Cost",[], "Constraint",[], "DefaultCost",true, "ReferenceBus","auto");
 % [prob, x0] = net.solver_OPF.build_problem(net, sct);
 % ```
 %
@@ -31,7 +31,7 @@ function [prob, x0] = build_problem(obj, net, sct_options)
     arguments (Input)
         obj                                          % Solver (net.solver_OPF).
         net                                          % Network whose problem is built; only read.
-        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options): Method, Cost, Constraint, DefaultCost, ReferenceBus; WarmStart (default false).
+        sct_options (1,1) struct % Effective settings: Method, Cost, Constraint, DefaultCost, ReferenceBus; WarmStart (absent: false).
     end
     arguments (Output)
         prob % optimproblem; its Description shows the OPF settings of the network.

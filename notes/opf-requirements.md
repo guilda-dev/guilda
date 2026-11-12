@@ -37,7 +37,10 @@ the end as open questions.
   - 型による分岐は負荷（`component.load.abstract`）の固定だけ。
 - ユーザー定義の項: `net.calculate_optimal_powerflow` / `net.build_opf_problem` の
   Name-Value オプション（ネットワーク全体に適用。PyPSA の `extra_functionality`、
-  PowerModels の build-then-modify に相当）。`net.solver_OPF` に既定値として保存可能。
+  PowerModels の build-then-modify に相当）。呼び出しだけのオプションで、保存しない
+  （2026-11-12。既定は `Cost=[]`、`Constraint=[]`、`DefaultCost=true`、`ReferenceBus="auto"`）。
+  オプションはすべて `arguments` ブロックで検証し、未知の名前・不正な値は MATLAB のエラー。
+  v3 の形式（6 出力、`"methods"`）と `Export` は廃止（結果は `res.export()` で書く）。
   - `Cost = @(v, p) <スカラーの式>`: 目的関数 `GenCost` に加算。
   - `Constraint = @(v, p) struct(<名前>, <制約>, ...)`: `prob.Constraints.<名前>` と
     して追加。名前が双対変数のラベル（`result.lambda.Constraints.<名前>`）。既存の名前は
@@ -62,7 +65,7 @@ the end as open questions.
 - 変更した問題の求解: `[prob, x0] = net.build_opf_problem(...)` の `prob` を変更し、
   `net.calculate_optimal_powerflow(Problem=prob, InitialPoint=x0)` で求解（呼び出しのみの
   オプション、保存しない）。結果の表は通常どおり。
-- OPF の設定（`net.solver_OPF`、operation / OPF の編集）は平衡点を古くしない。
+- OPF のオプションと operation / OPF の編集は平衡点を古くしない。
 - 負荷の既定のコストは 0。価格応答する負荷は P の上下限と `Cost` を明示。
 - DC OPF のブランチのサセプタンスは MATPOWER と同じ `1/(X·tap)`。
 

@@ -32,7 +32,7 @@ function [result, flag, output] = initialize(obj, varargin)
 % - `Method` — How the operating point is obtained when it is solved. Default:
 %   "powerflow".
 %   - "powerflow": net.calculate_powerflow (settings of GUILDA.setting).
-%   - "OPF": net.calculate_optimal_powerflow with Method="AC OPF" (OptimalPowerFlow section of GUILDA.setting and conditions of net.solver_OPF;
+%   - "OPF": net.calculate_optimal_powerflow with Method="AC OPF" (OptimalPowerFlow section of GUILDA.setting;
 %     the AC formulation gives a complete AC operating point).
 %   - "FixedInput": the equilibrium with the inputs of the components held
 %     (rv_Uequilibrium, edited with Component.set_input): the states, the bus voltages,
@@ -256,8 +256,10 @@ function [result, flag, output] = solve_opf(obj, c_nv)
         [result, flag, output] = obj.calculate_optimal_powerflow(c_nv{:}, "Method", "AC OPF");
     catch ME
         % building the OPF problem of a split network can stop with an internal error:
-        % those have an identifier, while error(msg(...)) of GUILDA has none
-        if ~isempty(ME.identifier) && ~startsWith(ME.identifier, "GUILDA:") && network_islands(obj) > 1
+        % those have an identifier, while error(msg(...)) of GUILDA has none; the errors of
+        % the arguments block (options) are passed on unchanged
+        if ~isempty(ME.identifier) && ~startsWith(ME.identifier, ["GUILDA:","MATLAB:TooManyInputs","MATLAB:validators:","MATLAB:validation:"]) ...
+                && network_islands(obj) > 1
             stop_opf(obj, struct("message", ME.message))
         end
         rethrow(ME)
