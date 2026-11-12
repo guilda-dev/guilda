@@ -311,8 +311,8 @@
         <li><b>PF-09</b> <code>PowerNetwork</code>: <code>powerflow_table</code> → <code>format_powerflow</code></li>
         <li><b>PF-10</b> <code>PowerNetwork</code> → <code>ResultPF</code></li>
       </ol>
-      <figcaption lang="en">Numbers: step IDs of the list below. Solid arrows: calls; dashed arrows: returns. PF-02 runs only when no bus has <code>l_isSlack = true</code>. PF-06 and PF-07: alternatives selected by <code>Solver</code>. PF-10 runs only for <code>Format="GUILDAorigin"</code>. Files are written afterwards by the caller with <code>result.Export(filename)</code>.</figcaption>
-      <figcaption lang="ja">番号は下のリストのステップ ID です。実線は呼び出し、破線は戻り値を表します。PF-02 は <code>l_isSlack = true</code> の母線がないときだけ実行します。PF-06 と PF-07 は、<code>Solver</code> に応じてどちらか一方だけを実行します。PF-10 は <code>Format="GUILDAorigin"</code> のときだけ実行します。ファイルへの書き出しは、呼び出し側があとで <code>result.Export(filename)</code> で行います。</figcaption>
+      <figcaption lang="en">Numbers: step IDs of the list below. Solid arrows: calls; dashed arrows: returns. PF-02 runs only when no bus has <code>l_isSlack = true</code>. PF-06 and PF-07: alternatives selected by <code>Solver</code>. PF-10 runs only for <code>Format="GUILDAorigin"</code>. Files are written afterwards by the caller with <code>result.export(filename)</code>.</figcaption>
+      <figcaption lang="ja">番号は下のリストのステップ ID です。実線は呼び出し、破線は戻り値を表します。PF-02 は <code>l_isSlack = true</code> の母線がないときだけ実行します。PF-06 と PF-07 は、<code>Solver</code> に応じてどちらか一方だけを実行します。PF-10 は <code>Format="GUILDAorigin"</code> のときだけ実行します。ファイルへの書き出しは、呼び出し側があとで <code>result.export(filename)</code> で行います。</figcaption>
     </figure>
 
     <!-- ============================== 3. STEPS ============================== -->

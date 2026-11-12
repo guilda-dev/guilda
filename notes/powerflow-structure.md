@@ -39,7 +39,7 @@
 - **既定値(ユーザーの決定、2026-11-12):** `calculate_powerflow` の既定は `"GUILDAorigin"` です。最初の実装は `"V"` でした。`initialize` の既定は `"V"` のままで、確認中です。
 
 - `flag` と `output` はどの Format でも 2 番目・3 番目の出力です。
-- **Export(ユーザーの決定、2026-11-12):** `calculate_powerflow` に `Export` オプションはありません。書き出しは `res.Export(...)` だけです(`initialize` も受け付けません)。最初の実装では、ほかの Format でも書き出しのためだけに `ResultPF` を作っていましたが、オプションごと削除しました。`ResultPF.Export` の名前(`export` か `Export` か)は確認中です。
+- **Export(ユーザーの決定、2026-11-12):** `calculate_powerflow` に `Export` オプションはありません。書き出しは `res.export(...)` だけです(`initialize` も受け付けません)。最初の実装では、ほかの Format でも書き出しのためだけに `ResultPF` を作っていましたが、オプションごと削除しました。書き出しのメソッドは、すべての結果クラスで `export` に改名しました(ユーザーの決定、2026-11-12。別名や互換の変換はありません)。
 - `initialize` にも同じ値の `Format`(既定 `"V"`)を加えました。潮流計算・FixedInput・平衡点からの計算は解いた点を、OPF は `"GUILDAorigin"` で `ResultOPF`、それ以外で AC OPF の解の母線 V・I・P・Q を返します。
 - 内部の呼び出しは必要なものだけを求めます。`initialize` の潮流計算と `solve_fixed_input` の初期点は `Format="powerflow(tab)"` です。`initialize` は `Format="GUILDAorigin"` のときだけ `ResultPF` を作ります。
 - 書き換えた呼び出し元: DebugScript(`initialize` の結果を読むテストに `Format="GUILDAorigin"` を追加。`calculate_powerflow` では既定なので書かない)、`calculate_powerflow`・`initialize`・`SolverPF` のヘルプの例。同梱ネットワークのヘルプの例(`res = net.calculate_powerflow()`)は元のままです。`_GUILDAverification`、`Scenario`、CPF、OPF は `calculate_powerflow` の結果を読んでいません。
@@ -54,7 +54,7 @@
 - **`tools.distribute_power` の変更:** スナップショットの母線(struct)も受け付けるようにしました。内部の `group` が struct なら `tab_parameter.(グループ名)` を読みます。オブジェクトでの動作は変わりません。
 - **枝のアドミタンス(案 C、ユーザーの決定、2026-11-12):** `Branch` が `struct` を上書きし(`LayerPackage.struct` と同じ引数 `l_disp`・`s_header`・`sct_visited`、Hidden)、`LayerPackage.struct` の結果にフィールド `cm_Y`(`get_admittance_matrix` の 2×2 複素行列)を加えます。`ResultPF` はスナップショットの `cm_Y` で枝潮流を求めるので、式は枝のクラスだけにあり、利用者が作った枝のクラスでも潮流が求まります。`cm_Y` のない struct の枝は NaN です。最初の実装の `@ResultPF/private/branch_admittance.m`(クラス名ごとの式)は削除しました。
   テストは F2「Branch flows of the result use the admittance matrix in the snapshot」で、4 つの組み込みクラスの一致、2 度目に出会う枝がパスのままであること、クラス名を変えても `cm_Y` で潮流が決まること(利用者の枝クラスの代わり)を確かめています。利用者の枝クラスそのものは、`add_branch` が `GUILDA.keymap` に登録されたキーしか受け付けないため、テストでは作っていません。
-- `ResultPF.Export` の JSON は保存した `tab_PFcondition` と `cm_Y` を使います。持たない結果(`ResultPF()`、平衡点からの結果)では、これまでどおり `GUILDA:ResultPF:NoNetwork` です(本文を新しい形に合わせました)。
+- `ResultPF.export` の JSON は保存した `tab_PFcondition` と `cm_Y` を使います。持たない結果(`ResultPF()`、平衡点からの結果)では、これまでどおり `GUILDA:ResultPF:NoNetwork` です(本文を新しい形に合わせました)。
 - **動作の変化:** `initialize` の FixedInput と平衡点からの `ResultPF` も、枝潮流と運転制約の違反を持つようになりました(以前は空)。`r_elapsed` はソルバーの時間で、結果の組み立ては含みません。
 
 ## 5. `ResultPF` の表示メソッドの提案(未実装)
@@ -72,7 +72,7 @@
 | `plot_convergence` | 反復(dynamic では仮想時間)ごとの最大残差と電圧の変化(`cm_Vhistory`、`rv_step`) | `Parent`、`Bus`(電圧の推移を描く母線) |
 | `plot_network` | 系統図(スナップショットの `graph` パラメータの座標)に母線電圧を色で、枝潮流を矢印で重ねる | `Parent`、`Color`(`"V"` / `"angle"`)、`Arrow`(`"P"` / `"Q"` / `"none"`) |
 
-**既存の `Plot`:** `Plot` と `Export` は `ResultBase` の約束(すべての結果クラスに共通の入口)なので、名前は残すことを勧めます。中身は `plot_voltage` を呼ぶだけにし、`plot_*` の各メソッドを個別の図として加えます。`plot_` の形へ改名すると、ほかの結果クラス(`ResultOPF`、`ResultCPF`、`ResultODE`、`ResultLIN`)の `Plot` もそろえる必要があります。
+**既存の `Plot`:** `Plot` と `export` は `ResultBase` の約束(すべての結果クラスに共通の入口)なので、名前は残すことを勧めます。中身は `plot_voltage` を呼ぶだけにし、`plot_*` の各メソッドを個別の図として加えます。`plot_` の形へ改名すると、ほかの結果クラス(`ResultOPF`、`ResultCPF`、`ResultODE`、`ResultLIN`)の `Plot` もそろえる必要があります。
 
 `disp` の既定(オブジェクトを表示したとき)を `disp_summary` にするかどうかも、合わせて決めてください。
 

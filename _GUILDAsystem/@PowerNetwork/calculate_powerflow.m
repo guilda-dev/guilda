@@ -39,7 +39,7 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
 % res.tab_bus            % Varg, V, P, Q, Vphasor, Iphasor of each bus
 % res.tab_branch         % flows and losses of each branch
 % res.Plot();            % voltage profile
-% res.Export("pf.csv");  % bus table to a file
+% res.export("pf.csv");  % bus table to a file
 % V   = net.calculate_powerflow(Format="V", Solver="dynamic");   % complex bus voltages
 % tab = net.calculate_powerflow(Format="powerflow(tab)");      % V, I, P, Q of each bus
 % ```

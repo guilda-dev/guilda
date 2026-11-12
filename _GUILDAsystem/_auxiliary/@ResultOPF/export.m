@@ -1,4 +1,4 @@
-function s_file = Export(obj, filename, opt)
+function s_file = export(obj, filename, opt)
 % Write the bus, connection or branch table to a file.
 %
 % Writes a table of the result to a CSV (.csv, .txt) or Excel (.xlsx, .xls) file, with

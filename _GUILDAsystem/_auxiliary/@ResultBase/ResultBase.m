@@ -9,7 +9,7 @@ classdef (Abstract) ResultBase < auxiliary
 % tools.resolve_options). Model data
 % stays with its owner: the result refers to the network (a_PowerNetwork, not a copy; the
 % network may have been edited after the analysis) and keeps its tag (s_network); it does
-% not copy bus, branch or component data. Plot and Export are part of the contract. A subclass overrides
+% not copy bus, branch or component data. Plot and export are part of the contract. A subclass overrides
 % the ones it supports; the others stop with the error GUILDA:ResultBase:Unsupported.
 %
 % <@Examples>
@@ -82,7 +82,7 @@ classdef (Abstract) ResultBase < auxiliary
         end
 
         varargout = Plot(obj, varargin)
-        varargout = Export(obj, varargin)
+        varargout = export(obj, varargin)
     end
 
     methods (Access=protected)

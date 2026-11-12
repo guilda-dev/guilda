@@ -13,7 +13,7 @@ classdef ResultODE < ResultBase
 % local controllers, the states of the global controllers, the bus voltages and the inputs
 % of the components. odeResults is a view of it per bus and component, and get_point gives
 % the values at a time, for example for net.linearize(Point={sim, t}). Plot draws a
-% trajectory of the buses or components. Export writes all trajectories as a table (CSV,
+% trajectory of the buses or components. export writes all trajectories as a table (CSV,
 % Excel) or as a MAT-file.
 %
 % - `tab_variable` has one row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"),
@@ -43,7 +43,7 @@ classdef ResultODE < ResultBase
 % r = result.odeResults;               % r.t, r.Bus(i).V, r.Bus(i).Component(j).X, ...
 % x = result.get_point(2);             % all variables at t = 2, in variable-map order
 % result.Plot(Quantity="omega");       % a state of the components
-% result.Export("sim.mat");
+% result.export("sim.mat");
 % ```
 %
 % See also SolverODE, Scenario, ResultBase, PowerNetwork.get_variable_map
@@ -120,7 +120,7 @@ classdef ResultODE < ResultBase
 
         rv = get_point(obj, t, tab_map, opt)
         ax = Plot(obj, opt)
-        s_file = Export(obj, filename)
+        s_file = export(obj, filename)
     end
 
     methods (Access=private)

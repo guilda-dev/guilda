@@ -296,7 +296,7 @@ assert(isa(DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Forma
 mat_eq = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium", Format="powerflow(mat)"));
 assert(max(abs(mat_eq - mat), [], "all") < 1e-6)
 assert(error_id(@() net.initialize(Format="table")) == "MATLAB:validators:mustBeMember")
-% 書き出しは結果のメソッド (res.Export) だけ。calculate_powerflow と initialize に Export オプションはない
+% 書き出しは結果のメソッド (res.export) だけ。calculate_powerflow と initialize に Export オプションはない
 assert(error_id(@() net.calculate_powerflow(Export="pf.csv")) ~= "")
 assert(error_id(@() net.initialize(Method="powerflow", Export="pf.csv")) ~= "")
 
@@ -677,14 +677,14 @@ assert(error_id(@() net.calculate_powerflow(PlotFcn=1)) == "GUILDA:check_plotfcn
 
 % Export: 拡張子で形式が決まる。CSV は母線または枝の表
 s_dir = tempname; mkdir(s_dir); c_dir = onCleanup(@() rmdir(s_dir, "s"));
-f_bus = res.Export(fullfile(s_dir, "bus.csv"));
+f_bus = res.export(fullfile(s_dir, "bus.csv"));
 tab = readtable(f_bus, "ReadRowNames", true);
 assert(isequal(string(tab.Properties.RowNames), string(net.a_Bus)) && max(abs(tab.V - res.tab_bus.V)) < 1e-12)
-res.Export(fullfile(s_dir, "branch.csv"), Table="branch");
+res.export(fullfile(s_dir, "branch.csv"), Table="branch");
 tab = readtable(fullfile(s_dir, "branch.csv"), "ReadRowNames", true);
 assert(height(tab) == numel(net.a_Branch) && max(abs(tab.Ploss - res.tab_branch.Ploss)) < 1e-12)
 % 未対応の拡張子
-assert(error_id(@() res.Export(fullfile(s_dir, "bus.mat"))) == "GUILDA:ResultPF:ExportFormat")
+assert(error_id(@() res.export(fullfile(s_dir, "bus.mat"))) == "GUILDA:ResultPF:ExportFormat")
 
 
 %% Dynamic method exports convergence history as JSON
@@ -693,7 +693,7 @@ net = DebugScript.helper.build_ieee14();
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="dynamic"));
 filepath = fullfile(tempdir, "DebugScript_test_F2_" + string(feature("getpid")) + ".json");
 c = onCleanup(@() delete(filepath));
-DebugScript.helper.quiet(@() res.Export(filepath));
+DebugScript.helper.quiet(@() res.export(filepath));
 
 assert(isfile(filepath))
 data = jsondecode(fileread(filepath));
@@ -701,7 +701,7 @@ assert(numel(data.nodes) == numel(net.a_Bus))
 assert(numel(data.nodes(2).Vabs) == numel(res.rv_step))
 % 結果だけ (系統なし) では JSON を書けない
 res_empty = ResultPF();
-assert(error_id(@() res_empty.Export(filepath)) == "GUILDA:ResultPF:NoNetwork")
+assert(error_id(@() res_empty.export(filepath)) == "GUILDA:ResultPF:NoNetwork")
 
 
 % ---- local functions ----

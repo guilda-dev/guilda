@@ -1,4 +1,4 @@
-function s_file = Export(obj, filename, opt)
+function s_file = export(obj, filename, opt)
 % Write the bus/branch table or the iteration history to a file.
 %
 % Writes the result to a file. The format follows the extension of filename:

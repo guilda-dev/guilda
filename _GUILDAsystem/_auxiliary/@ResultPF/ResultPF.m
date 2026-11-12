@@ -6,7 +6,7 @@ classdef ResultPF < ResultBase
 % "dynamic" method). It is built from data only: the solution table, the bus admittance
 % matrix, a struct snapshot of the network (struct(net, false), no handles) and the
 % solver information. It keeps no reference to the network, so a later edit of the
-% network does not change it. Plot draws the voltage profile. Export writes the bus or
+% network does not change it. Plot draws the voltage profile. export writes the bus or
 % branch table (CSV, Excel) or the iteration history (JSON for the GridSpring viewer).
 %
 % - `tab_bus` has the bus tags as row names.
@@ -37,7 +37,7 @@ classdef ResultPF < ResultBase
 % result.tab_branch        % flows and losses of each branch
 % result.tab_violation     % violated operating limits (0 rows when none)
 % result.Plot();           % voltage profile
-% result.Export("pf.csv", Table="branch");
+% result.export("pf.csv", Table="branch");
 % ```
 %
 % See also SolverPF, ResultBase, PowerNetwork.calculate_powerflow
@@ -96,6 +96,6 @@ classdef ResultPF < ResultBase
         end
 
         fig = Plot(obj, opt)
-        s_file = Export(obj, filename, opt)
+        s_file = export(obj, filename, opt)
     end
 end

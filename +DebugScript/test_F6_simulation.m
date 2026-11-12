@@ -280,22 +280,22 @@ end
 
 s_dir = tempname;  mkdir(s_dir);
 c_dir = onCleanup(@() rmdir(s_dir, "s"));
-s_csv = sol.Export(fullfile(s_dir, "sim.csv"));
+s_csv = sol.export(fullfile(s_dir, "sim.csv"));
 tab = readtable(s_csv, "VariableNamingRule", "preserve");
 assert(height(tab) == numel(sol.odeResults.t))
 sv  = string(tab.Properties.VariableNames);
 assert(sv(1) == "t" && any(sv == "B001_Vreal") && any(sv == "B001SG1_omega") && any(sv == "B008_Q"))
 assert(max(abs(tab.B001SG1_omega - sol.odeResults.Bus(1).Component(1).X.omega)) < 1e-10)
-s_mat = sol.Export(fullfile(s_dir, "sim.mat"));
+s_mat = sol.export(fullfile(s_dir, "sim.mat"));
 s = load(s_mat);
 assert(isequal(s.odeResults.t, sol.odeResults.t) && s.flag == sol.flag)
 try
-    sol.Export(fullfile(s_dir, "sim.json"));
+    sol.export(fullfile(s_dir, "sim.json"));
     error("DebugScript:noError", "未対応の拡張子でエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:ExportFormat", DebugScript.helper.msg_id(ME))
 end
-% simulate(..., Export=file) は result.Export を呼ぶ。図は描かない (図は result.Plot)
+% simulate(..., Export=file) は result.export を呼ぶ。図は描かない (図は result.Plot)
 n_fig = numel(findall(0, "Type", "figure"));
 net.simulate([0,1], ev, Export=fullfile(s_dir, "sim2.csv"));
 assert(numel(findall(0, "Type", "figure")) == n_fig)

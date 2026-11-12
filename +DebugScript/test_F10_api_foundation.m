@@ -126,13 +126,13 @@ res = DebugScript.helper.DummyResult([], "x", struct(), true, struct(), 0, [1 3 
 h = res.Plot();
 assert(isa(h, "matlab.graphics.chart.primitive.Line") && isequal(h.YData, [1 3 2]))
 close(ancestorfig(h))
-% 実装していない Export は明確なエラー
+% 実装していない export は明確なエラー
 try
-    res.Export("result.csv");
-    error("DebugScript:noError", "未対応の Export でエラーにならない")
+    res.export("result.csv");
+    error("DebugScript:noError", "未対応の export でエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultBase:Unsupported", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "Export") && contains(ME.message, "DebugScript.helper.DummyResult"))
+    assert(contains(ME.message, "export") && contains(ME.message, "DebugScript.helper.DummyResult"))
 end
 
 

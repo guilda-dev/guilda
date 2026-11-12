@@ -1,4 +1,4 @@
-function s_file = Export(obj, filename)
+function s_file = export(obj, filename)
 % Write the trajectories to a table file or a MAT-file.
 %
 % Writes the trajectories to a file. The format follows the extension of filename:

@@ -1,4 +1,4 @@
-function varargout = Export(obj, varargin) %#ok<STOUT>
+function varargout = export(obj, varargin) %#ok<STOUT>
 % Write the result to a file.
 %
 % Writes the result to a file. Each result class defines the file formats and
@@ -13,5 +13,5 @@ function varargout = Export(obj, varargin) %#ok<STOUT>
     arguments (Output, Repeating)
         varargout % Path of the written file (defined by the result class).
     end
-    obj.error_unsupported("Export");
+    obj.error_unsupported("export");
 end
