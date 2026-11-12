@@ -58,8 +58,6 @@ function [tab, summary] = compare_table4_5(opt)
         sv_tag = cellfun(@string, c_sc);
         for k = find(tab_rep.Section == s_sec).'
             sc = c_sc{sv_tag == tab_rep.Scenario(k)};
-            sc.Judge = @judge_table4_5;
-
             % The run stops early (flag) rather than with a warning: an out-of-step case
             % often stops the solver once the angles have passed 360 degrees
             sct_warn = warning("off", "all");
@@ -67,7 +65,7 @@ function [tab, summary] = compare_table4_5(opt)
             [result, rv_flag(k)] = net.simulate(sc, c_sim{:});
             clear o_restore
 
-            v = sc.judge(result);
+            v = judge_table4_5(result);
             sv_verdict(k) = v.Verdict;  rv_toos(k) = v.Time;
             rv_per(k) = v.Period;       rv_max(k) = v.MaxAngle;
             if opt.Plot
@@ -99,10 +97,10 @@ end
 function v = judge_table4_5(result)
 % Judge of the comparison: out-of-step, stopped, growing or stable (see README.md)
 %
-% - "out-of-step": Scenario.out_of_step with the slack generator G10 (B030) as the
+% - "out-of-step": result.judge_out_of_step with the slack generator G10 (B030) as the
 %   reference and 360 degrees.
 % - "stopped": the simulation stopped early (flag ~= 1) before an angle passed 360 degrees
-%   (the "incomplete" of Scenario.out_of_step).
+%   (the "incomplete" of judge_out_of_step).
 % - otherwise "growing" when the peak-to-peak spread of the angles from G10 over the last
 %   5 s is larger than over 0.2 s to 5 s, and "stable" when it is not.
 %
@@ -113,9 +111,9 @@ function v = judge_table4_5(result)
         result  % Simulation result (ResultODE).
     end
     arguments (Output)
-        v  % Judge of Scenario.out_of_step with the fields t, Angle and Period added.
+        v  % Verdict of judge_out_of_step with the fields t, Angle and Period added.
     end
-    v = Scenario.out_of_step(result);
+    v = result.judge_out_of_step();
 
     % Angles of the generators (G1 to G10 in the order of their buses) from G10 [deg]
     tab_var = result.tab_variable;

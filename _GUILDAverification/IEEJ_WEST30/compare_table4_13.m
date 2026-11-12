@@ -6,7 +6,7 @@ function [tab, c_result] = compare_table4_13(opt)
 % Each scenario is a three-phase ground fault at 0.10 s, cleared at 0.17 s by opening the
 % faulted circuits until the end (3LG-O). The network is built per section, the scenarios
 % are imported into it with Scenario.import_csv, simulated with net.simulate(sc) from the
-% equilibrium and judged with sc.judge (Scenario.out_of_step: Reference="slack", the
+% equilibrium and judged with result.judge_out_of_step (Reference="slack", the
 % machine G15 at bus B3150, Threshold=360 deg).
 %
 % A case agrees when the GUILDA verdict matches the report: "out-of-step" for a report
@@ -88,7 +88,7 @@ function [tab, c_result] = compare_table4_13(opt)
             rv_time(k) = toc(t_run);
             rv_flag(k) = flag;
 
-            v = sc.judge(result);
+            v = result.judge_out_of_step();
             sv_verdict(k) = v.Verdict;
             rv_max(k)     = v.MaxAngle;
             rv_toos(k)    = v.Time;
@@ -121,7 +121,7 @@ end
 
 
 function str = verdict_of(l_stable)
-% Verdict of Scenario.out_of_step that agrees with the report: "stable" or "out-of-step"
+% Verdict of judge_out_of_step that agrees with the report: "stable" or "out-of-step"
     arguments (Input)
         l_stable  % True when the report says the case is stable.
     end
@@ -164,7 +164,7 @@ function plot_case(result, v, s_sec, row)
 % Rotor angles of the generators relative to the reference machine of the verdict
     arguments (Input)
         result   % Simulation result (ResultODE).
-        v        % Judge of the scenario.
+        v        % Verdict of judge_out_of_step.
         s_sec    % Section ("peak" or "night").
         row      % Row of the report CSV for the case.
     end

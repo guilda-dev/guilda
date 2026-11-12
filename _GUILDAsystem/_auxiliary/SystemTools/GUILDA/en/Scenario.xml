@@ -22,10 +22,6 @@
         <entry key="UnknownOption">Scenario "{0}": {1} is not an option of net.simulate. Options: {2}.</entry>
         <entry key="InvalidTime">The Time of a scenario must be [] or [t0, tend] with finite values and t0 &lt; tend: {0}.</entry>
         <entry key="DisturbanceNotFound">Scenario "{1}" has no disturbance with the tag {0}.</entry>
-        <entry key="NoRotorAngle">The result has no component with the state delta, so no rotor angle can be judged. Give a Judge of your own (sc.Judge = @(result) ...).</entry>
-        <entry key="UnknownReference">Reference "{0}" of out_of_step is not "slack", "COI" or a component of the result with the state delta ({1}).</entry>
-        <entry key="NoSlackGenerator">Reference "slack": the slack bus {0} of network "{1}" has no component with the state delta. Give Reference="COI" or the tag of a generator.</entry>
-        <entry key="NoInertia">Reference "COI": the component "{0}" has no dynamics parameter M (inertia) to weight its rotor angle. Give Reference="slack" or the tag of a generator.</entry>
         <entry key="CsvNotFound">The scenario file "{0}" does not exist.</entry>
         <entry key="CsvMissingColumn">The scenario file "{0}" has no column Scenario. The columns are Scenario, Description, ScenarioTimeStart, ScenarioTimeEnd, Tag, TimeStart, TimeEnd, FaultBus, TripUnit, OpenBranch, OffsetUnit, OffsetState, OffsetValue, InputUnit, InputName, InputValue.</entry>
         <entry key="CsvUnknownColumn">The scenario file "{0}" has the unknown column(s) {1}; they are ignored.</entry>

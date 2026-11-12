@@ -7,6 +7,9 @@
         <entry key="PointTime">t = {0} is outside the simulated time [{1}, {2}].</entry>
         <entry key="InvalidMap">tab_map must be a variable map (columns Kind, Owner, Name, Bus), see get_variable_map.</entry>
         <entry key="UnknownVariable">The simulation result has no values for {0}. Give rows of result.tab_variable (the network as it was simulated).</entry>
-        <entry key="VariableMap">The state of the simulator does not match net.get_variable_map(); report this as a bug.</entry>
+        <entry key="NoRotorAngle">The result has no component with the state delta, so no rotor angle can be judged. Judge the result with a function of your own (v = my_judge(result)).</entry>
+        <entry key="UnknownReference">Reference "{0}" of judge_out_of_step is not "slack", "COI" or a component of the result with the state delta ({1}).</entry>
+        <entry key="NoSlackGenerator">Reference "slack": the slack bus {0} of network "{1}" has no component with the state delta. Give Reference="COI" or the tag of a generator.</entry>
+        <entry key="NoInertia">Reference "COI": the component "{0}" has no dynamics parameter M (inertia) to weight its rotor angle. Give Reference="slack" or the tag of a generator.</entry>
     </message>
 </rsccat>

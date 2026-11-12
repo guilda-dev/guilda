@@ -41,13 +41,13 @@ Each case starts from the equilibrium of its section (peak or night).
 
 ## Criterion
 
-The custom Judge `judge_table4_5` in `compare_table4_5.m` (the definition of the report,
+The judge function `judge_table4_5` in `compare_table4_5.m` (the definition of the report,
 and of the comparison made when the model was built):
 
-- `out-of-step`: `Scenario.out_of_step` with the slack generator G10 (`B030`) as the
+- `out-of-step`: `result.judge_out_of_step()` with the slack generator G10 (`B030`) as the
   reference: some `|delta_i - delta_G10|` exceeds 360 degrees in the 20 s.
 - `stopped`: the solver stopped early (flag ~= 1) before an angle passed 360 degrees
-  (the `incomplete` of `Scenario.out_of_step`). It counts as a disagreement.
+  (the `incomplete` of `judge_out_of_step`). It counts as a disagreement.
 - otherwise `growing` when the peak-to-peak spread of the angles from G10 over the last
   5 s is larger than over 0.2 s to 5 s, and `stable` when it is not.
 

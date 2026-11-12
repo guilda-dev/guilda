@@ -219,56 +219,6 @@ writelines(["Scenario,ScenarioTimeEnd"; "m,10"; "m,20"], s_file);
 assert(error_id(@() Scenario.import_csv(s_file)) == "GUILDA:Scenario:CsvConflict")
 
 
-%% Default judge: stable and out-of-step on IEEE9bus
-net = new_ieee14();
-n9 = network.IEEE9bus;  
-DebugScript.helper.quiet(@() n9.initialize);
-short = Scenario("short", Time=[0,5]);
-short.add_fault("B007", [1,1.05]);
-long  = Scenario("long", Time=[0,5]);
-long.add_fault("B007", [1,1.5]);
-n9.add_scenario({short, long});
-[r_short, f_short] = DebugScript.helper.quiet(@() n9.simulate(short));
-v = short.judge(r_short);
-assert(f_short == 1 && v.Verdict == "stable" && isnan(v.Time) && isempty(v.Units), v.Verdict)
-assert(v.Reference == "B001SG1" && v.Threshold == 360 && v.MaxAngle < 360)
-
-ws = warning("off", "all");  c_ws = onCleanup(@() warning(ws));
-r_long = DebugScript.helper.quiet(@() n9.simulate(long));
-clear c_ws
-v = long.judge(r_long);
-assert(v.Verdict == "out-of-step" && v.Time > 1 && ~isempty(v.Units) && v.MaxAngle > 360, v.Verdict)
-
-% 基準: 重心 (COI) と機器のタグ
-v = Scenario.out_of_step(r_short, Reference="COI");
-assert(v.Verdict == "stable" && v.Reference == "COI")
-v = Scenario.out_of_step(r_long, Reference="B002SG1");
-assert(v.Verdict == "out-of-step" && v.Reference == "B002SG1")
-assert(error_id(@() Scenario.out_of_step(r_short, Reference="B001")) == "GUILDA:Scenario:UnknownReference")
-% しきい値を小さくすると短い地絡でも脱調と判定する
-v = Scenario.out_of_step(r_short, Threshold=1);
-assert(v.Verdict == "out-of-step")
-
-
-%% Incomplete verdict and a custom judge
-net = new_ieee14();
-n9 = network.IEEE9bus;  
-DebugScript.helper.quiet(@() n9.initialize);
-sc = Scenario("limit", Time=[0,5]);
-sc.add_fault("B007", [1,1.05]);
-n9.add_scenario(sc);
-ws = warning("off", "all");  c_ws = onCleanup(@() warning(ws));
-[res, flag] = DebugScript.helper.quiet(@() n9.simulate(sc, TimeLimit=1e-3));
-clear c_ws
-assert(flag == 0)
-v = sc.judge(res);
-assert(v.Verdict == "incomplete" && isnan(v.Time), v.Verdict)
-% 利用者の判定関数
-sc.Judge = @(r) struct("Verdict", "custom", "tEnd", r.output.tEnd);
-v = sc.judge(res);
-assert(v.Verdict == "custom" && v.tEnd == res.output.tEnd)
-
-
 %% Scenarios of another network are rejected
 net = new_ieee14();
 other = DebugScript.helper.build_ieee14();

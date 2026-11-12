@@ -87,12 +87,17 @@ function tab = test_levels()
     "test_F30_governor/export_csvNamesTheGovernorItDoesNotWrite", "medium"
     % ---- F31_scenario ----------------------------------------------------------------------------
     "test_F31_scenario/AFaultThenAPermanentOpeningEqualsTwoOld_styleEvents", "large"
-    "test_F31_scenario/DefaultJudge_StableAndOut_of_stepOnIEEE9bus", "large"
     "test_F31_scenario/StoredTimeAndOptions_TheCallWins", "medium"
     "test_F31_scenario/Ownership_Add_Remove_Move_Copy", "medium"
     "test_F31_scenario/UnknownTagsAtAddAndAtRunTime", "medium"
     "test_F31_scenario/CSVRoundTripWithSeveralScenariosInOneFile", "medium"
-    "test_F31_scenario/IncompleteVerdictAndACustomJudge", "medium"
+    % ---- F38_result_judge --------------------------------------------------------------------------
+    "test_F38_result_judge/DefaultJudge_StableAndOut_of_stepOnIEEE9bus", "large"
+    "test_F38_result_judge/IncompleteVerdictAndAJudgeFunctionOfTheUser", "medium"
+    "test_F38_result_judge/JudgeOfARunStoppedByStopOnOutOfStep_flag2_", "medium"
+    "test_F38_result_judge/TheResultWorksAfterTheNetworkIsDeleted", "medium"
+    "test_F38_result_judge/OutputsYOfTheComponentsAndControllers", "medium"
+    "test_F38_result_judge/ErrorsOfTheJudge", "medium"
     % ---- F35_controller_signal_routing -----------------------------------------------------------
     "test_F35_controller_signal_routing/AGlobalControllerReadsAnOutputOfItsUnitBeforeAStateOfTheSameName", "medium"
     % ---- F36_tutorial_all_models -----------------------------------------------------------------

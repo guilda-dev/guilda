@@ -228,7 +228,9 @@ function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
         disp(output.message)
     end
 
-    result = ResultODE(net, obj, sct_options, flag, output, t0, c_phase);
+    [sct_sol, sct_dae] = result_data(net, c_phase);     % temporary until S5 (build_simulation_data)
+    result = ResultODE(sct_sol, sct_dae, struct(net, false), struct("solver", obj, "options", sct_options, ...
+                       "flag", flag, "output", output, "elapsed", t0));
 end
 
 
