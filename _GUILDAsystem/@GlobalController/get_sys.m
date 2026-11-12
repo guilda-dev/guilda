@@ -8,13 +8,10 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
 % is labelled as the output or state of the unit it observes (Component.get_sys: "Y_" +
 % name for an output with the name of a state), and an output has one row for each input
 % it drives (a "global" connection), labelled as that input (of a local controller or of
-% the unit). A controller that is not on a network has no connections: its inputs and
-% outputs are labelled as its own rows uc and yc of the map (gc.attach_tag(name + "_" +
-% unit tag)), one output row per unit and output.
+% the unit).
 %
-% A controller on a network stops with the error GUILDA:GlobalController:Stale
-% when net.initialize() is needed (a stale tag of the network or the controller); a controller without a network builds its stale
-% handles first.
+% The controller stops with the error GUILDA:GlobalController:Stale when net.initialize()
+% is needed (a stale tag of the network or the controller).
 % A controlled unit without the outputs or states sv_u, or an output sv_y that drives no
 % input of the unit or its local controllers, stops with the error
 % GUILDA:GlobalController:GlobalControllerPort.
@@ -32,7 +29,7 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
     arguments (Input)
         obj
         x        (:,1) double  = obj.rv_Xequilibrium   % States (default: the equilibrium).
-        V        (:,1) double  = tools.vcellfun(@(b) [real(b.c_Vequilibrium); imag(b.c_Vequilibrium)], obj.controlledUnits{1}.a_Bus.a_PowerNetwork.a_Bus)   % [pu] Voltages of all buses [Vre1; Vim1; ...] (default: the equilibrium).
+        V        (:,1) double  = tools.vcellfun(@(b) [real(b.c_Vequilibrium); imag(b.c_Vequilibrium)], obj.a_PowerNetwork.a_Bus)   % [pu] Voltages of all buses [Vre1; Vim1; ...] (default: the equilibrium).
         u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
         opt.full (1,1) logical = false  % Ignored; kept for old calls.
         opt.Format (1,1) string {mustBeMember(opt.Format, ["GUILDAorigin","struct","ss"])} = "GUILDAorigin"   % Form of the model: GUILDAorigin (a ResultLIN), struct or ss (dss; needs the Control System Toolbox).
@@ -50,61 +47,43 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
     a_Comp = obj.controlledUnits;
     n_u = numel(obj.sv_u);
     n_o = numel(obj.sv_y);
-    net_units = a_Comp{1}.a_Bus.a_PowerNetwork;
+    net = obj.a_PowerNetwork;
     lv_in  = obj.iv_obsY > 0 | obj.iv_obsX > 0;
-    k_gc = [];
-    if ~isempty(obj.a_PowerNetwork)
-        k_gc = find(cellfun(@(g) g == obj, obj.a_PowerNetwork.a_GlobalController), 1);
-    end
-    if isempty(k_gc)
-        % Not on a network: no connections, its own labels
-        sv_l   = @(sv) reshape(string(obj.attach_tag(reshape(repmat(reshape(sv, [], 1), 1, numel(a_Comp)) + "_" + ...
-                         repmat(reshape(string(a_Comp), 1, []), numel(sv), 1), [], 1))), [], 1);
-        uNames = sv_l(obj.sv_u);
-        yNames = sv_l(obj.sv_y);
-        iv_row = (1:numel(a_Comp)*n_o)';
-        lv_out = true(numel(a_Comp)*n_o, 1);
-    else
-        [tab, ~, c_idxGC, tab_c] = obj.a_PowerNetwork.get_variable_map();
-        iv_gc = c_idxGC{k_gc};
-        iv_uc = iv_gc(tab.Kind(iv_gc) == "uc");
-        iv_yc = iv_gc(tab.Kind(iv_gc) == "yc");
-        [lv_obs, iv_c] = ismember(iv_uc, tab_c.TargetIndex(tab_c.Kind == "observe"));
-        sv_src = tab_c.Source(tab_c.Kind == "observe");
-        uNames = tab.Label(iv_uc);
-        uNames(lv_obs) = sv_src(iv_c(lv_obs));
-        tab_g  = tab_c(tab_c.Kind == "global" & ismember(tab_c.SourceIndex, iv_yc), :);
-        [~, iv_ord] = sort(tab_g.SourceIndex);       % by output (stable: targets in map order)
-        tab_g  = tab_g(iv_ord, :);
-        yNames = tab_g.Target;
-        iv_row = tab_g.SourceIndex - iv_yc(1) + 1;
-        lv_out = ismember(iv_yc, tab_g.SourceIndex);
-    end
+    k_gc = find(cellfun(@(g) g == obj, net.a_GlobalController), 1);
+    [tab, ~, c_idxGC, tab_c] = net.get_variable_map();
+    iv_gc = c_idxGC{k_gc};
+    iv_uc = iv_gc(tab.Kind(iv_gc) == "uc");
+    iv_yc = iv_gc(tab.Kind(iv_gc) == "yc");
+    [lv_obs, iv_c] = ismember(iv_uc, tab_c.TargetIndex(tab_c.Kind == "observe"));
+    sv_src = tab_c.Source(tab_c.Kind == "observe");
+    uNames = tab.Label(iv_uc);
+    uNames(lv_obs) = sv_src(iv_c(lv_obs));
+    tab_g  = tab_c(tab_c.Kind == "global" & ismember(tab_c.SourceIndex, iv_yc), :);
+    [~, iv_ord] = sort(tab_g.SourceIndex);       % by output (stable: targets in map order)
+    tab_g  = tab_g(iv_ord, :);
+    yNames = tab_g.Target;
+    iv_row = tab_g.SourceIndex - iv_yc(1) + 1;
+    lv_out = ismember(iv_yc, tab_g.SourceIndex);
     for k = 1:numel(a_Comp)
         if ~all(lv_in((k-1)*n_u + (1:n_u))) || ~all(lv_out((k-1)*n_o + (1:n_o)))
             s = a_Comp{k};
             error(msg("GUILDA:GlobalController:GlobalControllerPort", obj.s_tag, join(obj.sv_u, " "), join(obj.sv_y, " "), s.s_tag, class(s), join([s.sv_y(:); s.sv_x(:)], " "), join(s.sv_u, " ")))
         end
     end
-    vNames = tools.vcellfun(@(b) reshape(string(b.attach_tag(["Vre";"Vim"])), [], 1), net_units.a_Bus);
+    vNames = tools.vcellfun(@(b) reshape(string(b.attach_tag(["Vre";"Vim"])), [], 1), net.a_Bus);
 
-    if ~isempty(obj.a_PowerNetwork)
-        net = obj.a_PowerNetwork;
-        if ~isempty(net.sct_stale.input)   % edited inputs: initialize(Method="FixedInput")
-            sv_in = unique(net.sct_stale.input, "stable");
-            error(msg("GUILDA:GlobalController:InputEdited", char(net.s_tag), char(join(sv_in(1:min(end,3)), "; "))))
+    if ~isempty(net.sct_stale.input)   % edited inputs: initialize(Method="FixedInput")
+        sv_in = unique(net.sct_stale.input, "stable");
+        error(msg("GUILDA:GlobalController:InputEdited", char(net.s_tag), char(join(sv_in(1:min(end,3)), "; "))))
+    end
+    sv  = [net.sct_stale.powerflow; net.sct_stale.odefcn; obj.sct_stale.equilibrium; obj.sct_stale.odefcn];
+    if ~isempty(sv)
+        sv = unique(sv, "stable");
+        s_reason = join(sv(1:min(end,3)), "; ");
+        if numel(sv) > 3
+            s_reason = s_reason + "; ...";
         end
-        sv  = [net.sct_stale.powerflow; net.sct_stale.odefcn; obj.sct_stale.equilibrium; obj.sct_stale.odefcn];
-        if ~isempty(sv)
-            sv = unique(sv, "stable");
-            s_reason = join(sv(1:min(end,3)), "; ");
-            if numel(sv) > 3
-                s_reason = s_reason + "; ...";
-            end
-            error(msg("GUILDA:GlobalController:Stale", char(obj.s_tag), char(s_reason)))
-        end
-    else
-        obj.set_odefcn();    % no network to initialize: stale handles are rebuilt here
+        error(msg("GUILDA:GlobalController:Stale", char(obj.s_tag), char(s_reason)))
     end
 
     % Same Jacobian contract as SolverODE: f_JacobiDx/Y(t,x,V,u); a model may return []
@@ -143,7 +122,7 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
     if opt.Format ~= "struct"
         sct_block = struct("Axx", A, "Axv", Bv, "Bx", Bu, "E", E);
         l_eq = isequal(x, reshape(obj.rv_Xequilibrium, [], 1)) && isequal(u, reshape(obj.rv_Uequilibrium, [], 1)) ...
-               && isequal(V, tools.vcellfun(@(b) [real(b.c_Vequilibrium); imag(b.c_Vequilibrium)], net_units.a_Bus));
+               && isequal(V, tools.vcellfun(@(b) [real(b.c_Vequilibrium); imag(b.c_Vequilibrium)], net.a_Bus));
         sct_output = struct("message", "Linearized the global controller " + obj.s_tag + ".", ...
                             "s_issue", "", "l_equilibrium", l_eq, "s_layer", "GlobalController");
         sys = ResultLIN(obj.a_PowerNetwork, "", struct(), true, sct_output, t0, ...

@@ -7,9 +7,8 @@ function sct = build_index(net)
 % each evaluation computes them into the signal vector s (the rows y, yc of the map). The
 % inputs are given by the connection map: res = z_in - (e + S_sig*s + S_var*z), where e
 % holds the equilibrium of the inputs without another source. Nothing is written to the
-% model objects. Stops with GUILDA:SolverODE:Stale when net.initialize() is needed, with
-% GUILDA:SolverODE:ForeignControlledUnit for a global controller whose unit left the
-% network, and with GUILDA:SolverODE:GconNoTarget for an output of a global controller
+% model objects. Stops with GUILDA:SolverODE:Stale when net.initialize() is needed, and
+% with GUILDA:SolverODE:GconNoTarget for an output of a global controller
 % that drives no input. Called by solve.
     arguments (Input)
         net  % Network of the run.
@@ -163,18 +162,7 @@ end
 
 
 function check_network(net)
-    % The checks before a run: units of the global controllers on the network, edited
-    % inputs, and the stale tags of the network and its models
-    a_gc = net.a_GlobalController;
-    for k = 1:numel(a_gc)
-        gcon = a_gc{k};
-        for idx = 1:numel(gcon.controlledUnits)
-            unit = gcon.controlledUnits{idx};
-            if isempty(unit.a_Bus) || ~isequal(unit.a_Bus.a_PowerNetwork, net)
-                error(msg("GUILDA:SolverODE:ForeignControlledUnit", char(gcon.s_tag), char(unit.s_tag), char(net.s_tag)))
-            end
-        end
-    end
+    % The checks before a run: edited inputs, and the stale tags of the network and its models
     if ~isempty(net.sct_stale.input)   % edited inputs: initialize(Method="FixedInput")
         sv_in = unique(net.sct_stale.input, "stable");
         error(msg("GUILDA:SolverODE:InputEdited", char(net.s_tag), char(join(sv_in(1:min(end,3)), "; "))))
@@ -189,6 +177,7 @@ function check_network(net)
             end
         end
     end
+    a_gc = net.a_GlobalController;
     for k = 1:numel(a_gc)
         sv = [sv; a_gc{k}.sct_stale.equilibrium; a_gc{k}.sct_stale.odefcn]; %#ok<AGROW>
     end

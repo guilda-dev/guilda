@@ -30,4 +30,18 @@ classdef T < Branch
         key = "T"      % Type name used by PowerNetwork.add_branch.
     end
 
+    methods (Access={?PowerNetwork})
+        function obj = T(index, opt)
+            % Create the branch; called through `PowerNetwork.add_branch`.
+            arguments (Input)
+                index (1,1) string   % Number part of the tag, e.g. "001".
+                opt   (1,1) struct   % Branch settings of add_branch.
+            end
+            arguments (Output)
+                obj   % New branch object.
+            end
+            obj@Branch(index, opt)
+        end
+    end
+
 end

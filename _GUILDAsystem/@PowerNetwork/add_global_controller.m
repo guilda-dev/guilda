@@ -60,13 +60,6 @@ function con = add_global_controller(obj, Key, a_Unit, opt)
     if ismember(con.s_tag, string(obj.a_GlobalController))
         error(msg("GUILDA:PowerNetwork:GconTagInUse", char(con.s_tag), char(obj.s_tag)))
     end
-    for idx = 1:numel(con.controlledUnits)
-        unit = con.controlledUnits{idx};
-        % Compare handles: isequal would accept an identical copy of the network
-        if isempty(unit.a_Bus) || isempty(unit.a_Bus.a_PowerNetwork) || unit.a_Bus.a_PowerNetwork ~= obj
-            error(msg("GUILDA:PowerNetwork:GconOtherNetwork", char(con.s_tag), char(unit.s_tag), char(obj.s_tag)))
-        end
-    end
 
     % The connections of the controller, from the map of the network with it: each input
     % must observe its unit ("observe") and each output drive an input ("global")
@@ -77,7 +70,7 @@ function con = add_global_controller(obj, Key, a_Unit, opt)
         [tab, ~, c_idxGC, tab_c] = obj.get_variable_map();
     catch ME
         obj.a_GlobalController(end) = [];
-        con.a_PowerNetwork = [];
+        delete(con);
         rethrow(ME)
     end
     iv_gc = c_idxGC{end};
@@ -93,10 +86,11 @@ function con = add_global_controller(obj, Key, a_Unit, opt)
         lv_o = lv_out((idx-1)*n_o + (1:n_o));
         if ~all(lv_i) || ~all(lv_o)
             obj.a_GlobalController(end) = [];
-            con.a_PowerNetwork = [];
             unit = con.controlledUnits{idx};
             sv_missing = ["output or state " + reshape(con.sv_u(~lv_i), [], 1); "input " + reshape(con.sv_y(~lv_o), [], 1)];
-            error(msg("GUILDA:PowerNetwork:GconPorts", char(con.s_tag), char(unit.s_tag), class(unit), char(strjoin(sv_missing, ", "))))
+            s_tagCon = con.s_tag;
+            delete(con);
+            error(msg("GUILDA:PowerNetwork:GconPorts", char(s_tagCon), char(unit.s_tag), class(unit), char(strjoin(sv_missing, ", "))))
         end
     end
     con.log_edit("added to " + obj.s_tag, "Topology");

@@ -400,16 +400,11 @@ assert(DebugScript.helper.msg_id(error_of(@() net.a_Bus{5}.get_sys())) == "GUILD
 assert(DebugScript.helper.msg_id(error_of(@() net.initialize())) == "GUILDA:PowerNetwork:InputEdited")
 assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="equilibrium"))) == "GUILDA:PowerNetwork:InputEdited")
 assert(isequal(ld.rv_Uequilibrium, u0/0.95))
-% 値の検査: 要素数、実数・有限、母線への接続
+% 値の検査: 要素数、実数・有限
 assert(DebugScript.helper.msg_id(error_of(@() ld.set_input([1; 2; 3]))) == "GUILDA:Component:InputSize")
 assert(DebugScript.helper.msg_id(error_of(@() ld.set_input([NaN; 1]))) == "MATLAB:validators:mustBeFinite")
 assert(DebugScript.helper.msg_id(error_of(@() ld.set_input([1i; 1]))) == "MATLAB:validators:mustBeReal")
 assert(numel(net.sct_stale.input) == 1)
-net0 = PowerNetwork();
-bus0 = net0.add_bus();
-ld0 = bus0.add_component("load-impedance", P=-0.5, Q=-0.1);
-bus0.remove_component(ld0.s_tag);
-assert(DebugScript.helper.msg_id(error_of(@() ld0.set_input([1; 0]))) == "GUILDA:Component:InputNotConnected")
 
 
 %% FixedInput solves the equilibrium with the edited inputs

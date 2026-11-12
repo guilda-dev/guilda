@@ -11,9 +11,6 @@ function sm = gc_routes(comp, sm_before)
         sm (:,3) string          % Connections now: [GC tag, Source, Target].
     end
     sm = strings(0,3);
-    if isempty(comp.a_Bus) || isempty(comp.a_Bus.a_PowerNetwork)
-        return
-    end
     net = comp.a_Bus.a_PowerNetwork;
     lv_gc = cellfun(@(gc) any(cellfun(@(u) u == comp, gc.controlledUnits)), net.a_GlobalController);
     if ~any(lv_gc)

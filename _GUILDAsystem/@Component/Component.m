@@ -40,9 +40,12 @@ classdef Component < PowerSystemModel
 %   equilibrium from the held V and I when they are stale.
 % - Does not own the bus voltage (it reads `a_Bus.c_Vequilibrium`), the network frequency
 %   (it reads `get_Hz()`) or the system base.
-% - Created only by `Bus.add_component` and `Bus.replace_component`. Only the bus sets and
-%   clears `a_Bus` (`SetAccess`) and logs the attachment as a "Topology" edit of the
-%   component; the component sets `LocalController.a_Component` of its controllers. A
+% - Created only by `Bus.add_component` and `Bus.replace_component` (the constructors of
+%   the concrete classes are accessible only from `Bus`), so a component is always on a
+%   bus of a network. Only the bus sets `a_Bus` (`SetAccess`) and logs the attachment as a
+%   "Topology" edit of the component; the component sets `LocalController.a_Component` of
+%   its controllers. `Bus.remove_component` and `Bus.replace_component` delete the
+%   component they take out (with its local controllers). A
 %   `GlobalController` refers to controlled components in `controlledUnits`; a controlled
 %   component cannot be removed or replaced while the controller is on the network.
 %
@@ -80,7 +83,7 @@ classdef Component < PowerSystemModel
 
 %% Parameter
     properties(SetAccess={?Bus}) % Layer Structure
-        a_Bus = []                           % Bus the component is connected to ([] when removed). <@Type> Bus
+        a_Bus = []                           % Bus the component is connected to (set by Bus.add_component and Bus.replace_component). <@Type> Bus
     end
     properties(SetAccess=protected) % Layer Structure
         a_LocalController (:,1) = cell(0,1)  % Top-level local controllers, in slot order whatever the attach order: the AVR or "local" controller (a PSS hangs under an AVR), then the governor. <@Stale> equilibrium
@@ -103,7 +106,7 @@ classdef Component < PowerSystemModel
         c_Iequilibrium                       % [pu] Current injected into the bus at the equilibrium (complex).
     end
     properties(Dependent) % Steady State
-        c_Vequilibrium                       % [pu] Terminal voltage at the equilibrium (= a_Bus.c_Vequilibrium; [] without a bus).
+        c_Vequilibrium                       % [pu] Terminal voltage at the equilibrium (= a_Bus.c_Vequilibrium).
         rv_Xequilibrium_all                  % State equilibrium of the component, then of its controllers depth first (the order of get_variable_map).
     end
     properties(Dependent, Access=protected) % Layer Structure
@@ -246,12 +249,8 @@ classdef Component < PowerSystemModel
             x = equilibrium_depth_first(obj);
         end
         function V = get.c_Vequilibrium(obj)
-            % The bus owns the voltage; a component not attached to a bus has none.
-            if isempty(obj.a_Bus)
-                V = [];
-            else
-                V = obj.a_Bus.c_Vequilibrium;
-            end
+            % The bus owns the voltage
+            V = obj.a_Bus.c_Vequilibrium;
         end
         function p = get.parent(obj)
             p = obj.a_Bus;

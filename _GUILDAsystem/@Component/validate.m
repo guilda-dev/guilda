@@ -251,15 +251,10 @@ function [flag, contract] = compare_jacobian(flag, contract, s_method, f_num, f_
 end
 
 function sv_src = input_sources(obj)
-    % Who drives each input, from the connection map (of the network when the component is
-    % on one, otherwise of the component): the outputs of the local controllers of the same
+    % Who drives each input, from the connection map of the network: the outputs of the local controllers of the same
     % name, and those of the global controllers that no local controller of the component
     % takes as an input; the other inputs stay at the equilibrium.
-    if ~isempty(obj.a_Bus) && ~isempty(obj.a_Bus.a_PowerNetwork)
-        [tab, ~, ~, tab_c] = obj.a_Bus.a_PowerNetwork.get_variable_map();
-    else
-        [tab, tab_c] = obj.get_variable_map();
-    end
+    [tab, ~, ~, tab_c] = obj.a_Bus.a_PowerNetwork.get_variable_map();
     iv_u = find(tab.Kind == "u" & tab.Owner == string(obj.s_tag));
     sv_src = repmat("equilibrium (not connected)", numel(obj.sv_u), 1);
     for k = 1:numel(iv_u)

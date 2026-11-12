@@ -4,8 +4,8 @@ function remove_bus(obj, sr_BusTag, opt)
 % A branch connected to a removed bus would be left with a dangling end, so removing
 % such a bus is an error unless `RemoveBranches` is true, which removes those branches
 % too. A bus whose components are controlled by a global controller cannot be removed
-% until that controller is removed. The removed buses (and branches) no longer refer to
-% this network.
+% until that controller is removed. The removed buses are deleted with their components and
+% local controllers (and the removed branches), so a handle to them becomes invalid.
 %
 % <@Examples>
 % ```matlab
@@ -53,7 +53,5 @@ function remove_bus(obj, sr_BusTag, opt)
 
     obj.a_Bus = obj.a_Bus(~lv_rmBus);
     obj.log_edit(obj.s_tag+" ---remove->> "+join(sv_tagBus(lv_rmBus),", "),"Topology");
-    for k = 1:numel(a_rmBus)
-        a_rmBus{k}.a_PowerNetwork = [];
-    end
+    tools.delete_layers(a_rmBus);
 end

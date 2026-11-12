@@ -36,8 +36,11 @@ classdef GlobalController < PowerSystemModel
 %   inputs whose equilibrium is already set.
 % - Unlike a `LocalController`: no nested controller. It does not own its units and is not a
 %   child of any bus.
-% - Only the network sets and clears `a_PowerNetwork` (`SetAccess`;
-%   `PowerNetwork.add_global_controller` logs the attachment as a "Topology" edit).
+% - Created only by `PowerNetwork.add_global_controller` (the constructors of the concrete
+%   classes are accessible only from `PowerNetwork`), so a controller is always on a
+%   network. Only the network sets `a_PowerNetwork` (`SetAccess`; add_global_controller
+%   logs the attachment as a "Topology" edit), and `PowerNetwork.remove_global_controller`
+%   deletes the controller.
 % - The handles `f_*` @(t,x,V,u) bind param and omega0; `set_odefcn` builds them,
 %   called by `initialize` when they are stale (`sct_stale.odefcn`, or a network
 %   frequency other than `r_odefcnHz`).
@@ -75,7 +78,7 @@ classdef GlobalController < PowerSystemModel
         f_JacobiY                                  % Jacobian function of f_Y.
     end
     properties (SetAccess={?PowerNetwork}) % Layer Structure
-        a_PowerNetwork = []                        % PowerNetwork the controller belongs to (set by add_global_controller; [] when removed). <@Type> PowerNetwork
+        a_PowerNetwork = []                        % PowerNetwork the controller belongs to (set by add_global_controller). <@Type> PowerNetwork
     end
     properties (SetAccess=protected, Hidden) % Layer Structure
         controlledUnits                            % Controlled components, in the order given to the constructor.

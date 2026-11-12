@@ -1,8 +1,7 @@
 function flag = validate(obj, l_message)
 % Check the model functions of the controller against the contract of LocalController.
 %
-% The controller must be attached to a component on a network, and the network must be
-% initialized: the check is made at the equilibrium. A broken model does not stop the
+% The network must be initialized: the check is made at the equilibrium. A broken model does not stop the
 % check: it is reported as FAIL in flag.contract and the values that cannot be computed
 % are NaN. flag.inputs shows where each input is read, so a misspelled input name
 % appears as "equilibrium (not connected)".
@@ -17,9 +16,6 @@ function flag = validate(obj, l_message)
     end
 
     comp = obj.observed_component();
-    if isempty(comp) || isempty(comp.a_Bus) || isempty(comp.a_Bus.a_PowerNetwork)
-        error(msg("GUILDA:LocalController:ValidateNotAttached", obj.s_tag))
-    end
     net = comp.a_Bus.a_PowerNetwork;
     if ~isempty(net.sct_stale.input)   % edited inputs: initialize(Method="FixedInput")
         sv_in = unique(net.sct_stale.input, "stable");

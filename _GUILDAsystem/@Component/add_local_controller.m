@@ -23,9 +23,9 @@ function con = add_local_controller(obj, Key, opt)
 % drive the inputs of the component of the same name (an input event or a global
 % controller on such an input adds to them).
 % A new AVR or "local" controller replaces the attached one. The PSS of an old AVR moves
-% to a new AVR, and is detached when the new controller is not an AVR. A new PSS
+% to a new AVR, and is deleted when the new controller is not an AVR. A new PSS
 % replaces the attached one, and a new governor the attached governor. Replaced
-% controllers are detached (they no longer refer to this component).
+% controllers are deleted, so a handle to them becomes invalid.
 % The two top-level controllers must drive different inputs: a governor and an AVR or
 % "local" controller with a common output (e.g. a local_LQR on all the inputs, Pmech
 % among them) are rejected with an error.
@@ -96,14 +96,15 @@ function con = add_local_controller(obj, Key, opt)
                 show_msg("warning", "GUILDA:Component:ReplaceController", label(new_con), char(new_con.s_tag), char(old_avr.s_tag), char(obj.s_tag))
                 a_pss = old_avr.a_LocalController;
                 old_avr.remove_local_controller();
-                old_avr.a_Component = [];
+                s_old = old_avr.s_tag;
+                tools.delete_layers({old_avr});
                 set_slots(obj, new_con, governor_of(obj));
                 new_con.a_Component = obj;
                 new_con.resolve_observe();
                 new_con.log_edit("attached to " + obj.s_tag, "Topology");
                 if ~isempty(a_pss)
                     if new_con.s_role ~= "avr"
-                        a_pss{1}.a_Component = [];
+                        tools.delete_layers(a_pss);
                     else
                         new_con.add_local_controller(a_pss{1})
                         a_pss{1}.a_Component = new_con;
@@ -111,7 +112,7 @@ function con = add_local_controller(obj, Key, opt)
                         a_pss{1}.log_edit("attached to " + new_con.s_tag, "Topology");
                     end
                 end
-                obj.log_edit(obj.s_tag+" <<-replace--- "+new_con.s_tag+" (was "+old_avr.s_tag+")", "Topology");
+                obj.log_edit(obj.s_tag+" <<-replace--- "+new_con.s_tag+" (was "+s_old+")", "Topology");
             end
 
         case "governor"
@@ -121,8 +122,8 @@ function con = add_local_controller(obj, Key, opt)
                 obj.log_edit(obj.s_tag+" <<-Add--- "+new_con.s_tag, "Topology");
             else
                 show_msg("warning", "GUILDA:Component:ReplaceController", label(new_con), char(new_con.s_tag), char(old_gov.s_tag), char(obj.s_tag))
-                old_gov.a_Component = [];
                 obj.log_edit(obj.s_tag+" <<-replace--- "+new_con.s_tag+" (was "+old_gov.s_tag+")", "Topology");
+                tools.delete_layers({old_gov});
             end
             new_con.a_Component = obj;
             new_con.resolve_observe();
@@ -141,8 +142,8 @@ function con = add_local_controller(obj, Key, opt)
             else
                 old_pss = avr.a_LocalController{1};
                 show_msg("warning", "GUILDA:Component:ReplaceController", "PSS", char(new_con.s_tag), char(old_pss.s_tag), char(avr.s_tag))
-                old_pss.a_Component = [];
                 obj.log_edit(obj.s_tag+" <<-replace--- "+new_con.s_tag+" (was "+old_pss.s_tag+")", "Topology");
+                tools.delete_layers({old_pss});
             end
             avr.add_local_controller(new_con)
             new_con.a_Component = avr;

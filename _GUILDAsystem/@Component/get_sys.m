@@ -38,12 +38,11 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
 % returns a struct with the same eight fields; "ss" returns a descriptor state-space model
 % (dss) and needs the Control System Toolbox.
 %
-% At the default point (x, V, u and Point all omitted), a component on a network
+% At the default point (x, V, u and Point all omitted), the component
 % stops with the error GUILDA:Component:Stale when net.initialize() is needed (a stale
 % tag of the network, the component or its controllers). A call with x, V, u or
 % Point does not check the stale tags: the model is linearized at the given point with
-% the current handles. A component without a network builds its stale handles (and
-% those of its controllers, with Controllers true) first.
+% the current handles.
 %
 % See also Component.get_variable_map, Bus.get_sys, PowerNetwork.get_sys
 %
@@ -73,14 +72,7 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
     % All controllers in the tree (e.g. PSS attached under AVR) are separate blocks connected by signal names
     a_LC = all_controllers(obj);
 
-    if isempty(obj.a_Bus) || isempty(obj.a_Bus.a_PowerNetwork)
-        % no network to initialize: the handles are built here
-        if opt.Controllers
-            build_stale(obj);
-        else
-            obj.set_odefcn();
-        end
-    elseif l_default
+    if l_default
         % stale tags of the network, the component and its controllers
         net = obj.a_Bus.a_PowerNetwork;
         if ~isempty(net.sct_stale.input)   % edited inputs: initialize(Method="FixedInput")
@@ -130,7 +122,7 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
             tab = tab([1:nx, find(ismember(tab.Kind, ["Vre","Vim","u"]))'], :);
             tab.Index = (1:height(tab))';
             rv_point = [x; V; u];
-            l_eq = ~isempty(obj.a_Bus) && isequal(rv_point, [reshape(obj.rv_Xequilibrium, [], 1); ...
+            l_eq = isequal(rv_point, [reshape(obj.rv_Xequilibrium, [], 1); ...
                        ri(obj.c_Vequilibrium); reshape(obj.rv_Uequilibrium, [], 1)]);
             sys = object_result(sys, tab, rv_point, l_eq, t0);
             if opt.Format == "ss"
@@ -179,7 +171,7 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
     varargout{3} = cellstr(sys.OutputName);
 
     if opt.Format ~= "struct"
-        l_eq = l_equilibrium && ~isempty(obj.a_Bus) && isequal(rv_point, SolverLIN.point_vector(obj, []));
+        l_eq = l_equilibrium && isequal(rv_point, SolverLIN.point_vector(obj, []));
         tab  = obj.get_variable_map();
         sys  = object_result(sys, tab(ismember(tab.Kind, ["x","Vre","Vim","u"]), :), rv_point, l_eq, t0);
         if opt.Format == "ss"
@@ -201,11 +193,7 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
         if ~l_eq
             sct_output.message = "Linearized the component " + obj.s_tag + " at the given point.";
         end
-        net = [];
-        if ~isempty(obj.a_Bus)
-            net = obj.a_Bus.a_PowerNetwork;
-        end
-        result = ResultLIN(net, "", struct("Port", opt.port, "Point", {opt.Point}), true, sct_output, t0, ...
+        result = ResultLIN(obj.a_Bus.a_PowerNetwork, "", struct("Port", opt.port, "Point", {opt.Point}), true, sct_output, t0, ...
                            tab, rv_point, sct_block, struct("sct_sys", sct_sys));
     end
 
@@ -243,13 +231,6 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
         sv = reshape(string(owner.sv_y), [], 1);
         lv = ismember(sv, owner.sv_x);
         sv(lv) = "Y_" + sv(lv);
-    end
-
-    function build_stale(layer)
-        layer.set_odefcn();
-        for k = 1:numel(layer.a_LocalController)
-            build_stale(layer.a_LocalController{k});
-        end
     end
 
     function list = all_controllers(parent)

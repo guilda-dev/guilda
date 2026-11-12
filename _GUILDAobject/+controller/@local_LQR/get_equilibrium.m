@@ -8,10 +8,7 @@ function get_equilibrium(obj, V, u)
         V  % [pu] Complex terminal voltage of the component at the equilibrium.
         u  % Equilibrium input of the component (in the order of its sv_u).
     end
-    comp = obj.a_Component;
-    if ~isa(comp, "Component")
-        error(msg("GUILDA:local_LQR:NotOnComponent", obj.s_tag))
-    end
+    comp = obj.a_Component;    % role "local": always on the component
     [~, iv_u] = ismember(obj.sv_y, comp.sv_u);
 
     obj.rv_Xequilibrium = zeros(0,1);

@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Removed objects are deleted",
+    "date": "2026-11-12",
+    "type": "feature",
+    "content": "Generators, loads, branches, AVRs, PSSs, governors and AGCs are made only with add_component, replace_component, add_branch, add_local_controller and add_global_controller; calling a model class directly, such as controller.avr.AVR_ST1(\"1\"), stops with an error. An object you remove or replace (remove_bus, remove_branch, remove_component, replace_component, remove_local_controller, remove_global_controller, or a controller replaced by add_local_controller) is deleted, together with what was attached to it, so a variable that still holds it can no longer be used. To use it again, add a new one with its key. In a model class of your own, declare the constructor with Access={?Bus} (components), Access={?Component} (local controllers) or Access={?PowerNetwork} (branches and global controllers)."
+  },
+  {
     "title": "Show the signal connections",
     "date": "2026-11-12",
     "type": "feature",

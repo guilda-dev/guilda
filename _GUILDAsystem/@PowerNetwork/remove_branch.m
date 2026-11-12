@@ -2,7 +2,7 @@ function remove_branch(obj,tag)
 % Remove branches by tag.
 %
 % A tag that is not found is an error, and then nothing is removed. The removed branches
-% no longer refer to this network or its buses.
+% are deleted, so a handle to them becomes invalid.
 %
 % <@Examples>
 % ```matlab
@@ -24,14 +24,10 @@ function remove_branch(obj,tag)
     end
     lv_branch  = ismember(branch_tag,tag);
 
-    % The removed branches no longer refer to this network or its buses
     a_removed    = obj.a_Branch(lv_branch);
     obj.a_Branch = obj.a_Branch(~lv_branch);
     if any(lv_branch)
         obj.log_edit(obj.s_tag+" ---remove->> "+join(branch_tag(lv_branch),", "),"Topology");
     end
-    for k = 1:numel(a_removed)
-        a_removed{k}.a_Bus          = cell(0,1);
-        a_removed{k}.a_PowerNetwork = [];
-    end
+    tools.delete_layers(a_removed);
 end

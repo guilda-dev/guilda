@@ -16,8 +16,9 @@ classdef Branch < PowerSystemModel
 %   buses. The order of `a_Bus` is the row and column order of the 2x2 matrix.
 % - Has no states and no function-handle cache. It takes part in the simulation only
 %   through the admittance matrix built when an analysis starts.
-% - Created only by `PowerNetwork.add_branch`; only the network sets and clears
-%   `a_PowerNetwork` and `a_Bus`. No dangling ends: `PowerNetwork.remove_bus` on a bus with
+% - Created only by `PowerNetwork.add_branch` (the constructors of the concrete classes
+%   are accessible only from `PowerNetwork`); only the network sets `a_PowerNetwork` and
+%   `a_Bus`, and `PowerNetwork.remove_branch` deletes the branch. No dangling ends: `PowerNetwork.remove_bus` on a bus with
 %   branches stops unless RemoveBranches=true.
 %
 % Subclasses in the `branch` package define `key` (the type name of add_branch), `header`
@@ -42,8 +43,8 @@ classdef Branch < PowerSystemModel
 
 %% Properties
     properties(SetAccess={?PowerNetwork}) % Layer Structure
-        a_PowerNetwork = []           % PowerNetwork the branch belongs to ([] when removed). <@Type> PowerNetwork
-        a_Bus (:,1) cell = cell(0,1)  % End buses {from; to}: the row and column order of the admittance matrix (empty when removed). <@Type> cell of Bus (2x1)
+        a_PowerNetwork = []           % PowerNetwork the branch belongs to (set by add_branch). <@Type> PowerNetwork
+        a_Bus (:,1) cell = cell(0,1)  % End buses {from; to}: the row and column order of the admittance matrix. <@Type> cell of Bus (2x1)
     end
     properties(Dependent) % Parameter
         cv_Vequilibrium      % [pu] Voltage phasors of the end buses at the equilibrium. <@Type> double

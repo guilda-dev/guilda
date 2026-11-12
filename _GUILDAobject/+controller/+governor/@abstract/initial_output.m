@@ -7,10 +7,6 @@ function r_P0 = initial_output(obj, u)
     arguments (Output)
         r_P0  % [pu of the rated MW] Turbine output at the equilibrium.
     end
-    comp = obj.a_Component;
-    r_Pmech = u(1);
-    if isa(comp, "Component") && any(comp.sv_u == "Pmech")
-        r_Pmech = u(comp.sv_u == "Pmech");
-    end
+    r_Pmech = u(obj.a_Component.sv_u == "Pmech");    % the governor drives Pmech of its component
     r_P0 = r_Pmech / obj.tab_parameter.dynamics{:, 'Prate'};
 end

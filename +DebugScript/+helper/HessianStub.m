@@ -1,5 +1,5 @@
 classdef HessianStub < Component
-% get_hessian の契約を確かめるための機器 (テスト専用、系統には追加しない)
+% get_hessian の契約を確かめるための機器 (テスト専用。DebugScript.helper.stub_component で母線に付ける)
 %
 %   dx = [x1^2 * Vre; x1 * u]   (x = [x1; x2], u はスカラー)
 %   I  = x2 * (Vre + j Vim)
@@ -14,16 +14,17 @@ classdef HessianStub < Component
     end
 
     methods
-        function obj = HessianStub()
+        function obj = HessianStub(s_tag, ~, opt)
+            % add_component から (タグの番号, parameter, 設定) で呼ばれる
+            arguments (Input)
+                s_tag  % タグの接尾辞
+                ~      % add_component の parameter (使わない)
+                opt    % add_component の設定
+            end
             arguments (Output)
                 obj  % 作成したオブジェクト
             end
-            opt = struct("baseMVA",100, "Pmin",-inf, "Pmax",inf, "Qmin",-inf, "Qmax",inf, ...
-                         "P",0, "Q",0, "OPFinit_P0",0, "OPFinit_Q0",0, "OPFcost_HP",1, ...
-                         "OPFcost_HQ",0, "OPFcost_fP",1, "OPFcost_fQ",0, "OPFcost_startup",0, ...
-                         "OPFcost_shutdown",0, "Xaxis",nan, "Yaxis",nan, "Marker","o", ...
-                         "MidXaxis","", "MidYaxis","", "BusTag","");
-            obj@Component("HS1", opt);
+            obj@Component("HS" + s_tag, opt);
         end
 
         function [x, u] = get_equilibrium(~, ~, ~, ~, ~)

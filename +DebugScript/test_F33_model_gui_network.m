@@ -95,13 +95,14 @@ check_branch(h, br)
 assert(~isequal(page_table(h, "Equilibrium").V, cv_old))
 
 
-%% Branch: a removed branch has an empty Equilibrium table
+%% Branch: a removed branch is deleted, and its view says so
 br = net.a_Branch{end};
-DebugScript.helper.quiet(@() net.remove_branch(br.s_tag));
-assert(isempty(br.a_Bus))
 h = br.gui(fig);
-tab = page_table(h, "Equilibrium");
-assert(height(tab) == 0 && isequal(string(tab.Properties.VariableNames), ["Bus","V","I"]))
+DebugScript.helper.quiet(@() net.remove_branch(br.s_tag));
+assert(~isvalid(br))
+h.render();
+h_label = findobj(h.h_container, "Type", "uilabel");
+assert(isscalar(h_label) && contains(h_label.Text, "deleted"))
 
 
 function check_network(h, net)

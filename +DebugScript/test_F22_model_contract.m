@@ -167,18 +167,19 @@ end
 
 %% check_model_contract reports each kind of violation
 check = @DebugScript.helper.check_model_contract;
-assert(isempty(check(DebugScript.helper.BadComponentStub("none"))))
-assert(contains(join(check(DebugScript.helper.BadComponentStub("xsize"))), "x, u sizes"))
-assert(contains(join(check(DebugScript.helper.BadComponentStub("equilibrium"))), "dx:"))   % 契約には反しない
-assert(contains(join(check(DebugScript.helper.BadComponentStub("currentreal"))), "I: NaN"))
-assert(contains(join(check(DebugScript.helper.BadJacobianStub())), "Axx:"))
+c_reg = DebugScript.helper.register_stub(["BadComponentStub","BadJacobianStub"], ...
+    ["component.load.stub_badcomponentstub","component.load.stub_badjacobianstub"]);
+bus = PowerNetwork().add_bus();
+assert(isempty(check(bus.add_component("stub-badcomponentstub", parameter="none"))))
+assert(contains(join(check(bus.add_component("stub-badcomponentstub", parameter="xsize"))), "x, u sizes"))
+assert(contains(join(check(bus.add_component("stub-badcomponentstub", parameter="equilibrium"))), "dx:"))   % 契約には反しない
+assert(contains(join(check(bus.add_component("stub-badcomponentstub", parameter="currentreal"))), "I: NaN"))
+assert(contains(join(check(bus.add_component("stub-badjacobianstub"))), "Axx:"))
 c_stub = DebugScript.helper.register_stub("BadControllerStub", "controller.test_bad_controller");
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
 comp.add_local_controller("test-bad-controller", parameter=struct(bad="jacobian"));
 DebugScript.helper.quiet(@() net.initialize);
 assert(contains(join(check(comp.a_LocalController{1})), "Axx:"))
-sv = check(controller.avr.AVR_ST1("avr1"));   % 接続していないので validate が止まる
-assert(contains(sv, "GUILDA:LocalController:ValidateNotAttached"))
 
 
 %% validate keeps the existing fields and adds contract and inputs
@@ -209,67 +210,77 @@ assert(contains(str, "Contract") && contains(str, "Connection source"))
 
 
 %% A correct stub passes
-flag = DebugScript.helper.BadComponentStub("none").validate(false);
+[comp, c_reg] = DebugScript.helper.stub_component("BadComponentStub", "none");
+flag = comp.validate(false);
 assert_no_fail(flag, "none");
 assert(max(flag.dx.diff) < 1e-12 && max(flag.I.diff) < 1e-12)
 
 
 %% Equilibrium error appears in the residual
-flag = DebugScript.helper.BadComponentStub("equilibrium").validate(false);
+[comp, c_reg] = DebugScript.helper.stub_component("BadComponentStub", "equilibrium");
+flag = comp.validate(false);
 assert_no_fail(flag, "equilibrium");    % 契約には反しない
 assert(max(flag.dx.diff) > 0.05)
 
 
 %% Wrong state size is detected
-flag = DebugScript.helper.BadComponentStub("xsize").validate(false);
+[comp, c_reg] = DebugScript.helper.stub_component("BadComponentStub", "xsize");
+flag = comp.validate(false);
 assert_only_fail(flag, "x, u sizes");
 assert(contains(flag.contract{"x, u sizes","detail"}, "x 3 (sv_x 2)"))
 
 
 %% fcn_I that is not a complex scalar is detected
-flag = DebugScript.helper.BadComponentStub("currentreal").validate(false);
+[comp, c_reg] = DebugScript.helper.stub_component("BadComponentStub", "currentreal");
+flag = comp.validate(false);
 assert_only_fail(flag, "fcn_I complex scalar");
 assert(all(isnan(flag.I.diff)))
 
 
 %% fcn_Mass that uses the point is detected
-flag = DebugScript.helper.BadComponentStub("massx").validate(false);
+[comp, c_reg] = DebugScript.helper.stub_component("BadComponentStub", "massx");
+flag = comp.validate(false);
 assert_only_fail(flag, "fcn_Mass constant and square");
 assert(contains(flag.contract{"fcn_Mass constant and square","detail"}, "badsubscript"))
 
 
 %% Required P, Q are valid
 % 枠組みは常に get_equilibrium(V,I,P,Q) で呼ぶ
-flag = DebugScript.helper.BadComponentStub("needpq").validate(false);
+[comp, c_reg] = DebugScript.helper.stub_component("BadComponentStub", "needpq");
+flag = comp.validate(false);
 assert(all(flag.contract.status ~= "FAIL"))
 assert(max(flag.dx.diff) < 1e-12)
 
 
 %% The model functions take no bus current and the output takes no input
 % fcn_dx(t,x,V,u), fcn_I(t,x,V,u), fcn_Y(t,x,V): no Jacobian block of I, none of fcn_Y by u
-flag = DebugScript.helper.BadComponentStub("none").validate(false);
+[comp, c_reg] = DebugScript.helper.stub_component("BadComponentStub", "none");
+flag = comp.validate(false);
 assert(~any(isfield(flag, ["Bxi","Dii","Dyi","Dyu"])))
 assert(~ismember("no dependence on I", string(flag.contract.Properties.RowNames)))
 assert(all(flag.contract.status ~= "FAIL"))
 
 
 %% Wrong sizes of fcn_dx, fcn_Y and fcn_Mass are detected
-flag = DebugScript.helper.BadComponentStub("dxsize").validate(false);
+[comp, c_reg, net] = DebugScript.helper.stub_component("BadComponentStub", "dxsize");
+flag = comp.validate(false);
 assert_only_fail(flag, "fcn_dx size");
 assert(all(isnan(flag.dx.diff)))
-flag = DebugScript.helper.BadComponentStub("ysize").validate(false);
+flag = net.a_Bus{1}.add_component("stub-badcomponentstub", parameter="ysize").validate(false);
 assert_only_fail(flag, "fcn_Y size");
-flag = DebugScript.helper.BadComponentStub("masssize").validate(false);
+flag = net.a_Bus{1}.add_component("stub-badcomponentstub", parameter="masssize").validate(false);
 assert_only_fail(flag, "fcn_Mass constant and square");
 
 
 %% Port names in sv_u are detected
-flag = DebugScript.helper.BadPortStub().validate(false);
+[comp, c_reg] = DebugScript.helper.stub_component("BadPortStub");
+flag = comp.validate(false);
 assert_only_fail(flag, "sv_u has no port names");
 
 
 %% Analytic Jacobian errors are detected
-flag = DebugScript.helper.BadJacobianStub().validate(false);
+[comp, c_reg] = DebugScript.helper.stub_component("BadJacobianStub");
+flag = comp.validate(false);
 assert(max(flag.Axx{:,:}, [], "all") > 1)                       % 大きさの合う Axx は比べる
 assert_only_fail(flag, "Jacobi_dx sizes");                      % Bxu が 2x3
 assert(all(isnan(flag.Bxu{:,:}), "all"))
@@ -354,11 +365,6 @@ comp.add_local_controller("test-bad-controller", parameter=struct(bad="jacobian"
 DebugScript.helper.quiet(@() net.initialize);
 flag = comp.a_LocalController{1}.validate(false);
 assert(abs(flag.Axx{1,1} - 5) < 1e-8)
-
-
-%% Controller that is not attached stops with a clear error
-con = controller.avr.AVR_ST1("avr1");
-assert_error(@() con.validate(false), "GUILDA:LocalController:ValidateNotAttached");
 
 
 %% Controller without an equilibrium asks for initialize

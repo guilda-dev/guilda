@@ -389,12 +389,12 @@ b1.l_isSlack = true;</code></pre>
             </li>
             <li><code>s_role</code> decides the slot:
               <ul>
-                <li>AVR or <code>"local"</code> controller: becomes <code>a_LocalController{1}</code>; an existing one is detached with a warning, and its PSS moves to a new AVR (detached when the new controller is not an AVR)</li>
+                <li>AVR or <code>"local"</code> controller: becomes <code>a_LocalController{1}</code>; an existing one is deleted with a warning, and its PSS moves to a new AVR (deleted when the new controller is not an AVR)</li>
                 <li>PSS: goes under the AVR</li>
-                <li>Governor: placed after the AVR in <code>a_LocalController</code>; an existing governor is detached with a warning</li>
+                <li>Governor: placed after the AVR in <code>a_LocalController</code>; an existing governor is deleted with a warning</li>
               </ul>
             </li>
-            <li>Attach: set <code>con.a_Component</code> (writable only by <code>Component</code> and <code>LocalController</code>), resolve the observed signals (<code>resolve_observe</code>: expand <code>"Xall"</code> / <code>"Yall"</code>, set <code>iv_obsY</code> / <code>iv_obsX</code>), report a <code>"Topology"</code> edit on the controller ("attached to &lt;parent&gt;"): its <code>equilibrium</code> becomes stale. Detach: <code>[]</code> only</li>
+            <li>Attach: set <code>con.a_Component</code> (writable only by <code>Component</code> and <code>LocalController</code>), resolve the observed signals (<code>resolve_observe</code>: expand <code>"Xall"</code> / <code>"Yall"</code>, set <code>iv_obsY</code> / <code>iv_obsX</code>), report a <code>"Topology"</code> edit on the controller ("attached to &lt;parent&gt;"): its <code>equilibrium</code> becomes stale. A replaced controller is deleted (<code>tools.delete_layers</code>)</li>
             <li>When a global controller controls the component: compare the <code>"global"</code> rows of the connection map (<code>net.get_variable_map()</code>) before and after the edit, and list the outputs that go elsewhere now in an INFO message (<code>GUILDA:Component:GconRouteChanged</code>; <code>-&gt; (no input)</code> when none)</li>
             <li>Return the new controller</li>
           </ul><ul lang="ja">
@@ -409,12 +409,12 @@ b1.l_isSlack = true;</code></pre>
             </li>
             <li>配置先は <code>s_role</code> で決まります:
               <ul>
-                <li>AVR・<code>"local"</code> の制御器: <code>a_LocalController{1}</code> に配置します。既存のものは警告を出して切り離し、その PSS は新しい AVR へ移します（新しい制御器が AVR でなければ切り離します）。</li>
+                <li>AVR・<code>"local"</code> の制御器: <code>a_LocalController{1}</code> に配置します。既存のものは警告を出して削除し、その PSS は新しい AVR へ移します（新しい制御器が AVR でなければ削除します）。</li>
                 <li>PSS: AVR の下に配置します。</li>
-                <li>ガバナ: <code>a_LocalController</code> で AVR の後ろに配置します。既存のガバナは警告を出して切り離します。</li>
+                <li>ガバナ: <code>a_LocalController</code> で AVR の後ろに配置します。既存のガバナは警告を出して削除します。</li>
               </ul>
             </li>
-            <li>接続では、<code>con.a_Component</code> を代入し（書き込めるのは <code>Component</code> と <code>LocalController</code> だけです）、観測する信号を解決し（<code>resolve_observe</code>: <code>"Xall"</code> / <code>"Yall"</code> を展開し、<code>iv_obsY</code> / <code>iv_obsX</code> を設定）、制御器の <code>"Topology"</code> の編集として報告します（"attached to &lt;parent&gt;"）。これで制御器の <code>equilibrium</code> が古くなります。切り離しは <code>[]</code> を代入するだけです。</li>
+            <li>接続では、<code>con.a_Component</code> を代入し（書き込めるのは <code>Component</code> と <code>LocalController</code> だけです）、観測する信号を解決し（<code>resolve_observe</code>: <code>"Xall"</code> / <code>"Yall"</code> を展開し、<code>iv_obsY</code> / <code>iv_obsX</code> を設定）、制御器の <code>"Topology"</code> の編集として報告します（"attached to &lt;parent&gt;"）。これで制御器の <code>equilibrium</code> が古くなります。置き換えた制御器は削除します（<code>tools.delete_layers</code>）。</li>
             <li>グローバル制御器がこの機器を制御する場合: 接続マップ（<code>net.get_variable_map()</code>）の <code>"global"</code> の行を編集の前後で比較し、接続先が変わった出力を INFO で表示します（<code>GUILDA:Component:GconRouteChanged</code>。接続先がなければ <code>-&gt; (no input)</code>）。</li>
             <li>新しい制御器を返します。</li>
           </ul></dd>
@@ -586,19 +586,17 @@ b1.l_isSlack = true;</code></pre>
             <li>Check the tags first</li>
             <li>Bus not removable while a global controller controls one of its components</li>
             <li>Bus not removable while branches end at it, unless <code>RemoveBranches=true</code> (then <code>remove_branch</code> runs first)</li>
-            <li>Take the removed objects out of the cell and detach them: <code>bus.a_PowerNetwork</code>, <code>br.a_PowerNetwork</code> and <code>gc.a_PowerNetwork</code> get <code>[]</code>, <code>br.a_Bus</code> gets <code>cell(0,1)</code></li>
-            <li>A removed bus keeps its components</li>
+            <li>Take the removed objects out of the cell and delete them (<code>tools.delete_layers</code>): a removed bus with its components and their local controllers</li>
           </ul><ul lang="ja">
             <li>先にタグを検査します。</li>
             <li>グローバル制御器が母線の機器を制御している間は、母線を削除できません。</li>
             <li>ブランチがその母線につながっている間は、母線を削除できません（<code>RemoveBranches=true</code> なら先に <code>remove_branch</code> を実行します）。</li>
-            <li>削除したオブジェクトを cell から外して切り離します。<code>bus.a_PowerNetwork</code>・<code>br.a_PowerNetwork</code>・<code>gc.a_PowerNetwork</code> に <code>[]</code>、<code>br.a_Bus</code> に <code>cell(0,1)</code> を代入します。</li>
-            <li>削除された母線は機器を保持したままです。</li>
+            <li>削除したオブジェクトを cell から外して削除します（<code>tools.delete_layers</code>）。母線は、機器とそのローカル制御器ごと削除します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">tags, <code>gc.controlledUnits</code>, <code>br.a_Bus</code></span><span lang="ja">タグ、<code>gc.controlledUnits</code>、<code>br.a_Bus</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code>; <span lang="en">back-references cleared; edit</span><span lang="ja">逆参照を解除、編集</span> <code>"Topology"</code></dd>
+          <dd><code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code>; <span lang="en">removed objects deleted; edit</span><span lang="ja">削除したオブジェクトは無効なハンドル、編集</span> <code>"Topology"</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-13">
@@ -607,26 +605,26 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Refuse a component that a global controller controls (<code>private/controlling_gcon</code>, handle comparison)</li>
-            <li><code>remove_component</code>: take it out, set <code>comp.a_Bus = []</code></li>
+            <li><code>remove_component</code>: take it out and delete it with its local controllers (<code>tools.delete_layers</code>)</li>
             <li><code>replace_component</code>:
               <ul>
                 <li>create the new type with the powerflow, operation, graph and OPF settings and the number of the old one, and attach it (<code>a_Bus</code>, then a <code>"Topology"</code> edit on it)</li>
                 <li>give it a placeholder equilibrium (the bus voltage and the old current)</li>
                 <li><code>Controllers="keep"</code>: move the local controllers, after checking that the new component has their ports</li>
-                <li><code>"drop"</code>: leave them on the old component with a warning</li>
-                <li>detach the old component (<code>[]</code>)</li>
+                <li><code>"drop"</code>: delete them with the old component, with a warning</li>
+                <li>delete the old component</li>
               </ul>
             </li>
           </ul><ul lang="ja">
             <li>グローバル制御器が制御している機器は拒否します（<code>private/controlling_gcon</code>、ハンドル比較）。</li>
-            <li><code>remove_component</code>: 機器を外して <code>comp.a_Bus = []</code> を代入します。</li>
+            <li><code>remove_component</code>: 機器を外し、ローカル制御器ごと削除します（<code>tools.delete_layers</code>）。</li>
             <li><code>replace_component</code>:
               <ul>
                 <li>元の機器の powerflow・operation・graph・OPF の設定と番号で新しい種類を作成して接続します（<code>a_Bus</code> の代入、続いてその機器の <code>"Topology"</code> の編集）。</li>
                 <li>仮の平衡点（母線電圧と元の電流）を与えます。</li>
                 <li><code>Controllers="keep"</code>: ローカル制御器を移します（新しい機器にそのポートがあることを先に検査します）。</li>
-                <li><code>"drop"</code>: 警告を出して元の機器に残します。</li>
-                <li>元の機器を切り離します（<code>[]</code>）。</li>
+                <li><code>"drop"</code>: 警告を出し、元の機器と一緒に削除します。</li>
+                <li>元の機器を削除します。</li>
               </ul>
             </li>
           </ul></dd>
@@ -642,11 +640,11 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Remove by tag the top controller (with its PSS only when <code>RemoveNested=true</code>) or the PSS alone</li>
-            <li>Detach the removed controllers (<code>a_Component = []</code>); <code>add_local_controller</code> builds a new controller instead of attaching them again</li>
+            <li>Delete the removed controllers (<code>tools.delete_layers</code>); <code>add_local_controller</code> builds a new controller</li>
             <li>When a global controller controls the component: INFO <code>GUILDA:Component:GconRouteChanged</code> for the outputs that go elsewhere now, as in MB-05</li>
           </ul><ul lang="ja">
             <li>タグで最上位の制御器（<code>RemoveNested=true</code> のときだけその PSS も）または PSS だけを削除します。</li>
-            <li>削除した制御器を切り離します（<code>a_Component = []</code>）。再接続はせず、<code>add_local_controller</code> で新しい制御器を作成します。</li>
+            <li>削除した制御器を削除します（<code>tools.delete_layers</code>）。付け直すときは <code>add_local_controller</code> で新しい制御器を作成します。</li>
             <li>グローバル制御器がこの機器を制御する場合は、接続先が変わった出力を INFO <code>GUILDA:Component:GconRouteChanged</code> で表示します（MB-05 と同じです）。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -797,15 +795,15 @@ b1.l_isSlack = true;</code></pre>
     <ul lang="en">
       <li><b>Before the first <code>initialize</code></b>: every stale tag holds "initialize has not been run" from the constructor, so edits add no message. <code>handle_edit</code> still keeps a single slack bus</li>
       <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: Handling of model edits</a> appends its message to the stale tags it affects; <code>simulate</code>, <code>linearize</code> and <code>get_sys</code> then stop with their stale errors (e.g. <code>GUILDA:SolverODE:Stale</code>) until <code>initialize</code> runs again. Operation, OPF, graph and tag edits: nothing stale</li>
-      <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (they stay empty). <code>initialize</code> builds the stale ones (<code>set_odefcn</code>, see <a href="feature-initialize.html">Initialization</a>); analyses only check. Outside <code>initialize</code>, only <code>get_sys</code> of a layer without a network builds handles, and only when they are empty; after an edit without <code>initialize</code> it uses the previous ones</li>
-      <li><b>Detached objects</b>: a removed object keeps its <code>sct_stale</code>; the removal is a <code>"Topology"</code> edit of the parent (a removed global controller: nothing). Its later edits do not reach the network. Attaching it to a new parent is a <code>"Topology"</code> edit of the object, which marks its <code>equilibrium</code> stale until the next <code>initialize</code>; its handles are rebuilt there when <code>r_odefcnHz</code> differs from the new network frequency</li>
+      <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (they stay empty). <code>initialize</code> builds the stale ones (<code>set_odefcn</code>, see <a href="feature-initialize.html">Initialization</a>); analyses only check, and nothing else builds handles. After an edit without <code>initialize</code>, a <code>get_sys</code> at a given point uses the previous ones</li>
+      <li><b>Removed objects</b>: the removal is a <code>"Topology"</code> edit of the parent (a removed global controller: nothing), and the removed object is deleted (<a href="class-design.html#parents">Class Design: parent references</a>), so it cannot be edited or attached again; <code>add_*</code> builds a new one</li>
       <li><b>Copies</b>: no deep-copy method; <code>b = a</code> copies a handle. For an independent network, save and load through a MAT file or CSV export. A loaded network, or a lower layer saved alone, keeps its parameter tables, so its edits are checked and logged as before saving</li>
     </ul>
     <ul lang="ja">
       <li><b>最初の <code>initialize</code> の前</b>: すべての stale タグがコンストラクタの "initialize has not been run" を保持するため、編集はメッセージを追加しません。<code>handle_edit</code> は slack 母線を 1 つに保ちます。</li>
       <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>で古くなるとされる編集は、影響する stale タグにメッセージを追加します。<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> は、再び <code>initialize</code> を実行するまでそれぞれの stale のエラー（例: <code>GUILDA:SolverODE:Stale</code>）で停止します。operation・OPF・graph・タグの編集は何も古くしません。</li>
-      <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作りません（空のままです）。古いものは <code>initialize</code> が作成し（<code>set_odefcn</code>、<a href="feature-initialize.html">初期化</a>を参照）、解析は確認するだけです。<code>initialize</code> 以外でハンドルを作るのはネットワークのない層の <code>get_sys</code> のみで、空のときだけ構築します。<code>initialize</code> を挟まない編集の後は、以前のハンドルを使用します。</li>
-      <li><b>切り離されたオブジェクト</b>: 削除されたオブジェクトは自分の <code>sct_stale</code> を保持します。削除は親の <code>"Topology"</code> の編集です（グローバル制御器の削除では編集はありません）。その後の編集はネットワークに届きません。新しい親への接続はそのオブジェクトの <code>"Topology"</code> の編集で、次の <code>initialize</code> まで <code>equilibrium</code> を古いと印付けます。<code>r_odefcnHz</code> が新しいネットワークの周波数と異なれば、そこでハンドルを再構築します。</li>
+      <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作りません（空のままです）。古いものは <code>initialize</code> が作成し（<code>set_odefcn</code>、<a href="feature-initialize.html">初期化</a>を参照）、解析は確認するだけで、ほかにハンドルを作るものはありません。<code>initialize</code> を挟まない編集の後、点を与えた <code>get_sys</code> は以前のハンドルを使います。</li>
+      <li><b>削除したオブジェクト</b>: 削除は親の <code>"Topology"</code> の編集です（グローバル制御器の削除では編集はありません）。削除したオブジェクトは <code>delete</code> されるため（<a href="class-design.html#parents">クラス設計: 親への参照</a>）、編集も再接続もできません。<code>add_*</code> で新しく作成します。</li>
       <li><b>コピー</b>: ディープコピーのメソッドはありません。<code>b = a</code> はハンドルのコピーです。独立したネットワークには、MAT ファイルへの保存と読み込み、または CSV への書き出しを使います。読み込んだネットワークや単独で保存した下の層もパラメータの表を保持し、編集の検査と記録は保存前と同じです。</li>
     </ul>
 
@@ -820,7 +818,7 @@ b1.l_isSlack = true;</code></pre>
         <tr><td><code>add_branch</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:PowerNetwork:BranchBusIndex</code>, <code>BusNotFound</code>, <code>BranchSelfLoop</code>, <code>BranchZeroImpedance</code>; <span lang="en">complex R, X or C: an <code>assert</code> without identifier</span><span lang="ja">R・X・C が複素数: 識別子のない <code>assert</code></span></td></tr>
         <tr><td><code>add_component</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:Component:MissingParameter</code>, <code>UnknownParameter</code> (<span lang="en">error</span><span lang="ja">エラー</span>); <code>GeneratorQIgnored</code> (<span lang="en">warning</span><span lang="ja">警告</span>)</td></tr>
         <tr><td><code>add_local_controller</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:Component:InvalidControllerKey</code> (<span lang="en">role <code>s_role</code></span><span lang="ja">役割 <code>s_role</code></span>), <code>ControllerOutput</code>, <code>NotExtAvr</code>, <code>PssParentKey</code>; <code>ReplaceController</code> (<span lang="en">warning</span><span lang="ja">警告</span>); <code>GUILDA:LocalController:ReservedInputNames</code>, <code>ReservedInputNoOverride</code></td></tr>
-        <tr><td><span lang="en">global controller</span><span lang="ja">グローバル制御器</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:GlobalController:InvalidComponent</code>; <code>GUILDA:PowerNetwork:GconTagInUse</code>, <code>GconOtherNetwork</code>, <code>GconPorts</code>, <code>GconNotFound</code></td></tr>
+        <tr><td><span lang="en">global controller</span><span lang="ja">グローバル制御器</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:GlobalController:InvalidComponent</code>; <code>GUILDA:PowerNetwork:GconTagInUse</code>, <code>GconPorts</code>, <code>GconNotFound</code></td></tr>
         <tr><td><code>l_isSlack = true</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:Bus:NonUnitBus</code> (<span lang="en">no component</span><span lang="ja">機器がない</span>); <code>SlackWithoutQnan</code> (<span lang="en">warning</span><span lang="ja">警告</span>)</td></tr>
         <tr><td><span lang="en">parameter assignment</span><span lang="ja">パラメータの代入</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:Parameter:ClassNameMismatch</code></td></tr>
         <tr><td><code>remove_*</code>, <code>replace_component</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:PowerNetwork:BusNotFound</code>, <code>BranchNotFound</code>, <code>BusHasBranches</code>, <code>BusHasControlledUnits</code>; <code>GUILDA:Bus:ComponentNotFound</code>, <code>ComponentControlled</code>, <code>ControllersNotKept</code>, <code>ControllersDropped</code> (<span lang="en">warning</span><span lang="ja">警告</span>); <code>GUILDA:Component:ControllerNotFound</code>, <code>ControllerHasNested</code></td></tr>
@@ -834,17 +832,17 @@ b1.l_isSlack = true;</code></pre>
     <!-- ============================== 7. EXTENSION ============================== -->
     <h2 id="extension"><span lang="en">7. Where to extend the feature</span><span lang="ja">7. 機能を拡張する箇所</span></h2>
     <ul lang="en">
-      <li><b>Component</b>: a class in <code>+component</code> with the constants <code>key</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <code>sv_para</code>, and a constructor <code>(index, parameter, opt)</code> that calls the <code>Component</code> constructor with the tag and replaces the <code>dynamics</code> container with one that holds every <code>sv_para</code> (<code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", sct)</code>, <code>sct</code>: a struct of the defaults). Run <code>GUILDA</code> again so that <code>add_component</code> knows the key</li>
-      <li><b>Branch</b>: a class in <code>+branch</code> with the constants <code>key</code> and <code>header</code> and <code>get_admittance_matrix</code>. The constructor <code>(index, opt)</code> is inherited</li>
-      <li><b>Local controller</b>: the constant <code>key</code>, the model key of a concrete class (e.g. <code>"avr-ST1"</code>), and the constant <code>s_role</code> <code>"avr"</code>, <code>"pss"</code>, <code>"local"</code> or <code>"governor"</code>, which decides where it goes; a constructor <code>(tag, Name=Value)</code>; outputs named after the inputs they drive; inputs named after the outputs or states they observe (<code>"Xall"</code> / <code>"Yall"</code> need an override of <code>set_inputs</code>; <code>resolve_ports</code> may adapt the ports to the component). Run <code>GUILDA</code> again so that <code>add_local_controller</code> knows the key</li>
-      <li><b>Global controller</b>: the constants <code>key</code> (model key, e.g. <code>"agc-PI"</code>) and <code>s_role</code> (e.g. <code>"agc"</code>); constructor <code>(net, tag, units..., Name=Value)</code> calling the <code>GlobalController</code> constructor. <code>sv_u</code> must be outputs or states of every unit, and <code>sv_y</code> inputs of every unit or of one of its local controllers. Run <code>GUILDA</code> again so that <code>add_global_controller</code> knows the key</li>
+      <li><b>Component</b>: a class in <code>+component</code> with the constants <code>key</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <code>sv_para</code>, and a constructor <code>(index, parameter, opt)</code> that calls the <code>Component</code> constructor with the tag and replaces the <code>dynamics</code> container with one that holds every <code>sv_para</code> (<code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", sct)</code>, <code>sct</code>: a struct of the defaults), declared with <code>Access={?Bus}</code>. Run <code>GUILDA</code> again so that <code>add_component</code> knows the key</li>
+      <li><b>Branch</b>: a class in <code>+branch</code> with the constants <code>key</code> and <code>header</code> and <code>get_admittance_matrix</code>, and a constructor <code>(index, opt)</code> with <code>Access={?PowerNetwork}</code> that calls the <code>Branch</code> constructor</li>
+      <li><b>Local controller</b>: the constant <code>key</code>, the model key of a concrete class (e.g. <code>"avr-ST1"</code>), and the constant <code>s_role</code> <code>"avr"</code>, <code>"pss"</code>, <code>"local"</code> or <code>"governor"</code>, which decides where it goes; a constructor <code>(tag, Name=Value)</code> with <code>Access={?Component}</code>; outputs named after the inputs they drive; inputs named after the outputs or states they observe (<code>"Xall"</code> / <code>"Yall"</code> need an override of <code>set_inputs</code>; <code>resolve_ports</code> may adapt the ports to the component). Run <code>GUILDA</code> again so that <code>add_local_controller</code> knows the key</li>
+      <li><b>Global controller</b>: the constants <code>key</code> (model key, e.g. <code>"agc-PI"</code>) and <code>s_role</code> (e.g. <code>"agc"</code>); constructor <code>(net, tag, units..., Name=Value)</code> with <code>Access={?PowerNetwork}</code>, calling the <code>GlobalController</code> constructor. <code>sv_u</code> must be outputs or states of every unit, and <code>sv_y</code> inputs of every unit or of one of its local controllers. Run <code>GUILDA</code> again so that <code>add_global_controller</code> knows the key</li>
       <li><b>Network class</b>: a <code>PowerNetwork</code> subclass in <code>+network/@&lt;Name&gt;/</code> with the CSV folders, whose constructor calls <code>PowerNetwork.import_csv(dir, Network=obj)</code>. <code>net.export_csv(".../@&lt;Name&gt;")</code> writes such a class</li>
     </ul>
     <ul lang="ja">
-      <li><b>機器</b>: <code>+component</code> のクラスです。定数 <code>key</code>・<code>sv_x</code>・<code>sv_u</code>・<code>sv_y</code>・<code>sv_para</code> と、タグを付けて <code>Component</code> のコンストラクタを呼び、すべての <code>sv_para</code> を持つ <code>dynamics</code> コンテナに置き換えるコンストラクタ（<code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", sct)</code>、<code>sct</code> は既定値の struct） <code>(index, parameter, opt)</code> を持ちます。<code>add_component</code> がキーを認識するよう <code>GUILDA</code> を再実行します。</li>
-      <li><b>ブランチ</b>: <code>+branch</code> のクラスです。定数 <code>key</code>・<code>header</code> と <code>get_admittance_matrix</code> を持ちます。コンストラクタ <code>(index, opt)</code> は継承します。</li>
-      <li><b>ローカル制御器</b>: 定数 <code>key</code> は具象クラスのモデルのキー（例: <code>"avr-ST1"</code>）、定数 <code>s_role</code> は配置先を決める役割 <code>"avr"</code>・<code>"pss"</code>・<code>"local"</code>・<code>"governor"</code> です。コンストラクタは <code>(tag, Name=Value)</code> です。出力名は駆動する入力の名前、入力名は観測する出力または状態の名前です（<code>"Xall"</code> / <code>"Yall"</code> には <code>set_inputs</code> のオーバーライドが必要です。<code>resolve_ports</code> でポートを機器に合わせることもできます）。<code>add_local_controller</code> がキーを認識するよう <code>GUILDA</code> を再実行します。</li>
-      <li><b>グローバル制御器</b>: 定数 <code>key</code>（モデルのキー、例: <code>"agc-PI"</code>）と <code>s_role</code>（例: <code>"agc"</code>）を持ちます。コンストラクタ <code>(net, tag, units..., Name=Value)</code> が <code>GlobalController</code> のコンストラクタを呼び出します。<code>sv_u</code> は各対象の出力または状態、<code>sv_y</code> は各対象またはそのローカル制御器の入力である必要があります。<code>add_global_controller</code> がキーを認識するよう <code>GUILDA</code> を再実行します。</li>
+      <li><b>機器</b>: <code>+component</code> のクラスです。定数 <code>key</code>・<code>sv_x</code>・<code>sv_u</code>・<code>sv_y</code>・<code>sv_para</code> と、タグを付けて <code>Component</code> のコンストラクタを呼び、すべての <code>sv_para</code> を持つ <code>dynamics</code> コンテナに置き換えるコンストラクタ（<code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", sct)</code>、<code>sct</code> は既定値の struct） <code>(index, parameter, opt)</code> を <code>Access={?Bus}</code> で持ちます。<code>add_component</code> がキーを認識するよう <code>GUILDA</code> を再実行します。</li>
+      <li><b>ブランチ</b>: <code>+branch</code> のクラスです。定数 <code>key</code>・<code>header</code> と <code>get_admittance_matrix</code>、<code>Branch</code> のコンストラクタを呼ぶコンストラクタ <code>(index, opt)</code> を <code>Access={?PowerNetwork}</code> で持ちます。</li>
+      <li><b>ローカル制御器</b>: 定数 <code>key</code> は具象クラスのモデルのキー（例: <code>"avr-ST1"</code>）、定数 <code>s_role</code> は配置先を決める役割 <code>"avr"</code>・<code>"pss"</code>・<code>"local"</code>・<code>"governor"</code> です。コンストラクタは <code>(tag, Name=Value)</code> で、<code>Access={?Component}</code> にします。出力名は駆動する入力の名前、入力名は観測する出力または状態の名前です（<code>"Xall"</code> / <code>"Yall"</code> には <code>set_inputs</code> のオーバーライドが必要です。<code>resolve_ports</code> でポートを機器に合わせることもできます）。<code>add_local_controller</code> がキーを認識するよう <code>GUILDA</code> を再実行します。</li>
+      <li><b>グローバル制御器</b>: 定数 <code>key</code>（モデルのキー、例: <code>"agc-PI"</code>）と <code>s_role</code>（例: <code>"agc"</code>）を持ちます。コンストラクタ <code>(net, tag, units..., Name=Value)</code> は <code>Access={?PowerNetwork}</code> で、<code>GlobalController</code> のコンストラクタを呼び出します。<code>sv_u</code> は各対象の出力または状態、<code>sv_y</code> は各対象またはそのローカル制御器の入力である必要があります。<code>add_global_controller</code> がキーを認識するよう <code>GUILDA</code> を再実行します。</li>
       <li><b>ネットワーククラス</b>: CSV フォルダを持つ <code>+network/@&lt;Name&gt;/</code> の <code>PowerNetwork</code> サブクラスです。コンストラクタが <code>PowerNetwork.import_csv(dir, Network=obj)</code> を呼び出します。<code>net.export_csv(".../@&lt;Name&gt;")</code> はこの形のクラスを書き出します。</li>
     </ul>
     <p lang="en">Step-by-step instructions and the model contracts: <a href="model-implementation.html">Model Implementation</a> (<a href="model-implementation.html#steps">steps</a>, <a href="model-implementation.html#contracts">contracts</a>, <a href="model-implementation.html#controller">controller</a>, <a href="model-implementation.html#other">branches and networks</a>).</p>

@@ -10,9 +10,11 @@ classdef PowerNetwork < PowerSystemModel
 % - Results are returned, never stored in the network. The one exception: `initialize`
 %   writes the equilibrium into the buses, components and controllers.
 % - Top of the object tree, with no parent. It is the parent of its buses, branches and
-%   global controllers and the owner of its scenarios; only the network sets and clears
-%   their back references (`Bus.a_PowerNetwork`, `Branch.a_PowerNetwork`, `Branch.a_Bus`,
-%   `GlobalController.a_PowerNetwork`, `Scenario.a_PowerNetwork`).
+%   global controllers and the owner of its scenarios; only the network sets their back
+%   references (`Bus.a_PowerNetwork`, `Branch.a_PowerNetwork`, `Branch.a_Bus`,
+%   `GlobalController.a_PowerNetwork`, `Scenario.a_PowerNetwork`). The remove methods
+%   delete the buses, branches and global controllers they take out; a removed scenario
+%   stays usable and can be added again.
 % - Every edit is reported to the network's `handle_edit` (`LayerPackage.log_edit`), also
 %   before the first initialize. It keeps at most one slack bus, and marks the stale tag
 %   `powerflow` (`sct_stale`) for the edits that change the power flow: baseMVA, buses and

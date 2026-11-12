@@ -57,7 +57,7 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
         key = "avr-DC1"  % Model key that selects this class in `Component.add_local_controller`.
     end
 
-    methods
+    methods (Access={?Component})
         function obj = AVR_DC1(tag, param)
         % Create an AVR_DC1 regulator with the tag "CA" + tag.
             arguments (Input)

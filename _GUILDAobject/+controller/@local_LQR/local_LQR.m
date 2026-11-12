@@ -72,7 +72,7 @@ classdef local_LQR < LocalController
         r_designHz double = []                % [Hz] Frequency K was designed for (empty: not designed).
     end
 
-    methods
+    methods (Access={?Component})
         function obj = local_LQR(tag, opt)
         % Create a state-feedback LQR controller with the tag "CL" + tag.
             arguments (Input)
@@ -93,7 +93,8 @@ classdef local_LQR < LocalController
             obj.R  = opt.R;
             obj.V0 = opt.V0;
         end
-
+    end
+    methods
         function set.Q(obj, val)
             obj.Q = weight(val, "Q");
             obj.log_change("Q");

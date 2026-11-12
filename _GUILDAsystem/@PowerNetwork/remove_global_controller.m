@@ -1,7 +1,7 @@
 function remove_global_controller(obj, sr_GconTag)
 % Remove global controllers by tag.
 %
-% The removed controllers no longer refer to this network. A removal makes nothing stale:
+% The removed controllers are deleted, so a handle to them becomes invalid. A removal makes nothing stale:
 % it changes no equilibrium, and simulate and linearize take the controllers the network
 % has.
 %
@@ -27,7 +27,5 @@ function remove_global_controller(obj, sr_GconTag)
     a_rmGC  = obj.a_GlobalController(lv_rm);
 
     obj.a_GlobalController = obj.a_GlobalController(~lv_rm);
-    for k = 1:numel(a_rmGC)
-        a_rmGC{k}.a_PowerNetwork = [];
-    end
+    tools.delete_layers(a_rmGC);
 end
