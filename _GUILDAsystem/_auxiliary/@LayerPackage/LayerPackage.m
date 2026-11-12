@@ -18,8 +18,8 @@ classdef LayerPackage < handle
 % - An edit calls `log_edit(log, tag)` on the edited layer (the owner for a Parameter
 %   container), which calls the hook `handle_edit` with that layer on every layer from
 %   there up to the top. The default does nothing; each class appends the message
-%   ("<tags of the edited layer>: <log>") to its own fields for the edits that make them
-%   stale.
+%   ("<tag of the edited layer>: <log>", "<container tag>/<owner tag>: <log>" for a
+%   parameter) to its own fields for the edits that make them stale.
 % - Each analysis reads the stale tags it needs (the network, and the components and
 %   controllers it uses) and stops with its own error (e.g. GUILDA:SolverODE:Stale),
 %   naming up to three different messages; it rebuilds nothing.
@@ -33,7 +33,7 @@ classdef LayerPackage < handle
 % already exists among the siblings is renamed with a number suffix (checked again). A
 % rename is an edit with the tag "Tag", which makes nothing stale. Tags are permanent
 % IDs, so the tags of existing child layers do not follow: after renaming bus B002 to BX,
-% its component SG1B002 keeps its tag and a component added later is SG2BX.
+% its component B002SG1 keeps its tag and a component added later is BXSG1.
 %
 % <@Examples>
 % ```matlab
@@ -41,7 +41,7 @@ classdef LayerPackage < handle
 % net.disp_tree();            % hierarchy of the layers below the network
 % net.a_Bus{1}.doc();         % class reference page of the first bus
 % net.a_Bus{1}.tab_parameter.powerflow.V = 1.02;
-% net.sct_stale               % powerflow: "powerflow/B001/IEEE14bus: edit V: 1.06 -> 1.02"
+% net.sct_stale               % powerflow: "powerflow/B001: edit V: 1.06 -> 1.02"
 % net.initialize();           % brings every layer up to date
 % ```
 %
@@ -73,9 +73,6 @@ classdef LayerPackage < handle
     methods(Access=protected)
         log_edit(obj, log, tag)
         handle_edit(obj, a_layer, tag, log)
-    end
-    methods(Access=private)
-        out = get_tag(obj, s_split)
     end
     methods
         varargout = disp_tree(obj, sr_ignore)
