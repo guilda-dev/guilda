@@ -23,7 +23,7 @@ c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "n
 
 %% Simulate and get_sys before initialize ask for initialize
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
-assert_stale_error(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])), "GUILDA:SolverODE:Stale")
+assert_stale_error(@() net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]), "GUILDA:SolverODE:Stale")
 assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 assert(DebugScript.helper.edit_flag(net) == "unset")
 
@@ -32,14 +32,14 @@ assert(DebugScript.helper.edit_flag(net) == "unset")
 % net.solver_ODE.solve も simulate と同じ確認をする (線形化の net.solver_LIN.solve は
 % ブロックをつなぐだけの接続器で、確認は get_sys がする)
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-assert_stale_error(@() net.solver_ODE.solve(net, [0,1]), "GUILDA:SolverODE:Stale")
+assert_stale_error(@() net.solver_ODE.solve(net, [0,1], {}, DebugScript.helper.ode_options("Progress", "none")), "GUILDA:SolverODE:Stale")
 
 DebugScript.helper.quiet(@() net.initialize);
 comp.tab_parameter.dynamics.D = 5;
-assert_stale_error(@() net.solver_ODE.solve(net, [0,1]), "GUILDA:SolverODE:Stale")
+assert_stale_error(@() net.solver_ODE.solve(net, [0,1], {}, DebugScript.helper.ode_options("Progress", "none")), "GUILDA:SolverODE:Stale")
 
 DebugScript.helper.quiet(@() net.initialize);
-sol = DebugScript.helper.quiet(@() net.solver_ODE.solve(net, [0,1]));
+sol = DebugScript.helper.quiet(@() net.solver_ODE.solve(net, [0,1], {}, DebugScript.helper.ode_options("Progress", "none")));
 assert(sol.odeResults.t(end) == 1)
 
 
@@ -55,7 +55,7 @@ s_msg = "dynamics/" + comp.s_tag + ": edit D: " + tools.value_text(D0) + " -> 5"
 assert(isequal(comp.sct_stale.equilibrium, s_msg) && isequal(comp.sct_stale.odefcn, s_msg))
 assert(isempty(net.sct_stale.powerflow))                 % 潮流は古くならない
 assert(isequal(h_dx, comp.f_dx) && DebugScript.helper.is_stale(net))   % 編集しただけでは作り直さない
-assert_stale_error(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])), "GUILDA:SolverODE:Stale")
+assert_stale_error(@() net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]), "GUILDA:SolverODE:Stale")
 ME = error_of(@() net.get_sys());
 assert(contains(ME.message, s_msg), "エラーが理由を示さない: " + ME.message)
 assert(isequal(h_dx, comp.f_dx))                         % 解析は作り直さない
@@ -65,7 +65,7 @@ V0 = net.cv_Vequilibrium;
 res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
 assert(res.s_solver == "equilibrium" && isequal(net.cv_Vequilibrium, V0))
 assert(~isequal(h_dx, comp.f_dx) && ~DebugScript.helper.is_stale(net))
-sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]);
 assert(sol.odeResults.t(end) == 1)
 net.get_sys();
 
@@ -82,14 +82,14 @@ assert(isempty(net.sct_stale.powerflow) && isempty(comp.sct_stale.odefcn) && ise
 assert(net.sct_stale.odefcn == "base/" + net.s_tag + ": edit Hz: " + Hz0 + " -> 50", "Hz の編集は系統の odefcn に入る")
 assert(DebugScript.helper.is_stale(net) && comp.get_Hz() == 50)
 assert(DebugScript.helper.handle_Hz(comp) == Hz0, "編集しただけでは作り直さない")
-ME = error_of(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])));
+ME = error_of(@() net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:Stale" && contains(ME.message, "edit Hz"))
 
 % initialize はハンドルだけを作り直し、平衡点は変わらない
 res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
 assert(res.s_solver == "equilibrium" && isequal(comp.rv_Xequilibrium, x_eq))
 assert(DebugScript.helper.handle_Hz(comp) == 50 && ~DebugScript.helper.is_stale(net))
-sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]);
 assert(sol.odeResults.t(end) == 1)
 assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
 x = comp.rv_Xequilibrium;  x(comp.sv_x == "omega") = 0.01;
@@ -108,7 +108,7 @@ f_dx = comp.f_dx;
 net.tab_parameter.base.baseMVA = 200;
 assert(isequal(net.sct_stale.powerflow, "base/" + net.s_tag + ": edit baseMVA: 100 -> 200"))
 assert(isequal(comp.f_dx, f_dx))
-assert_stale_error(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])), "GUILDA:SolverODE:Stale")
+assert_stale_error(@() net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]), "GUILDA:SolverODE:Stale")
 assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
 assert(res.s_solver ~= "equilibrium" && ~DebugScript.helper.is_stale(net))
@@ -159,7 +159,7 @@ assert(any(contains(net.sct_stale.powerflow, "---remove->>")))
 DebugScript.helper.quiet(@() net.initialize);
 net.a_Bus{3}.replace_component(string(net.a_Bus{3}.a_Component{1}), "load-impedance");
 assert(any(contains(net.sct_stale.powerflow, "replace")))
-assert_stale_error(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])), "GUILDA:SolverODE:Stale")
+assert_stale_error(@() net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]), "GUILDA:SolverODE:Stale")
 
 % 送電線の追加・削除
 DebugScript.helper.quiet(@() net.initialize);
@@ -184,7 +184,7 @@ avr1 = comp.add_local_controller("avr-ST1");
 assert(any(contains(comp.sct_stale.equilibrium, avr1.s_tag)) && isempty(net.sct_stale.powerflow))
 assert(avr1.sct_stale.odefcn(1) == avr1.s_notInitialized)   % 新しい制御器は未初期化
 assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
-assert_stale_error(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])), "GUILDA:SolverODE:Stale")
+assert_stale_error(@() net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]), "GUILDA:SolverODE:Stale")
 res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
 assert(res.s_solver == "equilibrium" && ~DebugScript.helper.is_stale(net))   % 潮流計算はしない
 assert(~isempty(avr1.f_dx) && ~isempty(avr1.rv_Xequilibrium))
@@ -249,7 +249,7 @@ net.a_Bus{2}.tab_parameter.graph.Xaxis = 1;
 assert(DebugScript.helper.edit_flag(net) == "initialized" && isempty(DebugScript.helper.stale(net)))
 
 % initialize し直さなくても解析できる
-sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]);
 assert(sol.odeResults.t(end) == 1)
 net.get_sys();
 
@@ -331,7 +331,7 @@ res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
 assert(res.s_solver == "equilibrium" && ~DebugScript.helper.is_stale(net))
 net.remove_global_controller(agc.s_tag);
 assert(~DebugScript.helper.is_stale(net))
-sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]);
 assert(sol.odeResults.t(end) == 1)
 
 

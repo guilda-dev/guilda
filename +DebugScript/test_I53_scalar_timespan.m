@@ -31,7 +31,7 @@ sc = net.add_scenario("both");
 sc.add_trip("B003LPQ2", [1.5,2]);
 assert(event_error(@() sc.add_disturbance("fault", "TimeSpan", 1, c_fault{:})) == "GUILDA:Scenario:ZeroLengthTimeSpan")
 assert(height(sc.tab_disturbance) == 1)
-[~, flag] = net.simulate([0,3], ev_other);
+[~, flag] = net.simulate(ev_other.s_tag, Time=[0,3]);
 assert(flag == 1)
 
 
@@ -48,25 +48,25 @@ assert(height(sc.tab_disturbance) == 0)
 
 %% Offset and an event without effect keep a single time
 for ts = {0, 1, [1,1], [1,2]}
-    [sol, flag] = net.simulate([0,3], DebugScript.helper.scenario("os", net, "TimeSpan", ts{1}, c_os{:}));
+    [sol, flag] = net.simulate(DebugScript.helper.scenario("os", net, "TimeSpan", ts{1}, c_os{:}).s_tag, Time=[0,3]);
     assert(flag == 1 && sol.odeResults.t(end) == 3)
 end
 for ts = {1, [1,1]}
-    [sol, flag] = net.simulate([0,3], DebugScript.helper.scenario("none", net, "TimeSpan", ts{1}));
+    [sol, flag] = net.simulate(DebugScript.helper.scenario("none", net, "TimeSpan", ts{1}).s_tag, Time=[0,3]);
     assert(flag == 1 && sol.odeResults.t(end) == 3)
 end
 
 
 %% Events with a duration still run
 for c_kind = {c_fault, c_trip, c_input}
-    [sol, flag] = net.simulate([0,2], DebugScript.helper.scenario("ev", net, "TimeSpan", [1,1.05], c_kind{1}{:}));
+    [sol, flag] = net.simulate(DebugScript.helper.scenario("ev", net, "TimeSpan", [1,1.05], c_kind{1}{:}).s_tag, Time=[0,2]);
     assert(flag == 1 && sol.odeResults.t(end) == 2)
 end
 
 
 function expect_zero_length(net, s_ts, varargin)
     % エラーの ID と、メッセージが原因と対処を示すことを確認する
-    [s_id, s_msg] = event_error(@() net.simulate([0,3], DebugScript.helper.scenario("ev", net, varargin{:})));
+    [s_id, s_msg] = event_error(@() net.simulate(DebugScript.helper.scenario("ev", net, varargin{:}).s_tag, Time=[0,3]));
     assert(s_id == "GUILDA:Scenario:ZeroLengthTimeSpan", s_id + ": " + s_msg)
     assert(all(contains(s_msg, ['"ev"', s_ts, "[t_start, t_end]"])), "原因が示されない: " + s_msg)
 end

@@ -2,7 +2,7 @@ function sc = scenario(tag, net, varargin)
 % 外乱 1 つのシナリオ (Scenario) を系統に作る (旧 ODEevent(tag, net, ...) の書き換え用)
 %
 %   sc  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-%   sol = net.simulate([0,5], sc);
+%   sol = net.simulate(sc.s_tag, Time=[0,5]);
 %
 % 外乱のタグは tag (output.phases の列名)。シナリオのタグも tag だが、系統に同じタグの
 % シナリオがあれば tag_2, tag_3, ... にする (旧 ODEevent と同じく、同じタグで何度でも作れる)。

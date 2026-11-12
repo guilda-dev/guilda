@@ -6,7 +6,7 @@ function tab = compare_table4_3(opt)
 % opening of 1 or 2 circuits of that card until the end (20 s). The verdict of the report
 % for each scenario is in `table4_3_report.csv`. The function builds the network of each
 % section, imports the scenarios into it (Scenario.import_csv with Network), simulates
-% the scenarios of that section, judges each result with Scenario.out_of_step (reference:
+% the scenarios of that section, judges each result with ResultODE.judge_out_of_step (reference:
 % the slack generator, G3 at peak and G6 at night; threshold 360 degrees) and compares
 % the verdict with the report. The report's "sustained oscillation" (peak, card 36)
 % counts as stable. See README.md in this folder.
@@ -24,7 +24,7 @@ function tab = compare_table4_3(opt)
 % tab = compare_table4_3(Governor=false, Sections="peak");
 % ```
 %
-% See also network.IEEJ_EAST10, Scenario, Scenario.out_of_step
+% See also network.IEEJ_EAST10, Scenario, ResultODE.judge_out_of_step
     arguments (Input)
         opt.Governor (1,1) logical = true % true for the governors of the network (its default).
         opt.Sections (1,:) string {mustBeMember(opt.Sections,["peak","night"])} = ["peak","night"] % Sections to run.
@@ -61,16 +61,14 @@ function tab = compare_table4_3(opt)
     tab.MaxAngle      = zeros(n_case,1);    % [deg] largest relative angle
     tab.Flag          = zeros(n_case,1);    % flag of net.simulate
 
-    sct_tolerance = struct("Tolerance", opt.Tolerance, "AbsoluteTolerance", opt.Tolerance);
     for s = intersect(opt.Sections, tab.Section.', "stable")
         net  = network.IEEJ_EAST10(Section=s, Governor=opt.Governor);
         c_sc = Scenario.import_csv(s_scenario, Network=net);
         sv_tag = cellfun(@(sc) sc.s_tag, c_sc);
         for k = find(tab.Section == s).'
             sc = c_sc{sv_tag == tab.Scenario(k)};
-            sc.Options = sct_tolerance;
-            [result, flag] = net.simulate(sc, Progress="none");
-            verdict = sc.judge(result);
+            [result, flag] = net.simulate(sc.s_tag, Progress="none", Tolerance=opt.Tolerance, AbsoluteTolerance=opt.Tolerance);
+            verdict = result.judge_out_of_step();
 
             tab.Verdict(k)       = verdict.Verdict;
             tab.Agree(k)         = verdict.Verdict == tab.ReportVerdict(k);

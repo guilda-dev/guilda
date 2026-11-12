@@ -37,8 +37,17 @@ sv_expect = ["Bus_add_component", "Bus_replace_component", "Bus_remove_component
              "Component_add_local_controller", "Component_remove_local_controller", ...
              "PowerNetwork_add_branch", "PowerNetwork_add_global_controller", "PowerNetwork_remove_branch", ...
              "PowerNetwork_remove_bus", "PowerNetwork_remove_global_controller", ...
-             "PowerNetwork_add_scenario", "PowerNetwork_remove_scenario"];
+             "PowerNetwork_add_scenario", "PowerNetwork_remove_scenario", "PowerNetwork_simulate"];
 assert(all(ismember(sv_expect, sv_name)), join(setdiff(sv_expect, sv_name), ", "))
+% simulate: シナリオのタグを補完し、設定の名前を Name-Value に並べる (SolverOptions, Export はない)
+c_in = sct.PowerNetwork_simulate.inputs;
+if isstruct(c_in)
+    c_in = num2cell(c_in);
+end
+sv_in = string(cellfun(@(a) a.name, c_in, 'UniformOutput', false));
+assert(isequal(sv_in(:)', ["obj","s_scenario","Time","Solver","Tolerance","AbsoluteTolerance","MaxStep","InitialStep", ...
+                           "SeparateComplexParts","TimeLimit","Progress","Verbose","PlotFcn"]), join(sv_in, ", "))
+assert(contains(jsonencode(c_in{2}.type), "choices=cellstr(string(obj.a_Scenario))"))
 
 
 %% Key suggests the model keys of the category
@@ -65,6 +74,8 @@ assert(ismember("B005LRX1", choices('sys__F34.a_Bus{5}.remove_component(')))
 assert(ismember("B004", choices('sys__F34.remove_bus(')))
 evalin("base", "sys__F34.add_scenario(""case1"");");
 sv = choices('sys__F34.remove_scenario(');
+assert(ismember("case1", sv) && ~any(ismember(evalin("base", "string(sys__F34.a_Bus)"), sv)), join(sv, ", "))
+sv = choices('sys__F34.simulate(');
 assert(ismember("case1", sv) && ~any(ismember(evalin("base", "string(sys__F34.a_Bus)"), sv)), join(sv, ", "))
 assert(ismember("B001SG1", choices('replace_component(sys__F34.a_Bus{1}, ')))
 % ローカル制御器のタグは入れ子 (AVR の下の PSS) も含む

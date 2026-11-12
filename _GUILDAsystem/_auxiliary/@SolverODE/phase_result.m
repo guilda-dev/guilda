@@ -1,13 +1,13 @@
 function sct_out = phase_result(ctx, ph, sct_sol)
-% Trajectory of one phase for ResultODE: the variables x, V, u in the order of the variable
-% map (ctx.iv_lin), and the bus currents; the states of the tripped units are NaN.
+% Trajectory of one phase for ResultODE: the variables x, V, u, uc in the order of the
+% variable map, and the bus currents; the states of the tripped units are NaN.
     arguments (Input)
         ctx      % Context of the run (Ymat of the phase).
         ph       % Data of the phase (an element of the output of Scenario.compile).
         sct_sol  % Solution of the phase (fields Time and Solution, full state vector).
     end
     arguments (Output)
-        sct_out  % Trajectory of the phase (fields t, x, i).
+        sct_out  % Trajectory of the phase (fields t, x (all variable rows of the map), i).
     end
     xsol = sct_sol.Solution;
 
@@ -21,5 +21,6 @@ function sct_out = phase_result(ctx, ph, sct_sol)
     end
 
     Isol = ctx.Ymat * xsol(:, ctx.iv_V).';
-    sct_out = struct('t', sct_sol.Time, 'x', xsol(:, ctx.iv_lin), 'i', Isol.');
+    iv_var = union(ctx.iv_lin, ctx.iv_in);   % x, V, u (iv_lin) and uc, ascending = map order
+    sct_out = struct('t', sct_sol.Time, 'x', xsol(:, iv_var), 'i', Isol.');
 end

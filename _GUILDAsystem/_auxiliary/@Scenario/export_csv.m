@@ -9,8 +9,8 @@ function path = export_csv(path, scenarios, opt)
 % by ";" (e.g. EL003;EL004), and numbers with the digits that read back the same double.
 % A cell of numbers in InputValue is written as numbers. A function handle in InputValue
 % cannot be written and stops with GUILDA:Scenario:CsvFunctionHandle before the file is
-% written. Options and a Judge other than the default are not saved; the warning
-% GUILDA:Scenario:CsvNotSaved names them. An existing file is an error unless Overwrite=true.
+% written. A Judge other than the default is not saved; the warning
+% GUILDA:Scenario:CsvNotSaved names it. An existing file is an error unless Overwrite=true.
 %
 % <@Examples>
 % ```matlab
@@ -43,9 +43,6 @@ function path = export_csv(path, scenarios, opt)
     sm = strings(0, numel(sr_col));
     for i = 1:numel(scenarios)
         sc = scenarios{i};
-        if ~isempty(fieldnames(sc.Options))
-            show_msg("warning", "GUILDA:Scenario:CsvNotSaved", char(sc.s_tag), "Options");
-        end
         if ~strcmp(func2str(sc.Judge), "Scenario.out_of_step")
             show_msg("warning", "GUILDA:Scenario:CsvNotSaved", char(sc.s_tag), "Judge");
         end

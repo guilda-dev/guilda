@@ -1,4 +1,4 @@
-function [result, flag, output] = calculate_continuation_powerflow(obj, varargin)
+function [result, flag, output] = calculate_continuation_powerflow(obj, opt)
 % Trace the PV curve by the continuation power flow and return a ResultCPF.
 %
 % Traces the PV curve of the network by the continuation power flow: starting from the
@@ -7,8 +7,7 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
 % settings are the ContinuationPowerFlow section of GUILDA.setting, and the condition
 % LoadBus is kept by net.solver_CPF; Name-Value options override them for this call only
 % (neither net.solver_CPF nor the settings file is changed).
-% Accepted options are the names in SolverCPF.OptionMap plus Export;
-% any other name stops with GUILDA:resolve_options:UnknownName.
+% Options not listed below stop with the MATLAB error of an unknown name.
 % It stops with an error naming the remedy when the network is not initialized (or was
 % edited after net.initialize) and when LoadBus is empty or names an unknown bus.
 %
@@ -39,9 +38,17 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
 % <@Group> CPF
     arguments (Input)
         obj
-    end
-    arguments (Input, Repeating)
-        varargin   % Name-Value options.
+        opt.LoadBus {mustBeText} % Tags of the buses whose loads are scaled by (1 + lambda); omitted: net.solver_CPF.LoadBus.
+        opt.MaxIteration (1,1) double {mustBePositive, mustBeInteger} % Maximum number of predictor-corrector steps; omitted: GUILDA.setting.
+        opt.Tolerance (1,1) double {mustBePositive} % Convergence tolerance of the corrector; omitted: GUILDA.setting.
+        opt.StepSize (1,1) double {mustBePositive} % Step size of the predictor; omitted: GUILDA.setting.
+        opt.ArcLength (1,1) double {mustBePositive} % Arc length of the corrector; omitted: GUILDA.setting.
+        opt.InitialLambda (1,1) double % lambda at the starting point; omitted: GUILDA.setting.
+        opt.UseInternalState (1,1) logical % Solve with the internal states of the generators; omitted: GUILDA.setting.
+        opt.Verbose (1,1) logical % Print lambda at each step; omitted: GUILDA.setting.
+        opt.Limits % Operating limits along the path: "Q", "V", "S", "all" or "none" (checked by SolverCPF.solve); omitted: GUILDA.setting.
+        opt.PlotFcn % Live display during the calculation: "pvcurve", a function handle or "none" (checked by tools.check_plotfcn); omitted: GUILDA.setting.
+        opt.Export {mustBeA(opt.Export, ["logical","string","char"])} = false % Call result.export after the calculation: true or a file name.
     end
     arguments (Output)
         result   % lambda and bus voltages along the path, and the nose point.
@@ -49,8 +56,11 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
         output   % Details: message, iterations, correctorIterations.
     end
 
-    [c_nv, opt] = take_call_options(varargin);
-    sct_options = obj.solver_CPF.get_options(c_nv);
+    if ischar(opt.Export)
+        opt.Export = string(opt.Export);
+    end
+    mustBeScalarOrEmpty(opt.Export);
+    sct_options = solver_options(obj.solver_CPF, opt);
 
     [result, flag, output] = obj.solver_CPF.solve(obj, sct_options);
 
@@ -62,28 +72,26 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
 end
 
 
-function [c_nv, opt] = take_call_options(c_in)
-% Separates the option of this call (Export) from the solver options
-    c_nv = c_in;
-    opt  = call_options();
-    if mod(numel(c_in), 2) ~= 0
-        return              % not Name-Value pairs: tools.resolve_options reports it
+function sct = solver_options(solver, opt)
+% Settings handed to the solver: the ContinuationPowerFlow section of GUILDA.setting and
+% the condition LoadBus of the solver, with the options given in this call
+    sct_cfg = GUILDA.config("ContinuationPowerFlow");
+    sct = struct();
+    for s_name = string(fieldnames(sct_cfg)).'
+        sct.(s_name) = sct_cfg.(s_name).Value;
     end
-    lv_call = false(size(c_in));
-    for k = 1:2:numel(c_in)
-        lv_call(k:k+1) = (ischar(c_in{k}) || isstring(c_in{k})) && strcmpi(c_in{k}, "Export");
+    sct.LoadBus = solver.LoadBus;
+    for s_name = string(fieldnames(opt)).'
+        if s_name ~= "Export"
+            sct.(s_name) = opt.(s_name);
+        end
     end
-    c_call = c_in(lv_call);
-    c_nv   = c_in(~lv_call);
-    opt    = call_options(c_call{:});
+    sct.LoadBus = reshape(string(sct.LoadBus), 1, []);
+    if isstring(sct.Limits) || ischar(sct.Limits) || iscellstr(sct.Limits)
+        sct.Limits = reshape(string(sct.Limits), 1, []);   % other values: SolverCPF.solve stops
+    end
+    sct.UseInternalState = logical(sct.UseInternalState);
+    sct.Verbose = logical(sct.Verbose);
+    sct.PlotFcn = tools.check_plotfcn(sct.PlotFcn, "calculate_continuation_powerflow", "pvcurve");
 end
 
-function opt = call_options(opt)
-    arguments (Input)
-        opt.Export {mustBeA(opt.Export, ["logical","string","char"])} = false
-    end
-    if ischar(opt.Export)
-        opt.Export = string(opt.Export);
-    end
-    mustBeScalarOrEmpty(opt.Export);
-end

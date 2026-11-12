@@ -18,7 +18,7 @@ c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "n
 
 %% Open and reclose returns near the equilibrium
 % EL003 (B002-B003) を 1.0〜1.2 秒に開放して再投入する
-[sol, flag, output] = net.simulate([0,10], DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003"));
+[sol, flag, output] = net.simulate(DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003").s_tag, Time=[0,10]);
 assert(flag == 1 && output.nPhases == 3, output.message)
 r = sol.odeResults;
 assert(r.t(end) == 10)
@@ -47,7 +47,7 @@ assert(norm(full(c_Y{2} - Y_full), 1) > 1, "開放で Y が変わる")
 %% Jacobian matches the right-hand side in the open phase
 % 解析的なヤコビアンと右辺の中心差分 (I51 と同じ方法) が開放区間でも一致する
 box = containers.Map("KeyType", "double", "ValueType", "double");
-sct_options = net.solver_ODE.get_options({"Progress", "none"});
+sct_options = DebugScript.helper.ode_options("Progress", "none");
 sct_options.PhaseProbe = @(o) store(box, jacobian_error_ode(o));
 net.solver_ODE.solve(net, [0,2], {DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003")}, sct_options);
 err = cell2mat(box.values);
@@ -57,7 +57,7 @@ assert(numel(err) == 3 && max(err) < 1e-5, "誤差 " + mat2str(err,3))
 %% Bus currents follow the Y of each phase
 % 結果の母線電流 I は各区間の Y と電圧から I = Y*V
 ev  = DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003");
-r   = net.simulate([0,2], ev).odeResults;
+r   = net.simulate(ev.s_tag, Time=[0,2]).odeResults;
 [V, I] = bus_trajectories(r);
 Y_full = full_admittance(net);
 Y_open = admittance_without("EL003");
@@ -76,7 +76,7 @@ assert(max(abs(I(lv,:) - V(lv,:)*Y_full.'), [], "all") < 1e-10)
 ev_fault = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B003");
 ev_open  = DebugScript.helper.scenario("open",  net, "TimeSpan", [1.07,20], "OpenBranch", "EL003");
 lastwarn("");
-[sol, flag, output] = net.simulate([0,10], ev_fault, ev_open);
+[sol, flag, output] = net.simulate(DebugScript.helper.combine(net, ev_fault, ev_open).s_tag, Time=[0,10]);
 assert(isempty(lastwarn()), "警告: " + lastwarn())
 assert(flag == 1 && output.nPhases == 3, output.message)
 assert(isequal(output.phases{:, ["t1","t2"]}, [0,1; 1,1.07; 1.07,10]))
@@ -115,7 +115,7 @@ assert(numel(c_Y) == 3 && all(cellfun(@(Y) isequal(Y, Y_ref), c_Y)))
 
 %% One event can fault a bus and open a branch
 ev = DebugScript.helper.scenario("both", net, "TimeSpan", [1,1.05], "FaultBus", "B008", "OpenBranch", "EL003");
-[~, flag, output] = net.simulate([0,2], ev);
+[~, flag, output] = net.simulate(ev.s_tag, Time=[0,2]);
 assert(flag == 1, output.message)
 
 
@@ -146,7 +146,7 @@ assert(all(contains(s_msg, ["EL003", "B004", "Phase 2"])), s_msg)
 
 %% A part with components is simulated as an island
 % ET020 は B008 (発電機のみ) を網につなぐ唯一のブランチ
-[~, flag, output] = net.simulate([0,2], DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "ET020"));
+[~, flag, output] = net.simulate(DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "ET020").s_tag, Time=[0,2]);
 assert(flag == 1, output.message)
 
 
@@ -187,7 +187,7 @@ end
 function c_Y = phase_admittance(net, time, c_events)
     % 各区間の右辺が使う ctx.Ymat (PhaseProbe で ode の右辺から取り出す)
     box = containers.Map("KeyType", "double", "ValueType", "any");
-    sct_options = net.solver_ODE.get_options({"Progress", "none"});
+    sct_options = DebugScript.helper.ode_options("Progress", "none");
     sct_options.PhaseProbe = @(o) store(box, ode_ymat(o));
     [~, flag, output] = net.solver_ODE.solve(net, time, c_events, sct_options);
     assert(flag == 1, output.message)
@@ -226,7 +226,7 @@ function [V, I] = bus_trajectories(r)
 end
 
 function [s_id, s_msg] = event_error(net, varargin)
-    [s_id, s_msg] = call_error(@() net.simulate([0,3], varargin{:}));
+    [s_id, s_msg] = call_error(@() net.simulate(varargin{1}.s_tag, Time=[0,3]));
 end
 
 function [s_id, s_msg] = call_error(f)

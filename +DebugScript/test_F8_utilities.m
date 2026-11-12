@@ -275,7 +275,7 @@ assert(norm(sort(abs(eig(n1.get_sys.A))) - sort(abs(eig(net.get_sys.A)))) < 1e-1
 f = functions(comp.f_dx);
 assert(f.workspace{1}.obj == comp)                      % f_* も読み込んだ機器を指す
 ev  = DebugScript.helper.scenario("fault", n1, "TimeSpan", [1,1.05], "FaultBus", "B003");
-sol = DebugScript.helper.quiet(@() n1.simulate([0,2], ev));
+sol = DebugScript.helper.quiet(@() n1.simulate(ev.s_tag, Time=[0,2]));
 assert(sol.odeResults.t(end) == 2)
 
 % 読み込んだ系統でも編集が古さとして記録される
@@ -335,17 +335,27 @@ assert(numel(DebugScript.helper.stale(s.net)) == 1 && DebugScript.helper.is_stal
 pss.tab_parameter.dynamics.kpss = pss.tab_parameter.dynamics.kpss * 1.1;
 assert(numel(DebugScript.helper.stale(s.net)) == 2)
 
-% 結果オブジェクトが参照する系統も同じ
+% 潮流計算の結果は系統のハンドルを持たず、スナップショット (struct) と表を保存する。
+% 一緒に保存した系統は下の層まで戻り、編集が記録される。結果は系統の編集で変わらない
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
 res = DebugScript.helper.quiet(@() net.calculate_powerflow());
-save(s_mat, "res");
+save(s_mat, "res", "net");
 lastwarn("");
 s = load(s_mat);
 assert(isempty(lastwarn), lastwarn)
-assert(numel(s.res.a_PowerNetwork.a_Bus) == 3)
-s.res.a_PowerNetwork.a_Bus{2}.a_Component{1}.tab_parameter.dynamics.D = 1;
-assert(numel(DebugScript.helper.stale(s.res.a_PowerNetwork)) == 1)
+assert(isa(s.res, "ResultPF") && isempty(s.res.a_PowerNetwork) && s.res.s_network == string(net.s_tag))
+sct = s.res.sct_network;
+assert(isstruct(sct) && numel(sct.a_Bus) == 3 && numel(sct.a_Branch) == numel(net.a_Branch))
+assert(isfield(sct.a_Branch{1}, "cm_Y") && isequal(sct.a_Branch{1}.cm_Y, net.a_Branch{1}.get_admittance_matrix()))
+assert(isequaln(s.res.tab_bus, res.tab_bus) && isequaln(s.res.tab_branch, res.tab_branch))
+assert(isequaln(s.res.tab_violation, res.tab_violation) && isequal(s.res.cm_Y, res.cm_Y) && isequaln(s.res.tab_PFcondition, res.tab_PFcondition))
+assert(contains(s.res.disp_summary(), "converged"))          % 読み込んだ結果も表示できる
+assert(numel(s.net.a_Bus) == 3 && s.net.a_Bus{2}.a_Component{1}.a_Bus == s.net.a_Bus{2})
+r_D = sct.a_Bus{2}.a_Component{1}.tab_parameter.dynamics.D;
+s.net.a_Bus{2}.a_Component{1}.tab_parameter.dynamics.D = r_D + 1;
+assert(numel(DebugScript.helper.stale(s.net)) == 1)
+assert(s.res.sct_network.a_Bus{2}.a_Component{1}.tab_parameter.dynamics.D == r_D)
 
 % 系統の下の層だけを保存しても、読み込んだ層の編集は記録され、型も検査される
 gen = net.a_Bus{2}.a_Component{1};
@@ -371,7 +381,7 @@ net.a_Bus{2}.a_Component{1}.add_local_controller("local-LQR");
 net.add_global_controller("agc-PI", "B003SG1");
 DebugScript.helper.quiet(@() net.initialize);
 res = net.get_sys();
-sim = net.simulate([0,1], Progress="none");
+sim = net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,1], Progress="none");
 s_mat = tempname + ".mat";
 c = onCleanup(@() delete(s_mat));
 save(s_mat, "net", "res", "sim");
@@ -406,7 +416,7 @@ s.net.a_GlobalController{1}.get_sys();   % グローバル制御器の get_sys �
 
 %% MATPOWER import reproduces case14
 % import_matpower は tools.network_to_mpc の逆変換 (MATPOWER 不要)。
-% case14 を読み込んで mpc に戻すと元のデータになり、潮流計算・OPF は network.IEEE14bus と一致する。
+% case14 を読み込んで mpc に戻すと母線電圧 VM/VA 以外は元のデータになり、潮流計算・OPF は network.IEEE14bus と一致する。
 mpc14 = DebugScript.helper.case14_data();
 net   = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc14));
 assert(numel(net.a_Bus) == 14 && numel(net.a_Branch) == 20)
@@ -414,11 +424,15 @@ assert(net.tab_parameter.base.baseMVA == 100 && net.tab_parameter.base.Hz == GUI
 assert(net.a_Bus{1}.l_isSlack && sum(cellfun(@(b) b.l_isSlack, net.a_Bus)) == 1)
 assert(all(isfinite(net.cv_Vequilibrium)))                  % Initialize=true が既定
 
+% bus の VM/VA (8, 9 列) は case14 の値ではなく系統の平衡点の電圧を書き出すので、case14 とは比べない
 mpc = tools.network_to_mpc(net);
 for s_f = ["bus","gen","branch","gencost"]
     assert(isequal(size(mpc.(s_f)), size(mpc14.(s_f))), s_f)
-    assert(max(abs(mpc.(s_f) - mpc14.(s_f)), [], "all") < 1e-12, s_f)
+    i_col = setdiff(1:size(mpc14.(s_f),2), (s_f=="bus")*[8 9]);
+    assert(max(abs(mpc.(s_f)(:,i_col) - mpc14.(s_f)(:,i_col)), [], "all") < 1e-12, s_f)
 end
+assert(max(abs(mpc.bus(:,8) - abs(net.cv_Vequilibrium))) < 1e-12)
+assert(max(abs(mpc.bus(:,9) - angle(net.cv_Vequilibrium)*180/pi)) < 1e-12)
 
 % 機器: 発電機は gen-park (既定)、負荷は load-power で P, Q は消費が負
 gen = net.a_Bus{2}.a_Component{1};
@@ -462,7 +476,8 @@ assert(numel(net.a_Branch) == 19)
 s_path = net.export_csv(fullfile(s_dir, "Csv14"));
 net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
 mpc2 = tools.network_to_mpc(net2);
-assert(max(abs(mpc2.bus - mpc14.bus), [], "all") < 1e-12 && max(abs(mpc2.gen - mpc14.gen), [], "all") < 1e-12)
+i_col = setdiff(1:size(mpc14.bus,2), [8 9]);              % VM/VA は平衡点の電圧なので比べない
+assert(max(abs(mpc2.bus(:,i_col) - mpc14.bus(:,i_col)), [], "all") < 1e-12 && max(abs(mpc2.gen - mpc14.gen), [], "all") < 1e-12)
 
 
 %% MATPOWER import rejects unsupported gencost
@@ -596,7 +611,7 @@ e = eig(net.get_sys.A);
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.594552)) < 1e-5)
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-sol = DebugScript.helper.quiet(@() net.simulate([0,3], ev));
+sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,3]));
 assert(sol.odeResults.t(end) == 3)
 
 
@@ -654,7 +669,7 @@ e = DebugScript.helper.finite_eigs(net.get_sys("Method","Kron"));
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.0069046)) < 1e-6)     % AVR・PSS 付きで安定
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-sol = DebugScript.helper.quiet(@() net.simulate([0,3], ev));
+sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,3]));
 assert(sol.odeResults.t(end) == 3)
 Vfd = sol.odeResults.Bus(1).Component(1).U.Vfield;     % AVR が動作する
 assert(max(Vfd) - min(Vfd) > 1e-3)
@@ -684,7 +699,7 @@ e = DebugScript.helper.finite_eigs(net.get_sys("Method","Kron"));
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.0051275)) < 1e-6)     % AVR・PSS 付きで安定
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.2,0.25], "FaultBus", "B030");
-sol = DebugScript.helper.quiet(@() net.simulate([0,1], ev, TimeLimit=Inf));
+sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,1], TimeLimit=Inf));
 assert(sol.odeResults.t(end) == 1)
 
 

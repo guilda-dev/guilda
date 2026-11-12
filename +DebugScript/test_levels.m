@@ -68,7 +68,7 @@ function tab = test_levels()
     "test_F2_powerflow/PowerFlowOnIEEE14HonorsGeneratorSettings", "medium"
     "test_F2_powerflow/PowerFlowOnIEEE14MatchesMATPOWERCase14", "medium"
     "test_F2_powerflow/DynamicMethodConverges", "medium"
-    "test_F2_powerflow/Name_ValueOptionsOverrideSolverDefaultsForOneCallOnly", "medium"
+    "test_F2_powerflow/Name_ValueOptionsOverrideTheSettingsForOneCallOnly", "medium"
     "test_F2_powerflow/DynamicMethodExportsConvergenceHistoryAsJSON", "medium"
     % ---- F30_governor ----------------------------------------------------------------------------
     "test_F30_governor/TheSlotsKeepAFixedOrderWhateverTheOrderOfAttachment", "large"
@@ -86,10 +86,17 @@ function tab = test_levels()
     "test_F30_governor/replace_componentWithControllers__keep_MovesBothSlots", "medium"
     "test_F30_governor/export_csvNamesTheGovernorItDoesNotWrite", "medium"
     % ---- F31_scenario ----------------------------------------------------------------------------
-    "test_F31_scenario/AFaultThenAPermanentOpeningEqualsTwoOld_styleEvents", "large"
-    "test_F31_scenario/StoredTimeAndOptions_TheCallWins", "medium"
+    "test_F31_scenario/AFaultThenAPermanentOpeningEqualsTheGeneralForm", "large"
+    "test_F31_scenario/StoredTime_TheTimeAndTheSettingsOfTheCallWinForThatCall", "medium"
     "test_F31_scenario/ChildrenOfTheNetwork_Create_Rename_Copy_Remove", "medium"
     "test_F31_scenario/UnknownTagsAtAddAndAtRunTime", "medium"
+    % ---- F38_result_judge --------------------------------------------------------------------------
+    "test_F38_result_judge/DefaultJudge_StableAndOut_of_stepOnIEEE9bus", "large"
+    "test_F38_result_judge/IncompleteVerdictAndAJudgeFunctionOfTheUser", "medium"
+    "test_F38_result_judge/JudgeOfARunStoppedByStopOnOutOfStep_flag2_", "medium"
+    "test_F38_result_judge/TheResultWorksAfterTheNetworkIsDeleted", "medium"
+    "test_F38_result_judge/OutputsYOfTheComponentsAndControllers", "medium"
+    "test_F38_result_judge/ErrorsOfTheJudge", "medium"
     % ---- F35_controller_signal_routing -----------------------------------------------------------
     "test_F35_controller_signal_routing/AGlobalControllerReadsAnOutputOfItsUnitBeforeAStateOfTheSameName", "medium"
     % ---- F36_tutorial_all_models -----------------------------------------------------------------
@@ -244,7 +251,7 @@ function tab = test_levels()
     "test_F8_utilities/TemplateTxt3Bus", "medium"
     % ---- F9_environment --------------------------------------------------------------------------
     "test_F9_environment/GUILDAStartsInBatchMode", "medium"
-    "test_F9_environment/ComponentKeyMapIsGeneratedAtStartup", "medium"
+    "test_F9_environment/ModelKeyMapListsTheKeysOfTheClasses", "medium"
     % ---- I105_model_contracts --------------------------------------------------------------------
     "test_I105_model_contracts/TripOfAGeneratorThatRequiresPAndQCompletes", "medium"
     % ---- I111_unfeasible_dae_message -------------------------------------------------------------
@@ -260,8 +267,7 @@ function tab = test_levels()
     % ---- I53_scalar_timespan ---------------------------------------------------------------------
     "test_I53_scalar_timespan/OffsetAndAnEventWithoutEffectKeepASingleTime", "medium"
     % ---- I54_simulate_time -----------------------------------------------------------------------
-    "test_I54_simulate_time/AScenarioAsTheFirstArgumentRunsWithoutTime", "medium"
-    "test_I54_simulate_time/EmptyTimeTakesTheTimeOfTheScenario", "medium"
+    "test_I54_simulate_time/TheTimeOfTheScenarioIsUsedWithoutTime", "medium"
     % ---- I55_time_limit --------------------------------------------------------------------------
     "test_I55_time_limit/PartialResultWarnsWithAnyNumberOfOutputs", "medium"
     "test_I55_time_limit/PhasesThatEachFitInTheLimitStopWhenTheirSumDoesNot", "medium"

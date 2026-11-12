@@ -124,7 +124,7 @@
       {"name":"s_tag","kind":"required","type":["string"],"purpose":"Tag of the new scenario; a number is added when a child of the network has it."},
       {"name":"Time","kind":"namevalue","type":["double"],"purpose":"[s] Simulation time [t0, tend]. Default: From.Time, else [0, 10]."},
       {"name":"Description","kind":"namevalue","type":["string"],"purpose":"Free text. Default: From.Description, else \"\"."},
-      {"name":"From","kind":"namevalue","type":["Scenario"],"purpose":"Scenario to copy the disturbances and settings from (of this or another network)."}
+      {"name":"From","kind":"namevalue","type":["Scenario"],"purpose":"Scenario to copy the disturbances, Time and Description from (of this or another network)."}
     ],
     "outputs": [
       {"name":"sc","purpose":"The new scenario, a child of the network."}
@@ -134,6 +134,28 @@
     "inputs": [
       {"name":"obj","kind":"required","type":"PowerNetwork"},
       {"name":"sr_tag","kind":"required","type":[["string","choices=cellstr(string(obj.a_Scenario))"],["string"]],"purpose":"Tags of the scenarios to remove."}
+    ]
+  },
+  "PowerNetwork.simulate": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"PowerNetwork"},
+      {"name":"s_scenario","kind":"required","type":[["string","choices=cellstr(string(obj.a_Scenario))"],["string"]],"purpose":"Tag of the scenario to run (net.add_scenario)."},
+      {"name":"Time","kind":"namevalue","type":["double"],"purpose":"[s] Simulation time [t0, tend] of this call. Default: the Time of the scenario."},
+      {"name":"Solver","kind":"namevalue","type":["string","choices=cellstr([\"ode15s\",\"ode23t\"])"],"purpose":"Solver of the MATLAB ode object. Default: GUILDA.setting."},
+      {"name":"Tolerance","kind":"namevalue","type":["double"],"purpose":"Relative error tolerance. Default: GUILDA.setting."},
+      {"name":"AbsoluteTolerance","kind":"namevalue","type":["double"],"purpose":"Absolute error tolerance. Default: GUILDA.setting."},
+      {"name":"MaxStep","kind":"namevalue","type":["double"],"purpose":"[s] Largest step of the solver; NaN for the solver default. Default: GUILDA.setting."},
+      {"name":"InitialStep","kind":"namevalue","type":["double"],"purpose":"[s] First step of each phase; NaN for the solver default. Default: GUILDA.setting."},
+      {"name":"SeparateComplexParts","kind":"namevalue","type":["logical"],"purpose":"SeparateComplexParts of the ode object (true: \"on\", false: \"off\"). Default: GUILDA.setting."},
+      {"name":"TimeLimit","kind":"namevalue","type":["double"],"purpose":"[s] Wall-clock limit of the whole run; Inf for none. Default: GUILDA.setting."},
+      {"name":"Progress","kind":"namevalue","purpose":"\"dialog\", \"disp\" or \"none\" (true: \"dialog\", false: \"none\"). Default: GUILDA.setting."},
+      {"name":"Verbose","kind":"namevalue","type":["logical"],"purpose":"Print the phases and the outcome. Default: GUILDA.setting."},
+      {"name":"PlotFcn","kind":"namevalue","purpose":"Live display during the run: \"none\" (draw the result with result.plot_trajectory()). Default: GUILDA.setting."}
+    ],
+    "outputs": [
+      {"name":"result","purpose":"Trajectories of the buses and components (ResultODE; result.odeResults)."},
+      {"name":"flag","purpose":"1 completed, 0 stopped by TimeLimit, -1 stopped by the solver."},
+      {"name":"output","purpose":"Details: message, tEnd, phases, nPhases, nPhasesDone, isSparse, exception."}
     ]
   }
 }

@@ -6,9 +6,9 @@ classdef SolverCPF < auxiliary
 % the maximum loading point (the nose of the PV curve). net.solver_CPF holds one. The
 % settings are the ContinuationPowerFlow section of GUILDA.setting
 % (GUILDA.config("ContinuationPowerFlow")); the solver keeps only the condition of its
-% network, LoadBus (kept between runs). Name-Value options of a call override both for
-% that call only (see OptionMap and get_options); neither the solver nor the settings file
-% is changed. Results are returned as a ResultCPF.
+% network, LoadBus (kept between runs). Name-Value options of
+% net.calculate_continuation_powerflow override both for that call only; neither the
+% solver nor the settings file is changed. Results are returned as a ResultCPF.
 %
 % - The power the components of the `LoadBus` buses draw is multiplied by (1 + lambda).
 % - `StepSize` multiplies the tangent at the first step and the secant from the previous
@@ -28,10 +28,8 @@ classdef SolverCPF < auxiliary
 % - The Newton-Raphson corrector takes CorrectorMaxIteration and CorrectorStepSize, and
 %   the predictor and the corrector the numerical Jacobian step Increment, from the
 %   ContinuationPowerFlow section of GUILDA.setting.
-% - `OptionMap` is the input of tools.resolve_options. MaxIteration, Tolerance, Verbose
-%   Limits and PlotFcn are common names; LoadBus, InitialLambda, StepSize, ArcLength and
-%   UseInternalState have no common equivalent. Each name is also the key of the setting
-%   (LoadBus: the property).
+% - Each Name-Value option of net.calculate_continuation_powerflow is also the key of the
+%   setting (LoadBus: the property).
 % - `PlotFcn` (live display): "pvcurve" draws |V| of every bus against lambda and extends
 %   the lines at each step (one reused figure); a function handle is called at the
 %   starting point ("init"), each step ("iter") and the end ("done") as
@@ -55,20 +53,6 @@ classdef SolverCPF < auxiliary
         LoadBus (1,:) string = strings(1,0)                              % Tags of the buses whose loads are scaled by (1 + lambda); must not be empty when solving.
     end
 
-    properties (Constant) % Settings
-        OptionMap = struct( ...
-            "LoadBus",          {{"LoadBus", @(b) reshape(string(b), 1, [])}}, ...
-            "MaxIteration",     "MaxIteration", ...
-            "Tolerance",        "Tolerance", ...
-            "StepSize",         "StepSize", ...
-            "ArcLength",        "ArcLength", ...
-            "InitialLambda",    "InitialLambda", ...
-            "UseInternalState", "UseInternalState", ...
-            "Verbose",          "Verbose", ...
-            "Limits",           {{"Limits", @(s) reshape(string(s), 1, [])}}, ...
-            "PlotFcn",          "PlotFcn")                               % Name-Value options of net.calculate_continuation_powerflow and the setting (GUILDA.setting key) or condition (LoadBus) each one sets. <@Type> struct
-    end
-
     methods
         function obj = SolverCPF(varargin)
         % Create a CPF solver with no LoadBus (the settings are read at each run).
@@ -85,7 +69,6 @@ classdef SolverCPF < auxiliary
             v3_cpf_constructor(varargin);       % COMPAT(v3)
         end
 
-        sct_options = get_options(obj, nv)
         [result,flag,output] = solve(obj, net, sct_options)
     end
 end

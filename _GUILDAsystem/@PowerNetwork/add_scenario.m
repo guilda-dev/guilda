@@ -6,7 +6,7 @@ function sc = add_scenario(obj, s_tag, opt)
 % number suffix (case1 -> case1002, as for the other layers) and the new tag is shown as
 % INFO; read it from sc.s_tag. Add the disturbances with the methods of the scenario.
 %
-% From=sc0 copies the disturbances, Time, Options and Description of the scenario sc0 (of
+% From=sc0 copies the disturbances, Time and Description of the scenario sc0 (of
 % this or another network); sc0 does not change. The disturbances are checked against this
 % network: when a check fails, no scenario is created. To move a scenario, copy it and
 % remove the original: `net2.add_scenario(tag, From=sc); net1.remove_scenario(tag)`.
@@ -19,7 +19,7 @@ function sc = add_scenario(obj, s_tag, opt)
 % sc = net.add_scenario("case1", Time=[0, 20]);
 % sc.add_fault("B008", [0.10, 0.17]);
 % sc.add_open_branch("EL003", [0.17, 20]);
-% result = net.simulate(sc);
+% result = net.simulate("case1");
 % other.add_scenario("case1", From=sc);     % a copy in another network
 % ```
 %
@@ -31,7 +31,7 @@ function sc = add_scenario(obj, s_tag, opt)
         s_tag (1,1) string {mustBeNonzeroLengthText}   % Tag of the new scenario; a number is added when a child of the network has it.
         opt.Time (1,2) double {mustBeSimulationTime}   % [s] Simulation time [t0, tend]. Default: From.Time, else [0, 10].
         opt.Description (1,1) string                   % Free text. Default: From.Description, else "".
-        opt.From Scenario {mustBeScalarOrEmpty}        % Scenario to copy the disturbances and settings from (of this or another network).
+        opt.From Scenario {mustBeScalarOrEmpty}        % Scenario to copy the disturbances, Time and Description from (of this or another network).
     end
     arguments (Output)
         sc Scenario   % The new scenario, a child of the network.
@@ -42,7 +42,6 @@ function sc = add_scenario(obj, s_tag, opt)
         if isfield(opt, "From") && ~isempty(opt.From)
             sc0 = opt.From;
             sc.Time        = sc0.Time;
-            sc.Options     = sc0.Options;
             sc.Description = sc0.Description;
             tab = sc0.tab_disturbance;
             sv_var = string(tab.Properties.VariableNames(2:end));

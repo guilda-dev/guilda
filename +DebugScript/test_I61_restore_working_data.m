@@ -17,14 +17,14 @@ c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "n
 %% Unit stays connected after a trip lasting to the end time
 c_before = snapshot(net);
 ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,5], "TripUnit", "B002SG1");
-DebugScript.helper.quiet(@() net.simulate([0,2], ev));
+DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,2]));
 assert_untouched(net, c_before)
 
 
 %% Bus has no fault after a fault lasting to the end time
 c_before = snapshot(net);
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,5], "FaultBus", "B008");
-DebugScript.helper.quiet(@() net.simulate([0,2], ev));
+DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,2]));
 assert_untouched(net, c_before)
 
 
@@ -32,7 +32,7 @@ assert_untouched(net, c_before)
 c_before = snapshot(net);
 ev_os = DebugScript.helper.scenario("offset", net, "TimeSpan", 1, "OffsetUnit", "B002SG1", "OffsetState", "delta", "OffsetValue", 0.01);
 ev_in = DebugScript.helper.scenario("input", net, "TimeSpan", [1,2], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.01);
-DebugScript.helper.quiet(@() net.simulate([0,2], ev_os, ev_in));
+DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.combine(net, ev_os, ev_in).s_tag, Time=[0,2]));
 assert_untouched(net, c_before)
 
 
@@ -48,7 +48,7 @@ ev_error = DebugScript.helper.scenario("input", net, "TimeSpan", [0.4,5], "Input
                        "InputValue", 1e6);
 w = warning("off", "GUILDA:PowerNetwork:SimulationIncomplete");
 c_w = onCleanup(@() warning(w));
-[~, flag, output] = DebugScript.helper.quiet(@() net.simulate([0,2], ev_fault, ev_trip, ev_error));
+[~, flag, output] = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.combine(net, ev_fault, ev_trip, ev_error).s_tag, Time=[0,2]));
 clear c_w
 assert(flag == -1 && output.tEnd == 0.4 && isfield(output, "exception"), "外乱の区間で止まる: flag " + flag)
 assert_untouched(net, c_before)
@@ -56,12 +56,12 @@ assert_untouched(net, c_before)
 
 %% Rerun after a trip matches a run on a fresh network
 ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,5], "TripUnit", "B002SG1");
-DebugScript.helper.quiet(@() net.simulate([0,2], ev));
-sol = DebugScript.helper.quiet(@() net.simulate([0,2]));
+DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,2]));
+sol = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,2]));
 
 net2 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net2.initialize);
-ref = DebugScript.helper.quiet(@() net2.simulate([0,2]));
+ref = DebugScript.helper.quiet(@() net2.simulate(DebugScript.helper.no_disturbance(net2), Time=[0,2]));
 assert(isequaln(sol.rm_variable, ref.rm_variable))
 
 

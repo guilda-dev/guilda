@@ -15,7 +15,7 @@ c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "n
 %% Fault on a generator bus explains the failure
 for s_bus = ["B001","B002"]
     [net, ev] = build_case("load-power", s_bus);
-    [sol, flag, output] = net.simulate([0,2], ev);
+    [sol, flag, output] = net.simulate(ev.s_tag, Time=[0,2]);
     assert(flag == -1 && sol.flag == -1)
     assert(DebugScript.helper.msg_id(output.exception) == "GUILDA:SolverODE:InitialConditionFailed")
     assert(contains(output.message, "algebraic equations"))
@@ -26,7 +26,7 @@ end
 
 %% Failure prints nothing unexpected
 [net, ev] = build_case("load-power", "B001");
-s_out = evalc("net.simulate([0,2], ev);");
+s_out = evalc("net.simulate(ev.s_tag, Time=[0,2]);");
 assert(~contains(s_out, "ans"))
 assert(~contains(s_out, "tspan"))
 
@@ -34,7 +34,7 @@ assert(~contains(s_out, "tspan"))
 %% The remedy of the message solves the same faults
 for s_bus = ["B001","B002"]
     [net, ev] = build_case("load-impedance", s_bus);
-    [~, flag] = net.simulate([0,2], ev);
+    [~, flag] = net.simulate(ev.s_tag, Time=[0,2]);
     assert(flag == 1)
 end
 

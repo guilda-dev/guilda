@@ -1,4 +1,4 @@
-% Issue 63: simulate の Export は拡張子を計算前に検査し、制御器の状態も書き出す
+% Issue 63: result.export は拡張子を検査し、制御器の状態も書き出す (simulate の Export オプションは廃止)
 %
 % 実行: runtests("DebugScript.test_I63_export")  または  DebugScript.run_all("Features","I63")
 
@@ -19,46 +19,54 @@ tab_ctrl = tab_ctrl(ismember(tab_ctrl.Owner, [avr1.s_tag, pss1.s_tag, avr2.s_tag
 
 c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
 
-%% Invalid file name fails before the integration
-% 終わらない長さの計算が一瞬で止まれば、積分の前に検査している
-c_case = {"a.json", "a", "", 'a.json', strings(0,1), ".csv.bak"};
+%% Invalid file name stops the export
+sol = net.simulate(ev.s_tag, Time=[0,0.2]);
+c_case = {"a.json", "a", "", 'a.json', ".csv.bak"};
 for k = 1:numel(c_case)
-    t_start = tic;
     try
-        net.simulate([0,1e6], Export=c_case{k}, TimeLimit=Inf);
+        sol.export(fullfile(s_dir, c_case{k}));
         error("DebugScript:noError", "エラーにならない: %d", k)
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:SimulateExport", ME.message)
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:ExportFormat", ME.message)
     end
-    assert(toc(t_start) < 5, "計算前に止まっていない: %d", k)
+end
+assert(isempty(dir(s_dir + "/*.*")) || all([dir(s_dir).isdir]), "ファイルを書いた")
+% simulate の Export オプションは廃止
+try
+    net.simulate(ev.s_tag, Time=[0,0.2], Export=true);
+    error("DebugScript:noError", "Export を受け付けた")
+catch ME
+    assert(DebugScript.helper.msg_id(ME) ~= "DebugScript:noError", ME.message)
 end
 
 
-%% Every format of Export is accepted and written
+%% Every format of export is accepted and written
+sol = net.simulate(ev.s_tag, Time=[0,0.2]);
 for s_ext = [".csv", ".CSV", ".txt", ".xlsx", ".xls", ".mat"]
     s_file = fullfile(s_dir, "accepted" + s_ext);
-    net.simulate([0,0.2], ev, Export=s_file);
+    assert(sol.export(s_file) == s_file)
     assert(isfile(s_file), s_file)
     delete(s_file)
 end
-% Export=true も Export=false も従来どおり (true は既定の名前で現在のフォルダに書く)
+% 名前を省くと既定の名前で現在のフォルダに書く
 s_old = cd(s_dir);
 c_back = onCleanup(@() cd(s_old));
-net.simulate([0,0.2], ev, Export=true);
+sol.export();
 assert(numel(dir("*_simulation.csv")) == 1)
 delete("*_simulation.csv")
-net.simulate([0,0.2], ev, Export=false);
-assert(isempty(dir("*_simulation.csv")))
 
 
 %% Table has the controller states, by Label, after the existing columns
-sol = net.simulate([0,0.2], ev);
+sol = net.simulate(ev.s_tag, Time=[0,0.2]);
 s_csv = sol.export(fullfile(s_dir, "sim.csv"));
 tab = readtable(s_csv, "VariableNamingRule", "preserve");
 sv  = string(tab.Properties.VariableNames);
 assert(height(tab) == numel(sol.rv_t))
 assert(numel(unique(sv)) == numel(sv))
-assert(isequal(sv(end-height(tab_ctrl)+1:end), tab_ctrl.Label'))
+n_out = height(sol.tab_output);
+assert(isequal(sv(end-n_out-height(tab_ctrl)+1:end-n_out), tab_ctrl.Label'))
+% 出力 y, yc の列 (tab_output の Label) が最後
+assert(isequal(sv(end-n_out+1:end), sol.tab_output.Label'))
 for k = 1:height(tab_ctrl)
     rv = sol.rm_variable(:, tab_ctrl.Index(k));
     assert(max(abs(tab.(tab_ctrl.Label(k)) - rv)) < 1e-10, tab_ctrl.Label(k))
@@ -71,7 +79,7 @@ assert(max(abs(tab.B001SG1_omega - sol.odeResults.Bus(1).Component(1).X.omega)) 
 %% Network without controllers keeps its columns
 net0 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net0.initialize);
-sol0 = net0.simulate([0,0.1]);
+sol0 = net0.simulate(DebugScript.helper.no_disturbance(net0), Time=[0,0.1]);
 tab0 = readtable(sol0.export(fullfile(s_dir, "sim0.csv")), "VariableNamingRule", "preserve");
 n_bus = numel(net0.a_Bus);
 n_comp = 0;
@@ -83,13 +91,14 @@ for i = 1:n_bus
         end
     end
 end
-assert(width(tab0) == 1 + 6*n_bus + n_comp)
+assert(width(tab0) == 1 + 6*n_bus + n_comp + height(sol0.tab_output))
 
 
 %% MAT file has the controller states
-sol = net.simulate([0,0.2], ev);
+sol = net.simulate(ev.s_tag, Time=[0,0.2]);
 s_mat = sol.export(fullfile(s_dir, "sim.mat"));
 s = load(s_mat);
 assert(isequal(s.rm_variable, sol.rm_variable) && isequal(s.tab_variable, sol.tab_variable))
 assert(isequal(s.odeResults.t, sol.odeResults.t) && s.flag == sol.flag)
 assert(all(ismember(tab_ctrl.Label, s.tab_variable.Label)))
+assert(isequaln(s.rm_output, sol.rm_output) && isequal(s.tab_output, sol.tab_output))

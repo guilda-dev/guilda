@@ -13,7 +13,7 @@ function [result,flag,output] = solve(obj, net, sct_options)
     arguments (Input)
         obj % Solver (net.solver_CPF).
         net % Network initialized by net.initialize.
-        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+        sct_options (1,1) struct % Effective settings: the ContinuationPowerFlow section of GUILDA.setting and LoadBus, with the options of the call (built by net.calculate_continuation_powerflow).
     end
     arguments (Output)
         result % lambda and bus voltages along the path, and the nose point.
@@ -204,7 +204,18 @@ end
 
 
 function sv = limit_kinds(sv_limits)
-% Kinds of operating limits of the option Limits, in the order "Q", "V", "S"
+% Kinds of operating limits of the option Limits, in the order "Q", "V", "S". Limits
+% (from the call or GUILDA.setting) must be distinct members of "Q", "V", "S", or "all" /
+% "none" alone
+    l_ok = (isstring(sv_limits) || ischar(sv_limits) || iscellstr(sv_limits)) && ~isempty(sv_limits);
+    if l_ok
+        sv_limits = reshape(string(sv_limits), 1, []);
+        l_ok = all(ismember(sv_limits, ["Q","V","S"])) && numel(unique(sv_limits)) == numel(sv_limits) ...
+               || isscalar(sv_limits) && ismember(sv_limits, ["all","none"]);
+    end
+    if ~l_ok
+        error(msg("GUILDA:SolverCPF:InvalidLimits"));
+    end
     sv = ["Q","V","S"];
     if isequal(sv_limits, "none")
         sv = strings(1,0);

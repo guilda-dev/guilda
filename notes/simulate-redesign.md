@@ -79,16 +79,34 @@
 
 ### 0.6 実装の状況
 
-| 手順 | 状況 | コミット(`refactor/simulate-redesign-s1`) |
+| 手順 | 状況 | コミット |
 |---|---|---|
-| S0 | 済(2026-11-12) | `da12bc4e` |
-| S1 | 済(2026-11-12) | `938f3b81` |
-| S2-S7 | 未着手 | |
+| S0 | 済(2026-11-12) | `da12bc4e`(`refactor/simulate-redesign-s1`) |
+| S1 | 済(2026-11-12) | `938f3b81`(`refactor/simulate-redesign-s1`) |
+| S2 | 済(2026-11-12) | `10c5e5ff`, `99d3e179`(`refactor/simulate-redesign-s2`、`22565858` で統合) |
+| S3 | 済(2026-11-12) | `4434b396`, `c931880d`, `fac24132`(`refactor/simulate-redesign-s3`) |
+| S4 | 済(2026-11-13) | `03f727f7`, `505d411f`, `b82731df`(`refactor/simulate-redesign-s4`) |
+| S5-S7 | 未着手 | |
 
 - **S0:** `+DebugScript/+helper/simulate_baseline.m` を加えました。§8.3 の 6 例(IEEE68 の地絡 `[0,10]`、IEEE68 `LocalController=false` の外乱なし、IEEE14 AVR+PSS の母線 3 の発電機の解列、IEEE14 の 3 番目のブランチの開放、IEEE9 のオフセットと一定値の入力、F18 の構成の AGC 付き IEEE14 の GC の解列と観測機器の解列。いずれも `[0,5]`、IEEE68 の地絡だけ `[0,10]`)を計算し、`rv_t`, `rm_variable`, `rm_I`, `output.phases`, `flag` を `Mode="record"` で保存、`Mode="compare"` で `isequaln` で比べ、違えば例ごとに差の最大値を示します。タグは系統から読みます。API に触れるのはローカル関数 `new_scenario` と `run_case` だけで、S2-S6 はこの 2 つの数行を書き換えます。
 - **基準:** `/Users/taku/GUILDA/simulate-baseline/baseline_s0.mat`(リポジトリの外、コミットしない)。基準のコードは `refactor/design-alignment` の `7bc4cd45`(`7bc4cd457b99f23e37b9f195f0e73a798c7f47f2`、MAT の `sct_meta.commit` にも記録)、R2026a。6 例とも `flag = 1`。
 - **S1:** `v3_simulate_args.m`, `_VersionSupport/ODEevent.m`, `Deprecated.xml` の `SimulateOptionName` と `ODEevent`, `Scenario.l_compat`(と `Ver` の「1.x: ODEevent」の説明), `simulate.m` の `v3_simulate_args` の行を削除しました。テストは F6「Deprecated option names still work」、F31「Compatibility」の節と `test_levels` の行を削除し、F31 の最初の節の `ODEevent` は `DebugScript.helper.scenario` に置き換えました。§7 に挙げていなかった箇所: F10 の COMPAT フックの数(`simulate.m` 1 → 0、合計 15 → 14)、`add_disturbance.m` のヘルプの「deprecated ODEevent」、開発者ページ `feature-simulation.html`(ODEevent と `v3_simulate_args` の項目)と `folder-structure.html`(`_VersionSupport` の例)。旧名 `Reporter` などは `GUILDA:resolve_options:UnknownName` で止まります(v4-migration に記載)。`Scenario.Ver` の 3.0 への変更は S2 で行います。
 - **確認:** S1 の後の `simulate_baseline(Mode="compare")` は 6 例すべて `isequaln`。small は S0 で 512 件(PASS 510 / KNOWN 1 / SKIP 1)、S1 で 511 件(PASS 509 / KNOWN 1 / SKIP 1)、FAIL 0。medium は S1 の後に 1 回、685 件(PASS 683 / KNOWN 1 / SKIP 1、FAIL 0)。
+- **S3:** `ResultODE(sct_sol, sct_dae, sct_network, sct_solver)` をデータから作り、系統を参照しません(`a_PowerNetwork` は空、`sct_network` は `struct(net, false)`)。出力 `tab_output` / `rm_output` をコンストラクタで計算し(`private/output_trajectory.m`)、`odeResults` の `Y`、`export` の表の出力の列と MAT の `rm_output`, `tab_output` を加えました。`simulator_columns` は `tab_variable`, `tab_output`, `sv_bus`, `c_component` から列を作ります(`GUILDA:ResultODE:VariableMap` は削除)。`@Scenario/out_of_step.m` を `@ResultODE/judge_out_of_step.m` へ移し(`flag = 2` は角が `Threshold` を超えれば `"out-of-step"`、超えなければ `"incomplete"`)、スラック母線と慣性 `M` はスナップショットから読みます。メッセージ `NoRotorAngle`, `NoSlackGenerator`, `NoInertia`, `UnknownReference` を `GUILDA:ResultODE:` へ移しました。`SolverODE.solve` は暫定の `@SolverODE/private/result_data.m` で `net` から入力を作ります(S5 で `build_simulation_data` に置き換えて削除)。`_GUILDAverification` の 4 スクリプトと README の判定は `result.judge_out_of_step(...)`。テストは新規 F38(F31 の判定の 2 節を移し、`flag = 2`、`delete(net)` の後の動作、出力の値、判定のエラーを加えた)、I63 は出力の列。
+- **S3 で仕様と違った点:**
+  - 制御器の出力 `f_Y(t, x, V, u)` に uc が要りますが、uc の記録は S5(§4.3)の予定でした。S3 で `phase_result.m` を変え、全変数の行(x, Vre, Vim, u, uc)を記録します。`ResultODE.rm_variable` は従来どおり x, Vre, Vim, u だけです。
+  - コンストラクタの入力に解列の情報がないため、状態が NaN のブロック(解列中の機器と GC)の出力を NaN にします。状態を持たない機器の解列は検出できません。
+  - §6.3 の改名に `GUILDA:Scenario:UnknownReference` がありませんでしたが、`msg` の制約で `GUILDA:ResultODE:UnknownReference` にしました。
+  - `struct(net, false)` はモデルの `f_*` のクロージャを含みます(「ハンドルなし」ではない)。
+  - §5.4 の `ExportExtension` と既存の `GUILDA:ResultODE:ExportFormat` が重なります(S3 では変えていない)。
+  - `Scenario.m` の静的メソッド `out_of_step` の宣言は S2 の統合の後に削除しました。`@Scenario/export_csv.m` は削除済みの `sc.Judge` を読みます(S6 でファイルごと削除)。
+- **S3 の時間(R9、§5.2):** IEEE68 の地絡 `[0,10]`(648 時刻、出力 48 列)で、コンストラクタは 0.033-0.04 s(変更前のコンストラクタは約 0.05 s)、暫定の `result_data` は 0.03-0.06 s で、出力 y の計算は安いので遅延計算には変えません。**`struct(net, false)` は約 0.6 s で、`simulate` 全体が約 0.7 s から約 1.3 s になります。** スナップショットの作り方(または持ち方)は別に判断が要ります。
+- **S3 の確認:** S2 の統合(`22565858`)の後、`simulate_baseline(Mode="compare")` は 6 例すべて `isequaln`。small は 514 件(PASS 512 / KNOWN 1 / SKIP 1、FAIL 0)、medium は 1 回、691 件(PASS 689 / KNOWN 1 / SKIP 1、FAIL 0)。
+- **S4:** `simulate(obj, s_scenario, opt)` を素の arguments ブロックにし、タグでシナリオを 1 つ選びます(`@PowerNetwork/private/mustBeScenarioOf.m`。`ScenarioNotFound` の本文にタグを最大 10 個、なければ `add_scenario` の案内。文は `scenario_hint.m` で `remove_scenario` と共有し、メッセージに `{2}` を追加)。Name-Value は `Time`(`sc.Time` をその呼び出しだけ上書き)、`Solver`(`"ode15s"`/`"ode23t"`)、`Tolerance`, `AbsoluteTolerance`(`mustBeInRange` 1e-15〜1e-3)、`MaxStep`, `InitialStep`(新規、`mustBePositiveOrNaN`)、`SeparateComplexParts`, `TimeLimit`, `Progress`(true/false を残す)、`Verbose`, `PlotFcn`(`mustBePlotFcn(PlotFcn, s_analysis, sv_key)`、simulate は "none" だけ)。既定値は書かず、`GUILDA.config("TimeSimulation")` に呼び出しの値を重ねます(`simulate.m` のローカル関数 `simulate_options`)。`DefaultTimeSimulation.json` は version 2 で `MaxStep`, `InitialStep`(NaN)を追加(NaN は JSON の読み書きとも通る)。`makeODE` は NaN でなければ `o.SolverOptions.MaxStep` / `InitialStep` に入れます。
+  - 削除: `SolverOptions`(simulate、`makeODE` の分岐、`validate_options.m`)、`Export` オプション、`Scenario.Options` と `set.Options`、`SolverODE.OptionMap`, `get_options.m`, `progress_mode`(`@PowerNetwork/private/` へ移動、`mustBeProgress` も)、未使用の `checkSimulationTime.m`、メッセージ `SimulateArguments`, `SimulateExport`, `SimulateTime`, `ScenarioTimeConflict`, `ScenarioOptionConflict`, `Scenario:UnknownOption`。`SolverODE.solve` の `time`, `c_events`, `sct_options` は必須に。`sig_methods` に simulate を加え、`functionSignatures.json` を再生成(タグの補完は F34 で確認)。
+  - テスト: 約 230 か所を `net.simulate(sc.s_tag, Time=..., ...)` に機械的に置き換え、補助関数 `DebugScript.helper.no_disturbance`(外乱のないシナリオ)、`combine`(複数のシナリオを 1 つに。旧 `simulate(t, sc1, sc2)` の置き換え)、`ode_options`(`solve` を直接呼ぶテスト用の設定)を加えました。I54 は `Time` の検査、I63 は `result.export`、F31・I60 の複数シナリオ・他系統・Options の節は「1 回に 1 つ、タグで選ぶ」の確認に書き換え。I55 の不安定なテスト(区間ごと 0.3 s 待ち、上限 0.7 s、余裕 約 0.4 s)は、同じ計算を先に 1 回してから 0.6 s 待ち・上限 1.5 s(第 1 区間の余裕 0.9 s、第 3 区間で必ず超える)に。ヘルプの例(`_GUILDAobject` 20 ファイル、`ResultODE`, `Scenario`, `SolverODE`, `PowerNetwork`)と `_GUILDAverification` の 4 スクリプトも新しい呼び出しに。
+  - 仕様と違った点・残り: `Format` は S5 で加えます(S4 では引数を持たない)。`calculate_powerflow.m` のローカル `mustBePlotFcn` は潮流計算の並行作業のため残しました(同名の private 関数よりローカルが優先されるので動作は同じ。次に潮流計算を触るときに削除)。`compile` の `OtherNetwork`, `DuplicateRunTag`, `ScenarioArray` は simulate からは起きなくなりましたが、S5 の `compile` の書き換えまで残します。`string(sc)` がタグを返すので `net.simulate(sc)` も動きます。`Time` は `(1,2) double` の変換で `'ab'` や `[false true]` も数値として通ります。開発者ページ(`feature-simulation.html` の `SolverOptions`, `Options` の記述)と v4-migration は S7。
+- **S4 の確認:** `simulate_baseline(Mode="compare")` は 6 例すべて `isequaln`(`result.options` のフィールドが変わったので "solver options differ" の注記が出ます)。small は 512 件(PASS 510 / KNOWN 1 / SKIP 1、FAIL 0)。medium は 1 回、689 件(PASS 686 / KNOWN 1 / SKIP 1 / FAIL 1)。FAIL は F3「Solvers called directly check the equilibrium」(`solve` を時間だけで呼んでいた)で、`b82731df` で直し、`test_F3_edit_handling` 単独で 22 件すべて PASS。
 
 ## 1. 現状の構造: `SolverODE` が系統を読む箇所
 

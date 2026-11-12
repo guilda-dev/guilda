@@ -52,7 +52,7 @@ assert(r_err < 0.01, "relative error %g", r_err)
 
 %% Without an external signal the equilibrium is kept
 net = build_with_avr(s_unit);
-r = net.simulate([0,5]).odeResults;
+r = net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,5]).odeResults;
 gen = component_of(net, s_unit);
 X = component_result(r, net, s_unit).X;
 assert(max(abs(X.omega - gen.rv_Xequilibrium(gen.sv_x == "omega"))) < 1e-9)
@@ -79,7 +79,7 @@ end
 
 function r = simulate_step(net, s_unit, s_input, r_step, rv_time)
     ev = DebugScript.helper.scenario("step", net, "TimeSpan", rv_time, "InputUnit", s_unit, "InputName", s_input, "InputValue", r_step);
-    r = net.simulate(rv_time, ev).odeResults;
+    r = net.simulate(ev.s_tag, Time=rv_time).odeResults;
 end
 
 function [r_err, r_max] = error_to_linear(net, s_unit, s_input, r_step)

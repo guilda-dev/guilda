@@ -19,19 +19,19 @@ c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "n
 
 %% Partial result warns with any number of outputs
 lastwarn("");
-sol = net.simulate([0,5], ev, TimeLimit=1e-6);
+sol = net.simulate(ev.s_tag, Time=[0,5], TimeLimit=1e-6);
 [s_msg, s_got] = lastwarn(); s_got = DebugScript.helper.msg_id(s_msg, s_got);
 assert(s_got == s_id)
 assert(contains(s_msg, "TimeLimit") && contains(s_msg, "flag = 0"))
 assert(sol.flag == 0)
 
 lastwarn("");
-[~, flag] = net.simulate([0,5], ev, TimeLimit=1e-6);
+[~, flag] = net.simulate(ev.s_tag, Time=[0,5], TimeLimit=1e-6);
 s_got = DebugScript.helper.msg_id();
 assert(s_got == s_id && flag == 0)
 
 lastwarn("");
-[~, flag, output] = net.simulate([0,5], ev, TimeLimit=1e-6);
+[~, flag, output] = net.simulate(ev.s_tag, Time=[0,5], TimeLimit=1e-6);
 [s_msg, s_got] = lastwarn(); s_got = DebugScript.helper.msg_id(s_msg, s_got);
 assert(s_got == s_id && flag == 0)
 assert(contains(s_msg, output.message))
@@ -41,7 +41,7 @@ assert(contains(s_msg, output.message))
 % 入力が t = 1 から 1 s で 1e3 まで増えるとソルバーが止まる
 ev_in = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", [0, 0; 1, 1e3]);
 lastwarn("");
-[~, flag, output] = net.simulate([0,4], ev_in);
+[~, flag, output] = net.simulate(ev_in.s_tag, Time=[0,4]);
 [s_msg, s_got] = lastwarn(); s_got = DebugScript.helper.msg_id(s_msg, s_got);
 assert(flag == -1)
 assert(s_got == s_id && contains(s_msg, "flag = -1") && contains(s_msg, output.message))
@@ -49,7 +49,7 @@ assert(s_got == s_id && contains(s_msg, "flag = -1") && contains(s_msg, output.m
 
 %% Completed run does not warn
 lastwarn("");
-[~, flag] = net.simulate([0,2], ev);
+[~, flag] = net.simulate(ev.s_tag, Time=[0,2]);
 s_got = DebugScript.helper.msg_id();
 assert(flag == 1)
 assert(s_got ~= s_id)
@@ -57,7 +57,7 @@ assert(s_got ~= s_id)
 
 %% Default TimeLimit is Inf
 % 既定は GUILDA.setting の TimeSimulation (net.solver_ODE は設定を持たない)
-assert(~isprop(SolverODE(), "TimeLimit") && isinf(SolverODE().get_options().TimeLimit))
+assert(~isprop(SolverODE(), "TimeLimit") && isinf(net.simulate(ev.s_tag, Time=[0,0.1]).options.TimeLimit))
 sct_config = readstruct(fullfile(GUILDA.pwd, "@GUILDA", "config", "DefaultTimeSimulation.json"));
 assert(isinf(sct_config.TimeLimit.Value))
 
@@ -86,8 +86,12 @@ assert(prog.ToBeContinue)
 
 
 %% Phases that each fit in the limit stop when their sum does not
-% 各区間の前で 0.3 s 待つ。区間ごとの上限なら 0.7 s を超える区間はなく最後まで進む
-[flag, output] = run_with_delay(net, [0,5], faults(net), 0.3, 0.7);
+% 各区間の前で 0.6 s 待つ。区間ごとの上限なら 1.5 s を超える区間はなく最後まで進む。
+% 全体では第 3 区間の待ちで 1.8 s > 1.5 s になり必ず止まる。第 1 区間は 0.9 s 以内に計算できれば
+% 終わる (先に同じ計算を 1 回して、初回の読み込みの時間を除く)
+c_ev = faults(net);
+assert(run_with_delay(net, [0,5], c_ev, 0, Inf) == 1)
+[flag, output] = run_with_delay(net, [0,5], c_ev, 0.6, 1.5);
 assert(flag == 0, "flag " + flag)
 assert(output.nPhasesDone >= 1 && output.nPhasesDone < output.nPhases, "phases " + output.nPhasesDone)
 assert(output.tEnd < 5)
@@ -107,7 +111,7 @@ function c_ev = faults(net)
 end
 
 function [flag, output] = run_with_delay(net, tspan, c_events, t_delay, t_limit)
-    sct_options = net.solver_ODE.get_options({"Progress", "none", "TimeLimit", t_limit});
+    sct_options = DebugScript.helper.ode_options("Progress", "none", "TimeLimit", t_limit);
     sct_options.PhaseProbe = @(o) pause(t_delay);
     [~, flag, output] = net.solver_ODE.solve(net, tspan, c_events, sct_options);
 end

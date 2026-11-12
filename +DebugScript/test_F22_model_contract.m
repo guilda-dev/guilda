@@ -60,7 +60,7 @@ end
 for key = DebugScript.helper.model_classes("Component").Key'
     [net, comp] = DebugScript.helper.build_3bus(key);
     DebugScript.helper.quiet(@() net.initialize);
-    sol = DebugScript.helper.quiet(@() net.simulate([0,1]));
+    sol = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,1]));
     r = sol.odeResults.Bus(2 + startsWith(key, "load")).Component(1);   % build_3bus の配置
     if ~isempty(comp.sv_x)
         assert(max(abs(r.X{:,:} - comp.rv_Xequilibrium'), [], "all") < 1e-6, key)
@@ -110,7 +110,7 @@ for cls = DebugScript.helper.model_classes("LocalController").Class'
     [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
     attach_controller(comp, cls);
     DebugScript.helper.quiet(@() net.initialize);
-    sol = DebugScript.helper.quiet(@() net.simulate([0,1]));
+    sol = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,1]));
     r = sol.odeResults.Bus(2).Component(1);
     assert(max(abs(r.X{:,:} - comp.rv_Xequilibrium'), [], "all") < 1e-6, cls)
 end

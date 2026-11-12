@@ -23,7 +23,7 @@ classdef PowerNetwork < PowerSystemModel
 %   every model; the edit does not reach them). The components and controllers mark
 %   their own stale tags.
 % - `initialize` brings every layer up to date; the analyses only read the stale tags
-%   they need and stop with their own error (GUILDA:SolverODE:Stale, SolverLIN:Stale,
+%   they need and stop with their own error (GUILDA:SolverODE:Stale,
 %   SolverCPF:Stale, and PowerSystemModel:Stale of get_sys), naming the
 %   reasons, until it has run.
 %
@@ -83,7 +83,7 @@ classdef PowerNetwork < PowerSystemModel
 % net.initialize();                         % equilibrium for the dynamic analyses
 % sc  = net.add_scenario("fault", Time=[0,10]);
 % sc.add_fault("B003", [1,1.05]);
-% sim = net.simulate(sc);                   % ResultODE
+% sim = net.simulate("fault");              % ResultODE
 % res = net.get_sys();                      % ResultLIN: linear model in res.A, res.B, ...
 % ```
 %
@@ -175,7 +175,7 @@ classdef PowerNetwork < PowerSystemModel
         tab_Ybus2bus = get_admittance_matrix(obj)
         
         % Time simulation
-        [result, flag, output] = simulate(obj, time, varargin)
+        [result, flag, output] = simulate(obj, s_scenario, opt)
 
         % User Interface << Information >>
         info(obj, disp)

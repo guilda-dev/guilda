@@ -1,13 +1,15 @@
 function s = build_view(obj)
-% odeResults from rv_t, rm_variable and rm_I (same layout as before the
-% trajectory was stored in variable-map order)
+% odeResults from rv_t, rm_variable, rm_I and rm_output (same layout as before the
+% trajectory was stored in variable-map order, with the outputs Y of each component)
     s = struct();
     if isempty(obj.c_index)
         return
     end
     X = array2table(obj.rm_variable);
     I = array2table(obj.rm_I);
+    Y = array2table(obj.rm_output);
     Vmap = obj.tab_variable.Name;
+    Ymap = obj.tab_output.Name;
 
     s.t = obj.rv_t;
     for i = 1:numel(obj.c_index)
@@ -22,6 +24,10 @@ function s = build_view(obj)
             sol_c_idx = X(:, idx.c_u{j});
             sol_c_idx.Properties.VariableNames = Vmap(idx.c_u{j});
             s.Bus(i).Component(j).U = sol_c_idx;
+
+            sol_c_idx = Y(:, idx.c_y{j});
+            sol_c_idx.Properties.VariableNames = Ymap(idx.c_y{j});
+            s.Bus(i).Component(j).Y = sol_c_idx;
         end
 
         sol_V_idx = X{:, idx.iv_V};

@@ -1,5 +1,5 @@
 {
-    "version": 1,
+    "version": 2,
     "Solver":{
         "Value": "ode15s",
         "Type": "select",
@@ -18,6 +18,16 @@
         "Value": 1e-6,
         "Type": "double",
         "Description": "Absolute error tolerance, 'AbsoluteTolerance' of the ode object (1e-15 <= tol <= 1e-3)"
+    },
+    "MaxStep":{
+        "Value": NaN,
+        "Type": "double",
+        "Description": "[s] Largest step of the solver; NaN for the solver default"
+    },
+    "InitialStep":{
+        "Value": NaN,
+        "Type": "double",
+        "Description": "[s] First step of each phase; NaN for the solver default"
     },
     "SeparateComplexParts":{
         "Value": false,

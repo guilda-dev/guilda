@@ -3,7 +3,7 @@
 % イベントの種類ごとに IEEE14 母線系統の応答を計算し、結果を確認する。
 %   sc  = net.add_scenario("名前");  sc.add_disturbance("名前", "TimeSpan", [t1,t2], <外乱の指定>);
 %   (テストでは ev = DebugScript.helper.scenario("名前", net, "TimeSpan", [t1,t2], <外乱の指定>))
-%   [sol, flag, output] = net.simulate([t0,tend], ev1, ev2, ..., Name, Value);
+%   [sol, flag, output] = net.simulate(ev.s_tag, Time=[t0,tend], Name=Value);   % 1 回に 1 つのシナリオ
 %   r   = sol.odeResults;     % r.t, r.Bus(i).V / I / PQ, r.Bus(i).Component(j).X / U
 %
 %   FaultBus   : 母線の地絡 (電圧 0)
@@ -12,8 +12,8 @@
 %   InputValue : 機器入力への加算 (数値 / 関数ハンドル)
 %
 %   flag: 1 = 終了時刻まで計算, 0 = TimeLimit で停止, -1 = ソルバーが途中で停止
-%   Name-Value (SolverODE.OptionMap): Solver, SolverOptions, Tolerance, AbsoluteTolerance,
-%   SeparateComplexParts, TimeLimit, Progress, Verbose, Plot (+ Export)。その呼び出しだけ有効
+%   Name-Value (simulate の arguments ブロック): Time, Solver, Tolerance, AbsoluteTolerance,
+%   MaxStep, InitialStep, SeparateComplexParts, TimeLimit, Progress, Verbose, PlotFcn。その呼び出しだけ有効
 %
 % 実行: runtests("DebugScript.test_F6_simulation")  または  DebugScript.run_all("Features","F6")
 
@@ -27,7 +27,7 @@ c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "n
 
 %% Simulation result structure
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-sol = net.simulate([0,3], ev);
+sol = net.simulate(ev.s_tag, Time=[0,3]);
 assert(isa(sol, "ResultODE"))
 
 r = sol.odeResults;
@@ -62,7 +62,7 @@ net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
 net.add_global_controller("agc-PI", ["B001SG1", "B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-sol = net.simulate([0,2], ev);
+sol = net.simulate(ev.s_tag, Time=[0,2]);
 [tab, c_idxBus, c_idxGC] = net.get_variable_map();
 n_lin = sum(ismember(tab.Kind, ["x","Vre","Vim","u"]));   % 結果の変数は表の先頭の x, Vre, Vim, u
 tab = tab(1:n_lin,:);
@@ -114,7 +114,7 @@ assert(isequal(sol0.odeResults, struct()) && isempty(sol0.rm_variable) && isempt
 % get_point は既定でイベントの後 (Side="after")、Side="before" でイベントの前の値を返す
 gen = net.a_Bus{1}.a_Component{1};
 ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 1, "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.1);
-sol = net.simulate([0,2], ev);
+sol = net.simulate(ev.s_tag, Time=[0,2]);
 tab = sol.tab_variable;
 iv_d = find(tab.Owner == gen.s_tag & tab.Name == "delta");
 assert(nnz(sol.rv_t == 1) == 2, "境界の時刻が 2 回出力されていない")
@@ -136,7 +136,7 @@ assert(isequal(net.get_sys("Point", {sol, 1, "before"}).rv_point, x_before))
 %% V4 call returns result flag and output
 % [result, flag, output] を返す。結果クラスは ResultBase を継承し、flag / output / 使った設定を持つ
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-[sol, flag, output] = net.simulate([0,3], ev);
+[sol, flag, output] = net.simulate(ev.s_tag, Time=[0,3]);
 assert(isa(sol, "ResultODE") && isa(sol, "ResultBase"))
 assert(flag == 1 && sol.flag == 1 && sol.l_success)
 assert(isequal(sol.output, output) && output.tEnd == 3 && output.nPhases == 3 && output.nPhasesDone == 3)
@@ -158,48 +158,65 @@ assert(~isprop(net.solver_ODE, "RelativeTolerance") && ~isprop(net.solver_ODE, "
 % Name-Value はその呼び出しだけ有効。GUILDA.setting の TimeSimulation は変わらない
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 sct0 = GUILDA.config("TimeSimulation");
-sol = net.simulate([0,3], ev, Tolerance=1e-6, AbsoluteTolerance=1e-8, TimeLimit=Inf, Progress=false, Solver="ode23t");
+sol = net.simulate(ev.s_tag, Time=[0,3], Tolerance=1e-6, AbsoluteTolerance=1e-8, TimeLimit=Inf, Progress=false, Solver="ode23t");
 assert(sol.options.Tolerance == 1e-6 && sol.options.AbsoluteTolerance == 1e-8)
 assert(isinf(sol.options.TimeLimit) && sol.options.Progress == "none" && string(sol.options.Solver) == "ode23t")
 assert(sol.flag == 1 && sol.odeResults.t(end) == 3)
 assert(isequaln(sct0, GUILDA.config("TimeSimulation")), "Name-Value で GUILDA.setting が変わった")
 % 厳しい許容誤差では刻みが細かくなり、応答はほぼ同じ
-ref = net.simulate([0,3], ev);
+ref = net.simulate(ev.s_tag, Time=[0,3]);
 assert(numel(sol.odeResults.t) > numel(ref.odeResults.t))
 w1  = sol.odeResults.Bus(1).Component(1).X.omega;
 w0  = ref.odeResults.Bus(1).Component(1).X.omega;
 assert(abs(w1(end) - w0(end)) < 1e-4)
 % GUILDA.setting の既定値は次の呼び出しから使われる (Solver も設定のキー)
 c_cfg = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none", "Tolerance", 1e-5, "Solver", "ode23t"));
-sol = net.simulate([0,1], ev);
+sol = net.simulate(ev.s_tag, Time=[0,1]);
 assert(sol.options.Tolerance == 1e-5 && string(sol.options.Solver) == "ode23t")
 clear c_cfg
-% SolverOptions は呼び出し (またはシナリオの Options) だけ。既定は Solver の既定の options
-assert(isempty(net.solver_ODE.get_options().SolverOptions))
-sol = net.simulate([0,1], ev, SolverOptions=matlab.ode.options.ODE15s(MaxStep=0.01));
-assert(max(diff(sol.odeResults.t)) <= 0.01 + 1e-12)
+% MaxStep / InitialStep: 既定は NaN (ソルバーの既定)。呼び出しの値は ode の SolverOptions に入る
+assert(isnan(GUILDA.config("TimeSimulation", "MaxStep")) && isnan(GUILDA.config("TimeSimulation", "InitialStep")))
+assert(isnan(ref.options.MaxStep) && isnan(ref.options.InitialStep))
+sol = net.simulate(ev.s_tag, Time=[0,1], MaxStep=0.01);
+assert(max(diff(sol.odeResults.t)) <= 0.01 + 1e-12 && sol.options.MaxStep == 0.01)
+sol = net.simulate(ev.s_tag, Time=[0,1], InitialStep=1e-7);
+assert(sol.odeResults.t(2) <= 1e-7 + 1e-15 && sol.options.InitialStep == 1e-7)
+% 設定の MaxStep も効き、呼び出しの値が設定に勝つ
+c_cfg = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none", "MaxStep", 0.02));
+sol = net.simulate(ev.s_tag, Time=[0,1]);
+assert(max(diff(sol.odeResults.t)) <= 0.02 + 1e-12 && sol.options.MaxStep == 0.02)
+sol = net.simulate(ev.s_tag, Time=[0,1], MaxStep=0.005);
+assert(max(diff(sol.odeResults.t)) <= 0.005 + 1e-12)
+sol = net.simulate(ev.s_tag, Time=[0,1], MaxStep=NaN);      % NaN: ソルバーの既定
+assert(max(diff(sol.odeResults.t)) > 0.02)
+clear c_cfg
+assert(error_id(@() net.simulate(ev.s_tag, MaxStep=-1)) ~= "")
+assert(error_id(@() net.simulate(ev.s_tag, InitialStep=0)) ~= "")
+% SolverOptions は廃止 (MaxStep, InitialStep に置き換え)
+assert(error_id(@() net.simulate(ev.s_tag, SolverOptions=matlab.ode.options.ODE15s(MaxStep=0.01))) ~= "")
 % 設定はプロパティではない (v3 の名前も互換なし)
 assert(error_id(@() set_property(net.solver_ODE, "RelativeTolerance", 1e-5)) ~= "")
 assert(error_id(@() set_property(net.solver_ODE, "Reporter", "none")) ~= "")
 % Plot オプションは廃止 (図は result.plot_trajectory)、PlotFcn は "none" のみ
-assert(error_id(@() net.simulate([0,1], ev, Plot=true)) == "GUILDA:resolve_options:UnknownName")
-assert(error_id(@() net.simulate([0,1], ev, PlotFcn="omega")) == "GUILDA:check_plotfcn:InDevelopment")
+assert(error_id(@() net.simulate(ev.s_tag, Time=[0,1], Plot=true)) ~= "")
+assert(error_id(@() net.simulate(ev.s_tag, Time=[0,1], PlotFcn="omega")) == "GUILDA:check_plotfcn:InDevelopment")
+assert(error_id(@() net.simulate(ev.s_tag, Time=[0,1], PlotFcn=@(varargin) [])) == "GUILDA:check_plotfcn:InDevelopment")
+assert(error_id(@() net.simulate(ev.s_tag, Time=[0,1], PlotFcn=1)) == "GUILDA:check_plotfcn:InvalidValue")
+assert(net.simulate(ev.s_tag, Time=[0,1], PlotFcn='none').options.PlotFcn == "none")
 % SeparateComplexParts は他の on/off の設定と同じ logical (ode には "on" / "off" で渡す)
 assert(GUILDA.config("TimeSimulation", "SeparateComplexParts") == false)
-sct_ode = net.solver_ODE.get_options({"SeparateComplexParts", true});
-assert(islogical(sct_ode.SeparateComplexParts) && sct_ode.SeparateComplexParts)
-assert(error_id(@() net.solver_ODE.get_options({"SeparateComplexParts", "maybe"})) ~= "")
-sol = net.simulate([0,1], ev, SeparateComplexParts=true);
+assert(error_id(@() net.simulate(ev.s_tag, Time=[0,1], SeparateComplexParts="maybe")) ~= "")
+sol = net.simulate(ev.s_tag, Time=[0,1], SeparateComplexParts=true);
 assert(sol.l_success && sol.options.SeparateComplexParts == true)
 % Verbose: 区間の一覧と結果を表示する
-str = evalc("net.simulate([0,3], ev, Verbose=true);");
+str = evalc("net.simulate(ev.s_tag, Time=[0,3], Verbose=true);");
 assert(contains(str, "phase  1") && contains(str, "fault") && contains(str, "reached t = 3"))
 
 
 %% TimeLimit stops the simulation with flag 0
 % 計算時間が TimeLimit を超えると、その時刻までの結果と flag = 0 を返す
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-[sol, flag, output] = net.simulate([0,5], ev, TimeLimit=1e-6);
+[sol, flag, output] = net.simulate(ev.s_tag, Time=[0,5], TimeLimit=1e-6);
 assert(flag == 0 && sol.flag == 0 && ~sol.l_success)
 assert(output.tEnd < 5 && sol.odeResults.t(end) == output.tEnd)
 assert(output.nPhasesDone < output.nPhases)
@@ -208,44 +225,37 @@ assert(contains(output.message, "TimeLimit"))
 assert(height(sol.odeResults.Bus(1).V) == numel(sol.odeResults.t))
 % 既定値 (GUILDA.setting の TimeLimit) は変わらず、次の計算は最後まで進む
 assert(GUILDA.config("TimeSimulation", "TimeLimit") ~= 1e-6)
-[~, flag] = net.simulate([0,5], ev);
+[~, flag] = net.simulate(ev.s_tag, Time=[0,5]);
 assert(flag == 1)
 
 
 %% Unknown option or misplaced argument stops with an error
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 try
-    net.simulate([0,1], ev, Tolerence=1e-6);
+    net.simulate(ev.s_tag, Time=[0,1], Tolerence=1e-6);
     error("DebugScript:noError", "未知の名前でエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "Tolerence") && contains(ME.message, "TimeLimit"))   % 使える名前を示す
+    assert(DebugScript.helper.msg_id(ME) ~= "DebugScript:noError", ME.message)   % MATLAB の arguments ブロックのエラー
 end
+% 旧 Export オプションは廃止 (result.export を呼ぶ)
+assert(error_id(@() net.simulate(ev.s_tag, Export=true)) ~= "")
 % 不正な値
 try
-    net.simulate([0,1], ev, Progress="loud");
+    net.simulate(ev.s_tag, Time=[0,1], Progress="loud");
     error("DebugScript:noError", "不正な Progress でエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) ~= "DebugScript:noError", ME.message)
 end
-% イベントは Name-Value の前に置く
-try
-    net.simulate([0,1], "Verbose", false, ev);
-    error("DebugScript:noError", "Name-Value の後のイベントでエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:SimulateArguments", DebugScript.helper.msg_id(ME))
-end
-try
-    net.simulate([0,1], ev, 3);
-    error("DebugScript:noError", "イベントでも名前でもない引数でエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:SimulateArguments", DebugScript.helper.msg_id(ME))
-end
+% シナリオはタグ 1 つで選ぶ (旧形式の時間、複数のシナリオは受けない)。Scenario は string(sc) でタグになる
+assert(isequaln(net.simulate(ev, Time=[0,0.1]).rv_t, net.simulate(ev.s_tag, Time=[0,0.1]).rv_t))
+assert(error_id(@() net.simulate([0,1], ev.s_tag)) ~= "")
+assert(error_id(@() net.simulate(ev.s_tag, ev.s_tag)) ~= "")
+assert(error_id(@() net.simulate([ev.s_tag, ev.s_tag])) ~= "")
 
 
 %% Plot and Export of the simulation result
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-sol = net.simulate([0,2], ev);
+sol = net.simulate(ev.s_tag, Time=[0,2]);
 c_fig = onCleanup(@() close(findall(0, "Type", "figure")));
 ax = sol.plot_trajectory();
 assert(isa(ax, "matlab.graphics.axis.Axes") && numel(ax.Children) == numel(net.a_Bus))
@@ -283,17 +293,16 @@ try
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:ExportFormat", DebugScript.helper.msg_id(ME))
 end
-% simulate(..., Export=file) は result.export を呼ぶ。図は描かない (図は result.plot_trajectory)
+% simulate は図を描かない (図は result.plot_trajectory)
 n_fig = numel(findall(0, "Type", "figure"));
-net.simulate([0,1], ev, Export=fullfile(s_dir, "sim2.csv"));
+net.simulate(ev.s_tag, Time=[0,1]);
 assert(numel(findall(0, "Type", "figure")) == n_fig)
-assert(isfile(fullfile(s_dir, "sim2.csv")))
 
 
 %% Fault bus
 % B008 で 1.00〜1.05 秒に地絡 (旧 Task7)
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-sol = net.simulate([0,5], ev);
+sol = net.simulate(ev.s_tag, Time=[0,5]);
 r   = sol.odeResults;
 
 % 地絡中は故障母線の電圧が 0
@@ -310,7 +319,7 @@ assert(abs(abs(V8_end) - abs(net.a_Bus{8}.c_Vequilibrium)) < 0.05)
 %% Trip generator
 % 発電機 B002SG1 を 1.00〜1.05 秒に解列 (旧 Task8)
 ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.05], "TripUnit", "B002SG1");
-sol = net.simulate([0,5], ev);
+sol = net.simulate(ev.s_tag, Time=[0,5]);
 r   = sol.odeResults;
 X   = r.Bus(2).Component(1).X.Variables;
 
@@ -325,7 +334,7 @@ assert(all(isfinite(X(r.t < 1,:)), "all"))
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.05], "TripUnit", "B002SG1");
-sol = net.simulate([0,5], ev);
+sol = net.simulate(ev.s_tag, Time=[0,5]);
 r   = sol.odeResults;
 lv  = inwin(r.t, 1, 1.05);
 X2 = r.Bus(2).Component(1).X.Variables;
@@ -339,7 +348,7 @@ end
 %% Trip load
 % 負荷 B003LPQ2 を 1.00〜1.05 秒に解列 → 母線 B003 の消費電力が減る
 ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.05], "TripUnit", "B003LPQ2");
-sol = net.simulate([0,5], ev);
+sol = net.simulate(ev.s_tag, Time=[0,5]);
 r   = sol.odeResults;
 
 P3 = r.Bus(3).PQ.P;
@@ -352,7 +361,7 @@ assert(min(P3(lv)) - P3(1) > 0.3, "負荷解列中も B003 の消費電力が減
 % 計算開始時に B001SG1 の内部位相 delta を 0.1 rad ずらす (旧 Task16)
 gen = net.a_Bus{1}.a_Component{1};
 ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 0, "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.1);
-sol = net.simulate([0,5], ev);
+sol = net.simulate(ev.s_tag, Time=[0,5]);
 r   = sol.odeResults;
 
 delta = r.Bus(1).Component(1).X.delta;
@@ -364,7 +373,7 @@ assert(max(abs(r.Bus(1).Component(1).X.omega)) > 1e-5)
 % t = 1 秒で delta を 0.1 rad ずらす (旧 Task10 の ev1)
 gen = net.a_Bus{1}.a_Component{1};
 ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 1, "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.1);
-sol = net.simulate([0,5], ev);
+sol = net.simulate(ev.s_tag, Time=[0,5]);
 r   = sol.odeResults;
 
 delta = r.Bus(1).Component(1).X.delta;
@@ -377,7 +386,7 @@ assert(abs(delta(i1) - (gen.rv_Xequilibrium(1) + 0.1)) < 1e-2, "t = 1 のオフ�
 % 他の機器の解列中 (区間の初期値の再計算が必要な場合) にもオフセットが残る
 os = DebugScript.helper.scenario("offset", net, "TimeSpan", 1.5, "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.1);
 tr = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,2], "TripUnit", "B002SG1");
-r  = net.simulate([0,3], os, tr).odeResults;
+r  = net.simulate(DebugScript.helper.combine(net, os, tr).s_tag, Time=[0,3]).odeResults;
 d  = r.Bus(1).Component(1).X.delta;
 k  = find(abs(r.t - 1.5) < 1e-9);              % 1.5 秒の前後の区間の境界点 (2 点)
 assert(numel(k) == 2 && abs(d(k(2)) - d(k(1)) - 0.1) < 1e-8, "解列中の t = 1.5 のオフセットが反映されていない")
@@ -388,8 +397,8 @@ assert(numel(k) == 2 && abs(d(k(2)) - d(k(1)) - 0.1) < 1e-8, "解列中の t = 1
 % (分割用のイベントは入力 0 で、応答には影響しない)
 os  = DebugScript.helper.scenario("offset", net, "TimeSpan", [1,3], "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.1);
 cut = DebugScript.helper.scenario("cut", net, "TimeSpan", [2,2.5], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0);
-r1  = net.simulate([0,4], os).odeResults;
-r2  = net.simulate([0,4], os, cut).odeResults;
+r1  = net.simulate(os.s_tag, Time=[0,4]).odeResults;
+r2  = net.simulate(DebugScript.helper.combine(net, os, cut).s_tag, Time=[0,4]).odeResults;
 d1  = r1.Bus(1).Component(1).X.delta;
 d2  = r2.Bus(1).Component(1).X.delta;
 assert(abs(d2(end) - d1(end)) < 1e-3, "オフセットが分割された区間ごとに重ねて加わっている")
@@ -399,7 +408,7 @@ assert(abs(d2(end) - d1(end)) < 1e-3, "オフセットが分割された区間�
 % B002SG1 の機械入力 Pmech に 1〜3 秒の間 0.1 を加える
 gen = net.a_Bus{2}.a_Component{1};
 ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.1);
-sol = net.simulate([0,5], ev);
+sol = net.simulate(ev.s_tag, Time=[0,5]);
 r   = sol.odeResults;
 
 Pm  = r.Bus(2).Component(1).U.Pmech;
@@ -415,7 +424,7 @@ assert(max(abs(r.Bus(2).Component(1).X.omega)) > 1e-5)
 load2 = net.a_Bus{2}.a_Component{2};
 ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,3], "InputUnit", "B002LPQ2", ...
                   "InputName", ["Pload";"Qload"], "InputValue", [0, 0, 0; 2, 0.2, 0]);
-sol = net.simulate([0,5], ev);
+sol = net.simulate(ev.s_tag, Time=[0,5]);
 r   = sol.odeResults;
 
 U   = r.Bus(2).Component(2).U;
@@ -431,7 +440,7 @@ gen = net.a_Bus{1}.a_Component{1};
 g2  = net.a_Bus{2}.a_Component{1};
 os  = DebugScript.helper.scenario("offset", net, "TimeSpan", 0, "OffsetUnit", "B001SG1", "OffsetState", ["omega";"delta"], "OffsetValue", [0.01;0.1]);
 in  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,2], "InputUnit", "B002SG1", "InputName", ["Vfield";"Pmech"], "InputValue", [0.02;0.1]);
-r   = net.simulate([0,2], os, in).odeResults;
+r   = net.simulate(DebugScript.helper.combine(net, os, in).s_tag, Time=[0,2]).odeResults;
 
 X = r.Bus(1).Component(1).X;
 assert(abs(X.delta(1) - (gen.rv_Xequilibrium(gen.sv_x == "delta") + 0.1)) < 1e-8)
@@ -451,7 +460,7 @@ o{1} = DebugScript.helper.scenario("os1", net, "TimeSpan", 0,     "OffsetUnit", 
 o{2} = DebugScript.helper.scenario("os2", net, "TimeSpan", 0,     "OffsetUnit", "B001SG1", "OffsetState", "delta", "OffsetValue", 0.05);
 o{3} = DebugScript.helper.scenario("in1", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.1);
 o{4} = DebugScript.helper.scenario("in2", net, "TimeSpan", [2,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.05);
-r = net.simulate([0,4], o{:}).odeResults;
+r = net.simulate(DebugScript.helper.combine(net, o{:}).s_tag, Time=[0,4]).odeResults;
 
 assert(abs(r.Bus(1).Component(1).X.delta(1) - (gen.rv_Xequilibrium(gen.sv_x == "delta") + 0.1)) < 1e-8)
 Pm  = r.Bus(2).Component(1).U.Pmech;
@@ -467,10 +476,10 @@ g2  = net.a_Bus{2}.a_Component{1};
 Pm0 = g2.rv_Uequilibrium(g2.sv_u == "Pmech");
 ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [1,5], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", [0, 0; 4, 0.4]);
 
-r = net.simulate([0,2], ev).odeResults;
+r = net.simulate(ev.s_tag, Time=[0,2]).odeResults;
 assert(r.t(1) == 0 && r.t(end) == 2)
 
-r = net.simulate([2,4], ev).odeResults;
+r = net.simulate(ev.s_tag, Time=[2,4]).odeResults;
 assert(r.t(1) == 2 && r.t(end) == 4)
 Pm = r.Bus(2).Component(1).U.Pmech;
 assert(max(abs(Pm - (Pm0 + 0.1*(r.t - 1)))) < 1e-8)
@@ -483,7 +492,7 @@ o{1} = DebugScript.helper.scenario("ev1", net, "TimeSpan", 0,        "OffsetStat
 o{2} = DebugScript.helper.scenario("ev2", net, "TimeSpan", [1,1.5],  "InputUnit", "B002SG1", "InputName", ["Pmech";"Vfield"], "InputValue", [0, 0.05, 0; 0.5, 0.05, 0.005]);
 o{3} = DebugScript.helper.scenario("ev4", net, "TimeSpan", [2,2.02], "FaultBus", "B008");
 o{4} = DebugScript.helper.scenario("ev5", net, "TimeSpan", [3,3.5],  "TripUnit", "B003LPQ2");
-sol = net.simulate([0,5], o{:});
+sol = net.simulate(DebugScript.helper.combine(net, o{:}).s_tag, Time=[0,5]);
 r   = sol.odeResults;
 
 assert(r.t(end) == 5)
@@ -493,7 +502,7 @@ assert(all(isfinite(r.Bus(1).Component(1).X.Variables), "all"))
 
 %% Simulate without events
 % イベントを渡さなければ外乱なしの応答になるべき
-sol = net.simulate([0,3]);
+sol = net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,3]);
 assert(sol.odeResults.t(end) == 3)
 assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
 
@@ -501,8 +510,8 @@ assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
 %% Repeated simulation gives the same result
 % 同じ net で続けて計算しても結果は変わらない (状態が残らない)
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-s1 = net.simulate([0,3], ev);
-s2 = net.simulate([0,3], ev);
+s1 = net.simulate(ev.s_tag, Time=[0,3]);
+s2 = net.simulate(ev.s_tag, Time=[0,3]);
 o1 = s1.odeResults.Bus(1).Component(1).X.omega;
 o2 = s2.odeResults.Bus(1).Component(1).X.omega;
 assert(isequal(size(o1), size(o2)) && max(abs(o1 - o2)) < 1e-10)
@@ -512,8 +521,8 @@ assert(isequal(size(o1), size(o2)) && max(abs(o1 - o2)) < 1e-10)
 % 区間数の少ない計算を後から行っても、前の計算の区間が結果に残らない
 o1 = DebugScript.helper.scenario("f1", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 o2 = DebugScript.helper.scenario("f2", net, "TimeSpan", [2,2.05], "FaultBus", "B008");
-net.simulate([0,3], o1, o2);
-r = net.simulate([0,2], o1).odeResults;
+net.simulate(DebugScript.helper.combine(net, o1, o2).s_tag, Time=[0,3]);
+r = net.simulate(o1.s_tag, Time=[0,2]).odeResults;
 assert(r.t(end) == 2 && all(diff(r.t) >= 0))
 
 
@@ -527,7 +536,7 @@ net.a_Bus{2}.a_Component{1}.add_local_controller("pss-PSS1");
 DebugScript.helper.quiet(@() net.initialize);
 
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-sol = net.simulate([0,5], ev);
+sol = net.simulate(ev.s_tag, Time=[0,5]);
 r   = sol.odeResults;
 assert(r.t(end) == 5)
 
@@ -553,7 +562,7 @@ c{1} = net.a_Bus{1}.a_Component{1};
 c{2} = net.a_Bus{2}.a_Component{1};
 net.add_global_controller("agc-PI", c, parameter=struct(alpha=[1;1], beta=[1;1]));
 DebugScript.helper.quiet(@() net.initialize);
-sol = net.simulate([0,3], DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008"));
+sol = net.simulate(DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008").s_tag, Time=[0,3]);
 r   = sol.odeResults;
 assert(abs(numel(r.t) - 189) <= 0.2*189, "steps: " + numel(r.t))
 x_ref = [1.21546465440074; 0.000417344321429537; 0.894219545365634; 0.244739185785292; -0.982794522565431; 0.381301677046273];
@@ -571,11 +580,11 @@ lqr1 = net.a_Bus{1}.a_Component{1}.add_local_controller("local-LQR");
 net.a_Bus{6}.a_Component{1}.add_local_controller("local-LQR", parameter=struct(Input="Vfield"));
 DebugScript.helper.quiet(@() net.initialize);
 
-sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]);
 assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
 
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-r   = net.simulate([0,10], ev).odeResults;
+r   = net.simulate(ev.s_tag, Time=[0,10]).odeResults;
 assert(r.t(end) == 10)
 w   = r.Bus(1).Component(1).X.omega;
 
@@ -588,7 +597,7 @@ assert(max(abs(U{:,:}' - u), [], "all") < 1e-6)
 
 net0 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net0.initialize);
-r0  = net0.simulate([0,10], DebugScript.helper.scenario("fault", net0, "TimeSpan", [1,1.05], "FaultBus", "B008")).odeResults;
+r0  = net0.simulate(DebugScript.helper.scenario("fault", net0, "TimeSpan", [1,1.05], "FaultBus", "B008").s_tag, Time=[0,10]).odeResults;
 w0  = r0.Bus(1).Component(1).X.omega;
 assert(max(abs(w(r.t > 8))) < max(abs(w0(r0.t > 8))))
 
@@ -602,7 +611,7 @@ agc  = net.add_global_controller("agc-PI", c, parameter=struct(alpha=[1;1], beta
 DebugScript.helper.quiet(@() net.initialize);
 
 ev  = DebugScript.helper.scenario("step", net, "TimeSpan", [1,20], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", -0.1);
-sol = net.simulate([0,20], ev);
+sol = net.simulate(ev.s_tag, Time=[0,20]);
 r   = sol.odeResults;
 
 % AGC が発電機の機械入力を増やし、周波数偏差を 0 に戻す
@@ -616,7 +625,7 @@ assert(Pm(end) > Pm(1))
 net0 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net0.initialize);
 ev0  = DebugScript.helper.scenario("step", net0, "TimeSpan", [1,20], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", -0.1);
-r0   = net0.simulate([0,20], ev0).odeResults;
+r0   = net0.simulate(ev0.s_tag, Time=[0,20]).odeResults;
 assert(abs(r0.Bus(1).Component(1).X.omega(end)) > 10*abs(omega(end)))
 
 
@@ -628,7 +637,7 @@ DebugScript.helper.quiet(@() net.initialize);
 
 ev1 = DebugScript.helper.scenario("step", net, "TimeSpan", [1,20], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", -0.1);
 ev2 = DebugScript.helper.scenario("trip", net, "TimeSpan", [5,10], "TripUnit", agc.s_tag);
-sol = net.simulate([0,20], ev1, ev2);
+sol = net.simulate(DebugScript.helper.combine(net, ev1, ev2).s_tag, Time=[0,20]);
 r   = sol.odeResults;
 Pm  = r.Bus(1).Component(1).U.Pmech;
 lv  = inwin(r.t, 5, 10);
@@ -650,12 +659,12 @@ DebugScript.helper.quiet(@() net1.initialize);
 DebugScript.helper.quiet(@() net2.initialize);
 
 % 外乱なしでは平衡点に留まる
-sol = net2.simulate([0,2], DebugScript.helper.noop_event(net2,[0,2]));
+sol = net2.simulate(DebugScript.helper.noop_event(net2,[0,2]).s_tag, Time=[0,2]);
 assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
 
 % 負荷を増やしたときの応答が 1 台の場合と一致し、周波数偏差が 0 に戻る
-r1 = net1.simulate([0,20], DebugScript.helper.scenario("step", net1, "TimeSpan", [1,20], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", -0.1)).odeResults;
-r2 = net2.simulate([0,20], DebugScript.helper.scenario("step", net2, "TimeSpan", [1,20], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", -0.1)).odeResults;
+r1 = net1.simulate(DebugScript.helper.scenario("step", net1, "TimeSpan", [1,20], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", -0.1).s_tag, Time=[0,20]).odeResults;
+r2 = net2.simulate(DebugScript.helper.scenario("step", net2, "TimeSpan", [1,20], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", -0.1).s_tag, Time=[0,20]).odeResults;
 t  = linspace(0, 20, 401)';
 [t1, i1] = unique(r1.t);
 [t2, i2] = unique(r2.t);
@@ -683,7 +692,7 @@ for k = 1:2
     DebugScript.helper.quiet(@() net.initialize);
     i_bus = find(cellfun(@(b) b == gen.a_Bus, net.a_Bus));
     ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 0, "OffsetUnit", string(gen), "OffsetState", "omega", "OffsetValue", 1e-3);
-    r   = net.simulate([0,0.02], ev).odeResults;
+    r   = net.simulate(ev.s_tag, Time=[0,0.02]).odeResults;
     X   = r.Bus(i_bus).Component(1).X;
     ddelta(k) = interp1(r.t, X.delta, 0.01) - X.delta(1);
 end
@@ -707,13 +716,13 @@ expect_error(@() DebugScript.helper.scenario("in", net, "TimeSpan", [1,2], "Inpu
 net = DebugScript.helper.quiet(@() network.IEEE68bus(LocalController=false));
 DebugScript.helper.quiet(@() net.initialize);
 
-[sol, flag, output] = net.simulate([0,5], DebugScript.helper.scenario("none", net, "TimeSpan", 1));
+[sol, flag, output] = net.simulate(DebugScript.helper.scenario("none", net, "TimeSpan", 1).s_tag, Time=[0,5]);
 assert(flag == 1, output.message)
 assert(output.nPhases == 2)
 assert(DebugScript.helper.max_state_drift(sol) < 1e-8)
 % 地絡の後の区間も計算できる
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B030");
-[~, flag, output] = net.simulate([0,2], ev, TimeLimit=Inf);
+[~, flag, output] = net.simulate(ev.s_tag, Time=[0,2], TimeLimit=Inf);
 assert(flag == 1, output.message)
 
 
@@ -722,7 +731,7 @@ assert(flag == 1, output.message)
 % output.message は止まった区間・時刻とソルバーの警告文を示す
 ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", [0, 0; 1, 1e3]);
 lastwarn("");
-[~, flag, output] = net.solver_ODE.solve(net, [0,4], {ev}, net.solver_ODE.get_options({}));   % net.simulate の警告で lastwarn が変わらない
+[~, flag, output] = net.solver_ODE.solve(net, [0,4], {ev}, DebugScript.helper.ode_options());   % net.simulate の警告で lastwarn が変わらない
 s_warn = lastwarn();
 assert(flag == -1)
 assert(output.tEnd > 1 && output.tEnd < 2.5)
@@ -735,7 +744,7 @@ assert(strlength(s_warn) > 0 && contains(output.message, s_warn), output.message
 % 代数状態、入力) だけを新しい区間の網で解き直す。地絡の始まりと終わり、負荷の解列を確かめる
 ev1 = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 ev2 = DebugScript.helper.scenario("trip",  net, "TimeSpan", [1.5,1.7], "TripUnit", "B003LPQ2");
-[sol, flag, output] = net.simulate([0,2], ev1, ev2);
+[sol, flag, output] = net.simulate(DebugScript.helper.combine(net, ev1, ev2).s_tag, Time=[0,2]);
 assert(flag == 1, output.message)
 [d_x, d_v] = boundary_jumps(net, sol);
 assert(numel(d_x) == 4 && all(d_x == 0), "微分状態の跳び " + mat2str(d_x))
@@ -751,7 +760,7 @@ net = DebugScript.helper.quiet(@() network.IEEJ_WEST10(Section="peak"));
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.1,0.17], "FaultBus", "B003");
 for tol = [1e-4, 1e-6]
     lastwarn("");
-    [sol, flag, output] = net.simulate([0,1], ev, Progress="none", Tolerance=tol, AbsoluteTolerance=1e-8);
+    [sol, flag, output] = net.simulate(ev.s_tag, Time=[0,1], Progress="none", Tolerance=tol, AbsoluteTolerance=1e-8);
     assert(flag == 1, output.message)
     assert(isempty(lastwarn()), lastwarn())
     [d_x, d_v] = boundary_jumps(net, sol);
@@ -766,7 +775,7 @@ end
 net = DebugScript.helper.quiet(@() network.IEEJ_WEST10(Section="peak"));
 for t_end = [1, 10]
     for atol = [1e-4, 1e-6, 1e-8]
-        [sol, flag, output] = net.simulate([0,t_end], Progress="none", AbsoluteTolerance=atol);
+        [sol, flag, output] = net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,t_end], Progress="none", AbsoluteTolerance=atol);
         assert(flag == 1, output.message)
         assert(sol.rv_t(end) == t_end)
     end
@@ -776,7 +785,7 @@ end
 %% Event outside the simulation time warns
 ev = DebugScript.helper.scenario("late", net, "TimeSpan", [5,6], "FaultBus", "B008");
 lastwarn("");
-[~, flag] = net.simulate([0,1], ev);
+[~, flag] = net.simulate(ev.s_tag, Time=[0,1]);
 id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:Scenario:OutsideTimeSpan")
 assert(flag == 1)

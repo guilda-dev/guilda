@@ -1,7 +1,7 @@
-function verdict = out_of_step(result, opt)
-% Judge a result by the rotor angles: out of step beyond a threshold from a reference.
+function verdict = judge_out_of_step(obj, opt)
+% Judge the result by the rotor angles: out of step beyond a threshold from a reference.
 %
-% The default Judge of a scenario. The units judged are the components with the state
+% The units judged are the components with the state
 % delta (synchronous generators). A unit is out of step when the absolute value of its
 % rotor angle relative to the reference exceeds Threshold (360 degrees) at any time of the
 % result. The verdict is
@@ -9,65 +9,67 @@ function verdict = out_of_step(result, opt)
 % - "out-of-step" when a unit is out of step (also when the simulation stopped early after
 %   that),
 % - "incomplete" when no unit is out of step but the simulation did not reach its end
-%   (result.flag ~= 1),
+%   (result.flag ~= 1; also flag = 2, a run stopped by StopOnOutOfStep at an angle below
+%   Threshold),
 % - "stable" otherwise.
 %
 % The reference is the generator of the slack bus (Reference="slack", the default; the
-% first component with delta on the slack bus of the network of the result), the center of
-% inertia of all the units (Reference="COI", weights the dynamics parameter M), or a unit
-% given by its tag. The states of a tripped unit are NaN while it is tripped and do not
-% count; they are left out of the center of inertia at those times.
+% first component with delta on the slack bus of the network snapshot sct_network), the
+% center of inertia of all the units (Reference="COI", weights the dynamics parameter M of
+% the snapshot), or a unit given by its tag. The states of a tripped unit are NaN while it
+% is tripped and do not count; they are left out of the center of inertia at those times.
+% Only the result is read, so the judgment works after the network is edited or deleted.
+% For another criterion, write a function of the result: v = my_judge(result).
 %
 % <@Examples>
 % ```matlab
-% result  = net.simulate(sc);
-% verdict = Scenario.out_of_step(result);           % same as sc.judge(result) by default
-% verdict = Scenario.out_of_step(result, Reference="COI", Threshold=180);
-% sc.Judge = @(r) Scenario.out_of_step(r, Reference="B003SG1");
+% result  = net.simulate("fault");
+% verdict = result.judge_out_of_step();
+% verdict = result.judge_out_of_step(Reference="COI", Threshold=180);
+% verdict = result.judge_out_of_step(Reference="B003SG1");
 % ```
 %
-% See also Scenario.judge, ResultODE
+% See also ResultODE
     arguments (Input)
-        result (1,1) ResultODE % Result of net.simulate.
+        obj
         opt.Reference (1,1) string = "slack" % "slack", "COI", or the tag of a unit with delta.
         opt.Threshold (1,1) double {mustBePositive} = 360 % [deg] Largest allowed absolute rotor angle relative to the reference.
     end
     arguments (Output)
         verdict struct % Verdict ("stable" | "out-of-step" | "incomplete"), Time [s] (first time beyond Threshold, NaN when none), Units (tags of the units out of step), MaxAngle [deg] (largest absolute relative angle), Reference, Threshold.
     end
-    tab   = result.tab_variable;
-    sv_cp = vertcat(strings(0,1), result.c_component{:});
+    tab   = obj.tab_variable;
+    sv_cp = vertcat(strings(0,1), obj.c_component{:});
     lv_d  = tab.Kind == "x" & tab.Name == "delta" & ismember(tab.Owner, sv_cp);
     if ~any(lv_d)
-        error(msg("GUILDA:Scenario:NoRotorAngle"));
+        error(msg("GUILDA:ResultODE:NoRotorAngle"));
     end
     sv_unit = tab.Owner(lv_d);
     sv_bus  = tab.Bus(lv_d);
-    m_delta = result.rm_variable(:, lv_d);
-    rv_t    = result.rv_t;
+    m_delta = obj.rm_variable(:, lv_d);
+    rv_t    = obj.rv_t;
+    a_bus   = obj.sct_network.a_Bus;
 
     switch lower(opt.Reference)
         case "slack"
-            net = result.a_PowerNetwork;
-            lv_slack = cellfun(@(b) b.l_isSlack, net.a_Bus);
-            sv_slack = string(net.a_Bus(lv_slack));
+            lv_slack = cellfun(@(b) b.l_isSlack, a_bus);
+            sv_slack = string(cellfun(@(b) b.s_tag, a_bus(lv_slack), 'UniformOutput', false));
             i_ref = find(ismember(sv_bus, sv_slack), 1);
             if isempty(i_ref)
-                error(msg("GUILDA:Scenario:NoSlackGenerator", char(join(sv_slack, ", ")), char(net.s_tag)));
+                error(msg("GUILDA:ResultODE:NoSlackGenerator", char(join(sv_slack, ", ")), char(obj.s_network)));
             end
             rv_ref = m_delta(:, i_ref);
             s_ref = sv_unit(i_ref);
         case "coi"
-            net = result.a_PowerNetwork;
-            c_comp = tools.cellfun(@(b) b.a_Component, net.a_Bus);
+            c_comp = tools.cellfun(@(b) reshape(b.a_Component, [], 1), a_bus);
             c_comp = vertcat(cell(0,1), c_comp{:});
-            sv_all = string(c_comp);
+            sv_all = string(cellfun(@(c) c.s_tag, c_comp, 'UniformOutput', false));
             rv_M = zeros(1, numel(sv_unit));
             for k = 1:numel(sv_unit)
                 comp = c_comp{sv_all == sv_unit(k)};
                 tab_dyn = comp.tab_parameter.dynamics;
                 if ~ismember("M", string(tab_dyn.Properties.VariableNames))
-                    error(msg("GUILDA:Scenario:NoInertia", char(sv_unit(k))));
+                    error(msg("GUILDA:ResultODE:NoInertia", char(sv_unit(k))));
                 end
                 rv_M(k) = tab_dyn.M(1);
             end
@@ -79,7 +81,7 @@ function verdict = out_of_step(result, opt)
         otherwise
             i_ref = find(sv_unit == opt.Reference, 1);
             if isempty(i_ref)
-                error(msg("GUILDA:Scenario:UnknownReference", char(opt.Reference), char(join(sv_unit, ", "))));
+                error(msg("GUILDA:ResultODE:UnknownReference", char(opt.Reference), char(join(sv_unit, ", "))));
             end
             rv_ref = m_delta(:, i_ref);
             s_ref = sv_unit(i_ref);
@@ -94,7 +96,7 @@ function verdict = out_of_step(result, opt)
     if any(lv_out)
         verdict.Verdict = "out-of-step";
         verdict.Time    = rv_t(find(any(lm_out, 2), 1));
-    elseif ~isequal(result.flag, 1)
+    elseif ~isequal(obj.flag, 1)
         verdict.Verdict = "incomplete";
         verdict.Time    = NaN;
     else

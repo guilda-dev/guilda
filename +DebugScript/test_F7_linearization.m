@@ -755,9 +755,10 @@ end
 net = new_net();
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
-sim = net.simulate([0,1.5], ev);
+sim = net.simulate(ev.s_tag, Time=[0,1.5]);
 r   = sim.odeResults;
 tab = net.get_variable_map();
+tab = tab(ismember(tab.Kind, ["x","Vre","Vim","u"]), :);   % rv_point の行 (信号 y は含まない)
 k   = find(r.t > 0.8, 1);
 t   = r.t(k);
 x   = zeros(height(tab),1);
@@ -813,7 +814,7 @@ net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
 net.a_Bus{2}.a_Component{1}.add_local_controller("avr-DC1", parameter=struct(kap=20));
 net.add_global_controller("agc-PI", ["B001SG1", "B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
-sim  = net.simulate([0,1]);
+sim  = net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,1]);
 res0 = net.get_sys();
 res1 = net.get_sys("Point", {sim, 0.5});
 tab  = res0.tab_variable;
@@ -839,7 +840,7 @@ net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
 net.add_global_controller("agc-PI", ["B002SG1", "B006SG1"], parameter=struct(kP=100, kI=500));   % B001SG1, B003SG1 は AGC の外
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
-sim = net.simulate([0,1.5], ev);
+sim = net.simulate(ev.s_tag, Time=[0,1.5]);
 t   = 0.9;
 res0 = net.get_sys();
 res  = net.get_sys("Point", {sim, t});
@@ -988,7 +989,7 @@ catch ME
     assert(contains(ME.message, "more"), ME.message)
 end
 % トリップ中の {sim, t}: 解列した機器の状態が NaN
-sim = n14.simulate([0,2], DebugScript.helper.scenario("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "B002SG1"));
+sim = n14.simulate(DebugScript.helper.scenario("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "B002SG1").s_tag, Time=[0,2]);
 try
     n14.get_sys("Point", {sim, 1.2});
     error("DebugScript:NoError", "トリップ中の Point がエラーにならない")
@@ -1003,7 +1004,7 @@ assert(n14.get_sys("Point", {sim, 0.5}).l_success)
 % トリップの区間だけ NaN の点で止まり、境界は Side に従う。復帰後は機器を含めた通常の点として線形化する
 n14 = new_net();
 DebugScript.helper.quiet(@() n14.initialize);
-sim = n14.simulate([0,2], DebugScript.helper.scenario("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "B002SG1"), Progress="none");
+sim = n14.simulate(DebugScript.helper.scenario("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "B002SG1").s_tag, Time=[0,2], Progress="none");
 res0 = n14.get_sys();
 tab  = res0.tab_variable;
 for c_point = {{sim,1}, {sim,1.2}, {sim,1.5,"before"}}
@@ -1043,7 +1044,7 @@ assert(all(isfinite(sc.A), "all") && isequal(sc.A, gen3.get_sys("Point", x(iv)).
 n9 = network.IEEE9bus();
 DebugScript.helper.quiet(@() n9.initialize);
 ev  = DebugScript.helper.scenario("short", n9, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
-sim = n9.simulate([0,1], ev, Progress="none", TimeLimit=120);
+sim = n9.simulate(ev.s_tag, Time=[0,1], Progress="none", TimeLimit=120);
 str = evalc('[res, flag, output] = n9.get_sys("Point", {sim, 0.52});');
 assert(contains(str, "INFO") && contains(str, "B008"), str)
 assert(flag && output.s_issue == "" && isequal(output.sv_faultBus, "B008"))
