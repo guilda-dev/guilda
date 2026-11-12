@@ -212,18 +212,6 @@ assert(GUILDA.config("TimeSimulation", "TimeLimit") ~= 1e-6)
 assert(flag == 1)
 
 
-%% Deprecated option names still work
-% COMPAT(v3): Name-Value の Reporter / RelativeTolerance は Progress / Tolerance に読み替え、警告を1回出す
-clear Deprecated
-lastwarn("");
-ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-evalc('sol = net.simulate([0,2], ev, Reporter="none", RelativeTolerance=1e-5);');
-id = DebugScript.helper.msg_id();
-assert(id == "GUILDA:Deprecated:SimulateOptionName", id)
-assert(sol.options.Progress == "none" && sol.options.Tolerance == 1e-5)
-assert(GUILDA.config("TimeSimulation", "Tolerance") ~= 1e-5)
-
-
 %% Unknown option or misplaced argument stops with an error
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 try

@@ -93,7 +93,6 @@ function tab = test_levels()
     "test_F31_scenario/UnknownTagsAtAddAndAtRunTime", "medium"
     "test_F31_scenario/CSVRoundTripWithSeveralScenariosInOneFile", "medium"
     "test_F31_scenario/IncompleteVerdictAndACustomJudge", "medium"
-    "test_F31_scenario/Compatibility_ODEeventWarnsOnceAndGivesTheSameResults", "medium"
     % ---- F35_controller_signal_routing -----------------------------------------------------------
     "test_F35_controller_signal_routing/AGlobalControllerReadsAnOutputOfItsUnitBeforeAStateOfTheSameName", "medium"
     % ---- F36_tutorial_all_models -----------------------------------------------------------------

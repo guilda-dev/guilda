@@ -90,12 +90,8 @@ classdef (Sealed = true) Scenario < auxiliary
         Description (1,1) string = ""                        % Free text describing the scenario.
     end
 
-    properties (Hidden) % Compatibility
-        l_compat (1,1) logical = false                       % True for a scenario made by the deprecated ODEevent(tag, net, ...) (set by _VersionSupport/ODEevent.m).
-    end
-
     properties (SetAccess=private, Hidden) % Version
-        Ver (1,1) double = 2.0                               % Version of this class (1.x: ODEevent).
+        Ver (1,1) double = 2.0                               % Version of this class.
     end
 
     properties (Constant, Hidden) % Disturbance fields

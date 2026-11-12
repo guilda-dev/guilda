@@ -7,8 +7,7 @@
 %   result  = net.simulate(sc);                  % 保存した Time と Options で実行
 %   verdict = sc.judge(result);                  % "stable" / "out-of-step" / "incomplete"
 %
-% 複数の外乱を持つシナリオ、系統との所有関係、タグの検査、CSV の入出力、判定関数、
-% 旧 ODEevent の互換を確認する。
+% 複数の外乱を持つシナリオ、系統との所有関係、タグの検査、CSV の入出力、判定関数を確認する。
 %
 % 実行: runtests("DebugScript.test_F31_scenario")  または  DebugScript.run_all("Features","F31")
 
@@ -29,10 +28,8 @@ assert(flag == 1 && r_sc.rv_t(end) == 3)
 
 net2 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net2.initialize);
-ws = warning("off", "all");  c_ws = onCleanup(@() warning(ws));
-ev1 = ODEevent("fault1", net2, "TimeSpan", [1,1.07], "FaultBus", "B008");
-ev2 = ODEevent("open1",  net2, "TimeSpan", [1.07,3], "OpenBranch", "EL003");
-clear c_ws
+ev1 = DebugScript.helper.scenario("fault1", net2, "TimeSpan", [1,1.07], "FaultBus", "B008");
+ev2 = DebugScript.helper.scenario("open1",  net2, "TimeSpan", [1.07,3], "OpenBranch", "EL003");
 [r_ev, ~, out_ev] = DebugScript.helper.quiet(@() net2.simulate([0,3], ev1, ev2));
 assert(isequaln(r_sc.rm_variable, r_ev.rm_variable) && isequaln(r_sc.rv_t, r_ev.rv_t))
 assert(isequal(out_sc.phases, out_ev.phases))
@@ -270,31 +267,6 @@ assert(v.Verdict == "incomplete" && isnan(v.Time), v.Verdict)
 sc.Judge = @(r) struct("Verdict", "custom", "tEnd", r.output.tEnd);
 v = sc.judge(res);
 assert(v.Verdict == "custom" && v.tEnd == res.output.tEnd)
-
-
-%% Compatibility: ODEevent warns once and gives the same results
-net = new_ieee14();
-clear Deprecated
-lastwarn("");
-ev = DebugScript.helper.quiet(@() ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008"));
-assert(string(DebugScript.helper.msg_id()) == "GUILDA:Deprecated:ODEevent")
-assert(isa(ev, "Scenario") && ev.a_PowerNetwork == net && ev.s_tag == "fault" && ev.tab_disturbance.Tag == "fault")
-lastwarn("");
-ev2 = DebugScript.helper.quiet(@() ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "B002SG1"));
-assert(isempty(lastwarn()), "警告は 1 回だけ")
-r_old = DebugScript.helper.quiet(@() net.simulate([0,2], ev, ev2));
-sc = Scenario("new");
-sc.add_fault("B008", [1,1.05], Tag="fault");
-sc.add_trip("B002SG1", [1,1.2], Tag="trip");
-net.add_scenario(sc);
-r_new = DebugScript.helper.quiet(@() net.simulate([0,2], sc));
-assert(isequaln(r_old.rm_variable, r_new.rm_variable) && isequal(r_old.output.phases, r_new.output.phases))
-% 同じタグの ODEevent は前のものを置き換える (ループで増えない)
-ev3 = DebugScript.helper.quiet(@() ODEevent("fault", net, "TimeSpan", [1,1.1], "FaultBus", "B008"));
-assert(isempty(ev.a_PowerNetwork) && ev3.a_PowerNetwork == net)
-assert(sum(cellfun(@(s) s.s_tag == "fault", net.a_Scenario)) == 1)
-% Scenario として追加した同じタグのシナリオは置き換えない
-assert(error_id(@() ODEevent("new", net, "TimeSpan", [1,1.1], "FaultBus", "B008")) == "GUILDA:PowerNetwork:ScenarioTagInUse")
 
 
 %% Scenarios of another network are rejected

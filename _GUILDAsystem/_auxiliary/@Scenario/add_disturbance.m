@@ -1,7 +1,7 @@
 function s_tag = add_disturbance(obj, tag, opt)
 % Add a disturbance given by any of the disturbance fields.
 %
-% The general form, with the fields of the deprecated ODEevent: one disturbance may
+% The general form: one disturbance may
 % combine a fault, a trip, a branch opening, an offset and an input with one time
 % span. When the scenario is attached to a network, the tags are checked against it
 % now; otherwise when the scenario is added to a network. The checks are those of the

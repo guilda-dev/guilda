@@ -159,12 +159,10 @@ verdict = sc.judge(result)</code></pre>
     <ul lang="en">
       <li>Scenarios are not model data: adding, removing or editing them makes nothing stale.</li>
       <li><code>Scenario.import_csv</code>, <code>Scenario.export_csv</code>: several scenarios, one row per disturbance.</li>
-      <li>Deprecated <code>ODEevent(tag, net, Name, Value)</code> (<code>_VersionSupport/</code>): returns a scenario with one disturbance, already added to <code>net</code>.</li>
     </ul>
     <ul lang="ja">
       <li>シナリオはモデルのデータではありません。加えても、消しても、編集しても、古くなる層はありません。</li>
       <li><code>Scenario.import_csv</code> と <code>Scenario.export_csv</code> は、複数のシナリオを外乱 1 つにつき 1 行の形で読み書きします。</li>
-      <li>非推奨の <code>ODEevent(tag, net, Name, Value)</code> (<code>_VersionSupport/</code>) は、外乱を 1 つだけ持つシナリオを作り、<code>net</code> に加えてから返します。</li>
     </ul>
 
     <h3><span lang="en">Preconditions for the call</span><span lang="ja">呼び出しの前提条件</span></h3>
@@ -307,13 +305,11 @@ verdict = sc.judge(result)</code></pre>
           <dd><ul lang="en">
               <li>Accepts a scenario in place of <code>time</code> (<code>net.simulate(sc, ...)</code>); checks <code>time</code> (<code>check_time</code>).</li>
               <li>Splits the leading scenarios from the options (<code>split_events</code>).</li>
-              <li>Maps the deprecated option names <code>Reporter</code> → <code>Progress</code>, <code>RelativeTolerance</code> → <code>Tolerance</code> (<code>v3_simulate_args</code>).</li>
               <li>Takes the stored <code>Time</code> and <code>Options</code> of the scenarios where the call gives none (<code>scenario_settings</code>).</li>
               <li>Takes <code>Export</code> out (<code>take_call_options</code>) and checks its extension (<code>check_export</code>).</li>
             </ul><ul lang="ja">
               <li><code>time</code> の位置にシナリオが来た場合も受け付けます（<code>net.simulate(sc, ...)</code>）。<code>time</code> は <code>check_time</code> で検査します。</li>
               <li>先頭に並んだシナリオと、オプションを分けます（<code>split_events</code>）。</li>
-              <li>非推奨のオプション名を読み替えます。<code>Reporter</code> は <code>Progress</code> に、<code>RelativeTolerance</code> は <code>Tolerance</code> になります（<code>v3_simulate_args</code>）。</li>
               <li>呼び出しで指定していない時間とオプションは、シナリオの <code>Time</code> と <code>Options</code> から取ります（<code>scenario_settings</code>）。</li>
               <li><code>Export</code> を取り出し（<code>take_call_options</code>）、拡張子を検査します（<code>check_export</code>）。</li>
             </ul></dd>
