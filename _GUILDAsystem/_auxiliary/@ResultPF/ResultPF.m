@@ -43,6 +43,7 @@ classdef ResultPF < ResultBase
 % result.disp_violation();         % violated operating limits by kind
 % result.plot_voltage();           % voltage profile with Vmin / Vmax
 % result.plot_branch(Quantity="loading");   % |S| / Smax of each branch
+% result.plot_convergence(Bus="B014");       % largest residual and |V| per iteration
 % result.export("pf.csv", Table="branch");
 % ```
 %
@@ -103,6 +104,7 @@ classdef ResultPF < ResultBase
 
         fig = plot_voltage(obj, opt)
         ax = plot_branch(obj, opt)
+        fig = plot_convergence(obj, opt)
         varargout = disp_summary(obj)
         varargout = disp_bus(obj, opt)
         varargout = disp_branch(obj, opt)

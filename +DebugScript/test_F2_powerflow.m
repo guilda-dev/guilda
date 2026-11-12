@@ -414,6 +414,32 @@ assert(error_id(@() res.plot_branch(Parent=f, Quantity="I")) == "MATLAB:validato
 clear c_f
 
 
+%% plot_convergence draws the largest residual at each iterate
+% 残差は SolverPF の方程式と同じ: 収束した最後の点は Tolerance 以下、反復ごとに MethodNewtonRaphson の残差と一致
+net = DebugScript.helper.build_9bus();
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false, Solver="newton"));
+f = figure("Visible", "off"); c_f = onCleanup(@() close(f));
+t = res.plot_convergence(Parent=f);
+assert(numel(findobj(f, "Type", "axes")) == 1 && numel(findobj(f, "Tag", "Tolerance")) == 1)
+h = findobj(f, "Tag", "Residual");
+assert(isequal(h.XData(:), res.rv_step(:)) && h.YData(end) <= res.options.Tolerance && h.YData(1) > 1e-3)
+assert(abs(h.YData(end) - res.output.residual) <= 1e-12 + 1e-6*res.output.residual)
+assert(strcmp(t.Children(end).YScale, "log"))
+clf(f); res.plot_convergence(Parent=f, Bus=["B008","B001"]);
+hv = findobj(f, "Tag", "V");
+assert(numel(findobj(f, "Type", "axes")) == 2 && numel(hv) == 2)
+[~, i8] = ismember("B008", string({hv.DisplayName}));
+assert(max(abs(hv(i8).YData(:) - abs(res.cm_Vhistory(8,:)).')) < 1e-12)
+assert(error_id(@() res.plot_convergence(Parent=f, Bus="B099")) == "GUILDA:ResultPF:UnknownTag")
+assert(error_id(@() ResultPF().plot_convergence(Parent=f)) == "GUILDA:ResultPF:NoHistory")
+% dynamic: 横軸は仮想時間
+res_d = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false, Solver="dynamic"));
+clf(f); res_d.plot_convergence(Parent=f);
+h = findobj(f, "Tag", "Residual");
+assert(isequal(h.XData(:), res_d.rv_step(:)) && contains(get(get(findobj(f, "Type", "axes"), "XLabel"), "String"), "virtual time"))
+clear c_f
+
+
 %% Branch flows of the result use the admittance matrix in the snapshot
 % Branch.struct はスナップショットに枝のアドミタンス行列 cm_Y を加え、ResultPF はそれで枝潮流を求める
 net = PowerNetwork();
