@@ -150,7 +150,7 @@ verdict = sc.judge(result)</code></pre>
       <tbody>
         <tr><td><code>TimeSpan</code></td><td><span lang="en">[s] <code>[t_start, t_end]</code>, or <code>t_start</code> alone for an offset. A fault, trip, branch opening or input needs <code>t_start &lt; t_end</code>. Default of <code>add_disturbance</code> <code>[0, 10]</code>.</span><span lang="ja">[s] <code>[t_start, t_end]</code> で指定します。オフセットだけなら <code>t_start</code> だけでかまいません。地絡、トリップ、ブランチの開放、入力には <code>t_start &lt; t_end</code> が必要です。<code>add_disturbance</code> での既定値は <code>[0, 10]</code> です。</span></td></tr>
         <tr><td><code>FaultBus</code> <small>add_fault</small></td><td><span lang="en">Ground fault: the voltage and current variables of these buses are removed, so their voltage is 0.</span><span lang="ja">地絡です。指定した母線の電圧と電流の変数を取り除き、電圧を 0 に固定します。</span></td></tr>
-        <tr><td><code>TripUnit</code> <small>add_trip</small></td><td><span lang="en">Components or global controllers disconnected: a component's states and inputs are removed and it injects no current; a global controller gives no output.</span><span lang="ja">機器または広域制御器を切り離します。機器は状態と入力を取り除き、電流を注入しなくなります。広域制御器は出力を止めます。</span></td></tr>
+        <tr><td><code>TripUnit</code> <small>add_trip</small></td><td><span lang="en">Components or global controllers disconnected: a component's states and inputs are removed and it injects no current; a global controller gives no output.</span><span lang="ja">機器またはグローバル制御器を切り離します。機器は状態と入力を取り除き、電流を注入しなくなります。グローバル制御器は出力を止めます。</span></td></tr>
         <tr><td><code>OpenBranch</code> <small>add_open_branch</small></td><td><span lang="en">Branches left out of the bus admittance matrix; reconnected at <code>t_end</code> (a <code>t_end</code> at or after the end of the simulation keeps them open). A part of the network without any component is an error; a part with components is simulated as an island.</span><span lang="ja">ブランチを母線アドミタンス行列から外し、<code>t_end</code> でつなぎ直します。<code>t_end</code> がシミュレーションの終わり以降なら、開いたままです。切り離した部分に機器が 1 つもなければエラーになります。機器を含む部分は、単独の系統としてそのままシミュレーションします。</span></td></tr>
         <tr><td><code>OffsetUnit</code>, <code>OffsetState</code>, <code>OffsetValue</code> <small>add_offset</small></td><td><span lang="en">Added once to the named states of the component at <code>t_start</code> (the phase in which the disturbance starts).</span><span lang="ja"><code>t_start</code>（外乱が始まるフェーズ）で 1 回だけ、機器の指定した状態に値を足します。</span></td></tr>
         <tr><td><code>InputUnit</code>, <code>InputName</code>, <code>InputValue</code> <small>add_input</small></td><td><span lang="en">Added to the named inputs of the component: a number, or a function <code>f(t)</code> of the time since <code>t_start</code>. Inputs of several disturbances on the same input are summed.</span><span lang="ja">機器の指定した入力に値を足します。値は数値か、<code>t_start</code> からの経過時間を引数に取る関数 <code>f(t)</code> です。同じ入力に複数の外乱がかかるときは合計します。</span></td></tr>
@@ -172,7 +172,7 @@ verdict = sc.judge(result)</code></pre>
       <li lang="en"><code>net.initialize()</code> has run, with no edit since that makes a layer stale, a network <code>Hz</code> edit included (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>). <code>initialize</code> builds the function handles <code>f_*</code>.</li>
       <li lang="ja"><code>net.initialize()</code> を実行してあり、その後に層を古くする編集をしていないことが前提です。ネットワークの <code>Hz</code> の編集もこれに含みます（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照）。関数ハンドル <code>f_*</code> は <code>initialize</code> が作ります。</li>
       <li lang="en">Every scenario belongs to this network and the tags of its disturbances exist in it now, and every unit a global controller controls is on this network.</li>
-      <li lang="ja">どのシナリオもこのネットワークのもので、外乱に書いたタグが今のネットワークに存在していなければなりません。広域制御器が制御する機器も、すべてこのネットワーク上にある必要があります。</li>
+      <li lang="ja">どのシナリオもこのネットワークのもので、外乱に書いたタグが今のネットワークに存在していなければなりません。グローバル制御器が制御する機器も、すべてこのネットワーク上にある必要があります。</li>
       <li lang="en">The mass matrices of all components and controllers are constant (<code>tools.read_mass</code>).</li>
       <li lang="ja">すべての機器と制御器で、質量行列が定数でなければなりません（<code>tools.read_mass</code>）。</li>
     </ul>
@@ -381,13 +381,13 @@ verdict = sc.judge(result)</code></pre>
               <li>Builds the equilibrium vector <code>rv_z0</code> and the mass matrix <code>rm_M</code> (blocks from <code>tools.read_mass</code>).</li>
               <li>An output of a global controller without a target: stops with <code>GUILDA:SolverODE:GconNoTarget</code>.</li>
             </ul><ul lang="ja">
-              <li>各広域制御器の制御対象がこのネットワーク上にあるか（<code>GUILDA:SolverODE:ForeignControlledUnit</code>）、入力が編集されていないか（<code>GUILDA:SolverODE:InputEdited</code>）を確かめます。</li>
-              <li>使う層の stale タグ（<code>sct_stale</code>）を集めます。対象はネットワークの <code>powerflow</code> と <code>odefcn</code>、各機器、局所制御器、広域制御器の <code>equilibrium</code> と <code>odefcn</code> です。空でないタグがあれば、異なるメッセージを 3 件まで示して <code>GUILDA:SolverODE:Stale</code> で止め、<code>net.initialize()</code> の実行を促します。ここで作り直すことはしません。</li>
-              <li>変数マップをもとに、DAE ベクトル <code>z = [x; V; I; u; uc]</code> の各要素に番号を振ります。変数の行はマップの順に並べ、マップにない母線電流 <code>I</code> は <code>V</code> の後に置きます。あわせて、各ブロック（機器、局所制御器、広域制御器）の位置と、<code>z</code> の各要素を持つオブジェクトのタグを記録します。</li>
+              <li>各グローバル制御器の制御対象がこのネットワーク上にあるか（<code>GUILDA:SolverODE:ForeignControlledUnit</code>）、入力が編集されていないか（<code>GUILDA:SolverODE:InputEdited</code>）を確かめます。</li>
+              <li>使う層の stale タグ（<code>sct_stale</code>）を集めます。対象はネットワークの <code>powerflow</code> と <code>odefcn</code>、各機器、ローカル制御器、グローバル制御器の <code>equilibrium</code> と <code>odefcn</code> です。空でないタグがあれば、異なるメッセージを 3 件まで示して <code>GUILDA:SolverODE:Stale</code> で止め、<code>net.initialize()</code> の実行を促します。ここで作り直すことはしません。</li>
+              <li>変数マップをもとに、DAE ベクトル <code>z = [x; V; I; u; uc]</code> の各要素に番号を振ります。変数の行はマップの順に並べ、マップにない母線電流 <code>I</code> は <code>V</code> の後に置きます。あわせて、各ブロック（機器、ローカル制御器、グローバル制御器）の位置と、<code>z</code> の各要素を持つオブジェクトのタグを記録します。</li>
               <li>信号ベクトル <code>s</code> にも番号を振ります。対象はマップの <code>y</code> と <code>yc</code> の行です。機器の出力は、接続がそれを読む場合にだけ計算します。</li>
               <li>接続マップから、入力を決める行列とベクトルを作ります。<code>S_sig</code> は入力 × 信号、<code>S_var</code> は入力 × <code>z</code> で観測する状態を表し、<code>rv_e</code> は <code>"equilibrium"</code> でつながる入力の平衡点です。</li>
               <li>平衡点のベクトル <code>rv_z0</code> と質量行列 <code>rm_M</code> を作ります。各ブロックの質量行列は <code>tools.read_mass</code> で読みます。</li>
-              <li>接続先のない広域制御器の出力があれば、<code>GUILDA:SolverODE:GconNoTarget</code> で止めます。</li>
+              <li>接続先のないグローバル制御器の出力があれば、<code>GUILDA:SolverODE:GconNoTarget</code> で止めます。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>net.get_variable_map()</code> (<code>tab</code>, <code>tab_connection</code>), <code>a_Bus</code>, <code>a_Component</code>, <code>a_LocalController</code>, <code>a_GlobalController</code>, <code>controlledUnits</code>, <code>f_*</code>, <code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, <code>c_Vequilibrium</code>, <code>c_Iequilibrium</code>, <code>sct_stale</code></dd>
@@ -435,8 +435,8 @@ verdict = sc.judge(result)</code></pre>
               <li>Takes the input events of the phase, built by SIM-04, as functions on the input rows of <code>z</code>.</li>
               <li>The models are not changed.</li>
             </ul><ul lang="ja">
-              <li>フェーズの状態を <code>ctx</code> に設定します。接続している機器と広域制御器（有効な外乱の <code>TripUnit</code> に含まれないもの）と、地絡している母線です。</li>
-              <li>トリップした機器を観測している広域制御器では、その入力を 0 にします（<code>S_sig</code> と <code>S_var</code> の該当する行）。</li>
+              <li>フェーズの状態を <code>ctx</code> に設定します。接続している機器とグローバル制御器（有効な外乱の <code>TripUnit</code> に含まれないもの）と、地絡している母線です。</li>
+              <li>トリップした機器を観測しているグローバル制御器では、その入力を 0 にします（<code>S_sig</code> と <code>S_var</code> の該当する行）。</li>
               <li>SIM-04 で作ったフェーズの入力イベントを、<code>z</code> の入力の行に対する関数として取り出します。</li>
               <li>モデルには手を加えません。</li>
             </ul></dd>
@@ -545,8 +545,8 @@ verdict = sc.judge(result)</code></pre>
               <li>Bus rows: <code>Ib − ΣI = 0</code> and <code>Ib − Y·V = 0</code>; terms below the round-off level of their parts set to 0.</li>
             </ul><span lang="ja">DAE の残差をブロックごとに計算します。どのブロックも、<code>z</code> のうち自分の部分だけを読みます。</span><ul lang="ja">
               <li>機器は <code>dx = f_dx(t, x, V, u)</code> と母線への電流（トリップ中は 0）を返します。接続が読む場合は、出力 <code>y = f_Y(t, x, V)</code> も <code>s</code> に入れます。</li>
-              <li>局所制御器は、自分の <code>x</code>、母線の <code>V</code>、入力 <code>uc</code> から <code>dx</code> と <code>yc</code> を求めます。</li>
-              <li>広域制御器は、自分の <code>x</code>、全母線の電圧、入力 <code>uc</code> から <code>dx</code> と <code>yc</code> を求めます。トリップ中は計算しません。</li>
+              <li>ローカル制御器は、自分の <code>x</code>、母線の <code>V</code>、入力 <code>uc</code> から <code>dx</code> と <code>yc</code> を求めます。</li>
+              <li>グローバル制御器は、自分の <code>x</code>、全母線の電圧、入力 <code>uc</code> から <code>dx</code> と <code>yc</code> を求めます。トリップ中は計算しません。</li>
               <li>入力 <code>u</code> と <code>uc</code> の行は <code>z_in − (rv_e + 入力イベント(t) + S_sig·s + S_var·z) = 0</code> です。</li>
               <li>母線の行は <code>Ib − ΣI = 0</code> と <code>Ib − Y·V = 0</code> です。丸め誤差より小さい項は 0 にします。</li>
             </ul></dd>
@@ -588,7 +588,7 @@ verdict = sc.judge(result)</code></pre>
               <li>Solver stopped before <code>t2</code>: the loop ends here.</li>
             </ul><ul lang="ja">
               <li>フェーズの解を全体の DAE ベクトル <code>z</code> の大きさに戻し（<code>EM · sol.Solution</code>）、<code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> の行をマップの順に取り出します（<code>ctx.iv_lin</code>）。時刻には <code>t1</code> を足します。</li>
-              <li>トリップした機器と広域制御器の状態は <code>NaN</code> にします。母線電流 <code>Y·V</code> は、そのフェーズのアドミタンス行列で計算します。</li>
+              <li>トリップした機器とグローバル制御器の状態は <code>NaN</code> にします。母線電流 <code>Y·V</code> は、そのフェーズのアドミタンス行列で計算します。</li>
               <li>ソルバーが <code>t2</code> より前で止まったときは、ここでループを抜けます。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -608,7 +608,7 @@ verdict = sc.judge(result)</code></pre>
             </ul><span lang="ja">次のフェーズの初期値を作ります。最後の状態と質量行列を全体の大きさに戻し、再開時の値を次のように決めます。</span><ul lang="ja">
               <li>このフェーズでトリップした発電機は、今の母線電圧と <code>I = P = Q = 0</code> で <code>get_equilibrium</code> を呼んで値を決めます。その制御器は平衡点に戻します。</li>
               <li>地絡した母線は、平衡点の電圧と電流に戻します（SIM-12 の初期推定値として使います）。</li>
-              <li>トリップした広域制御器は、平衡点に戻します。</li>
+              <li>トリップしたグローバル制御器は、平衡点に戻します。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>sol.Solution(:, end)</code>, <code>ctx.lv_compOn</code>, <code>ctx.lv_gcOn</code>, <code>ctx.lv_fault</code>, <code>ctx.rv_z0</code>, <code>ctx.rm_M</code>, <code>get_equilibrium</code></dd>
@@ -656,9 +656,9 @@ verdict = sc.judge(result)</code></pre>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Block</span><span lang="ja">ブロック</span></th><th><span lang="en">Contents</span><span lang="ja">内容</span></th><th><span lang="en">Mass matrix</span><span lang="ja">質量行列</span></th></tr></thead>
       <tbody>
-        <tr><td>1. <code>x</code></td><td><span lang="en">For each bus, for each component: its states, then those of its local controllers depth first (AVR or <code>"local"</code> controller, PSS, governor); then the states of each global controller.</span><span lang="ja">母線ごと、機器ごとに、まず機器の状態を、続いて局所制御器の状態を深さ優先で並べます（AVR または <code>"local"</code> の制御器、PSS、ガバナ）。その後に各広域制御器の状態が続きます。</span></td><td><code>fcn_Mass</code></td></tr>
+        <tr><td>1. <code>x</code></td><td><span lang="en">For each bus, for each component: its states, then those of its local controllers depth first (AVR or <code>"local"</code> controller, PSS, governor); then the states of each global controller.</span><span lang="ja">母線ごと、機器ごとに、まず機器の状態を、続いてローカル制御器の状態を深さ優先で並べます（AVR または <code>"local"</code> の制御器、PSS、ガバナ）。その後に各グローバル制御器の状態が続きます。</span></td><td><code>fcn_Mass</code></td></tr>
         <tr><td>2. <code>V</code>, <code>I</code></td><td><code>Vre, Vim</code> <span lang="en">of each bus, then</span><span lang="ja">(母線ごと)、続いて</span> <code>Ire, Iim</code> <span lang="en">of each bus [pu].</span><span lang="ja">(母線ごと、[pu]) です。</span></td><td>0</td></tr>
-        <tr><td>3. <code>u</code>, <code>uc</code></td><td><span lang="en">Component inputs; then controller inputs: local controllers per bus and component depth first, then each global controller, one set of <code>sv_u</code> per controlled unit.</span><span lang="ja">まず機器の入力、続いて制御器の入力を並べます。制御器の入力は、局所制御器を母線ごと、機器ごとに深さ優先で並べ、その後に各広域制御器の入力を並べます（制御対象ごとに <code>sv_u</code> を 1 組）。</span></td><td>0</td></tr>
+        <tr><td>3. <code>u</code>, <code>uc</code></td><td><span lang="en">Component inputs; then controller inputs: local controllers per bus and component depth first, then each global controller, one set of <code>sv_u</code> per controlled unit.</span><span lang="ja">まず機器の入力、続いて制御器の入力を並べます。制御器の入力は、ローカル制御器を母線ごと、機器ごとに深さ優先で並べ、その後に各グローバル制御器の入力を並べます（制御対象ごとに <code>sv_u</code> を 1 組）。</span></td><td>0</td></tr>
       </tbody>
     </table>
 
@@ -765,7 +765,7 @@ verdict = sc.judge(result)</code></pre>
       <tbody>
         <tr><td><code>Component</code></td><td><span lang="en"><code>fcn_dx</code>, <code>fcn_I</code>, <code>fcn_Y</code> (SIM-14); a constant <code>fcn_Mass</code> (SIM-05); <code>Jacobi_dx</code>, <code>Jacobi_I</code>, <code>Jacobi_Y</code> (SIM-15, numerical differentiation without them, which is slower). <code>sv_x</code> and <code>sv_u</code> are the names used by <code>OffsetState</code> and <code>InputName</code>. A subclass of <code>component.generator.abstract</code> restarts after a trip through <code>get_equilibrium(V, 0, 0, 0)</code> (SIM-18).</span><span lang="ja"><code>fcn_dx</code>、<code>fcn_I</code>、<code>fcn_Y</code> (SIM-14)、定数の <code>fcn_Mass</code> (SIM-05)、<code>Jacobi_dx</code>、<code>Jacobi_I</code>、<code>Jacobi_Y</code> (SIM-15) を使います。ヤコビアンがなければ数値微分で求めるので、遅くなります。<code>sv_x</code> と <code>sv_u</code> の名前は、<code>OffsetState</code> と <code>InputName</code> で指定するときに使います。<code>component.generator.abstract</code> のサブクラスは、トリップの後 <code>get_equilibrium(V, 0, 0, 0)</code> で再開します (SIM-18)。</span></td></tr>
         <tr><td><code>LocalController</code></td><td><span lang="en"><code>fcn_dx</code>, <code>fcn_y</code>, a constant <code>fcn_Mass</code>, <code>Jacobi_dx</code>, <code>Jacobi_Y</code>. Its inputs <code>sv_u</code> are read by name: an output of a nested controller, then an output of the component, then a state ("local", "observe"); its outputs <code>sv_y</code> drive the inputs of the same name. A component has two slots: the AVR or <code>"local"</code> controller, which can hold one more (a PSS under the AVR), and a governor; the two drive different inputs (<code>GUILDA:Component:ControllerOutputOverlap</code>).</span><span lang="ja"><code>fcn_dx</code>、<code>fcn_y</code>、定数の <code>fcn_Mass</code>、<code>Jacobi_dx</code>、<code>Jacobi_Y</code> を使います。入力 <code>sv_u</code> は名前で参照し、入れ子の制御器の出力、機器の出力、状態の順に探します（"local"、"observe"）。出力 <code>sv_y</code> は、同じ名前の入力を動かします。機器には制御器の枠が 2 つあります。1 つは AVR または <code>"local"</code> の制御器で、その下にもう 1 つ（AVR の下の PSS など）を持てます。もう 1 つはガバナです。2 つが同じ入力を動かすことはできません（<code>GUILDA:Component:ControllerOutputOverlap</code>）。</span></td></tr>
-        <tr><td><code>GlobalController</code></td><td><span lang="en"><code>fcn_dx</code>, <code>fcn_y</code>, <code>Jacobi_dx</code>, <code>Jacobi_Y</code>, a constant <code>fcn_Mass</code>; <code>sv_u</code> names outputs or states, <code>sv_y</code> names inputs of every controlled unit. Routing by name in the connection map (<code>"observe"</code>, <code>"global"</code>): an output drives every local controller of the unit with an input of that name, otherwise the component input; an input is the sum of its sources.</span><span lang="ja"><code>fcn_dx</code>、<code>fcn_y</code>、<code>Jacobi_dx</code>、<code>Jacobi_Y</code>、定数の <code>fcn_Mass</code> を使います。<code>sv_u</code> には各制御対象の出力か状態の名前を、<code>sv_y</code> には制御対象の入力の名前を書きます。接続は接続マップ（<code>"observe"</code>、<code>"global"</code>）が名前で決めます。出力は、同じ名前の入力を持つ制御対象の局所制御器すべてにつながり、そうした制御器がなければ機器の入力につながります。入力には、接続元の値の和が入ります。</span></td></tr>
+        <tr><td><code>GlobalController</code></td><td><span lang="en"><code>fcn_dx</code>, <code>fcn_y</code>, <code>Jacobi_dx</code>, <code>Jacobi_Y</code>, a constant <code>fcn_Mass</code>; <code>sv_u</code> names outputs or states, <code>sv_y</code> names inputs of every controlled unit. Routing by name in the connection map (<code>"observe"</code>, <code>"global"</code>): an output drives every local controller of the unit with an input of that name, otherwise the component input; an input is the sum of its sources.</span><span lang="ja"><code>fcn_dx</code>、<code>fcn_y</code>、<code>Jacobi_dx</code>、<code>Jacobi_Y</code>、定数の <code>fcn_Mass</code> を使います。<code>sv_u</code> には各制御対象の出力か状態の名前を、<code>sv_y</code> には制御対象の入力の名前を書きます。接続は接続マップ（<code>"observe"</code>、<code>"global"</code>）が名前で決めます。出力は、同じ名前の入力を持つ制御対象のローカル制御器すべてにつながり、そうした制御器がなければ機器の入力につながります。入力には、接続元の値の和が入ります。</span></td></tr>
         <tr><td><span lang="en">New disturbance kind</span><span lang="ja">新しい種類の外乱</span></td><td><ul lang="en">
             <li>Add the field to <code>Scenario</code> (<code>sv_field</code>, the empty record, an <code>add_*</code> method).</li>
             <li>Check it in <code>validate_disturbance</code>; collect it per phase in <code>Scenario.compile</code>.</li>

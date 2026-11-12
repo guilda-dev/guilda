@@ -2,7 +2,7 @@
 %
 %   net = network.Tutorial10bus();
 %
-% GUILDA.keymap に登録されたすべての機器、局所制御器、大域制御器、ブランチを 1 つの網に含み、
+% GUILDA.keymap に登録されたすべての機器、ローカル制御器、グローバル制御器、ブランチを 1 つの網に含み、
 % 空の母線 (B006) も持つ。キーを追加したのにこの網へ入れていなければ最初のテストが失敗する。
 % initialize、線形化 (Kron / Feedback / DAE の固有値の一致と安定性)、変数表の AGC の接続、
 % B008 の三相地絡のシミュレーションを確かめる。
@@ -15,7 +15,7 @@ net = DebugScript.helper.quiet(@() network.Tutorial10bus());
 
 
 %% The network has every registered model key and an empty bus
-% 網にある機器、局所制御器 (入れ子の PSS を含む)、大域制御器、ブランチのクラス
+% 網にある機器、ローカル制御器 (入れ子の PSS を含む)、グローバル制御器、ブランチのクラス
 a_comp = [net.a_Bus{:}];
 a_comp = vertcat(a_comp.a_Component);
 a_lc = {};
@@ -96,12 +96,12 @@ end
 
 
 function a_lc = nested_controllers(obj)
-% obj の局所制御器と、その下の入れ子の制御器 (深さ優先)
+% obj のローカル制御器と、その下の入れ子の制御器 (深さ優先)
     arguments (Input)
-        obj  % 機器または局所制御器
+        obj  % 機器またはローカル制御器
     end
     arguments (Output)
-        a_lc (:,1) cell  % 局所制御器
+        a_lc (:,1) cell  % ローカル制御器
     end
     a_lc = cell(0,1);
     for k = 1:numel(obj.a_LocalController)

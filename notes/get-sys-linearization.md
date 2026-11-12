@@ -12,7 +12,7 @@
 ## 0. 要点
 
 1. **3 方式の固有値は一致します** [計測]。全テンプレートで最大差は 3.2e-10 (IEEE68)、F7 の許容値 1e-6 を十分下回ります。F7 は 31/31 件合格。線形モデルと非線形 `simulate` の誤差は外乱の 2 乗で減り、線形化は正しいと言えます (§5.4)。
-2. **一致するのは固有値までで、モデルの形は方式で異なります** [計測]。IEEE68 では Kron の状態が 144、Feedback が 128、DAE が 280 です。Feedback は `connect` が AVR の代数状態 `Vst` を消すため状態名から消え、大域制御器の状態は出力に入りません。P=Q=0 の負荷の入力も、B が 0 でないのに Feedback から消えます。
+2. **一致するのは固有値までで、モデルの形は方式で異なります** [計測]。IEEE68 では Kron の状態が 144、Feedback が 128、DAE が 280 です。Feedback は `connect` が AVR の代数状態 `Vst` を消すため状態名から消え、グローバル制御器の状態は出力に入りません。P=Q=0 の負荷の入力も、B が 0 でないのに Feedback から消えます。
 3. **`NonUnit` は Feedback だけに効き、機器を落とします** [計測]。実際に負荷がある母線を指定すると固有値が変わり、IEEE14 の `NonUnit=[7 9]` では最大実部が +1.09 になります。警告はありません。F7 は P=Q=0 の B007 でしか確認していません。
 4. **`flag` は数値的な失敗を表しません** [計測]。`Avv` が完全に特異 (`rcond=0`) でも `flag=true` で、Kron と Feedback は `dss` の分かりにくいエラーで止まります。
 5. **疎性は保持されません** [事実・計測]。すべて密行列です。IEEE68 のブロック密度は 0.2〜4.8 % です。ただし現在の規模で支配的なのは行列演算ではなく `table` 操作で、`get_variable_map` 系が `linearize` の約 65 % を占めます。
@@ -28,9 +28,9 @@
 | 3 | `OL/solve.m:22` | `require_equilibrium`: 古い `f_*` を作り直し、平衡点が古ければエラー |
 | 4 | `OL/solve.m:33-34` | 変数表 `tab_map` と点 `rv_point` を取得 |
 | 5 | `OL/solve.m:41-50` | 各母線の `Bus.get_sys("port","V2I")` を求め、出力を `[I]`、入力を `[V; 機器の u]` に絞る (制御器の入出力を捨てる) |
-| 6 | `OL/solve.m:51-59` | 大域制御器の `get_sys` |
+| 6 | `OL/solve.m:51-59` | グローバル制御器の `get_sys` |
 | 7 | `OL/solve.m:61-62` | `Y` と `cv_V` |
-| 8 | `OL/solve.m:67-78` | ブロックを `blkdiag` で連結し、大域制御器を閉じる |
+| 8 | `OL/solve.m:67-78` | ブロックを `blkdiag` で連結し、グローバル制御器を閉じる |
 | 9 | `OL/solve.m:85-94` | `sct_block` (DAE) と `sct_model` (Feedback 用) を作る |
 | 10 | `OL/solve.m:96-110` | `flag` は全ブロックが有限かどうかだけ。`rcond_Avv` は記録するだけで判定しない |
 | 11 | `LR/get_ss.m:36-43` | Kron / Feedback / DAE へ変換 |
@@ -61,9 +61,9 @@ v = [Vre1; Vim1; Vre2; ...]   (母線ごとに交互)
 ```
 
 `Y_real` は各要素 `a+jb` を `[a -b; b a]` にした実数表現です (`S/+tools/complex2matrix.m`)。
-寸法は `n_x` × `n_x`、`n_v = 2 n_bus`、`n_u` = 全機器の入力数です。**局所制御器の入力は含みません** (`OL/solve.m:36-39`)。
+寸法は `n_x` × `n_x`、`n_v = 2 n_bus`、`n_u` = 全機器の入力数です。**ローカル制御器の入力は含みません** (`OL/solve.m:36-39`)。
 
-**大域制御器** (`OL/solve.m:131-187`): 制御器 k を `E_k ż_k = A_k z_k + B_k w_k`、`y_k = C_k z_k + D_k w_k` とし、`w_k = S_k x` (名前で状態へ対応)、`u ← u + T_k y_k` とします。
+**グローバル制御器** (`OL/solve.m:131-187`): 制御器 k を `E_k ż_k = A_k z_k + B_k w_k`、`y_k = C_k z_k + D_k w_k` とし、`w_k = S_k x` (名前で状態へ対応)、`u ← u + T_k y_k` とします。
 
 ```
 Axx' = [Axx + Bxu Dux,  Bxu Cuz;  Bzx,  Az]
@@ -81,7 +81,7 @@ B = Bx  - Axv Avv⁻¹ Bv
 C = I,  D = 0,  E = rm_E
 ```
 
-コードは符号を反転した `Dv=-Avv`、`Cx=-Avx`、`Du=-Bv` で同じ式を計算しています (`:71-82`)。状態順は `legacy_order` により大域制御器が先頭です (`:54-62`)。
+コードは符号を反転した `Dv=-Avv`、`Cx=-Avx`、`Du=-Bv` で同じ式を計算しています (`:71-82`)。状態順は `legacy_order` によりグローバル制御器が先頭です (`:54-62`)。
 
 ### 1.5 DAE (`LR/get_ss.m:93-165`)
 
@@ -107,7 +107,7 @@ C = I,  D = 0,  E = rm_E
    ```
 3. **網の Kron 縮約** (`:213-217`): `Y_red = Y_uu - Y_un Y_nn⁻¹ Y_nu`。`I = Y_red V` を `ssN` にします。**非 unit 母線の機器の電流は `Y` に戻さず捨てます。**
 4. **結線** (`:196`): `connect(ssG, ssN, 外部入力, 外部出力)`。`Simplify` は既定のままです。
-5. **大域制御器** (`:200-210`): `feedback(sysODE, sysGC, feedin, feedout, +1)` を順に閉じます。
+5. **グローバル制御器** (`:200-210`): `feedback(sysODE, sysGC, feedin, feedout, +1)` を順に閉じます。
 
 ### 1.7 3 方式の関係
 
@@ -115,9 +115,9 @@ C = I,  D = 0,  E = rm_E
 - 非 unit 母線の電流が平衡点で 0 であれば固有値は変わりません。電流が流れている母線では別のモデルになります (§5.5)。
 - DAE は消去しないので、`v` を残した同じ方程式です。F7 は DAE と Kron の伝達関数の一致を確認しています (`+DebugScript/test_F7_linearization.m:318-327`)。
 
-### 1.8 局所制御器・大域制御器・retrofit・その他
+### 1.8 ローカル制御器・グローバル制御器・retrofit・その他
 
-- **局所制御器**: 母線モデルの中に閉じています。`local_LQR` は `Xall` を読み、状態はありません。ゲイン設計では `comp.get_sys(..., "con",false,"rec",false)` を使います (`_GUILDAobject/+controller/local_LQR.m:138`)。
+- **ローカル制御器**: 母線モデルの中に閉じています。`local_LQR` は `Xall` を読み、状態はありません。ゲイン設計では `comp.get_sys(..., "con",false,"rec",false)` を使います (`_GUILDAobject/+controller/local_LQR.m:138`)。
 - **`Point`**: `OL/point_vector.m` が値を作り、機器は `point_values` で `I` と制御器入力を算出します (`S/@Component/private/point_values.m`)。**固定項 `f(point)` は保持しません。** 結果にも出力にも載りません [事実・計測]。δ を 0.3 ずらした点で機器 1 の `|f|` は 2.1 ですが、線形モデルからは落ちます。
 - **retrofit**: `controller.local_LQR_retrofit` は抽象クラス扱いで作れません (`MATLAB:class:abstract`) [計測]。v2 のインターフェース (`net.a_bus`, `get_sys4retrofit`) を使っており (`_GUILDAobject/+controller/local_LQR_retrofit.m:10-12, 65`)、`get_environment` も同様です (`_GUILDAobject/+controller/+modeling/get_environment.m:25-50`)。**現在の `get_sys` の経路には入りません。**
 - **`Plot`**: `options.Algorithm` を見ず、既定で常に Kron を描きます (`LR/Plot.m:10`)。`linearize(Algorithm="Feedback", NonUnit=[7 9])` でも題名は `Eigenvalues (Kron)` でした [計測]。
@@ -156,15 +156,15 @@ C = I,  D = 0,  E = rm_E
 
 ### 3.1 変数表
 
-`net.get_variable_map()` の順は `x` (母線順、機器→制御器の深さ優先、最後に大域制御器) → `Vre, Vim` (母線ごとに交互) → `u` (機器の入力のみ) です (`S/@PowerNetwork/get_variable_map.m:7-12`)。`rm_*` と `Point` はこの順です。
+`net.get_variable_map()` の順は `x` (母線順、機器→制御器の深さ優先、最後にグローバル制御器) → `Vre, Vim` (母線ごとに交互) → `u` (機器の入力のみ) です (`S/@PowerNetwork/get_variable_map.m:7-12`)。`rm_*` と `Point` はこの順です。
 
 ただし `get_ss` は別の順を返します。
 
 | | 状態順 | 根拠 |
 |---|---|---|
-| 変数表 / `rm_*` | 機器 → 大域制御器 | `get_variable_map.m:59` |
-| Kron, DAE | **大域制御器** → 機器 | `LR/get_ss.m:54-62` |
-| Feedback | 機器 → 大域制御器 | `:209`、F7 `:106-114` |
+| 変数表 / `rm_*` | 機器 → グローバル制御器 | `get_variable_map.m:59` |
+| Kron, DAE | **グローバル制御器** → 機器 | `LR/get_ss.m:54-62` |
+| Feedback | 機器 → グローバル制御器 | `:209`、F7 `:106-114` |
 
 `class-design.html:278` の「Do not define another order」と、v3 互換のこの順は食い違っています。`get_ss` の help には明記されています (`LR/get_ss.m:6-8`)。
 
@@ -211,7 +211,7 @@ IEEE14 の発電機 1 に AVR+PSS、AGC を付けた例です [計測]。
 | AVR | `Vre, Vim, Vref, Vpss` | AVR | `Vfield` | 4/3/1 | 位置引数 |
 | 機器 V2I | `V; umac; ucon` | 機器+制御器 | `I; Y_omega; Vfield; Vpss` | 7/12/5 | 位置引数, `Point` |
 | 母線 V2I | `V; 各機器の u, ucon` | 同上 | `I; 各 y` | 7/12/5 | `Point` のみ |
-| 大域制御器 | 制御対象の `omega` | `xi` | 制御対象の `Pmech` | 2/1/2 | 位置引数 |
+| グローバル制御器 | 制御対象の `omega` | `xi` | 制御対象の `Pmech` | 2/1/2 | 位置引数 |
 | 系統 Kron | 機器の `u` | 全状態 | 全状態 (**名前なし**) | 34/37/37 | `Point` |
 | 系統 Feedback | 機器の `u` (P=Q=0 の負荷を除く) | `Vst` を除く全状態 | 機器の状態全部 (`xi` を含まず) | 32/36/36 | `Point` |
 | 系統 DAE | 機器の `u` | 全状態+母線変数 | 全状態 | 34/65/37 | `Point` |
@@ -220,8 +220,8 @@ IEEE14 の発電機 1 に AVR+PSS、AGC を付けた例です [計測]。
 
 - 下 3 層は「`V → I` のポート付きモデル、状態は出力でない」で揃っています (`class-design.html:141`、F7 `:227-276`)。
 - **`PowerNetwork` は揃っていません。** 同じ文に「On every layer ... states are never outputs」とありますが、系統の出力は状態です [事実・計測]。名前の一意性も崩れます。`StateName` と `OutputName` が同じです。`notes/v4-migration.md:30-31` は `net.get_sys` を変更なしとしており、v3 互換を意図したものと考えます [推測]。
-- 大域制御器は `opt.full` が未使用で (`GlobalController.m:128`)、`Point` もありません。
-- 入力名 `omega_...` は機器の状態ラベルと同じで、`Y_omega_...` ではありません (`GlobalController.m:150`)。`class-design.html:202` は「大域制御器は出力 Y を読む」と書いていますが、線形化は**状態名で対応**させ (`OL/solve.m:160`)、`gc_input` も状態を読みます (`:123`)。名前が一致するので動いています。
+- グローバル制御器は `opt.full` が未使用で (`GlobalController.m:128`)、`Point` もありません。
+- 入力名 `omega_...` は機器の状態ラベルと同じで、`Y_omega_...` ではありません (`GlobalController.m:150`)。`class-design.html:202` は「グローバル制御器は出力 Y を読む」と書いていますが、線形化は**状態名で対応**させ (`OL/solve.m:160`)、`gc_input` も状態を読みます (`:123`)。名前が一致するので動いています。
 - 戻り値も層で違います。系統だけ `[sys, flag, output]`、機器と制御器は `[sys, 名前...]`、母線は `sys` のみです。`LocalController` の `varargout` の入力名は `V` なしで出力名は状態込み (#in=2, #out=4 で `sys` の 4, 1 と不一致)、`Component` は `sys` と一致します [計測]。
 
 **効かないオプション** [事実・計測]:
@@ -360,8 +360,8 @@ IEEE68 は 3 回、他は 5 回の中央値です。
 | ケース | 結果 [計測] |
 |---|---|
 | 制御器なし (`IEEE9, LocalController=false`) | 正常。上表 |
-| 局所制御器 / 大域制御器 (F7 の構成) | 3 方式一致。F7 合格 |
-| 大域制御器 + `Point` | 平衡点では `Axx` の差 0 |
+| ローカル制御器 / グローバル制御器 (F7 の構成) | 3 方式一致。F7 合格 |
+| グローバル制御器 + `Point` | 平衡点では `Axx` の差 0 |
 | AVR に `local_LQR` を追加 | `ReplaceController` の警告で AVR が置換され、同じ入力を 2 つで駆動する状態は API で作れない |
 | 機器なし母線 (`build_9bus`) | Feedback は自動で非 unit。`Y_nn` の `rcond` 0.7。n=15 |
 | P=Q=0 の `load-power` | `Div=0`。`has_I2V` が除外。K-F 差 7.8e-15。ただし入力は消える (§6-B5) |
@@ -452,7 +452,7 @@ P=Q=0 の `load-power` でも同じです。実行時に警告は記録されま
 ### 重複
 
 - **I2V 変換が 3 か所**: `S/@Component/get_sys.m:176-182`、`S/@Bus/get_sys.m:87-91`、`LR/get_ss.m:224-251`。
-- **大域制御器の閉ループが 2 通り**: `OL/solve.m:131-187` (行列) と `LR/get_ss.m:200-210` (`feedback`)。
+- **グローバル制御器の閉ループが 2 通り**: `OL/solve.m:131-187` (行列) と `LR/get_ss.m:200-210` (`feedback`)。
 - **複素→実数変換が 2 か所**: `S/+tools/complex2matrix.m` と `LR/get_ss.m:214` の局所関数 (`cell2mat` + `arrayfun`)。
 - **`all_controllers` が 3 か所**: `S/@Component/get_sys.m:286`、`S/@Component/get_variable_map.m:61`、`OL/point_vector.m:110`。**`shape` は 2 か所**。
 - 検証の二重化: `validate_options` と `set.Point`、`check_point` が `point_vector` の中でも再度呼ばれます (`OL/odeLinearizer.m:81-84`, `OL/point_vector.m:27`)。
@@ -471,9 +471,9 @@ P=Q=0 の `load-power` でも同じです。実行時に警告は記録されま
 - help の例にネットワークのタグがありません (`S/@Component/get_sys.m:14`)。ラベルは `net` の名前に依存するので、別名の系統では文字列が変わります。
 - DAE の母線変数は `theta1`, `rho1` で、母線のタグでなく**番号**です (`LR/get_ss.m:158-159`)。他のラベルと形式が違います。
 - `get_sys` の説明は「reduced state-space model」ですが、DAE は縮約ではありません (`S/@PowerNetwork/get_sys.m:2`)。
-- `get_ss` は「Outputs: the states」(`LR/get_ss.m:11, 15`) としていますが、Feedback は大域制御器の状態を含まず、消去した `Vst` を含みます。
+- `get_ss` は「Outputs: the states」(`LR/get_ss.m:11, 15`) としていますが、Feedback はグローバル制御器の状態を含まず、消去した `Vst` を含みます。
 - `class-design.html:141` の「states are never outputs」と系統の出力の矛盾 (§4)。
-- `class-design.html:202` の「大域制御器は出力 Y を読む」と状態名による接続の違い (§4)。
+- `class-design.html:202` の「グローバル制御器は出力 Y を読む」と状態名による接続の違い (§4)。
 
 ### 性能
 

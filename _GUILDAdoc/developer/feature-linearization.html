@@ -103,7 +103,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
     <!-- ============================== SEQUENCE ============================== -->
     <h2 id="sequence"><span lang="en">Call sequence between classes</span><span lang="ja">クラス間の呼び出し順</span></h2>
     <p lang="en">Numbers: the IDs of the <a href="#steps">steps</a>. LIN-07 to LIN-10 repeat for each bus and component, LIN-11 for each global controller. Dashed arrows: returns.</p>
-    <p lang="ja">番号は<a href="#steps">ステップ</a>の ID です。LIN-07〜LIN-10 は母線・機器ごと、LIN-11 は広域制御器ごとに繰り返します。破線の矢印は戻り値です。</p>
+    <p lang="ja">番号は<a href="#steps">ステップ</a>の ID です。LIN-07〜LIN-10 は母線・機器ごと、LIN-11 はグローバル制御器ごとに繰り返します。破線の矢印は戻り値です。</p>
     <figure class="dg-figure" aria-labelledby="lin-seq-title">
       <svg class="dg-svg dg-sv dg-only-wide lin-seq" viewBox="0 0 1000 715" role="img" aria-labelledby="lin-seq-title">
         <title id="lin-seq-title">Sequence of net.linearize: PowerNetwork, SolverLIN, Bus, Component, LocalController, GlobalController and ResultLIN</title>
@@ -117,7 +117,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         <text class="is-k" x="240" y="274" lang="ja">ループ · 母線ごと・機器ごと</text>
         <rect class="dg-sv-box is-muted" x="232" y="400" width="620" height="44" rx="6"/>
         <text class="is-k" x="240" y="414" lang="en">LOOP · EACH GLOBAL CONTROLLER</text>
-        <text class="is-k" x="240" y="414" lang="ja">ループ · 広域制御器ごと</text>
+        <text class="is-k" x="240" y="414" lang="ja">ループ · グローバル制御器ごと</text>
         <!-- lifelines -->
         <g>
           <path class="dg-sv-line is-muted" d="M50 52V705M170 52V705M300 52V705M425 52V705M545 52V705M665 52V705M795 52V705M930 52V705"/>
@@ -215,7 +215,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
       <li><code>n_x</code>, <code>n_v</code> (= 2 × number of buses), <code>n_u</code>: numbers of states, bus voltage variables and component inputs of the variable map.</li>
     </ul>
     <ul lang="ja">
-      <li>ステップ 1 つに、この機能の要件を 1 つずつ書いています。左に印のあるステップは、母線、機器、広域制御器ごとに繰り返します。</li>
+      <li>ステップ 1 つに、この機能の要件を 1 つずつ書いています。左に印のあるステップは、母線、機器、グローバル制御器ごとに繰り返します。</li>
       <li><code>n_x</code>、<code>n_v</code> (= 2 × 母線数)、<code>n_u</code> は、それぞれ変数マップにある状態、母線電圧変数、機器入力の数です。</li>
     </ul>
     <ol class="fs-steps">
@@ -266,11 +266,11 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
               <li>Reads the stale tags (<code>sct_stale</code>, public GetAccess) inline: <code>powerflow</code> and <code>odefcn</code> of the network, then <code>equilibrium</code> and <code>odefcn</code> of each component, its local controllers (as one worklist, nested ones included) and each global controller. When any is not empty, stops with <code>GUILDA:SolverLIN:Stale</code>, naming up to three different messages, and asks for <code>net.initialize()</code>. Rebuilds nothing.</li>
               <li>Rejects a <code>NonUnit</code> bus that does not exist (<code>v3_nonunit_range</code>).</li>
             </ul><ul lang="ja">
-              <li>stale タグ（<code>sct_stale</code>、GetAccess は public）をその場で読み取ります。対象はネットワークの <code>powerflow</code> と <code>odefcn</code>、続いて各機器・その局所制御器（入れ子も含め 1 つの作業リストで）・各広域制御器の <code>equilibrium</code> と <code>odefcn</code> です。空でないものがあれば、異なるメッセージを最大 3 件示して <code>GUILDA:SolverLIN:Stale</code> で停止し、<code>net.initialize()</code> を促します。ハンドルの作り直しはしません。</li>
+              <li>stale タグ（<code>sct_stale</code>、GetAccess は public）をその場で読み取ります。対象はネットワークの <code>powerflow</code> と <code>odefcn</code>、続いて各機器・そのローカル制御器（入れ子も含め 1 つの作業リストで）・各グローバル制御器の <code>equilibrium</code> と <code>odefcn</code> です。空でないものがあれば、異なるメッセージを最大 3 件示して <code>GUILDA:SolverLIN:Stale</code> で停止し、<code>net.initialize()</code> を促します。ハンドルの作り直しはしません。</li>
               <li>存在しない <code>NonUnit</code> 母線を拒否します (<code>v3_nonunit_range</code>)。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>sct_stale</code> <span lang="en">of the network, components, local and global controllers</span><span lang="ja">（ネットワーク・機器・局所制御器・広域制御器）</span>, <code>NonUnit</code></dd>
+          <dd><code>sct_stale</code> <span lang="en">of the network, components, local and global controllers</span><span lang="ja">（ネットワーク・機器・ローカル制御器・グローバル制御器）</span>, <code>NonUnit</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en">— (errors only)</span><span lang="ja">—（エラーのみ）</span></dd>
         </dl>
@@ -279,7 +279,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         <p class="fs-head"><b class="fs-id">LIN-05</b> <span class="fs-call"><code>SolverLIN.solve</code> → <code>PowerNetwork.get_variable_map</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Gets the order of all variables and the rows of each bus and global controller, and keeps the leading rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code>: the variables of the linearization. The controller inputs <code>uc</code> are eliminated by the models of the layers; the signals <code>y</code>, <code>yc</code> are not variables.</span><span lang="ja">全変数の順序と、母線・広域制御器ごとの行を取得し、先頭の行 <code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> を残します。この 4 種類が近似線形化の変数です。制御器の入力 <code>uc</code> は各層のモデルの中で消去され、信号 <code>y</code>、<code>yc</code> は変数ではありません。</span></dd>
+          <dd><span lang="en">Gets the order of all variables and the rows of each bus and global controller, and keeps the leading rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code>: the variables of the linearization. The controller inputs <code>uc</code> are eliminated by the models of the layers; the signals <code>y</code>, <code>yc</code> are not variables.</span><span lang="ja">全変数の順序と、母線・グローバル制御器ごとの行を取得し、先頭の行 <code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> を残します。この 4 種類が近似線形化の変数です。制御器の入力 <code>uc</code> は各層のモデルの中で消去され、信号 <code>y</code>、<code>yc</code> は変数ではありません。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>sv_x</code>, <code>sv_u</code>, <span lang="en">tags</span><span lang="ja">タグ</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -325,7 +325,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
               <li>the controller models (LIN-09);</li>
               <li>extra state outputs for controllers that read states (<code>connect_states</code>).</li>
               <li>With a <code>Point</code>: <code>point_values</code> splits it into <code>x, V, u</code> and the controller inputs.</li>
-            </ul><span lang="ja">すべての局所制御器 (深さ優先) を含む機器のモデルです。次の要素を信号名で行列により接続します (<code>connect_blocks</code>: 入力は同名の出力の和を受け取り、状態はすべて保持します):</span><ul lang="ja">
+            </ul><span lang="ja">すべてのローカル制御器 (深さ優先) を含む機器のモデルです。次の要素を信号名で行列により接続します (<code>connect_blocks</code>: 入力は同名の出力の和を受け取り、状態はすべて保持します):</span><ul lang="ja">
               <li>制御器が読む出力と電圧を持つ機器 (LIN-10)</li>
               <li>制御器のモデル (LIN-09)</li>
               <li>状態を読む制御器のための状態出力 (<code>connect_states</code>)</li>
@@ -369,7 +369,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         <p class="fs-head"><b class="fs-id">LIN-11</b> <span class="fs-call"><code>SolverLIN.solve</code> → <code>GlobalController.get_sys("Format", "struct")</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Model of each global controller, before the bus models: inputs, the voltages of all buses and, for each controlled unit, the outputs (else the states) named <code>sv_u</code>; outputs, one row for each input they drive, labelled as that input (an input of a local controller of the unit, else of the unit). At a <code>Point</code>, the inputs are computed at the point (<code>gc_input</code>). <code>add_global_controllers</code> then closes the loop: an observed output is a row of the bus models (<code>Cy, Dyv</code>), an output into a local controller acts through the columns of that input in the bus models (<code>c_sysL</code>), and the voltage dependence changes <code>Axv</code> and <code>Avv</code>.</span><span lang="ja">各広域制御器のモデルを、母線モデルの前に作成します。入力は全母線の電圧と、各制御対象の <code>sv_u</code> という名前の出力（なければ状態）です。出力は駆動する入力ごとに 1 行で、その入力の名前（制御対象の局所制御器の入力、なければ制御対象の入力）を付けます。<code>Point</code> のときは入力を点で計算します (<code>gc_input</code>)。続いて <code>add_global_controllers</code> がループを閉じます。観測する出力は母線モデルの行 (<code>Cy, Dyv</code>) です。局所制御器への出力は母線モデルのその入力の列 (<code>c_sysL</code>) を通して作用し、電圧への依存は <code>Axv</code> と <code>Avv</code> を変更します。</span></dd>
+          <dd><span lang="en">Model of each global controller, before the bus models: inputs, the voltages of all buses and, for each controlled unit, the outputs (else the states) named <code>sv_u</code>; outputs, one row for each input they drive, labelled as that input (an input of a local controller of the unit, else of the unit). At a <code>Point</code>, the inputs are computed at the point (<code>gc_input</code>). <code>add_global_controllers</code> then closes the loop: an observed output is a row of the bus models (<code>Cy, Dyv</code>), an output into a local controller acts through the columns of that input in the bus models (<code>c_sysL</code>), and the voltage dependence changes <code>Axv</code> and <code>Avv</code>.</span><span lang="ja">各グローバル制御器のモデルを、母線モデルの前に作成します。入力は全母線の電圧と、各制御対象の <code>sv_u</code> という名前の出力（なければ状態）です。出力は駆動する入力ごとに 1 行で、その入力の名前（制御対象のローカル制御器の入力、なければ制御対象の入力）を付けます。<code>Point</code> のときは入力を点で計算します (<code>gc_input</code>)。続いて <code>add_global_controllers</code> がループを閉じます。観測する出力は母線モデルの行 (<code>Cy, Dyv</code>) です。ローカル制御器への出力は母線モデルのその入力の列 (<code>c_sysL</code>) を通して作用し、電圧への依存は <code>Axv</code> と <code>Avv</code> を変更します。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>controlledUnits</code>, <code>iv_obsY</code>, <code>iv_obsX</code>, <code>f_JacobiDx</code>, <code>f_JacobiY</code>, <code>f_Mass</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -397,7 +397,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
               <li>Checks the state names against the map; forms <code>Avx = −Cix</code>, <code>Avv = Y − Div</code>, <code>Bv = −Diu</code>.</li>
             </ul><ul lang="ja">
               <li>母線モデルをブロック対角に配置します (<code>Axx</code>、<code>Axv</code>、<code>Bxu</code>、<code>Cix</code>、<code>Div</code>、<code>Diu</code>、<code>E</code>)。</li>
-              <li>広域制御器で閉ループを作ります。状態 <code>z</code> を <code>x</code> の後に配置します。入力は母線電圧 <code>v</code> と、観測する機器の出力 (<code>Cy x + Dyv v</code>) または状態です。出力は機器の入力 <code>u</code> に加算するか、局所制御器の入力 (母線モデルのその列) を駆動します。</li>
+              <li>グローバル制御器で閉ループを作ります。状態 <code>z</code> を <code>x</code> の後に配置します。入力は母線電圧 <code>v</code> と、観測する機器の出力 (<code>Cy x + Dyv v</code>) または状態です。出力は機器の入力 <code>u</code> に加算するか、ローカル制御器の入力 (母線モデルのその列) を駆動します。</li>
               <li>状態名を変数マップと照合します。<code>Avx = −Cix</code>、<code>Avv = Y − Div</code>、<code>Bv = −Diu</code> を作成します。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -472,7 +472,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
               <li>Stops for <code>"NotFinite"</code>, and for <code>"SingularAvv"</code> except with <code>"DAE"</code>.</li>
             </ul><span lang="ja">ブロックを行列演算でディスクリプタ形式のモデルに縮約します。モデルは構造体で保持します:</span><ul lang="ja">
               <li><code>via_kron</code>: <code>v</code> を消去します (<code>A = Axx − Axv·Avv⁻¹·Avx</code>)。</li>
-              <li><code>via_feedback</code>: I-to-V 形式の母線モデル (<code>i2v_full</code>) をアドミタンス行列と名前で接続します (<code>connect_by_name</code>)。I-to-V 形式のない母線はアドミタンス行列に吸収します。入力から届かない状態を除去します (<code>remove_unreachable_states</code>)。最後に広域制御器を正帰還で閉ループにします (<code>positive_feedback</code>)。広域制御器は、吸収した (機器の状態のない) 母線の電圧と機器の出力も読み取れます。広域制御器が使う場合のみ、ネットワークのブロックがその母線の電流の釣り合いから出力に追加します。そのような母線の局所制御器の入力を駆動する広域制御器は <code>GUILDA:ResultLIN:GlobalControllerPort</code> で停止します。</li>
+              <li><code>via_feedback</code>: I-to-V 形式の母線モデル (<code>i2v_full</code>) をアドミタンス行列と名前で接続します (<code>connect_by_name</code>)。I-to-V 形式のない母線はアドミタンス行列に吸収します。入力から届かない状態を除去します (<code>remove_unreachable_states</code>)。最後にグローバル制御器を正帰還で閉ループにします (<code>positive_feedback</code>)。グローバル制御器は、吸収した (機器の状態のない) 母線の電圧と機器の出力も読み取れます。グローバル制御器が使う場合のみ、ネットワークのブロックがその母線の電流の釣り合いから出力に追加します。そのような母線のローカル制御器の入力を駆動するグローバル制御器は <code>GUILDA:ResultLIN:GlobalControllerPort</code> で停止します。</li>
               <li><code>via_dae</code>: <code>v</code> を指定した座標で保持します (<code>coordinate_filter</code>)。</li>
               <li><code>select_output</code>、<code>input_index</code>: <code>Output</code> と <code>Input</code> を適用します。</li>
               <li><code>to_format</code>: <code>Format="ss"</code> のとき名前付きの <code>dss</code> を作成します (Control System Toolbox)。</li>
@@ -521,7 +521,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
         <tr><td><code>rm_Bx</code></td><td><code>n_x × n_u</code></td><td>∂f/∂u</td></tr>
         <tr><td><code>rm_Avx</code>, <code>rm_Avv</code>, <code>rm_Bv</code></td><td><code>n_v × n_x</code>, <code>n_v × n_v</code>, <code>n_v × n_u</code></td><td><span lang="en">Jacobians of the current balance <code>Y v − I</code>; <code>rm_Avv = Y − Div</code>.</span><span lang="ja">電流バランス <code>Y v − I</code> のヤコビアンです。<code>rm_Avv = Y − Div</code> です。</span></td></tr>
         <tr><td><code>A</code>, <code>B</code>, <code>C</code>, <code>D</code>, <code>E</code>, <code>StateName</code>, <code>InputName</code>, <code>OutputName</code></td><td><span lang="en">as the model</span><span lang="ja">モデルによる</span></td><td><span lang="en">Model of <code>options.Method</code> (<code>E dx/dt = A x + B u</code>, <code>y = C x + D u</code>), names as string columns. Same matrices as <code>get_ss</code>; no toolbox needed.</span><span lang="ja"><code>options.Method</code> のモデルです (<code>E dx/dt = A x + B u</code>、<code>y = C x + D u</code>)。名前は string の列です。<code>get_ss</code> と同じ行列で、Toolbox は不要です。</span></td></tr>
-        <tr><td><code>sct_model</code> <small>Hidden</small></td><td>struct</td><td><span lang="en">For <code>get_ss</code>: the bus models <code>c_sysBus</code>, the global controller models <code>c_sysGC</code>, <code>cm_Y</code>, <code>cv_V</code>, <code>lv_nonUnit</code> (buses without components), <code>sv_I</code> and <code>sct_output</code> (<code>Cx</code>, <code>Cv</code>, <code>Du</code>, <code>sv_name</code> of the outputs <code>y</code>). The models are structs with the fields <code>A, B, C, D, E, StateName, InputName, OutputName</code>.</span><span lang="ja"><code>get_ss</code> 用のデータです。母線モデル <code>c_sysBus</code>、広域制御器モデル <code>c_sysGC</code>、<code>cm_Y</code>、<code>cv_V</code>、<code>lv_nonUnit</code> (機器のない母線)、<code>sv_I</code>、<code>sct_output</code> (出力 <code>y</code> の <code>Cx</code>、<code>Cv</code>、<code>Du</code>、<code>sv_name</code>) を含みます。モデルはフィールド <code>A, B, C, D, E, StateName, InputName, OutputName</code> の構造体です。</span></td></tr>
+        <tr><td><code>sct_model</code> <small>Hidden</small></td><td>struct</td><td><span lang="en">For <code>get_ss</code>: the bus models <code>c_sysBus</code>, the global controller models <code>c_sysGC</code>, <code>cm_Y</code>, <code>cv_V</code>, <code>lv_nonUnit</code> (buses without components), <code>sv_I</code> and <code>sct_output</code> (<code>Cx</code>, <code>Cv</code>, <code>Du</code>, <code>sv_name</code> of the outputs <code>y</code>). The models are structs with the fields <code>A, B, C, D, E, StateName, InputName, OutputName</code>.</span><span lang="ja"><code>get_ss</code> 用のデータです。母線モデル <code>c_sysBus</code>、グローバル制御器モデル <code>c_sysGC</code>、<code>cm_Y</code>、<code>cv_V</code>、<code>lv_nonUnit</code> (機器のない母線)、<code>sv_I</code>、<code>sct_output</code> (出力 <code>y</code> の <code>Cx</code>、<code>Cv</code>、<code>Du</code>、<code>sv_name</code>) を含みます。モデルはフィールド <code>A, B, C, D, E, StateName, InputName, OutputName</code> の構造体です。</span></td></tr>
         <tr><td><span lang="en">from</span><span lang="ja">継承:</span> <code>ResultBase</code></td><td></td><td><code>flag</code> (logical), <code>output</code>, <code>options</code> (<code>Method</code>, <code>Point</code>, <code>Coordinate</code>; <code>Input</code>, <code>Output</code> from <code>net.get_sys</code>), <code>s_solver = "SolverLIN"</code>, <code>r_elapsed</code> [s], <code>s_network</code>, <code>l_success</code></td></tr>
       </tbody>
     </table>
@@ -539,13 +539,13 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
     <ul lang="ja">
       <li><code>Format="ss"</code>: <code>StateName</code>、<code>InputName</code>、<code>OutputName</code> (変数マップのラベル) を持つ <code>dss</code> オブジェクトを返します。<code>Format="struct"</code> では、同じ行列と名前を持つ構造体を返します。</li>
       <li>入力は、変数マップの順に並べた機器入力 <code>u</code> です。</li>
-      <li>状態の並びは、<code>"Kron"</code> と <code>"DAE"</code> では広域制御器が先、<code>"Feedback"</code> では後です (<a href="class-design.html#variables">クラス設計: 状態・入力変数の順序</a>を参照)。</li>
+      <li>状態の並びは、<code>"Kron"</code> と <code>"DAE"</code> ではグローバル制御器が先、<code>"Feedback"</code> では後です (<a href="class-design.html#variables">クラス設計: 状態・入力変数の順序</a>を参照)。</li>
     </ul>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Method</span><span lang="ja">アルゴリズム</span></th><th><span lang="en">States</span><span lang="ja">状態</span></th><th><span lang="en">Default outputs</span><span lang="ja">既定の出力</span></th><th><span lang="en">A, B, C, D</span><span lang="ja">A, B, C, D</span></th></tr></thead>
       <tbody>
         <tr><td><code>"Kron"</code></td><td><span lang="en">all <code>n_x</code></span><span lang="ja"><code>n_x</code> 個すべて</span></td><td><span lang="en">the states, without output names</span><span lang="ja">状態 (出力名なし)</span></td><td><code>n_x × n_x</code>, <code>n_x × n_u</code>, <code>n_x × n_x</code>, <code>n_x × n_u</code></td></tr>
-        <tr><td><code>"Feedback"</code></td><td><span lang="en"><code>n_x</code> or fewer (states that no input reaches, such as <code>Vst</code> of an AVR without a PSS, are removed)</span><span lang="ja"><code>n_x</code> 個以下です (PSS のない AVR の <code>Vst</code> など、入力から届かない状態を除去します)。</span></td><td><span lang="en">states of the components and local controllers, a row for each removed state, no global controller states</span><span lang="ja">機器と局所制御器の状態 (取り除いた状態の行を含み、広域制御器の状態は含まない)</span></td><td><span lang="en">rows of C as the outputs</span><span lang="ja">C の行は出力の数</span></td></tr>
+        <tr><td><code>"Feedback"</code></td><td><span lang="en"><code>n_x</code> or fewer (states that no input reaches, such as <code>Vst</code> of an AVR without a PSS, are removed)</span><span lang="ja"><code>n_x</code> 個以下です (PSS のない AVR の <code>Vst</code> など、入力から届かない状態を除去します)。</span></td><td><span lang="en">states of the components and local controllers, a row for each removed state, no global controller states</span><span lang="ja">機器とローカル制御器の状態 (取り除いた状態の行を含み、グローバル制御器の状態は含まない)</span></td><td><span lang="en">rows of C as the outputs</span><span lang="ja">C の行は出力の数</span></td></tr>
         <tr><td><code>"DAE"</code></td><td><span lang="en"><code>n_x + n_v</code>: the states, then <code>theta1…</code>, <code>rho1…</code> (or <code>V</code>, <code>Vre</code>/<code>Vim</code>); <code>E</code> singular</span><span lang="ja"><code>n_x + n_v</code>: 状態、続いて <code>theta1…</code>、<code>rho1…</code> (または <code>V</code>、<code>Vre</code>/<code>Vim</code>) です。<code>E</code> は特異です。</span></td><td><span lang="en">the dynamic states</span><span lang="ja">動的な状態</span></td><td><code>(n_x+n_v)²</code>, <code>(n_x+n_v) × n_u</code>, <code>n_x × (n_x+n_v)</code>, <code>n_x × n_u</code></td></tr>
       </tbody>
     </table>
@@ -554,7 +554,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
       <li><code>Input</code>: selects the inputs.</li>
     </ul>
     <ul lang="ja">
-      <li><code>Output</code>: 出力を <code>"x"</code>、<code>"V"</code> (各母線の <code>Vre</code>、<code>Vim</code>)、<code>"I"</code> (<code>Y v</code>)、<code>"y"</code> (機器と局所制御器の出力)、名前の任意の組み合わせに置き換えます。消去した電圧を通して表現します。</li>
+      <li><code>Output</code>: 出力を <code>"x"</code>、<code>"V"</code> (各母線の <code>Vre</code>、<code>Vim</code>)、<code>"I"</code> (<code>Y v</code>)、<code>"y"</code> (機器とローカル制御器の出力)、名前の任意の組み合わせに置き換えます。消去した電圧を通して表現します。</li>
       <li><code>Input</code>: 入力を選択します。</li>
     </ul>
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
@@ -612,7 +612,7 @@ sys = comp.get_sys(…, Format="GUILDAorigin"|"struct"|"ss")   % also bus, con, 
       <tbody>
         <tr><td><code>Component</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_I</code> returning <code>[∂/∂x, ∂/∂V, ∂/∂u]</code> and <code>Jacobi_Y</code> returning <code>[∂/∂x, ∂/∂V]</code> (numerical differentiation without them). <code>fcn_Mass</code> is <code>E</code>. <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code> name the states, inputs and outputs; an output with a state's name becomes <code>Y_&lt;name&gt;</code>.</span><span lang="ja"><code>[∂/∂x, ∂/∂V, ∂/∂u]</code> を返す <code>Jacobi_dx</code>、<code>Jacobi_I</code> と、<code>[∂/∂x, ∂/∂V]</code> を返す <code>Jacobi_Y</code> を使います (なければ数値微分します)。<code>fcn_Mass</code> が <code>E</code> です。<code>sv_x</code>、<code>sv_u</code>、<code>sv_y</code> は状態・入力・出力の名前です。状態と同名の出力は <code>Y_&lt;name&gt;</code> になります。</span></td></tr>
         <tr><td><code>LocalController</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code>, <code>fcn_Mass</code>; connected to the component by the names of <code>sv_u</code> and <code>sv_y</code>, as in the simulation. A controller that keeps its own model (such as <code>controller.local_LQR</code>) can call <code>comp.get_sys(x, V, u, Controllers=false, Format="struct")</code>, which does not check the stale tags at an explicit point.</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code>、<code>fcn_Mass</code> を使います。シミュレーションと同じく <code>sv_u</code> と <code>sv_y</code> の名前で機器に接続します。独自のモデルを持つ制御器 (<code>controller.local_LQR</code> など) は <code>comp.get_sys(x, V, u, Controllers=false, Format="struct")</code> を呼び出せます。明示した点では stale タグを確認しません。</span></td></tr>
-        <tr><td><code>GlobalController</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code> (the <code>V</code> columns over all buses and the <code>u</code> columns), <code>fcn_Mass</code>; every controlled unit has outputs or states named <code>sv_u</code>, and inputs named <code>sv_y</code> on the unit or on its local controllers.</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code> (全母線の <code>V</code> の列と <code>u</code> の列)、<code>fcn_Mass</code> を使います。すべての制御対象は、<code>sv_u</code> という名前の出力または状態と、その対象またはその局所制御器に <code>sv_y</code> という名前の入力を持ちます。</span></td></tr>
+        <tr><td><code>GlobalController</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code> (the <code>V</code> columns over all buses and the <code>u</code> columns), <code>fcn_Mass</code>; every controlled unit has outputs or states named <code>sv_u</code>, and inputs named <code>sv_y</code> on the unit or on its local controllers.</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code> (全母線の <code>V</code> の列と <code>u</code> の列)、<code>fcn_Mass</code> を使います。すべての制御対象は、<code>sv_u</code> という名前の出力または状態と、その対象またはそのローカル制御器に <code>sv_y</code> という名前の入力を持ちます。</span></td></tr>
         <tr><td><span lang="en">New reduced form</span><span lang="ja">新しい縮約形</span></td><td><span lang="en">Add a case to <code>ResultLIN.get_ss</code> and to the <code>Method</code> validators of <code>SolverLIN</code>; build it from <code>rm_*</code> and <code>sct_model</code> so that no new linearization is needed.</span><span lang="ja"><code>ResultLIN.get_ss</code> と <code>SolverLIN</code> の <code>Method</code> の検査に場合を追加します。新たな線形化が不要なよう、<code>rm_*</code> と <code>sct_model</code> から構築します。</span></td></tr>
       </tbody>
     </table>

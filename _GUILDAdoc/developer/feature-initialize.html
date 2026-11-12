@@ -60,7 +60,7 @@
     <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Initialization Feature Design</span><span lang="ja">初期化機能の設計</span></h1>
     <p class="page-lead" lang="en"><code>net.initialize()</code> brings every stale layer up to date: it solves the operating point (a power flow or an AC optimal power flow) when the power flow is stale or a <code>Method</code> is given, writes it as the equilibrium of every bus, component, local controller, and global controller, rebuilds the stale function handles, and checks the result. The only method that brings layers up to date; starting point of every dynamic analysis.</p>
-    <p class="page-lead" lang="ja"><code>net.initialize()</code> は、古くなった層をすべて最新の状態に戻します。潮流が古いときや <code>Method</code> を指定したときは、まず運転点を求めます（潮流計算または交流の最適潮流計算）。求めた運転点をすべての母線、機器、局所制御器、広域制御器の平衡点として設定し、古い関数ハンドルを作り直してから結果を検査します。層を最新にできるメソッドはこれだけで、動的な解析はすべてここから始まります。</p>
+    <p class="page-lead" lang="ja"><code>net.initialize()</code> は、古くなった層をすべて最新の状態に戻します。潮流が古いときや <code>Method</code> を指定したときは、まず運転点を求めます（潮流計算または交流の最適潮流計算）。求めた運転点をすべての母線、機器、ローカル制御器、グローバル制御器の平衡点として設定し、古い関数ハンドルを作り直してから結果を検査します。層を最新にできるメソッドはこれだけで、動的な解析はすべてここから始まります。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#purpose"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></a>
@@ -214,7 +214,7 @@
         <text x="191" y="592"><tspan class="init-num">14</tspan> <tspan class="dg-mono">result, flag, output</tspan> <tspan lang="en">+ warnings</tspan><tspan lang="ja">＋警告</tspan></text>
       </svg>
       <figcaption lang="en">Numbers: the step IDs below (INIT-01 to INIT-14). Step 03 calls <code>calculate_powerflow</code> or <code>optimize_powerflow</code> when the operating point is solved; otherwise, a call inside <code>PowerNetwork</code> (<code>calculate_from_equilibrium</code>), and steps 04 to 08 are skipped. Steps 05 to 09 repeat for every bus, component, and local controller; step 12 also evaluates the local and global controllers.</figcaption>
-      <figcaption lang="ja">番号は下の処理ステップの ID（INIT-01〜INIT-14）です。ステップ 03 は、運転点を求める場合は <code>calculate_powerflow</code> または <code>optimize_powerflow</code> を呼び出します。それ以外の場合は <code>PowerNetwork</code> 内の <code>calculate_from_equilibrium</code> を呼び、ステップ 04〜08 は省きます。ステップ 05〜09 はすべての母線、機器、局所制御器について繰り返し、ステップ 12 では局所制御器と広域制御器も評価します。</figcaption>
+      <figcaption lang="ja">番号は下の処理ステップの ID（INIT-01〜INIT-14）です。ステップ 03 は、運転点を求める場合は <code>calculate_powerflow</code> または <code>optimize_powerflow</code> を呼び出します。それ以外の場合は <code>PowerNetwork</code> 内の <code>calculate_from_equilibrium</code> を呼び、ステップ 04〜08 は省きます。ステップ 05〜09 はすべての母線、機器、ローカル制御器について繰り返し、ステップ 12 ではローカル制御器とグローバル制御器も評価します。</figcaption>
     </figure>
 
     <!-- ============================== STEPS ============================== -->
@@ -387,7 +387,7 @@
           </ul><ul lang="ja">
             <li>ハンドルが古ければ、先に作り直します（<code>set_odefcn</code>）。<code>controller.local_LQR</code> のように、制御器がハンドルを使って設計することがあるためです。</li>
             <li>モデルの <code>get_equilibrium</code> を 4 つの引数すべてで呼び出し、結果を保存します。</li>
-            <li>自分の stale タグ <code>equilibrium</code> を消去します。続いて、各局所制御器について INIT-08 と <code>initialize(true)</code> を実行します。制御器は自分の <code>equilibrium</code> を消去し、古いハンドルを作り直します。</li>
+            <li>自分の stale タグ <code>equilibrium</code> を消去します。続いて、各ローカル制御器について INIT-08 と <code>initialize(true)</code> を実行します。制御器は自分の <code>equilibrium</code> を消去し、古いハンドルを作り直します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>c_V</code>, <code>c_I</code>, <code>r_P</code>, <code>r_Q</code> [pu]; <code>tab_parameter.dynamics</code> of the model</span><span lang="ja"><code>c_V</code>、<code>c_I</code>、<code>r_P</code>、<code>r_Q</code> [pu]、モデルの <code>tab_parameter.dynamics</code></span></dd>
@@ -404,7 +404,7 @@
             <li>Calls its nested controller (e.g. the PSS under an AVR)</li>
             <li><code>controller.local_LQR</code> also designs its gain here</li>
           </ul><ul lang="ja">
-            <li>機器の各局所制御器は、電圧と機器の平衡入力から自分の平衡点を設定します。</li>
+            <li>機器の各ローカル制御器は、電圧と機器の平衡入力から自分の平衡点を設定します。</li>
             <li>入れ子の制御器（AVR の下の PSS など）も呼び出します。</li>
             <li><code>controller.local_LQR</code> はここでゲインも設計します。</li>
           </ul></dd>
@@ -426,8 +426,8 @@
           </ul><ul lang="ja">
             <li>各母線が自分の機器を初期化し、続いて各ブランチを初期化します（ブランチでは何もしません）。</li>
             <li>機器は、<code>odefcn</code> が空でないときか、<code>r_odefcnHz</code> が <code>get_Hz()</code> と異なるときにハンドルを作り直します（<code>set_odefcn</code>）。</li>
-            <li>機器またはその局所制御器の平衡点がまだ古い場合（動特性や制御器を編集した場合）、機器は保持中の V と I から平衡点を計算し直します（INIT-07、INIT-08）。古くなければ、局所制御器の <code>initialize(false)</code> を呼び出します。</li>
-            <li>局所制御器（<code>initialize(l_equilibrium)</code>）は、<code>true</code> を受け取ると自分の <code>equilibrium</code> を消去します。古いハンドルは同じように作り直し、入れ子の制御器も同じ <code>l_equilibrium</code> で初期化します。<code>controller.local_LQR</code> は、ネットワークの周波数が設計時と違えばゲインを設計し直します。</li>
+            <li>機器またはそのローカル制御器の平衡点がまだ古い場合（動特性や制御器を編集した場合）、機器は保持中の V と I から平衡点を計算し直します（INIT-07、INIT-08）。古くなければ、ローカル制御器の <code>initialize(false)</code> を呼び出します。</li>
+            <li>ローカル制御器（<code>initialize(l_equilibrium)</code>）は、<code>true</code> を受け取ると自分の <code>equilibrium</code> を消去します。古いハンドルは同じように作り直し、入れ子の制御器も同じ <code>l_equilibrium</code> で初期化します。<code>controller.local_LQR</code> は、ネットワークの周波数が設計時と違えばゲインを設計し直します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>sct_stale</code>, <code>r_odefcnHz</code>, <code>tab_parameter.dynamics</code> of the components and controllers; network <code>Hz</code>; <code>c_Vequilibrium</code>, <code>c_Iequilibrium</code></span><span lang="ja">機器と制御器の <code>sct_stale</code>、<code>r_odefcnHz</code>、<code>tab_parameter.dynamics</code>、ネットワークの <code>Hz</code>、<code>c_Vequilibrium</code>、<code>c_Iequilibrium</code></span></dd>
@@ -443,7 +443,7 @@
             <li>Each global controller, in the order of <code>net.a_GlobalController</code>, after every component</li>
             <li>Rebuilds its stale handles; gets its equilibrium, which may read the controlled units just set</li>
           </ul><ul lang="ja">
-            <li>広域制御器は、すべての機器の処理が終わってから <code>net.a_GlobalController</code> の順に処理します。</li>
+            <li>グローバル制御器は、すべての機器の処理が終わってから <code>net.a_GlobalController</code> の順に処理します。</li>
             <li>古いハンドルを作り直してから平衡点を求めます。このとき、設定したばかりの制御対象の値を読むことがあります。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -478,9 +478,9 @@
             <li>Global controller: inputs are the outputs (else the states) named <code>sv_u</code> of its controlled units and the voltages of all buses; outputs must be zero</li>
           </ul><ul lang="ja">
             <li>すべてのモデルを、運転点において <code>t = 0</code> で評価します。</li>
-            <li>評価するのは、各機器の <code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、各局所制御器（深さ優先）と各広域制御器の <code>f_dx</code> と <code>f_Y</code> です。</li>
-            <li>局所制御器が駆動する入力は、その制御器の出力と比べます。局所制御器の入力は、観測している出力または状態（<code>iv_obsY</code>、<code>iv_obsX</code>）と比べます。</li>
-            <li>広域制御器の入力は、制御対象の <code>sv_u</code> と同じ名前の出力（なければ状態）と、全母線の電圧です。出力はゼロでなければなりません。</li>
+            <li>評価するのは、各機器の <code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、各ローカル制御器（深さ優先）と各グローバル制御器の <code>f_dx</code> と <code>f_Y</code> です。</li>
+            <li>ローカル制御器が駆動する入力は、その制御器の出力と比べます。ローカル制御器の入力は、観測している出力または状態（<code>iv_obsY</code>、<code>iv_obsX</code>）と比べます。</li>
+            <li>グローバル制御器の入力は、制御対象の <code>sv_u</code> と同じ名前の出力（なければ状態）と、全母線の電圧です。出力はゼロでなければなりません。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, <code>c_Vequilibrium</code>, <code>c_Iequilibrium</code>; <code>f_*</code> handles; <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code></span><span lang="ja"><code>rv_Xequilibrium</code>、<code>rv_Uequilibrium</code>、<code>c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>f_*</code> ハンドル、<code>sv_x</code>、<code>sv_u</code>、<code>sv_y</code></span></dd>
@@ -543,7 +543,7 @@
         <tr><td><code>Bus</code></td><td><code>c_Iequilibrium</code> <small>Dependent</small></td><td lang="en" data-label="Size and unit">complex scalar [pu]: sum of the component currents, 0 without components</td><td lang="ja" data-label="サイズと単位">複素スカラー [pu]。機器の電流の和で、機器がなければ 0 です。</td></tr>
         <tr><td><code>Component</code></td><td><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code></td><td lang="en" data-label="Size and unit">numel(sv_x) × 1, numel(sv_u) × 1, in the order of <code>sv_x</code> / <code>sv_u</code></td><td lang="ja" data-label="サイズと単位">numel(sv_x) × 1、numel(sv_u) × 1。<code>sv_x</code> / <code>sv_u</code> の順です。</td></tr>
         <tr><td><code>Component</code></td><td><code>c_Iequilibrium</code></td><td lang="en" data-label="Size and unit">complex scalar [pu], injected into the bus</td><td lang="ja" data-label="サイズと単位">複素スカラー [pu] で、母線への注入電流です。</td></tr>
-        <tr><td><code>Component</code></td><td><code>c_Vequilibrium</code>, <code>rv_Xequilibrium_all</code> <small>Dependent</small></td><td lang="en" data-label="Size and unit">the voltage of the bus; the states of the component followed by those of its local controllers, depth first</td><td lang="ja" data-label="サイズと単位">母線の電圧です。機器の状態に続けて局所制御器の状態を深さ優先で並べます。</td></tr>
+        <tr><td><code>Component</code></td><td><code>c_Vequilibrium</code>, <code>rv_Xequilibrium_all</code> <small>Dependent</small></td><td lang="en" data-label="Size and unit">the voltage of the bus; the states of the component followed by those of its local controllers, depth first</td><td lang="ja" data-label="サイズと単位">母線の電圧です。機器の状態に続けてローカル制御器の状態を深さ優先で並べます。</td></tr>
         <tr><td><code>LocalController</code></td><td><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code></td><td lang="en" data-label="Size and unit">numel(sv_x) × 1, numel(sv_u) × 1; <code>c_Vequilibrium</code> and <code>c_Iequilibrium</code> read from the parent</td><td lang="ja" data-label="サイズと単位">numel(sv_x) × 1、numel(sv_u) × 1。<code>c_Vequilibrium</code> と <code>c_Iequilibrium</code> は親から参照します。</td></tr>
         <tr><td><code>GlobalController</code></td><td><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code></td><td lang="en" data-label="Size and unit">numel(sv_x) × 1; the inputs, one per controlled unit and name in <code>sv_u</code></td><td lang="ja" data-label="サイズと単位">numel(sv_x) × 1。入力は制御対象ごと・<code>sv_u</code> の名前ごとに 1 つです。</td></tr>
         <tr><td><code>PowerNetwork</code></td><td><code>cv_Vequilibrium</code>, <code>cv_Iequilibrium</code>, <code>rv_Xequilibrium</code> <small>Dependent</small></td><td lang="en" data-label="Size and unit">n_bus × 1 [pu]; all states in the order of the x rows of <code>get_variable_map</code></td><td lang="ja" data-label="サイズと単位">n_bus × 1 [pu]。全状態を <code>get_variable_map</code> の x 行の順に並べます。</td></tr>
@@ -605,7 +605,7 @@
           <li>機器と制御器の <code>sct_stale.equilibrium</code> と <code>.odefcn</code> は、それぞれを最新にした時点で空にします（INIT-07〜INIT-10）。</li>
           <li><code>net.sct_stale.powerflow</code> と <code>.odefcn</code> は INIT-13 で空にします。</li>
           <li>INIT-05〜INIT-12 の途中で停止した呼び出しでは、代わりに <code>powerflow</code> に古い印を付けます。</li>
-          <li>古いものがなく <code>Method</code> の指定もなければ、書き込むのは大域制御器の平衡点だけです（INIT-10）。</li>
+          <li>古いものがなく <code>Method</code> の指定もなければ、書き込むのはグローバル制御器の平衡点だけです（INIT-10）。</li>
         </ul>
       </li>
       <li><strong>後からの編集:</strong>

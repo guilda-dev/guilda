@@ -125,9 +125,9 @@ output.result = result                          @PowerNetwork/get_sys.m:33
 | Y 行列 | どこにも保持しません | 呼び出しのたびに `Branch` と母線シャントから計算します | `@PowerNetwork/get_admittance_matrix.m:19-32` |
 | V の平衡点 | `Bus.c_Vequilibrium` | 正本。機器と制御器は Dependent で読みます | `@Bus/Bus.m:43`, `@Component/Component.m:238-245`, `@LocalController/LocalController.m:256-282` |
 | I の平衡点 | `Component.c_Iequilibrium` | 正本。`Bus.c_Iequilibrium` は Dependent の和です | `@Component/Component.m:90`, `@Bus/Bus.m:129-136` |
-| X, U の平衡点 | 機器、局所制御器、GC の各 `rv_X/Uequilibrium` | `net.cv_*` は Dependent の集計です | `@Component/Component.m:88-89`, `@LocalController/LocalController.m:102-103`, `@GlobalController/GlobalController.m:70-71`, `@PowerNetwork/PowerNetwork.m:222-233` |
+| X, U の平衡点 | 機器、ローカル制御器、GC の各 `rv_X/Uequilibrium` | `net.cv_*` は Dependent の集計です | `@Component/Component.m:88-89`, `@LocalController/LocalController.m:102-103`, `@GlobalController/GlobalController.m:70-71`, `@PowerNetwork/PowerNetwork.m:222-233` |
 | パラメータ | 各層の `para_*`(`Parameter`、動的プロパティ) | `tab_parameter` は Dependent の表で、`set` は各値へ分解して代入します | `_auxiliary/@Parameter/Parameter.m:82-97`, `_auxiliary/@Parameter/add_entry.m:18-24`, `@Component/Component.m:256-281` |
-| `f_*` ハンドル | 機器、局所制御器、GC | パラメータと Hz を**値で**閉じ込めたキャッシュです | `@Component/Component.m:169-196`, `@LocalController/LocalController.m:237-248`, `@GlobalController/GlobalController.m:159-170` |
+| `f_*` ハンドル | 機器、ローカル制御器、GC | パラメータと Hz を**値で**閉じ込めたキャッシュです | `@Component/Component.m:169-196`, `@LocalController/LocalController.m:237-248`, `@GlobalController/GlobalController.m:159-170` |
 | ソルバ設定 | `net.solver_*` | 各ネットワークが持つ既定値。結果は持ちません | `@PowerNetwork/PowerNetwork.m:52-89` |
 | 変数の順序 | `get_variable_map`(都度計算) | 「ただ一つの定義」とされています | `@PowerNetwork/get_variable_map.m:4-6`, `_GUILDAdoc/developer/class-design.html:278` |
 | 結果 | `AnalysisResult` | 計算値と使用した設定。`a_PowerNetwork` は生きた参照です | `_auxiliary/@AnalysisResult/AnalysisResult.m:49-54,78-81` |
@@ -305,9 +305,9 @@ output.result = result                          @PowerNetwork/get_sys.m:33
 |---|---|---|---|---|
 | `iv_odeX/U/Y/I` | 機器、制御器、母線、GC | `initialize_index`(実行ごと)。`_auxiliary/@odeSimulator/odeSimulator.m:340-409` | **解除しません** | シミュレータ、`odeEventSet`、結果の構築 |
 | `l_isFault` | `Bus` | 位相ごと。`_auxiliary/@odeEventSet/odeEventSet.m:333` | **解除しません**(次の実行で上書き) | `getNextPhase` のみ(`:679`) |
-| `l_isConnect`(機器、局所制御器) | 各オブジェクト | 位相ごと。`_auxiliary/@odeEventSet/odeEventSet.m:497` | **解除しません**(次の実行で上書き) | `get_dx_algebraic`, `getNextPhase`, AGC の `u_connect` |
+| `l_isConnect`(機器、ローカル制御器) | 各オブジェクト | 位相ごと。`_auxiliary/@odeEventSet/odeEventSet.m:497` | **解除しません**(次の実行で上書き) | `get_dx_algebraic`, `getNextPhase`, AGC の `u_connect` |
 | `l_isConnect`(GC) | `GlobalController` | 位相ごと。`_auxiliary/@odeSimulator/odeSimulator.m:217` | `onCleanup` で戻します(`:180`) | `getODEFunction`, `getODEJacobian`, `getNextPhase` |
-| `rv_Xoffset`, `rv_Uoffset` | 機器(公開の Hidden)。局所制御器は既定値のまま | 位相ごと。`_auxiliary/@odeEventSet/odeEventSet.m:245,282` | **解除しません**(クロージャを保持) | `getODEFunction`, `getXM`, `getInitialCondition` |
+| `rv_Xoffset`, `rv_Uoffset` | 機器(公開の Hidden)。ローカル制御器は既定値のまま | 位相ごと。`_auxiliary/@odeEventSet/odeEventSet.m:245,282` | **解除しません**(クロージャを保持) | `getODEFunction`, `getXM`, `getInitialCondition` |
 | `iv_CPFV`, `iv_CPFX`, `f_PQ2Bus` | 母線、機器 | CPF の `build_layout` | 解除しません | CPF のみ |
 | `ctx`, `tab_phase`, `x0`, `Mass`, `odeProg` | `solve` のローカル変数 | 実行ごと | 関数の終了時 | シミュレータのみ |
 | `odeIteration` など | `odeEventSet` | 位相ごと | イベントを再利用すると上書き | イベントのみ |

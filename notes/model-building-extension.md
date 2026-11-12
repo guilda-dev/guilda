@@ -498,7 +498,7 @@ simulate flag=1 drift=0.00e+00 | fault flag=1 | get_sys flag=1 n_x=5 maxRe=3.69e
 - PSS の出力 `Vpss` は名前で AVR の入力に入ります。
 - 制御器を置き換えると警告が出ます(`GUILDA:Component:ReplaceController`) **[実行 M51]**。
 
-### 4.4 局所と大域の違い
+### 4.4 ローカル制御器とグローバル制御器の違い
 
 | 観点 | `LocalController` | `GlobalController` |
 |---|---|---|
@@ -703,7 +703,7 @@ simulate flag=1 drift=0.00e+00 | fault flag=1 | get_sys flag=1 n_x=5 maxRe=3.69e
 16. **`getCompPQ` が任意か必須か宣言されていません。** 確定: `build_layout.m:131`。`droop`, `impedance` にありません(実行は発電機の `gen-simple`, `gen-droop` のみ) **[実行 M28, M29]**。
 17. **`isa` による機種の分岐が枠組みにあります。** 確定: `Component.m:143`, `@Component/build_opf_problem.m:41`, `@GlobalController/GlobalController.m:97`, `SIM:652`, `@PowerNetwork/export_csv.m:190-191`, `+tools/network_to_mpc.m:59`。`_GUILDAsystem` は `_GUILDAobject` に依存しないとの規約(`folder-structure.html`)と異なります。`Component` を直接継承した機器はこれらの分岐から外れます。
 18. **発電機の親のパラメータ読み込みが `parameter.csv` に結合しています。** 確定: `abstract.m:44-49`。既定値を持てないのは `sv_para` が CSV の列にない場合です。
-19. **1機器1系統の枠です。** 確定: AVR と調速機を同時に付けられません **[実行 M51]**。`local` の下に PSS も付きません **[実行 M37]**。AGC は `Pmech` を駆動しますが、局所の調速機は別枠なので共存の形が異なります。推測: 拡張には `key` の意味の見直しが要ります。
+19. **1機器1系統の枠です。** 確定: AVR と調速機を同時に付けられません **[実行 M51]**。`local` の下に PSS も付きません **[実行 M37]**。AGC は `Pmech` を駆動しますが、ローカル制御器の調速機は別枠なので共存の形が異なります。推測: 拡張には `key` の意味の見直しが要ります。
 20. **`pss` などの名前が枠組みに固定です。** 確定: `add_local_controller.m:38-85`。
 
 ### 登録の手順

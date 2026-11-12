@@ -26,11 +26,11 @@ tab = DebugScript.helper.model_classes("LocalController");
 assert(all(ismember(["controller.avr.AVR_ST1","controller.avr.AVR_DC1","controller.pss.PSS1","controller.local_LQR"], tab.Class)))
 assert(all(ismember(["avr-ST1","avr-DC1","pss-PSS1","gov-LPT1","gov-LPT3","gov-LPT4","local-LQR"], tab.Key)))
 assert(isequal(sort(tab.Key), sort(keymap_keys("LocalController"))), "GUILDA.keymap(LocalController)")
-assert(numel(unique(tab.Key)) == height(tab) && all(tab.Key ~= ""), "局所制御器のキーが重複または空")
+assert(numel(unique(tab.Key)) == height(tab) && all(tab.Key ~= ""), "ローカル制御器のキーが重複または空")
 tab = DebugScript.helper.model_classes("GlobalController");
 assert(any(tab.Class == "controller.agc.broadcast_PI_AGC") && any(tab.Key == "agc-PI"))
 assert(isequal(sort(tab.Key), sort(keymap_keys("GlobalController"))), "GUILDA.keymap(GlobalController)")
-assert(numel(unique(tab.Key)) == height(tab) && all(tab.Key ~= ""), "大域制御器のキーが重複または空")
+assert(numel(unique(tab.Key)) == height(tab) && all(tab.Key ~= ""), "グローバル制御器のキーが重複または空")
 
 
 %% Every component key creates its class

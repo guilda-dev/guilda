@@ -401,7 +401,7 @@ g3 = s.net.a_Bus{3}.a_Component{1};
 g3.tab_parameter.dynamics.D = 2 * g3.tab_parameter.dynamics.D;
 assert(error_id(@() g3.get_sys()) == "GUILDA:Component:Stale")
 assert(error_id(@() s.net.a_Bus{3}.get_sys()) == "GUILDA:Bus:Stale")
-s.net.a_GlobalController{1}.get_sys();   % 大域制御器の get_sys は系統と自分のタグだけを見る
+s.net.a_GlobalController{1}.get_sys();   % グローバル制御器の get_sys は系統と自分のタグだけを見る
 
 
 %% MATPOWER import reproduces case14

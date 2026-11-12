@@ -44,7 +44,7 @@
   <path class="ln" d="M498 174 V186" marker-end="url(#a)"/>
   <rect x="300" y="188" width="396" height="44" rx="4" fill="#FBE8D8" stroke="#C2682A" stroke-width="1.5"/>
   <text class="t" x="312" y="206">Add buses</text>
-  <text class="c" x="312" y="224">net.add_bus();</text>
+  <text class="c" x="312" y="224">bus1 = net.add_bus();</text>
   <path class="ln" d="M498 232 V244" marker-end="url(#a)"/>
   <rect x="300" y="246" width="396" height="44" rx="4" fill="#F8F0D2" stroke="#B08A18" stroke-width="1.5"/>
   <text class="t" x="312" y="264">Add branches</text>
@@ -52,7 +52,7 @@
   <path class="ln" d="M498 290 V302" marker-end="url(#a)"/>
   <rect x="300" y="304" width="396" height="44" rx="4" fill="#E4EFE6" stroke="#2E6B3F" stroke-width="1.5"/>
   <text class="t" x="312" y="322">Add components to buses by Key</text>
-  <text class="c" x="312" y="340">net.a_Bus{1}.add_component("gen-park");</text>
+  <text class="c" x="312" y="340">bus1.add_component("gen-park");</text>
   <rect x="12" y="388" width="696" height="228" rx="4" fill="#F5F6F7"/>
   <text class="h" x="24" y="409">2  Set and initialize the operating point</text>
   <path class="ln" d="M134 188 V364 H498"/>
@@ -62,9 +62,9 @@
   <rect x="160" y="428" width="400" height="58" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5"/>
   <text class="t" x="172" y="446">Set the power-flow conditions (buses, components)</text>
   <rect x="172" y="456" width="8" height="8" rx="1.5" fill="#FBE8D8" stroke="#C2682A" stroke-width="1.2"/>
-  <text class="c" x="186" y="464">net.a_Bus{1}.tab_parameter.powerflow</text>
+  <text class="c" x="186" y="464">bus1.tab_parameter.powerflow</text>
   <rect x="172" y="471" width="8" height="8" rx="1.5" fill="#E4EFE6" stroke="#2E6B3F" stroke-width="1.2"/>
-  <text class="c" x="186" y="479">net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow</text>
+  <text class="c" x="186" y="479">bus1.a_Component{1}.tab_parameter.powerflow</text>
   <path class="ln" d="M360 486 V498" marker-end="url(#a)"/>
   <rect x="160" y="500" width="400" height="44" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5" stroke-dasharray="5 3"/>
   <text class="t" x="172" y="518">Check the power flow (optional)</text>

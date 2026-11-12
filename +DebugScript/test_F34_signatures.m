@@ -63,7 +63,7 @@ assert(~ismember("B001SG1", choices('sys__F34.a_Bus{5}.replace_component(')))
 assert(ismember("B005LRX1", choices('sys__F34.a_Bus{5}.remove_component(')))
 assert(ismember("B004", choices('sys__F34.remove_bus(')))
 assert(ismember("B001SG1", choices('replace_component(sys__F34.a_Bus{1}, ')))
-% 局所制御器のタグは入れ子 (AVR の下の PSS) も含む
+% ローカル制御器のタグは入れ子 (AVR の下の PSS) も含む
 assignin("base", "gen__F34", evalin("base", "sys__F34.a_Bus{1}.a_Component{1}"));
 c_gen = onCleanup(@() evalin("base", "clear gen__F34"));
 sv_con = evalin("base", "string(gen__F34.a_LocalController)");

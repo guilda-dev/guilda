@@ -382,7 +382,7 @@ agc1 = net.add_global_controller("agc-PI", "B001SG1");
 agc2 = net.add_global_controller("agc-PI", "B002SG1");
 DebugScript.helper.quiet(@() net.initialize);
 
-% すべての大域制御器に平衡点が設定されるべき
+% すべてのグローバル制御器に平衡点が設定されるべき
 assert(numel(agc1.rv_Uequilibrium) == 1, "1台目の AGC の平衡点が未設定")
 assert(numel(agc2.rv_Uequilibrium) == 1, "2台目の AGC の平衡点が未設定")
 assert(agc1.a_PowerNetwork == net && agc2.a_PowerNetwork == net)
@@ -536,12 +536,12 @@ assert(all(cellfun(@(br) isempty(br.a_PowerNetwork), a_conn)))
 bus = net.add_bus();
 assert(numel(unique(string(net.a_Bus))) == 9 && bus.s_tag == "B010")
 
-% 大域制御器が制御している機器のある母線は削除できない
+% グローバル制御器が制御している機器のある母線は削除できない
 net = DebugScript.helper.build_ieee14();
 agc = net.add_global_controller("agc-PI", "B001SG1");
 try
     net.remove_bus("B001", "RemoveBranches", true);
-    error("DebugScript:noError", "大域制御器が制御する機器のある母線の削除がエラーにならない")
+    error("DebugScript:noError", "グローバル制御器が制御する機器のある母線の削除がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:BusHasControlledUnits", ME.message)
 end
@@ -560,7 +560,7 @@ assert(~DebugScript.helper.is_stale(net))             % 削除は何も古くし
 % 存在しないタグはエラー
 try
     net.remove_global_controller(agc.s_tag);
-    error("DebugScript:noError", "存在しない大域制御器の削除がエラーにならない")
+    error("DebugScript:noError", "存在しないグローバル制御器の削除がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:GconNotFound", ME.message)
 end
