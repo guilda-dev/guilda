@@ -20,6 +20,7 @@
 - [powerflow-options.md](powerflow-options.md): 潮流計算のオプション、Method クラス、ウォームスタートとキャッシュ、`V0`/`Varg0` の廃止、`operation` 制約の扱いの仕様。
 - [fixed-input.md](fixed-input.md): `initialize` の Method="FixedInput"(入力 u を固定した平衡点)、`rv_Uequilibrium` の編集、アルゴリズムの選択の `Solver` への改名、線形化の `Algorithm` から `Method` への改名の仕様。
 - [controller-signal-routing.md](controller-signal-routing.md): 機器・局所制御器・大域制御器の信号構造(母線電流 I の廃止、出力の直達の禁止、GC の観測と出力の振り分け、DAE の右辺の評価順)の仕様。
+- [structural-checks.md](structural-checks.md): モデルの物体を追加メソッドだけで作り、外すと削除する設計と、それで起きえなくなった親の検査の削除(Issue #119)。
 
 ## 調査と改善案
 

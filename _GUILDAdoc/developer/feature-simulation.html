@@ -373,7 +373,7 @@ verdict = sc.judge(result)</code></pre>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>Checks that the controlled units of every global controller are on this network (<code>GUILDA:SolverODE:ForeignControlledUnit</code>) and that no input was edited (<code>GUILDA:SolverODE:InputEdited</code>).</li>
+              <li>Checks that no input was edited (<code>GUILDA:SolverODE:InputEdited</code>).</li>
               <li>Collects the stale tags (<code>sct_stale</code>) it reads: <code>powerflow</code> and <code>odefcn</code> of the network, <code>equilibrium</code> and <code>odefcn</code> of each component, local controller and global controller. When any is not empty, stops with <code>GUILDA:SolverODE:Stale</code>, naming up to three different messages, and asks for <code>net.initialize()</code>. Rebuilds nothing.</li>
               <li>Numbers the DAE vector <code>z = [x; V; I; u; uc]</code> from the variable map: its variable rows in map order, with the bus currents <code>I</code> (not in the map) after <code>V</code>. Records the positions of each block (component, local controller, global controller) and the owner tag of each element of <code>z</code>.</li>
               <li>Numbers the signal vector <code>s</code>: the rows <code>y</code>, <code>yc</code> of the map. A component computes its outputs only when a connection reads them.</li>
@@ -381,7 +381,7 @@ verdict = sc.judge(result)</code></pre>
               <li>Builds the equilibrium vector <code>rv_z0</code> and the mass matrix <code>rm_M</code> (blocks from <code>tools.read_mass</code>).</li>
               <li>An output of a global controller without a target: stops with <code>GUILDA:SolverODE:GconNoTarget</code>.</li>
             </ul><ul lang="ja">
-              <li>各広域制御器の制御対象がこのネットワーク上にあるか（<code>GUILDA:SolverODE:ForeignControlledUnit</code>）、入力の編集がないか（<code>GUILDA:SolverODE:InputEdited</code>）を確認</li>
+              <li>入力の編集がないか（<code>GUILDA:SolverODE:InputEdited</code>）を確認</li>
               <li>読み取る stale タグ（<code>sct_stale</code>）を収集: ネットワークの <code>powerflow</code> と <code>odefcn</code>、各機器・局所制御器・広域制御器の <code>equilibrium</code> と <code>odefcn</code>。空でないものがあれば、異なるメッセージを最大 3 件示して <code>GUILDA:SolverODE:Stale</code> で停止し、<code>net.initialize()</code> を促す。再構築はなし</li>
               <li>変数マップから DAE ベクトル <code>z = [x; V; I; u; uc]</code> に番号付け: 変数の行をマップの順に。マップにない母線電流 <code>I</code> は <code>V</code> の後。各ブロック（機器、局所制御器、広域制御器）の位置と、<code>z</code> の各要素の所有者のタグを記録</li>
               <li>信号ベクトル <code>s</code> に番号付け: マップの <code>y</code>、<code>yc</code> の行。機器の出力の計算は接続が読む場合のみ</li>
@@ -742,7 +742,7 @@ verdict = sc.judge(result)</code></pre>
         <tr><td><span lang="en">Equilibrium missing or stale (SIM-05)</span><span lang="ja">平衡点がない、または古い (SIM-05)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverODE:Stale</code></td></tr>
         <tr><td><span lang="en">Invalid scenario (SIM-04; most checks also run when a disturbance or the scenario is added)</span><span lang="ja">不正なシナリオ (SIM-04。多くの検査は外乱やシナリオの追加時にも実施)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:Scenario:</code><code>ScenarioArray</code>, <code>OtherNetwork</code>, <code>DuplicateRunTag</code>, <code>InvalidTimeSpan</code>, <code>ZeroLengthTimeSpan</code>, <code>UnknownFaultBus</code>, <code>UnknownOpenBranch</code>, <code>UnknownTripUnit</code>, <code>UnknownOffsetUnit</code>, <code>UnknownOffsetState</code>, <code>UnknownInputUnit</code>, <code>UnknownInputName</code>, <code>ValueCountMismatch</code>, <code>InvalidNargin</code>, <code>InvalidInputType</code>; <span lang="en">when adding</span><span lang="ja">追加時</span> <code>ReservedTag</code>, <code>DuplicateTag</code>. <span lang="en">Warning</span><span lang="ja">警告</span> <code>OutsideTimeSpan</code>.</td></tr>
         <tr><td><span lang="en">Opened branches leave buses without any component (SIM-04)</span><span lang="ja">開放ブランチによって機器のない母線が切り離される (SIM-04)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverODE:OpenBranchIsland</code> <span lang="en">before the integration. An island with components but without a generator (e.g. a constant-power load) usually gives <code>flag = -1</code>.</span><span lang="ja">(積分の前)。機器はあるが発電機のない単独系統 (定電力負荷など) は多くの場合 <code>flag = -1</code></span></td></tr>
-        <tr><td><span lang="en">Model structure</span><span lang="ja">モデルの構造</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:SolverODE:ForeignControlledUnit</code>, <code>InputEdited</code>, <code>GconNoTarget</code>, <code>GUILDA:read_mass:NotConstant</code> (SIM-05), <code>GUILDA:ResultODE:VariableMap</code> (SIM-19)</td></tr>
+        <tr><td><span lang="en">Model structure</span><span lang="ja">モデルの構造</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:SolverODE:InputEdited</code>, <code>GconNoTarget</code>, <code>GUILDA:read_mass:NotConstant</code> (SIM-05), <code>GUILDA:ResultODE:VariableMap</code> (SIM-19)</td></tr>
       </tbody>
     </table>
     <ul lang="en">

@@ -178,7 +178,7 @@
     <ul>
       <li><span lang="en">A constant-magnitude source behind the reactance <code>Xs</code>, with the swing equation.</span><span lang="ja">リアクタンス <code>Xs</code> の背後にある大きさ一定の電源と動揺方程式のモデル。</span></li>
       <li><span lang="en">Same dynamics as <code>gen-classical</code> with <code>Xd = Xq = Xs</code>: a useful check.</span><span lang="ja"><code>Xd = Xq = Xs</code> とした <code>gen-classical</code> と同じ動特性。確認に有用。</span></li>
-      <li><span lang="en">The base class <code>component.generator.abstract</code> provides the constructor and sets the tag to the bus tag + <code>"SG"</code> + index (<code>Component</code> puts the bus tag in front).</span><span lang="ja">基底クラス <code>component.generator.abstract</code> がコンストラクタを提供し、タグを母線のタグ + <code>"SG"</code> + インデックスに設定（母線のタグは <code>Component</code> が先頭に付ける）。</span></li>
+      <li><span lang="en">The constructor only calls the base class <code>component.generator.abstract</code>, which reads the parameters and sets the tag to the bus tag + <code>"SG"</code> + index (<code>Component</code> puts the bus tag in front). It is declared with <code>Access={?Bus}</code>, so only <code>add_component</code> and <code>replace_component</code> create the model; a class without a constructor would inherit a public one (<a href="class-design.html#parents">Class Design: parent references</a>).</span><span lang="ja">コンストラクタは基底クラス <code>component.generator.abstract</code> を呼ぶだけで、基底クラスがパラメータを読み、タグを母線のタグ + <code>"SG"</code> + インデックスに設定（母線のタグは <code>Component</code> が先頭に付ける）。<code>Access={?Bus}</code> で宣言するため、モデルを作るのは <code>add_component</code> と <code>replace_component</code> だけ。コンストラクタのないクラスは公開のコンストラクタを継承（<a href="class-design.html#parents">クラス設計: 親への参照</a>）。</span></li>
       <li><span lang="en">A load inherits from <code>component.load.abstract</code> in the same way.</span><span lang="ja">負荷も同様に <code>component.load.abstract</code> を継承。</span></li>
     </ul>
     <span class="mi-file">_GUILDAobject/+component/+generator/simple_sg.m</span>
@@ -192,6 +192,12 @@
         sv_u = ["Pmech";"Vfield"]  % Input names.
         sv_y = "omega"             % Output names read by local controllers.
         sv_para = ["M";"D";"Xs"]   % Dynamic parameter names, in the order of p.
+    end
+    methods (Access={?Bus})
+        function obj = simple_sg(index, parameter, varargin)
+            % Create the generator (called by Bus.add_component and Bus.replace_component).
+            obj@component.generator.abstract(index, parameter, varargin{:})
+        end
     end
     methods
         function [x, u] = get_equilibrium(obj, c_V, c_I, r_P, ~)
@@ -264,7 +270,7 @@ sys = net.get_sys();
       <li><span lang="en">No generator output is called <code>Vref</code> or <code>Vpss</code>: <code>Vref</code> stays at its equilibrium, <code>Vpss</code> reads a PSS when one is attached.</span><span lang="ja">発電機に <code>Vref</code>、<code>Vpss</code> という名前の出力はない。<code>Vref</code> は平衡点の値のまま、<code>Vpss</code> は PSS が接続されていればその出力。</span></li>
       <li><span lang="en">The constant <code>key</code> is the model key of <code>add_local_controller</code>; <code>s_role = "avr"</code> attaches it to the component, with a PSS under it. Run <code>GUILDA</code> again so that the key list of <code>add_local_controller</code> includes <code>"avr-simple"</code>.</span><span lang="ja">定数 <code>key</code> は <code>add_local_controller</code> のモデルのキー。<code>s_role = "avr"</code> で機器に接続し、その下に PSS。<code>add_local_controller</code> のキー一覧に <code>"avr-simple"</code> が入るよう <code>GUILDA</code> を再実行。</span></li>
       <li><span lang="en">The Jacobians are written by hand.</span><span lang="ja">ヤコビ行列は手で記述。</span></li>
-      <li><span lang="en">The constructor adds the parameters to the <code>dynamics</code> container (tag form) and builds the function handles; they are built again with the network frequency when the controller is attached.</span><span lang="ja">コンストラクタがパラメータを <code>dynamics</code> コンテナに追加（タグの形）して関数ハンドルを作成。制御器の接続時にネットワークの周波数で再作成。</span></li>
+      <li><span lang="en">The constructor adds the parameters to the <code>dynamics</code> container (tag form). It is declared with <code>Access={?Component}</code>, so only <code>add_local_controller</code> creates the controller. <code>net.initialize</code> builds the function handles with the network frequency.</span><span lang="ja">コンストラクタがパラメータを <code>dynamics</code> コンテナに追加（タグの形）。<code>Access={?Component}</code> で宣言するため、制御器を作るのは <code>add_local_controller</code> だけ。関数ハンドルは <code>net.initialize</code> がネットワークの周波数で作成。</span></li>
     </ul>
     <span class="mi-file">_GUILDAobject/+controller/+avr/simple_avr.m</span>
 <pre class="mi-code" data-file="_GUILDAobject/+controller/+avr/simple_avr.m">classdef simple_avr &lt; LocalController
@@ -281,7 +287,7 @@ sys = net.get_sys();
         sv_y = "Vfield"         % Output names; drives the input Vfield of the component.
         sv_para = ["Ka";"Te"]   % Dynamic parameter names, in the order of p.
     end
-    methods
+    methods (Access={?Component})
         function obj = simple_avr(tag, opt)
             % Create the controller with the tag "CA"+tag.
             arguments (Input)
@@ -292,6 +298,8 @@ sys = net.get_sys();
             obj@LocalController("CA"+tag)
             obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", struct("Ka", opt.Ka, "Te", opt.Te));
         end
+    end
+    methods
         function get_equilibrium(obj, V, u)
             % Set the equilibrium from the complex voltage V and the component inputs u.
             Ka = obj.tab_parameter.dynamics.Ka;

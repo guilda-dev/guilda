@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Model objects are created by add methods and deleted when removed",
+    "date": "2026-11-12",
+    "type": "feature",
+    "content": "Components, branches, local and global controllers are created only from their model keys by add_component, replace_component, add_branch, add_local_controller and add_global_controller; calling the constructor of a model class directly (e.g. controller.avr.AVR_ST1(\"1\")) stops with an error. remove_bus, remove_branch, remove_component, replace_component, remove_local_controller, remove_global_controller and a controller replaced by add_local_controller now delete the removed objects (a removed bus with its components), so a variable that still holds one is an invalid handle. Local controllers dropped by replace_component are deleted too. A model class of your own declares its constructor with Access={?Bus} (components), {?Component} (local controllers) or {?PowerNetwork} (branches, global controllers)."
+  },
+  {
     "title": "Tags read parent first; labels use the own tag",
     "date": "2026-11-12",
     "type": "feature",

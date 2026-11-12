@@ -281,9 +281,11 @@ net.add_branch(Type, ["B001","B002"], ...)       % buses may be given by tag
 - `add_global_controller` with a tag already in use is an error
   (`GUILDA:PowerNetwork:GconTagInUse`); the tag is the user's choice.
 - `remove_bus` refuses a bus whose components a global controller controls.
-- `remove_component`, `replace_component`, `remove_branch`, `remove_bus`
-  and `remove_global_controller` detach the removed object: it no longer
-  refers to the old bus or network.
+- `remove_component`, `replace_component`, `remove_branch`, `remove_bus`,
+  `remove_global_controller`, `remove_local_controller` and a controller replaced by
+  `add_local_controller` delete the removed object (`delete`; a bus with its
+  components, a component with its local controllers). A variable that still holds it
+  is an invalid handle (`isvalid` is false) (1.24).
 - Buses are created with their network: `Bus(net, tag, opt)`. The separate
   `set_network` step after construction and `reset_odeset` (Bus, Branch,
   PowerNetwork) are gone.
@@ -1284,9 +1286,17 @@ of its parent, so the labels stay unique within a network.
 
 ---
 
+### 1.24 モデルの物体は追加メソッドで作り、外すと削除する(Issue #119)
+
+- **作成。** 機器・ブランチ・局所制御器・大域制御器は、キーで作るメソッド(`add_component`、`replace_component`、`add_branch`、`add_local_controller`、`add_global_controller`)の中でしか作れません。具体クラスのコンストラクタを直接呼ぶと `MATLAB:class:MethodRestricted` で止まります(例: `controller.avr.AVR_ST1("1")`、`component.generator.park("1", nan, opt)`、`branch.pi("1", opt)`)。以前は制御器、発電機、ブランチのコンストラクタは公開でした。
+- **削除。** 外した物体は `delete` されます(1.4)。外した制御器を別の機器に付け直したり、外した機器を読んだりしていたスクリプトは、キーで新しく作ってください。`replace_component` の `Controllers="drop"`(既定)で残らなかった局所制御器も削除されます。
+- **親のない物体の扱いの廃止。** 親のない物体がなくなったため、それを前提にした動作もなくなりました: 系統にない層の `get_sys` が古いハンドルを作り直す動作、`comp.c_Vequilibrium` / `con.c_Vequilibrium` が `[]` を返す動作、`gc.get_sys` の系統外の名前付け、`get_Hz` の `GUILDA.config("Model","Hz")` への切り替え。エラー ID `GUILDA:Component:InputNotConnected`、`GUILDA:LocalController:ValidateNotAttached`、`GUILDA:local_LQR:NotOnComponent`、`GUILDA:PowerNetwork:GconOtherNetwork`、`GUILDA:SolverODE:ForeignControlledUnit` はなくなりました(起きえない状況の検査)。
+
 ## 2. Changes so far — model authors
 
 新しいモデルの実装手順は `_GUILDAdoc/developer/model-implementation.html` を見てください。
+
+- **コンストラクタのアクセス(Issue #119)。** 具体クラスはコンストラクタを作成する親クラスにだけ公開します: 機器は `methods (Access={?Bus})`、局所制御器は `{?Component}`、ブランチと大域制御器は `{?PowerNetwork}`。基底クラスを呼ぶだけでも宣言が必要です(コンストラクタのないクラスは公開の既定のコンストラクタを継承するため)。property の set メソッドは属性のない `methods` ブロックに置く必要があるので、コンストラクタとは別のブロックにします(`controller.local_LQR`)。メソッドの中では親が常にあるものとして書き、`isempty(obj.a_Bus)` などの検査は書きません(`class-design.html#parents`)。
 
 - **Function signatures** (no bus current, no output feedthrough; see
   `notes/controller-signal-routing.md`). A component has
