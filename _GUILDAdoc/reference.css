@@ -504,7 +504,45 @@ tr.ref-group-row:hover { background: transparent; }
 .doc-layout table.ref-member-table td.col-signature { overflow-wrap: anywhere; }
 .ref-member-table td .markdown-content > :first-child { margin-top: 0; }
 .ref-member-table td .markdown-content > :last-child { margin-bottom: 0; }
+/* Resizable columns (doc-colresize.js): a grab handle on the right edge of
+   each header cell, seen on hover and focus only. Once a column is resized
+   the table takes a fixed layout with the widths in --ref-col-w and may grow
+   past its container, scrolling inside .ref-table-scroll. Phones keep the
+   stacked rows, so the fixed layout applies on wide screens only. */
+.ref-member-table thead th { position: relative; }
+.ref-col-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ref-col-handle::after {
+  content: "";
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  right: 2px;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent;
+}
+.ref-col-handle:hover::after,
+.ref-col-handle.is-dragging::after { background: var(--line-strong); }
+.ref-col-handle:focus { outline: none; }
+.ref-col-handle:focus-visible::after { top: 0; bottom: 0; background: var(--primary-color); }
+@media (min-width: 601px) {
+  .doc-layout table.ref-member-table.is-col-resized { table-layout: fixed; width: var(--ref-table-width); max-width: none; }
+  .doc-layout table.ref-member-table.is-col-resized > thead > tr > th { box-sizing: border-box; width: var(--ref-col-w, auto); min-width: 0; max-width: none; }
+  .doc-layout table.ref-member-table.is-col-resized th,
+  .doc-layout table.ref-member-table.is-col-resized td { overflow: hidden; max-width: none; white-space: normal; overflow-wrap: anywhere; }
+}
 @media (max-width: 600px) {
+  .ref-col-handle { display: none; }
   .ref-member-table thead { display: none; }
   .ref-member-table tr:not(.ref-group-row) { display: block; padding: 4px 0; border-bottom: 1px solid var(--line); }
   .doc-layout .ref-member-table tr:not(.ref-group-row) td { display: block; width: auto !important; max-width: none; min-width: 0; border: 0; white-space: normal; }

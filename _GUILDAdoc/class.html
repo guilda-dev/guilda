@@ -13,6 +13,7 @@
   <script src="./database/list_Classes.js"></script>
   <script src="./doc-loader.js"></script>
   <script src="./doc-render.js"></script>
+  <script src="./doc-colresize.js"></script>
   <script src="./doc-tree.js"></script>
 </head>
 <body class="doc-layout">
@@ -262,11 +263,13 @@
       container.innerHTML = `
         <p class="ref-count">${tr(`${rows.length} of ${allRows.length} shown`, `${allRows.length} 件中 ${rows.length} 件を表示`)}</p>
         <div class="ref-table-scroll">
-          <table class="compact-table ref-member-table${kind === 'method' ? ' method-link-table' : ''}${fit ? ' is-fit' : ''}">
+          <table class="compact-table ref-member-table${kind === 'method' ? ' method-link-table' : ''}${fit ? ' is-fit' : ''}" data-colresize="class-${kind}">
             <thead><tr>${header}</tr></thead>
             <tbody>${body}</tbody>
           </table>
         </div>`;
+      // Column widths set by dragging the header edges (doc-colresize.js).
+      window.GuildaColResize?.attachAll(container);
       container.querySelectorAll('[data-sort]').forEach((th) => {
         th.addEventListener('click', () => {
           state.order = state.sort === th.dataset.sort ? -state.order : 1;
