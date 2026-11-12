@@ -83,11 +83,16 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
     r_elapsed = toc(t0);
     notify_failure(flag, output, sct_options.WhenFailed);
 
-    tab_pf = powerflow_table(sv_bus, cv_V, cm_Y*cv_V);
+    if opt.Format == "V"
+        result = cv_V;                % nothing else to build
+        return
+    end
+    rm_pf = powerflow_matrix(cv_V, cm_Y*cv_V);
     sct_solver = struct("solver", string(class(obj.solver_PF)), "options", sct_options, ...
         "flag", flag, "output", output, "elapsed", r_elapsed, "cm_Vhistory", cm_Vhistory, ...
         "rv_step", rv_step, "tab_PFcondition", tab_PFcondition);
-    result = format_powerflow(opt.Format, tab_pf, @() ResultPF(tab_pf, cm_Y, struct(obj, false), sct_solver));
+    result = format_powerflow(opt.Format, sv_bus, rm_pf, ...
+        @() ResultPF(powerflow_table(sv_bus, rm_pf), cm_Y, struct(obj, false), sct_solver));
 end
 
 

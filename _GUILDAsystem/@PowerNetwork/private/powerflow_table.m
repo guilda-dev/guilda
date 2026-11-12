@@ -1,17 +1,15 @@
-function tab = powerflow_table(sv_bus, cv_V, cv_I)
+function tab = powerflow_table(sv_bus, rm_pf)
 % Solution of a power flow as the table of Format "powerflow(tab)".
 %
-% One row per bus (row names = bus tags): V and I are the complex voltage and current
-% injection phasors, P and Q the real power injections into the network (S = V.*conj(I)).
+% The columns of the "powerflow(mat)" array as table variables: V and I complex, P and Q
+% real; row names = bus tags.
     arguments (Input)
-        sv_bus (:,1) string  % Bus tags.
-        cv_V   (:,1) double  % [pu] Complex bus voltages.
-        cv_I   (:,1) double  % [pu] Complex current injections into the network.
+        sv_bus (:,1) string  % Bus tags (row order of rm_pf).
+        rm_pf  (:,4) double  % [pu] Columns V, I, P, Q (powerflow_matrix).
     end
     arguments (Output)
         tab table            % Variables V, I, P, Q [pu]; row names = bus tags.
     end
-    cv_S = cv_V .* conj(cv_I);
-    tab  = table(cv_V, cv_I, real(cv_S), imag(cv_S), ...
-                 'VariableNames', ["V","I","P","Q"], 'RowNames', sv_bus);
+    tab = table(rm_pf(:,1), rm_pf(:,2), real(rm_pf(:,3)), real(rm_pf(:,4)), ...
+                'VariableNames', ["V","I","P","Q"], 'RowNames', sv_bus);
 end

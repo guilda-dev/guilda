@@ -49,18 +49,21 @@ function [result, flag, output] = initialize(obj, varargin)
 %   - "equilibrium": never solved; the equilibria the components already hold (from an
 %     earlier initialize) are kept, and buses without components get the voltage of
 %     Y*V = I. A stale power flow stops with an error: use net.initialize().
-% - `Format` — Form of the first output, with the values of calculate_powerflow. Default: "V" (calculate_powerflow: "GUILDAorigin").
-%   - "V": complex bus voltages of the operating point [pu], a column in net.a_Bus order.
+% - `Format` — Form of the first output, with the values of calculate_powerflow. Default:
+%   "powerflow(mat)" (calculate_powerflow: "GUILDAorigin").
 %   - "powerflow(mat)": n-by-4 complex double; columns V, I (complex phasors), P, Q
-%     (real injections into the network) [pu]; rows in bus order.
+%     (real injections into the network) [pu]; rows in net.a_Bus order. It is the array
+%     initialize writes with Bus.set_equilibrium, so it costs nothing extra.
+%   - "V": complex bus voltages of the operating point [pu], a column in net.a_Bus order.
 %   - "powerflow(tab)": the same as a table with the variables V, I, P, Q; row names =
 %     bus tags.
 %   - "GUILDAorigin": the result object: ResultPF for "powerflow" ("FixedInput":
 %     s_solver = "FixedInput"; without a solve: the held equilibrium, s_solver =
 %     "equilibrium"), ResultOPF for "OPF".
 %   The other values give the bus V, I, P, Q of the operating point for every Method
-%   (for "OPF", those of the AC OPF solution). Internally, initialize requests only
-%   "powerflow(tab)" from calculate_powerflow unless Format is "GUILDAorigin".
+%   (for "OPF", those of the AC OPF solution). Internally, initialize requests the
+%   "powerflow(mat)" array from calculate_powerflow; a table is built only for
+%   "powerflow(tab)" and a ResultPF only for "GUILDAorigin".
 % - `WarmStart` — true starts the power flow or the "AC OPF" from the last solution of the
 %   network (kept by net.solver_PF or net.solver_OPF); false from the flat start. Default:
 %   the WarmStart of the PowerFlowCalculation or OptimalPowerFlow section of GUILDA.setting.
@@ -97,7 +100,8 @@ function [result, flag, output] = initialize(obj, varargin)
 % net.a_Bus{1}.a_Component{1}.tab_parameter.dynamics.D = 0.1;
 % net.initialize();                                % only the edited generator
 % net.initialize(Method="equilibrium");            % never solves the power flow
-% V   = net.initialize(Method="powerflow");          % complex bus voltages of the point
+% pf  = net.initialize(Method="powerflow");          % n-by-4 V, I, P, Q of the point
+% V   = net.initialize(Method="powerflow", Format="V");      % complex bus voltages
 % tab = net.initialize(Method="powerflow", Format="powerflow(tab)");   % V, I, P, Q
 % res = net.initialize(Method="OPF", Solver="fmincon", Format="GUILDAorigin");
 % res.r_cost                                       % cost of the OPF operating point
@@ -113,7 +117,7 @@ function [result, flag, output] = initialize(obj, varargin)
         varargin   % Name-Value options.
     end
     arguments (Output)
-        result   % Operating point in the form of Format: bus voltages (default), an n-by-4 matrix or table of V, I, P, Q, or the result object (ResultPF, or ResultOPF for "OPF").
+        result   % Operating point in the form of Format: the n-by-4 array of V, I, P, Q (default), bus voltages, a table of V, I, P, Q, or the result object (ResultPF, or ResultOPF for "OPF").
         flag     % Success flag of the analysis (positive; a failure stops with an error).
         output   % Details of the analysis; output.message describes the outcome.
     end
@@ -130,14 +134,14 @@ function [result, flag, output] = initialize(obj, varargin)
     switch s_method
         case "powerflow"
             if l_solve
-                [result, flag, output, tab_pf] = solve_powerflow(obj, c_nv, s_format);
+                [result, flag, output, rm_pf] = solve_powerflow(obj, c_nv, s_format);
             end
         case "OPF"
             if l_solve
                 [result, flag, output] = solve_opf(obj, c_nv);
-                [tab_pf, c_PQ] = opf_point(obj, result);
+                [rm_pf, c_PQ] = opf_point(obj, result);
                 if s_format ~= "GUILDAorigin"
-                    result = format_powerflow(s_format, tab_pf, @() []);
+                    result = format_powerflow(s_format, string(obj.a_Bus), rm_pf, @() []);
                 end
             end
         case "FixedInput"
@@ -162,9 +166,9 @@ function [result, flag, output] = initialize(obj, varargin)
         if s_method == "FixedInput"
             write_fixed_input(obj, sct_point);
         elseif s_method == "OPF" && l_solve
-            write_powerflow(obj, tab_pf, c_PQ);
+            write_powerflow(obj, rm_pf, c_PQ);
         elseif l_solve
-            write_powerflow(obj, tab_pf, cell(numel(obj.a_Bus),1));
+            write_powerflow(obj, rm_pf, cell(numel(obj.a_Bus),1));
         end
         for i_bus = 1:numel(obj.a_Bus)
             obj.a_Bus{i_bus}.initialize();
@@ -212,11 +216,12 @@ function [result, flag, output] = initialize(obj, varargin)
 end
 
 
-function [result, flag, output, tab_pf] = solve_powerflow(obj, c_nv, s_format)
+function [result, flag, output, rm_pf] = solve_powerflow(obj, c_nv, s_format)
 % The power flow; a slack bus that calculate_powerflow set is released when it fails.
-% Only "GUILDAorigin" builds the ResultPF; tab_pf (V, I, P, Q) is what initialize writes
+% calculate_powerflow is asked for the n-by-4 array rm_pf (V, I, P, Q), which initialize
+% writes; only "GUILDAorigin" builds the ResultPF
     lv_slack = tools.vcellfun(@(b) b.l_isSlack, obj.a_Bus);
-    s_request = "powerflow(tab)";
+    s_request = "powerflow(mat)";
     if s_format == "GUILDAorigin"
         s_request = "GUILDAorigin";
     end
@@ -237,10 +242,10 @@ function [result, flag, output, tab_pf] = solve_powerflow(obj, c_nv, s_format)
     end
     if s_format == "GUILDAorigin"
         tab_bus = result.tab_bus;
-        tab_pf  = powerflow_table(string(tab_bus.Properties.RowNames), tab_bus.Vphasor, tab_bus.Iphasor);
+        rm_pf   = powerflow_matrix(tab_bus.Vphasor, tab_bus.Iphasor);
     else
-        tab_pf  = result;
-        result  = format_powerflow(s_format, tab_pf, @() []);
+        rm_pf   = result;
+        result  = format_powerflow(s_format, string(obj.a_Bus), rm_pf, @() []);
     end
 end
 
@@ -263,20 +268,20 @@ function [result, flag, output] = solve_opf(obj, c_nv)
 end
 
 
-function write_powerflow(obj, tab_pf, c_PQ)
+function write_powerflow(obj, rm_pf, c_PQ)
 % Bus.set_equilibrium of every bus with the solved point (the components and their local
 % controllers set theirs); c_PQ{i} is [P Q] of the components of bus i when the analysis
 % fixes them, [] lets Bus.set_equilibrium distribute
     for i_bus = 1:numel(obj.a_Bus)
-        obj.a_Bus{i_bus}.set_equilibrium(tab_pf.V(i_bus), tab_pf.I(i_bus), tab_pf.P(i_bus), tab_pf.Q(i_bus), "rm_PQ", c_PQ{i_bus})
+        obj.a_Bus{i_bus}.set_equilibrium(rm_pf(i_bus,1), rm_pf(i_bus,2), real(rm_pf(i_bus,3)), real(rm_pf(i_bus,4)), "rm_PQ", c_PQ{i_bus})
     end
 end
 
 
-function [tab_pf, c_PQ] = opf_point(obj, result)
+function [rm_pf, c_PQ] = opf_point(obj, result)
 % The bus V, I, P, Q of an "AC OPF" result, and [P Q] of the components of each bus
     tab_bus = result.tab_bus;
-    tab_pf  = powerflow_table(string(tab_bus.Properties.RowNames), tab_bus.Vphasor, tab_bus.Iphasor);
+    rm_pf   = powerflow_matrix(tab_bus.Vphasor, tab_bus.Iphasor);
     n_Bus = numel(obj.a_Bus);
     c_PQ  = cell(n_Bus,1);
     for i_bus = 1:n_Bus
@@ -343,8 +348,8 @@ end
 
 
 function [s_format, c_nv] = take_format(c_in)
-% Separates Format (of initialize, default "V") from the other options; checks its value
-    s_format = "V";
+% Separates Format (of initialize, default "powerflow(mat)") from the other options; checks its value
+    s_format = "powerflow(mat)";
     c_nv     = c_in;
     if mod(numel(c_in), 2) ~= 0
         return              % take_method reports it
@@ -671,8 +676,9 @@ function [result, flag, output] = calculate_from_equilibrium(obj, s_format)
     output = struct("residual", r_resid, ...
                     "message", "The equilibria of the components satisfy the network equations.");
 
-    tab_pf = powerflow_table(sv_Bus(:), cv_Vbus, cv_Ibus);
+    rm_pf = powerflow_matrix(cv_Vbus, cv_Ibus);
     sct_solver = struct("solver", "equilibrium", "options", struct("Method","equilibrium","Tolerance",tol), ...
         "flag", flag, "output", output, "elapsed", toc(t0));
-    result = format_powerflow(s_format, tab_pf, @() ResultPF(tab_pf, cm_Y, struct(obj, false), sct_solver));
+    result = format_powerflow(s_format, sv_Bus(:), rm_pf, ...
+        @() ResultPF(powerflow_table(sv_Bus(:), rm_pf), cm_Y, struct(obj, false), sct_solver));
 end

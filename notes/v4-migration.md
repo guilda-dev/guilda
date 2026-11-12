@@ -484,7 +484,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 | `net.calculate_powerflow("dynamic", "export", true, "filename", f)` | `res = net.calculate_powerflow(Solver="dynamic"); res.export(f)` (`.json`) |
 | `net.solver_PF.rm_response`, `rr_step`, `i_iteration` | `res.cm_Vhistory`, `res.rv_step` |
 
-- **最初の出力は `Format` で選びます(2026-11-12)。** 既定の `"GUILDAorigin"` は `ResultPF`、`"V"` は母線の複素電圧の列、`"powerflow(mat)"` は V・I・P・Q の n×4 の複素行列、`"powerflow(tab)"` は同じ内容の table です。`initialize` も同じ値の `Format` を取りますが、既定は `"V"` です。`initialize` の結果から `res.tab_bus` などを読むスクリプトには `Format="GUILDAorigin"` が必要です。詳細は [powerflow-structure.md](powerflow-structure.md)。
+- **最初の出力は `Format` で選びます(2026-11-12)。** 既定の `"GUILDAorigin"` は `ResultPF`、`"V"` は母線の複素電圧の列、`"powerflow(mat)"` は V・I・P・Q の n×4 の複素行列、`"powerflow(tab)"` は同じ内容の table です。`initialize` も同じ値の `Format` を取りますが、既定は `"powerflow(mat)"`(平衡点に書く V・I・P・Q の n×4 の配列)です。`initialize` の結果から `res.tab_bus` などを読むスクリプトには `Format="GUILDAorigin"` が必要です。詳細は [powerflow-structure.md](powerflow-structure.md)。
 - **v3 の呼び出し形式は使えません(2026-11-12)。** 位置引数の mode(`calculate_powerflow("dynamic")`)と `"export"` / `"filename"` は、互換の変換をせずエラーになります。`Solver=` と `res.export(f)` を使ってください。
 - **`Export` オプションはありません(2026-11-12)。** 書き出しは結果のメソッド `res.export(...)` だけです(`initialize` も `Export` を受け付けません)。
 - オプション: `Solver`(`"newton"` | `"gradient"` | `"levenberg-marquardt"` | `"fsolve"` | `"dynamic"`。開発版の `Method` から改名)、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`、`PlotFcn`、`Format`。v3 の潮流計算(fsolve)は `Solver="fsolve"` で、Optimization Toolbox が必要です。

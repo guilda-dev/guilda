@@ -98,14 +98,16 @@
           <td><code>Format</code></td>
           <td lang="en" data-label="Values and default"><ul>
             <li>Form of the first output, with the values of <code>calculate_powerflow</code> (whose default is <code>"GUILDAorigin"</code>); <code>flag</code> and <code>output</code> stay the 2nd and 3rd outputs</li>
-            <li><code>"V"</code> (default): complex bus voltages of the operating point, a column in <code>net.a_Bus</code> order</li>
+            <li><code>"powerflow(mat)"</code> (default): the n_bus × 4 array that <code>initialize</code> writes with <code>Bus.set_equilibrium</code> (no extra work)</li>
+            <li><code>"V"</code>: complex bus voltages of the operating point, a column in <code>net.a_Bus</code> order</li>
             <li><code>"powerflow(mat)"</code>: n_bus × 4 complex double; columns <code>V</code>, <code>I</code> (phasors), <code>P</code>, <code>Q</code> (real) [pu]</li>
             <li><code>"powerflow(tab)"</code>: the same as a table with variables <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code>; row names = bus tags</li>
             <li><code>"GUILDAorigin"</code>: the result object; <code>ResultPF</code> (<code>"powerflow"</code>, <code>"FixedInput"</code>, <code>"equilibrium"</code>) or <code>ResultOPF</code> (<code>"OPF"</code>)</li>
           </ul><small>Taken out by <code>take_format</code> before the other options are passed on</small></td>
           <td lang="ja" data-label="値と既定値"><ul>
             <li>最初の出力の形です。<code>calculate_powerflow</code> と同じ値を取ります（<code>calculate_powerflow</code> の既定は <code>"GUILDAorigin"</code>）。<code>flag</code> と <code>output</code> は、どの値でも 2 番目と 3 番目の出力です。</li>
-            <li><code>"V"</code>（既定）: 運転点の母線の複素電圧です。<code>net.a_Bus</code> の順の列ベクトルです。</li>
+            <li><code>"powerflow(mat)"</code>（既定）: <code>initialize</code> が <code>Bus.set_equilibrium</code> で書き込む n_bus × 4 の配列そのものです（余分な処理はありません）。</li>
+            <li><code>"V"</code>: 運転点の母線の複素電圧です。<code>net.a_Bus</code> の順の列ベクトルです。</li>
             <li><code>"powerflow(mat)"</code>: n_bus × 4 の複素数の行列です。列は <code>V</code>、<code>I</code>（フェーザ）、<code>P</code>、<code>Q</code>（実数）[pu] です。</li>
             <li><code>"powerflow(tab)"</code>: 同じ内容の table です。変数は <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code>、行名は母線のタグです。</li>
             <li><code>"GUILDAorigin"</code>: 結果のオブジェクトです。<code>"powerflow"</code>、<code>"FixedInput"</code>、<code>"equilibrium"</code> では <code>ResultPF</code>、<code>"OPF"</code> では <code>ResultOPF</code> です。</li>
@@ -287,7 +289,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>GUILDA.config("PowerFlowCalculation")</code>, <code>net.solver_PF</code> (warm start), <code>c_nv</code>, <code>Format</code>, <code>Bus.l_isSlack</code>, <code>tab_parameter.powerflow</code></span><span lang="ja"><code>GUILDA.config("PowerFlowCalculation")</code>、<code>net.solver_PF</code>（ウォームスタート）、<code>c_nv</code>、<code>Format</code>、<code>Bus.l_isSlack</code>、<code>tab_parameter.powerflow</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>tab_pf</code> (<code>Format="powerflow(tab)"</code> of <code>calculate_powerflow</code>: <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code> [pu], one row per bus), and the first output in <code>Format</code>; only <code>Format="GUILDAorigin"</code> requests a <code>ResultPF</code>, whose <code>tab_bus</code> gives <code>tab_pf</code>; may set <code>l_isSlack</code> of one bus</span><span lang="ja"><code>tab_pf</code>（<code>calculate_powerflow</code> の <code>Format="powerflow(tab)"</code>。母線ごとの <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code> [pu]）と、<code>Format</code> の形の最初の出力を返します。<code>ResultPF</code> を求めるのは <code>Format="GUILDAorigin"</code> のときだけで、そのときは <code>tab_bus</code> から <code>tab_pf</code> を作ります。母線 1 つの <code>l_isSlack</code> を設定することがあります。</span></dd>
+          <dd><span lang="en"><code>rm_pf</code> (<code>Format="powerflow(mat)"</code> of <code>calculate_powerflow</code>: n_bus × 4, columns <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code> [pu]), and the first output in <code>Format</code>; only <code>Format="GUILDAorigin"</code> requests a <code>ResultPF</code>, whose <code>tab_bus</code> gives <code>rm_pf</code>; may set <code>l_isSlack</code> of one bus</span><span lang="ja"><code>rm_pf</code>（<code>calculate_powerflow</code> の <code>Format="powerflow(mat)"</code>。n_bus × 4 で、列は <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code> [pu]）と、<code>Format</code> の形の最初の出力を返します。<code>ResultPF</code> を求めるのは <code>Format="GUILDAorigin"</code> のときだけで、そのときは <code>tab_bus</code> から <code>rm_pf</code> を作ります。母線 1 つの <code>l_isSlack</code> を設定することがあります。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-03b">
@@ -346,7 +348,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>result.tab_bus</code> (<code>Vphasor</code>, <code>Iphasor</code>) and <code>result.tab_cub{tags, ["P","Q"]}</code> of the <code>ResultOPF</code></span><span lang="ja"><code>ResultOPF</code> の <code>result.tab_bus</code>（<code>Vphasor</code>、<code>Iphasor</code>）と <code>result.tab_cub{tags, ["P","Q"]}</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>tab_pf</code> (<code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code> of each bus); <code>c_PQ</code>: n_bus × 1 cell, each n_comp × 2 [pu] or <code>[]</code>; with a <code>Format</code> other than <code>"GUILDAorigin"</code>, the first output is built from <code>tab_pf</code></span><span lang="ja"><code>tab_pf</code>（各母線の <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code>）と、<code>c_PQ</code>（n_bus × 1 のセル配列。各要素は n_comp × 2 [pu] または <code>[]</code>）を返します。<code>Format</code> が <code>"GUILDAorigin"</code> でないときは、最初の出力を <code>tab_pf</code> から作ります。</span></dd>
+          <dd><span lang="en"><code>rm_pf</code> (n_bus × 4: <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code> of each bus); <code>c_PQ</code>: n_bus × 1 cell, each n_comp × 2 [pu] or <code>[]</code>; with a <code>Format</code> other than <code>"GUILDAorigin"</code>, the first output is built from <code>rm_pf</code></span><span lang="ja"><code>rm_pf</code>（n_bus × 4。各母線の <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code>）と、<code>c_PQ</code>（n_bus × 1 のセル配列。各要素は n_comp × 2 [pu] または <code>[]</code>）を返します。<code>Format</code> が <code>"GUILDAorigin"</code> でないときは、最初の出力を <code>rm_pf</code> から作ります。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-05">
@@ -544,12 +546,12 @@
     <!-- ============================== DATA ============================== -->
     <h2 id="data"><span lang="en">Data the feature produces</span><span lang="ja">この機能が生成するデータ</span></h2>
     <ul lang="en">
-      <li>First output: the operating point of step 03 in the form of <code>Format</code> (default <code>"V"</code>, the complex bus voltages); with <code>"GUILDAorigin"</code>, <code>ResultPF</code> for <code>"powerflow"</code>, <code>"FixedInput"</code> and <code>"equilibrium"</code>, <code>ResultOPF</code> for <code>"OPF"</code></li>
+      <li>First output: the operating point of step 03 in the form of <code>Format</code> (default <code>"powerflow(mat)"</code>, the n_bus × 4 array of V, I, P, Q that is written); with <code>"GUILDAorigin"</code>, <code>ResultPF</code> for <code>"powerflow"</code>, <code>"FixedInput"</code> and <code>"equilibrium"</code>, <code>ResultOPF</code> for <code>"OPF"</code></li>
       <li><code>result.tab_bus</code> of the result object: the bus equilibrium in every case</li>
       <li>The equilibrium itself: stored on the model objects, each on its owner</li>
     </ul>
     <ul lang="ja">
-      <li>最初の出力は、ステップ 03 の運転点を <code>Format</code> の形にしたものです（既定は <code>"V"</code>、母線の複素電圧）。<code>"GUILDAorigin"</code> では、<code>"powerflow"</code>、<code>"FixedInput"</code>、<code>"equilibrium"</code> で <code>ResultPF</code>、<code>"OPF"</code> で <code>ResultOPF</code> です。</li>
+      <li>最初の出力は、ステップ 03 の運転点を <code>Format</code> の形にしたものです（既定は <code>"powerflow(mat)"</code>、書き込む V・I・P・Q の n_bus × 4 の配列）。<code>"GUILDAorigin"</code> では、<code>"powerflow"</code>、<code>"FixedInput"</code>、<code>"equilibrium"</code> で <code>ResultPF</code>、<code>"OPF"</code> で <code>ResultOPF</code> です。</li>
       <li>結果のオブジェクトの <code>result.tab_bus</code> は、どの場合も母線の平衡点を表します。</li>
       <li>平衡点そのものは、所有者ごとにモデルのオブジェクトに保存します。</li>
     </ul>

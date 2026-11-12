@@ -287,14 +287,23 @@ assert(isequal(string(tab.Properties.VariableNames), ["V","I","P","Q"]))
 assert(isequal(string(tab.Properties.RowNames), string(net.a_Bus)) && isreal(tab.P) && isreal(tab.Q))
 assert(max(abs(tab{:,:} - mat), [], "all") < 1e-12)
 assert(error_id(@() net.calculate_powerflow(Format="table")) == "MATLAB:validators:mustBeMember")
-% initialize も同じ Format の値を取る (既定は "V")
-V0 = DebugScript.helper.quiet(@() net.initialize(Method="powerflow"));
+% initialize も同じ Format の値を取る。既定は set_equilibrium に書く n×4 の配列 "powerflow(mat)"
+mat0 = DebugScript.helper.quiet(@() net.initialize(Method="powerflow"));
+assert(isequal(size(mat0), [numel(net.a_Bus), 4]) && max(abs(mat0 - mat), [], "all") < 1e-8)
+assert(max(abs(mat0(:,1) - net.cv_Vequilibrium)) < 1e-12 && max(abs(mat0(:,2) - net.cv_Iequilibrium)) < 1e-12)
+V0 = DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Format="V"));
 assert(max(abs(V0 - V)) < 1e-8)
 tab0 = DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Format="powerflow(tab)"));
 assert(max(abs(tab0.V - tab.V)) < 1e-8 && isequal(string(tab0.Properties.VariableNames), ["V","I","P","Q"]))
 assert(isa(DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Format="GUILDAorigin")), "ResultPF"))
-mat_eq = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium", Format="powerflow(mat)"));
+mat_eq = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium"));
 assert(max(abs(mat_eq - mat), [], "all") < 1e-6)
+V_eq = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium", Format="V"));
+assert(max(abs(V_eq - mat(:,1))) < 1e-6)
+mat_fi = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput"));
+assert(isequal(size(mat_fi), [numel(net.a_Bus), 4]) && max(abs(abs(mat_fi(:,1)) - abs(mat(:,1)))) < 1e-6)
+tab_fi = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput", Format="powerflow(tab)"));
+assert(istable(tab_fi) && max(abs(tab_fi.V - mat_fi(:,1))) < 1e-8)
 assert(error_id(@() net.initialize(Format="table")) == "MATLAB:validators:mustBeMember")
 % 書き出しは結果のメソッド (res.export) だけ。calculate_powerflow と initialize に Export オプションはない
 assert(error_id(@() net.calculate_powerflow(Export="pf.csv")) ~= "")

@@ -294,7 +294,7 @@
           <path class="dg-sv-line is-muted" d="M34 490H184" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="482" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="494" text-anchor="middle" style="font-size:10px">10</text>
-          <text class="dg-mono is-sm fpf-l" x="202" y="484" text-anchor="start">ResultPF(tab_pf, cm_Y, struct(net, false), sct_solver)</text>
+          <text class="dg-mono is-sm fpf-l" x="202" y="484" text-anchor="start">ResultPF(tab, cm_Y, struct(net, false), sct_solver)</text>
           <path class="dg-sv-line is-muted" d="M190 522H89" marker-end="url(#fpf-ah-m)"/>
           <text class="dg-mono is-sm fpf-l" x="186" y="516" text-anchor="end">[result, flag, output]</text>
         </svg>
@@ -513,18 +513,20 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li><code>powerflow_table</code>: <code>I = Y*V</code>, <code>S = V.*conj(I)</code>; table of V, I, P = real(S), Q = imag(S), row names = bus tags</li>
-            <li><code>format_powerflow</code>: the first output by <code>Format</code> (see the <a href="#entry">options table</a>)</li>
+            <li><code>"V"</code>: returns <code>cv_V</code> as it is; nothing else is built</li>
+            <li>Other values: <code>powerflow_matrix</code> computes <code>I = Y*V</code>, <code>S = V.*conj(I)</code> and the n_bus×4 array of V, I, P = real(S), Q = imag(S)</li>
+            <li><code>format_powerflow</code>: the first output by <code>Format</code> (see the <a href="#entry">options table</a>); <code>powerflow_table</code> builds a table only for <code>"powerflow(tab)"</code> and for the <code>ResultPF</code></li>
             <li>It calls the <code>ResultPF</code> constructor (PF-10) only for <code>"GUILDAorigin"</code>; the other forms build no result and no network snapshot</li>
           </ul><ul lang="ja">
-            <li><code>powerflow_table</code> は <code>I = Y*V</code> と <code>S = V.*conj(I)</code> を求め、V、I、P = real(S)、Q = imag(S) の table を作ります。行名は母線のタグです。</li>
-            <li><code>format_powerflow</code> が、<code>Format</code> に応じて最初の出力を作ります（<a href="#entry">オプションの表</a>を参照）。</li>
+            <li><code>"V"</code> では <code>cv_V</code> をそのまま返し、ほかには何も作りません。</li>
+            <li>ほかの値では、<code>powerflow_matrix</code> が <code>I = Y*V</code> と <code>S = V.*conj(I)</code> を求め、V、I、P = real(S)、Q = imag(S) の n_bus×4 の配列を作ります。</li>
+            <li><code>format_powerflow</code> が、<code>Format</code> に応じて最初の出力を作ります（<a href="#entry">オプションの表</a>を参照）。table を作る（<code>powerflow_table</code>）のは、<code>"powerflow(tab)"</code> と <code>ResultPF</code> のときだけです。</li>
             <li><code>ResultPF</code> のコンストラクタ（PF-10）を呼ぶのは <code>"GUILDAorigin"</code> のときだけです。ほかの形では、結果のオブジェクトもネットワークのスナップショットも作りません。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>cv_V</code>, <code>cm_Y</code>, <span lang="en">bus tags</span><span lang="ja">母線のタグ</span>, <code>opt.Format</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>tab_pf</code> <span lang="en">(n_bus×4 table)</span><span lang="ja">（n_bus×4 の table）</span>, <code>result</code></dd>
+          <dd><code>rm_pf</code> <span lang="en">(n_bus×4 array)</span><span lang="ja">（n_bus×4 の配列）</span>, <code>result</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-10">
@@ -533,16 +535,16 @@
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Only for <code>Format="GUILDAorigin"</code></li>
-            <li>Inputs: <code>tab_pf</code>, <code>cm_Y</code>, the snapshot <code>struct(net, false)</code> (a nested struct without handles), and <code>sct_solver</code> (solver class name, <code>sct_options</code>, flag, output, elapsed time, <code>cm_Vhistory</code>, <code>rv_step</code>, <code>tab_PFcondition</code>)</li>
+            <li>Inputs: the table of <code>powerflow_table</code>, <code>cm_Y</code>, the snapshot <code>struct(net, false)</code> (a nested struct without handles), and <code>sct_solver</code> (solver class name, <code>sct_options</code>, flag, output, elapsed time, <code>cm_Vhistory</code>, <code>rv_step</code>, <code>tab_PFcondition</code>)</li>
             <li><code>ResultBase</code> receives <code>[]</code> as the network; <code>ResultPF</code> sets <code>s_network</code> from the tag of the snapshot</li>
-            <li><code>tab_bus</code> from <code>tab_pf</code> (<code>private/bus_table</code>)</li>
+            <li><code>tab_bus</code> from that table (<code>private/bus_table</code>)</li>
             <li><code>tab_branch</code> (<code>private/branch_flow</code>): current and power into each branch at both ends (from = <code>a_Bus{1}</code>, to = <code>a_Bus{2}</code>), with the 2×2 matrix <code>cm_Y</code> of the branch in the snapshot, which <code>Branch.struct</code> adds from <code>get_admittance_matrix</code> (every branch class, also one of your own)</li>
             <li><code>tab_violation</code> (<code>private/violation_table</code>) from the <code>operation</code> parameters of the snapshot, only when the calculation converged</li>
           </ul><ul lang="ja">
             <li><code>Format="GUILDAorigin"</code> のときだけ実行します。</li>
-            <li>入力は <code>tab_pf</code>、<code>cm_Y</code>、スナップショット <code>struct(net, false)</code>（ハンドルを含まない入れ子の構造体）、<code>sct_solver</code>（ソルバーのクラス名、<code>sct_options</code>、flag、output、経過時間、<code>cm_Vhistory</code>、<code>rv_step</code>、<code>tab_PFcondition</code>）です。</li>
+            <li>入力は <code>powerflow_table</code> の table、<code>cm_Y</code>、スナップショット <code>struct(net, false)</code>（ハンドルを含まない入れ子の構造体）、<code>sct_solver</code>（ソルバーのクラス名、<code>sct_options</code>、flag、output、経過時間、<code>cm_Vhistory</code>、<code>rv_step</code>、<code>tab_PFcondition</code>）です。</li>
             <li><code>ResultBase</code> にはネットワークとして <code>[]</code> を渡します。<code>s_network</code> は、<code>ResultPF</code> がスナップショットのタグから設定します。</li>
-            <li><code>tab_bus</code> は <code>tab_pf</code> から作ります（<code>private/bus_table</code>）。</li>
+            <li><code>tab_bus</code> はその table から作ります（<code>private/bus_table</code>）。</li>
             <li><code>tab_branch</code>（<code>private/branch_flow</code>）は、各ブランチの両端でブランチに流れ込む電流と電力です（from は <code>a_Bus{1}</code>、to は <code>a_Bus{2}</code>）。2×2 行列には、スナップショットのブランチのフィールド <code>cm_Y</code> を使います。<code>Branch.struct</code> が <code>get_admittance_matrix</code> から加えるので、利用者が作ったものも含め、どのブランチのクラスでも求まります。</li>
             <li><code>tab_violation</code>（<code>private/violation_table</code>）は、スナップショットの <code>operation</code> パラメータから作ります。計算が収束したときだけです。</li>
           </ul></dd>
@@ -612,12 +614,12 @@
     </table>
     <ul lang="en">
       <li>Nothing stored back on the model objects</li>
-      <li><code>net.initialize()</code> (Method <code>"powerflow"</code>) calls <code>calculate_powerflow</code> with <code>Format="powerflow(tab)"</code> (<code>"GUILDAorigin"</code> when its own <code>Format</code> is <code>"GUILDAorigin"</code>) and writes V, I, P, Q of each bus with <code>Bus.set_equilibrium</code></li>
+      <li><code>net.initialize()</code> (Method <code>"powerflow"</code>) calls <code>calculate_powerflow</code> with <code>Format="powerflow(mat)"</code> (<code>"GUILDAorigin"</code> when its own <code>Format</code> is <code>"GUILDAorigin"</code>) and writes the columns V, I, P, Q of each row with <code>Bus.set_equilibrium</code></li>
       <li><code>Bus.set_equilibrium</code> sets <code>Bus.c_Vequilibrium</code> and distributes P and Q to <code>Component.set_equilibrium</code> (see <a href="feature-initialize.html">Initialization</a>)</li>
     </ul>
     <ul lang="ja">
       <li>モデルのオブジェクトには何も書き戻しません。</li>
-      <li><code>net.initialize()</code>（Method <code>"powerflow"</code>）は <code>calculate_powerflow</code> を <code>Format="powerflow(tab)"</code> で呼び出し（自分の <code>Format</code> が <code>"GUILDAorigin"</code> のときは <code>"GUILDAorigin"</code>）、各母線の V、I、P、Q を <code>Bus.set_equilibrium</code> で書き込みます。</li>
+      <li><code>net.initialize()</code>（Method <code>"powerflow"</code>）は <code>calculate_powerflow</code> を <code>Format="powerflow(mat)"</code> で呼び出し（自分の <code>Format</code> が <code>"GUILDAorigin"</code> のときは <code>"GUILDAorigin"</code>）、配列の各行の V、I、P、Q の列を <code>Bus.set_equilibrium</code> で書き込みます。</li>
       <li><code>Bus.set_equilibrium</code> は <code>Bus.c_Vequilibrium</code> を設定し、P と Q を <code>Component.set_equilibrium</code> で機器に配分します（<a href="feature-initialize.html">初期化</a>を参照）。</li>
     </ul>
 
