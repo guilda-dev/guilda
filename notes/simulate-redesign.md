@@ -1,6 +1,6 @@
 # `simulate` と `SolverODE` の再設計(仕様)
 
-ブランチは `docs/simulate-redesign-spec` です。調査の基準コミットは `9940b9d6` で、2026-11-12 の利用者の回答(§0.2, §0.3)を反映した版の基準は `c3dc7b05`(`refactor/design-alignment`)です。**この文書は仕様で、コードは変えていません。** §7 の手順でサブセッションに分けて実装します。
+ブランチは `docs/simulate-redesign-spec` です。調査の基準コミットは `9940b9d6` で、2026-11-12 の利用者の回答(§0.2-§0.4)を反映した版の基準は `514cde71`(`refactor/design-alignment`、潮流計算の再設計の統合を含む)です。**この文書は仕様で、コードは変えていません。** §7 の手順でサブセッションに分けて実装します。
 
 **根拠の区別**
 
@@ -33,7 +33,7 @@
 | Q3 | `add_scenario` のタグが系統の子と重なったら、`set.s_tag` と同じ規則で番号を足して改名し、新しいタグを INFO で示す。エラーにしない | §2.2, §6.3, §8 |
 | Q4 | `remove_scenario` はシナリオを削除する | §2.3 |
 | Q5 | `add_scenario(tag, From=sc)`。`sc.copy()` は削除 | §2.2, §6 |
-| Q6 | `SolverOptions` は**残す**(将来、Y 法を手本にした固定刻みの自作ソルバーを加える可能性がある)。`MaxStep` と `InitialStep` も設定に加え、呼び出しで上書きできるようにする | §2.1, §2.7, §3.1 |
+| Q6 | **§0.4 で変更: `SolverOptions` は削除。** 以下は当初の回答: `SolverOptions` は残す(将来、Y 法を手本にした固定刻みの自作ソルバーを加える可能性がある)。`MaxStep` と `InitialStep` も設定に加え、呼び出しで上書きできるようにする | §2.1, §2.7, §3.1 |
 | Q7 | `Progress` の true/false は残す | §2.1 |
 | Q8 | `ResultODE` は `sct_network` のスナップショットを持つ | §5.2 |
 | Q9 | `Format="struct"` はモデルの階層を写した struct(`sol.a_Bus{i}.a_Component{j}.x` など)で、各物体の応答は変数名を列名とする table。形は追加の回答(2026-11-12)で確定。出力 `.y` を加えるかは確認待ち | §5.1, §5.3, §8.2, §9.2 |
@@ -52,6 +52,19 @@
 | R3 | **シナリオは関数ハンドルを一切持たない。** 持つのは外乱の種類、時間、対象、時系列のデータだけ。`Judge` を削除し、関数の `InputValue` は時系列のデータ(`[t, 値]`、`SolverODE` が補間)か一定値に置き換える。シナリオの JSON は単純なデータだけになり、`Judge` の項目、`ScenarioJudgeNotSaved`、`ScenarioFunctionHandle` はなくなる | §2.2, §2.4, §2.8, §2.9, §2.10, §3.4, §4.1, §6, §7, §8 |
 | 改名 | `PowerNetwork.import_csv` → `PowerNetwork.import`、`export_csv` → `export`(データが CSV だけではなくなるため)。`import` は MATLAB の組み込み関数なので、実装の最初に R2026a で定義と呼び出しを確かめ、だめなら代わりの名前にする | §2.11, §6, §7, §8 |
 | 説明 | `SolverOptions` とは何か、`Method` はあるか、の説明を加える | §2.1, §2.7 |
+
+### 0.4 追加の決定(2026-11-12)
+
+| # | 決定 | 反映した節 |
+|---|---|---|
+| SolverOptions | **`SolverOptions` を削除する**(Q6 の回答を取り消す)。`MaxStep` と `InitialStep` は設定のまま、呼び出しで上書きできる | §2.1, §2.6, §2.7, §3.1, §6, §8 |
+| 停止条件 | 回転子角の差がしきい値を超えたら実行を止める `StopOnOutOfStep`(logical)と `StopAngle`([deg])を、設定と呼び出しの上書きで加える | §2.1, §2.7, §2.12, §3.2, §4.5, §8 |
+| 出力の時刻 | 結果を一定の時間間隔で記録する `SampleTime` を、設定と呼び出しの上書きで加える。NaN か 0 はソルバーの刻み(既定) | §2.1, §2.7, §2.13, §5, §8 |
+| R4 | 推奨どおり: IEEJ の検証スクリプトはローカル関数で CSV を読み、`add_scenario` と `add_disturbance` を呼ぶ | §2.8 |
+| R5 | 推奨どおり。[事実] 潮流計算の作業(`514cde71` に統合)が `ResultBase` とすべての結果クラス(`ResultODE` を含む)の `Export` を `export` に改名済み | §1.6, §5.4, §7 |
+| R6 | 推奨どおり: 判定は `ResultODE.judge_out_of_step` | §2.9 |
+| R7 | 入力の時系列の補間は、外乱を加えるときに `Method` で選ぶ: `"zoh"`(0 次ホールド)、`"foh"`(1 次、線形)、`"spline"`。最後の点の後は値を保ち、時刻は外乱の開始から | §2.10, §2.8, §3.4, §4.1, §8 |
+| R8, R9 | 未決(利用者に再確認中) | §9.2 |
 
 ## 1. 現状の構造: `SolverODE` が系統を読む箇所
 
@@ -133,7 +146,9 @@
 
 ### 1.6 `Export` の置き場所 [事実]
 
-`Export` は `ResultBase` の約束です。`@ResultBase/ResultBase.m:85` が `varargout = Export(obj, varargin)` を宣言し、既定の `@ResultBase/Export.m` は `error_unsupported("Export")`(`GUILDA:ResultBase:Unsupported`)で止まります。`ResultPF`, `ResultOPF`, `ResultCPF`, `ResultODE` がそれぞれ `Export.m` で上書きし、`calculate_powerflow`, `optimize_powerflow`, `calculate_continuation_powerflow`, `simulate` が `Export` オプションから呼びます。共有の補助関数はありません。**したがって `ResultODE.Export` だけを `export` に改名すると、継承した `Export`(エラー)と `export` の両方が残ります。** 改名は `ResultBase` と全結果クラスで揃える必要があります(§5.4、§7 の注意)。
+`Export` は `ResultBase` の約束です。`@ResultBase/ResultBase.m:85` が `varargout = Export(obj, varargin)` を宣言し、既定の `@ResultBase/Export.m` は `error_unsupported("Export")`(`GUILDA:ResultBase:Unsupported`)で止まります。`ResultPF`, `ResultOPF`, `ResultCPF`, `ResultODE` がそれぞれ `Export.m` で上書きし、`calculate_powerflow`, `optimize_powerflow`, `calculate_continuation_powerflow`, `simulate` が `Export` オプションから呼びます。共有の補助関数はありません。**したがって `ResultODE.Export` だけを `export` に改名すると、継承した `Export`(エラー)と `export` の両方が残ります。** 改名は `ResultBase` と全結果クラスで揃える必要がありました。
+
+**`514cde71` での状態 [事実]:** 潮流計算の作業が、`ResultBase`(`@ResultBase/export.m`)と `ResultPF`, `ResultOPF`, `ResultCPF`, `ResultODE` の `Export` をすべて `export` に改名し、`calculate_powerflow` の `Export` オプションを削除しました。`simulate` には `Export` オプションが残り、`result.export(...)` を呼んでいます(`simulate.m:86, 95-98`)。この再設計で残るのは、`simulate` の `Export` オプションの削除だけです(§5.4)。
 
 ### 1.7 系統のフォルダとシナリオの CSV [事実]
 
@@ -152,12 +167,14 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
         s_scenario (1,1) string {mustBeScenarioOf(obj, s_scenario)}   % Tag of the scenario to run (net.add_scenario).
         opt.Time (1,2) double {mustBeSimulationTime}   % [s] Simulation time [t0, tend] of this call. Default: the Time of the scenario.
         opt.Solver (1,1) string {mustBeMember(opt.Solver, ["ode15s","ode23t"])}   % Solver of the MATLAB ode object. Default: GUILDA.setting.
-        opt.SolverOptions (1,1) matlab.ode.Options   % Options of the solver (e.g. MaxOrder); its class must match Solver. Default: the options of the Solver.
         opt.Tolerance (1,1) double {mustBeInRange(opt.Tolerance, 1e-15, 1e-3)}   % Relative error tolerance. Default: GUILDA.setting.
         opt.AbsoluteTolerance (1,1) double {mustBeInRange(opt.AbsoluteTolerance, 1e-15, 1e-3)}   % Absolute error tolerance. Default: GUILDA.setting.
         opt.MaxStep (1,1) double {mustBePositiveOrNaN}   % [s] Largest step of the solver; NaN for the solver default. Default: GUILDA.setting.
         opt.InitialStep (1,1) double {mustBePositiveOrNaN}   % [s] First step of each phase; NaN for the solver default. Default: GUILDA.setting.
         opt.SeparateComplexParts (1,1) logical   % SeparateComplexParts of the ode object. Default: GUILDA.setting.
+        opt.SampleTime (1,1) double {mustBeNonnegative}   % [s] Interval of the recorded times; NaN or 0 for the solver steps. Default: GUILDA.setting.
+        opt.StopOnOutOfStep (1,1) logical   % Stop the run when a rotor angle from the reference exceeds StopAngle. Default: GUILDA.setting.
+        opt.StopAngle (1,1) double {mustBePositive}   % [deg] Threshold of StopOnOutOfStep. Default: GUILDA.setting.
         opt.TimeLimit (1,1) double {mustBePositive}   % [s] Wall-clock limit of the whole run; Inf for none. Default: GUILDA.setting.
         opt.Progress {mustBeProgress}   % "dialog", "disp" or "none" (true: "dialog", false: "none"). Default: GUILDA.setting.
         opt.Verbose (1,1) logical   % Print the phases and the outcome. Default: GUILDA.setting.
@@ -166,8 +183,8 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
     end
     arguments (Output)
         result   % ResultODE (Format "GUILDAorigin") or a struct that mirrors the model hierarchy, with tables (Format "struct").
-        flag     % 1 completed, 0 stopped by TimeLimit, -1 stopped by the solver.
-        output   % Details: message, tEnd, phases, nPhases, nPhasesDone, isSparse, exception.
+        flag     % 1 completed, 2 stopped by StopOnOutOfStep, 0 stopped by TimeLimit, -1 stopped by the solver.
+        output   % Details: message, tEnd, phases, nPhases, nPhasesDone, isSparse, exception, outOfStep.
     end
 ```
 
@@ -181,30 +198,25 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
   for s_name = string(fieldnames(sct_cfg)).'
       sct_options.(s_name) = sct_cfg.(s_name).Value;
   end
-  if isfield(opt, "SolverOptions")       % the call's object keeps its own step sizes
-      sct_options.MaxStep = NaN;
-      sct_options.InitialStep = NaN;
-  end
   for s_name = setdiff(string(fieldnames(opt)).', ["Time","Format"])
       sct_options.(s_name) = opt.(s_name);      % this call only
   end
   sct_options.Progress = progress_mode(sct_options.Progress);   % true/false -> "dialog"/"none"
-  check_solver_options(sct_options);          % SolverOptions must match Solver (today validate_options)
   ```
 
   `TimeLimit` の設定値が正でないときは `Inf` にします(現行 `get_options.m:38-40` と同じ)。設定ファイルの値は `GUILDA.setting` の検査(type、options)に任せます。
-- **`SolverOptions` と `MaxStep`, `InitialStep` の優先順位 [提案]:** 呼び出しの `MaxStep` / `InitialStep` > 呼び出しの `SolverOptions` の値 > `GUILDA.setting` の `MaxStep` / `InitialStep` > ソルバーの既定。呼び出しで `SolverOptions` を渡したときは、設定ファイルの `MaxStep` / `InitialStep` を当てません(利用者が渡したオブジェクトの値を設定ファイルが黙って変えないため)。`SolverOptions` のクラスが `Solver` と合わないときは現行どおり止まります(`@SolverODE/private/validate_options.m` の検査を `simulate` へ移す)。
-- **`Solver` と `SolverOptions`(と `Method` がないこと)[決定、説明]:**
+- **`MaxStep`, `InitialStep` の優先順位:** 呼び出しの値 > `GUILDA.setting` の値 > ソルバーの既定(設定が NaN のとき)。
+- **`Solver` と、`SolverOptions` も `Method` もないこと [決定 §0.4、説明]:**
   - `Solver` は積分のアルゴリズムを選びます(`"ode15s"` / `"ode23t"`)。潮流計算の再設計と同じく「`Solver` = アルゴリズム」の規則です。
-  - `SolverOptions` は、選んだソルバーの `matlab.ode.Options` オブジェクト(`matlab.ode.options.ODE15s` など)で、`MaxStep`、`InitialStep`、`MaxOrder`、`BDF` などそのソルバー固有の設定を持ちます。呼び出しだけで渡します。
-  - `simulate` に別の `Method` オプションはありません。`Method` という名前は `initialize` の平衡点の求め方などに使っており、時間応答ではアルゴリズムの選択も `Solver` です。
-  - **重なり:** `MaxStep` と `InitialStep` は `SolverOptions` のフィールドでもあるので、`simulate` の Name-Value(と設定)の `MaxStep` / `InitialStep` と重なります。設定ファイルに保存できるのは後者だけ(`matlab.ode.Options` は JSON に書けない)なので、よく使う 2 つだけを別の名前でも受け、重なりは下の優先順位で解きます。両方を与えたときはエラーにせず、Name-Value の `MaxStep` / `InitialStep` が勝ちます(`SolverOptions` を使い回しながら刻みだけ変えられるように)。
-- **将来の固定刻みソルバー [決定 Q6 の背景]:** Y 法を手本にした自作ソルバーを加えるときは、`Solver` の選択肢を増やし、`SolverODE.solve` の中で `ode` オブジェクトの代わりにそのソルバーを使います。`sct_dae` などのデータの約束(§3)は MATLAB の `ode` に依存しないように作るので、モデル側の変更は要りません。そのソルバーの設定を `SolverOptions` で渡すかどうかは、そのときに決めます(`opt.SolverOptions` の型を `matlab.ode.Options` から広げる)。
-- **検証関数の置き場所 [提案]:** `mustBeScenarioOf`、`mustBePositiveOrNaN`、`mustBeProgress`、`mustBePlotFcn` は `@PowerNetwork/private/` に置きます。`mustBeSimulationTime` は今 `@Scenario/private/` にあり、`PowerNetwork` からは呼べないので、`_GUILDAsystem/_auxiliary/SystemTools/` 直下へ移して両方から使います。`mustBePlotFcn` は `refactor/powerflow-structure` の `calculate_powerflow` も使う名前なので、統合の順で重複しないよう、後から入る側が既存のものを使います(§7 の注意)。
+  - `SolverOptions`(MATLAB の `matlab.ode.Options` オブジェクトを渡すオプション)は削除します。そのうち使われていた刻みの設定は `MaxStep` と `InitialStep` として、設定ファイルに保存でき、呼び出しで上書きできます。`MaxOrder`、`BDF` など、ほかのソルバー固有の設定は受けません(要望が出たら設定として加えます)。これで、同じ設定を 2 か所から与える重なりはなくなります。
+  - `simulate` に別の `Method` オプションはありません。`Method` という名前は `initialize` の平衡点の求め方と、入力の時系列の補間(§2.10)に使います。
+- **将来の固定刻みソルバー:** Y 法を手本にした自作ソルバーを加えるときは、`Solver` の選択肢を増やし、`SolverODE.solve` の中で `ode` オブジェクトの代わりにそのソルバーを使います。`sct_dae` などのデータの約束(§3)は MATLAB の `ode` に依存しないように作るので、モデル側の変更は要りません。そのソルバーの設定(刻み幅など)は、TimeSimulation の設定として加えます。
+- **検証関数の置き場所 [提案]:** `mustBeScenarioOf`、`mustBePositiveOrNaN`、`mustBeProgress`、`mustBePlotFcn` は `@PowerNetwork/private/` に置きます。`mustBeSimulationTime` は今 `@Scenario/private/` にあり、`PowerNetwork` からは呼べないので、`_GUILDAsystem/_auxiliary/SystemTools/` 直下へ移して両方から使います。[事実] `mustBePlotFcn` は `calculate_powerflow.m:151` のローカル関数として統合済みです。`simulate` も使うので、S4 で `@PowerNetwork/private/mustBePlotFcn.m` に移して共有します。
 - **`mustBeScenarioOf` のエラー [提案]:** `GUILDA:PowerNetwork:ScenarioNotFound`(既存のキー)。本文に系統のシナリオのタグを最大 10 個並べ、`net.add_scenario` を案内します。シナリオがない系統では「`net.add_scenario("name")` で作る(`Time` の既定は `[0, 10]`)」と案内します。
 - **`output` の内容**は現行と同じです(`message`, `tEnd`, `phases`, `nPhases`, `nPhasesDone`, `isSparse`, `exception`)。`output.phases` の列名は外乱のタグです。
-- **警告:** `flag ~= 1` のとき `GUILDA:PowerNetwork:SimulationIncomplete` を出すのは現行と同じです。
+- **警告:** `flag` が 0 か -1 のとき `GUILDA:PowerNetwork:SimulationIncomplete` を出すのは現行と同じです。`flag = 2`(`StopOnOutOfStep` で止めた)は利用者が求めた停止なので警告しません(§2.12)。
 - **`Export` オプションは削除 [決定 Q14]。** 書き出しは `result.export(...)` です(§5.4)。
+- **停止条件と出力の時刻:** `StopOnOutOfStep`, `StopAngle` は §2.12、`SampleTime` は §2.13 です。
 
 **`simulate` の処理順 [提案]**
 
@@ -367,12 +379,14 @@ end
     {"name":"s_scenario","kind":"required","type":[["string","choices=cellstr(string(obj.a_Scenario))"],["string"]]},
     {"name":"Time","kind":"namevalue","type":["double"]},
     {"name":"Solver","kind":"namevalue","type":["string","choices=cellstr([\"ode15s\",\"ode23t\"])"]},
-    {"name":"SolverOptions","kind":"namevalue","type":["matlab.ode.Options"]},
     {"name":"Tolerance","kind":"namevalue","type":["double"]},
     {"name":"AbsoluteTolerance","kind":"namevalue","type":["double"]},
     {"name":"MaxStep","kind":"namevalue","type":["double"]},
     {"name":"InitialStep","kind":"namevalue","type":["double"]},
     {"name":"SeparateComplexParts","kind":"namevalue","type":["logical"]},
+    {"name":"SampleTime","kind":"namevalue","type":["double"]},
+    {"name":"StopOnOutOfStep","kind":"namevalue","type":["logical"]},
+    {"name":"StopAngle","kind":"namevalue","type":["double"]},
     {"name":"TimeLimit","kind":"namevalue","type":["double"]},
     {"name":"Progress","kind":"namevalue"},
     {"name":"Verbose","kind":"namevalue","type":["logical"]},
@@ -385,16 +399,21 @@ end
 
 `remove_scenario` は `remove_branch` と同じ形、`add_scenario` は `From` の型 `Scenario` を持つ項になります。既定値のない引数は `purpose` に "Default:" が付かないので、ヘルプのコメントに "Default: GUILDA.setting." などを書きます(上の arguments ブロックのとおり)。`test_F34_signatures` の「build or remove a model」の一覧に `add_scenario`, `remove_scenario` を加えます。
 
-### 2.7 設定(`DefaultTimeSimulation.json`)[決定 Q6、提案]
+### 2.7 設定(`DefaultTimeSimulation.json`)[決定 Q6, §0.4、提案]
 
-| キー | 変更 |
-|---|---|
-| `MaxStep` | 追加。`"Value": NaN`(ソルバーの既定)、type double、"[s] Largest step of the solver; NaN for the solver default" |
-| `InitialStep` | 追加。`"Value": NaN`、type double、"[s] First step of each phase; NaN for the solver default" |
-| その他(`Solver`, `Tolerance`, `AbsoluteTolerance`, `SeparateComplexParts`, `Progress`, `TimeLimit`, `Verbose`, `PlotFcn`) | 変更なし |
-| `version` | 1 → 2(利用者の設定ファイルは INFO とともに既定に戻ります) |
+| キー | 変更 | `Type` | `Value` | `Description` |
+|---|---|---|---|---|
+| `MaxStep` | 追加 | `double` | `NaN` | "[s] Largest step of the solver; NaN for the solver default" |
+| `InitialStep` | 追加 | `double` | `NaN` | "[s] First step of each phase; NaN for the solver default" |
+| `SampleTime` | 追加 | `double` | `NaN` | "[s] Interval of the recorded times on a uniform grid from the start time; the start and end of each phase are also recorded. NaN or 0 records the steps of the solver" |
+| `StopOnOutOfStep` | 追加 | `logical` | `false` | "Stop the simulation when the rotor angle of a generator from the generator of the slack bus exceeds StopAngle (flag = 2)" |
+| `StopAngle` | 追加 | `double` | `360` | "[deg] Threshold of StopOnOutOfStep: largest allowed absolute rotor angle from the reference" |
+| その他(`Solver`, `Tolerance`, `AbsoluteTolerance`, `SeparateComplexParts`, `Progress`, `TimeLimit`, `Verbose`, `PlotFcn`) | 変更なし | | | |
+| `version` | 1 → 2(利用者の設定ファイルは INFO とともに既定に戻ります) | | | |
 
-`SolverOptions` は設定ファイルには入れず、呼び出しだけで渡します(`matlab.ode.Options` は JSON に書けないため。`Scenario.Options` がなくなるので、保存する場所は呼び出しだけになります)。`makeODE` は、`SolverOptions` があればそれを使い、`MaxStep` / `InitialStep` が NaN でなければそのフィールドに入れます(優先順位は §2.1)。どれも与えないときは何も設定しないので、数値は現行と同じです。[未確認] JSON の `NaN` の読み書き(`TimeLimit` の `Infinity` と同じく `jsondecode` が受けるか)は実装時に確かめます。
+- `makeODE` は `MaxStep` / `InitialStep` が NaN でなければ `o.SolverOptions` のそのフィールドに入れます。NaN のときは何も設定しないので、数値は現行と同じです。`SolverOptions` を受け取る分岐(`makeODE.m:23-25`)は削除します。
+- `StopAngle` の既定 360 は、判定 `judge_out_of_step` の `Threshold` の既定と同じです。
+- [未確認] JSON の `NaN` の読み書き(`TimeLimit` の `Infinity` と同じく `jsondecode` が受けるか)と、`GUILDA.setting` の画面での NaN の入力は、実装時に確かめます。
 
 ### 2.8 シナリオのファイル(`scenario/<タグ>.json`)[決定 Q13、提案]
 
@@ -431,18 +450,18 @@ end
     {"Tag": "offset", "TimeSpan": 0,            "OffsetUnit": "B001SG1", "OffsetState": ["delta"], "OffsetValue": [0.1]},
     {"Tag": "step",   "TimeSpan": [1, 1.5],     "InputUnit": "B002SG1", "InputName": ["Pmech", "Vfield"], "InputValue": [0.05, 0.01]},
     {"Tag": "ramp",   "TimeSpan": [2, 4],       "InputUnit": "B002SG1", "InputName": ["Pmech"],
-     "InputValue": {"Time": [0, 1, 2], "Value": [[0], [0.05], [0.05]]}}
+     "InputValue": {"Time": [0, 1, 2], "Value": [[0], [0.05], [0.05]], "Method": "foh"}}
   ]
 }
 ```
 
 - タグはファイル名だけに持ち、JSON には書きません(2 か所で食い違わないため)。
 - `Disturbances` の各要素は `add_disturbance` の Name-Value と同じ名前で、空の項目は書きません。読むときは要素ごとに `sc.add_disturbance(Tag, 項目...)` を呼びます。リストは 1 つでも配列で書き、読むときは `string(...)` で列にします(`jsonencode` の 1 要素の扱いに依らないため)。
-- `InputValue` は、一定値なら数値の配列(入力名ごとに 1 つ)、時系列なら `Time` と `Value` を持つオブジェクトです(§2.10)。形で区別できるように、時系列を数値の 2 次元配列だけで書く形は使いません(`jsondecode` は 1 行の 2 次元配列とベクトルを区別しにくいため)。
+- `InputValue` は、一定値なら数値の配列(入力名ごとに 1 つ)、時系列なら `Time`, `Value`, `Method`(補間、§2.10。省くと `"foh"`)を持つオブジェクトです。形で区別できるように、時系列を数値の 2 次元配列だけで書く形は使いません(`jsondecode` は 1 行の 2 次元配列とベクトルを区別しにくいため)。
 - 関数ハンドルを書く場面はありません [決定 R3]。`Judge` の項目もありません。
 - 未知の項目(古いファイルの `Judge` を含む)は警告(`GUILDA:import:UnknownScenarioField`)して無視します(CSV の未知の列と同じ)。`version` が読める値より大きければ止めます。
 
-**`_GUILDAverification` への影響 [要確認]:** IEEJ の比較スクリプト 3 つは、1 つの CSV の多数のシナリオを `Scenario.import_csv` で読んでいます(§1.7)。単独の読み込みがなくなるので、(a) それぞれの CSV を同梱の系統のフォルダの `scenario/<tag>.json` に変換するか、(b) スクリプト内の小さな読み込み関数(`_GUILDAverification` のローカル関数で、GUILDA の API ではない)で CSV から `add_scenario` と `add_disturbance` を呼ぶか、のどちらかにします。推奨は (b) です。検証の表は 1 つの CSV のほうが比べやすく、(a) では同梱の系統を作るたびに数十のシナリオが付くためです。
+**`_GUILDAverification` への影響 [決定 R4]:** IEEJ の比較スクリプト 3 つは、1 つの CSV の多数のシナリオを `Scenario.import_csv` で読んでいます(§1.7)。単独の読み込みがなくなるので、(a) それぞれの CSV を同梱の系統のフォルダの `scenario/<tag>.json` に変換するか、(b) スクリプト内の小さな読み込み関数(`_GUILDAverification` のローカル関数で、GUILDA の API ではない)で CSV から `add_scenario` と `add_disturbance` を呼ぶか、のどちらかにします。(b) にします。検証の表は 1 つの CSV のほうが比べやすく、(a) では同梱の系統を作るたびに数十のシナリオが付くためです。
 
 ### 2.9 判定(安定・脱調)[決定 R3、提案]
 
@@ -472,7 +491,7 @@ verdict = result.judge_out_of_step(Reference="slack", Threshold=360)
 | `_GUILDAverification/IEEJ_WEST30/compare_table4_13.m:91` | `sc.judge(result)` | `result.judge_out_of_step()` |
 | ヘルプの例(`Scenario.m`, `ResultODE.m`, `simulate.m`)、`feature-simulation.html`、`v4-migration.md` §1.18 | 説明 | 書き換え |
 
-### 2.10 入力の時系列(`InputValue`)[決定 R3、提案]
+### 2.10 入力の時系列(`InputValue`)[決定 R3, R7、提案]
 
 関数の `InputValue`(`@(t) ...`)をなくし、一定値か時系列のデータにします。
 
@@ -483,15 +502,33 @@ verdict = result.judge_out_of_step(Reference="slack", Threshold=360)
 | 時系列(table) | 変数 `Time` と入力名の変数を持つ table | 列は名前で対応させます(順は問わない) |
 
 - **時刻の条件:** `t` は有限で狭義に増加し、`t(1) = 0` です。違えば `GUILDA:Scenario:InvalidInputSeries` で止まります。
-- **補間 [提案]:** 点の間は**線形補間**、最後の点より後は最後の値を保ちます(`t2` まで)。線形にするのは、値が区間の中で連続になり、可変刻みのソルバーが区間の中の飛びに出会わないためです。値を飛ばしたいときは、別の外乱(区間の境界)に分けます。
+- **補間の選択 [決定 R7]:** 時系列を加えるときに `Method` で選びます。
+
+  ```matlab
+  s_tag = sc.add_input(unit, name, value, time, Method="foh", Tag="")
+  sc.add_disturbance(tag, InputUnit=..., InputName=..., InputValue=..., InputMethod="foh", TimeSpan=...)
+  ```
+
+  | `Method` | 点の間 | 連続性 |
+  |---|---|---|
+  | `"zoh"` | 0 次ホールド: 次の点まで前の点の値 | 各点で値が飛ぶ |
+  | `"foh"`(既定) | 1 次: 線形補間 | 値は連続、傾きが各点で飛ぶ |
+  | `"spline"` | 3 次スプライン(`griddedInterpolant` の `"spline"`) | 値と傾きが連続 |
+
+  - 既定は `"foh"` です(値が連続で、元の関数を標本にしたときに最も素直な近似のため)。
+  - どの方法も、最後の点より後は最後の値を保ち(`t2` まで)、時刻は外乱の開始からです。
+  - 一定値(時系列でない `value`)には `Method` は効きません。`Method` を一定値に与えても無視せず、`GUILDA:Scenario:MethodWithoutSeries` で止めます(誤解を防ぐため)。
+  - `"spline"` の点が 2 つのときは線形と同じです。
+- **`tab_disturbance` の列:** `InputMethod`(string)を加え、列は 12 になります(`InputValue` の後)。一定値の行は `""` です。
 - **`tab_disturbance` での持ち方:** `InputValue` の列のセルに、一定値は数値の列、時系列は `[t, v]` の行列で入れます(table で渡したものも行列にする)。関数ハンドルは入りません。
+- **`zoh` の飛びと区間の境界 [提案]:** `"zoh"` の各点(最初の点を除く)では入力が飛ぶので、`compile` がその時刻を**区間の境界**にします。区間の中では入力が一定になり、可変刻みのソルバーが区間の中の飛びに出会いません。境界では、ほかの外乱の境界と同じく代数変数だけを解き直します(§4.2)。境界の時刻は `tab_phase` の行になり、外乱の列は変わりません(同じ外乱が続く)。点の多い `"zoh"` は区間が増えて遅くなるので、ヘルプにそう書きます。`"foh"` と `"spline"` は値が連続なので境界を加えません。
 - **`compile` の出力との対応:** 現行は `event2fhandle`(`compile.m:245-259`)が値や関数を「区間の開始からの時刻の関数」にし、同じ入力の複数の外乱を関数の和にして `c_Uoffset{j}` に入れます(`compile.m:225-238`)。新しい `compile` は関数を作らず、`sct_event(k).c_input` に入力の行ごとのデータを入れます(§3.4)。
   - 一定値は 1 点の時系列 `t = 0`, `v` とします。
   - 区間の開始からの時刻に直すため、`t` から `ts = 区間の開始 - 外乱の開始` を引きます(現行の `exV(t+ts)` と同じずらし)。
-  - 同じ入力の複数の外乱は、時刻の和集合の上で補間した値の和にして、1 つの時系列にします。
-- **`SolverODE` での評価:** 区間の開始で入力の行ごとに `griddedInterpolant(t, v, "linear", "nearest")`(範囲外は端の値)を 1 回作り、右辺で `e(iv_row) += F(t)` とします(現行 `getODEFunction.m:77-80` の関数の呼び出しの置き換え)。右辺のヤコビアンには入りません(現行と同じ。入力は時刻だけの関数)。
-- **JSON:** 一定値は数値の配列、時系列は `{"Time": [...], "Value": [[...], ...]}`(`Value` は時刻ごとの行)です(§2.8)。
-- **数値の違い:** 関数を時系列にした計算は、標本の取り方の分だけ現行と違います。線形の関数(例 `@(t) 0.01*t`)は 2 点の時系列で表せますが、補間の丸めの分だけ一致しないことがあります(§8.3)。
+  - 同じ入力の複数の外乱は、`c_input` の要素を外乱ごとに分けたまま渡し、`SolverODE` が評価した値を足します(補間の方法が外乱ごとに違ってもよいため)。
+- **`SolverODE` での評価:** 区間の開始で `c_input` の要素ごとに補間のオブジェクトを 1 回作り、右辺で `e(iv_row) += F(t)` とします(現行 `getODEFunction.m:77-80` の関数の呼び出しの置き換え)。`"foh"` は `griddedInterpolant(t, v, "linear", "nearest")`、`"spline"` は `griddedInterpolant(t, v, "spline", "nearest")`(範囲外は端の値。`"nearest"` の外挿で最後の値を保つ)、`"zoh"` は区間の中で一定なので、区間の開始の値を定数として足します。右辺のヤコビアンには入りません(現行と同じ。入力は時刻だけの関数)。
+- **JSON:** 一定値は数値の配列、時系列は `{"Time": [...], "Value": [[...], ...], "Method": "foh"}`(`Value` は時刻ごとの行。`Method` を省くと `"foh"`)です(§2.8)。
+- **数値の違い:** 関数を時系列にした計算は、標本の取り方の分だけ現行と違います。線形の関数(例 `@(t) 0.01*t`)は `"foh"` の 2 点の時系列で表せますが、補間の丸めの分だけ一致しないことがあります(§8.3)。
 
 ### 2.11 `import_csv` / `export_csv` の改名 [決定、提案]
 
@@ -522,6 +559,38 @@ verdict = result.judge_out_of_step(Reference="slack", Threshold=360)
 
 **利用者への影響:** 以前に `export_csv(..., ClassFile=true)` で書き出したクラスファイルは `PowerNetwork.import_csv` を呼ぶので動かなくなります(互換は設けない)。もう一度 `export` で書き出すか、その 1 行を書き換えます。
 
+### 2.12 回転子角による停止(`StopOnOutOfStep`, `StopAngle`)[決定 §0.4、提案]
+
+`StopOnOutOfStep=true` のとき、ある発電機の回転子角の基準からの差の絶対値が `StopAngle` を超えた時刻で実行を止めます。既定は `false`(止めない)と `360` です。
+
+- **角の差の測り方:** 判定 `judge_out_of_step`(現行 `Scenario.out_of_step`)の既定と同じです。
+  - 対象は状態 `delta` を持つ機器(`tab_variable` の Kind が `"x"`、Name が `"delta"`、所有者が機器の行)です。
+  - 基準はスラック母線の発電機(スラック母線にある、`delta` を持つ最初の機器)です。差は `|δ_k - δ_ref|`(rad、折り返さない)です。
+  - 解列中の機器は対象から外します。基準の発電機が解列中の区間では、停止の判定をしません。
+  - 慣性中心(COI)や任意の機器を基準にする指定は、判定 `judge_out_of_step(Reference=)` にはありますが、停止条件には設けません(§9.2 の R10)。
+  - 対象の機器や基準の発電機がない系統で `StopOnOutOfStep=true` なら、積分の前に `GUILDA:PowerNetwork:StopNoRotorAngle` で止めます。
+- **`SolverODE` での実装:** `SolverODE` は発電機を知りません。`build_simulation_data` が `sct_dae.sct_stop` を作り、`SolverODE` は「ある変数の差の絶対値がしきい値を超えたら止める」とだけ扱います(§3.2)。
+  - `ode` の `EventDefinition` の事象関数を、現行の進捗の事象(`solve.m:58`、`odeProg.Events()`)と停止の事象の 2 つの値を返す形にし、どちらも `Response="stop"` にします。停止の事象の値は `r_limit - max(abs(x(iv_angle(lv_on)) - x(i_ref)))` で、正から 0 を横切ると止まります。
+  - 区間ごとに、解列中の機器の行を `lv_on` から外します(縮約した `x` での位置に直す)。
+  - 止まった後、どちらの事象かを `ode` の解の事象の情報(`sol.EventIndex`)で見分けます。
+- **`flag` と `output`:**
+  - `flag = 2`: 停止条件で止まった。結果は止まった時刻(`output.tEnd`)までの軌道です。
+  - `output.message`: `"The simulation stopped at t = 1.234 s by StopOnOutOfStep: the rotor angle of B003SG1 from B001SG1 reached 360 deg."`
+  - `output.outOfStep`: `struct("Time", 1.234, "Unit", "B003SG1", "Reference", "B001SG1", "Angle", 360)`([deg])。`StopOnOutOfStep` が false か止まらなかったときは空の struct です。
+  - `GUILDA:PowerNetwork:SimulationIncomplete` の警告は出しません。
+  - 判定 `judge_out_of_step` は、`flag = 2` の結果を、角が `Threshold` を超えていれば `"out-of-step"`、超えていなければ `"incomplete"` とします(`StopAngle < Threshold` のとき)。
+- **`flag` の値を新しく足す理由:** 0(TimeLimit)、-1(ソルバーの停止)と違い、利用者が求めた止まり方で、結果は正しいためです。1 にしないのは、終了時刻に届いていないことを `flag` だけで見分けられるようにするためです。
+
+### 2.13 出力の時刻(`SampleTime`)[決定 §0.4、提案]
+
+`SampleTime` が正のとき、結果を一定の時間間隔の時刻で記録します。NaN か 0 は、現行どおりソルバーの刻みで記録します(既定)。
+
+- **時刻の格子:** 開始時刻 `t0` からの `t0 + k·SampleTime` です。区間ごとに、区間の中にある格子の時刻に、**区間の開始と終わりの時刻を加えます**(外乱の時刻を保つため。区間の境界の時刻は現行どおり 2 回現れます)。格子は区間ごとではなく実行全体で揃えるので、区間をまたいでも間隔は一定です(境界の前後を除く)。
+- **作り方:** 積分の後の補間ではなく、`ode` の出力の時刻で求めます。区間ごとに `solve(o, tv)`(`tv` は区間の開始からの時刻のベクトル)を呼ぶと、ソルバーは自分の刻みで積分し、`tv` の時刻の値をソルバーの連続な近似で返します。積分の精度は `SampleTime` に依りません。[未確認] R2026a の `ode` オブジェクトで、質量行列のある DAE に時刻のベクトルを渡したときの動作と、`EventDefinition`(停止)で途中で止まったときに止まった時刻が解に入るかは、実装時に確かめます。止まった時刻が入らなければ、`sol` の事象の時刻と値を加えます。
+- **`ResultODE`:** `rv_t` が格子の時刻(と区間の境界)になるだけで、プロパティの形は同じです。`rm_output`(§5.2)はその時刻で計算するので、記録が少ないほど速くなります。`get_point` は現行どおり記録した時刻の間を線形補間します。
+- **`Format="struct"`:** `sol.t` が格子の時刻になり、すべての table の行がそれに揃います。繰り返しの実行で記録を減らすのに使えます。
+- **`MaxStep` との関係:** `SampleTime` は記録だけで、刻みは変えません。`SampleTime` より速い変化を積分で捉えるには `MaxStep` を使います。
+
 ## 3. `SolverODE.solve` のデータの約束
 
 ### 3.1 シグネチャ [提案]
@@ -537,12 +606,12 @@ function [sct_sol, flag, output] = solve(obj, sct_dae, sct_event, rv_x0, sct_opt
     end
     arguments (Output)
         sct_sol (1,1) struct   % Raw trajectories (section 5.1).
-        flag    (1,1) double   % 1, 0, -1 (unchanged).
+        flag    (1,1) double   % 1, 2 (StopOnOutOfStep), 0, -1.
         output  (1,1) struct   % Details (unchanged).
     end
 ```
 
-`solve` は `PowerNetwork`、`Bus`、`Branch`、`Component`、制御器、`Scenario` の物体と、その `a_*` を一切読みません。読むのは引数と、ブロックのハンドルの呼び出しだけです。`ProgressODE` と MATLAB の `ode` は使います。`sct_options` の `Solver`, `SolverOptions`, `MaxStep`, `InitialStep` から `ode` オブジェクトを作るのは `solve`(`makeODE`)で、将来の固定刻みソルバーもここで選びます(§2.1)。
+`solve` は `PowerNetwork`、`Bus`、`Branch`、`Component`、制御器、`Scenario` の物体と、その `a_*` を一切読みません。読むのは引数と、ブロックのハンドルの呼び出しだけです。`ProgressODE` と MATLAB の `ode` は使います。`sct_options` の `Solver`, `MaxStep`, `InitialStep` から `ode` オブジェクトを作るのは `solve`(`makeODE`)で、`SampleTime` で出力の時刻を、`StopOnOutOfStep` で停止の事象を決めるのも `solve` です。将来の固定刻みソルバーもここで選びます(§2.1)。
 
 **潮流計算との対応:** `refactor/powerflow-structure` の `SolverPF.solve(obj, cm_Y, tab_PFcondition, sct_options)` と同じく、系統がデータを組み立て、ソルバーは数値計算だけをします。アドミタンス行列の名前は同じ `cm_Y`(母線の順の複素行列)にします。違いは、時間応答ではブロックのハンドル、2 つの表、イベントがあるので、位置引数を増やさず `sct_dae` にまとめることです。
 
@@ -562,6 +631,7 @@ function [sct_sol, flag, output] = solve(obj, sct_dae, sct_event, rv_x0, sct_opt
 | `c_comp` | cell, n_comp × 1 | 機器のブロック(下表)。`a_Bus` の順、各母線の `a_Component` の順 |
 | `c_lc` | cell, n_lc × 1 | ローカル制御器のブロック。深さ優先(`get_variable_map` の順) |
 | `c_gc` | cell, n_gc × 1 | グローバル制御器のブロック(`a_GlobalController` の順) |
+| `sct_stop` | struct(空のことがある) | 停止条件(§2.12)。`iv_angle`(対象の `delta` の行)、`iv_angleComp`(その機器の `c_comp` の番号。解列の判定用)、`i_ref`(基準の `delta` の行)、`i_refComp`、`r_limit`([rad])。`StopOnOutOfStep` が false なら空 |
 | `sv_bus`, `sv_branch`, `sv_comp`, `sv_lc`, `sv_gc` | string 列 | メッセージと `Format="struct"` の名前に使うタグ。`SolverODE` は照合に使いません |
 
 **ブロック(struct)**
@@ -608,7 +678,7 @@ function [tab_phase, sct_event] = compile(obj, sct_dae, time)
     end
 ```
 
-時間は必ず `[t0, tend]` で渡ります [決定 Q1, Q2]。外乱がないシナリオは `t0` に空の外乱 `NoAction` を置く現行の扱い(`compile.m:69-78`)のうち、時間が空の分岐を削ります。`private/getTimeSpan.m` の時間が空のときの規則(`[0, 30·ceil(tmax/10)]`)も削ります。
+時間は必ず `[t0, tend]` で渡ります [決定 Q1, Q2]。`"zoh"` の入力の各点も区間の境界にします(§2.10)。外乱がないシナリオは `t0` に空の外乱 `NoAction` を置く現行の扱い(`compile.m:69-78`)のうち、時間が空の分岐を削ります。`private/getTimeSpan.m` の時間が空のときの規則(`[0, 30·ceil(tmax/10)]`)も削ります。
 
 | フィールド | 型・大きさ | 内容 |
 |---|---|---|
@@ -618,7 +688,7 @@ function [tab_phase, sct_event] = compile(obj, sct_dae, time)
 | `iv_faultBus` | double 列 | 地絡中の母線(位置) |
 | `iv_openBranch` | double 列, 昇順 | 開放中のブランチ(位置) |
 | `iv_offset`, `rv_offset` | double 列 ×2 | この区間の開始で状態に足す値。行は `tab_variable` の x の行。**第 1 区間は空**(初期値に含める、§3.5) |
-| `c_input` | cell, k × 3 | `{iv_row, rv_t, rm_v}`: 入力の行(`tab_variable` の u の行)、区間の開始からの時刻(狭義に増加)、その時刻の値(`numel(rv_t) × numel(iv_row)`)。同じ入力の複数の外乱は合計済み。関数ハンドルはない(§2.10) |
+| `c_input` | cell, k × 4 | `{iv_row, rv_t, rm_v, s_method}`: 入力の行(`tab_variable` の u の行)、区間の開始からの時刻(狭義に増加)、その時刻の値(`numel(rv_t) × numel(iv_row)`)、補間(`"zoh"`, `"foh"`, `"spline"`、一定値は `"zoh"` の 1 点)。外乱ごとに 1 要素で、`SolverODE` が足す。関数ハンドルはない(§2.10) |
 | `sr_event` | string 列 | 有効な外乱のタグ(進捗の表示用) |
 
 - タグから位置への変換に使うのは `sct_dae.sv_bus`, `sv_branch`, `sv_comp`, `sv_gc` です。状態と入力の名前は `tab_variable` の `Owner` と `Name` で行に変えます(現行 `compile.m:194-242` の `comp.sv_x`, `comp.sv_u` の照合と同じ結果)。
@@ -647,7 +717,7 @@ rv_x0(u の行)  += 第 1 区間の入力の時系列の t = 0 の値(現行 ini
 | 地絡 `iv_faultBus` | 母線の Vre, Vim と Ire, Iim の行を外す(電圧は 0 に固定) | — | 戻るとき平衡点の V と I(`getNextPhase.m:38-44`) |
 | 開放 `iv_openBranch` | — | `Y = cm_Y - Σ c_branchY{k}` を `im_branchBus(k,:)` の位置に。集合が変わったときだけ作り直す(現行 `set_admittance.m:13-15`) | 次の区間の集合で作り直す |
 | オフセット `iv_offset` | — | — | 区間の開始で `x0(iv_offset) += rv_offset` |
-| 入力 `c_input` | — | `e(iv_row) += F(t)`。`F` は区間の開始で作る線形補間(範囲外は端の値、§2.10。現行 `getODEFunction.m:77-80` の関数の呼び出しを置き換え) | — |
+| 入力 `c_input` | — | `e(iv_row) += F(t)`。`F` は区間の開始で作る補間(`"foh"` 線形、`"spline"`、`"zoh"` は区間の中で一定。範囲外は端の値、§2.10。現行 `getODEFunction.m:77-80` の関数の呼び出しを置き換え) | — |
 
 ### 4.2 区間の初期化と整合する初期条件 [事実、変更なし]
 
@@ -661,13 +731,18 @@ rv_x0(u の行)  += 第 1 区間の入力の時系列の t = 0 の値(現行 ini
 
 現行 `check_islands(net, ...)`(`private/check_islands.m`)は `build_simulation_data` 側(`@PowerNetwork/private/check_islands.m` に移す)で、`compile` の後、積分の前に全区間を検査します。メッセージはブランチと母線のタグを示すので、モデル側が適しています。エラー ID は `GUILDA:PowerNetwork:OpenBranchIsland` に改名します(§6.3)。
 
+### 4.5 停止の事象と出力の時刻 [提案]
+
+- 停止の事象(§2.12)は区間ごとに `lv_on` を作り直し、進捗の事象と一緒に `EventDefinition` に入れます。`flag = 2` で止まったら、残りの区間は解きません。
+- 出力の時刻(§2.13)は区間ごとに `solve(o, tv)` で求めます。`SampleTime` が NaN か 0 のときは現行どおり `solve(o, 0, t2-t1)` です。
+
 ## 5. 出力の約束
 
 ### 5.1 `sct_sol`(`solve` の第 1 出力)[提案]
 
 | フィールド | 型・大きさ | 内容 |
 |---|---|---|
-| `rv_t` | double, n_t × 1 | 時刻。区間の境界は 2 回(現行と同じ) |
+| `rv_t` | double, n_t × 1 | 時刻。ソルバーの刻み、または `SampleTime` の格子と区間の境界(§2.13)。区間の境界は 2 回(現行と同じ) |
 | `rm_variable` | double, n_t × n_var | 変数 x, Vre, Vim, u, uc の値(`tab_variable` の変数の行の順)。解列中の状態は NaN |
 | `rm_I` | double, n_t × 2 n_bus | 母線電流 Ire, Iim |
 | `rv_phase` | double, n_t × 1 | 各時刻の区間の番号(`Format="struct"` で機器の電流 `f_I` と出力 `f_Y` を評価するとき、区間の開始からの時刻と、その区間の解列を知るため) |
@@ -755,7 +830,7 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 ### 5.4 `export` への改名 [決定 Q14]
 
 - `simulate` の `Export` オプションを削除し、利用者は `result.export(filename)` を呼びます。拡張子の検査(現行 `simulate.m:103-112` の `check_export`、`SimulateExport`)は `ResultODE.export` の先頭へ移します(積分の後ですが、結果は失われません)。
-- `ResultODE.Export` を `export` に改名します。§1.6 のとおり `Export` は `ResultBase` の約束なので、**`ResultBase.Export` → `export`(既定の `error_unsupported("export")`)と、全結果クラス(`ResultPF`, `ResultOPF`, `ResultCPF`, `ResultODE`)の改名を揃える**必要があります。だれが先に行うかは §7 の注意に書きます。
+- `ResultODE.Export` → `export` の改名は、`ResultBase` と全結果クラスとともに潮流計算の作業が済ませました [事実、`514cde71`、§1.6]。この再設計では、`simulate` の `Export` オプションと `check_export` を削除し、拡張子の検査を `ResultODE.export` に置くことだけが残ります。
 - `Format="struct"` の結果は `export` を持ちません。書き出すときは `Format="GUILDAorigin"` で実行します。
 
 ## 6. 削除・改名の一覧と移行
@@ -777,13 +852,12 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | `_GUILDAsystem/_auxiliary/@Scenario/private/mustBeSimulationTime.m` | `SystemTools/` 直下へ移す(`PowerNetwork` からも使う)。`[]` を受けない形に |
 | `_GUILDAsystem/_auxiliary/@SolverODE/get_options.m` | 削除(設定の合成は `simulate`) |
 | `_GUILDAsystem/_auxiliary/@SolverODE/progress_mode.m` | `@PowerNetwork/private/progress_mode.m` へ移す |
-| `_GUILDAsystem/_auxiliary/@SolverODE/private/validate_options.m` | `SolverOptions` と `Solver` の照合を `@PowerNetwork/private/check_solver_options.m` へ移し、削除 |
+| `_GUILDAsystem/_auxiliary/@SolverODE/private/validate_options.m` | 削除(`SolverOptions` がなくなり、検査は arguments ブロック) |
 | `_GUILDAsystem/_auxiliary/@SolverODE/private/mustBeProgress.m` | `@PowerNetwork/private/` へ移す |
 | `_GUILDAsystem/_auxiliary/@SolverODE/private/check_islands.m` | `@PowerNetwork/private/` へ移す |
 | `_GUILDAsystem/_auxiliary/@SolverODE/private/checkSimulationTime.m` | 削除(未使用、simulate-improvements ST2) [事実: 呼び出しなし] |
 | `_GUILDAsystem/_auxiliary/@ResultODE/private/simulator_columns.m` | `tab_variable` から作る形に書き換え |
-| `_GUILDAsystem/_auxiliary/@ResultODE/Export.m` | `export.m` に改名 |
-| `_GUILDAsystem/_auxiliary/@ResultBase/Export.m` | `export.m` に改名(§5.4、§7 の注意) |
+| `_GUILDAsystem/_auxiliary/@ResultODE/Export.m`, `@ResultBase/Export.m` | [事実] `export.m` に改名済み(`514cde71`) |
 | `_GUILDAsystem/_auxiliary/@PowerSystemModel/gui.m` | `@LayerPackage/gui.m` へ移す [決定 Q12] |
 | `@PowerNetwork/build_simulation_data.m`, `@PowerNetwork/private/read_scenarios.m`, `write_scenarios.m`, `struct_result.m`, `check_simulation.m`, `simulation_blocks.m`, 検証関数 | 新規 |
 
@@ -819,10 +893,12 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | `ResultODE(net, solver, options, flag, output, elapsed, c_phase)` | `ResultODE(sct_sol, sct_dae, sct_network, sct_solver)` |
 | `ResultODE.tab_output`, `rm_output`, `judge_out_of_step` | 追加(§5.2, §2.9) |
 | `ResultODE` の `a_PowerNetwork` | 空。`sct_network` を追加 |
-| `ResultBase.Export` と各結果クラスの `Export` | `export` |
+| `ResultBase.Export` と各結果クラスの `Export` | [事実] `export` に改名済み(`514cde71`) |
 | simulate の `Export` オプション | 削除 [決定 Q14] |
-| simulate の `SolverOptions` オプション | **残す**(呼び出しだけ)[決定 Q6] |
-| simulate の `Time`, `MaxStep`, `InitialStep`, `Format` オプション | 追加 |
+| simulate の `SolverOptions` オプション、`makeODE` の `SolverOptions` の分岐 | 削除 [決定 §0.4] |
+| simulate の `Time`, `MaxStep`, `InitialStep`, `SampleTime`, `StopOnOutOfStep`, `StopAngle`, `Format` オプション | 追加(`Time`, `Format` 以外は設定でもある) |
+| `flag = 2`, `output.outOfStep` | 追加(§2.12) |
+| `Scenario.add_input` の `Method`、`add_disturbance` の `InputMethod`、`tab_disturbance` の列 `InputMethod` | 追加(§2.10) |
 | `PhaseProbe`(`sct_options` のテスト用フィールド、`solve.m:86-88`) | 残す(テストは `build_simulation_data` のデータで `solve` を直接呼ぶ) |
 
 ### 6.3 メッセージ
@@ -845,9 +921,10 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | `GUILDA:import_csv:*`, `GUILDA:export_csv:*` | `GUILDA:import:*`, `GUILDA:export:*`(§2.11) |
 | `GUILDA:resolve_options:UnknownName`(simulate の経路) | MATLAB の arguments ブロックのエラーに変わる |
 | `GUILDA:SolverODE:Stale`, `InputEdited`, `GconNoTarget`, `OpenBranchIsland` | `GUILDA:PowerNetwork:SimulateStale`, `SimulateInputEdited`, `GconNoTarget`, `OpenBranchIsland` に改名(モデル側の検査になるため。`msg` は呼び出し元のクラスの ID しか受け付けない、powerflow-structure と同じ理由) |
-| 現行 `validate_options` の `SolverOptions` の不一致の ID | `GUILDA:PowerNetwork:` の ID に改名 [未確認: 現行の ID 名は実装時に確認] |
+| 現行 `validate_options` の `SolverOptions` の不一致の ID | 削除(`SolverOptions` がなくなる) |
+| `GUILDA:PowerNetwork:StopNoRotorAngle`, `GUILDA:Scenario:MethodWithoutSeries` | 追加(§2.12, §2.10) |
 | `GUILDA:ResultODE:VariableMap` | 削除 |
-| `GUILDA:ResultBase:Unsupported` | 本文の "Export" を "export" に |
+| `GUILDA:ResultBase:Unsupported` | [事実] 本文は `export` に変更済み(`514cde71`) |
 | `GUILDA:SolverODE:MassNotConstant` | 追加(現行 `GUILDA:read_mass:NotConstant` の経路を置き換え) |
 | `GUILDA:PowerNetwork:ScenarioNotFound` | 本文を「`simulate` のタグにも使う」形に。シナリオの一覧を示す |
 
@@ -861,7 +938,9 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | `net.simulate(sc)` で外乱の時間幅から時間を決めていた | `Time` を明示する(既定は `[0, 10]`) |
 | `net.simulate(t, sc1, sc2)` | 1 つのシナリオに外乱をまとめる: `net.add_scenario("both", From=sc1)` の後に `sc2` の外乱を足す |
 | `sc.Options = struct("Tolerance",1e-6)` | 呼び出しで `net.simulate("f", Tolerance=1e-6)`、または `GUILDA.setting("TimeSimulation", Tolerance=1e-6)` |
-| `SolverOptions=matlab.ode.options.ODE15s(MaxStep=0.01)` | そのまま使える。`MaxStep=0.01` だけでもよい |
+| `SolverOptions=matlab.ode.options.ODE15s(MaxStep=0.01)` | `MaxStep=0.01`(`SolverOptions` はなくなる。`MaxOrder` などは指定できない) |
+| 脱調を見つけたら止めるスクリプト(`TimeLimit` や `OutputFcn` で代用していたもの) | `StopOnOutOfStep=true, StopAngle=...`(`flag = 2`) |
+| 結果を一定間隔の時刻で取り出すための `interp1` | `SampleTime=0.01` |
 | `net.simulate(..., Export="sim.csv")` | `res = net.simulate(...); res.export("sim.csv")` |
 | `res.Export(...)`(全結果クラス) | `res.export(...)` |
 | `other.add_scenario(sc.copy())` | `other.add_scenario("f", From=sc)` |
@@ -869,7 +948,7 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | `PowerNetwork.import_csv(path)` / `net.export_csv(path)` | `PowerNetwork.import(path)` / `net.export(path)`。古いクラスファイルの `import_csv` の行も書き換える |
 | `sc.judge(result)` / `Scenario.out_of_step(result, ...)` | `result.judge_out_of_step(...)` |
 | `sc.Judge = @my_judge; sc.judge(result)` | `my_judge(result)` |
-| `sc.add_input(u, n, @(t) 0.01*t, [1 3])` | `sc.add_input(u, n, [0 0; 2 0.02], [1 3])`(`[t, 値]`、線形補間) |
+| `sc.add_input(u, n, @(t) 0.01*t, [1 3])` | `sc.add_input(u, n, [0 0; 2 0.02], [1 3])`(`[t, 値]`、`Method="foh"` が既定) |
 | `ODEevent(tag, net, ...)` | `net.add_scenario(tag).add_disturbance(tag, ...)` |
 | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `Progress=v` / `Tolerance=v` |
 | `res.a_PowerNetwork` | `res.sct_network`(スナップショット)。系統そのものは呼び出し側の変数 |
@@ -884,23 +963,25 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | **S0** 基準の記録 | 軌道の比較用の基準を保存する(§8.3)。コードは変えない | `+DebugScript/+helper/simulate_baseline.m`(新規)、基準の MAT は作業用フォルダ(コミットしない) | 基準の作成だけ | なし |
 | **S1** v3 の削除 | `v3_simulate_args.m`, `ODEevent.m`, `Deprecated.xml` の 2 項目, `Scenario.l_compat`, `simulate.m:83`、v4-migration の表 | `_VersionSupport/` の 2 ファイル, `Deprecated.xml`, `Scenario.m`(l_compat の 2 行), `simulate.m`(1 行) | F6「Deprecated option names still work」、F31「Compatibility」の節と `test_levels` の該当行を削除 | S0 |
 | **S2** `Scenario` を `LayerPackage` に | §2.2-2.5, §2.10 の前半: `add_scenario(tag)`(改名と INFO), `remove_scenario`(delete), `From`, `copy` の削除, `Judge`・`judge` の削除, `InputValue` の時系列(検査と `tab_disturbance` での持ち方。`compile` は暫定で時系列から補間の関数を作る), `Time` の既定 `[0, 10]` と時間の規則の削除, `children`, `log_edit` の上書き, `gui` の移動, GUI の描画, `disp_tree`, `sig_methods` の add/remove | `@Scenario/*`(`compile.m` の時間の分岐を含む。`out_of_step.m`, `import_csv.m`, `export_csv.m` を除く), `@Scenario/private/getTimeSpan.m`, `mustBeSimulationTime.m`(SystemTools へ), `@PowerNetwork/PowerNetwork.m`, `add_scenario.m`, `remove_scenario.m`, `gui_content.m`, `@LayerPackage/`, `@PowerSystemModel/gui.m`, `@DrawerModelGUI/`, `@GUILDA/update_keymap.m`, `functionSignatures.json`, `+DebugScript/+helper/scenario.m`, `noop_event.m` | F31 の書き換え(CSV と判定の節を除く。判定の節は削除し S3 の新しいテストへ)、関数の `InputValue` を使うテスト(F6, F31, I58 など)を時系列に、F32/F33(GUI のシナリオのカード)、F24(タグの名前空間)、F34、I53, I54(時間の規則)、新規は §8.2 | S1 |
-| **S3** `ResultODE` をデータから、`export`、判定 | §2.9, §5.2, §5.4: 新しいコンストラクタ, `sct_network`, 出力 `tab_output`/`rm_output` の計算, `simulator_columns` の書き換え, `out_of_step` を `ResultODE.judge_out_of_step` へ移す, `ResultODE.Export` → `export`(`ResultBase` の改名が統合済みであること、下記) | `@ResultODE/*`, `@Scenario/out_of_step.m`(削除), `@SolverODE/solve.m`(231 行の 1 か所だけ。暫定で `net` から入力と出力のハンドルを作る), `_GUILDAverification` の判定の行, 新規 `+DebugScript/test_F38_result_judge.m`, `simulate.m`(`Export` の呼び出し 95-99 行を `export` に) | F6 の結果の節、I63(export)、新規 F38(判定。F31 の判定の節を移す)、新規: 系統を消した後(`delete(net)`)も `Plot`, `get_point`, `export`, 判定が動く、出力の値 | S1、`ResultBase.export` |
-| **S4** `simulate` の引数と設定 | §2.1, §2.7: タグの引数, `Time` の上書き, arguments ブロック, 設定の合成, `SolverOptions` と `MaxStep`/`InitialStep` の優先順位, `Format`(`"struct"` は S5 で完成。S4 では `"GUILDAorigin"` だけ受け付けてもよい), `Export` オプションの削除, `Scenario.Options` の削除, `get_options` 等の削除, `sig_methods` の simulate, 呼び出し元(`_GUILDAobject` のヘルプの例 20 ファイル、`_GUILDAverification` の 4 ファイルの simulate の行) | `simulate.m`, `@PowerNetwork/private/`(検証関数, `progress_mode`, `check_solver_options`), `@SolverODE/SolverODE.m`, `get_options.m`, `progress_mode.m`, `private/makeODE.m`, `validate_options.m`, `mustBeProgress.m`, `@Scenario/Scenario.m`(Options), `DefaultTimeSimulation.json`, `update_keymap.m`, `functionSignatures.json`, `+DebugScript/*`(simulate の呼び出し約 230 か所) | 全 simulate テストの書き換え、I54(時間の検査)、I63(`Export` オプションの節を `export` に)、新規は §8.2 | S2(`Scenario.m`, `update_keymap.m`), S3(`simulate.m` の export の行) |
-| **S5** `SolverODE` のデータの約束、`Format="struct"` | §3, §4, §5.1, §5.3, §2.10 の後半(`compile` の時系列の出力と `SolverODE` の補間): `build_simulation_data`, `compile` の位置化, 初期値, `check_islands` の移動, `build_index` の分割, `set_phase`/`set_admittance`/`initial_condition`/`getNextPhase`/`phase_result` の位置化(uc も記録), `solve` のシグネチャ, `struct_result`, S3 の暫定の除去 | `simulate.m`, `@PowerNetwork/PowerNetwork.m`(Hidden の宣言), `@PowerNetwork/build_simulation_data.m`, `@PowerNetwork/private/`(収集, `struct_result`), `@Scenario/compile.m`, `@SolverODE/*` | F6, F29, F35(`PhaseProbe` で `solve` を直接呼ぶ箇所を `build_simulation_data` に)、I50-I64、§8.3 の軌道の一致、新規は §8.2 | S3, S4 |
+| **S3** `ResultODE` をデータから、`export`、判定 | §2.9, §5.2, §5.4: 新しいコンストラクタ, `sct_network`, 出力 `tab_output`/`rm_output` の計算, `simulator_columns` の書き換え, `out_of_step` を `ResultODE.judge_out_of_step` へ移す(`flag = 2` の扱いを含む、§2.12)。`export` への改名は済んでいる(§1.6) | `@ResultODE/*`, `@Scenario/out_of_step.m`(削除), `@SolverODE/solve.m`(231 行の 1 か所だけ。暫定で `net` から入力と出力のハンドルを作る), `_GUILDAverification` の判定の行, 新規 `+DebugScript/test_F38_result_judge.m` | F6 の結果の節、I63(export)、新規 F38(判定。F31 の判定の節を移す)、新規: 系統を消した後(`delete(net)`)も `Plot`, `get_point`, `export`, 判定が動く、出力の値 | S1 |
+| **S4** `simulate` の引数と設定 | §2.1, §2.7: タグの引数, `Time` の上書き, arguments ブロック, 設定の合成, `SolverOptions` の削除(`makeODE` の分岐を含む), `MaxStep`/`InitialStep`, `Format`(`"struct"` は S5 で完成。S4 では `"GUILDAorigin"` だけ受け付けてもよい), `Export` オプションの削除, `Scenario.Options` の削除, `get_options` 等の削除, `sig_methods` の simulate, 呼び出し元(`_GUILDAobject` のヘルプの例 20 ファイル、`_GUILDAverification` の 4 ファイルの simulate の行) | `simulate.m`, `@PowerNetwork/private/`(検証関数, `progress_mode`, `calculate_powerflow.m` から移す `mustBePlotFcn`), `calculate_powerflow.m`(ローカルの `mustBePlotFcn` を削除), `@SolverODE/SolverODE.m`, `get_options.m`, `progress_mode.m`, `private/makeODE.m`, `validate_options.m`, `mustBeProgress.m`, `@Scenario/Scenario.m`(Options), `DefaultTimeSimulation.json`, `update_keymap.m`, `functionSignatures.json`, `+DebugScript/*`(simulate の呼び出し約 230 か所) | 全 simulate テストの書き換え、I54(時間の検査)、I63(`Export` オプションの節を `export` に)、新規は §8.2 | S2(`Scenario.m`, `update_keymap.m`) |
+| **S5** `SolverODE` のデータの約束、`Format="struct"` | §3, §4, §5.1, §5.3, §2.10 の後半(`compile` の時系列の出力、`"zoh"` の点の区間の境界、`SolverODE` の補間): `build_simulation_data`, `compile` の位置化, 初期値, `check_islands` の移動, `build_index` の分割, `set_phase`/`set_admittance`/`initial_condition`/`getNextPhase`/`phase_result` の位置化(uc も記録), `solve` のシグネチャ, `struct_result`, S3 の暫定の除去 | `simulate.m`, `@PowerNetwork/PowerNetwork.m`(Hidden の宣言), `@PowerNetwork/build_simulation_data.m`, `@PowerNetwork/private/`(収集, `struct_result`), `@Scenario/compile.m`, `@SolverODE/*` | F6, F29, F35(`PhaseProbe` で `solve` を直接呼ぶ箇所を `build_simulation_data` に)、I50-I64、§8.3 の軌道の一致、新規は §8.2 | S3, S4 |
+| **S5b** 停止条件と出力の時刻 | §2.12, §2.13, §4.5: `StopOnOutOfStep`/`StopAngle`/`SampleTime` の arguments と設定、`sct_dae.sct_stop`、`EventDefinition` の 2 つの事象、`flag = 2` と `output.outOfStep`、`solve(o, tv)` による出力の時刻、`StopNoRotorAngle`、`sig_methods` の再生成 | `simulate.m`, `@PowerNetwork/build_simulation_data.m`, `@PowerNetwork/private/simulation_blocks.m`, `@SolverODE/solve.m`, `private/makeODE.m`(必要なら), `DefaultTimeSimulation.json`, `functionSignatures.json` | 新規は §8.2(停止、出力の時刻)。既定(停止なし、`SampleTime` NaN)は §8.3 の基準と `isequaln` | S5 |
 | **S6** 系統のファイル: 改名とシナリオの JSON | §2.11 の確認(最初に R2026a で `PowerNetwork.import` を確かめ、結果をノートに記録)、`import_csv`/`export_csv` → `import`/`export`(または代わりの名前)と §2.11 の表の全箇所、§2.8: `scenario/`, `read_scenarios`/`write_scenarios`, `to_json_struct`/`add_from_json_struct`, `Scenario.import_csv`/`export_csv` の削除, `_GUILDAverification` の 3 スクリプトのシナリオの読み込み | `@PowerNetwork/import_csv.m`, `export_csv.m`(改名), `PowerNetwork.m`, `import_matpower.m`(ヘルプ), カタログの 2 ファイル, `_GUILDAobject/+network/` の 12 クラス, `_VersionSupport/@CsvNetHandler/`(呼び出しの名前), `@PowerNetwork/private/read_scenarios.m`, `write_scenarios.m`, `@Scenario/import_csv.m`, `export_csv.m`, `Scenario.m`(2 メソッドの宣言), `_GUILDAverification/IEEJ_*/compare_table*.m`, テスト(F8, F16, F30, F31, I91, `test_levels`) | F16(往復)にシナリオを追加、F31 の CSV の節を JSON に置き換え、新規は §8.2 | S3(検証スクリプトの判定の行), S4(`Scenario.m`、検証スクリプト), S5(`PowerNetwork.m`) |
 | **S7** 文書 | `feature-simulation.html`(シーケンス図、SIM-xx の手順、オプション表)、`feature-data-io.html`(`scenario/` の JSON)、`api-design.html`, `class-design.html`, Update log, `v4-migration.md`, `status.md`、ヘルプの `<@Examples>` の残り | `_GUILDAdoc/`, `notes/` | 文書の検査スクリプト(あれば) | S5, S6(利用者向けの部分は S4 の後に並行可) |
 
 **並行できる組 [提案]**
 
 - S2 と S3 は並行できます(重なるファイルはありません。S3 は `@Scenario/out_of_step.m` だけ、S2 はそれ以外の `@Scenario/*` のうち CSV と `out_of_step` 以外)。ただし S3 は `ResultBase` の改名の統合を待ちます(下記)。
+- S5b と S6 は並行できます(S5b は `simulate.m`, `build_simulation_data.m`, `@SolverODE/*`, 設定ファイル、S6 は `import`/`export`, `PowerNetwork.m`, `@Scenario/*` の CSV と JSON, 検証スクリプト)。`functionSignatures.json` は S5b だけが作り直します(S6 の `import`/`export` は `sig_methods` にない)。
 - S5 と S6 は、`PowerNetwork.m` を両方が触る(S5 は `build_simulation_data` の宣言、S6 は `import`/`export` の宣言)ため、**S6 は S5 の統合の後**にします。S6 の最初の確認(§2.11 の 1-4、コードを変えない)だけは S5 と並行できます。
 - S7 の利用者向け(Tutorial 以外のページ、v4-migration)は S4 の後、S5 と並行できます。`feature-simulation.html` は S5 の後、`feature-data-io.html` は S6 の後です。
 - `_GUILDAtutorial/*.mlx` はチュートリアルの保留(#113)に含まれるため、この計画では変えません。
 
 **注意(他の作業との重なり)**
 
-- **`Export` → `export` の改名:** `ResultBase.Export` は全結果クラスの共有の約束です(§1.6)。潮流計算の作業(`refactor/powerflow-structure`)が `ResultPF` で同じ改名をするので、**その作業が `ResultBase`(`ResultBase.m:85`, `Export.m`, `error_unsupported.m` の本文)と `ResultPF`, `ResultOPF`, `ResultCPF` とその呼び出し元をまとめて先に改名する**ことを推奨します。S3 はその統合の後に始め、`ResultODE` だけを改名します。潮流計算の作業が `ResultBase` を触らない場合は、S3 の前に小さな手順「S2.5 `ResultBase` と OPF・CPF の `export`」を挟みます(どちらが行うかはコーディネーターが決める)。
-- `refactor/powerflow-structure`(未統合)も `@PowerNetwork/private/` に `mustBePlotFcn` を置く可能性があります。S4 の開始時に統合済みならそれを使い、未統合なら S4 で作り、後から統合する側が片方を消します。
+- **`Export` → `export` の改名 [決定 R5、事実]:** 潮流計算の作業が `ResultBase` と全結果クラスの改名を済ませ、`514cde71` に統合されました(§1.6)。S3 と S4 は改名を前提にします。
+- `mustBePlotFcn` は `calculate_powerflow.m` のローカル関数として統合済みです [事実]。S4 が `@PowerNetwork/private/` へ移して共有します(`calculate_powerflow.m` を触るので、そのとき潮流計算の作業が並行していないことを確かめる)。
 - `update_keymap.m` と `functionSignatures.json` は S2 と S4 が触るので、S4 は S2 の統合後に始めます。
 - `PowerNetwork.import_csv` / `export_csv`(改名後 `import` / `export`)は S6 だけが触ります。§9.3 の「接続を JSON、パラメータを CSV」の設計を行う場合は、S6 の後にします。
 
@@ -920,8 +1001,8 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | `.judge(` / `.Judge` | F31 (235, 242, 267, 270-271 行) |
 | 関数の `InputValue`(`@(t)`) | F6, F31 など(S2 で grep して時系列に) |
 | `solver_ODE.solve(` | F29 (52, 192 行), F35 (300 行) |
-| `SolverOptions=` | F6(残る。`MaxStep` との優先順位の節を加える) |
-| `.Export(` / `Export=` | I63, F6, I62, F2, F4, F5, F10(33 か所。`ResultBase` の改名と一緒に) |
+| `SolverOptions=` | F6(削除。`MaxStep=` に置き換える) |
+| `Export=`(simulate のオプション) | I63, F6, I62(S4 で `result.export` に。`.Export(` の改名は済んでいる [事実、`514cde71`]) |
 
 **補助関数:** 多くのテストは `DebugScript.helper.noop_event(net, tspan)` と `DebugScript.helper.scenario(tag, net, ...)` でシナリオを作り、`net.simulate(tspan, ev)` で実行します。S2 で `helper.scenario` を `net.add_scenario` に、`noop_event` が `Time=tspan` を設定する形にし、S4 で `net.simulate(tspan, ev)` を `net.simulate(ev.s_tag)` に置き換えます。シナリオと違う時間で実行する箇所は `net.simulate(ev.s_tag, Time=tspan)` にします。
 
@@ -931,7 +1012,10 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 - `simulate("nope")` が `ScenarioNotFound` で止まり、本文にタグの一覧がある。
 - `Time`: `simulate("f", Time=[0 2])` が `[0, 2]` で計算し、`sc.Time` は変わらない。`Time` を与えなければ `sc.Time`。`add_scenario("f")` の `Time` は `[0, 10]`。外乱の時間幅は時間を変えない。
 - 呼び出しの `Tolerance` が `result.options` に入り、`GUILDA.config("TimeSimulation","Tolerance")` は変わらない。与えない名前は設定の値。
-- `MaxStep=1e-3` で出力の時間間隔が 1e-3 以下。設定の `MaxStep` も効く(`GUILDA.setting` を一時的に変え、`onCleanup` で戻す)。呼び出しの `SolverOptions` があるとき設定の `MaxStep` は当たらず、呼び出しの `MaxStep` は当たる。`MaxStep` も `SolverOptions` も与えない実行は基準と `isequaln`。
+- `MaxStep=1e-3` で出力の時間間隔が 1e-3 以下。設定の `MaxStep` も効く(`GUILDA.setting` を一時的に変え、`onCleanup` で戻す)。呼び出しの値が設定に勝つ。与えない実行は基準と `isequaln`。`SolverOptions=...` は MATLAB の未知の名前のエラー。
+- 停止条件(S5b): IEEE9 などで脱調する地絡(長い故障時間)を `StopOnOutOfStep=true, StopAngle=180` で計算すると、`flag = 2`、`output.outOfStep.Unit` が脱調した発電機、`output.tEnd` の角の差が 180 deg(事象の許容誤差の範囲)、`SimulationIncomplete` の警告が出ない。同じ計算を停止なしで行い、`tEnd` までの軌道が一致する。基準の発電機の解列中は止まらない。`delta` のない系統で `StopNoRotorAngle`。`judge_out_of_step` が `flag = 2` を `"out-of-step"` / `"incomplete"` に正しく分ける。
+- 出力の時刻(S5b): `SampleTime=0.01` で `rv_t` の区間の中の間隔が 0.01、区間の開始と終わり(外乱の時刻)が含まれ、境界が 2 回現れる。値がソルバーの刻みの計算(`SampleTime` なし)の補間と許容誤差の範囲で一致。`Format="struct"` の `sol.t` も同じ。`StopOnOutOfStep` で止まったとき最後の時刻が止まった時刻。NaN と 0 は基準と `isequaln`。
+- 入力の補間: `Method="zoh"` で各点が `output.phases` の区間の境界になり、入力が区間の中で一定。`"spline"` の入力が `griddedInterpolant(..., "spline")` の値と一致。一定値に `Method` を与えると `MethodWithoutSeries`。JSON の往復で `Method` が残り、省いた JSON は `"foh"`。
 - `Format="struct"`: `sol.a_Bus{i}.V.Vre` が `ResultODE` の同じ列と `isequaln`。どの table も `height` が `numel(sol.t)`。各要素の `s_tag` が `net` の同じ位置の物体のタグ。AVR+PSS の系統で PSS が `a_LocalController{1}.a_LocalController{1}` にある。機器の `I` の和が母線の `I` と一致(数値の誤差の範囲)。`P + jQ = V·conj(I)`。GC の `u` の列名が `<名前>_<機器タグ>`。解列中の機器の `x` が NaN、`I` が 0。機器のない母線の `a_Component` が空。`.y` を加える場合は、その列が `f_Y` の値と一致。
 - `simulate(..., Export=...)` が MATLAB の未知の名前のエラーになる。`result.export("x.foo")` が `ExportExtension` で止まる。
 - `Scenario` の改名・外乱の追加が `net.sct_stale` と `n_revOPF` を変えない。
@@ -941,7 +1025,7 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 - JSON: `export` → `import` の往復で、各シナリオの `Time`, `Description`, `tab_disturbance`(一定値と時系列の `InputValue` を含む)が一致。`scenario/` のないフォルダは従来どおり読める。壊れた JSON は系統を変える前に止まる。古いファイルの `Judge` の項目は `UnknownScenarioField` の警告で無視される。
 - 改名: `PowerNetwork.import(path)` がスクリプト、関数の中、同梱の系統のコンストラクタから動く(§2.11 の確認)。`export(..., ClassFile=true)` が書くクラスファイルが `PowerNetwork.import` を呼ぶ。
 - シナリオが関数ハンドルを持たない: `struct(sc)` と `tab_disturbance` に `function_handle` がない。`add_input` に関数を渡すと止まる。
-- 入力の時系列: `[0 0; 2 0.02]` の入力で、入力の軌道(`result.rm_variable` の u の列)が線形補間の値と一致し、`t1 + 2` 以後は 0.02 を保つ。table で渡しても同じ。`t` が増加しない、`t(1) ≠ 0` は `InvalidInputSeries`。同じ入力の 2 つの外乱の和。一定値の入力は基準と `isequaln`。
+- 入力の時系列: `[0 0; 2 0.02]` の入力(既定の `"foh"`)で、入力の軌道(`result.rm_variable` の u の列)が線形補間の値と一致し、`t1 + 2` 以後は 0.02 を保つ。table で渡しても同じ。`t` が増加しない、`t(1) ≠ 0` は `InvalidInputSeries`。同じ入力の 2 つの外乱の和。一定値の入力は基準と `isequaln`。
 - 判定: `result.judge_out_of_step()` が現行の `Scenario.out_of_step(result)` と同じ struct を返す(F31 の判定の節を F38 へ移す)。
 - 出力: `result.rm_output` の機器の出力が、同じ時刻の `f_Y` の値と一致。解列中は NaN。`odeResults` の `Y`。`export` の表に出力の列がある。`Format="struct"` に `.y` がない。
 - `solve` が系統を読まない: `build_simulation_data` の後で系統を `delete` し、`solve` が同じ結果を返す(S5)。
@@ -970,7 +1054,7 @@ S0 で、基準コミットのコードで次の実行の `rv_t`, `rm_variable`,
 
 ### 9.1 回答済み(2026-11-12)
 
-§0.2 と §0.3 の表のとおりです。回答の前の推奨と違う決定は Q1(時間の上書きを許す)、Q2(既定 `[0, 10]`)、Q3(改名と INFO)、Q6(`SolverOptions` を残す)、Q9(モデルの階層を写した struct と table)、Q13(系統のフォルダの JSON)、Q14(`Export` オプションの削除と `export` への改名)です。
+§0.2-§0.4 の表のとおりです。§0.4 で Q6 の回答(`SolverOptions` を残す)は取り消され、`SolverOptions` は削除になりました。回答の前の推奨と違う決定は Q1(時間の上書きを許す)、Q2(既定 `[0, 10]`)、Q3(改名と INFO)、Q6(`SolverOptions` を残す)、Q9(モデルの階層を写した struct と table)、Q13(系統のフォルダの JSON)、Q14(`Export` オプションの削除と `export` への改名)です。
 
 ### 9.2 確認の状況と、利用者の確認を待つ事項
 
@@ -979,12 +1063,15 @@ S0 で、基準コミットのコードで次の実行の `rv_t`, `rm_variable`,
 | R1 | ~~`Format="struct"` に出力 `.y` を加えるか~~ | **決定(§0.3):** `ResultODE` が計算して `rm_output` に持つ。`Format="struct"` は持たない |
 | R2 | ~~`Format="struct"` の table に `Time` の列を重ねるか~~ | **決定(§0.3):** 重ねない。`sol.t` だけ |
 | R3 | ~~シナリオの JSON と関数ハンドル~~ | **決定(§0.3):** シナリオは関数ハンドルを持たない。JSON は単純なデータだけ |
-| R4 | `_GUILDAverification` の IEEJ のシナリオ(§2.8 末) | 検証スクリプトのローカル関数で CSV を読み、`add_scenario` と `add_disturbance` を呼ぶ |
-| R5 | `Export` → `export` の改名をだれが行うか(§7 の注意) | 潮流計算の作業が `ResultBase` と PF・OPF・CPF をまとめて先に行い、S3 は `ResultODE` だけ |
-| R6 | 判定のメソッドの名前と置き場所(§2.9) | `ResultODE.judge_out_of_step(Reference=, Threshold=)`。静的メソッド `Scenario.out_of_step` は残さない |
-| R7 | 入力の時系列の補間と時刻の基準(§2.10) | 線形補間、最後の点の後は値を保つ、時刻は外乱の開始から(`t(1) = 0`)。値の飛びは外乱を分ける |
-| R8 | `import` を使えないときの代わりの名前(§2.11) | `import_network` / `export_network` |
-| R9 | `ResultODE` が出力をいつも計算すること(§5.2) | いつも計算する。IEEE68 で時間が問題になれば、初めて読んだときに計算する(`odeResults` と同じ遅延)に変える |
+| R4 | ~~`_GUILDAverification` の IEEJ のシナリオ~~ | **決定(§0.4):** 推奨どおり、検証スクリプトのローカル関数 |
+| R5 | ~~`Export` → `export` の改名をだれが行うか~~ | **決定(§0.4)、済み:** 潮流計算の作業が全結果クラスを改名(`514cde71`) |
+| R6 | ~~判定のメソッドの名前と置き場所~~ | **決定(§0.4):** `ResultODE.judge_out_of_step(Reference=, Threshold=)` |
+| R7 | ~~入力の時系列の補間と時刻の基準~~ | **決定(§0.4):** `Method` で `"zoh"` / `"foh"`(既定) / `"spline"`、最後の点の後は値を保つ、時刻は外乱の開始から |
+| R8 | `import` を使えないときの代わりの名前(§2.11)【利用者に再確認中】 | `import_network` / `export_network` |
+| R9 | `ResultODE` が出力をいつも計算すること(§5.2)【利用者に再確認中】 | いつも計算する。IEEE68 で時間が問題になれば、初めて読んだときに計算する(`odeResults` と同じ遅延)に変える |
+| R10 | 停止条件の基準(§2.12) | スラック母線の発電機だけ(判定の既定と同じ)。COI や任意の機器を基準にする `StopReference` は、要望が出たら加える |
+| R11 | `StopOnOutOfStep` で止めたときの `flag`(§2.12) | 新しい値 `2`。`SimulationIncomplete` の警告は出さない |
+| R12 | `"zoh"` の各点を区間の境界にすること(§2.10) | する。点の多い `"zoh"` は遅くなるとヘルプに書く。代わりに区間の中で飛ぶ値をソルバーに渡すと、刻みの縮小や失敗が起きやすい |
 
 ### 9.3 別の設計課題: 系統の接続を JSON、パラメータを CSV に
 
