@@ -68,8 +68,8 @@
             <h3><span lang="en">RMS phasor models</span><span lang="ja">実効値フェーザモデル</span></h3>
             <p lang="en">Three-phase balanced networks in the RMS phasor representation: voltages and currents are complex phasors of their RMS values at the fundamental frequency, the network is a set of algebraic equations, and the dynamics are those of the generators, loads and controllers.</p>
             <p lang="ja">三相平衡の電力系統を、実効値（RMS）のフェーザで表します。電圧と電流は基本周波数の複素フェーザとして扱い、送電網は代数方程式で表します。動的な振る舞いは、発電機、負荷、制御器のモデルが受け持ちます。</p>
-            <p lang="en">Load a standard model, such as the IEEE test systems (<code>network.IEEE9bus</code>, <code>IEEE14bus</code>, <code>IEEE39Bus</code>, <code>IEEE68bus</code>) or the IEEJ standard models (<code>network.IEEJ_EAST10</code>, <code>IEEJ_EAST30</code>, <code>IEEJ_WEST10</code>, <code>IEEJ_WEST30</code>), or build a network of your own configuration from buses, branches and components.</p>
-            <p lang="ja">IEEE の試験系統（<code>network.IEEE9bus</code>、<code>IEEE14bus</code>、<code>IEEE39Bus</code>、<code>IEEE68bus</code>）や電気学会の標準モデル（<code>network.IEEJ_EAST10</code>、<code>IEEJ_EAST30</code>、<code>IEEJ_WEST10</code>、<code>IEEJ_WEST30</code>）を、すぐに読み込めます。母線、ブランチ、機器を自分で組み合わせて、独自の構成の系統を作ることもできます。</p>
+            <p lang="en">Load a standard model, such as the IEEE 9-, 14-, 39- and 68-bus test systems or the IEEJ EAST10, EAST30, WEST10 and WEST30 standard models, or build a network of your own configuration from buses, branches and components.</p>
+            <p lang="ja">IEEE 9 母線系統、14 母線系統、39 母線系統、68 母線系統や、電気学会の EAST10/EAST30/WEST10/WEST30 系統モデルを、すぐに読み込めます。母線、ブランチ、機器を自分で組み合わせて、独自の構成の系統を作ることもできます。</p>
           </div>
           <a class="analysis-link" data-tutorial="Step1_BuildNetwork.mlx" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
         </li>
@@ -109,8 +109,8 @@
           </svg>
           <div class="analysis-body">
             <h3><span lang="en">Continuation power flow</span><span lang="ja">連続潮流計算</span></h3>
-            <p lang="en">Trace the nose (PV) curve with <code>net.calculate_continuation_powerflow</code> by raising the loads of chosen buses, and find the maximum loading point to assess voltage stability.</p>
-            <p lang="ja"><code>net.calculate_continuation_powerflow</code> を使うと、選んだ母線の負荷を少しずつ増やしながら潮流解をたどり、PV カーブ（ノーズカーブ）を描けます。最大負荷点がわかるので、電圧安定性の評価に使えます。</p>
+            <p lang="en">Raise the loads of chosen buses step by step and trace the power-flow solution to draw the nose (PV) curve, then find the maximum loading point to assess voltage stability.</p>
+            <p lang="ja">連続潮流計算で PV カーブ（ノーズカーブ）を描けます。選んだ母線の負荷を少しずつ増やしながら潮流解をたどるので、最大負荷点がわかり、電圧安定性の評価に使えます。</p>
           </div>
         </li>
         <li class="analysis-item">
@@ -355,6 +355,9 @@ sys = net.get_sys();                  % linearized model</code></pre>
         <p lang="ja">GUILDA を用いた成果を発表するときは、GUILDA を紹介した次の記事を引用してください。</p>
 <pre class="about-cite"><code>T. Nishino, T. Kawaguchi and T. Ishizaki, "GUILDA: エネルギーナレッジマネジメントのはじめの一歩,"
 計測と制御, Vol. 62, No. 9, pp. 559–563, 2023.</code></pre>
+        <p lang="en">To cite the software itself, cite the GitHub repository with the version or commit you used and the date you accessed it, for example:</p>
+        <p lang="ja">ソフトウェアそのものを引用するときは、GitHub リポジトリに、使ったバージョンまたはコミットと、アクセスした日付を添えて引用してください。たとえば次のように書きます。</p>
+<pre class="about-cite"><code>GUILDA: Grid &amp; Utility Infrastructure Linkage Dynamics Analyzer, https://github.com/guilda-dev/guilda (version/commit, accessed YYYY-MM-DD).</code></pre>
       </section>
     </div>
 
