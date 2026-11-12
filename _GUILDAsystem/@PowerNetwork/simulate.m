@@ -34,7 +34,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % - `TimeLimit` — Limit of the computation time [s] of the whole run; Inf for no limit. Default: GUILDA.setting (Inf).
 % - `Progress` — "dialog", "disp" or "none"; true = "dialog", false = "none". Default: GUILDA.setting ("dialog").
 % - `Verbose` — Print the phases and the outcome. Default: GUILDA.setting (false).
-% - `PlotFcn` — Live display during the simulation: "none" (the other displays are under development; draw the result with result.Plot()). Default: GUILDA.setting ("none").
+% - `PlotFcn` — Live display during the simulation: "none" (the other displays are under development; draw the result with result.plot_trajectory()). Default: GUILDA.setting ("none").
 % - `Export` — Call result.export after the simulation: true for the default file name, or the file name, whose extension is checked before the integration. Default: false.
 %
 % <@Examples>
@@ -45,7 +45,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % net.add_scenario(sc);
 % [res, flag] = net.simulate([0,10], sc, Progress="none", TimeLimit=Inf);
 % res.odeResults.Bus(1).Component(1).X.omega    % frequency deviation of a generator
-% res.Plot(Quantity="omega");
+% res.plot_trajectory(Quantity="omega");
 % ```
 %
 % The stored time and options of a scenario:
@@ -80,7 +80,6 @@ function [result, flag, output] = simulate(obj, time, varargin)
     end
     check_time(time);
     [c_events, c_nv] = split_events(c_in);
-    c_nv = v3_simulate_args(c_nv);                            % COMPAT(v3)
     [time, c_nv] = scenario_settings(c_events, time, c_nv);
     [c_nv, opt] = take_call_options(c_nv);
     check_export(opt.Export);

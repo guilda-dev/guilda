@@ -1,4 +1,4 @@
-function fig = Plot(obj, opt)
+function fig = plot_dispatch(obj, opt)
 % Plot the component outputs and the bus voltages.
 %
 % Draws the solution as bar charts: the active power P [pu] of each component (and the

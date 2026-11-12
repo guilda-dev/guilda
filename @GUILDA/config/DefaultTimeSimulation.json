@@ -50,6 +50,6 @@
         "options": [
             "none"
         ],
-        "Description": "Live display during the analysis ('none'; other displays are under development). The figure after the analysis: result.Plot()"
+        "Description": "Live display during the analysis ('none'; other displays are under development). The figure after the analysis: result.plot_trajectory()"
     }
 }

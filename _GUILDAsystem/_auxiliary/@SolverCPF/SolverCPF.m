@@ -37,7 +37,7 @@ classdef SolverCPF < auxiliary
 %   starting point ("init"), each step ("iter") and the end ("done") as
 %   stop = f(x, optimValues, state), x the complex bus voltages, optimValues.iteration
 %   (step), .lambda and .correctorIterations; a true stop ends the path there.
-%   result.Plot() draws the PV curves after the analysis.
+%   result.plot_pvcurve() draws the PV curves after the analysis.
 %
 % <@Examples>
 % ```matlab

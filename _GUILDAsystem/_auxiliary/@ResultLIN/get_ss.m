@@ -69,7 +69,7 @@ function sys = get_ss(obj, Method, opt)
 % sct  = res.get_ss("Kron", Format="struct");   % matrices and names, no toolbox
 % ```
 %
-% See also PowerNetwork.get_sys, ResultLIN.Plot
+% See also PowerNetwork.get_sys, ResultLIN.plot_eigenvalue
     arguments (Input)
         obj
         Method (1,1) string {mustBeMember(Method, ["Kron","Feedback","DAE"])} = default_algorithm(obj) % Form of the model.

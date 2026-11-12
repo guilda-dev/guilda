@@ -593,15 +593,15 @@ net = DebugScript.helper.build_9bus();
 res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
 
 % Plot: 機器の P, Q と母線電圧の大きさ・位相 (AC OPF は 3 段、ELD は 1 段)
-t = res.Plot(Parent=figure("Visible","off"));
+t = res.plot_dispatch(Parent=figure("Visible","off"));
 c_fig = onCleanup(@() close(ancestor(t, "figure")));
 assert(isa(t, "matlab.graphics.layout.TiledChartLayout") && numel(findobj(t.Children, "Type", "axes")) == 3)
 res_ELD = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD"));
-t2 = res_ELD.Plot(Parent=figure("Visible","off"));
+t2 = res_ELD.plot_dispatch(Parent=figure("Visible","off"));
 c_fig2 = onCleanup(@() close(ancestor(t2, "figure")));
 ax = findobj(t2.Children, "Type", "axes");
 assert(numel(ax) == 1 && numel(ax.Children.XData) == numel(tools.vcellfun(@(b) b.a_Component, net.a_Bus)))
-% 計算後の図は result.Plot だけ。Plot オプションは廃止。PlotFcn は fmincon の表示 (別のテスト)
+% 計算後の図は result.plot_dispatch だけ。Plot オプションは廃止。PlotFcn は fmincon の表示 (別のテスト)
 % Plot は PlotFcn の省略形として読まれ、その値として不正
 assert(error_id(@() net.calculate_optimal_powerflow(Method="ELD", Plot=true)) == "GUILDA:check_plotfcn:InvalidValue")
 assert(error_id(@() net.calculate_optimal_powerflow(Method="ELD", PlotFcn="cost")) == "GUILDA:check_plotfcn:UnknownKey")

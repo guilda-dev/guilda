@@ -8,7 +8,7 @@
         <entry key="DuplicateName">Constraint name "{0}" (from the Constraint handle) is already used in the OPF problem.</entry>
         <entry key="UnknownReferenceBus">ReferenceBus "{0}" is not a bus of the network. Use a bus tag, "auto" or "none".</entry>
         <entry key="ProblemMismatch">Problem is not a "{0}" problem of this network (missing or resized variables: {1}). Build it with net.build_opf_problem and the same Method.</entry>
-        <entry key="PlotFcnUnsupported">PlotFcn of calculate_optimal_powerflow: Solver "{0}" ({1}) has no live display; only fmincon ("AC OPF") has one. Use PlotFcn="none" and draw the result with result.Plot().</entry>
+        <entry key="PlotFcnUnsupported">PlotFcn of calculate_optimal_powerflow: Solver "{0}" ({1}) has no live display; only fmincon ("AC OPF") has one. Use PlotFcn="none" and draw the result with result.plot_dispatch().</entry>
         <entry key="InvalidProblem">Problem must be an optimproblem, e.g. the output of net.build_opf_problem.</entry>
     </message>
 </rsccat>

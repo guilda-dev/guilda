@@ -1,4 +1,4 @@
-function fig = Plot(obj, opt)
+function fig = plot_eigenvalue(obj, opt)
 % Plot the eigenvalue map.
 %
 % Draws the eigenvalue map of the linear model: the finite generalized eigenvalues of

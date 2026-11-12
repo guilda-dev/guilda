@@ -122,8 +122,10 @@ assert(error_id(@() ResultBase()) ~= "")
 
 %% Analysis result Plot and Export contract
 res = DebugScript.helper.DummyResult([], "x", struct(), true, struct(), 0, [1 3 2]);
-% Plot を実装した結果クラス
-h = res.Plot();
+% 基底クラスに Plot はない (図は各結果クラスの plot_* メソッド)
+assert(~ismethod(res, "Plot"))
+% 結果クラスが自分の plot_* を持てる
+h = res.plot_value();
 assert(isa(h, "matlab.graphics.chart.primitive.Line") && isequal(h.YData, [1 3 2]))
 close(ancestorfig(h))
 % 実装していない export は明確なエラー
@@ -207,12 +209,12 @@ assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "calculate_opti
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "build_opf_problem.m")) == 0, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "initialize.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverCPF", "SolverCPF.m")) == 1, join(sv_hook, ", "))
-assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "simulate.m")) == 1, join(sv_hook, ", "))
+assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "simulate.m")) == 0, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "SolverLIN.m")) == 3, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "get_options.m")) == 2, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "solve.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@ResultLIN", "get_ss.m")) == 1, join(sv_hook, ", "))
-assert(numel(sv_hook) == 12, join(sv_hook, ", "))
+assert(numel(sv_hook) == 11, join(sv_hook, ", "))
 
 
 % ---- local functions ----

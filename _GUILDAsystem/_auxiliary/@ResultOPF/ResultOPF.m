@@ -9,17 +9,15 @@ classdef ResultOPF < ResultBase
 % solution of SolverOPF.solve, a snapshot of the network (struct(net, false), of which it
 % keeps the tag) and the solver information. It keeps no reference to the network, so a
 % later edit of the network does not change it; the OPF settings (tab_parameter.OPF /
-% .operation) stay with the network. Plot draws the component outputs
+% .operation) stay with the network. plot_dispatch draws the component outputs
 % and, for "DC OPF" and "AC OPF", the bus voltages. export writes the bus, connection or
 % branch table (CSV, Excel).
 %
 % - `tab_bus`: row names = bus tags. "AC OPF": Varg [rad], V [pu], P, Q (injections into
-%   the network) [pu], Vphasor, Iphasor [pu]; "DC OPF": Varg, V, P; "ELD": P. The same
-%   table as the first output of optimize_powerflow in v3.
+%   the network) [pu], Vphasor, Iphasor [pu]; "DC OPF": Varg, V, P; "ELD": P.
 % - `tab_cub`: rows are the components of each bus (row name "<component>"), then the
 %   branch ends at the bus ("<branch>_<bus>"). "AC OPF": Iphasor, P, Q [pu]; "DC OPF" and
-%   "ELD": P (NaN for branch ends in "ELD"). The same table as the second output of
-%   optimize_powerflow in v3.
+%   "ELD": P (NaN for branch ends in "ELD").
 % - `tab_branch`: row names = branch tags. "from" is br.a_Bus{1}, "to" is br.a_Bus{2};
 %   values flow into the branch at each end, as in ResultPF.tab_branch. "AC OPF": Pfrom,
 %   Qfrom, Pto, Qto, Ifrom, Ito, Ploss, Qloss; "DC OPF" and "ELD": Pfrom, Pto, Ploss (NaN
@@ -40,7 +38,7 @@ classdef ResultOPF < ResultBase
 % result.r_cost            % optimal generation cost
 % result.tab_cub           % P, Q of each component and branch end
 % price = -result.lambda.Constraints.balancedP_B001;   % nodal price at bus B001
-% result.Plot();
+% result.plot_dispatch();
 % result.export("opf.csv", Table="cub");
 % ```
 %
@@ -82,7 +80,7 @@ classdef ResultOPF < ResultBase
             end
         end
 
-        fig = Plot(obj, opt)
+        fig = plot_dispatch(obj, opt)
         s_file = export(obj, filename, opt)
     end
 

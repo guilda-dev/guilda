@@ -3,9 +3,9 @@ classdef DummyResult < ResultBase
 %
 %   res = DebugScript.helper.DummyResult(net, solver, options, flag, output, elapsed, value)
 %
-% Plot だけを実装し、export は基底クラスのまま (未対応エラー) にしている。
+% 図のメソッド plot_value だけを持ち、export は基底クラスのまま (未対応エラー) にしている。
     properties (SetAccess=private)
-        value  % Plot で描く値
+        value  % plot_value で描く値
     end
     methods
         function obj = DummyResult(net, solver, options, flag, output, elapsed, value)
@@ -16,7 +16,7 @@ classdef DummyResult < ResultBase
                 flag     % 終了フラグ
                 output   % 解析の詳細
                 elapsed  % [s] 計算時間
-                value    % Plot で描く値
+                value    % plot_value で描く値
             end
             arguments (Output)
                 obj  % 作成したオブジェクト
@@ -24,7 +24,7 @@ classdef DummyResult < ResultBase
             obj@ResultBase(net, solver, options, flag, output, elapsed);
             obj.value = value;
         end
-        function h = Plot(obj, opt)
+        function h = plot_value(obj, opt)
             arguments (Input)
                 obj
                 opt.Parent = []
