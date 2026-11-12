@@ -388,6 +388,32 @@ assert(isempty(findobj(f, "Tag", "Vmin")) && isempty(findobj(f, "Tag", "Vmax")))
 clear c_f
 
 
+%% plot_branch draws one bar per branch
+% 棒の高さは tab_branch の値 (P: Pfrom, Q: Qfrom, S: 両端の大きいほうの |S|, loss: Ploss)。loading は |S|/Smax と 1 の線
+net = DebugScript.helper.build_9bus();
+net.a_Branch{4}.tab_parameter.operation.Smax = 0.8;
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+tab = res.tab_branch;
+rv_S = max(abs([tab.Pfrom + 1j*tab.Qfrom, tab.Pto + 1j*tab.Qto]), [], 2);
+f = figure("Visible", "off"); c_f = onCleanup(@() close(f));
+ax = res.plot_branch(Parent=f);
+b = findobj(ax, "Tag", "Branch");
+assert(isa(ax, "matlab.graphics.axis.Axes") && numel(b) == 1 && max(abs(b.YData(:) - tab.Pfrom)) < 1e-12)
+assert(isequal(string(b.XData(:)), string(tab.Properties.RowNames)))
+for c = {"Q", tab.Qfrom; "S", rv_S; "loss", tab.Ploss}'
+    clf(f); b = findobj(res.plot_branch(Parent=f, Quantity=c{1}), "Tag", "Branch");
+    assert(max(abs(b.YData(:) - c{2})) < 1e-12, c{1})
+end
+clf(f); ax = res.plot_branch(Parent=f, Quantity="loading");
+b = findobj(ax, "Tag", "Branch");
+rv_Smax = cellfun(@(br) br.tab_parameter.operation.Smax, net.a_Branch(:));   % 無限なら棒なし (NaN)
+rv_load = rv_S ./ rv_Smax; rv_load(isinf(rv_Smax)) = NaN;
+assert(abs(b.YData(4) - rv_S(4)/0.8) < 1e-12 && isequaln(isnan(b.YData(:)), isnan(rv_load)) && max(abs(b.YData(:) - rv_load), [], "omitnan") < 1e-12)
+assert(numel(findobj(ax, "Tag", "Limit")) == 1)
+assert(error_id(@() res.plot_branch(Parent=f, Quantity="I")) == "MATLAB:validators:mustBeMember")
+clear c_f
+
+
 %% Branch flows of the result use the admittance matrix in the snapshot
 % Branch.struct はスナップショットに枝のアドミタンス行列 cm_Y を加え、ResultPF はそれで枝潮流を求める
 net = PowerNetwork();
