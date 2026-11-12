@@ -68,28 +68,42 @@ assert(isequal(res.options.LoadBus, sr_load) && res.options.MaxIteration == GUIL
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 solver = net.solver_CPF;
-sct_before = solver.get_options();
+sct_before = GUILDA.config("ContinuationPowerFlow");
 
 % MaxIteration=3 ではノーズに届かない
 [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow( ...
     LoadBus=sr_load, MaxIteration=3, StepSize=0.4, ArcLength=2e-3, Tolerance=1e-6));
 assert(~flag && ~res.l_success && numel(res.rv_lambda) == 4 && contains(output.message, "MaxIteration"))
 assert(res.options.MaxIteration == 3 && res.options.StepSize == 0.4 && res.options.ArcLength == 2e-3 && res.options.Tolerance == 1e-6)
-% 実効設定は get_options で確認できる (InitialLambda は出発点の λ)
-sct_opt = solver.get_options({"InitialLambda", 0.1, "UseInternalState", true});
-assert(sct_opt.InitialLambda == 0.1 && sct_opt.UseInternalState && sct_opt.MaxIteration == GUILDA.config("ContinuationPowerFlow", "MaxIteration"))
+% 実効設定は res.options で確認できる (InitialLambda は出発点の λ)
+res = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow( ...
+    LoadBus=sr_load, MaxIteration=1, InitialLambda=0.01, Verbose=false));
+sct_opt = res.options;
+assert(sct_opt.InitialLambda == 0.01 && ~sct_opt.Verbose && sct_opt.MaxIteration == 1 && res.rv_lambda(1) == 0.01)
+assert(sct_opt.StepSize == GUILDA.config("ContinuationPowerFlow", "StepSize"))   % 渡さない項目は設定の値
 % Verbose=true は各ステップの λ を表示する (名前の大文字小文字は区別しない)
 s_log = evalc("net.calculate_continuation_powerflow(loadbus=sr_load, maxiteration=2, verbose=true);");
 assert(count(s_log, "CPF step") == 2)
 
 % 保存されている既定値は変わらない
-assert(isequal(sct_before, solver.get_options()) && net.solver_CPF == solver && isempty(solver.LoadBus))
+assert(isequal(sct_before, GUILDA.config("ContinuationPowerFlow")) && net.solver_CPF == solver && isempty(solver.LoadBus))
 
 % 系統の条件 LoadBus は net.solver_CPF に、設定は GUILDA.setting の ContinuationPowerFlow に置く
 net.solver_CPF.LoadBus = sr_load;
 c_cfg = DebugScript.helper.user_config("ContinuationPowerFlow", struct("MaxIteration", 2));
 res = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow());
 assert(isequal(res.options.LoadBus, sr_load) && numel(res.rv_lambda) == 3)
+% 省略したオプションはすべて設定の値になる (LoadBus は net.solver_CPF の値)
+sct_cfg = GUILDA.config("ContinuationPowerFlow");
+for s_name = string(fieldnames(sct_cfg)).'
+    if s_name ~= "PlotFcn"
+        assert(isequal(res.options.(s_name), sct_cfg.(s_name).Value), s_name)
+    end
+end
+% 呼び出しのオプションは設定と系統の条件より優先する (この呼び出しだけ)
+res = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(MaxIteration=3, LoadBus="B014"));
+assert(res.options.MaxIteration == 3 && numel(res.rv_lambda) == 4 && isequal(res.options.LoadBus, "B014"))
+assert(isequal(net.solver_CPF.LoadBus, sr_load) && GUILDA.config("ContinuationPowerFlow", "MaxIteration") == 2)
 clear c_cfg
 assert(~isprop(net.solver_CPF, "MaxIterations") && ~isprop(net.solver_CPF, "StepSize"))
 assert(~isfield(GUILDA.config("ContinuationPowerFlow"), "LoadBus"))   % 系統ごとの条件なので設定にない
@@ -103,19 +117,19 @@ assert(error_id(@() net.calculate_continuation_powerflow(LoadBus="B099")) == "GU
 net2 = DebugScript.helper.build_9bus();
 assert(error_id(@() net2.calculate_continuation_powerflow(LoadBus="B005")) == "GUILDA:SolverCPF:NoEquilibrium")
 
-% 未知のオプション (v3 の名前も受け付けない)
+% 未知のオプション (v3 の名前も受け付けない): arguments ブロックのエラー
 try
     DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load, CPFMaxIter=10));
     error("DebugScript:noError", "未知のオプションでエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "CPFMaxIter") && contains(ME.message, "LoadBus, MaxIteration, Tolerance"))
+    assert(ME.identifier == "MATLAB:TooManyInputs", ME.identifier)
+    assert(contains(ME.message, "CPFMaxIter") && contains(ME.message, "LoadBus") && contains(ME.message, "MaxIteration"))
 end
-assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, Method="x")) == "GUILDA:resolve_options:UnknownName")
+assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, Method="x")) == "MATLAB:TooManyInputs")
 % 値の検証
 assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, StepSize=-1)) ~= "")
 assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=1.5)) ~= "")
-assert(error_id(@() net.calculate_continuation_powerflow("LoadBus")) == "GUILDA:resolve_options:InvalidPairs")
+assert(error_id(@() net.calculate_continuation_powerflow("LoadBus")) == "MATLAB:TooManyInputs")
 
 % initialize 後に編集した系統は平衡点が古い (共通設定の系統は変えない)
 net3 = DebugScript.helper.build_ieee14();
@@ -217,15 +231,18 @@ assert(~flag && numel(res.rv_lambda) == 1 && res.tab_stop.Step == 1 && res.tab_s
 
 %% Limits option values are checked
 solver = net.solver_CPF;
+f_cpf = @(varargin) DebugScript.helper.quiet(@() net.calculate_continuation_powerflow("LoadBus", sr_load, "MaxIteration", 1, varargin{:}));
 % string 配列・char・cellstr を受け付け、string の行ベクトルとして保持
-assert(isequal(solver.get_options({"Limits", 'Q'}).Limits, "Q"))
-assert(isequal(solver.get_options({"Limits", {'V','S'}}).Limits, ["V","S"]))
-assert(isequal(solver.get_options({"Limits", "all"}).Limits, "all") && solver.get_options().Limits == "none")
+res = f_cpf(Limits='Q');       assert(isequal(res.options.Limits, "Q"))
+res = f_cpf(Limits={'V','S'}); assert(isequal(res.options.Limits, ["V","S"]))
+res = f_cpf(Limits="all");     assert(isequal(res.options.Limits, "all"))
+res = f_cpf();                 assert(isequal(res.options.Limits, "none"))
+assert(isempty(solver.LoadBus))
 % 不正な値: 未知の種類、重複、"all"/"none" と他の組み合わせ、空
 c_bad = {["Q","X"], "q", ["Q","Q"], ["all","Q"], ["none","V"], strings(1,0), 1};
 for k = 1:numel(c_bad)
     try
-        solver.get_options({"Limits", c_bad{k}});
+        net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=1, Limits=c_bad{k});
         error("DebugScript:noError", "不正な Limits でエラーにならない")
     catch ME
         assert(contains(ME.message, "Limits of the continuation power flow"), ME.message)
@@ -254,7 +271,7 @@ assert(numel(findobj(ax2, "Type", "line")) == n_bus)
 assert(error_id(@() res.plot_pvcurve(Bus="B099", Parent=figure("Visible","off"))) == "GUILDA:ResultCPF:UnknownBus")
 close(findall(groot, "Type", "figure", "Visible", "off"))
 % 計算後の図は result.plot_pvcurve だけ。Plot オプションは廃止。PlotFcn は計算中の表示 (別のテスト)
-assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=2, Plot=true)) == "GUILDA:resolve_options:UnknownName")
+assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=2, Plot=true)) ~= "")   % Plot は PlotFcn の省略形として扱われ、値 true で止まる (arguments ブロックの部分一致)
 assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=2, PlotFcn="lambda")) == "GUILDA:check_plotfcn:UnknownKey")
 
 % Export: 経路の表 (lambda, V_<bus>, Varg_<bus>)
