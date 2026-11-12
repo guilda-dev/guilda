@@ -66,9 +66,12 @@
           </svg>
           <div class="analysis-body">
             <h3><span lang="en">RMS phasor models</span><span lang="ja">実効値フェーザモデル</span></h3>
-            <p><span lang="en">Three-phase balanced networks described as phasors.</span><span lang="ja">三相平衡の電力系統のフェーザ表現。</span></p>
+            <p lang="en">Three-phase balanced networks in the RMS phasor representation: voltages and currents are complex phasors of their RMS values at the fundamental frequency, the network is a set of algebraic equations, and the dynamics are those of the generators, loads and controllers.</p>
+            <p lang="ja">三相平衡の電力系統を、実効値（RMS）のフェーザで表します。電圧と電流は基本周波数の複素フェーザとして扱い、送電網は代数方程式で表します。動的な振る舞いは、発電機、負荷、制御器のモデルが受け持ちます。</p>
+            <p lang="en">Load a standard model, such as the IEEE test systems (<code>network.IEEE9bus</code>, <code>IEEE14bus</code>, <code>IEEE39Bus</code>, <code>IEEE68bus</code>) or the IEEJ standard models (<code>network.IEEJ_EAST10</code>, <code>IEEJ_EAST30</code>, <code>IEEJ_WEST10</code>, <code>IEEJ_WEST30</code>), or build a network of your own configuration from buses, branches and components.</p>
+            <p lang="ja">IEEE の試験系統（<code>network.IEEE9bus</code>、<code>IEEE14bus</code>、<code>IEEE39Bus</code>、<code>IEEE68bus</code>）や電気学会の標準モデル（<code>network.IEEJ_EAST10</code>、<code>IEEJ_EAST30</code>、<code>IEEJ_WEST10</code>、<code>IEEJ_WEST30</code>）を、すぐに読み込めます。母線、ブランチ、機器を自分で組み合わせて、独自の構成の系統を作ることもできます。</p>
           </div>
-          <a class="analysis-link" data-tutorial="Tutorial1_1_NetBuild.mlx" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
+          <a class="analysis-link" data-tutorial="Step1_BuildNetwork.mlx" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
         </li>
         <li class="analysis-item">
           <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -78,9 +81,9 @@
           </svg>
           <div class="analysis-body">
             <h3><span lang="en">Time-domain simulation</span><span lang="ja">時間応答シミュレーション</span></h3>
-            <p><span lang="en">Responses to faults, load and input changes, and initial-value perturbations.</span><span lang="ja">地絡、負荷や入力の変化、初期値の摂動に対する応答の計算。</span></p>
+            <p><span lang="en">Responses to faults, load and input changes, and initial-value perturbations.</span><span lang="ja">地絡や負荷・入力の変化、初期値の摂動に対して、系統がどう応答するかを計算します。</span></p>
           </div>
-          <a class="analysis-link" data-tutorial="Tutorial3_1_Simulation.mlx" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
+          <a class="analysis-link" data-tutorial="Step4_SimulateCondition.mlx" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
         </li>
         <li class="analysis-item">
           <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -90,11 +93,25 @@
             <circle class="ai-dot" cx="28" cy="24" r="1.8"/>
           </svg>
           <div class="analysis-body">
-            <h3><span lang="en">Linearization</span><span lang="ja">近似線形化</span></h3>
-            <p lang="en">Approximate linear models <span class="nowrap">ẋ = Ax + Bu</span>, <span class="nowrap">y = Cx + Du</span> and energy-function Hessians.</p>
-            <p lang="ja">近似線形モデル <span class="nowrap">ẋ = Ax + Bu</span>、<span class="nowrap">y = Cx + Du</span> とエネルギー関数のヘッセ行列の導出。</p>
+            <h3><span lang="en">Linear analysis</span><span lang="ja">線形解析</span></h3>
+            <p lang="en">Linearize the network around an operating point into <span class="nowrap">Eẋ = Ax + Bu</span>, <span class="nowrap">y = Cx + Du</span>, and analyse small-signal stability from its eigenvalues. The matrices A, B, C, D and E come with the names of the states, inputs and outputs, so they can be used for further linear analyses such as kernel analysis.</p>
+            <p lang="ja">動作点のまわりで系統を近似線形化し、<span class="nowrap">Eẋ = Ax + Bu</span>、<span class="nowrap">y = Cx + Du</span> の形のモデルを得ます。固有値を調べれば、定態安定性を評価できます。行列 A、B、C、D、E には状態・入力・出力の変数名が付いているので、カーネル解析など、ほかの線形解析にもそのまま使えます。</p>
           </div>
-          <a class="analysis-link" data-section="tutorial-linear-model" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
+          <a class="analysis-link" data-tutorial="Step6_GetLinearSystem.mlx" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
+        </li>
+        <li class="analysis-item">
+          <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="ai-axis" d="M6 42 H44 M8 44 V6"/>
+            <path class="ai-brand is-dashed" d="M37 27 V42"/>
+            <path class="ai-ink" d="M8 11 C21 12 31 17 37 27"/>
+            <path class="ai-ink is-dashed" d="M37 27 C38.5 33 31 38 18 40"/>
+            <circle class="ai-brand-dot" cx="37" cy="27" r="2.4"/>
+          </svg>
+          <div class="analysis-body">
+            <h3><span lang="en">Continuation power flow</span><span lang="ja">連続潮流計算</span></h3>
+            <p lang="en">Trace the nose (PV) curve with <code>net.calculate_continuation_powerflow</code> by raising the loads of chosen buses, and find the maximum loading point to assess voltage stability.</p>
+            <p lang="ja"><code>net.calculate_continuation_powerflow</code> を使うと、選んだ母線の負荷を少しずつ増やしながら潮流解をたどり、PV カーブ（ノーズカーブ）を描けます。最大負荷点がわかるので、電圧安定性の評価に使えます。</p>
+          </div>
         </li>
         <li class="analysis-item">
           <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -107,9 +124,23 @@
           </svg>
           <div class="analysis-body">
             <h3><span lang="en">Optimal power flow</span><span lang="ja">最適潮流計算</span></h3>
-            <p><span lang="en">General formulations of OPF problems on the same network.</span><span lang="ja">同じ系統モデル上での、一般的な形の最適潮流計算問題。</span></p>
+            <p><span lang="en">General formulations of OPF problems on the same network.</span><span lang="ja">同じ系統モデルを使って、一般的な形で定式化した最適潮流計算問題を解けます。</span></p>
           </div>
-          <a class="analysis-link" data-tutorial="Tutorial5_1_OPF.mlx" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
+        </li>
+        <li class="analysis-item">
+          <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <rect class="ai-ink" x="17" y="7" width="15" height="11" rx="1.5"/>
+            <rect class="ai-brand" x="17" y="30" width="15" height="11" rx="1.5"/>
+            <path class="ai-axis" d="M4 12.5 H17 M32 12.5 H44 M39 12.5 V35.5 H32 M17 35.5 H10 V12.5"/>
+            <path class="ai-axis" d="M14 10.5 L17 12.5 L14 14.5 M35 33.5 L32 35.5 L35 37.5"/>
+            <circle class="ai-dot" cx="10" cy="12.5" r="1.8"/>
+          </svg>
+          <div class="analysis-body">
+            <h3><span lang="en">Controller design from scripts</span><span lang="ja">スクリプトによる制御器設計</span></h3>
+            <p lang="en">Design controllers in MATLAB scripts, for example an LQR gain from the linear model, attach them as local or global controllers, then simulate or linearize the network to evaluate them.</p>
+            <p lang="ja">制御器は MATLAB のスクリプトで設計できます。たとえば線形モデルから LQR のゲインを求め、ローカル制御器やグローバル制御器として系統に取り付けます。そのうえでシミュレーションや近似線形化を行い、効果を確かめます。</p>
+          </div>
+          <a class="analysis-link" data-tutorial="Step2_AddController.mlx" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
         </li>
         <li class="analysis-item">
           <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -121,8 +152,9 @@
           </svg>
           <div class="analysis-body">
             <h3><span lang="en">Graph &amp; animation</span><span lang="ja">グラフとアニメーション</span></h3>
-            <p><span lang="en">Network graphs whose node heights and colours follow the response.</span><span lang="ja">ノードの高さと色が応答に合わせて変わる系統グラフの描画。</span></p>
+            <p><span lang="en">Network graphs whose node heights and colours follow the response.</span><span lang="ja">応答に合わせてノードの高さと色が変わる、系統のグラフを描けます。</span></p>
           </div>
+          <a class="analysis-link" data-tutorial="Step5_SimulateResultData.mlx" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
         </li>
       </ol>
 
