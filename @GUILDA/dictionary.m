@@ -37,7 +37,7 @@ function tab_out = dictionary(headword,opt)
     for i = 1:n_out
         l_flag      = true;
         sv_parent   = opt.output(i);
-        tab_outi     = [];
+        tab_outi    = class_list([],:);   % keeps the filename/superclass columns when nothing is found
         while l_flag
             l_flag = false;
             lv_child = ismember(class_list.superclass,sv_parent);
