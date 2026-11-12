@@ -1,6 +1,6 @@
 # 線形化の接続器(`SolverLIN`)と共通の `get_sys`(Issue #121)
 
-ブランチは `refactor/121-linearization-connector`(未 push、分岐元 `d41057ba`)です。この文書は手順 0 の仕様です。**実装はまだしていません。** コーディネータとユーザーの確認を待ちます。
+ブランチは `refactor/121-linearization-connector`(未 push、分岐元 `d41057ba`)です。この文書は手順 0 の仕様です。ユーザーの決定(2026-11-13、§9.1)を受けて実装します。
 
 **ラベル**: 無印または [事実] = コードを読んで確認。[計測] = MATLAB R2026a で実行して確認。[提案] = この文書の提案で、未承認。[未確認] = 調べていない。
 
@@ -12,7 +12,7 @@
 2. `SolverLIN.solve` は数値だけの接続器です。ブロック、変数表、接続表、層の入出力(ポート)、網ではアドミタンス行列を受け取り、添字で接続した記述子形式のモデルを返します。`PowerNetwork` もモデルオブジェクトも読みません。
 3. `get_sys` は `PowerSystemModel` に 1 つだけ置きます。ブロックを変数表の順に集め、`SolverLIN.solve` を呼び、`Format` に応じて返します。各層が決めるのは外部入力と出力(ポート)だけです。
 4. 点は `Point` だけで与えます。`x, V, u` の位置引数は `_VersionSupport` の 1 つの関数が `Point` に変換し、非推奨の警告を出します。
-5. **Kron と Feedback の比較 [計測]:** 共通の状態の A, B, C, D, E は全 13 系統・平衡点とずらした点で 1e-11 以下で一致します。ただし Feedback は入力から届かない状態を消すため、状態の数が異なります。IEEE68 などで消えるのは AVR の代数状態 `Vst`(有限の固有値は変わらない)ですが、**IEEJ の 4 系統では有限の固有値を持つ状態(`Ed` など)が消え、固有値の集合が一致しません**(§8)。Feedback を Kron の別名にするかは、ユーザーの判断を待ちます(§9 Q1)。
+5. **Kron と Feedback の比較 [計測]:** 共通の状態の A, B, C, D, E は全 13 系統・平衡点とずらした点で 1e-11 以下で一致します。ただし Feedback は入力から届かない状態を消すため、状態の数が異なります。IEEE68 などで消えるのは AVR の代数状態 `Vst`(有限の固有値は変わらない)ですが、**IEEJ の 4 系統では有限の固有値を持つ状態(`Ed` など)が消え、固有値の集合が一致しません**(§8)。ユーザーの決定により Feedback は廃止します(§9.1)。
 
 ## 1. 現状(基準 `d41057ba`)
 
@@ -176,7 +176,7 @@ arguments (Input)
     u (:,1) double = zeros(0,1)
     opt.Point                      % [], 層の変数表の順のベクトル, {sim, t}。既定なし = 平衡点
     opt.Port (1,1) string {mustBeMember(opt.Port, ["V2I","I2V"])}   % Component, Bus だけ。既定なし = "V2I"
-    opt.Method (1,1) string {mustBeMember(opt.Method, ["Kron","Feedback","DAE"])}   % 既定なし = GUILDA.setting
+    opt.Method (1,1) string {mustBeMember(opt.Method, ["Kron","DAE"])}   % 既定なし = GUILDA.setting
     opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])}   % 既定なし = GUILDA.setting
     opt.PlotFcn                    % 既定なし = GUILDA.setting。tools.check_plotfcn
     opt.Input (1,:) string         % 既定なし = すべての入力
@@ -218,7 +218,6 @@ end
 - `get_ss` が縮約するもの:
   - `"Kron"`: v を消去(今の `via_kron`)。I2V の `Component` と `Bus` は、いつもこれです。
   - `"DAE"`: v を残し `Coordinate` で変換(今の `via_dae`)。
-  - `"Feedback"`: §8 と §9 Q1 の決定による。別名にするなら `"Kron"` と同じ処理です。
   - v のない層(V2I、LC、GC): 接続したモデルそのもの。`Method` は効きません。
 - `Input`、`Output` の選択(`select_output`、`input_index`)は今のままです。`Output` の種類 `"y"` は `y` と `yc` の Label です。
 - `A … OutputName` のプロパティは、今と同じく `get_ss(Method)` の結果です。
@@ -250,8 +249,8 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 | `GUILDA:SolverLIN:GroundFault`(INFO) | `GUILDA:PowerSystemModel:GroundFault` |
 | `GUILDA:SolverLIN:GlobalControllerPort` | なし(GC のポートは `add_global_controller` と GC のブロックで検査済み) |
 | `GUILDA:resolve_options:UnknownName`(線形化) | MATLAB の arguments ブロックのエラー |
-| `GUILDA:ResultLIN:NoUnitBus`、`GUILDA:ResultLIN:NoI2V`、`GUILDA:ResultLIN:GlobalControllerPort` | なし(Feedback を別名にする場合) |
-| `GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus`、`GUILDA:v3_nonunit_range:NonUnit`、`GUILDA:Deprecated:LinearizeAlgorithm`、`LinearizeNonUnit`、`SolverLinNonUnit` | なし(§9 Q2 で削除する場合) |
+| `GUILDA:ResultLIN:NoUnitBus`、`GUILDA:ResultLIN:NoI2V`、`GUILDA:ResultLIN:GlobalControllerPort` | なし(Feedback の廃止、§9.1) |
+| `GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus`、`GUILDA:v3_nonunit_range:NonUnit`、`GUILDA:Deprecated:LinearizeAlgorithm`、`LinearizeNonUnit`、`SolverLinNonUnit` | なし(§9 Q2 の削除) |
 
 残る ID: `GUILDA:SolverLIN:PointType`、`PointSize`、`PointSimType`、`PointSimSize`、`PointLayer`、`PointNotFinite`、`JacobianNotFinite`、`VariableMap`(意味を変える)、`GUILDA:GlobalController:GlobalControllerPort`(ブロックのメソッドで)、`GUILDA:ResultLIN:NotFinite`、`SingularAvv`、`UnknownOutput`、`StateNotInModel`、`UnknownInput`。
 
@@ -309,6 +308,13 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 | Q9 | `comp.get_sys` などの `varargout`(StateName、InputName、OutputName の cellstr)を残すか | 削除。出力は全層で `[sys, flag, output]` |
 | Q10 | `get_sys` の入出力の名前と並びの変化(§3.2、§4)を受け入れるか | 受け入れる。変数表の Label と順に揃える |
 | Q11 | 今のモデルとの一致を確かめる基準値をどう持つか | 基準 `d41057ba` で全同梱系統と全機器・制御器のモデルを求め、MAT ファイルにして `+DebugScript` に置く(置き場所の規則の確認が必要)。名前で対応させて比べる |
+
+### 9.1 決定(2026-11-13)
+
+- **Q1: Feedback は廃止します。Kron の別名にもしません。** `Method` は `"Kron"` と `"DAE"` だけを受け付け、`GUILDA.setting` の既定値(Linearization の `Method`)は `"Kron"` にします。`Method="Feedback"` は arguments ブロックの通常の検証エラーで、互換の警告は出しません。`via_feedback` とその補助関数、Feedback だけが使うエラー ID(`GUILDA:ResultLIN:NoUnitBus`、`NoI2V`、`GlobalControllerPort`)を削除し、Feedback を使う・名指す呼び出し元、テスト、設定の既定値、文書をすべて書き換えます。
+- **Q8: `net.linearize` は削除します(案 A)。** `get_sys` は `Format="GUILDAorigin"` なら flag が false でも `ResultLIN` を返します。`"struct"` と `"ss"` では flag が false ならエラーです。`linearize` を使う呼び出し元、テスト、文書を書き換えます。
+- **Q2〜Q7、Q9〜Q11:** 提案のとおりです。Q11 の基準値の置き場所は `_GUILDAdoc/developer/` の配置の規則を確かめて決めます。
+- 実装の前に、ブランチを `refactor/design-alignment`(`8ba7c955`)に追いつかせます。
 
 ## 10. 実装の手順(承認後)
 
