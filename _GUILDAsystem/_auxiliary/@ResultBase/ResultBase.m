@@ -9,8 +9,11 @@ classdef (Abstract) ResultBase < auxiliary
 % tools.resolve_options). Model data
 % stays with its owner: the result refers to the network (a_PowerNetwork, not a copy; the
 % network may have been edited after the analysis) and keeps its tag (s_network); it does
-% not copy bus, branch or component data. Plot and export are part of the contract. A subclass overrides
-% the ones it supports; the others stop with the error GUILDA:ResultBase:Unsupported.
+% not copy bus, branch or component data (ResultPF keeps a struct snapshot instead). export
+% is part of the contract: a subclass overrides it when it writes files; otherwise it stops
+% with the error GUILDA:ResultBase:Unsupported. Figures are drawn by the plot_* methods of
+% each subclass (ResultPF.plot_voltage, ResultOPF.plot_dispatch, ResultCPF.plot_pvcurve,
+% ResultODE.plot_trajectory, ResultLIN.plot_eigenvalue).
 %
 % <@Examples>
 % Every analysis of a network returns a subclass of ResultBase:
@@ -21,7 +24,7 @@ classdef (Abstract) ResultBase < auxiliary
 % result.l_success     % true when the analysis succeeded
 % result.options       % settings used for this run
 % result.r_elapsed     % elapsed time [s]
-% result.Plot();
+% result.plot_voltage();
 % ```
 %
 % See also ResultPF, ResultOPF, ResultCPF, ResultLIN, ResultODE
@@ -81,7 +84,6 @@ classdef (Abstract) ResultBase < auxiliary
             l = obj.is_success();
         end
 
-        varargout = Plot(obj, varargin)
         varargout = export(obj, varargin)
     end
 

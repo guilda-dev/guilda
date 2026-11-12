@@ -25,7 +25,7 @@ function [sys, flag, output] = get_sys(obj, varargin)
 % - `Method` — Form of the model (see ResultLIN.get_ss). Default: GUILDA.setting ("Feedback").
 % - `Point` — Point of the linearization (see net.linearize). Default: [] (the equilibrium; given in a call only).
 % - `Coordinate` — Bus variables of "DAE" (see ResultLIN.get_ss). Default: GUILDA.setting ("theta&rho").
-% - `PlotFcn` — Live display during the linearization: "none" (the other displays are under development; draw the eigenvalue map with result.Plot()). Default: GUILDA.setting ("none").
+% - `PlotFcn` — Live display during the linearization: "none" (the other displays are under development; draw the eigenvalue map with result.plot_eigenvalue()). Default: GUILDA.setting ("none").
 % - `Input` — Inputs of the model: "u" or Labels (see ResultLIN.get_ss). Default: all inputs.
 % - `Output` — Outputs of the model: "x", "V", "I", "y" or names (see ResultLIN.get_ss). Default: as in get_ss, so the outputs follow the states and "Kron" has no output names.
 % - `Format` — Form of sys: "GUILDAorigin", "struct" or "ss". Default: "GUILDAorigin".

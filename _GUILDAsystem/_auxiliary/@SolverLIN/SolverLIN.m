@@ -24,7 +24,7 @@ classdef SolverLIN < auxiliary
 %   "Vre&Vim" (real and imaginary parts). "Kron" and "Feedback" do not use it.
 % - `OptionMap` is the input of tools.resolve_options. Method and Coordinate are also the
 %   keys of the settings. PlotFcn (live display) is "none" only (tools.check_plotfcn);
-%   result.Plot() draws the eigenvalue map.
+%   result.plot_eigenvalue() draws the eigenvalue map.
 %
 % <@Examples>
 % ```matlab

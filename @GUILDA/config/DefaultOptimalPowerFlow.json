@@ -106,6 +106,6 @@
             "funccount",
             "x"
         ],
-        "Description": "Live display during the analysis (fmincon only, 'AC OPF'): the plot function optimplot<key> of fmincon, or 'none'. The figure after the analysis: result.Plot()"
+        "Description": "Live display during the analysis (fmincon only, 'AC OPF'): the plot function optimplot<key> of fmincon, or 'none'. The figure after the analysis: result.plot_dispatch()"
     }
 }

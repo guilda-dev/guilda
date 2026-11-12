@@ -245,15 +245,15 @@ clear c_cfg
 res = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load));
 
 % Plot: 既定は負荷母線の PV 曲線
-ax = res.Plot(Parent=figure("Visible","off"));
+ax = res.plot_pvcurve(Parent=figure("Visible","off"));
 c_fig = onCleanup(@() close(ancestor(ax, "figure")));
 assert(isa(ax, "matlab.graphics.axis.Axes") && numel(findobj(ax, "Type", "line")) == numel(sr_load))
-ax2 = res.Plot(Bus="all", Parent=figure("Visible","off"));
+ax2 = res.plot_pvcurve(Bus="all", Parent=figure("Visible","off"));
 c_fig2 = onCleanup(@() close(ancestor(ax2, "figure")));
 assert(numel(findobj(ax2, "Type", "line")) == n_bus)
-assert(error_id(@() res.Plot(Bus="B099", Parent=figure("Visible","off"))) == "GUILDA:ResultCPF:UnknownBus")
+assert(error_id(@() res.plot_pvcurve(Bus="B099", Parent=figure("Visible","off"))) == "GUILDA:ResultCPF:UnknownBus")
 close(findall(groot, "Type", "figure", "Visible", "off"))
-% 計算後の図は result.Plot だけ。Plot オプションは廃止。PlotFcn は計算中の表示 (別のテスト)
+% 計算後の図は result.plot_pvcurve だけ。Plot オプションは廃止。PlotFcn は計算中の表示 (別のテスト)
 assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=2, Plot=true)) == "GUILDA:resolve_options:UnknownName")
 assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=2, PlotFcn="lambda")) == "GUILDA:check_plotfcn:UnknownKey")
 

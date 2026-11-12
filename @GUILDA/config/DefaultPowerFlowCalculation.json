@@ -70,6 +70,6 @@
             "none",
             "residual"
         ],
-        "Description": "Live display during the analysis: 'residual' (a bar of |residual| per power equation, updated at each iteration) or 'none'. The figure after the analysis: result.Plot()"
+        "Description": "Live display during the analysis: 'residual' (a bar of |residual| per power equation, updated at each iteration) or 'none'. The figure after the analysis: result.plot_voltage()"
     }
 }
