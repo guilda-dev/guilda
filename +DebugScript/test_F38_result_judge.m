@@ -109,7 +109,7 @@ assert(height(r.odeResults.Bus(1).Component(1).X) == numel(r.rv_t))
 s_dir = tempname;  mkdir(s_dir);  c_dir = onCleanup(@() rmdir(s_dir, "s"));
 assert(isfile(r.export(fullfile(s_dir, "sim.csv"))) && isfile(r.export(fullfile(s_dir, "sim.mat"))))
 fig = figure("Visible", "off");  c_fig = onCleanup(@() close(fig));
-r.Plot(Quantity="omega");
+r.plot_trajectory(Quantity="omega");
 assert(size(r.rm_output, 1) == numel(r.rv_t))
 
 

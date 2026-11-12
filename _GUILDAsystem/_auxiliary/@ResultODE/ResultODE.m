@@ -5,8 +5,9 @@ classdef ResultODE < ResultBase
 % inputs of the components and controllers, and of their outputs. It is built from data
 % only: the trajectories of the solver, the variable map and the output functions of the
 % run, a struct snapshot of the network (sct_network = struct(net, false)) and the solver
-% information. It keeps no reference to the network: its methods (Plot, get_point, export,
-% judge_out_of_step, odeResults) work after the network is edited or deleted.
+% information. It keeps no reference to the network: its methods (plot_trajectory,
+% get_point, export, judge_out_of_step, odeResults) work after the network is edited or
+% deleted.
 % flag is 1 when the simulation reached the end time, 0 when it stopped by TimeLimit and
 % -1 when the solver stopped early; then the trajectories end at output.tEnd. When the
 % first phase could not be solved, they have no time points.
