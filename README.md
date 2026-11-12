@@ -63,7 +63,7 @@ Power flow calculations can be done using the `calculate_powerflow(obj)` method.
 But if you want to set the operating points easily, it is recommended to use the `initialize(obj)` method, which not only performs power flow calculations but also sets up equilibrium points for dynamic simulations.
 
 ### 3. Analysis
-After setting up the power flow conditions, you can perform various analyses such as dynamic simulations using the `simulate(obj)` method, or optimal power flow calculations using the `optimize_powerflow(obj)` method.
+After setting up the power flow conditions, you can perform various analyses such as dynamic simulations using the `simulate(obj)` method, or optimal power flow calculations using the `calculate_optimal_powerflow(obj)` method.
 
 #### _**・Dynamic Simulation**_
 Dynamic simulations can be performed using the `simulate(obj)` method, which simulates the time-domain

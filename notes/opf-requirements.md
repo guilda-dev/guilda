@@ -29,15 +29,25 @@ the end as open questions.
 `set_opffcn` は未リリースのまま置き換え）
 
 - 既定: 問題の種類ごとに標準の目的関数・制約・アルゴリズム。
-- 問題の構築: 潮流計算と同じ方式。`SolverOPF.build_problem` が母線・機器・ブランチの
-  `tab_parameter`（operation / OPF / powerflow / dynamics）を読み取り、`optimproblem` を
-  構築。Bus / Component / Branch に OPF のメソッドや状態は持たせない。
+- 問題の構築: 潮流計算と同じ方式（2026-11-12）。`calculate_optimal_powerflow` と
+  `build_opf_problem` が `@PowerNetwork/private/opf_data.m` で母線・機器・ブランチの
+  `tab_parameter`（operation / OPF / powerflow / dynamics）から 3 つの表（行名はタグ）、
+  `base`（baseMVA、Hz）、解決済みの `ReferenceBus`（`"auto"` → 母線タグ）を集める。
+  `SolverOPF.build_problem` / `solve` はこの表とオプションだけを受け取り、系統や
+  Bus / Component / Branch のオブジェクトを読まない。問題のキャッシュはなく
+  （`PowerNetwork.n_revOPF` も削除）、`net.solver_OPF` はウォームスタートの母線電圧と
+  母線タグだけを持つ。`ResultOPF` は `struct(net, false)` と解から作り、系統のハンドルを
+  持たない。問題の Description に系統の木（`disp_tree`）は入れない。
+  Bus / Component / Branch に OPF のメソッドや状態は持たせない。
   - 理由: OPF を使う解析はほかにない。動特性（`f_dx` など）は `simulate` と `get_sys`
     が再利用するため、キャッシュしたハンドルをクラスに保持するのとは事情が異なる。
   - 型による分岐は負荷（`component.load.abstract`）の固定だけ。
-- ユーザー定義の項: `net.optimize_powerflow` / `net.build_opf_problem` の
+- ユーザー定義の項: `net.calculate_optimal_powerflow` / `net.build_opf_problem` の
   Name-Value オプション（ネットワーク全体に適用。PyPSA の `extra_functionality`、
-  PowerModels の build-then-modify に相当）。`net.solver_OPF` に既定値として保存可能。
+  PowerModels の build-then-modify に相当）。呼び出しだけのオプションで、保存しない
+  （2026-11-12。既定は `Cost=[]`、`Constraint=[]`、`DefaultCost=true`、`ReferenceBus="auto"`）。
+  オプションはすべて `arguments` ブロックで検証し、未知の名前・不正な値は MATLAB のエラー。
+  v3 の形式（6 出力、`"methods"`）と `Export` は廃止（結果は `res.export()` で書く）。
   - `Cost = @(v, p) <スカラーの式>`: 目的関数 `GenCost` に加算。
   - `Constraint = @(v, p) struct(<名前>, <制約>, ...)`: `prob.Constraints.<名前>` と
     して追加。名前が双対変数のラベル（`result.lambda.Constraints.<名前>`）。既存の名前は
@@ -60,9 +70,9 @@ the end as open questions.
   - 未決: シミュレーションと連続潮流計算での使い方（制約違反の検出・警告・停止、
     リミッターとして動特性に入れるか、連続潮流計算の終了条件にするか）。
 - 変更した問題の求解: `[prob, x0] = net.build_opf_problem(...)` の `prob` を変更し、
-  `net.optimize_powerflow(Problem=prob, InitialPoint=x0)` で求解（呼び出しのみの
+  `net.calculate_optimal_powerflow(Problem=prob, InitialPoint=x0)` で求解（呼び出しのみの
   オプション、保存しない）。結果の表は通常どおり。
-- OPF の設定（`net.solver_OPF`、operation / OPF の編集）は平衡点を古くしない。
+- OPF のオプションと operation / OPF の編集は平衡点を古くしない。
 - 負荷の既定のコストは 0。価格応答する負荷は P の上下限と `Cost` を明示。
 - DC OPF のブランチのサセプタンスは MATPOWER と同じ `1/(X·tap)`。
 

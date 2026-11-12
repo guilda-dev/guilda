@@ -37,10 +37,10 @@
 >   `output.result` is the `ResultLIN`. `[sys, lin] = net.get_sys()`
 >   gives no error; using `lin` as an `odeLinearizer` fails later (1.12).
 > - **`get_sys` は既定で `ss` ではなく `ResultLIN` を返します。** すべての層の `get_sys` の既定は `Format="GUILDAorigin"`(`ResultLIN` を返却)です。`eig(sys)`、`pole`、`step`、`sys(出力名, 入力名)` など `ss` の関数を使うスクリプトは `Format="ss"` を渡す(Control System Toolbox が必要)か、`res.A`、`res.E` と名前のプロパティを読むように直してください(1.12)。
-> - **`optimize_powerflow` with 1–3 outputs has the v4 meaning.**
->   `[bus, cub, flag] = net.optimize_powerflow()` now gives
->   `bus = ResultOPF`, `cub = flag`, `flag = output`. Only the 6-output form
->   returns the old tuple (with a warning) (1.9).
+> - **`optimize_powerflow` is gone.** The OPF is
+>   `[res, flag, output] = net.calculate_optimal_powerflow(Method=...)`; the old
+>   name, the 6-output tuple and the option `"methods"` stop with MATLAB errors
+>   (no compatibility, 2026-11-12) (1.9).
 > - **DAE `B` sign.** `get_sys(Method="DAE")` / `get_ss("DAE")` returns
 >   `B` with the opposite sign on the algebraic rows (the bus current
 >   balance). v3 had the wrong sign there, so its DAE model did not match
@@ -159,7 +159,7 @@
 
   結果の `res.options` のフィールドも新しい名前です(`res.options.Tolerance`、`res.options.MaxIteration` など)。
 - **`SolverOptions` と `Point` は呼び出しだけ。** 時間応答シミュレーションの `SolverOptions`(`matlab.ode.Options`)は呼び出しかシナリオの `Options` でだけ与えます。与えなければ `ode` オブジェクトは `Solver` のオプションを使います。優先順位は `GUILDA.setting` < `sc.Options` < 呼び出しの Name-Value です。線形化の `Point` も呼び出しだけで(既定 `[]` = 平衡点)、保存しません。
-- **`Plot` オプションを `PlotFcn` に置き換えました。** `calculate_powerflow`、`optimize_powerflow`、`calculate_continuation_powerflow`、`simulate`、`linearize`、`get_sys` の `Plot`(解析後に `result.Plot()` を呼ぶ)は廃止し、渡すと `GUILDA:resolve_options:UnknownName` で止まります。解析後の図は `result.Plot()` で描いてください。`PlotFcn`(MATLAB の `optimoptions` / `odeset` と同じ名前)は解析中のライブ表示で、値は `"none"`、表示キーの string 配列、または関数ハンドルです。既定は各セクションのキー `PlotFcn`(select、選択肢は `"none"` と各解析のキー)です。
+- **`Plot` オプションを `PlotFcn` に置き換えました。** `calculate_powerflow`、`calculate_optimal_powerflow`、`calculate_continuation_powerflow`、`simulate`、`linearize`、`get_sys` の `Plot`(解析後に `result.Plot()` を呼ぶ)は廃止し、渡すと `GUILDA:resolve_options:UnknownName` で止まります。解析後の図は `result.Plot()` で描いてください。`PlotFcn`(MATLAB の `optimoptions` / `odeset` と同じ名前)は解析中のライブ表示で、値は `"none"`、表示キーの string 配列、または関数ハンドルです。既定は各セクションのキー `PlotFcn`(select、選択肢は `"none"` と各解析のキー)です。
   - 潮流計算 `"residual"`(方程式ごとの残差の棒グラフ。全 Solver)、OPF は fmincon のプロット関数(`"fval"` → `optimplotfval` など。linprog・quadprog では `GUILDA:SolverOPF:PlotFcnUnsupported`)、連続潮流計算 `"pvcurve"`(全母線の PV 曲線を伸ばす)。
   - 関数ハンドルは `stop = f(x, optimValues, state)`(optimoptions と同じ形。OPF は fmincon にそのまま渡す)。
   - 時間応答シミュレーションと線形化は `"none"` のみ(ほかの値は `GUILDA:check_plotfcn:InDevelopment`)。未知のキーは `GUILDA:check_plotfcn:UnknownKey`、別の型の値は `GUILDA:check_plotfcn:InvalidValue` で止まります(`tools.check_plotfcn`)。
@@ -524,7 +524,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   whose first bus has such a component is unchanged. Any other network gets
   another slack bus, so its results change; only the INFO message shows it. To
   keep the old choice, set `net.a_Bus{1}.l_isSlack = true`.
-  `net.optimize_powerflow` and `tools.network_to_mpc` use the same bus as their
+  `net.calculate_optimal_powerflow` and `tools.network_to_mpc` use the same bus as their
   reference when none is set, but do not set `l_isSlack`. They keep the first bus
   when no bus has a component. The angles of their results are then relative to
   the new reference bus. `tools.slack_bus_index(net)` returns this bus.
@@ -551,35 +551,32 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 
 | v3 | v4 |
 |----|----|
-| `[bus, cub, flag, output, lambda, prob] = net.optimize_powerflow("methods", "DC OPF")` | `[res, flag, output] = net.optimize_powerflow(Method="DC OPF")` |
+| `[bus, cub, flag, output, lambda, prob] = net.optimize_powerflow("methods", "DC OPF")` | `[res, flag, output] = net.calculate_optimal_powerflow(Method="DC OPF")` |
 | `bus`, `cub`, `lambda`, `prob` | `res.tab_bus`, `res.tab_cub`, `res.lambda`, `res.OPFprob` |
 | (cost computed by hand) | `res.r_cost`; branch flows `res.tab_branch` |
 
-- Options: `Method` (`"ELD"` | `"DC OPF"` | `"AC OPF"`, default
-  `"AC OPF"`), `Solver` (`"auto"` | `"linprog"` | `"quadprog"` |
+- **Renamed:** `optimize_powerflow` is now `calculate_optimal_powerflow` (2026-11-12, no alias): the old name stops with the MATLAB error of an unknown method. `build_opf_problem` and the GUILDA.setting section `OptimalPowerFlow` keep their names.
+- **No v3 forms (2026-11-12).** The 6-output tuple and the option `"methods"`
+  (of the OPF and of `build_opf_problem`) are not kept: they stop with the
+  MATLAB errors of too many outputs / an unknown name. Use
+  `[res, flag, output] = net.calculate_optimal_powerflow(Method=m)`.
+- Options (`arguments` block; an unknown name or a wrong value stops with the
+  MATLAB validation error): `Method` (`"ELD"` | `"DC OPF"` | `"AC OPF"`,
+  default `"AC OPF"`), `Solver` (`"auto"` | `"linprog"` | `"quadprog"` |
   `"fmincon"`), `Tolerance` (`OptimalityTolerance`), `MaxIteration`,
   `Verbose` (the `Display` of the solver: `"iter"` or `"none"`), `PlotFcn`
-  (fmincon only), `Export`. Settings in the OptimalPowerFlow section of
-  `GUILDA.setting` (keys `Tolerance`, was `OptimalityTolerance`; `Verbose`,
-  was `Display`); the conditions `Cost`, `Constraint`, `DefaultCost`,
-  `ReferenceBus` in `net.solver_OPF` (`SolverOPF`, new; it was empty in v3).
+  (fmincon only), `WarmStart`, `Problem`, `InitialPoint`. Defaults in the
+  OptimalPowerFlow section of `GUILDA.setting` (keys `Tolerance`, was
+  `OptimalityTolerance`; `Verbose`, was `Display`). `Cost`, `Constraint`,
+  `DefaultCost`, `ReferenceBus` are options of the call only (defaults `[]`,
+  `[]`, `true`, `"auto"`); `net.solver_OPF` (`SolverOPF`) keeps only the warm
+  start. There is no `Export` option: write the result with `res.export(f)`.
 - `ResultOPF`: `Plot` draws the component outputs and, for DC/AC OPF, the
-  bus voltages; `Export` writes the bus, connection or branch table.
+  bus voltages; `export` writes the bus, connection or branch table.
   `l_success` is true for a positive exit flag. The nodal price of a bus is
   `-res.lambda.Constraints.balancedP_<bus>`.
-- **Output count decides the form** (silent change): only 6 outputs return
-  the v3 tuple; 1–3 outputs get the v4 meaning; 4 or 5 outputs are an error
-  (too many outputs).
-- Deprecated, still working:
-
-  | Old form | Warning ID |
-  |----------|------------|
-  | 6 outputs `[bus, cub, flag, output, lambda, prob] = ...` | `GUILDA:Deprecated:OptimizePowerflowTuple` |
-  | option `"methods"` | `GUILDA:Deprecated:OptimizePowerflowMethods` |
-  | `net.build_opf_problem("methods", m)` | `GUILDA:Deprecated:BuildOpfProblemMethods` |
-
-- `net.build_opf_problem` takes the same option name as
-  `optimize_powerflow`: `[prob, x0] = net.build_opf_problem(Method="DC OPF",
+- `net.build_opf_problem` takes the same option names as
+  `calculate_optimal_powerflow`: `[prob, x0] = net.build_opf_problem(Method="DC OPF",
   validate=false)`.
 - Fixes (stage 1 and OPF step 1, see [status.md](status.md#opf)): ELD, DC
   and AC OPF run again; loads keep their power-flow P and Q (not
@@ -591,8 +588,8 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 - New `tools.network_to_mpc(net)` converts a network into a MATPOWER case.
 - **Customizing the problem (options).** `SolverOPF` builds the problem from
   `tab_parameter` of the buses, components and branches; user terms are
-  Name-Value options of `optimize_powerflow` and `build_opf_problem`
-  (conditions kept between runs in `net.solver_OPF`), applied to the whole network:
+  Name-Value options of `calculate_optimal_powerflow` and `build_opf_problem`
+  (options of the call only), applied to the whole network:
   - `Cost=@(v, p) <scalar>` is added to the objective; `Constraint=@(v, p)
     struct(name, constraint, ...)` is added, each field becoming
     `prob.Constraints.<name>`, also the label of its dual in
@@ -604,7 +601,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
     `ReferenceBus="auto"|<tag>|"none"` picks the bus with a fixed angle.
   - A default limit of one object is removed by setting it to ±Inf in its
     `tab_parameter.operation` (branch limits: NaN also means none).
-  - `optimize_powerflow(Problem=prob, InitialPoint=x0)` solves a problem from
+  - `calculate_optimal_powerflow(Problem=prob, InitialPoint=x0)` solves a problem from
     `build_opf_problem` modified by the user.
   - Bad handles stop with `GUILDA:SolverOPF:InvalidCost`,
     `InvalidConstraint`, `InvalidConstraintField` or `DuplicateName`, or
@@ -966,7 +963,7 @@ Option names:
   `ListToolbox.txt` は廃止し、「Required Toolbox components ... missing」の文も出しません。
   キーは `tools.require_toolbox` の短縮名(`optim`/`control`/`symbolic`)で、
   `tools.require_toolbox` も Toolbox 名とライセンス名をこのファイルから読みます。
-- Optimization Toolbox: 潮流計算の `Solver="fsolve"` と OPF(`optimize_powerflow`、
+- Optimization Toolbox: 潮流計算の `Solver="fsolve"` と OPF(`calculate_optimal_powerflow`、
   `initialize(Method="OPF")`)。無いと `tools.require_toolbox` が
   `GUILDA:require_toolbox:Unavailable` で止めます。
 - Control System Toolbox: 線形化の `ss` 出力(`Format="ss"`)と LQR 制御器
@@ -1042,9 +1039,9 @@ there.
   `s_solver = "equilibrium"` and no branch flows) or a `ResultOPF`
   (`"OPF"`, which runs AC OPF).
 - Other Name-Value options go unchanged to `calculate_powerflow` or
-  `optimize_powerflow` (e.g. `net.initialize(Method="OPF",
+  `calculate_optimal_powerflow` (e.g. `net.initialize(Method="OPF",
   Solver="fmincon")`, `net.initialize(MaxIteration=50)`); unknown names stop
-  with `GUILDA:resolve_options:UnknownName`. `"equilibrium"` takes no other
+  with the error of the `arguments` block of that analysis. `"equilibrium"` takes no other
   option. `Solver` chooses the algorithm of that analysis (for the power flow,
   default: the `Solver` of the PowerFlowCalculation section of GUILDA.setting). `WarmStart` is passed on like the other options.
 - **`Method="FixedInput"`** (new): the inputs of the components
@@ -1453,9 +1450,6 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 |----------|----|----------|
 | `net.add_bus(..., "baseMVA", x)` with x = system base | `GUILDA:Deprecated:BusBaseMVA` | warning; ignored |
 | `net.add_bus(..., "baseMVA", x)` with x ≠ system base | `GUILDA:Deprecated:BusBaseMVAMismatch` | warning; ignored, system base used |
-| `optimize_powerflow("methods", m)` | `GUILDA:Deprecated:OptimizePowerflowMethods` | warning; becomes `Method=m` |
-| `build_opf_problem("methods", m)` | `GUILDA:Deprecated:BuildOpfProblemMethods` | warning; becomes `Method=m` |
-| 6 outputs of `optimize_powerflow` | `GUILDA:Deprecated:OptimizePowerflowTuple` | warning; returns `{tab_bus, tab_cub, flag, output, lambda, OPFprob}` |
 | `Continuation_Power_Flow(net, opt)` | `GUILDA:Deprecated:ContinuationPowerFlowFunction` | warning; returns a `ContinuationPowerFlowV3` (v3 properties, `solve`, `CPF_Result`) |
 | `SolverCPF(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | error |
 | `SolverLIN(net, NonUnit, Name, Value)` | `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` | error |
@@ -1482,9 +1476,6 @@ lists all of them:
 |------|------|------|
 | `@PowerNetwork/add_bus.m` | `opt.baseMVA` argument | accepts the old option |
 | `@PowerNetwork/add_bus.m` | `v3_bus_baseMVA(obj, opt)` | warns and removes the option |
-| `@PowerNetwork/optimize_powerflow.m` | `v3_opf_args(varargin)` | `methods` option |
-| `@PowerNetwork/optimize_powerflow.m` | `legacy_output(..., 6, @v3_optimize_powerflow, ...)` | 6-output tuple |
-| `@PowerNetwork/build_opf_problem.m` | `v3_opf_args(varargin, "BuildOpfProblemMethods")` | `methods` option |
 | `@PowerNetwork/initialize.m` | `v3_initialize_args(varargin)` | `methods` option and old values |
 | `_auxiliary/@SolverCPF/SolverCPF.m` | `v3_cpf_constructor(varargin)` | rejects v3 constructor arguments |
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `v3_linearizer_constructor(varargin)` | rejects v3 constructor arguments |
@@ -1516,8 +1507,6 @@ settings (an untagged line, needed by the `get_config` hook).
 | `Continuation_Power_Flow.m` | old CPF entry point (returns `ContinuationPowerFlowV3`) |
 | `ContinuationPowerFlowV3.m` | v3 CPF object: `CPF*` properties, `solve`, `CPF_Result` |
 | `@CsvNetHandler/` | old CSV import / export, wrappers of `import_csv` / `export_csv` |
-| `v3_opf_args.m` | `methods` option of `optimize_powerflow` and `build_opf_problem` |
-| `v3_optimize_powerflow.m` | v4 outputs → the v3 6-output tuple |
 | `v3_cpf_constructor.m` | error for `SolverCPF(net, ...)` |
 | `v3_linearizer_constructor.m` | error for `SolverLIN(net, ...)` |
 | `v3_linearize_args.m` | `linearize` / `get_sys` の `NonUnit` |
@@ -1540,13 +1529,14 @@ Old output tuples: declare the method with `varargout` and end it with
 
 ```matlab
 varargout = {result, flag, output};
-varargout = legacy_output(varargout, nargout, 6, @v3_optimize_powerflow, "OptimizePowerflowTuple"); % COMPAT(v3)
+varargout = legacy_output(varargout, nargout, 4:6, @v3_analysis_tuple, "AnalysisTuple"); % COMPAT(v3)
 ```
 
-`v3_optimize_powerflow(result, flag, output)` (in `_VersionSupport/`)
-returns the old outputs as a cell row. Only output counts above 3 can select
-the old form: with 1–3 outputs the v4 form is returned. `optimize_powerflow`
-selects it only for 6 outputs, so 4 or 5 outputs are an error.
+`v3_analysis_tuple(result, flag, output)` (a converter in `_VersionSupport/`;
+the name is an example) returns the old outputs as a cell row. Only output
+counts above 3 can select the old form: with 1–3 outputs the v4 form is
+returned. No analysis uses `legacy_output` now (the OPF tuple was removed on
+2026-11-12); `DebugScript.test_F10_api_foundation` tests it.
 
 ### Removing compat code in one step
 

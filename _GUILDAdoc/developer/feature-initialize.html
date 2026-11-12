@@ -83,13 +83,13 @@
           <td><code>Method</code></td>
           <td lang="en" data-label="Values and default"><ul>
             <li><code>"powerflow"</code> (default): <code>net.calculate_powerflow</code> with the settings of <code>GUILDA.setting</code> (PowerFlowCalculation); when not given, only if <code>net.sct_stale.powerflow</code> is not empty</li>
-            <li><code>"OPF"</code>: <code>net.optimize_powerflow</code> with <code>Method="AC OPF"</code>, the OptimalPowerFlow section of <code>GUILDA.setting</code> and the conditions of <code>net.solver_OPF</code>; always solved</li>
+            <li><code>"OPF"</code>: <code>net.calculate_optimal_powerflow</code> with <code>Method="AC OPF"</code> and the OptimalPowerFlow section of <code>GUILDA.setting</code>; <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code> only when given in the call; always solved</li>
             <li><code>"FixedInput"</code>: the equilibrium with the inputs of the components held (<code>rv_Uequilibrium</code>, edited with <code>Component.set_input</code>); the states, bus voltages, currents and the <code>Pmech</code> of the first generator of the slack bus are solved, with the slack bus angle 0; controllers take their equilibria afterwards; always solved</li>
             <li><code>"equilibrium"</code>: never solved; the equilibria the components already hold are kept, stale ones recomputed from the held <code>V</code> and <code>I</code></li>
           </ul><small>Default fixed in <code>initialize</code>; no <code>solver_*</code> property or <code>GUILDA.config</code> entry for it</small></td>
           <td lang="ja" data-label="値と既定値"><ul>
             <li><code>"powerflow"</code>（既定）: <code>GUILDA.setting</code>（PowerFlowCalculation）の設定で <code>net.calculate_powerflow</code> を実行します。指定がない場合は、<code>net.sct_stale.powerflow</code> が空でないときだけ実行します。</li>
-            <li><code>"OPF"</code>: <code>GUILDA.setting</code> の OptimalPowerFlow セクションと <code>net.solver_OPF</code> の条件を使い、<code>Method="AC OPF"</code> で <code>net.optimize_powerflow</code> を実行します。常に求解します。</li>
+            <li><code>"OPF"</code>: <code>GUILDA.setting</code> の OptimalPowerFlow セクションの設定で、<code>Method="AC OPF"</code> として <code>net.calculate_optimal_powerflow</code> を実行します。<code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code> は、呼び出しで指定したときだけ使います。常に求解します。</li>
             <li><code>"FixedInput"</code>: 機器の入力（<code>rv_Uequilibrium</code>。<code>Component.set_input</code> で編集）を固定して平衡点を求めます。未知数は状態、母線電圧、電流と、スラック母線にある 1 台目の発電機の <code>Pmech</code> です（スラック母線の位相角は 0）。制御器の平衡点はその後で設定します。常に求解します。</li>
             <li><code>"equilibrium"</code>: 求解しません。機器が持っている平衡点をそのまま使い、古くなったものだけを保持済みの <code>V</code> と <code>I</code> から計算し直します。</li>
           </ul><small>既定値は <code>initialize</code> 内で固定されています。対応する <code>solver_*</code> のプロパティや <code>GUILDA.config</code> の項目はありません。</small></td>
@@ -116,18 +116,18 @@
         <tr>
           <td><span lang="en">other names</span><span lang="ja">その他の名前</span></td>
           <td lang="en" data-label="Values and default"><ul>
-            <li>Passed unchanged to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>optimize_powerflow</code> (<code>"OPF"</code>)</li>
-            <li>Validated there: by the <code>arguments</code> block of <code>calculate_powerflow</code>, or against <code>SolverOPF.OptionMap</code> plus the call options of <code>optimize_powerflow</code> (<code>Export</code>; for the OPF also <code>Problem</code>, <code>InitialPoint</code>, <code>WarmStart</code>)</li>
-            <li>Defaults: the PowerFlowCalculation / OptimalPowerFlow section of <code>GUILDA.setting</code>; for the OPF also the conditions in <code>net.solver_OPF</code> (<code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code>)</li>
+            <li>Passed unchanged to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>calculate_optimal_powerflow</code> (<code>"OPF"</code>)</li>
+            <li>Validated there, by the <code>arguments</code> block of <code>calculate_powerflow</code> or <code>calculate_optimal_powerflow</code>; its errors (unknown name: <code>MATLAB:TooManyInputs</code>; bad value: the MATLAB validator error) are passed on unchanged, also on a split network</li>
+            <li>Defaults: the PowerFlowCalculation / OptimalPowerFlow section of <code>GUILDA.setting</code>; for the OPF, <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code> default to <code>[]</code>, <code>[]</code>, <code>true</code>, <code>"auto"</code> (options of the call only)</li>
             <li><code>WarmStart</code>: passed the same way; <code>true</code> starts the power flow or the AC OPF from the last solution of the network (kept by <code>net.solver_PF</code> / <code>net.solver_OPF</code>), <code>false</code> from the flat start; default: <code>WarmStart</code> of the PowerFlowCalculation / OptimalPowerFlow section of <code>GUILDA.setting</code></li>
             <li><code>"equilibrium"</code>: no other option</li>
             <li><code>Solver</code>: the algorithm of the analysis, passed the same way (e.g. <code>Solver="levenberg-marquardt"</code> for the power flow, <code>Solver="fmincon"</code> for the OPF); default: the PowerFlowCalculation / OptimalPowerFlow section of <code>GUILDA.setting</code></li>
             <li><code>"FixedInput"</code>: <code>Solver</code> (<code>"newton"</code> (default), <code>"levenberg-marquardt"</code>, <code>"fsolve"</code>), <code>Tolerance</code> and <code>MaxIteration</code> (default: the PowerFlowCalculation section), <code>Verbose</code>, <code>WarmStart</code> (<code>true</code>: from the held equilibrium; <code>false</code>, or a component without one: from a power flow that is not written)</li>
           </ul></td>
           <td lang="ja" data-label="値と既定値"><ul>
-            <li><code>calculate_powerflow</code>（<code>"powerflow"</code>）または <code>optimize_powerflow</code>（<code>"OPF"</code>）へそのまま渡します。</li>
-            <li>検査は渡し先で行います。潮流計算では <code>calculate_powerflow</code> の <code>arguments</code> ブロック、OPF では <code>SolverOPF.OptionMap</code> と <code>optimize_powerflow</code> の呼び出しのオプション（<code>Export</code>、<code>Problem</code>、<code>InitialPoint</code>、<code>WarmStart</code>）が基準です。</li>
-            <li>既定値は <code>GUILDA.setting</code> の PowerFlowCalculation / OptimalPowerFlow セクションから取ります。OPF では <code>net.solver_OPF</code> の条件（<code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code>）も使います。</li>
+            <li><code>calculate_powerflow</code>（<code>"powerflow"</code>）または <code>calculate_optimal_powerflow</code>（<code>"OPF"</code>）へそのまま渡します。</li>
+            <li>検査は渡し先の <code>calculate_powerflow</code> または <code>calculate_optimal_powerflow</code> の <code>arguments</code> ブロックで行います。そのエラー（未知の名前は <code>MATLAB:TooManyInputs</code>、不正な値は MATLAB の検証関数のエラー）は、ネットワークが分断されているときも含め、そのまま伝えます。</li>
+            <li>既定値は <code>GUILDA.setting</code> の PowerFlowCalculation / OptimalPowerFlow セクションから取ります。OPF の <code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code> は呼び出しのときだけのオプションで、既定値は <code>[]</code>、<code>[]</code>、<code>true</code>、<code>"auto"</code> です。</li>
             <li><code>WarmStart</code>: これも同じように渡します。<code>true</code> なら、ネットワークが持つ最後の解（<code>net.solver_PF</code> / <code>net.solver_OPF</code> に保存）から潮流計算または AC OPF を始めます。<code>false</code> ならフラットスタートです。既定値は <code>GUILDA.setting</code> の PowerFlowCalculation / OptimalPowerFlow セクションの <code>WarmStart</code> です。</li>
             <li><code>"equilibrium"</code>: 他のオプションは指定できません。</li>
             <li><code>Solver</code>: 解析のアルゴリズムで、これも同じように渡します（例: 潮流計算の <code>Solver="levenberg-marquardt"</code>、OPF の <code>Solver="fmincon"</code>）。既定値は <code>GUILDA.setting</code> の PowerFlowCalculation / OptimalPowerFlow セクションの値です。</li>
@@ -232,8 +232,8 @@
         <path class="dg-sv-line is-muted" d="M185 588H64" marker-end="url(#init-ah-m)"/>
         <text x="191" y="592"><tspan class="init-num">14</tspan> <tspan class="dg-mono">result, flag, output</tspan> <tspan lang="en">+ warnings</tspan><tspan lang="ja">＋警告</tspan></text>
       </svg>
-      <figcaption lang="en">Numbers: the step IDs below (INIT-01 to INIT-14). Step 03 calls <code>calculate_powerflow</code> or <code>optimize_powerflow</code> when the operating point is solved; otherwise, a call inside <code>PowerNetwork</code> (<code>calculate_from_equilibrium</code>), and steps 04 to 08 are skipped. Steps 05 to 09 repeat for every bus, component, and local controller; step 12 also evaluates the local and global controllers.</figcaption>
-      <figcaption lang="ja">番号は下の処理ステップの ID（INIT-01〜INIT-14）です。ステップ 03 は、運転点を求める場合は <code>calculate_powerflow</code> または <code>optimize_powerflow</code> を呼び出します。それ以外の場合は <code>PowerNetwork</code> 内の <code>calculate_from_equilibrium</code> を呼び、ステップ 04〜08 は省きます。ステップ 05〜09 はすべての母線、機器、ローカル制御器について繰り返し、ステップ 12 ではローカル制御器とグローバル制御器も評価します。</figcaption>
+      <figcaption lang="en">Numbers: the step IDs below (INIT-01 to INIT-14). Step 03 calls <code>calculate_powerflow</code> or <code>calculate_optimal_powerflow</code> when the operating point is solved; otherwise, a call inside <code>PowerNetwork</code> (<code>calculate_from_equilibrium</code>), and steps 04 to 08 are skipped. Steps 05 to 09 repeat for every bus, component, and local controller; step 12 also evaluates the local and global controllers.</figcaption>
+      <figcaption lang="ja">番号は下の処理ステップの ID（INIT-01〜INIT-14）です。ステップ 03 は、運転点を求める場合は <code>calculate_powerflow</code> または <code>calculate_optimal_powerflow</code> を呼び出します。それ以外の場合は <code>PowerNetwork</code> 内の <code>calculate_from_equilibrium</code> を呼び、ステップ 04〜08 は省きます。ステップ 05〜09 はすべての母線、機器、ローカル制御器について繰り返し、ステップ 12 ではローカル制御器とグローバル制御器も評価します。</figcaption>
     </figure>
 
     <!-- ============================== STEPS ============================== -->
@@ -293,7 +293,7 @@
         </dl>
       </li>
       <li class="fs-step" id="INIT-03b">
-        <p class="fs-head"><b class="fs-id">INIT-03b</b> <span class="fs-call"><code>initialize</code> → <code>solve_opf</code> → <code>PowerNetwork.optimize_powerflow</code><small>→ <code>SolverOPF.solve</code></small></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-03b</b> <span class="fs-call"><code>initialize</code> → <code>solve_opf</code> → <code>PowerNetwork.calculate_optimal_powerflow</code><small>→ <code>SolverOPF.solve</code></small></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -304,7 +304,7 @@
             <li><code>"Method","AC OPF"</code> は他のオプションの後ろに追加するので、常にこちらが優先されます。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>GUILDA.config("OptimalPowerFlow")</code>, <code>c_nv</code>, <code>tab_parameter.OPF</code> / <code>.operation</code> (with <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code> of <code>net.solver_OPF</code>)</span><span lang="ja"><code>GUILDA.config("OptimalPowerFlow")</code>、<code>c_nv</code>、<code>tab_parameter.OPF</code> / <code>.operation</code>（<code>net.solver_OPF</code> の <code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code> を含む）</span></dd>
+          <dd><span lang="en"><code>GUILDA.config("OptimalPowerFlow")</code>, <code>c_nv</code> (including <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code> when given), <code>tab_parameter.OPF</code> / <code>.operation</code></span><span lang="ja"><code>GUILDA.config("OptimalPowerFlow")</code>、<code>c_nv</code>（指定されていれば <code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code> を含む）、<code>tab_parameter.OPF</code> / <code>.operation</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>ResultOPF</code> with <code>tab_bus</code> (n_bus × 6) and <code>tab_cub</code> (P, Q of each component)</span><span lang="ja"><code>tab_bus</code>（n_bus × 6）と <code>tab_cub</code>（各機器の P、Q）を持つ <code>ResultOPF</code></span></dd>
         </dl>
@@ -657,10 +657,10 @@
           <dt><span lang="en">Error or warning raised</span><span lang="ja">発生するエラー・警告</span></dt>
           <dd><ul lang="en">
             <li><code>InitializePairs</code>, <code>InitializeMethod</code></li>
-            <li><code>GUILDA:resolve_options:UnknownName</code> for other names</li>
+            <li>other names: the error of the analysis they go to; <code>"powerflow"</code> and <code>"OPF"</code>: the MATLAB error of the <code>arguments</code> block (<code>MATLAB:TooManyInputs</code> for an unknown name, a validator error for a bad value), passed on unchanged, also on a split network; <code>"FixedInput"</code>: <code>GUILDA:resolve_options:UnknownName</code>; <code>"equilibrium"</code>: <code>InitializeEquilibriumOption</code></li>
           </ul><ul lang="ja">
             <li><code>InitializePairs</code>、<code>InitializeMethod</code></li>
-            <li>それ以外の名前には <code>GUILDA:resolve_options:UnknownName</code> を出します。</li>
+            <li>それ以外の名前は、渡し先の解析のエラーになります。<code>"powerflow"</code> と <code>"OPF"</code> では <code>arguments</code> ブロックによる MATLAB のエラー（未知の名前は <code>MATLAB:TooManyInputs</code>、不正な値は検証関数のエラー）で、ネットワークが分断されているときもそのまま伝えます。<code>"FixedInput"</code> では <code>GUILDA:resolve_options:UnknownName</code>、<code>"equilibrium"</code> では <code>InitializeEquilibriumOption</code> です。</li>
           </ul></dd>
           <dt><span lang="en">State of the network after the failure</span><span lang="ja">失敗後のネットワークの状態</span></dt>
           <dd><span lang="en">unchanged</span><span lang="ja">変更されません。</span></dd>

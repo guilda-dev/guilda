@@ -1,30 +1,35 @@
-function [result,flag,output] = solve(obj, net, sct_options, sct_input)
-% Build and solve the optimal power flow with the given settings.
+function [sct_solution, flag, output] = solve(obj, tab_bus, tab_component, tab_branch, sct_options, sct_input)
+% Build and solve the optimal power flow from the data of a network.
 %
-% Builds the optimal power flow problem of net with build_problem for the effective
-% settings sct_options, solves it and returns the solution as a ResultOPF. The solver is
-% only read, except that it keeps the bus voltages of a solved "AC OPF" for the next warm
-% start and the built problem for the next run (see SolverOPF). Called by net.optimize_powerflow; calling it
-% directly is for advanced use. Without Optimization Toolbox it stops with
+% Builds the optimal power flow problem with build_problem from the tables of the buses,
+% components and branches (collected by net.calculate_optimal_powerflow from tab_parameter)
+% for the effective settings sct_options, solves it and returns the solution as a struct;
+% no network object is read. The caller builds the ResultOPF. The solver keeps only the
+% bus voltages of a solved "AC OPF", with their bus tags, for the next warm start (see
+% SolverOPF). Called by net.calculate_optimal_powerflow; calling it directly is for
+% advanced use. Without Optimization Toolbox it stops with
 % GUILDA:require_toolbox:Unavailable before anything is built.
-% sct_input carries the call-only options Problem and InitialPoint of optimize_powerflow:
-% with Problem, that problem is solved as it is instead of a built one (Cost, Constraint,
-% DefaultCost and ReferenceBus are not applied to it). It must have the variables of the
-% sct_options.Method problem of net (e.g. net.build_opf_problem, modified by the user). InitialPoint replaces the initial point; by default it is the x0 of
-% build_problem, so a Problem with added variables needs an InitialPoint that covers them.
+% sct_input carries the call-only options Problem and InitialPoint of
+% calculate_optimal_powerflow: with Problem, that problem is solved as it is instead of a
+% built one (Cost, Constraint, DefaultCost and ReferenceBus are not applied to it). It
+% must have the variables of the sct_options.Method problem of the same data (e.g.
+% net.build_opf_problem, modified by the user). InitialPoint replaces the initial point;
+% by default it is the x0 of build_problem, so a Problem with added variables needs an
+% InitialPoint that covers them.
     arguments (Input)
         obj % Solver (net.solver_OPF).
-        net % Network to optimize.
-        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+        tab_bus       table % Buses (see build_problem).
+        tab_component table % Components (see build_problem).
+        tab_branch    table % Branches (see build_problem).
+        sct_options (1,1) struct % Effective settings of the run (built by calculate_optimal_powerflow), with ReferenceBus as a bus tag or "none" and base (baseMVA, Hz).
         sct_input (1,1) struct = struct() % Call-only options: Problem (optimproblem), InitialPoint (struct of initial values by variable name); either may be absent.
     end
     arguments (Output)
-        result % Bus, connection and branch values of the solution.
+        sct_solution % tab_bus, tab_cub, tab_branch, r_cost, lambda and OPFprob (see ResultOPF).
         flag % exitflag of solve (positive = solved).
         output % Solver details; output.message describes the outcome.
     end
     tools.require_toolbox("optim", "OPF");
-    t0 = tic;
     s_method = sct_options.Method;
 
     % OPF problem: built, or given by the user
@@ -33,11 +38,11 @@ function [result,flag,output] = solve(obj, net, sct_options, sct_input)
         sct_build = sct_options;
         sct_build.Cost       = [];
         sct_build.Constraint = [];
-        [OPFprob, x0] = cached_problem(obj, net, sct_build);
+        [OPFprob, x0] = obj.build_problem(tab_bus, tab_component, tab_branch, sct_build);
         check_problem(sct_input.Problem, OPFprob, s_method);
         OPFprob = sct_input.Problem;
     else
-        [OPFprob, x0] = cached_problem(obj, net, sct_options);
+        [OPFprob, x0] = obj.build_problem(tab_bus, tab_component, tab_branch, sct_options);
     end
     if isfield(sct_input, "InitialPoint")
         x0 = sct_input.InitialPoint;
@@ -50,85 +55,40 @@ function [result,flag,output] = solve(obj, net, sct_options, sct_input)
         fval = sum(cell2mat(struct2cell(fval)));
     end
 
-    [tab_bus, tab_cub] = format_bus(net, sol, s_method);
-    tab_branch         = format_branch(net, sol, s_method);
-
-    result = ResultOPF(net, obj, sct_options, flag, output, t0, ...
-                       tab_bus, tab_cub, tab_branch, fval, lambda, OPFprob);
+    [tab_busSol, tab_cub] = format_bus(tab_bus, tab_component, tab_branch, sol, s_method);
+    sct_solution = struct("tab_bus", tab_busSol, "tab_cub", tab_cub, ...
+        "tab_branch", format_branch(tab_branch, sol, s_method), ...
+        "r_cost", fval, "lambda", lambda, "OPFprob", OPFprob);
 
     % keep the bus voltages of a solved AC OPF for the next warm start
     if s_method == "AC OPF" && flag > 0
-        obj.a_Bus         = net.a_Bus;
-        obj.n_revTopology = net.n_revTopology;
-        obj.rm_Vwarm      = [tab_bus.Varg, tab_bus.V];
+        obj.sv_warmBus = string(tab_bus.Properties.RowNames);
+        obj.rm_Vwarm   = [tab_busSol.Varg, tab_busSol.V];
     end
 end
 
 
-function [prob, x0] = cached_problem(obj, net, sct_options)
-% The kept problem when the network (by object), n_revOPF, the settings that build_problem
-% reads, the start and the variable bounds and types are those it was built with;
-% otherwise build_problem, and keep the new problem. The variables of an optimproblem are
-% handles, so a bound changed on a returned problem (e.g. result.OPFprob) would reach the
-% kept one: the bounds are compared before it is used again.
-    l_warm  = isfield(sct_options, "WarmStart") && sct_options.WarmStart;
-    rm_warm = zeros(0,2);
-    if l_warm
-        rm_warm = obj.rm_Vwarm;   % with the same network and revision, the start depends only on it
-    end
-    sct_key = struct("Method", sct_options.Method, "Cost", {sct_options.Cost}, ...
-                     "Constraint", {sct_options.Constraint}, "DefaultCost", sct_options.DefaultCost, ...
-                     "ReferenceBus", sct_options.ReferenceBus, "WarmStart", l_warm, "Vwarm", rm_warm);
-    sct = obj.sct_problem;
-    if ~isempty(sct) && sct.Network == net && sct.Revision == net.n_revOPF ...
-            && isequaln(sct.Key, sct_key) && isequaln(sct.Bounds, variable_bounds(sct.Problem))
-        prob = sct.Problem;
-        x0   = sct.InitialPoint;
-        return
-    end
-    [prob, x0] = obj.build_problem(net, sct_options);
-    sct = struct("Revision", net.n_revOPF, "Key", sct_key, "Problem", prob, ...
-                 "InitialPoint", x0, "Bounds", {variable_bounds(prob)});
-    sct.Network = net;    % assigned: struct(net, ...) would call the struct method of the network
-    obj.sct_problem = sct;
-end
-
-
-function c_bound = variable_bounds(prob)
-% {name, LowerBound, UpperBound, Type} of every variable of prob
-    sv_name = string(fieldnames(prob.Variables));
-    c_bound = cell(numel(sv_name), 4);
-    for k = 1:numel(sv_name)
-        var = prob.Variables.(sv_name(k));
-        c_bound(k,:) = {sv_name(k), var.LowerBound, var.UpperBound, var.Type};
-    end
-end
-
-
-function [tab_bus, tab_cub] = format_bus(net, sol, s_method)
+function [tab_bus, tab_cub] = format_bus(tab_data, tab_component, tab_branch, sol, s_method)
 % tab_cub has one row per connection to a bus, in bus order:
 %   the bus's components ("<component>"), then the branch ends at the bus ("<branch>_<bus>").
 % Each row is the injection into the bus (Iphasor, P, Q from the component / branch into the bus).
-    a_Bus    = net.a_Bus;
-    a_Branch = net.a_Branch;
+    sv_bus   = string(tab_data.Properties.RowNames);
+    sv_com   = string(tab_component.Properties.RowNames);
+    sv_br    = string(tab_branch.Properties.RowNames);
     rm_bus   = [];
     rm_cub   = [];
     sv_cub   = [];
 
-    cv_strBranchBus = cellfun(@(br) string(br.a_Bus), a_Branch, "UniformOutput", false);
-
-    for i_bus = 1:numel(a_Bus)
-        bus     = a_Bus{i_bus};
-        s_bus   = string(bus);
-        a_com   = bus.a_Component;
-        if isempty(a_com); a_com = cell(0,1); end
-        sv_bra = string.empty(0,1);
-        for i_bra = 1:numel(a_Branch)
-            if any(cv_strBranchBus{i_bra} == s_bus)
-                sv_bra = [sv_bra; string(a_Branch{i_bra})+"_"+s_bus];  %#ok
+    for i_bus = 1:numel(sv_bus)
+        s_bus   = sv_bus(i_bus);
+        sv_c    = sv_com(tab_component.Bus == s_bus);
+        sv_bra  = string.empty(0,1);
+        for i_bra = 1:numel(sv_br)
+            if tab_branch.From(i_bra) == s_bus || tab_branch.To(i_bra) == s_bus
+                sv_bra = [sv_bra; sv_br(i_bra)+"_"+s_bus];  %#ok
             end
         end
-        sv_cub = [sv_cub; string(a_com); sv_bra];                       %#ok
+        sv_cub = [sv_cub; sv_c(:); sv_bra];                       %#ok
 
         switch s_method
             case "AC OPF"
@@ -137,8 +97,8 @@ function [tab_bus, tab_cub] = format_bus(net, sol, s_method)
                 r_P   = 0;
                 r_Q   = 0;
                 c_I   = 0;
-                for i_com = 1:numel(a_com)
-                    sol_com = sol.(string(a_com{i_com}));
+                for i_com = 1:numel(sv_c)
+                    sol_com = sol.(sv_c(i_com));
                     Pcub = sol_com(1);
                     Qcub = sol_com(2);
                     Icub = (Pcub-1j*Qcub)/conj(c_V);
@@ -154,14 +114,14 @@ function [tab_bus, tab_cub] = format_bus(net, sol, s_method)
                 rm_bus = [rm_bus; [sol_V(1),sol_V(2),r_P,r_Q,c_V,c_I]];    %#ok
 
             case "DC OPF"
-                rv_P   = cellfun(@(c) sol.(string(c)), a_com);
+                rv_P   = arrayfun(@(c) sol.(c), sv_c);
                 rv_Pbr = arrayfun(@(s) sol.(s), sv_bra);
                 rm_cub = [rm_cub; rv_P(:); rv_Pbr(:)];                      %#ok
                 rm_bus = [rm_bus; [sol.(s_bus), 1, sum(rv_P)]];           %#ok
 
             case "ELD"
                 % Branches are ignored in ELD, so the branch rows are NaN.
-                rv_P   = cellfun(@(c) sol.(string(c)), a_com);
+                rv_P   = arrayfun(@(c) sol.(c), sv_c);
                 rm_cub = [rm_cub; rv_P(:); nan(numel(sv_bra),1)];          %#ok
                 rm_bus = [rm_bus; sum(rv_P)];                               %#ok
         end
@@ -169,30 +129,28 @@ function [tab_bus, tab_cub] = format_bus(net, sol, s_method)
 
     switch s_method
         case "AC OPF"
-            tab_bus = array2table( rm_bus, "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"], "RowNames",string(a_Bus));
+            tab_bus = array2table( rm_bus, "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"], "RowNames",sv_bus);
             tab_cub = array2table( rm_cub, "VariableNames",["Iphasor","P","Q"], "RowNames",sv_cub);
         case "DC OPF"
-            tab_bus = array2table( rm_bus, "VariableNames",["Varg","V","P"], "RowNames",string(a_Bus));
+            tab_bus = array2table( rm_bus, "VariableNames",["Varg","V","P"], "RowNames",sv_bus);
             tab_cub = array2table( rm_cub, "VariableNames","P", "RowNames",sv_cub);
         case "ELD"
-            tab_bus = array2table( rm_bus, "VariableNames","P", "RowNames",string(a_Bus));
+            tab_bus = array2table( rm_bus, "VariableNames","P", "RowNames",sv_bus);
             tab_cub = array2table( rm_cub, "VariableNames","P", "RowNames",sv_cub);
     end
 end
 
 
-function tab = format_branch(net, sol, s_method)
-% Flows at both ends of each branch (from = br.a_Bus{1}, to = br.a_Bus{2}), as power and
-% current flowing into the branch: the negative of the branch-end rows of tab_cub.
+function tab = format_branch(tab_branch, sol, s_method)
+% Flows at both ends of each branch (from = From, to = To of the branch table), as power
+% and current flowing into the branch: the negative of the branch-end rows of tab_cub.
 % ELD ignores branches, so its values are NaN.
-    n_br       = numel(net.a_Branch);
-    sv_branch  = strings(n_br,1);
+    n_br       = height(tab_branch);
+    sv_branch  = reshape(string(tab_branch.Properties.RowNames), [], 1);
     cm_S       = nan(n_br,2);
     cm_I       = nan(n_br,2);
     for k = 1:n_br
-        br  = net.a_Branch{k};
-        sv_branch(k) = string(br);
-        sv_end = string(br) + "_" + string(br.a_Bus);
+        sv_end = sv_branch(k) + "_" + [tab_branch.From(k), tab_branch.To(k)];
         for i_end = 1:2
             switch s_method
                 case "AC OPF"

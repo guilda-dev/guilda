@@ -32,7 +32,7 @@
 | `AnalysisResult.m` | `_GUILDAsystem/_auxiliary/@AnalysisResult/AnalysisResult.m` |
 | `Comp/gda.m` / `LC/gda.m` | `_GUILDAsystem/@Component/get_dx_algebraic.m` / `_GUILDAsystem/@LocalController/get_dx_algebraic.m` |
 | `Component.m` / `LocalController.m` / `GlobalController.m` / `Bus.m` | `_GUILDAsystem/@<クラス>/<クラス>.m` |
-| `PowerNetwork.m` / `reset_solver.m` / `check_edit.m` / `linearize.m` / `optimize_powerflow.m` | `_GUILDAsystem/@PowerNetwork/` |
+| `PowerNetwork.m` / `reset_solver.m` / `check_edit.m` / `linearize.m` / `calculate_optimal_powerflow.m` | `_GUILDAsystem/@PowerNetwork/` |
 | `add_local_controller.m` | `_GUILDAsystem/@Component/add_local_controller.m` |
 | `load/@power/power.m` / `load/@impedance/impedance.m` | `_GUILDAobject/+component/+load/` |
 | `resolve_options.m` / `complex2matrix.m` | `_GUILDAsystem/+tools/` |
@@ -74,7 +74,7 @@
 - 上書きは呼び出し限りで、`solver_ODE` には書き戻さない(`resolve_options.m:5-6`、`odeSimulator.m:145`)。F6 でもテスト済み(`F6:144-154`)。
 - 名前の照合は大小文字を区別しない(`resolve_options.m:76`)。`sct_options` には **変換前の値** が入る(例: `Plot=1` は double のまま)。`validate_options` は検査するだけで値を返さない(`odeSimulator.m:125`)。
 - `get_options` の metaclass 走査(`:127-137`)は、`OptionMap` が公開設定 9 個を全部覆っているので、`resolve_options` が返す `sct_given` と同じ内容を作り直している。
-- `take_call_options` は `linearize.m:52` と `optimize_powerflow.m:70` にも同名のローカルコピーがある。
+- `take_call_options` は `linearize.m:52` と `calculate_optimal_powerflow.m:70` にも同名のローカルコピーがある。
 
 ### 1.3 `time` の形式
 

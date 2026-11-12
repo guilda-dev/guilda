@@ -38,8 +38,8 @@ assert(contains(s_msg, output.message))
 
 
 %% Stop by the solver warns too
-% 入力が t = 2.5 で発散するとソルバーが止まる
-ev_in = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", @(t) 1/(1.5-t));
+% 入力が t = 1 から 1 s で 1e3 まで増えるとソルバーが止まる
+ev_in = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", [0, 0; 1, 1e3]);
 lastwarn("");
 [~, flag, output] = net.simulate([0,4], ev_in);
 [s_msg, s_got] = lastwarn(); s_got = DebugScript.helper.msg_id(s_msg, s_got);

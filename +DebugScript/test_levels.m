@@ -87,12 +87,9 @@ function tab = test_levels()
     "test_F30_governor/export_csvNamesTheGovernorItDoesNotWrite", "medium"
     % ---- F31_scenario ----------------------------------------------------------------------------
     "test_F31_scenario/AFaultThenAPermanentOpeningEqualsTwoOld_styleEvents", "large"
-    "test_F31_scenario/DefaultJudge_StableAndOut_of_stepOnIEEE9bus", "large"
     "test_F31_scenario/StoredTimeAndOptions_TheCallWins", "medium"
-    "test_F31_scenario/Ownership_Add_Remove_Move_Copy", "medium"
+    "test_F31_scenario/ChildrenOfTheNetwork_Create_Rename_Copy_Remove", "medium"
     "test_F31_scenario/UnknownTagsAtAddAndAtRunTime", "medium"
-    "test_F31_scenario/CSVRoundTripWithSeveralScenariosInOneFile", "medium"
-    "test_F31_scenario/IncompleteVerdictAndACustomJudge", "medium"
     % ---- F35_controller_signal_routing -----------------------------------------------------------
     "test_F35_controller_signal_routing/AGlobalControllerReadsAnOutputOfItsUnitBeforeAStateOfTheSameName", "medium"
     % ---- F36_tutorial_all_models -----------------------------------------------------------------
@@ -140,7 +137,6 @@ function tab = test_levels()
     "test_F4_opf/ResultClassOfAllThreeMethods", "large"
     "test_F4_opf/Name_ValueOptionsOverrideSolverDefaultsForOneCallOnly", "large"
     "test_F4_opf/PlotAndExportOfTheResult", "large"
-    "test_F4_opf/DeprecatedMethodsOption", "large"
     "test_F4_opf/DCOPFUsesTheMATPOWERSusceptance1_X", "large"
     "test_F4_opf/CostOptionAddsAUserCostToTheObjective", "large"
     "test_F4_opf/ConstraintOptionBindsAndItsDualHasTheUser_sName", "large"
@@ -154,12 +150,11 @@ function tab = test_levels()
     "test_F4_opf/IEEE14ELDAndDCOPF", "medium"
     "test_F4_opf/ACOPFOnA2_busSystemMatchesTheClosedForm", "medium"
     "test_F4_opf/ConversionToAMATPOWERCase", "medium"
-    "test_F4_opf/LegacySix_outputForm", "medium"
     "test_F4_opf/Price_responsiveLoad_ALoadWithPBoundsAndItsOwnCost", "medium"
     "test_F4_opf/InfiniteOperationLimitsRemoveTheDefaultLimits", "medium"
     "test_F4_opf/DefaultCost_falseLeavesOutTheCostsOfTab_parameter_OPF", "medium"
     "test_F4_opf/ReferenceBusSelectsTheBusWithAFixedAngle", "medium"
-    "test_F4_opf/StoredCostAndConstraintInNet_solver_OPF", "medium"
+    "test_F4_opf/CostAndConstraintAreOptionsOfTheCallOnly", "medium"
     "test_F4_opf/OPFOptionsDoNotMakeTheEquilibriumStale", "medium"
     "test_F4_opf/InvalidCostAndConstraintStopWithAnError", "medium"
     % ---- F5_cpf ----------------------------------------------------------------------------------
@@ -270,7 +265,7 @@ function tab = test_levels()
     "test_I53_scalar_timespan/OffsetAndAnEventWithoutEffectKeepASingleTime", "medium"
     % ---- I54_simulate_time -----------------------------------------------------------------------
     "test_I54_simulate_time/AScenarioAsTheFirstArgumentRunsWithoutTime", "medium"
-    "test_I54_simulate_time/EmptyTimeTakesTheTimeSpanOfTheEvents", "medium"
+    "test_I54_simulate_time/EmptyTimeTakesTheTimeOfTheScenario", "medium"
     % ---- I55_time_limit --------------------------------------------------------------------------
     "test_I55_time_limit/PartialResultWarnsWithAnyNumberOfOutputs", "medium"
     "test_I55_time_limit/PhasesThatEachFitInTheLimitStopWhenTheirSumDoesNot", "medium"

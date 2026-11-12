@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the function "mustBeSimulationTime".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="InvalidTime">A simulation time must be [t0, tend] with finite real values and t0 &lt; tend: {0}.</entry>
+    </message>
+</rsccat>

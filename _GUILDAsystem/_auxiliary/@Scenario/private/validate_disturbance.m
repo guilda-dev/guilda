@@ -1,5 +1,5 @@
 function validate_disturbance(d, s_scenario, net)
-% Checks of one disturbance; with net = [] (scenario not attached), those without the network.
+% Checks of one disturbance; with net = [], only those without the network.
     c_lbl = {char(d.Tag), char(s_scenario)};
     ts = d.TimeSpan;
     if ~isnumeric(ts) || ~isreal(ts) || any(isnan(ts)) || (numel(ts) == 2 && ts(1) > ts(2))
@@ -76,16 +76,26 @@ function validate_disturbance(d, s_scenario, net)
                     char(join(d.InputName(lv_bad), ", ")), char(d.InputUnit), char(join(sv_u, ", "))));
         end
     end
-    checkValueCount(c_lbl, "InputValue", d.InputValue, "InputName", d.InputName);
-    exV = d.InputValue;
-    if ~iscell(exV)
-        exV = {exV};
+    if d.InputMethod == ""
+        checkValueCount(c_lbl, "InputValue", d.InputValue, "InputName", d.InputName);
+        return
     end
-    for k = 1:numel(exV)
-        if isa(exV{k}, 'function_handle') && nargin(exV{k}) ~= 1
-            error(msg("GUILDA:Scenario:InvalidNargin", c_lbl{:}));
-        elseif ~isa(exV{k}, 'function_handle') && ~isa(exV{k}, 'double')
-            error(msg("GUILDA:Scenario:InvalidInputType", c_lbl{:}, class(exV{k})));
-        end
+    % A time series [t, v_1, ..., v_n] (normalize_input made it from a matrix or a table)
+    v = d.InputValue;
+    n_name = numel(d.InputName);
+    s_reason = "";
+    if ~isnumeric(v) || ~isreal(v) || ~ismatrix(v) || isempty(v)
+        s_reason = "it is not a real numeric matrix";
+    elseif n_name == 0 || size(v,2) ~= 1 + n_name
+        s_reason = "it has " + size(v,2) + " column(s) for " + n_name + " input name(s)";
+    elseif ~all(isfinite(v), "all")
+        s_reason = "it has a value that is not finite";
+    elseif v(1,1) ~= 0
+        s_reason = "the first time is " + v(1,1) + ", not 0";
+    elseif any(diff(v(:,1)) <= 0)
+        s_reason = "the times do not increase strictly";
+    end
+    if s_reason ~= ""
+        error(msg("GUILDA:Scenario:InvalidInputSeries", c_lbl{:}, char(s_reason)));
     end
 end

@@ -388,6 +388,100 @@ assert(isempty(findobj(f, "Tag", "Vmin")) && isempty(findobj(f, "Tag", "Vmax")))
 clear c_f
 
 
+%% plot_branch draws one bar per branch
+% 棒の高さは tab_branch の値 (P: Pfrom, Q: Qfrom, S: 両端の大きいほうの |S|, loss: Ploss)。loading は |S|/Smax と 1 の線
+net = DebugScript.helper.build_9bus();
+net.a_Branch{4}.tab_parameter.operation.Smax = 0.8;
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+tab = res.tab_branch;
+rv_S = max(abs([tab.Pfrom + 1j*tab.Qfrom, tab.Pto + 1j*tab.Qto]), [], 2);
+f = figure("Visible", "off"); c_f = onCleanup(@() close(f));
+ax = res.plot_branch(Parent=f);
+b = findobj(ax, "Tag", "Branch");
+assert(isa(ax, "matlab.graphics.axis.Axes") && numel(b) == 1 && max(abs(b.YData(:) - tab.Pfrom)) < 1e-12)
+assert(isequal(string(b.XData(:)), string(tab.Properties.RowNames)))
+for c = {"Q", tab.Qfrom; "S", rv_S; "loss", tab.Ploss}'
+    clf(f); b = findobj(res.plot_branch(Parent=f, Quantity=c{1}), "Tag", "Branch");
+    assert(max(abs(b.YData(:) - c{2})) < 1e-12, c{1})
+end
+clf(f); ax = res.plot_branch(Parent=f, Quantity="loading");
+b = findobj(ax, "Tag", "Branch");
+rv_Smax = cellfun(@(br) br.tab_parameter.operation.Smax, net.a_Branch(:));   % 無限なら棒なし (NaN)
+rv_load = rv_S ./ rv_Smax; rv_load(isinf(rv_Smax)) = NaN;
+assert(abs(b.YData(4) - rv_S(4)/0.8) < 1e-12 && isequaln(isnan(b.YData(:)), isnan(rv_load)) && max(abs(b.YData(:) - rv_load), [], "omitnan") < 1e-12)
+assert(numel(findobj(ax, "Tag", "Limit")) == 1)
+assert(error_id(@() res.plot_branch(Parent=f, Quantity="I")) == "MATLAB:validators:mustBeMember")
+clear c_f
+
+
+%% plot_convergence draws the largest residual at each iterate
+% 残差は SolverPF の方程式と同じ: 収束した最後の点は Tolerance 以下、反復ごとに MethodNewtonRaphson の残差と一致
+net = DebugScript.helper.build_9bus();
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false, Solver="newton"));
+f = figure("Visible", "off"); c_f = onCleanup(@() close(f));
+t = res.plot_convergence(Parent=f);
+assert(numel(findobj(f, "Type", "axes")) == 1 && numel(findobj(f, "Tag", "Tolerance")) == 1)
+h = findobj(f, "Tag", "Residual");
+assert(isequal(h.XData(:), res.rv_step(:)) && h.YData(end) <= res.options.Tolerance && h.YData(1) > 1e-3)
+assert(abs(h.YData(end) - res.output.residual) <= 1e-12 + 1e-6*res.output.residual)
+assert(strcmp(t.Children(end).YScale, "log"))
+clf(f); res.plot_convergence(Parent=f, Bus=["B008","B001"]);
+hv = findobj(f, "Tag", "V");
+assert(numel(findobj(f, "Type", "axes")) == 2 && numel(hv) == 2)
+[~, i8] = ismember("B008", string({hv.DisplayName}));
+assert(max(abs(hv(i8).YData(:) - abs(res.cm_Vhistory(8,:)).')) < 1e-12)
+assert(error_id(@() res.plot_convergence(Parent=f, Bus="B099")) == "GUILDA:ResultPF:UnknownTag")
+assert(error_id(@() ResultPF().plot_convergence(Parent=f)) == "GUILDA:ResultPF:NoHistory")
+% dynamic: 横軸は仮想時間
+res_d = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false, Solver="dynamic"));
+clf(f); res_d.plot_convergence(Parent=f);
+h = findobj(f, "Tag", "Residual");
+assert(isequal(h.XData(:), res_d.rv_step(:)) && contains(get(get(findobj(f, "Type", "axes"), "XLabel"), "String"), "virtual time"))
+clear c_f
+
+
+%% plot_network colors the buses and draws the flows as arrows
+% 色は |V| (または位相)、矢印は P (Q) が枝に入る端から、線幅は |P| とともに太くなる。座標がないと force レイアウト
+net = DebugScript.helper.build_9bus();
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+tab = res.tab_branch;
+f = figure("Visible", "off"); c_f = onCleanup(@() close(f));
+h = res.plot_network(Parent=f);
+assert(isa(h, "matlab.graphics.chart.primitive.GraphPlot") && numel(h.XData) == numel(net.a_Bus) && numel(h.LineWidth) == height(tab))
+assert(max(abs(h.NodeCData(:) - res.tab_bus.V)) < 1e-12 && numel(findobj(f, "Type", "colorbar")) == 1 && h.ShowArrows)
+% 一番太い矢印は |P| が最大の枝、細い順も |P| の順
+rv_P = max(abs([tab.Pfrom, tab.Pto]), [], 2);
+[~, iv_e] = ismember(h.UserData, string(tab.Properties.RowNames));
+assert(isequal(sort(iv_e(:))', 1:height(tab)))
+[~, i_e] = max(h.LineWidth);
+[~, i_b] = max(rv_P);
+assert(iv_e(i_e) == i_b && max(abs(h.LineWidth(:) - (0.5 + 4.5*rv_P(iv_e)/max(rv_P)))) < 1e-12)
+% 座標: スナップショットの Xaxis, Yaxis を使う。NaN があれば全母線を force レイアウトで置く
+sct = res.sct_network;
+for k = 1:numel(sct.a_Bus)
+    sct.a_Bus{k}.tab_parameter.graph.Xaxis = k;
+    sct.a_Bus{k}.tab_parameter.graph.Yaxis = -k;
+end
+tab_pf = table(res.tab_bus.Vphasor, res.tab_bus.Iphasor, res.tab_bus.P, res.tab_bus.Q, ...
+               'VariableNames', ["V","I","P","Q"], 'RowNames', res.tab_bus.Properties.RowNames);
+res_xy = ResultPF(tab_pf, res.cm_Y, sct, struct("flag", 1, "options", res.options));
+clf(f); h = res_xy.plot_network(Parent=f);
+assert(isequal(h.XData(:)', 1:9) && isequal(h.YData(:)', -(1:9)))
+sct.a_Bus{3}.tab_parameter.graph.Xaxis = NaN;
+clf(f); h = ResultPF(tab_pf, res.cm_Y, sct, struct("flag", 1)).plot_network(Parent=f);
+assert(all(isfinite(h.XData)) && ~isequal(h.XData(:)', 1:9))
+% Color="angle" は位相 [deg]、Arrow="none" は矢印なし
+clf(f); h = res.plot_network(Parent=f, Color="angle", Arrow="none");
+assert(max(abs(h.NodeCData(:) - rad2deg(res.tab_bus.Varg))) < 1e-12 && ~h.ShowArrows && all(h.LineWidth == 1))
+clf(f); h = res.plot_network(Parent=f, Arrow="Q");
+rv_Q = max(abs([tab.Qfrom, tab.Qto]), [], 2);
+[~, iv_e] = ismember(h.UserData, string(tab.Properties.RowNames));
+assert(max(abs(h.LineWidth(:) - (0.5 + 4.5*rv_Q(iv_e)/max(rv_Q)))) < 1e-12)
+assert(error_id(@() res.plot_network(Parent=f, Color="P")) == "MATLAB:validators:mustBeMember")
+assert(error_id(@() ResultPF().plot_network(Parent=f)) == "GUILDA:ResultPF:NoNetworkSnapshot")
+clear c_f
+
+
 %% Branch flows of the result use the admittance matrix in the snapshot
 % Branch.struct はスナップショットに枝のアドミタンス行列 cm_Y を加え、ResultPF はそれで枝潮流を求める
 net = PowerNetwork();

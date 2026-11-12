@@ -17,7 +17,7 @@
 - `initialize` の Name-Value `Method` は「何を解くか」: `"powerflow"` / `"OPF"` / `"FixedInput"` / `"equilibrium"`。
 - アルゴリズムの選択はすべての解析で Name-Value `Solver`。
   - `calculate_powerflow` の `Method="newton"` などは `Solver="newton"` に改名。GUILDA.setting の JSON キーも `Method` → `Solver`。
-  - `optimize_powerflow` / `simulate` の `Solver` はそのまま。OPF の `Method` は定式化(`"AC OPF"` / `"DC OPF"` / `"ELD"`)のまま。
+  - `calculate_optimal_powerflow` / `simulate` の `Solver` はそのまま。OPF の `Method` は定式化(`"AC OPF"` / `"DC OPF"` / `"ELD"`)のまま。
   - ユーザー設定ファイルの `Method` キーは変換しない(`v3_user_config` は変えない。リリース版の設定に `Method` キーはない)。
 - 線形化の `Algorithm`(`"Kron"` / `"Feedback"` / `"DAE"`)は `Method` に改名(何を作るか。数値の反復法ではない)。影響箇所は 6 節。
 - FixedInput: 機器本体の入力 u(`rv_Uequilibrium`)を固定し、状態 x・母線電圧 V・注入電流 I を解く。
@@ -44,7 +44,7 @@
 
 - powerflow-options.md 要判断 2(`initialize(Method="powerflow")` で潮流計算の手法を選ぶ手段がない):
   改名後は `net.initialize(Solver="levenberg-marquardt")` がそのまま `calculate_powerflow` に渡る(`take_method` は `Method` だけを取り除く)。
-  `Method="OPF"` では同じ `Solver` が `optimize_powerflow` の `Solver`(`"fmincon"` など)になる。
+  `Method="OPF"` では同じ `Solver` が `calculate_optimal_powerflow` の `Solver`(`"fmincon"` など)になる。
 
 ## 2. 機器モデル(現状)
 

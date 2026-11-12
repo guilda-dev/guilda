@@ -4,6 +4,7 @@
         <entry key="SetAbus">Use the method to add or remove Bus classes from a_Bus.&#xA;&#xA; &lt; When adding a Bus class &gt;&#xA;  &gt;&gt; obj.add_bus(BUS_INSTANCE)&#xA; &lt; When removing a Bus class &gt;&#xA;  &gt;&gt;  obj.aremove_bus('BUS_TAG')</entry> 
         <entry key="SetAbranch">Use the method to add or remove Branch classes from a_Bus.&#xA;&#xA; &lt; When adding a Branch class &gt;&#xA;  &gt;&gt; obj.add_bus(BRANCH_INSTANCE,['BUSi_TAG','BUSj_TAG'])&#xA; &lt; When removing a Bus class &gt;&#xA;  &gt;&gt; obj.aremove_bus('BRANCH_TAG')</entry> 
         <entry key="SetGcon">Use the method to add or remove Global Controller classes from a_Bus.&#xA;&#xA; &lt; When adding a Global Controller class &gt;&#xA;  &gt;&gt; obj.add_bus(GlobalCon_INSTANCE,[ComponentTag])&#xA; &lt; When removing a Global Controller class &gt;&#xA;  &gt;&gt; obj.aremove_bus(GlobalCon_TAG)</entry> 
+        <entry key="InvalidOpfHandle">Cost and Constraint of the optimal power flow must be function handles @(v, p) ... (or [] for none).</entry>
         <entry key="NoBus">''{0}'' has no buses, so the power flow has no slack bus.&#xA;Add buses with net.add_bus() and components with bus.add_component(...).</entry>
         <entry key="NoSlackCandidate">No bus of ''{0}'' has a component, so the power flow cannot select a slack bus.&#xA;Add a generator to a bus with bus.add_component(...). A bus with a component that has Q = NaN is selected first.</entry>
         <entry key="BusNotFound">No bus with the tag ''{0}'' was found in ''{1}''.</entry> 
@@ -46,8 +47,6 @@
         <entry key="SimulateExport">Export of net.simulate does not support the extension ''{0}''. Use a scalar file name with .csv, .txt, .xlsx, .xls or .mat.</entry>
         <entry key="SimulateTime">The time of net.simulate must be [t0, tend] with finite values and t0 &lt; tend, or [] for the Time of the scenarios or the time span of their disturbances: {0}.</entry>
         <entry key="SimulationIncomplete">net.simulate did not reach the end time (flag = {0}); the result holds the trajectories up to the time reached.&#xA;{1}</entry>
-        <entry key="NotScenario">net.add_scenario takes a Scenario or a cell of Scenario objects, e.g. net.add_scenario(sc) or net.add_scenario(Scenario.import_csv(path)).</entry>
-        <entry key="ScenarioTagInUse">A scenario with the tag ''{0}'' is already in ''{1}''.&#xA;Give the scenario another tag, or remove the existing one first with net.remove_scenario(TAG).</entry>
         <entry key="ScenarioNotFound">No scenario with the tag ''{0}'' was found in ''{1}''.</entry>
         <entry key="ScenarioTimeConflict">The scenarios {0} have different Time ({1}). Give the time to the call, net.simulate([t0, tend], ...), or set the same Time.</entry>
         <entry key="ScenarioOptionConflict">The scenarios {1} store different values of the option {0} in Options. Give the option in the call to net.simulate.</entry>

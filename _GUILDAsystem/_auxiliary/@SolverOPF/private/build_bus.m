@@ -1,29 +1,27 @@
-function [prob, x0, const, var] = build_bus(bus, prob, x0, const, s_method, rv_init)
+function [x0, const, var] = build_bus(row, x0, const, s_method, rv_init)
 % Add the variables and shunt power of one bus to the OPF problem.
 %
-% "AC OPF": variable <bus> = [Varg; V] with Vmin <= V <= Vmax (tab_parameter.operation;
-% ±Inf removes a bound) and the shunt power -V^2*Gshunt, V^2*Bshunt in the balance.
+% "AC OPF": variable <bus> = [Varg; V] with Vmin <= V <= Vmax (±Inf removes a bound) and
+% the shunt power -V^2*Gshunt, V^2*Bshunt in the balance.
 % "DC OPF": variable <bus> = Varg and the shunt power -Gshunt (|V| = 1). "ELD": none.
     arguments (Input)
-        bus                    % Bus to add.
-        prob                   % Problem being built.
+        row      table         % Row of the bus table (Vmin, Vmax, Gshunt, Bshunt, ...); row name = bus tag.
         x0       (1,1) struct  % Initial values, extended.
         const    (1,1) struct  % Power-balance expressions by "P_<bus>" / "Q_<bus>", extended.
         s_method (1,1) string  % "ELD", "DC OPF" or "AC OPF".
         rv_init  (1,2) double  % [rad, pu] Initial Varg and V of the bus.
     end
     arguments (Output)
-        prob                   % Problem (unchanged; kept for a uniform signature).
         x0                     % Extended initial values.
         const                  % Extended power-balance expressions.
         var                    % Variable of the bus; [] in "ELD".
     end
-    sv_con = ["P","Q"] + "_" + string(bus);
-    s_bus  = string(bus);
-    dyn    = group(bus, "dynamics");
+    s_bus  = string(row.Properties.RowNames{1});
+    sv_con = ["P","Q"] + "_" + s_bus;
+    dyn    = row;
     switch s_method
         case "AC OPF"
-            ope = group(bus, "operation");
+            ope = row;
             var = optimvar(s_bus, {'Varg','V'}, 1, "Type","continuous", ...
                            "LowerBound", [-inf; ope.Vmin], ...
                            "UpperBound", [ inf; ope.Vmax]);
@@ -51,7 +49,3 @@ function [prob, x0, const, var] = build_bus(bus, prob, x0, const, s_method, rv_i
     end
 end
 
-
-function tab = group(obj, s_group)
-    tab = obj.a_Parameter{cellfun(@(p) p.s_tag==s_group, obj.a_Parameter)}.tab_parameter;
-end

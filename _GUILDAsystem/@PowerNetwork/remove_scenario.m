@@ -1,8 +1,10 @@
 function remove_scenario(obj, sr_tag)
-% Remove simulation scenarios by tag.
+% Remove simulation scenarios by tag and delete them.
 %
-% The removed scenarios no longer refer to this network (sc.a_PowerNetwork is empty); add
-% them to a network again with add_scenario. The equilibrium does not become stale.
+% A variable that holds a removed scenario becomes an invalid handle (isvalid is false).
+% A tag that is not a scenario of the network stops with
+% GUILDA:PowerNetwork:ScenarioNotFound and nothing is removed. The equilibrium does not
+% become stale. To keep a copy, add one first: net.add_scenario(tag, From=sc).
 %
 % <@Examples>
 % ```matlab
@@ -25,6 +27,6 @@ function remove_scenario(obj, sr_tag)
     a_rm  = obj.a_Scenario(lv_rm);
     obj.a_Scenario = obj.a_Scenario(~lv_rm);
     for k = 1:numel(a_rm)
-        a_rm{k}.a_PowerNetwork = [];
+        delete(a_rm{k});
     end
 end

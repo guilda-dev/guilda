@@ -65,7 +65,7 @@ flowchart TD
 2. `check_edit()` で古い `f_*` を作り直します。平衡点の確認はしません(`:47`)。
 3. `Method` ごとの解析を実行します(`:49-80`)。
    - `"powerflow"`: 失敗かつ実行前にスラックが無かった場合、自動設定したスラックを戻します(`:51-67`)。
-   - `"OPF"`: 利用者の指定の後ろに `"Method","AC OPF"` を付けて `optimize_powerflow` を呼びます(`:69`)。
+   - `"OPF"`: 利用者の指定の後ろに `"Method","AC OPF"` を付けて `calculate_optimal_powerflow` を呼びます(`:69`)。
    - `"equilibrium"`: 保持している機器の V/I から組み立て、キルヒホッフ則を確認します(`:136-187`)。
 4. GC の平衡点を設定します(`:83-86`)。母線の平衡点より先です。
 5. 母線ごとに `Bus.set_equilibrium` を呼びます(`:89-96`)。その中で、スラックの P 残差と NaN の Q を配分し、`Component.set_equilibrium` に渡します(`@Bus/set_equilibrium.m:17-65`)。さらに、機器の `get_equilibrium` の後で制御器の `get_equilibrium` が呼ばれます(`@Component/set_equilibrium.m:12-21`)。
@@ -206,7 +206,7 @@ output.result = result                          @PowerNetwork/get_sys.m:33
 - **[実行 E02]** `avr.tab_parameter = ...` と `agc.tab_parameter = ...` は `MATLAB:class:noSetMethod` で失敗します。`LocalController` と `GlobalController` には `set.tab_parameter` がありません(`Component`、`Bus`、`Branch`、`PowerNetwork` にはあります)。制御器の編集は `para_dynamics` を直接使います。
 - **[実行 exp3]** 型の違う値の代入は例外になりません。リスナー内のエラーは MATLAB の警告に変わり、値は元に戻され、記録もされません(`_auxiliary/@Parameter/callbackPostSet.m:13-15`)。
 - **[事実]** `local_LQR` の `Q`, `R`, `V0` は `Parameter` ではなく通常のプロパティで、`set` メソッドから `log_edit` を呼びます(`_GUILDAobject/+controller/local_LQR.m:97-108,203-208`)。`Parameter` ではないので `s_odefcn` は立ちませんが、`initialize` で `K` と一緒に作り直されます(`:156-157`)。
-- **[実行 E22]** `calculate_powerflow`、`optimize_powerflow`、CPF は、初期化済みのネットワークの編集状態を変えず、その後の `get_sys` にも影響しません(`A` の差 0)。
+- **[実行 E22]** `calculate_powerflow`、`calculate_optimal_powerflow`、CPF は、初期化済みのネットワークの編集状態を変えず、その後の `get_sys` にも影響しません(`A` の差 0)。
 
 ### 3.3 すり抜ける経路
 

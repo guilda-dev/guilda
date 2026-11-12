@@ -9,12 +9,11 @@ classdef PowerNetwork < PowerSystemModel
 %   `Component` and the controllers, the numerical methods to the Solver classes.
 % - Results are returned, never stored in the network. The one exception: `initialize`
 %   writes the equilibrium into the buses, components and controllers.
-% - Top of the object tree, with no parent. It is the parent of its buses, branches and
-%   global controllers and the owner of its scenarios; only the network sets their back
-%   references (`Bus.a_PowerNetwork`, `Branch.a_PowerNetwork`, `Branch.a_Bus`,
+% - Top of the object tree, with no parent. It is the parent of its buses, branches,
+%   global controllers and scenarios; only the network sets their back references
+%   (`Bus.a_PowerNetwork`, `Branch.a_PowerNetwork`, `Branch.a_Bus`,
 %   `GlobalController.a_PowerNetwork`, `Scenario.a_PowerNetwork`). The remove methods
-%   delete the buses, branches and global controllers they take out; a removed scenario
-%   stays usable and can be added again.
+%   delete the buses, branches, global controllers and scenarios they take out.
 % - Every edit is reported to the network's `handle_edit` (`LayerPackage.log_edit`), also
 %   before the first initialize. It keeps at most one slack bus, and marks the stale tag
 %   `powerflow` (`sct_stale`) for the edits that change the power flow: baseMVA, buses and
@@ -32,7 +31,7 @@ classdef PowerNetwork < PowerSystemModel
 % components (generators, loads, ...) are added to the buses (`Bus.add_component`) and
 % local controllers to the components. The network runs the analyses:
 %
-% - power flow (`calculate_powerflow`) and optimal power flow (`optimize_powerflow`)
+% - power flow (`calculate_powerflow`) and optimal power flow (`calculate_optimal_powerflow`)
 % - continuation power flow (`calculate_continuation_powerflow`)
 % - equilibrium (`initialize`), time simulation (`simulate`) of the scenarios it holds
 %   (`add_scenario`, `remove_scenario`, `a_Scenario`)
@@ -47,8 +46,9 @@ classdef PowerNetwork < PowerSystemModel
 % for that call only. Results are returned (calculate_powerflow and initialize: in the
 % form of their Format option) and never stored in the network or the solver.
 %
-% The scenarios (`a_Scenario`) are added by `add_scenario` and removed by
-% `remove_scenario`; they are not model data and do not make the equilibrium stale.
+% The scenarios (`a_Scenario`) are created by `add_scenario` and deleted by
+% `remove_scenario`; their tags share the name space of the other children, but they are
+% not model data and do not make the equilibrium stale.
 %
 % The parameters of the network (`tab_parameter.base`):
 %
@@ -64,7 +64,7 @@ classdef PowerNetwork < PowerSystemModel
 % and the components (`tab_parameter.powerflow`: P, Q). OPF limits and costs are in
 % `tab_parameter.operation` and `tab_parameter.OPF` of the buses, components and
 % branches; user-defined costs and constraints are the options Cost and Constraint of
-% `optimize_powerflow` (stored defaults in `solver_OPF`).
+% `calculate_optimal_powerflow` and `build_opf_problem`.
 %
 % <@Examples>
 % ```matlab
@@ -81,9 +81,8 @@ classdef PowerNetwork < PowerSystemModel
 %
 % res = net.calculate_powerflow();          % ResultPF
 % net.initialize();                         % equilibrium for the dynamic analyses
-% sc  = Scenario("fault", Time=[0,10]);
+% sc  = net.add_scenario("fault", Time=[0,10]);
 % sc.add_fault("B003", [1,1.05]);
-% net.add_scenario(sc);
 % sim = net.simulate(sc);                   % ResultODE
 % res = net.get_sys();                      % ResultLIN: linear model in res.A, res.B, ...
 % ```
@@ -98,20 +97,14 @@ classdef PowerNetwork < PowerSystemModel
         a_GlobalController (:,1) cell = cell(0,1);  % Global controllers of the network. <@Stale> equilibrium of the added controller
     end
     properties(SetAccess=private) % Scenarios
-        a_Scenario (:,1) cell = cell(0,1);          % Simulation scenarios (Scenario), in the order added by add_scenario; not model data. <@Stale> nothing
+        a_Scenario (:,1) cell = cell(0,1);          % Simulation scenarios (Scenario), in the order created by add_scenario; not model data. <@Stale> nothing
     end
     properties(SetAccess=protected) % Solvers
         solver_PF SolverPF {mustBeScalarOrEmpty}    % Solver of calculate_powerflow (solves from the admittance matrix and the bus conditions the network assembles); keeps the warm start solution, no settings (GUILDA.setting). <@Type> SolverPF <@Stale> nothing
-        solver_OPF SolverOPF {mustBeScalarOrEmpty}  % Solver of optimize_powerflow (returns a ResultOPF); keeps the conditions Cost, Constraint, DefaultCost, ReferenceBus, the warm start and the problem cache; settings in GUILDA.setting. <@Type> SolverOPF <@Stale> nothing
+        solver_OPF SolverOPF {mustBeScalarOrEmpty}  % Solver of calculate_optimal_powerflow (returns a ResultOPF); keeps the warm start (bus voltages of the last solved AC OPF), no settings (GUILDA.setting). <@Type> SolverOPF <@Stale> nothing
         solver_CPF SolverCPF {mustBeScalarOrEmpty}  % Solver of calculate_continuation_powerflow (returns a ResultCPF); keeps the condition LoadBus; settings in GUILDA.setting. <@Type> SolverCPF <@Stale> nothing
         solver_ODE SolverODE {mustBeScalarOrEmpty}  % Solver of simulate (returns a ResultODE); no settings (GUILDA.setting). <@Type> SolverODE <@Stale> nothing
         solver_LIN SolverLIN {mustBeScalarOrEmpty}  % Solver of linearize and get_sys (returns a ResultLIN); no settings (GUILDA.setting). <@Type> SolverLIN <@Stale> nothing
-    end
-    properties(SetAccess=private, GetAccess={?PowerNetwork,?SolverOPF}) % Revisions
-        n_revY (1,1) double = 0                     % Revision of the bus admittance matrix, increased by handle_edit (see there); compared by the caches of the solvers.
-        n_revPF (1,1) double = 0                    % Revision of the power flow equations (every n_revY edit and the power flow settings), increased by handle_edit.
-        n_revTopology (1,1) double = 0              % Revision of the topology (buses and branches added, removed or replaced), increased by handle_edit; discards the warm start.
-        n_revOPF (1,1) double = 0                   % Revision of the OPF problem (every n_revPF edit, the operation and OPF parameters, tags, Hz), increased by handle_edit.
     end
     properties(Dependent) % Steady State
         cv_Vequilibrium                             % [pu] Bus voltage phasors at the equilibrium, one per bus.
@@ -120,7 +113,7 @@ classdef PowerNetwork < PowerSystemModel
     end
     properties(Dependent, Access=protected) % Layer Structure
         parent                                      % Parent in the layer structure: none (the network is the top).
-        children                                    % Children in the layer structure: the buses, branches and global controllers, then the Parameter object.
+        children                                    % Children in the layer structure: the buses, branches, global controllers and scenarios, then the Parameter object.
     end
 
 %% Constructor
@@ -160,7 +153,7 @@ classdef PowerNetwork < PowerSystemModel
         remove_global_controller( obj, sr_GconTag)
 
         % Scenarios of the time simulation
-        add_scenario(obj, sc)
+        sc = add_scenario(obj, s_tag, opt)
         remove_scenario(obj, sr_tag)
         
         % initialize
@@ -168,8 +161,8 @@ classdef PowerNetwork < PowerSystemModel
         reset_solver(obj);
 
         % OPF(optimal power-flow)
-        varargout = optimize_powerflow(obj, varargin)
-        varargout = build_opf_problem(obj, varargin)
+        [result, flag, output] = calculate_optimal_powerflow(obj, opt)
+        varargout = build_opf_problem(obj, opt)
 
         % PF(powerflow) calculations
         [result, flag, output] = calculate_powerflow(obj, opt)
@@ -211,7 +204,7 @@ classdef PowerNetwork < PowerSystemModel
             p = {};
         end
         function p = get.children(obj)
-            p = [obj.a_Bus; obj.a_Branch; obj.a_GlobalController; obj.a_Parameter];
+            p = [obj.a_Bus; obj.a_Branch; obj.a_GlobalController; obj.a_Scenario; obj.a_Parameter];
         end
         function V = get.cv_Vequilibrium(obj)
             V = tools.vcellfun(@(b) b.c_Vequilibrium, obj.a_Bus);
