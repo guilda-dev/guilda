@@ -9,7 +9,6 @@ function s_file = Export(obj, filename, opt)
 %                                stored power flow conditions (tab_PFcondition) and
 %                                admittance matrix (cm_Y).
 % A relative filename is relative to the current folder.
-% calculate_powerflow(..., Export=filename) calls it.
     arguments (Input)
         obj
         filename  (1,1) string = string(datetime("now","Format","uuMMdd_HHmmss")) + "_PowerFlow.csv" % Output file; its extension selects the format.

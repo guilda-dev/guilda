@@ -295,12 +295,9 @@ assert(isa(DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Forma
 mat_eq = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium", Format="powerflow(mat)"));
 assert(max(abs(mat_eq - mat), [], "all") < 1e-6)
 assert(error_id(@() net.initialize(Format="table")) == "MATLAB:validators:mustBeMember")
-% Export は Format が "GUILDAorigin" でなくても ResultPF を作って書き出す (最初の出力は Format のまま)
-s_file = fullfile(tempdir, "DebugScript_test_F2_format_" + string(feature("getpid")) + ".csv");
-c = onCleanup(@() delete(s_file));
-V_e = DebugScript.helper.quiet(@() net.calculate_powerflow(Export=s_file));
-assert(isfile(s_file) && isa(V_e, "double"))
-clear c
+% 書き出しは結果のメソッド (res.Export) だけ。calculate_powerflow と initialize に Export オプションはない
+assert(error_id(@() net.calculate_powerflow(Export="pf.csv")) ~= "")
+assert(error_id(@() net.initialize(Method="powerflow", Export="pf.csv")) ~= "")
 
 
 %% Branch flows of the result use the admittance of each branch class
@@ -652,7 +649,7 @@ assert(isa(t, "matlab.graphics.layout.TiledChartLayout") && numel(t.Children) ==
 a_before = findall(groot, "Type", "figure");
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(PlotFcn="none", Format="GUILDAorigin"));
 assert(res.options.PlotFcn == "none" && isempty(setdiff(findall(groot, "Type", "figure"), a_before)))
-assert(error_id(@() net.calculate_powerflow(Plot=true)) == "GUILDA:resolve_options:UnknownName")
+assert(error_id(@() net.calculate_powerflow(Plot=true)) ~= "")     % 未知の名前 (arguments ブロックのエラー)
 assert(error_id(@() net.calculate_powerflow(PlotFcn="voltage")) == "GUILDA:check_plotfcn:UnknownKey")
 assert(error_id(@() net.calculate_powerflow(PlotFcn=["none","residual"])) == "GUILDA:check_plotfcn:InvalidValue")
 assert(error_id(@() net.calculate_powerflow(PlotFcn=1)) == "GUILDA:check_plotfcn:InvalidValue")
@@ -665,9 +662,6 @@ assert(isequal(string(tab.Properties.RowNames), string(net.a_Bus)) && max(abs(ta
 res.Export(fullfile(s_dir, "branch.csv"), Table="branch");
 tab = readtable(fullfile(s_dir, "branch.csv"), "ReadRowNames", true);
 assert(height(tab) == numel(net.a_Branch) && max(abs(tab.Ploss - res.tab_branch.Ploss)) < 1e-12)
-% Export=filename は計算後に result.Export を呼ぶ
-DebugScript.helper.quiet(@() net.calculate_powerflow(Export=fullfile(s_dir, "nv.csv")));
-assert(isfile(fullfile(s_dir, "nv.csv")))
 % 未対応の拡張子
 assert(error_id(@() res.Export(fullfile(s_dir, "bus.mat"))) == "GUILDA:ResultPF:ExportFormat")
 

@@ -13,7 +13,7 @@
 ### 1. `calculate_powerflow` の v3 対応の削除
 
 - `v3_powerflow_args.m`、Deprecated の `CalculatePowerflowMode`・`CalculatePowerflowExport`、`SolverPF.get_options`・`SolverPF.OptionMap`・`@SolverPF/private/validate_options.m` を削除しました。
-- `calculate_powerflow` は 1 つの `arguments (Input)` ブロックで `Solver`・`Tolerance`・`MaxIteration`・`Verbose`・`WarmStart`・`PlotFcn`・`Export`・`Format` を検証します。既定値は `GUILDA.config("PowerFlowCalculation", ...)` です。
+- `calculate_powerflow` は 1 つの `arguments (Input)` ブロックで `Solver`・`Tolerance`・`MaxIteration`・`Verbose`・`WarmStart`・`PlotFcn`・`Format` を検証します。既定値は `GUILDA.config("PowerFlowCalculation", ...)` です。
 - 呼び出しのオプションでない設定(`WhenFailed`、`NewtonStepSize`、`GradientStepSize`、`FsolveMaxFunctionEvaluations`、`FsolveUseParallel`)は、これまでどおり `GUILDA.config` から読みます。ソルバーに渡す struct には、`Verbose` から作る `Display` も入れます。
 - 未知の名前は MATLAB の arguments ブロックのエラーになります(以前は `GUILDA:resolve_options:UnknownName`)。`initialize(Method="powerflow", Foo=1)` も同じです。
 - OPF、連続潮流計算、時間応答シミュレーション、線形化の `OptionMap` はそのままです。
@@ -23,7 +23,7 @@
 - `[cv_V, flag, output, cm_Vhistory, rv_step] = solve(obj, cm_Y, tab_PFcondition, sct_options)`。方程式は呼び出しごとに作ります。
 - 改訂番号によるキャッシュ(`a_Bus`、`n_revTopology`、`cm_Y`、`n_revY`、`n_revPF`、`sct_equation`)を削除しました。残るのはウォームスタートの `cv_Vwarm` と、その解の母線タグ `sv_warmBus` だけです。
 - ウォームスタートは、`WarmStart` が true で、母線タグ(順序も)が一致するときだけ使います。**動作の変化:** 以前は枝の追加・削除で解を捨て、タグの変更では保持していました。いまは逆に、枝の編集では保持し(初期値が変わるだけで解は同じです)、タグの変更では使いません。
-- `calculate_powerflow` がスラック母線の選択、`tab_PFcondition`(各 `Bus.get_pf_condition`)と `cm_Y`(`get_admittance_matrix`)の組み立て、`WhenFailed` の通知、Export を行います。
+- `calculate_powerflow` がスラック母線の選択、`tab_PFcondition`(各 `Bus.get_pf_condition`)と `cm_Y`(`get_admittance_matrix`)の組み立て、`WhenFailed` の通知を行います。
 - **メッセージ ID の変更:** 収束しないときの警告・エラーは `GUILDA:SolverPF:NotConverged` から `GUILDA:PowerNetwork:PowerflowNotConverged` に変わりました。`msg` は呼び出し元のクラスの ID しか受け付けないためです。`SolverPF.xml` は空になったので削除しました。
 - `PowerNetwork.n_revY` と `n_revPF` を読むソルバーはなくなりました(`handle_edit` が増やすだけです)。削除は別の作業にします。
 
@@ -37,7 +37,7 @@
 | `"GUILDAorigin"` | `ResultPF` |
 
 - `flag` と `output` はどの Format でも 2 番目・3 番目の出力です。
-- **Export の判断:** `Format` が `"GUILDAorigin"` でないときも、Export のためだけに `ResultPF` を作って書き出します。最初の出力は指定した Format のままです。Export を指定した利用者の意図ははっきりしており、エラーにすると `Format="GUILDAorigin"` を足すだけの手間を求めることになるためです。`ResultPF` を作るのは Export を指定したときだけです。
+- **Export(ユーザーの決定、2026-11-12):** `calculate_powerflow` に `Export` オプションはありません。書き出しは `res.Export(...)` だけです(`initialize` も受け付けません)。最初の実装では、ほかの Format でも書き出しのためだけに `ResultPF` を作っていましたが、オプションごと削除しました。`ResultPF.Export` の名前(`export` か `Export` か)は確認中です。
 - `initialize` にも同じ `Format`(既定 `"V"`)を加えました。潮流計算・FixedInput・平衡点からの計算は解いた点を、OPF は `"GUILDAorigin"` で `ResultOPF`、それ以外で AC OPF の解の母線 V・I・P・Q を返します。
 - 内部の呼び出しは必要なものだけを求めます。`initialize` の潮流計算と `solve_fixed_input` の初期点は `Format="powerflow(tab)"` です。`initialize` は `Format="GUILDAorigin"` のときだけ `ResultPF` を作ります。
 - 書き換えた呼び出し元: DebugScript(結果を読むテストに `Format="GUILDAorigin"` を追加)、同梱ネットワークのヘルプの例(`res = ...` → `V = ...`)、`PowerNetwork`・`ResultBase`・`SolverPF` のヘルプの例。`_GUILDAverification`、`Scenario`、CPF、OPF は `calculate_powerflow` の結果を読んでいません。

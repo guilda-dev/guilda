@@ -137,15 +137,6 @@
           <li>関数ハンドルを渡すと、反復ごとに <code>stop = f(x, optimValues, state)</code> を呼び出します。<code>x</code> は母線の複素電圧です。<code>optimValues</code> には <code>optimValues.iteration</code>、<code>.fval</code>（残差）、<code>.residual</code>（最大値）、<code>.time</code>（dynamic のみ）が入ります。<code>stop</code> に true を返すと、flag -1 で終わります。</li>
           <li>計算後の図は、<code>Format="GUILDAorigin"</code> の結果の <code>result.Plot()</code> で描きます。</li>
         </ul></td></tr>
-        <tr><td><code>Export</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small><span lang="en">call option</span><span lang="ja">呼び出しオプション</span></small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
-          <li><code>true</code>: calls <code>ResultPF.Export()</code> with the default file name</li>
-          <li>String: the file name; its extension selects the file format</li>
-          <li>With a <code>Format</code> other than <code>"GUILDAorigin"</code>: a <code>ResultPF</code> is built for the export only; the first output keeps its <code>Format</code></li>
-        </ul><ul lang="ja">
-          <li><code>true</code> なら、既定のファイル名で <code>ResultPF.Export()</code> を呼び出します。</li>
-          <li>文字列ならファイル名として使い、拡張子でファイル形式が決まります。</li>
-          <li><code>Format</code> が <code>"GUILDAorigin"</code> 以外のときは、書き出しのためだけに <code>ResultPF</code> を作ります。最初の出力は指定した <code>Format</code> のままです。</li>
-        </ul></td></tr>
         <tr><td><code>Format</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>"V"</code><small><span lang="en">call option</span><span lang="ja">呼び出しオプション</span></small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li>Form of the first output; <code>flag</code> and <code>output</code> stay the 2nd and 3rd outputs</li>
           <li><code>"V"</code>: complex bus voltages [pu], a column in <code>net.a_Bus</code> order</li>
@@ -162,7 +153,7 @@
       </tbody>
     </table>
     <ul lang="en">
-      <li>Name-Value names: the eight options above, checked by the <code>arguments</code> block of <code>calculate_powerflow</code></li>
+      <li>Name-Value names: the seven options above, checked by the <code>arguments</code> block of <code>calculate_powerflow</code></li>
       <li>config: the PowerFlowCalculation section of <code>GUILDA.setting</code> (<code>GUILDA.config("PowerFlowCalculation", ...)</code>; defaults in <code>@GUILDA/config/DefaultPowerFlowCalculation.json</code>), read at every call</li>
       <li>Name-Value options override it for that call only; the settings file is not written</li>
       <li>Other settings: no Name-Value option; set in <code>GUILDA.setting</code>
@@ -178,7 +169,7 @@
       <li><code>net.solver_PF</code>: no settings; keeps only the warm start solution (see <a href="#side-effects">Side effects</a>)</li>
     </ul>
     <ul lang="ja">
-      <li>Name-Value で指定できる名前は上の 8 つで、<code>calculate_powerflow</code> の <code>arguments</code> ブロックが検査します。</li>
+      <li>Name-Value で指定できる名前は上の 7 つで、<code>calculate_powerflow</code> の <code>arguments</code> ブロックが検査します。</li>
       <li>既定値は <code>GUILDA.setting</code> の PowerFlowCalculation セクション（<code>GUILDA.config("PowerFlowCalculation", ...)</code>）から、呼び出しのたびに読み込みます。元の値は <code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> にあります。</li>
       <li>Name-Value オプションは、その呼び出しの間だけ設定を上書きします。設定ファイルには書き込みません。</li>
       <li>次の設定は Name-Value では指定できず、<code>GUILDA.setting</code> で変更します。
@@ -211,37 +202,37 @@
     <h2 id="sequence"><span lang="en">2. Call sequence between classes</span><span lang="ja">2. クラス間の呼び出し順</span></h2>
     <figure class="dg-figure">
       <div class="dg-only-wide">
-        <svg class="dg-svg dg-sv fpf-seq" viewBox="0 0 780 576" role="img" aria-labelledby="fpf-seq-title">
-          <title id="fpf-seq-title">Call sequence of net.calculate_powerflow: the network checks the options in its arguments block and builds the solver settings, selects a slack bus if none is set, collects the power flow conditions of the buses and the admittance matrix, and calls SolverPF.solve, which runs a Method class (fsolve or ode15s for two of them). The network then reports a failure, returns the solution in the form of Format, and builds a ResultPF only for Format "GUILDAorigin" or Export.</title>
+        <svg class="dg-svg dg-sv fpf-seq" viewBox="0 0 780 544" role="img" aria-labelledby="fpf-seq-title">
+          <title id="fpf-seq-title">Call sequence of net.calculate_powerflow: the network checks the options in its arguments block and builds the solver settings, selects a slack bus if none is set, collects the power flow conditions of the buses and the admittance matrix, and calls SolverPF.solve, which runs a Method class (fsolve or ode15s for two of them). The network then reports a failure, returns the solution in the form of Format, and builds a ResultPF only for Format "GUILDAorigin".</title>
           <defs>
             <marker id="fpf-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
             <marker id="fpf-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head is-muted" d="M0 0L10 5L0 10z"/></marker>
           </defs>
-          <path class="dg-sv-line is-muted" d="M86 62V570"/>
+          <path class="dg-sv-line is-muted" d="M86 62V538"/>
           <rect class="dg-sv-box is-soft" x="36" y="16" width="100" height="46" rx="6"/>
           <text class="is-sm is-muted" lang="en" x="86" y="44" text-anchor="middle">Caller</text>
           <text class="is-sm is-muted" lang="ja" x="86" y="44" text-anchor="middle">呼び出し側</text>
-          <path class="dg-sv-line is-muted" d="M194 62V570"/>
+          <path class="dg-sv-line is-muted" d="M194 62V538"/>
           <rect class="dg-sv-box" x="144" y="16" width="100" height="46" rx="6"/>
           <text class="dg-mono is-b" x="194" y="36" text-anchor="middle" style="font-size:12px">PowerNetwork</text>
           <text class="is-sm is-muted" x="194" y="52" text-anchor="middle">net</text>
-          <path class="dg-sv-line is-muted" d="M302 62V570"/>
+          <path class="dg-sv-line is-muted" d="M302 62V538"/>
           <rect class="dg-sv-box" x="252" y="16" width="100" height="46" rx="6"/>
           <text class="dg-mono is-b" x="302" y="36" text-anchor="middle" style="font-size:12px">SolverPF</text>
           <text class="is-sm is-muted" x="302" y="52" text-anchor="middle">net.solver_PF</text>
-          <path class="dg-sv-line is-muted" d="M410 62V570"/>
+          <path class="dg-sv-line is-muted" d="M410 62V538"/>
           <rect class="dg-sv-box" x="360" y="16" width="100" height="46" rx="6"/>
           <text class="dg-mono is-b" x="410" y="36" text-anchor="middle" style="font-size:12px">Method*</text>
           <text class="is-sm is-muted" x="410" y="52" text-anchor="middle">ode15s | fsolve</text>
-          <path class="dg-sv-line is-muted" d="M518 62V570"/>
+          <path class="dg-sv-line is-muted" d="M518 62V538"/>
           <rect class="dg-sv-box" x="468" y="16" width="100" height="46" rx="6"/>
           <text class="dg-mono is-b" x="518" y="36" text-anchor="middle" style="font-size:12px">Bus</text>
           <text class="is-sm is-muted" x="518" y="52" text-anchor="middle">net.a_Bus{i}</text>
-          <path class="dg-sv-line is-muted" d="M626 62V570"/>
+          <path class="dg-sv-line is-muted" d="M626 62V538"/>
           <rect class="dg-sv-box" x="576" y="16" width="100" height="46" rx="6"/>
           <text class="dg-mono is-b" x="626" y="36" text-anchor="middle" style="font-size:12px">Branch</text>
           <text class="is-sm is-muted" x="626" y="52" text-anchor="middle">net.a_Branch{k}</text>
-          <path class="dg-sv-line is-muted" d="M734 62V570"/>
+          <path class="dg-sv-line is-muted" d="M734 62V538"/>
           <rect class="dg-sv-box" x="684" y="16" width="100" height="46" rx="6"/>
           <text class="dg-mono is-b" x="734" y="36" text-anchor="middle" style="font-size:12px">ResultPF</text>
           <text class="is-sm is-muted" x="734" y="52" text-anchor="middle">result</text>
@@ -302,13 +293,8 @@
           <rect class="dg-sv-box is-solid" x="3" y="482" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="494" text-anchor="middle" style="font-size:10px">10</text>
           <text class="dg-mono is-sm fpf-l" x="202" y="484" text-anchor="start">ResultPF(tab_pf, cm_Y, struct(net, false), sct_solver)</text>
-          <path class="dg-sv-line" d="M198 522H731" marker-end="url(#fpf-ah)"/>
-          <path class="dg-sv-line is-muted" d="M34 522H184" style="stroke-dasharray:1 5"/>
-          <rect class="dg-sv-box is-solid" x="3" y="514" width="30" height="16" rx="8"/>
-          <text class="is-inv is-b" x="18" y="526" text-anchor="middle" style="font-size:10px">11</text>
-          <text class="dg-mono is-sm fpf-l" x="202" y="516" text-anchor="start">Export(file)</text>
-          <path class="dg-sv-line is-muted" d="M190 554H89" marker-end="url(#fpf-ah-m)"/>
-          <text class="dg-mono is-sm fpf-l" x="186" y="548" text-anchor="end">[result, flag, output]</text>
+          <path class="dg-sv-line is-muted" d="M190 522H89" marker-end="url(#fpf-ah-m)"/>
+          <text class="dg-mono is-sm fpf-l" x="186" y="516" text-anchor="end">[result, flag, output]</text>
         </svg>
       </div>
       <ol class="dg-only-narrow fpf-narrow">
@@ -322,10 +308,9 @@
         <li><b>PF-08</b> <code>PowerNetwork</code>: <code>notify_failure</code> (<code>WhenFailed</code>)</li>
         <li><b>PF-09</b> <code>PowerNetwork</code>: <code>powerflow_table</code> → <code>format_powerflow</code></li>
         <li><b>PF-10</b> <code>PowerNetwork</code> → <code>ResultPF</code></li>
-        <li><b>PF-11</b> <code>PowerNetwork</code> → <code>ResultPF.Export</code></li>
       </ol>
-      <figcaption lang="en">Numbers: step IDs of the list below. Solid arrows: calls; dashed arrows: returns. PF-02 runs only when no bus has <code>l_isSlack = true</code>. PF-06 and PF-07: alternatives selected by <code>Solver</code>. PF-10 runs only for <code>Format="GUILDAorigin"</code> or with <code>Export</code>; PF-11 only with <code>Export</code>.</figcaption>
-      <figcaption lang="ja">番号は下のリストのステップ ID です。実線は呼び出し、破線は戻り値を表します。PF-02 は <code>l_isSlack = true</code> の母線がないときだけ実行します。PF-06 と PF-07 は、<code>Solver</code> に応じてどちらか一方だけを実行します。PF-10 は <code>Format="GUILDAorigin"</code> のときか <code>Export</code> を指定したときだけ、PF-11 は <code>Export</code> を指定したときだけ実行します。</figcaption>
+      <figcaption lang="en">Numbers: step IDs of the list below. Solid arrows: calls; dashed arrows: returns. PF-02 runs only when no bus has <code>l_isSlack = true</code>. PF-06 and PF-07: alternatives selected by <code>Solver</code>. PF-10 runs only for <code>Format="GUILDAorigin"</code>. Files are written afterwards by the caller with <code>result.Export(filename)</code>.</figcaption>
+      <figcaption lang="ja">番号は下のリストのステップ ID です。実線は呼び出し、破線は戻り値を表します。PF-02 は <code>l_isSlack = true</code> の母線がないときだけ実行します。PF-06 と PF-07 は、<code>Solver</code> に応じてどちらか一方だけを実行します。PF-10 は <code>Format="GUILDAorigin"</code> のときだけ実行します。ファイルへの書き出しは、呼び出し側があとで <code>result.Export(filename)</code> で行います。</figcaption>
     </figure>
 
     <!-- ============================== 3. STEPS ============================== -->
@@ -336,12 +321,12 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>The <code>arguments</code> block checks the eight options; defaults from <code>GUILDA.config("PowerFlowCalculation", ...)</code>, <code>Export = false</code>, <code>Format = "V"</code></li>
+            <li>The <code>arguments</code> block checks the seven options; defaults from <code>GUILDA.config("PowerFlowCalculation", ...)</code>, <code>Format = "V"</code></li>
             <li>Unknown name or invalid value: the MATLAB error of the <code>arguments</code> block</li>
             <li>Local <code>solver_options</code>: struct of the <code>Value</code> of every setting of the section, overwritten by the call options <code>Solver</code>, <code>Tolerance</code>, <code>MaxIteration</code>, <code>Verbose</code>, <code>WarmStart</code></li>
             <li>Adds <code>PlotFcn</code> checked by <code>tools.check_plotfcn</code> and <code>Display</code> (<code>"iter"</code> for Verbose true, <code>"none"</code> for false)</li>
           </ul><ul lang="ja">
-            <li><code>arguments</code> ブロックが 8 つのオプションを検査します。既定値は <code>GUILDA.config("PowerFlowCalculation", ...)</code> から読み、<code>Export</code> は <code>false</code>、<code>Format</code> は <code>"V"</code> です。</li>
+            <li><code>arguments</code> ブロックが 7 つのオプションを検査します。既定値は <code>GUILDA.config("PowerFlowCalculation", ...)</code> から読み、<code>Format</code> は <code>"V"</code> です。</li>
             <li>未知の名前や不正な値は、<code>arguments</code> ブロックによる MATLAB のエラーになります。</li>
             <li>内部関数 <code>solver_options</code> は、セクションの各設定の <code>Value</code> で構造体を作り、呼び出しのオプション <code>Solver</code>、<code>Tolerance</code>、<code>MaxIteration</code>、<code>Verbose</code>、<code>WarmStart</code> で上書きします。</li>
             <li>さらに、<code>tools.check_plotfcn</code> で検査した <code>PlotFcn</code> と、<code>Display</code>（Verbose が true なら <code>"iter"</code>、false なら <code>"none"</code>）を加えます。</li>
@@ -545,14 +530,14 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Only for <code>Format="GUILDAorigin"</code>, or for the export of PF-11</li>
+            <li>Only for <code>Format="GUILDAorigin"</code></li>
             <li>Inputs: <code>tab_pf</code>, <code>cm_Y</code>, the snapshot <code>struct(net, false)</code> (a nested struct without handles), and <code>sct_solver</code> (solver class name, <code>sct_options</code>, flag, output, elapsed time, <code>cm_Vhistory</code>, <code>rv_step</code>, <code>tab_PFcondition</code>)</li>
             <li><code>ResultBase</code> receives <code>[]</code> as the network; <code>ResultPF</code> sets <code>s_network</code> from the tag of the snapshot</li>
             <li><code>tab_bus</code> from <code>tab_pf</code> (<code>private/bus_table</code>)</li>
             <li><code>tab_branch</code> (<code>private/branch_flow</code>): current and power into each branch at both ends (from = <code>a_Bus{1}</code>, to = <code>a_Bus{2}</code>), with the 2×2 matrix of <code>private/branch_admittance</code> from the class name and the <code>dynamics</code> parameters of the branch in the snapshot; a class without a formula there gives NaN flows</li>
             <li><code>tab_violation</code> (<code>private/violation_table</code>) from the <code>operation</code> parameters of the snapshot, only when the calculation converged</li>
           </ul><ul lang="ja">
-            <li><code>Format="GUILDAorigin"</code> のときか、PF-11 の書き出しのときだけ実行します。</li>
+            <li><code>Format="GUILDAorigin"</code> のときだけ実行します。</li>
             <li>入力は <code>tab_pf</code>、<code>cm_Y</code>、スナップショット <code>struct(net, false)</code>（ハンドルを含まない入れ子の構造体）、<code>sct_solver</code>（ソルバーのクラス名、<code>sct_options</code>、flag、output、経過時間、<code>cm_Vhistory</code>、<code>rv_step</code>、<code>tab_PFcondition</code>）です。</li>
             <li><code>ResultBase</code> にはネットワークとして <code>[]</code> を渡します。<code>s_network</code> は、<code>ResultPF</code> がスナップショットのタグから設定します。</li>
             <li><code>tab_bus</code> は <code>tab_pf</code> から作ります（<code>private/bus_table</code>）。</li>
@@ -563,27 +548,6 @@
           <dd><span lang="en">its inputs only; no network object</span><span lang="ja">入力だけです。ネットワークのオブジェクトは読みません。</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>ResultPF</code> <span lang="en">(see <a href="#data">Data produced</a>)</span><span lang="ja">（<a href="#data">生成されるデータ</a>を参照）</span></dd>
-        </dl>
-      </li>
-      <li class="fs-step" id="PF-11">
-        <p class="fs-head"><b class="fs-id">PF-11</b> <span class="fs-call"><code>PowerNetwork</code> → <code>ResultPF.Export</code></span></p>
-        <dl class="fs-body">
-          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><ul lang="en">
-            <li>Only with <code>Export</code>; with another <code>Format</code>, on the <code>ResultPF</code> built for the export only</li>
-            <li>Writes <code>tab_bus</code> or <code>tab_branch</code> (.csv, .txt, .xlsx, .xls), or the iteration history (.json)</li>
-            <li>.json: the bus types and Y from the stored <code>tab_PFcondition</code> and <code>cm_Y</code></li>
-            <li>The figure (|V| and the angle per bus) is drawn by the caller with <code>result.Plot()</code></li>
-          </ul><ul lang="ja">
-            <li><code>Export</code> を指定したときだけ実行します。<code>Format</code> がほかの値なら、書き出しのためだけに作った <code>ResultPF</code> で実行します。</li>
-            <li><code>tab_bus</code> か <code>tab_branch</code> を .csv、.txt、.xlsx、.xls で、または反復履歴を .json で書き出します。</li>
-            <li>.json のときは、母線の種類と Y を、結果が持つ <code>tab_PFcondition</code> と <code>cm_Y</code> から読みます。</li>
-            <li>図（母線ごとの |V| と角度）は、呼び出し側が <code>result.Plot()</code> で描きます。</li>
-          </ul></dd>
-          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>result</code></dd>
-          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en">file</span><span lang="ja">ファイル</span></dd>
         </dl>
       </li>
     </ol>
@@ -672,7 +636,7 @@
       <li>No stale check; no use or build of the <code>f_*</code> handles; no read or change of <code>sct_stale</code></li>
       <li>Unused: the equilibrium, the dynamics parameters of components, the OPF parameters; the operation parameters only for <code>tab_violation</code></li>
       <li>A <code>ResultPF</code> holds the snapshot <code>struct(net, false)</code>, <code>tab_PFcondition</code> and <code>cm_Y</code>, no network handle: a later edit of the network changes neither its values nor its exports</li>
-      <li>Without <code>Format="GUILDAorigin"</code> or <code>Export</code>, neither a <code>ResultPF</code> nor a snapshot is built</li>
+      <li>Without <code>Format="GUILDAorigin"</code>, neither a <code>ResultPF</code> nor a snapshot is built</li>
     </ul>
     <ul lang="ja">
       <li>ネットワークに書き込むのは PF-02 だけです。</li>
@@ -689,7 +653,7 @@
       <li>stale は確かめません。<code>f_*</code> ハンドルは使わず、作りもしません。<code>sct_stale</code> は読みも書きもしません。</li>
       <li>平衡点、機器の dynamics パラメータ、OPF パラメータは使いません。operation パラメータを使うのは <code>tab_violation</code> だけです。</li>
       <li><code>ResultPF</code> は、スナップショット <code>struct(net, false)</code>、<code>tab_PFcondition</code>、<code>cm_Y</code> を持ち、ネットワークのハンドルは持ちません。そのため、あとでネットワークを編集しても、結果の値も書き出す内容も変わりません。</li>
-      <li><code>Format="GUILDAorigin"</code> でも <code>Export</code> の指定もないときは、<code>ResultPF</code> もスナップショットも作りません。</li>
+      <li><code>Format="GUILDAorigin"</code> でないときは、<code>ResultPF</code> もスナップショットも作りません。</li>
     </ul>
 
     <!-- ============================== 6. FAILURES ============================== -->

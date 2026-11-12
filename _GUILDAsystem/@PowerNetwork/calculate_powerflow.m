@@ -30,7 +30,6 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
 % - `Verbose` — Print the progress of each iteration. Default: GUILDA.setting (false).
 % - `WarmStart` — true starts from the last converged solution kept by net.solver_PF when it was solved for the same bus tags; false from the flat start (see SolverPF). Default: GUILDA.setting (true).
 % - `PlotFcn` — Live display during the calculation (every Solver): "residual" draws one bar per power equation (two per bus) with its |residual|, updated during the iterations; a function handle is called at every iterate as stop = f(x, optimValues, state) (x the complex bus voltages; optimValues.iteration, .fval = residuals, .residual = the largest, .time = virtual time for "dynamic"; state "init", "iter", "done"), and a true stop ends the calculation with flag -1; "none" draws nothing. The figure after the calculation: result.Plot() of Format="GUILDAorigin". Default: GUILDA.setting ("none").
-% - `Export` — Write the solution with ResultPF.Export after the calculation: true for the default file name, or the file name (its extension selects the format). With a Format other than "GUILDAorigin", the ResultPF is built for the export only and the first output keeps its Format. Default: false.
 %
 % <@Examples>
 % ```matlab
@@ -40,7 +39,7 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
 % res = net.calculate_powerflow(Format="GUILDAorigin", Solver="dynamic");
 % res.tab_branch         % flows and losses of each branch
 % res.Plot();            % voltage profile
-% net.calculate_powerflow(Export="pf.csv");                   % bus table to a file
+% res.Export("pf.csv");                                      % bus table to a file
 % ```
 %
 % See also ResultPF, SolverPF, PowerNetwork.initialize
@@ -54,7 +53,6 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
         opt.Verbose (1,1) logical = GUILDA.config("PowerFlowCalculation", "Verbose") % Print the progress of each iteration.
         opt.WarmStart (1,1) logical = GUILDA.config("PowerFlowCalculation", "WarmStart") % Start from the last converged solution of this network.
         opt.PlotFcn {mustBePlotFcn} = GUILDA.config("PowerFlowCalculation", "PlotFcn") % Live display during the calculation: "residual", a function handle or "none".
-        opt.Export {mustBeExport} = false % true for the default file name of result.Export, or the file name.
         opt.Format (1,1) string {mustBeMember(opt.Format, ["V","powerflow(mat)","powerflow(tab)","GUILDAorigin"])} = "V" % Form of the first output.
     end
     arguments (Output)
@@ -87,21 +85,7 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
     sct_solver = struct("solver", string(class(obj.solver_PF)), "options", sct_options, ...
         "flag", flag, "output", output, "elapsed", r_elapsed, "cm_Vhistory", cm_Vhistory, ...
         "rv_step", rv_step, "tab_PFcondition", tab_PFcondition);
-    f_result = @() ResultPF(tab_pf, cm_Y, struct(obj, false), sct_solver);
-    result   = format_powerflow(opt.Format, tab_pf, f_result);
-
-    if ~isequal(opt.Export, false)
-        if opt.Format ~= "GUILDAorigin"
-            res_export = f_result();         % built for the export only
-        else
-            res_export = result;
-        end
-        if isstring(opt.Export) || ischar(opt.Export)
-            res_export.Export(string(opt.Export));
-        else
-            res_export.Export();
-        end
-    end
+    result = format_powerflow(opt.Format, tab_pf, @() ResultPF(tab_pf, cm_Y, struct(obj, false), sct_solver));
 end
 
 
@@ -160,14 +144,4 @@ end
 function mustBePlotFcn(x)
 % "none", "residual" or a function handle (tools.check_plotfcn)
     tools.check_plotfcn(x, "calculate_powerflow", "residual");
-end
-
-
-function mustBeExport(x)
-% A logical scalar or one file name
-    mustBeA(x, ["logical","string","char"])
-    if ischar(x)
-        x = string(x);
-    end
-    mustBeScalarOrEmpty(x)
 end
