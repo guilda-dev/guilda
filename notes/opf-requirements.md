@@ -29,9 +29,16 @@ the end as open questions.
 `set_opffcn` は未リリースのまま置き換え）
 
 - 既定: 問題の種類ごとに標準の目的関数・制約・アルゴリズム。
-- 問題の構築: 潮流計算と同じ方式。`SolverOPF.build_problem` が母線・機器・ブランチの
-  `tab_parameter`（operation / OPF / powerflow / dynamics）を読み取り、`optimproblem` を
-  構築。Bus / Component / Branch に OPF のメソッドや状態は持たせない。
+- 問題の構築: 潮流計算と同じ方式（2026-11-12）。`calculate_optimal_powerflow` と
+  `build_opf_problem` が `@PowerNetwork/private/opf_data.m` で母線・機器・ブランチの
+  `tab_parameter`（operation / OPF / powerflow / dynamics）から 3 つの表（行名はタグ）、
+  `base`（baseMVA、Hz）、解決済みの `ReferenceBus`（`"auto"` → 母線タグ）を集める。
+  `SolverOPF.build_problem` / `solve` はこの表とオプションだけを受け取り、系統や
+  Bus / Component / Branch のオブジェクトを読まない。問題のキャッシュはなく
+  （`PowerNetwork.n_revOPF` も削除）、`net.solver_OPF` はウォームスタートの母線電圧と
+  母線タグだけを持つ。`ResultOPF` は `struct(net, false)` と解から作り、系統のハンドルを
+  持たない。問題の Description に系統の木（`disp_tree`）は入れない。
+  Bus / Component / Branch に OPF のメソッドや状態は持たせない。
   - 理由: OPF を使う解析はほかにない。動特性（`f_dx` など）は `simulate` と `get_sys`
     が再利用するため、キャッシュしたハンドルをクラスに保持するのとは事情が異なる。
   - 型による分岐は負荷（`component.load.abstract`）の固定だけ。

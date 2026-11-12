@@ -176,6 +176,17 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **要判断:** powerflow-structure.md の「5.」の表示メソッドの一覧。
 - **未対応:** `_GUILDAtutorial/*.mlx`(保留中のチュートリアルの作業)。`PowerNetwork.n_revY`・`n_revPF` はどのソルバーも読まなくなったので、削除を検討します。
 
+## 最適潮流計算の構造の見直し(2026-11-12)
+
+ブランチは `refactor/opf-structure`(未 push)です。潮流計算と同じ構造にしました。
+
+- `optimize_powerflow` を `calculate_optimal_powerflow` に改名しました(別名なし)。`build_opf_problem` と GUILDA.setting の `OptimalPowerFlow` はそのままです。
+- OPF の v3 互換(`v3_opf_args`、`v3_optimize_powerflow`、6 出力、`"methods"`)を削除しました。`legacy_output.m` は F10 のテストが使うので残しています。
+- オプションは `calculate_optimal_powerflow` と `build_opf_problem` の `arguments` ブロックで検証します(未知の名前は `MATLAB:TooManyInputs`)。`Cost`・`Constraint`・`DefaultCost`・`ReferenceBus` は呼び出しだけのオプション(既定 `[]`、`[]`、true、`"auto"`)で、`SolverOPF` のプロパティ、`OptionMap`、`get_options`、`Export` は削除しました。関数ハンドルでない値は `GUILDA:PowerNetwork:InvalidOpfHandle` です。
+- `@PowerNetwork/private/opf_data.m` が母線・機器・ブランチの 3 つの表、`base`、解決済みの `ReferenceBus` を集めます。`SolverOPF.build_problem` / `solve` は系統を読みません。問題のキャッシュと `PowerNetwork.n_revOPF` は削除し、ウォームスタートは母線タグで照合します。`ResultOPF` は `struct(net, false)` と解から作ります。
+- **テスト(MATLAB R2026a):** small を手順ごとに実行して FAIL 0(手順 3 で 512 件、PASS 510 / KNOWN 1 / SKIP 1)。medium 686 件、PASS 684 / KNOWN 1 / FAIL 0 / SKIP 1、856 s。F4 は全段階(37 件 + SKIP 1)を個別に実行して PASS。
+- **未対応:** `PowerNetwork.n_revY`・`n_revPF`・`n_revTopology` を読むソルバーはなくなりました(`handle_edit` が増やすだけです)。F8 の large のテスト 2 件(`MATFileRoundTripKeepsControllersAndLowerLayers`、`MATPOWERImportReproducesCase14`)は、この作業の前のコミットでも失敗します。
+
 ## 未決事項
 
 状態は `a9afe24` のコードと履歴で確認しました(`301b5d0` までの統合はコードを変えていません)(下で日付や基準を別に示した項目を除く)。

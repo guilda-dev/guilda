@@ -6,8 +6,11 @@ classdef SolverOPF < auxiliary
 % Name-Value options of the call applied to that call only (the arguments block of
 % PowerNetwork.calculate_optimal_powerflow); Cost, Constraint, DefaultCost and
 % ReferenceBus are options of the call only. The solver keeps only the warm start.
-% build_problem reads tab_parameter of the buses, components and branches and builds the
-% optimization problem; solve solves it and returns a ResultOPF.
+% It never reads the network: net.calculate_optimal_powerflow (and net.build_opf_problem)
+% collect the data of the buses, components and branches from tab_parameter as three
+% tables (tags as row names), resolve ReferenceBus "auto" to a bus tag and pass the base
+% (baseMVA, Hz). build_problem builds the optimization problem from these data; solve
+% solves it and returns the solution, from which the caller builds the ResultOPF.
 %
 % - `Method`: "ELD" (economic load dispatch, branches ignored), "DC OPF" (DC approximation:
 %   |V| = 1, no losses, b_ij = 1/(X*tap) as in MATPOWER) or "AC OPF" (AC power flow
@@ -35,10 +38,8 @@ classdef SolverOPF < auxiliary
 %   magnitude 1, with the set V at PV and slack buses and the set angle at the slack bus.
 %   "DC OPF" starts from the angles of the same start. net.reset_solver() discards the
 %   kept voltages.
-% - solve keeps the problem it built and uses it again while the network (by object), its
-%   OPF revision, Method, Cost, Constraint (by function handle), DefaultCost,
-%   ReferenceBus, the start and the bounds and types of the variables are unchanged.
-%   net.build_opf_problem always builds a new problem.
+% - The problem is built at every call (no cache); net.build_opf_problem builds the same
+%   problem without solving it.
 % - A default limit of one object is removed by setting it to Inf (-Inf for a lower
 %   bound) in its tab_parameter.operation: Vmin, Vmax (bus); Pmin, Pmax, Qmin, Qmax
 %   (component); Pmax, Qmax, Vargmax, Imax, Smax (branch, where NaN also means none).
@@ -54,13 +55,8 @@ classdef SolverOPF < auxiliary
 % See also ResultOPF, PowerNetwork.calculate_optimal_powerflow, PowerNetwork.build_opf_problem
 
     properties(Access=private) % Warm start
-        a_Bus (:,1) cell = cell(0,1)                                                                                                                            % Buses of the network of rm_Vwarm, in its bus order.
-        n_revTopology (1,1) double = NaN                                                                                                                        % Topology revision of the network when rm_Vwarm was kept.
-        rm_Vwarm (:,2) double = zeros(0,2)                                                                                                                      % [rad, pu] Varg and V of the buses in the last solved "AC OPF" (a_Bus order); empty when none.
-    end
-
-    properties(Access=private) % Cache
-        sct_problem struct = struct([])   % Problem built by the last solve: Network, Revision (n_revOPF), Key (settings and start), Problem, InitialPoint, Bounds (of the variables); empty when none.
+        rm_Vwarm (:,2) double = zeros(0,2)      % [rad, pu] Varg and V of the buses in the last solved "AC OPF"; empty when none.
+        sv_warmBus (:,1) string = strings(0,1)  % Bus tags of rm_Vwarm (row names of the bus table it was solved for).
     end
 
     methods
@@ -74,8 +70,8 @@ classdef SolverOPF < auxiliary
             end
         end
 
-        [prob, x0] = build_problem(obj, net, sct_options)
-        [result,flag,output] = solve(obj, net, sct_options, sct_input)
+        [prob, x0] = build_problem(obj, tab_bus, tab_component, tab_branch, sct_options)
+        [sct_solution, flag, output] = solve(obj, tab_bus, tab_component, tab_branch, sct_options, sct_input)
     end
 
     methods(Hidden)

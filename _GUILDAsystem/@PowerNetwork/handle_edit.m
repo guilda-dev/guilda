@@ -20,8 +20,6 @@ function handle_edit(obj, a_layer, tag, log)
 %     n_revPF        every n_revY edit, and bus powerflow, Slack and Topology, component
 %                    powerflow: the power flow equations
 %     n_revTopology  the network Topology: the warm start (and every cache)
-%     n_revOPF       every n_revPF edit, the network Hz, and the operation and OPF
-%                    parameters and the tag of any layer: the OPF problem
 % - The stale tag odefcn is marked for a Hz edit of the network (base, told from baseMVA
 %   by s_lastEdited of its base container): the edit does not reach the models, whose handles bind
 %   the frequency.
@@ -40,7 +38,6 @@ function handle_edit(obj, a_layer, tag, log)
     if a_layer == obj
         if tag == "base" && obj.a_Parameter{cellfun(@(p) p.s_tag=="base", obj.a_Parameter)}.s_lastEdited == "Hz"
             obj.sct_stale.odefcn(end+1,1) = log;
-            obj.n_revOPF = obj.n_revOPF + 1;    % p.base of the OPF Cost and Constraint
             return
         end
         l_Y        = matches(tag, ["base","Topology"]);
@@ -63,7 +60,6 @@ function handle_edit(obj, a_layer, tag, log)
         l_powerflow = false;
     end
     obj.n_revY = obj.n_revY + l_Y;
-    obj.n_revOPF = obj.n_revOPF + (l_powerflow || matches(tag, ["operation","OPF","Tag"]));
     if l_powerflow
         obj.n_revPF = obj.n_revPF + 1;
         obj.sct_stale.powerflow(end+1,1) = log;

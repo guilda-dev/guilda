@@ -1,14 +1,13 @@
-function [prob, x0, const, sct_var] = build_branch(br, prob, x0, const, sct_var, s_method)
+function [prob, x0, const, sct_var] = build_branch(row, prob, x0, const, sct_var, s_method)
 % Add the flow variables, definitions and limits of one branch to the OPF problem.
 %
 % The variables of each end are "<branch>_<bus>" and hold the flow from the branch into
-% that bus, which is added to the balance of the bus. Limits of tab_parameter.operation
-% at both ends: -Pmax <= P <= Pmax, -Qmax <= Q <= Qmax, |I|^2 <= Imax^2,
+% that bus, which is added to the balance of the bus. Limits at both ends: -Pmax <= P <= Pmax, -Qmax <= Q <= Qmax, |I|^2 <= Imax^2,
 % P^2 + Q^2 <= Smax^2 ("AC OPF") and |Varg_i - Varg_j| <= Vargmax; NaN or Inf adds no
 % limit. "DC OPF" uses P only, with the MATPOWER flow b*(θi - θj - phase),
 % b = 1/(X*tap). "ELD" ignores branches.
     arguments (Input)
-        br                       % Branch to add.
+        row      table           % Row of the branch table (From, To, Y, X, tap, phase, Pmax, ...); row name = tag.
         prob                     % Problem being built.
         x0       (1,1) struct    % Initial values (with the end buses), extended.
         const    (1,1) struct    % Power-balance expressions, extended.
@@ -25,18 +24,18 @@ function [prob, x0, const, sct_var] = build_branch(br, prob, x0, const, sct_var,
         return
     end
 
-    ope    = group(br, "operation");
-    sv_bus = string(br.a_Bus);
+    ope    = row;
+    s_br   = string(row.Properties.RowNames{1});
+    sv_bus = [row.From; row.To];       % column: sm_con below is 2x2 (end, P/Q)
     Vbusi  = sct_var.(sv_bus(1));
     Vbusj  = sct_var.(sv_bus(2));
     if ~isnan(ope.Vargmax) && ~isinf(ope.Vargmax)
-        s_br = string(br);
         prob.Constraints.("VargMax1_"+s_br) = (Vbusi("Varg")-Vbusj("Varg")) <=  ope.Vargmax;
         prob.Constraints.("VargMax2_"+s_br) = (Vbusi("Varg")-Vbusj("Varg")) >= -ope.Vargmax;
     end
 
     % str(1): end at bus i, str(2): end at bus j
-    str    = string(br) + "_" + sv_bus;
+    str    = s_br + "_" + sv_bus;
     sm_con = ["P_","Q_"] + sv_bus;
     switch s_method
         case "AC OPF"
@@ -50,7 +49,7 @@ function [prob, x0, const, sct_var] = build_branch(br, prob, x0, const, sct_var,
             sct_var.(str(2)) = varij;
 
             % The direction into the bus is positive, hence the minus sign.
-            rm_Yij = - br.get_admittance_matrix;
+            rm_Yij = - reshape(row.Y, 2, 2);
             rm_Yex = tools.complex2matrix(rm_Yij);
 
             % Initial point: the end values at the initial bus voltages, so that the
@@ -108,7 +107,10 @@ function [prob, x0, const, sct_var] = build_branch(br, prob, x0, const, sct_var,
 
             % |V| = 1, lossless, MATPOWER convention (makeBdc): the flow from bus i to
             % bus j is b*(θi - θj - phase); the power into bus i is its negative.
-            [b, phase] = dc_susceptance(group(br, "dynamics"));
+            % b = 1/(X*tap) as in MATPOWER, with the off-nominal tap ratio and the phase
+            % shift [rad] at the from end; tap = 1 and phase = 0 for lines.
+            b     = 1/(row.X*row.tap);
+            phase = row.phase;
             prob.Constraints.("defP_"+str(1)) = P_i == b *(Vbusj("Varg")-Vbusi("Varg")+phase);
             prob.Constraints.("defP_"+str(2)) = P_j == b *(Vbusi("Varg")-Vbusj("Varg")-phase);
 
@@ -129,23 +131,3 @@ function expr = current(rv_Y, Vbusi, Vbusj)
          + rv_Y(4) * Vbusj("V") * sin(Vbusj("Varg")) ;
 end
 
-
-function [b, phase] = dc_susceptance(para)
-% DC branch susceptance as in MATPOWER: b = 1/(X*tap), with the off-nominal tap ratio and
-% the phase shift [rad] at the from end (a_Bus{1}); tap = 1 and phase = 0 for lines.
-    s = table2struct(para);
-    tap = 1;
-    phase = 0;
-    if isfield(s, "tap") && ~isnan(s.tap) && s.tap ~= 0
-        tap = s.tap;
-    end
-    if isfield(s, "phase") && ~isnan(s.phase)
-        phase = s.phase;
-    end
-    b = 1/(s.X*tap);
-end
-
-
-function tab = group(obj, s_group)
-    tab = obj.a_Parameter{cellfun(@(p) p.s_tag==s_group, obj.a_Parameter)}.tab_parameter;
-end

@@ -24,6 +24,11 @@ function [result, flag, output] = calculate_optimal_powerflow(obj, opt)
 % the components; branch current and power limits are applied as |I|^2 <= Imax^2 and
 % P^2 + Q^2 <= Smax^2 at both ends. Options not listed below stop with the MATLAB error
 % of an unknown name. The result is written to a file with result.export.
+% The network assembles the data of the problem (tables of the buses, components and
+% branches from tab_parameter, the base and the reference bus) and net.solver_OPF builds
+% and solves it from these data only; the ResultOPF is built from a snapshot of the
+% network (struct(net, false)) and the solution. res.options holds the settings of the
+% run, with ReferenceBus as the bus tag ("auto" resolved) and base (baseMVA, Hz).
 %
 % Name-Value options:
 %
@@ -85,11 +90,17 @@ function [result, flag, output] = calculate_optimal_powerflow(obj, opt)
     end
 
     sct_options = solver_options(opt);
-    sct_input   = struct();
+    [tab_bus, tab_component, tab_branch, sct_options.base, sct_options.ReferenceBus] = opf_data(obj, opt.ReferenceBus);
+    sct_input = struct();
     for s_name = intersect(["Problem","InitialPoint"], string(fieldnames(opt)).', "stable")
         sct_input.(s_name) = opt.(s_name);
     end
-    [result, flag, output] = obj.solver_OPF.solve(obj, sct_options, sct_input);
+
+    t0 = tic;
+    [sct_solution, flag, output] = obj.solver_OPF.solve(tab_bus, tab_component, tab_branch, sct_options, sct_input);
+    sct_solver = struct("solver", string(class(obj.solver_OPF)), "options", sct_options, ...
+        "flag", flag, "output", output, "elapsed", toc(t0));
+    result = ResultOPF(struct(obj, false), sct_solution, sct_solver);
 end
 
 

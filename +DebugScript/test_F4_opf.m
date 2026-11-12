@@ -171,55 +171,36 @@ sct_def = jsondecode(fileread(fullfile(GUILDA.pwd, "@GUILDA", "config", "Default
 assert(sct_def.WarmStart.Value == false)
 
 
-%% The OPF problem is kept until the network or the settings change
-% net.solver_OPF は作った問題を保持し、ネットワーク・設定・初期点が同じなら再利用する。
-% 再利用の判定: 問題の変数はハンドルなので、同じ問題なら一方の上下限の変更が他方に見える
+%% Every call builds the OPF problem from the current network
+% 問題のキャッシュはない。呼び出しごとに tab_parameter から集めた表で問題を作るので、
+% operation / OPF / powerflow / タグの編集はすぐ結果に反映される。
+% 同じ問題かどうか: 問題の変数はハンドルなので、同じ問題なら一方の上下限の変更が他方に見える
 net = DebugScript.helper.build_9bus();
 s_var = "B001SG1";
 shared = @(r1, r2) shares_variable(r1.OPFprob, r2.OPFprob, s_var);
 res1 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
 res2 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
-assert(shared(res1, res2))                                  % 再利用
-res3 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD"));
-assert(~shared(res2, res3))
-res4 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
-assert(~shared(res2, res4))                                 % 設定が変われば作り直す (保持は 1 つ)
-res5 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF", Cost=@(v, p) 0*v.Component.B001SG1.P));
-assert(~shared(res4, res5))                                 % Cost (関数ハンドル) が違う
-res6 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
-assert(~shared(res5, res6))
-% operation / OPF / powerflow / タグの編集で作り直し、結果は編集を反映する
+assert(~shared(res1, res2) && abs(res2.r_cost - res1.r_cost) < 1e-9*max(1, abs(res1.r_cost)))
 g1 = net.a_Bus{1}.a_Component{1};
 g1.tab_parameter.operation.Pmax = 0.5;
-res7 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
-assert(~shared(res6, res7) && res7.tab_cub{"B001SG1","P"} <= 0.5 + 1e-6)
+res3 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
+assert(res3.tab_cub{"B001SG1","P"} <= 0.5 + 1e-6 && res3.OPFprob.Variables.B001SG1.UpperBound == 0.5)
 g1.tab_parameter.OPF.fP = g1.tab_parameter.OPF.fP + 1;
-res8 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
-assert(~shared(res7, res8))
+res4 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
+assert(res4.r_cost > res3.r_cost)
 net.a_Bus{5}.a_Component{1}.tab_parameter.powerflow.P = -1.1;
-res9 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
-assert(~shared(res8, res9))
+res5 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
+assert(abs(sum(res5.tab_cub{["B001SG1","B002SG1","B003SG1"],"P"}) - 3.1) < 1e-6)
 g1.s_tag = "G1";
-res10 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
-assert(isfield(res10.OPFprob.Variables, "G1") && ~isfield(res10.OPFprob.Variables, "B001SG1"))
-s_var = "G1";
-shared = @(r1, r2) shares_variable(r1.OPFprob, r2.OPFprob, s_var);
-% 結果の問題の上下限を変えると、次の計算は作り直す (変更は既定の問題に残らない)
-res11 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
-assert(shared(res10, res11))
-var = res11.OPFprob.Variables.G1;     % ハンドル (結果のプロパティ自体は読み取り専用)
+res6 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
+assert(isfield(res6.OPFprob.Variables, "G1") && ~isfield(res6.OPFprob.Variables, "B001SG1"))
+% 結果の問題の上下限を変えても、次の計算には残らない
+var = res6.OPFprob.Variables.G1;     % ハンドル (結果のプロパティ自体は読み取り専用)
 var.UpperBound = 0.2;
-res12 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
-assert(res12.OPFprob.Variables.G1.UpperBound == 0.5 && abs(res12.r_cost - res10.r_cost) < 1e-9*max(1, abs(res10.r_cost)))
-% build_opf_problem は毎回新しい問題 (保持した問題を返さない)
-prob = DebugScript.helper.quiet(@() net.build_opf_problem(Method="DC OPF"));
-prob.Variables.G1.UpperBound = 0.3;
-res13 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
-assert(shared(res12, res13) && res13.OPFprob.Variables.G1.UpperBound == 0.5)
-% net.reset_solver() で捨てる
-net.reset_solver();
-res14 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
-assert(~shared(res13, res14))
+res7 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
+assert(res7.OPFprob.Variables.G1.UpperBound == 0.5 && abs(res7.r_cost - res6.r_cost) < 1e-9*max(1, abs(res6.r_cost)))
+% 結果は系統への参照を持たず、スナップショットのタグだけを持つ
+assert(isempty(res7.a_PowerNetwork) && res7.s_network == string(net.s_tag))
 
 
 %% AC OPF respects generator limits
