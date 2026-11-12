@@ -91,7 +91,10 @@ classdef LayerPackage < handle
             if ~isempty(obj.parent)
                 a_sameLayer = obj.parent.children;
                 l_me  = tools.vcellfun(@(a) a==obj, a_sameLayer);
-                sv_sameLayer = string( a_sameLayer(~l_me) );
+                % A sibling without a tag yet (still being loaded from a MAT file) is
+                % skipped: string() of it fails, and load drops the tag silently.
+                c_tag = cellfun(@(a) a.s_tag, a_sameLayer(~l_me), "UniformOutput", false);
+                sv_sameLayer = string( c_tag(~cellfun(@isempty, c_tag)) );
                 if any(sv_sameLayer==s_newtag)
                     id = 2;
                     s_modified = s_newtag+num2str(id,"%.3d");
