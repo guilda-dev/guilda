@@ -1,4 +1,4 @@
-function ax = Plot(obj, opt)
+function ax = plot_trajectory(obj, opt)
 % Plot a trajectory of the buses or components.
 %
 % Draws a trajectory against time [s]: for the buses, the voltage magnitude (Vabs), the

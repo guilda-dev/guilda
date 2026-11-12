@@ -23,14 +23,14 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
 %   - "V": complex bus voltages [pu], a column in net.a_Bus order.
 %   - "powerflow(mat)": n-by-4 complex double, one row per bus (net.a_Bus order); columns V, I (complex phasors of the voltage and the current injection), P, Q (real injections into the network) [pu].
 %   - "powerflow(tab)": the same as a table with the variables V, I, P, Q; row names = bus tags.
-%   - "GUILDAorigin": a ResultPF (bus table, branch flows, violated operating limits, iteration history, Plot and Export).
+%   - "GUILDAorigin": a ResultPF (bus table, branch flows, violated operating limits, iteration history, plot_voltage, the disp_* methods and export).
 %   The other values build no ResultPF (nor the network snapshot it holds).
 % - `Solver` — Algorithm: "newton", "gradient", "levenberg-marquardt", "fsolve" or "dynamic" (see SolverPF). Default: GUILDA.setting.
 % - `Tolerance` — [pu] Largest P/Q mismatch of a converged solution, for every method. Default: GUILDA.setting (1e-8).
 % - `MaxIteration` — Maximum number of iterations; NaN for the automatic value of the method (see SolverPF). Default: GUILDA.setting (NaN).
 % - `Verbose` — Print the progress of each iteration. Default: GUILDA.setting (false).
 % - `WarmStart` — true starts from the last converged solution kept by net.solver_PF when it was solved for the same bus tags; false from the flat start (see SolverPF). Default: GUILDA.setting (true).
-% - `PlotFcn` — Live display during the calculation (every Solver): "residual" draws one bar per power equation (two per bus) with its |residual|, updated during the iterations; a function handle is called at every iterate as stop = f(x, optimValues, state) (x the complex bus voltages; optimValues.iteration, .fval = residuals, .residual = the largest, .time = virtual time for "dynamic"; state "init", "iter", "done"), and a true stop ends the calculation with flag -1; "none" draws nothing. The figure after the calculation: result.Plot(). Default: GUILDA.setting ("none").
+% - `PlotFcn` — Live display during the calculation (every Solver): "residual" draws one bar per power equation (two per bus) with its |residual|, updated during the iterations; a function handle is called at every iterate as stop = f(x, optimValues, state) (x the complex bus voltages; optimValues.iteration, .fval = residuals, .residual = the largest, .time = virtual time for "dynamic"; state "init", "iter", "done"), and a true stop ends the calculation with flag -1; "none" draws nothing. The figure after the calculation: result.plot_voltage(). Default: GUILDA.setting ("none").
 %
 % <@Examples>
 % ```matlab
@@ -38,7 +38,7 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
 % [res, flag] = net.calculate_powerflow();                    % ResultPF
 % res.tab_bus            % Varg, V, P, Q, Vphasor, Iphasor of each bus
 % res.tab_branch         % flows and losses of each branch
-% res.Plot();            % voltage profile
+% res.plot_voltage();            % voltage profile
 % res.export("pf.csv");  % bus table to a file
 % V   = net.calculate_powerflow(Format="V", Solver="dynamic");   % complex bus voltages
 % tab = net.calculate_powerflow(Format="powerflow(tab)");      % V, I, P, Q of each bus

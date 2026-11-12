@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Read the power flow result, and plot_* figures",
+    "date": "2026-11-12",
+    "type": "feature",
+    "content": "The power flow result has views: res.disp_summary() (outcome, totals, |V| range, violations), res.disp_bus (options Bus, Unit=\"SI\" for kV, MW and Mvar, Sort=\"V\"), res.disp_branch (Branch, Unit, Sort=\"loss\" or \"loading\"), res.disp_violation (Class) and res.plot_voltage (Quantity, Limit: the Vmin and Vmax lines). With one output, a disp_ method returns its text. Plot is replaced in every result by a plot_ name: plot_voltage (power flow), plot_dispatch (OPF), plot_pvcurve (continuation power flow), plot_trajectory (simulation) and plot_eigenvalue (linearization). Scripts that call Plot need updating."
+  },
+  {
     "title": "Choose the output of the power flow",
     "date": "2026-11-12",
     "type": "feature",

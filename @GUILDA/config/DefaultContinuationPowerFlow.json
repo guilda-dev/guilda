@@ -62,6 +62,6 @@
             "none",
             "pvcurve"
         ],
-        "Description": "Live display during the analysis: 'pvcurve' (|V| of every bus against lambda, extended at each step) or 'none'. The figure after the analysis: result.Plot()"
+        "Description": "Live display during the analysis: 'pvcurve' (|V| of every bus against lambda, extended at each step) or 'none'. The figure after the analysis: result.plot_pvcurve()"
     }
 }

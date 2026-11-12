@@ -23,7 +23,7 @@ classdef SolverODE < auxiliary
 %   AbsoluteTolerance, SolverOptions and SeparateComplexParts keep the names of the MATLAB
 %   ode object (SeparateComplexParts is logical and given to ode as "on" / "off"). Each
 %   name except SolverOptions is also the key of the setting. PlotFcn
-%   (live display) is "none" only (tools.check_plotfcn); result.Plot() draws the result.
+%   (live display) is "none" only (tools.check_plotfcn); result.plot_trajectory() draws the result.
 %
 % <@Examples>
 % ```matlab

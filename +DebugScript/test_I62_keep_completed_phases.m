@@ -69,9 +69,9 @@ expect_error(@() sol.get_point(0), "GUILDA:ResultODE:PointTime")
 sol = run(net, [0,2], ev_trip_first);
 fig = figure("Visible", "off");
 c_fig = onCleanup(@() close(fig));
-ax = sol.Plot(Parent=fig);
+ax = sol.plot_trajectory(Parent=fig);
 assert(isgraphics(ax))
-ax = sol.Plot(Parent=fig, Quantity="omega");
+ax = sol.plot_trajectory(Parent=fig, Quantity="omega");
 assert(isgraphics(ax))
 
 

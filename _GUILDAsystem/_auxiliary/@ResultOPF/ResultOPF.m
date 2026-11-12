@@ -6,7 +6,7 @@ classdef ResultOPF < ResultBase
 % solved optimization problem. The columns of the tables depend on the method: "AC OPF"
 % has voltages, P, Q and currents, "DC OPF" has Varg, V (= 1) and P, "ELD" has P only
 % (branches are ignored and their values are NaN). It holds computed values only; the OPF settings
-% (tab_parameter.OPF / .operation) stay with the network. Plot draws the component outputs
+% (tab_parameter.OPF / .operation) stay with the network. plot_dispatch draws the component outputs
 % and, for "DC OPF" and "AC OPF", the bus voltages. export writes the bus, connection or
 % branch table (CSV, Excel).
 %
@@ -37,7 +37,7 @@ classdef ResultOPF < ResultBase
 % result.r_cost            % optimal generation cost
 % result.tab_cub           % P, Q of each component and branch end
 % price = -result.lambda.Constraints.balancedP_B001;   % nodal price at bus B001
-% result.Plot();
+% result.plot_dispatch();
 % result.export("opf.csv", Table="cub");
 % ```
 %
@@ -83,7 +83,7 @@ classdef ResultOPF < ResultBase
             obj.OPFprob    = OPFprob;
         end
 
-        fig = Plot(obj, opt)
+        fig = plot_dispatch(obj, opt)
         s_file = export(obj, filename, opt)
     end
 

@@ -42,7 +42,7 @@ function varargout = optimize_powerflow(obj, varargin)
 % - `Problem` — optimproblem to solve instead of building one, e.g. from net.build_opf_problem with the same Method, modified by the user; Cost, Constraint, DefaultCost and ReferenceBus are not applied to it. Default: none.
 % - `InitialPoint` — Initial point (struct of values by variable name). Default: the x0 of net.build_opf_problem for the same Method; give it when Problem has added variables.
 % - `WarmStart` — true starts "AC OPF" from the bus voltages of the last solved "AC OPF" of this network (kept by net.solver_OPF); false from the flat start (see SolverOPF). Default: GUILDA.setting OptimalPowerFlow (false).
-% - `PlotFcn` — Live display during the calculation, fmincon only ("AC OPF"): keys of the plot functions of fmincon, key k for optimplot<k> ("fval", "constrviolation", "fvalconstr", "firstorderopt", "stepsize", "funccount", "x"), or a function handle stop = f(x, optimValues, state) passed to fmincon as it is; "none" draws nothing. With linprog or quadprog ("ELD", "DC OPF") a value other than "none" stops with GUILDA:SolverOPF:PlotFcnUnsupported. The figure after the calculation: result.Plot(). Default: GUILDA.setting ("none").
+% - `PlotFcn` — Live display during the calculation, fmincon only ("AC OPF"): keys of the plot functions of fmincon, key k for optimplot<k> ("fval", "constrviolation", "fvalconstr", "firstorderopt", "stepsize", "funccount", "x"), or a function handle stop = f(x, optimValues, state) passed to fmincon as it is; "none" draws nothing. With linprog or quadprog ("ELD", "DC OPF") a value other than "none" stops with GUILDA:SolverOPF:PlotFcnUnsupported. The figure after the calculation: result.plot_dispatch(). Default: GUILDA.setting ("none").
 % - `Export` — Call result.export after the calculation: true for the default file name, or the file name. Default: false.
 %
 % <@Examples>
@@ -51,7 +51,7 @@ function varargout = optimize_powerflow(obj, varargin)
 % res.tab_bus                                         % Varg, V, P, Q, Vphasor, Iphasor of each bus
 % res.r_cost                                          % optimal cost
 % res = net.optimize_powerflow(Method="ELD", Verbose=false);
-% res.Plot();
+% res.plot_dispatch();
 % % Spinning reserve of two generators; its price is the dual of the named constraint
 % res = net.optimize_powerflow(Method="DC OPF", Constraint=@(v, p) struct("Reserve", ...
 %           (2 - v.Component.B001SG1.P) + (2 - v.Component.B002SG1.P) >= 0.5));

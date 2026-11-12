@@ -57,24 +57,24 @@
 - `ResultPF.export` の JSON は保存した `tab_PFcondition` と `cm_Y` を使います。持たない結果(`ResultPF()`、平衡点からの結果)では、これまでどおり `GUILDA:ResultPF:NoNetwork` です(本文を新しい形に合わせました)。
 - **動作の変化:** `initialize` の FixedInput と平衡点からの `ResultPF` も、枝潮流と運転制約の違反を持つようになりました(以前は空)。`r_elapsed` はソルバーの時間で、結果の組み立ては含みません。
 
-## 5. `ResultPF` の表示メソッドの提案(未実装)
+## 5. `ResultPF` の表示メソッド
 
-結果を読むためのメソッドの案です。どれも結果が持つデータ(`tab_bus`、`tab_branch`、`tab_violation`、`cm_Vhistory`、`sct_network`)だけを使い、系統は読みません。
+ユーザーが承認した 5 つを実装しました(2026-11-12)。どれも結果が持つデータ(`tab_bus`、`tab_branch`、`tab_violation`、`tab_PFcondition`、`sct_network`、`output`)だけを使い、系統は読みません。`disp_*` は出力を 1 つ求めると表示せずに文字列を返します(`disp_connection` と同じ)。オブジェクトの表示(`disp`・`display`)は MATLAB の既定のままです。
 
-| 名前 | 表示するもの | オプション |
-|---|---|---|
-| `disp_summary` | 収束の情報(Solver、flag、反復回数、残差、時間)、発電・負荷・損失の合計、電圧の最大と最小(母線名つき)、違反の件数 | なし |
-| `disp_bus` | 母線ごとの種別(slack/PV/PQ)、\|V\|、位相 [deg]、P、Q。設定値と解の対応がわかるように、潮流条件の値も並べる | `Bus`(表示する母線タグ)、`Unit`(`"pu"` / `"SI"`。SI は baseKV・baseMVA で kV・MW・Mvar に換算)、`Sort`(`"tag"` / `"V"`) |
-| `disp_branch` | 枝ごとの from・to の母線、両端の P・Q、損失、負荷率(\|S\|/Smax) | `Branch`(表示する枝タグ)、`Unit`、`Sort`(`"tag"` / `"loss"` / `"loading"`) |
-| `disp_violation` | `tab_violation` を種類(母線・機器・枝)ごとにまとめた表。0 件なら「違反なし」 | `Class`(`"Bus"` / `"Component"` / `"Branch"` の絞り込み) |
-| `plot_voltage` | 母線電圧の大きさと位相の棒グラフ(いまの `Plot`)。Vmin・Vmax の線を重ねる | `Parent`、`Quantity`(`"magnitude"` / `"angle"` / `"both"`)、`Limit`(制約の線を描くか) |
-| `plot_branch` | 枝ごとの潮流の棒グラフ | `Parent`、`Quantity`(`"P"` / `"Q"` / `"S"` / `"loading"` / `"loss"`) |
-| `plot_convergence` | 反復(dynamic では仮想時間)ごとの最大残差と電圧の変化(`cm_Vhistory`、`rv_step`) | `Parent`、`Bus`(電圧の推移を描く母線) |
-| `plot_network` | 系統図(スナップショットの `graph` パラメータの座標)に母線電圧を色で、枝潮流を矢印で重ねる | `Parent`、`Color`(`"V"` / `"angle"`)、`Arrow`(`"P"` / `"Q"` / `"none"`) |
+| 名前 | 表示するもの | オプション | 状態 |
+|---|---|---|---|
+| `disp_summary` | 収束の情報(Solver、flag、反復回数、残差、時間、メッセージ)、母線の種別ごとの数と枝の数、母線注入の合計(発電 = 正の P、負荷 = 負の P、損失 = P と Q の合計)、\|V\| の最大と最小(母線名つき)、違反の件数 | なし | 実装 |
+| `disp_bus` | 母線ごとの種別(slack/PV/PQ)、潮流条件の設定値、\|V\|、位相 [deg]、P、Q | `Bus`(母線タグ)、`Unit`(`"pu"` / `"SI"`。SI は \|V\| を母線の baseKV 倍の kV、P・Q を baseMVA 倍の MW・Mvar。設定値は pu のまま)、`Sort`(`"tag"` / `"V"`(\|V\| の小さい順)) | 実装 |
+| `disp_branch` | 枝ごとの From・To の母線、両端の P・Q、損失、負荷率(両端の大きいほうの \|S\| / Smax。Smax が無限なら NaN) | `Branch`(枝タグ)、`Unit`、`Sort`(`"tag"` / `"loss"` / `"loading"`。大きい順) | 実装 |
+| `disp_violation` | `tab_violation` を種類(Bus・Component・Branch)ごとにまとめた表。0 件なら 1 行 | `Class`(`"Bus"` / `"Component"` / `"Branch"` の絞り込み) | 実装 |
+| `plot_voltage` | 母線電圧の大きさと位相の棒グラフ(旧 `Plot`)。有限の Vmin・Vmax を破線(Tag `"Vmin"`・`"Vmax"`)で重ねる | `Parent`、`Quantity`(`"magnitude"` / `"angle"` / `"both"`)、`Limit`(既定 true) | 実装 |
+| `plot_branch` | 枝ごとの潮流の棒グラフ | `Parent`、`Quantity`(`"P"` / `"Q"` / `"S"` / `"loading"` / `"loss"`) | 後で |
+| `plot_convergence` | 反復(dynamic では仮想時間)ごとの最大残差と電圧の変化(`cm_Vhistory`、`rv_step`) | `Parent`、`Bus` | 後で |
+| `plot_network` | 系統図(スナップショットの `graph` パラメータの座標)に母線電圧を色で、枝潮流を矢印で重ねる | `Parent`、`Color`、`Arrow` | 後で |
 
-**既存の `Plot`:** `Plot` と `export` は `ResultBase` の約束(すべての結果クラスに共通の入口)なので、名前は残すことを勧めます。中身は `plot_voltage` を呼ぶだけにし、`plot_*` の各メソッドを個別の図として加えます。`plot_` の形へ改名すると、ほかの結果クラス(`ResultOPF`、`ResultCPF`、`ResultODE`、`ResultLIN`)の `Plot` もそろえる必要があります。
-
-`disp` の既定(オブジェクトを表示したとき)を `disp_summary` にするかどうかも、合わせて決めてください。
+- 未知のタグは `GUILDA:ResultPF:UnknownTag`、スナップショットのない結果での `Unit="SI"` は `GUILDA:ResultPF:NoBase` です。
+- **`Plot` の廃止(ユーザーの決定、2026-11-12):** すべての結果クラスの `Plot` を、中身を変えずに `plot_*` に改名しました(別名なし)。`ResultPF.plot_voltage`(制約の線を追加)、`ResultOPF.plot_dispatch`、`ResultCPF.plot_pvcurve`、`ResultODE.plot_trajectory`、`ResultLIN.plot_eigenvalue` です。`ResultBase.Plot` は削除しました。`GUILDA:ResultBase:Unsupported` は `export` がまだ使うので残しています。
+- **未対応:** `_GUILDAtutorial/*.mlx` は保留中のチュートリアルの作業に含まれるため、`Plot` の呼び出しを変えていません。
 
 ## テスト
 

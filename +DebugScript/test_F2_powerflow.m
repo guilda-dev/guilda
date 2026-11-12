@@ -310,6 +310,84 @@ assert(error_id(@() net.calculate_powerflow(Export="pf.csv")) ~= "")
 assert(error_id(@() net.initialize(Method="powerflow", Export="pf.csv")) ~= "")
 
 
+%% Viewing methods of the result read only the stored data
+% disp_summary / disp_bus / disp_branch / disp_violation (出力 1 つで文字列) と plot_voltage
+net = DebugScript.helper.build_9bus();
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+s = res.disp_summary();
+assert(contains(s, "converged") && contains(s, "buses 9 (slack 1, PV 2, PQ 6), branches 9") && contains(s, "violated operating limits: 0"), s)
+assert(strlength(evalc("res.disp_summary();")) > 0)      % 出力なしでは表示する
+% disp_bus: 全母線、Bus で絞り込み、Sort="V" は |V| の小さい順
+s = res.disp_bus();
+assert(all(contains(s, string(net.a_Bus))) && contains(s, "slack") && contains(s, "P=-1, Q=-0.1"), s)
+s = res.disp_bus(Bus=["B005","B002"]);
+assert(contains(s, "B005") && contains(s, "B002") && ~contains(s, "B001"))
+s = res.disp_bus(Sort="V");
+[~, i_min] = min(res.tab_bus.V); [~, i_max] = max(res.tab_bus.V);
+assert(strfind(s, string(net.a_Bus{i_min})) < strfind(s, string(net.a_Bus{i_max})))
+assert(error_id(@() res.disp_bus(Bus="B099")) == "GUILDA:ResultPF:UnknownTag")
+% Unit="SI": |V| は母線の baseKV 倍、P・Q は系統の baseMVA 倍 (スナップショットの値を使う)
+sct = res.sct_network;
+sct.tab_parameter.base.baseMVA = 200;
+sct.a_Bus{2}.tab_parameter.operation.baseKV = 100;       % B002 は PV (V = 1)
+tab_pf = table(res.tab_bus.Vphasor, res.tab_bus.Iphasor, res.tab_bus.P, res.tab_bus.Q, ...
+               'VariableNames', ["V","I","P","Q"], 'RowNames', res.tab_bus.Properties.RowNames);
+sct_solver = struct("flag", 1, "options", res.options, "tab_PFcondition", res.tab_PFcondition);
+res_si = ResultPF(tab_pf, res.cm_Y, sct, sct_solver);
+s = res_si.disp_bus(Bus="B002", Unit="SI");
+assert(contains(s, "(kV)") && contains(s, "(MW)") && contains(s, " 100 ") && contains(s, " 200 "), s)   % 1 pu * 100 kV, 1 pu * 200 MVA
+s = res_si.disp_bus(Bus="B005", Unit="SI");
+assert(contains(s, "-200") && contains(s, "-20 "), s)                                                    % P = -1, Q = -0.1 pu
+assert(error_id(@() ResultPF(tab_pf, res.cm_Y, struct(), sct_solver).disp_bus(Unit="SI")) == "GUILDA:ResultPF:NoBase")
+% disp_branch: From/To、Sort="loss" は損失の大きい順、Smax があれば負荷率で並べる
+s = res.disp_branch();
+assert(all(contains(s, string(net.a_Branch))) && contains(s, "From") && contains(s, "Loading"), s)
+s = res.disp_branch(Branch="EL004");
+assert(contains(s, "EL004") && contains(s, "B004") && contains(s, "B005") && ~contains(s, "EL005"))
+s = res.disp_branch(Sort="loss");
+[~, i_loss] = max(res.tab_branch.Ploss); [~, i_low] = min(res.tab_branch.Ploss);
+assert(strfind(s, string(net.a_Branch{i_loss})) < strfind(s, string(net.a_Branch{i_low})))
+sct_l = res.sct_network;
+sct_l.a_Branch{9}.tab_parameter.operation.Smax = 2;
+res_l = ResultPF(tab_pf, res.cm_Y, sct_l, sct_solver);
+s = res_l.disp_branch(Sort="loading");
+assert(strfind(s, string(net.a_Branch{9})) < strfind(s, string(net.a_Branch{1})), s)
+s = res_si.disp_branch(Branch="ET001", Unit="SI");
+assert(contains(s, "(MW)") && contains(s, sprintf("%.2f", 200*res.tab_branch{"ET001","Pfrom"})), s)
+assert(error_id(@() res.disp_branch(Branch="EL099")) == "GUILDA:ResultPF:UnknownTag")
+% disp_violation: 種類ごと。Class で絞り込み。違反がなければ 1 行
+assert(contains(res.disp_violation(), "No violated operating limits"))
+net.a_Bus{8}.tab_parameter.operation.Vmax = 0.95;
+res_v = DebugScript.helper.quiet(@() net.calculate_powerflow());
+s = res_v.disp_violation();
+assert(contains(s, "Bus (1)") && contains(s, "B008") && contains(s, "Vmax"), s)
+assert(contains(res_v.disp_violation(Class="Branch"), "No violated operating limits (Branch)"))
+
+
+%% plot_voltage draws the limits that are finite
+% plot_voltage: 既定は 2 つの軸と有限の Vmin・Vmax の線。Limit=false や無限の制約では線なし
+net = DebugScript.helper.build_9bus();
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+tab_pf = table(res.tab_bus.Vphasor, res.tab_bus.Iphasor, res.tab_bus.P, res.tab_bus.Q, ...
+               'VariableNames', ["V","I","P","Q"], 'RowNames', res.tab_bus.Properties.RowNames);
+sct_solver = struct("flag", 1, "options", res.options, "tab_PFcondition", res.tab_PFcondition);
+f = figure("Visible", "off"); c_f = onCleanup(@() close(f));
+res.plot_voltage(Parent=f);
+assert(numel(findobj(f, "Type", "axes")) == 2 && numel(findobj(f, "Tag", "Vmin")) == 1 && numel(findobj(f, "Tag", "Vmax")) == 1)
+clf(f); res.plot_voltage(Parent=f, Quantity="magnitude", Limit=false);
+assert(numel(findobj(f, "Type", "axes")) == 1 && isempty(findobj(f, "Tag", "Vmin")))
+clf(f); res.plot_voltage(Parent=f, Quantity="angle");
+assert(numel(findobj(f, "Type", "axes")) == 1 && isempty(findobj(f, "Tag", "Vmax")))
+sct_i = res.sct_network;
+for k = 1:numel(sct_i.a_Bus)
+    sct_i.a_Bus{k}.tab_parameter.operation.Vmin = -Inf;
+    sct_i.a_Bus{k}.tab_parameter.operation.Vmax = Inf;
+end
+clf(f); ResultPF(tab_pf, res.cm_Y, sct_i, sct_solver).plot_voltage(Parent=f);
+assert(isempty(findobj(f, "Tag", "Vmin")) && isempty(findobj(f, "Tag", "Vmax")))
+clear c_f
+
+
 %% Branch flows of the result use the admittance matrix in the snapshot
 % Branch.struct はスナップショットに枝のアドミタンス行列 cm_Y を加え、ResultPF はそれで枝潮流を求める
 net = PowerNetwork();
@@ -672,10 +750,10 @@ net = DebugScript.helper.build_9bus();
 res = DebugScript.helper.quiet(@() net.calculate_powerflow());
 
 % Plot: 電圧の大きさと位相の棒グラフ
-t = res.Plot(Parent=figure("Visible","off"));
+t = res.plot_voltage(Parent=figure("Visible","off"));
 c_fig = onCleanup(@() close(ancestor(t, "figure")));
 assert(isa(t, "matlab.graphics.layout.TiledChartLayout") && numel(t.Children) == 2)
-% 計算後の図は result.Plot だけ。Plot オプションは廃止、PlotFcn (計算中の表示) は "none" では図を作らない
+% 計算後の図は result.plot_voltage だけ。Plot オプションは廃止、PlotFcn (計算中の表示) は "none" では図を作らない
 a_before = findall(groot, "Type", "figure");
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(PlotFcn="none"));
 assert(res.options.PlotFcn == "none" && isempty(setdiff(findall(groot, "Type", "figure"), a_before)))

@@ -28,7 +28,7 @@ function [result, flag, output] = linearize(obj, varargin)
 %   message and output.sv_faultBus.
 % - `Coordinate` — Default bus variables of result.get_ss("DAE"): "theta&rho", "theta&V" or
 %   "Vre&Vim". Default: GUILDA.setting ("theta&rho").
-% - `PlotFcn` — Live display during the linearization: "none" (the other displays are under development; draw the eigenvalue map with result.Plot()). Default: GUILDA.setting ("none").
+% - `PlotFcn` — Live display during the linearization: "none" (the other displays are under development; draw the eigenvalue map with result.plot_eigenvalue()). Default: GUILDA.setting ("none").
 %
 % <@Examples>
 % ```matlab
