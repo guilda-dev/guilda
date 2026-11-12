@@ -5,7 +5,10 @@ function varargout = disp_connection(obj, opt)
 % `tab_connection`). The inputs are grouped by their owner in the order of the model:
 % each bus, its components and their local controllers (depth first), then the global
 % controllers. Under each owner, every input (Kind "u" or "uc" of the variable map) is
-% listed with its sources, marked by the kind of the connection:
+% listed first with its sources, then the components or controllers it holds. The tips
+% tell them apart: `┠──` / `┖──` for an input port, `┣━━` / `┗━━` (as in
+% `LayerPackage.disp_tree`) for a held object. Each source is marked by the kind of the
+% connection:
 %
 % - `local`: an output of a local controller into its parent
 % - `global`: an output of a global controller into a unit or its local controllers
@@ -86,7 +89,7 @@ function varargout = disp_connection(obj, opt)
     end
 
     s_head = " Signal connections of " + obj.s_tag + " " + link(obj) + newline ...
-           + " input ◀ sources (several sources are summed); Kind: " + join(opt.Kind, ", ") + newline ...
+           + " ┠── input port ◀ sources (◀┳: summed), ┣━━ held object; Kind: " + join(opt.Kind, ", ") + newline ...
            + " Bus voltages that controllers read directly are not connections and are not listed." + newline;
     s_foot = "";
     sv_hidden = setdiff(["local","global","observe","equilibrium"], opt.Kind, "stable");
@@ -132,16 +135,14 @@ function sv_lines = block(owner, ctx)
     n_item = numel(c_item);
     for k = 1:n_item
         l_last = k == n_item;
-        if l_last
-            s_branch = "   ┗━━ ";  s_input = "       ";  s_owner = "      ";
-        else
-            s_branch = "   ┣━━ ";  s_input = "   ┃   ";  s_owner = "   ┃  ";
-        end
+        % held object: heavy tip as in disp_tree; input port: light tip on the heavy line
         if c_item{k}.l_owner
-            s_next = s_owner;
+            sv_tip = ["   ┣━━ ", "   ┗━━ "];  sv_next = ["   ┃  ", "      "];
         else
-            s_next = s_input;
+            sv_tip = ["   ┠── ", "   ┖── "];  sv_next = ["   ┃   ", "       "];
         end
+        s_branch = sv_tip(1 + l_last);
+        s_next   = sv_next(1 + l_last);
         sv_lines = [sv_lines; s_branch + c_item{k}.first; s_next + c_item{k}.more]; %#ok<AGROW>
     end
 end

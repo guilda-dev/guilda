@@ -47,6 +47,9 @@ assert(contains(s, "delta ◀━ state delta of B003SG1  [observe]"), s)
 assert(contains(s, "omega (B004SG1) ◀━ output omega of B004SG1  [observe]"), s)
 % 入力のない持ち主 (空の母線 B006、入力が平衡値だけの B005) は出ない
 assert(~contains(s, "B006") && ~contains(s, "B005"), s)
+% 入力の行は細い枝 (┠── / ┖──)、持つ物の行は disp_tree と同じ太い枝 (┣━━ / ┗━━)
+assert(contains(s, "┠── Pmech") && contains(s, "┃     ┠── Vpss") && contains(s, "┃           ┖── omega") && contains(s, "┣━━ B001SG1CA1") && contains(s, "┗━━ B001SG1CG3"), s)
+assert(~contains(s, "━━ Pmech") && ~contains(s, "── B001SG1CA1"), s)
 % タグの後に matlab:doc のリンク
 assert(contains(s, "B001SG1CA1 <a href=""matlab:doc('controller.avr.AVR_DC1');"">@controller.avr.AVR_DC1</a>"), s)
 
@@ -84,7 +87,7 @@ function check_targets(net, s, tab, tc)
     sv_line = splitlines(s);
     sv_line = regexprep(sv_line, "<a href=[^>]*>|</a>", "");
     iv_target = unique(tc.TargetIndex);
-    n_input = sum(contains(sv_line, "━━ ") & contains(sv_line, "◀"));   % 見出しの "input ◀ sources" は数えない
+    n_input = sum(contains(sv_line, "   ┠── " | "   ┖── ") & contains(sv_line, "◀"));   % 見出しの凡例 " ┠── input port ◀ ..." は数えない
     assert(n_input == numel(iv_target), "入力の数 %d、◀ の行の数 %d", numel(iv_target), n_input)
     assert(sum(endsWith(sv_line, "]") & contains(sv_line, "  [")) == height(tc), "入力元の行の数")
     for i = reshape(iv_target, 1, [])
@@ -92,13 +95,13 @@ function check_targets(net, s, tab, tc)
         i_owner = find(endsWith(sv_line, " " + s_owner + " @" + owner_class(net, s_owner)), 1);
         assert(~isempty(i_owner), "持ち主 %s がない", s_owner)
         % 持ち主の行より後で、同じかより浅い字下げの持ち主の行より前にある入力の行
-        iv_col = strlength(sv_line) - strlength(regexprep(sv_line, "^[ ┃┣┗━]*", ""));
+        iv_col = strlength(sv_line) - strlength(regexprep(sv_line, "^[ ┃┣┗━┠┖─]*", ""));
         lv_ownerline = contains(sv_line, " @");
         i_end = i_owner + find(lv_ownerline(i_owner+1:end) & iv_col(i_owner+1:end) <= iv_col(i_owner), 1);
         if isempty(i_end); i_end = numel(sv_line) + 1; end
         sv_block = sv_line(i_owner+1:i_end-1);
         s_name = tab.Name(i);
-        assert(any(~cellfun(@isempty, regexp(cellstr(sv_block), "[┣┗]━━ " + s_name + "( \(\w+\))? *◀", "once"))), ...
+        assert(any(~cellfun(@isempty, regexp(cellstr(sv_block), "[┠┖]── " + s_name + "( \(\w+\))? *◀", "once"))), ...
                "入力 %s (%s) がない", tab.Label(i), s_owner)
     end
 end
