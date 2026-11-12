@@ -335,17 +335,27 @@ assert(numel(DebugScript.helper.stale(s.net)) == 1 && DebugScript.helper.is_stal
 pss.tab_parameter.dynamics.kpss = pss.tab_parameter.dynamics.kpss * 1.1;
 assert(numel(DebugScript.helper.stale(s.net)) == 2)
 
-% 結果オブジェクトが参照する系統も同じ
+% 潮流計算の結果は系統のハンドルを持たず、スナップショット (struct) と表を保存する。
+% 一緒に保存した系統は下の層まで戻り、編集が記録される。結果は系統の編集で変わらない
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
 res = DebugScript.helper.quiet(@() net.calculate_powerflow());
-save(s_mat, "res");
+save(s_mat, "res", "net");
 lastwarn("");
 s = load(s_mat);
 assert(isempty(lastwarn), lastwarn)
-assert(numel(s.res.a_PowerNetwork.a_Bus) == 3)
-s.res.a_PowerNetwork.a_Bus{2}.a_Component{1}.tab_parameter.dynamics.D = 1;
-assert(numel(DebugScript.helper.stale(s.res.a_PowerNetwork)) == 1)
+assert(isa(s.res, "ResultPF") && isempty(s.res.a_PowerNetwork) && s.res.s_network == string(net.s_tag))
+sct = s.res.sct_network;
+assert(isstruct(sct) && numel(sct.a_Bus) == 3 && numel(sct.a_Branch) == numel(net.a_Branch))
+assert(isfield(sct.a_Branch{1}, "cm_Y") && isequal(sct.a_Branch{1}.cm_Y, net.a_Branch{1}.get_admittance_matrix()))
+assert(isequaln(s.res.tab_bus, res.tab_bus) && isequaln(s.res.tab_branch, res.tab_branch))
+assert(isequaln(s.res.tab_violation, res.tab_violation) && isequal(s.res.cm_Y, res.cm_Y) && isequaln(s.res.tab_PFcondition, res.tab_PFcondition))
+assert(contains(s.res.disp_summary(), "converged"))          % 読み込んだ結果も表示できる
+assert(numel(s.net.a_Bus) == 3 && s.net.a_Bus{2}.a_Component{1}.a_Bus == s.net.a_Bus{2})
+r_D = sct.a_Bus{2}.a_Component{1}.tab_parameter.dynamics.D;
+s.net.a_Bus{2}.a_Component{1}.tab_parameter.dynamics.D = r_D + 1;
+assert(numel(DebugScript.helper.stale(s.net)) == 1)
+assert(s.res.sct_network.a_Bus{2}.a_Component{1}.tab_parameter.dynamics.D == r_D)
 
 % 系統の下の層だけを保存しても、読み込んだ層の編集は記録され、型も検査される
 gen = net.a_Bus{2}.a_Component{1};
