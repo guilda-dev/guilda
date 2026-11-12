@@ -1,5 +1,5 @@
 classdef BadAGCStub < GlobalController
-% initialize が大域制御器の誤りを検出することを確かめるための AGC (テスト専用)
+% initialize がグローバル制御器の誤りを検出することを確かめるための AGC (テスト専用)
 %
 %   c   = DebugScript.helper.register_stub("BadAGCStub", "controller.test_bad_agc");
 %   agc = net.add_global_controller("test-bad-agc", {comp}, parameter=struct(bad="output"));

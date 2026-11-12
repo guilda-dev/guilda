@@ -2,7 +2,7 @@
 %
 % 編集は値を変え、その編集で古くなるものを各層の sct_stale にメッセージとして記録する。
 %   機器・制御器の dynamics の編集 → その機器・制御器の equilibrium と odefcn
-%   局所制御器の追加・置き換え・削除 → 機器の equilibrium
+%   ローカル制御器の追加・置き換え・削除 → 機器の equilibrium
 %   base(baseMVA)、母線・送電線の編集、機器の powerflow、構成の変更 (母線・送電線・機器)、
 %   スラック母線の変更 → 系統の powerflow
 %   base(Hz) の編集 → 系統の odefcn (機器・制御器には届かず、initialize でハンドルを作った Hz と比べる)
