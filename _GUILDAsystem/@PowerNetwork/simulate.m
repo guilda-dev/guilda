@@ -80,7 +80,6 @@ function [result, flag, output] = simulate(obj, time, varargin)
     end
     check_time(time);
     [c_events, c_nv] = split_events(c_in);
-    c_nv = v3_simulate_args(c_nv);                            % COMPAT(v3)
     [time, c_nv] = scenario_settings(c_events, time, c_nv);
     [c_nv, opt] = take_call_options(c_nv);
     check_export(opt.Export);

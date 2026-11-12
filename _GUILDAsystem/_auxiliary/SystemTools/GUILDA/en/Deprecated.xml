@@ -11,10 +11,8 @@
         <entry key="ContinuationPowerFlowFunction">Continuation_Power_Flow(net, opt) is deprecated: use [result, flag] = net.calculate_continuation_powerflow(LoadBus=opt.CPFBus). The v3 options map to LoadBus, InitialLambda, MaxIteration, StepSize, ArcLength and UseInternalState; result.rm_x is the old CPF_Result.x_sol.</entry>
         <entry key="CsvNetHandlerImport">CsvNetHandler.import(path, net) is deprecated: use net = PowerNetwork.import_csv(path) for a new network, or PowerNetwork.import_csv(path, Network=obj) to load into an existing one (e.g. in the constructor of a network class).</entry>
         <entry key="CsvNetHandlerExport">CsvNetHandler.export(net, ModelName, savepath=folder) is deprecated: use net.export_csv(fullfile(folder, "@"+ModelName)). The folder now also holds network/parameter.csv with Hz and baseMVA.</entry>
-        <entry key="SimulateOptionName">The simulate option {0} is deprecated: use {1}.</entry>
         <entry key="LinearizeAlgorithm">The option Algorithm of net.linearize and net.get_sys is renamed: use Method="{0}".</entry>
         <entry key="LinearizeNonUnit">The option NonUnit of net.linearize and net.get_sys is deprecated: buses without states are handled automatically, so remove the option. A listed bus without states is ignored; a listed bus with states stops "Feedback" with an error.</entry>
         <entry key="SolverLinNonUnit">net.solver_LIN.NonUnit is deprecated: buses without states are handled automatically, so remove the setting. A listed bus without states is ignored; a listed bus with states stops "Feedback" with an error.</entry>
-        <entry key="ODEevent">ODEevent(tag, net, ...) is deprecated: it now makes a Scenario with one disturbance and adds it to the network (net.a_Scenario), replacing an earlier ODEevent scenario with the same tag. Use sc = Scenario(tag); sc.add_disturbance(tag, ...) (or add_fault, add_trip, add_open_branch, add_offset, add_input); net.add_scenario(sc).</entry>
     </message>
 </rsccat>

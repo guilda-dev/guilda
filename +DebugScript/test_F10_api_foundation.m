@@ -207,12 +207,12 @@ assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "optimize_power
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "build_opf_problem.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "initialize.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverCPF", "SolverCPF.m")) == 1, join(sv_hook, ", "))
-assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "simulate.m")) == 1, join(sv_hook, ", "))
+assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "simulate.m")) == 0, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "SolverLIN.m")) == 3, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "get_options.m")) == 2, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "solve.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@ResultLIN", "get_ss.m")) == 1, join(sv_hook, ", "))
-assert(numel(sv_hook) == 15, join(sv_hook, ", "))
+assert(numel(sv_hook) == 14, join(sv_hook, ", "))
 
 
 % ---- local functions ----

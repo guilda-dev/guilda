@@ -77,6 +77,19 @@
 
 **問いはすべて閉じました。** この文書が実装の仕様です。実装は §7 の **S0(基準の記録)と S1(v3 の削除)** から始めます。
 
+### 0.6 実装の状況
+
+| 手順 | 状況 | コミット(`refactor/simulate-redesign-s1`) |
+|---|---|---|
+| S0 | 済(2026-11-12) | `da12bc4e` |
+| S1 | 済(2026-11-12) | `938f3b81` |
+| S2-S7 | 未着手 | |
+
+- **S0:** `+DebugScript/+helper/simulate_baseline.m` を加えました。§8.3 の 6 例(IEEE68 の地絡 `[0,10]`、IEEE68 `LocalController=false` の外乱なし、IEEE14 AVR+PSS の母線 3 の発電機の解列、IEEE14 の 3 番目のブランチの開放、IEEE9 のオフセットと一定値の入力、F18 の構成の AGC 付き IEEE14 の GC の解列と観測機器の解列。いずれも `[0,5]`、IEEE68 の地絡だけ `[0,10]`)を計算し、`rv_t`, `rm_variable`, `rm_I`, `output.phases`, `flag` を `Mode="record"` で保存、`Mode="compare"` で `isequaln` で比べ、違えば例ごとに差の最大値を示します。タグは系統から読みます。API に触れるのはローカル関数 `new_scenario` と `run_case` だけで、S2-S6 はこの 2 つの数行を書き換えます。
+- **基準:** `/Users/taku/GUILDA/simulate-baseline/baseline_s0.mat`(リポジトリの外、コミットしない)。基準のコードは `refactor/design-alignment` の `7bc4cd45`(`7bc4cd457b99f23e37b9f195f0e73a798c7f47f2`、MAT の `sct_meta.commit` にも記録)、R2026a。6 例とも `flag = 1`。
+- **S1:** `v3_simulate_args.m`, `_VersionSupport/ODEevent.m`, `Deprecated.xml` の `SimulateOptionName` と `ODEevent`, `Scenario.l_compat`(と `Ver` の「1.x: ODEevent」の説明), `simulate.m` の `v3_simulate_args` の行を削除しました。テストは F6「Deprecated option names still work」、F31「Compatibility」の節と `test_levels` の行を削除し、F31 の最初の節の `ODEevent` は `DebugScript.helper.scenario` に置き換えました。§7 に挙げていなかった箇所: F10 の COMPAT フックの数(`simulate.m` 1 → 0、合計 15 → 14)、`add_disturbance.m` のヘルプの「deprecated ODEevent」、開発者ページ `feature-simulation.html`(ODEevent と `v3_simulate_args` の項目)と `folder-structure.html`(`_VersionSupport` の例)。旧名 `Reporter` などは `GUILDA:resolve_options:UnknownName` で止まります(v4-migration に記載)。`Scenario.Ver` の 3.0 への変更は S2 で行います。
+- **確認:** S1 の後の `simulate_baseline(Mode="compare")` は 6 例すべて `isequaln`。small は S0 で 512 件(PASS 510 / KNOWN 1 / SKIP 1)、S1 で 511 件(PASS 509 / KNOWN 1 / SKIP 1)、FAIL 0。medium は S1 の後に 1 回、685 件(PASS 683 / KNOWN 1 / SKIP 1、FAIL 0)。
+
 ## 1. 現状の構造: `SolverODE` が系統を読む箇所
 
 ### 1.1 呼び出しの流れ [事実]
@@ -971,8 +984,8 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 
 | 手順 | 内容 | 主なファイル | テスト | 依存 |
 |---|---|---|---|---|
-| **S0** 基準の記録 | 軌道の比較用の基準を保存する(§8.3)。コードは変えない | `+DebugScript/+helper/simulate_baseline.m`(新規)、基準の MAT は作業用フォルダ(コミットしない) | 基準の作成だけ | なし |
-| **S1** v3 の削除 | `v3_simulate_args.m`, `ODEevent.m`, `Deprecated.xml` の 2 項目, `Scenario.l_compat`, `simulate.m:83`、v4-migration の表 | `_VersionSupport/` の 2 ファイル, `Deprecated.xml`, `Scenario.m`(l_compat の 2 行), `simulate.m`(1 行) | F6「Deprecated option names still work」、F31「Compatibility」の節と `test_levels` の該当行を削除 | S0 |
+| **S0** 基準の記録(**済**、`da12bc4e`) | 軌道の比較用の基準を保存する(§8.3)。コードは変えない | `+DebugScript/+helper/simulate_baseline.m`(新規)、基準の MAT は作業用フォルダ(コミットしない) | 基準の作成だけ | なし |
+| **S1** v3 の削除(**済**、`938f3b81`) | `v3_simulate_args.m`, `ODEevent.m`, `Deprecated.xml` の 2 項目, `Scenario.l_compat`, `simulate.m:83`、v4-migration の表 | `_VersionSupport/` の 2 ファイル, `Deprecated.xml`, `Scenario.m`(l_compat の 2 行), `simulate.m`(1 行) | F6「Deprecated option names still work」、F31「Compatibility」の節と `test_levels` の該当行を削除 | S0 |
 | **S2** `Scenario` を `LayerPackage` に | §2.2-2.5, §2.10 の前半: `add_scenario(tag)`(改名と INFO), `remove_scenario`(delete), `From`, `copy` の削除, `Judge`・`judge` の削除, `InputValue` の時系列(検査と `tab_disturbance` での持ち方。`compile` は暫定で時系列から補間の関数を作る), `Time` の既定 `[0, 10]` と時間の規則の削除, `children`, `log_edit` の上書き, `gui` の移動, GUI の描画, `disp_tree`, `sig_methods` の add/remove | `@Scenario/*`(`compile.m` の時間の分岐を含む。`out_of_step.m`, `import_csv.m`, `export_csv.m` を除く), `@Scenario/private/getTimeSpan.m`, `mustBeSimulationTime.m`(SystemTools へ), `@PowerNetwork/PowerNetwork.m`, `add_scenario.m`, `remove_scenario.m`, `gui_content.m`, `@LayerPackage/`, `@PowerSystemModel/gui.m`, `@DrawerModelGUI/`, `@GUILDA/update_keymap.m`, `functionSignatures.json`, `+DebugScript/+helper/scenario.m`, `noop_event.m` | F31 の書き換え(CSV と判定の節を除く。判定の節は削除し S3 の新しいテストへ)、関数の `InputValue` を使うテスト(F6, F31, I58 など)を時系列に、F32/F33(GUI のシナリオのカード)、F24(タグの名前空間)、F34、I53, I54(時間の規則)、新規は §8.2 | S1 |
 | **S3** `ResultODE` をデータから、`export`、判定 | §2.9, §5.2, §5.4: 新しいコンストラクタ, `sct_network`, 出力 `tab_output`/`rm_output` の計算, `simulator_columns` の書き換え, `out_of_step` を `ResultODE.judge_out_of_step` へ移す(`flag = 2` の扱いを含む、§2.12)。`export` への改名は済んでいる(§1.6) | `@ResultODE/*`, `@Scenario/out_of_step.m`(削除), `@SolverODE/solve.m`(231 行の 1 か所だけ。暫定で `net` から入力と出力のハンドルを作る), `_GUILDAverification` の判定の行, 新規 `+DebugScript/test_F38_result_judge.m` | F6 の結果の節、I63(export)、新規 F38(判定。F31 の判定の節を移す)、新規: 系統を消した後(`delete(net)`)も `Plot`, `get_point`, `export`, 判定が動く、出力の値 | S1 |
 | **S4** `simulate` の引数と設定 | §2.1, §2.7: タグの引数, `Time` の上書き, arguments ブロック, 設定の合成, `SolverOptions` の削除(`makeODE` の分岐を含む), `MaxStep`/`InitialStep`, `Format`(`"struct"` は S5 で完成。S4 では `"GUILDAorigin"` だけ受け付けてもよい), `Export` オプションの削除, `Scenario.Options` の削除, `get_options` 等の削除, `sig_methods` の simulate, 呼び出し元(`_GUILDAobject` のヘルプの例 20 ファイル、`_GUILDAverification` の 4 ファイルの simulate の行) | `simulate.m`, `@PowerNetwork/private/`(検証関数, `progress_mode`, `calculate_powerflow.m` から移す `mustBePlotFcn`), `calculate_powerflow.m`(ローカルの `mustBePlotFcn` を削除), `@SolverODE/SolverODE.m`, `get_options.m`, `progress_mode.m`, `private/makeODE.m`, `validate_options.m`, `mustBeProgress.m`, `@Scenario/Scenario.m`(Options), `DefaultTimeSimulation.json`, `update_keymap.m`, `functionSignatures.json`, `+DebugScript/*`(simulate の呼び出し約 230 か所) | 全 simulate テストの書き換え、I54(時間の検査)、I63(`Export` オプションの節を `export` に)、新規は §8.2 | S2(`Scenario.m`, `update_keymap.m`) |

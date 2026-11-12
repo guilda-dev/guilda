@@ -109,7 +109,7 @@
 | `odeLinearizer` | `SolverLIN` |
 | `LinearizationResult` | `ResultLIN` |
 
-イベントのクラスは、v3 の `odeEventSet` も v4 の開発途中の名前 `ODEevent` も `Scenario` に対応します。`ODEevent(tag, net, ...)` は互換の関数として残しています(1.18)。`EventODE` という名前は公開されておらず、別名もありません。
+イベントのクラスは、v3 の `odeEventSet` も v4 の開発途中の名前 `ODEevent` も `Scenario` に対応します。`ODEevent(tag, net, ...)` の互換の関数は削除しました(1.18)。`EventODE` という名前は公開されておらず、別名もありません。
 
 次の名前は変わりません。
 
@@ -134,7 +134,7 @@
 | 近似線形化 | Linearization(新設) | `solver_LIN`: なし(v3 互換の Hidden `NonUnit` だけ) |
 
 - **削除したプロパティへの代入はエラーです(互換なし)。** 例: `net.solver_ODE.RelativeTolerance = 1e-6`、`net.solver_ODE.Progress = "none"`、`net.solver_ODE.TimeLimit = 60`、`net.solver_OPF.Method = "ELD"`、`net.solver_CPF.MaxIterations = 100`、`net.solver_LIN.Method`、`.Point`、`.Coordinate`。いずれも存在しないプロパティへの代入として止まります。既定を変えるときは `GUILDA.setting` で該当するセクションを編集し、1 回だけ変えるときは Name-Value を渡してください(例 `net.simulate(t, sc, Tolerance=1e-6, Progress="none")`)。
-- **v3 互換の `net.solver_ODE.Reporter` も削除しました。** `v3_ode_reporter.m` と警告 `GUILDA:Deprecated:SimulatorReporter` はなくなり、代入はエラーです。Name-Value の `simulate(..., Reporter=..., RelativeTolerance=...)`(`GUILDA:Deprecated:SimulateOptionName`)はこれまでどおり動きます。
+- **v3 互換の `net.solver_ODE.Reporter` も削除しました。** `v3_ode_reporter.m` と警告 `GUILDA:Deprecated:SimulatorReporter` はなくなり、代入はエラーです。Name-Value の `simulate(..., Reporter=..., RelativeTolerance=...)` の読み替え(`v3_simulate_args`、`GUILDA:Deprecated:SimulateOptionName`)も削除しました。`Progress=` / `Tolerance=` を使ってください。旧名は未知の名前のエラー(`GUILDA:resolve_options:UnknownName`)になります。
 - **JSON のキーを Name-Value の名前にそろえました。** `@GUILDA/user/` の旧キーは変換しません。読み込み時に未知のキーとして捨てられ(`Remove unknown environment field '<キー>'.` を表示、警告なし)、新しいキーは既定値になります。
 
   | セクション | 旧キー | 新キー |
@@ -807,11 +807,10 @@ Option names:
   `"none"` | `"disp"` | `"dialog"`). User settings files are not converted:
   a user file whose `version` differs from that of its default file (or has
   none) is reset to the defaults with an INFO (`GUILDA:GUILDA:ConfigReset`).
-- Deprecated, still working:
-
-  | Old form | Warning ID |
-  |----------|------------|
-  | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `GUILDA:Deprecated:SimulateOptionName` |
+- Removed: the old option names `simulate(..., "Reporter", v)` /
+  `"RelativeTolerance", v` (and their warning
+  `GUILDA:Deprecated:SimulateOptionName`). Use `Progress` / `Tolerance`;
+  the old names stop with `GUILDA:resolve_options:UnknownName`.
 
 - Fixed earlier (stage 1): `simulate` works without events, clears previous
   phase results, keeps phases inside the requested time range, applies
@@ -1146,10 +1145,7 @@ there.
 - **判定。** `sc.judge(result)` は `sc.Judge(result)` を返します。既定の `Scenario.out_of_step` は、状態 `delta` を持つ機器(同期発電機)の回転子角の基準からの差の絶対値が `Threshold`(既定 360 度)を超えたら `"out-of-step"`、超えずに `flag ~= 1` なら `"incomplete"`、それ以外は `"stable"` を返します。基準 `Reference` は既定がスラック母線の発電機で、`"COI"`(慣性 `M` の重み付き重心)や機器のタグも指定できます。結果は構造体(`Verdict`, `Time`, `Units`, `MaxAngle`, `Reference`, `Threshold`)です。`net.simulate` の `output` には判定を入れません(複数のシナリオを一緒に実行できるため)。文献との比較や一致数の集計は GUILDA には入れず、検証用スクリプトで行います。
 - **CSV。** `Scenario.import_csv(path, Network=net)` が 1 つのファイルの複数のシナリオを読み(`Scenario` 列が同じ行が 1 つのシナリオ、1 行が 1 つの外乱)、`Scenario.export_csv(path, net.a_Scenario)` が同じ形式で書きます。列は `Scenario`, `Description`, `ScenarioTimeStart`, `ScenarioTimeEnd`, `Tag`, `TimeStart`, `TimeEnd`, `FaultBus`, `TripUnit`, `OpenBranch`, `OffsetUnit`, `OffsetState`, `OffsetValue`, `InputUnit`, `InputName`, `InputValue` で、リストは `;` 区切りです。`InputValue` の関数ハンドルは CSV に書けず `GUILDA:Scenario:CsvFunctionHandle` で止まります(MAT ファイルに保存してください)。`Options` と既定以外の `Judge` は保存せず、`GUILDA:Scenario:CsvNotSaved` で警告します。
 - **メッセージ ID。** `GUILDA:ODEevent:*` は `GUILDA:Scenario:*` になりました(キーは同じ)。`EventArray` は `ScenarioArray` に、一緒に実行するシナリオ間のタグの重複は `DuplicateRunTag` に、シナリオ内のタグの重複は追加の時点の `DuplicateTag` になりました。`add_scenario` / `remove_scenario` の誤りは `GUILDA:PowerNetwork:ScenarioTagInUse`, `ScenarioNotFound`, `NotScenario` です。
-- **互換。** `ODEevent(tag, net, Name=Value)` は `_VersionSupport/ODEevent.m` で動き続けます(1 セッションに 1 回 `GUILDA:Deprecated:ODEevent` を警告)。タグ `tag` のシナリオに同じタグの外乱を 1 つ入れて `net` に追加し、それを返します。旧版との違い:
-  - 返り値は `Scenario` です。`ev.TimeSpan` などの旧プロパティはなく、`ev.tab_disturbance` の列として読めます(変更はできません)。
-  - タグ、状態、入力の検査は作成の時点で行います(以前は `simulate` の時点)。
-  - 同じ系統で同じタグの `ODEevent` を作り直すと、前のもの(`ODEevent` で作ったもの)は系統から外れ、その系統で実行できなくなります(ループでシナリオが溜まらないため)。`add_scenario` で追加した同じタグのシナリオがあるときは `GUILDA:PowerNetwork:ScenarioTagInUse` で止まります。
+- **互換。** `ODEevent(tag, net, Name=Value)` の互換(`_VersionSupport/ODEevent.m`、警告 `GUILDA:Deprecated:ODEevent`、`Scenario.l_compat`)は削除しました。上の表のとおり `Scenario` を作って `net.add_scenario` で追加してください。返り値の違い(旧 `ev.TimeSpan` などは `sc.tab_disturbance` の列)と、タグ・状態・入力の検査が追加の時点で行われることは、`Scenario` でも同じです。
 - **内部。** 区間ごとのデータ(有効な外乱、地絡、解列、開放ブランチ、オフセット、入力関数)は `solve` の冒頭で `Scenario.compile` が 1 回だけ作ります(EV5)。モデルの作業データを書くのは `SolverODE` だけです。結果は以前の `ODEevent` と同じ(`rv_t`, `rm_variable`, `rm_I`, `output.phases` が代表的な地絡、解列、オフセット、入力、開放の例でビット単位で一致)です。
 
 ### 1.19 文字列と構造体の名前(`str_` → `s_`、`s_` → `sct_`)
@@ -1462,7 +1458,6 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | 6 outputs of `optimize_powerflow` | `GUILDA:Deprecated:OptimizePowerflowTuple` | warning; returns `{tab_bus, tab_cub, flag, output, lambda, OPFprob}` |
 | `Continuation_Power_Flow(net, opt)` | `GUILDA:Deprecated:ContinuationPowerFlowFunction` | warning; returns a `ContinuationPowerFlowV3` (v3 properties, `solve`, `CPF_Result`) |
 | `SolverCPF(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | error |
-| `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `GUILDA:Deprecated:SimulateOptionName` | warning; becomes `Progress` / `Tolerance` |
 | `SolverLIN(net, NonUnit, Name, Value)` | `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` | error |
 | `net.linearize` / `net.get_sys` の `Algorithm=a` | `GUILDA:Deprecated:LinearizeAlgorithm` | 警告。`Method=a` として扱う |
 | `net.linearize` / `net.get_sys` の `NonUnit=n` | `GUILDA:Deprecated:LinearizeNonUnit` | 警告。状態のない母線は無視。状態のある母線は `Feedback` で `GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus`、存在しない母線は `GUILDA:v3_nonunit_range:NonUnit` のエラー |
@@ -1471,7 +1466,6 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | `initialize` values `"powerflow calculation"` / `"optimal powerflow"` / `"calculate from Xequilibrium"` | `GUILDA:Deprecated:InitializeMethodValue` | warning; become `"powerflow"` / `"OPF"` / `"equilibrium"` |
 | `CsvNetHandler.import(path, net, Initialize=tf)` | `GUILDA:Deprecated:CsvNetHandlerImport` | warning; calls `PowerNetwork.import_csv` |
 | `CsvNetHandler.export(net, ModelName, savepath=d)` | `GUILDA:Deprecated:CsvNetHandlerExport` | warning; calls `net.export_csv(fullfile(d, "@"+ModelName))` |
-| `ODEevent(tag, net, Name=Value)` | `GUILDA:Deprecated:ODEevent` | 警告。外乱 1 つの `Scenario` を作って `net` に追加して返す(1.18) |
 
 Not kept: the v3 second output `lin` of `get_sys`, the v3 meaning of the
 second output of `simulate`, the v3 output order of `initialize` (see the
@@ -1492,7 +1486,6 @@ lists all of them:
 | `@PowerNetwork/optimize_powerflow.m` | `legacy_output(..., 6, @v3_optimize_powerflow, ...)` | 6-output tuple |
 | `@PowerNetwork/build_opf_problem.m` | `v3_opf_args(varargin, "BuildOpfProblemMethods")` | `methods` option |
 | `@PowerNetwork/initialize.m` | `v3_initialize_args(varargin)` | `methods` option and old values |
-| `@PowerNetwork/simulate.m` | `v3_simulate_args(c_nv)` | option names `Reporter`, `RelativeTolerance` |
 | `_auxiliary/@SolverCPF/SolverCPF.m` | `v3_cpf_constructor(varargin)` | rejects v3 constructor arguments |
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `v3_linearizer_constructor(varargin)` | rejects v3 constructor arguments |
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `NonUnit` property (Hidden) | 廃止した設定の保存先 |
@@ -1526,14 +1519,12 @@ settings (an untagged line, needed by the `get_config` hook).
 | `v3_opf_args.m` | `methods` option of `optimize_powerflow` and `build_opf_problem` |
 | `v3_optimize_powerflow.m` | v4 outputs → the v3 6-output tuple |
 | `v3_cpf_constructor.m` | error for `SolverCPF(net, ...)` |
-| `v3_simulate_args.m` | `simulate` option names `Reporter`, `RelativeTolerance` |
 | `v3_linearizer_constructor.m` | error for `SolverLIN(net, ...)` |
 | `v3_linearize_args.m` | `linearize` / `get_sys` の `NonUnit` |
 | `v3_solver_nonunit.m` | `solver_LIN.NonUnit` の setter |
 | `v3_nonunit_range.m` | `NonUnit` の存在しない母線のエラー |
 | `v3_nonunit_dynamic.m` | `NonUnit` の状態のある母線のエラー |
 | `v3_initialize_args.m` | `initialize` option `methods` and old method values |
-| `ODEevent.m` | 旧イベント `ODEevent(tag, net, ...)`。外乱 1 つの `Scenario` を `net` に追加して返す |
 
 ### Adding a compat form (stages 2 and 3)
 
