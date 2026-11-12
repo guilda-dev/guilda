@@ -185,6 +185,8 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - オプションは `calculate_optimal_powerflow` と `build_opf_problem` の `arguments` ブロックで検証します(未知の名前は `MATLAB:TooManyInputs`)。`Cost`・`Constraint`・`DefaultCost`・`ReferenceBus` は呼び出しだけのオプション(既定 `[]`、`[]`、true、`"auto"`)で、`SolverOPF` のプロパティ、`OptionMap`、`get_options`、`Export` は削除しました。関数ハンドルでない値は `GUILDA:PowerNetwork:InvalidOpfHandle` です。
 - `@PowerNetwork/private/opf_data.m` が母線・機器・ブランチの 3 つの表、`base`、解決済みの `ReferenceBus` を集めます。`SolverOPF.build_problem` / `solve` は系統を読みません。問題のキャッシュと `PowerNetwork.n_revOPF` は削除し、ウォームスタートは母線タグで照合します。`ResultOPF` は `struct(net, false)` と解から作ります。
 - **テスト(MATLAB R2026a):** small を手順ごとに実行して FAIL 0(手順 3 で 512 件、PASS 510 / KNOWN 1 / SKIP 1)。medium 686 件、PASS 684 / KNOWN 1 / FAIL 0 / SKIP 1、856 s。F4 は全段階(37 件 + SKIP 1)を個別に実行して PASS。
+- **`refactor/design-alignment`(d41057ba)のマージ(`e21f629c`):** 衝突は両方を残して解決しました(`optimize_powerflow.m` は削除し、`plot_dispatch` のヘルプの変更を `calculate_optimal_powerflow.m` に移しました。F10 のフックは 11 行)。マージ後の small 513 件、PASS 511 / KNOWN 1 / FAIL 0 / SKIP 1。medium 686 件、PASS 683 / KNOWN 1 / FAIL 1 / SKIP 1、1082 s。FAIL は I55 の時間制限のテスト `PhasesThatEachFitInTheLimitStopWhenTheirSumDoesNot` で、単独で 2 回実行してどちらも PASS(実行が遅かったための失敗と判断)。
+- **版番号の削除(`7f574d7c`):** small 513 件、PASS 511 / KNOWN 1 / FAIL 0 / SKIP 1、575 s。medium 686 件、PASS 684 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、865 s。large は未実行。
 - 読むものがなくなった版番号 `PowerNetwork.n_revY`・`n_revPF`・`n_revTopology` と、`handle_edit` のその増分を削除しました。`net.solver_PF` / `net.solver_OPF` のウォームスタートは母線タグで照合します。
 - **未対応:** F8 の large のテスト 2 件(`MATFileRoundTripKeepsControllersAndLowerLayers`、`MATPOWERImportReproducesCase14`)は、この作業の前のコミットでも失敗します。
 
