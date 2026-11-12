@@ -20,7 +20,7 @@ classdef Ishizaki6Bus < PowerNetwork
 % net = network.Ishizaki6Bus(0.1, line="None"); % R = 0.1*X; all 7 lines
 % res = net.calculate_powerflow();
 % sc  = Scenario("offset");
-% sc.add_offset("SG1B001", "delta", 0.1, 1);
+% sc.add_offset("B001SG1", "delta", 0.1, 1);
 % net.add_scenario(sc);
 % sol = net.simulate([0,10], sc);
 % ```

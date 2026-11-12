@@ -353,14 +353,14 @@ b1.l_isSlack = true;</code></pre>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Tag: class prefix + next number among the components of this bus + bus tag (e.g. <code>SG1B001</code>)</li>
+            <li>Tag: bus tag + class prefix + next number among the components of this bus (e.g. <code>B001SG1</code>)</li>
             <li>Subclass constructor calls <code>Component(s_tag, opt)</code>: creates five <code>Parameter</code> objects; replaces a NaN cost <code>HP</code> / <code>fP</code> by 0 for a load, 1 otherwise</li>
             <li>Subclass adds <code>sv_para</code> to the <code>dynamics</code> container of <code>a_Parameter</code></li>
             <li>Generator: force <code>Q = NaN</code></li>
             <li>Set <code>comp.a_Bus = bus</code> (writable only by <code>Bus</code>), then report a <code>"Topology"</code> edit on the component (<code>comp.log_edit("connected to &lt;bus&gt;", "Topology")</code>): its <code>equilibrium</code> becomes stale; a new component already holds "initialize has not been run" in <code>equilibrium</code> and <code>odefcn</code></li>
             <li>Append to <code>a_Component</code></li>
           </ul><ul lang="ja">
-            <li>タグ: クラスの接頭辞 + この母線の機器の中での次の番号 + 母線のタグ（例: <code>SG1B001</code>）</li>
+            <li>タグ: 母線のタグ + クラスの接頭辞 + この母線の機器の中での次の番号（例: <code>B001SG1</code>）</li>
             <li>サブクラスのコンストラクタが <code>Component(s_tag, opt)</code> を呼び出し: 5 つの <code>Parameter</code> を作成、NaN のコスト <code>HP</code> / <code>fP</code> を負荷なら 0、それ以外は 1 に置換</li>
             <li>サブクラスが <code>sv_para</code> を <code>a_Parameter</code> の <code>dynamics</code> コンテナに追加</li>
             <li>発電機: <code>Q = NaN</code> に固定</li>
@@ -379,7 +379,7 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Build one controller per call: the class of <code>Key</code> (checked against the generated key list) with the constructor <code>(tag, Name=Value)</code>; <code>parameter</code> (struct or one-row table) gives the Name=Value, omitted ones keep the class defaults</li>
-            <li>Tag: class header + next number among the controllers of this component (nested ones included) + component tag, e.g. <code>CA1SG1B001</code> (header <code>CA</code> AVR, <code>CP</code> PSS, <code>CG</code> governor, <code>CL</code> LQR)</li>
+            <li>Tag: component tag + class header + next number among the controllers of this component (nested ones included), e.g. <code>B001SG1CA1</code> (header <code>CA</code> AVR, <code>CP</code> PSS, <code>CG</code> governor, <code>CL</code> LQR)</li>
             <li>Check the new controller before any change:
               <ul>
                 <li>role <code>s_role</code> <code>"avr"</code>, <code>"pss"</code>, <code>"local"</code> or <code>"governor"</code></li>
@@ -399,7 +399,7 @@ b1.l_isSlack = true;</code></pre>
             <li>Return the new controller</li>
           </ul><ul lang="ja">
             <li>1 回の呼び出しで制御器を 1 つ作成: <code>Key</code>（生成済みのキー一覧で検査）のクラスをコンストラクタ <code>(tag, Name=Value)</code> で作成。Name=Value は <code>parameter</code>（struct または 1 行の table）、省略したものはクラスの既定値</li>
-            <li>タグ: クラスの接頭辞 + この機器の制御器（入れ子も含む）の中での次の番号 + 機器のタグ（例: <code>CA1SG1B001</code>。接頭辞は AVR <code>CA</code>、PSS <code>CP</code>、ガバナ <code>CG</code>、LQR <code>CL</code>）</li>
+            <li>タグ: 機器のタグ + クラスの接頭辞 + この機器の制御器（入れ子も含む）の中での次の番号（例: <code>B001SG1CA1</code>。接頭辞は AVR <code>CA</code>、PSS <code>CP</code>、ガバナ <code>CG</code>、LQR <code>CL</code>）</li>
             <li>変更前に新しい制御器を検査:
               <ul>
                 <li>役割 <code>s_role</code> が <code>"avr"</code>・<code>"pss"</code>・<code>"local"</code>・<code>"governor"</code> のいずれか</li>
@@ -430,12 +430,12 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Build one controller per call: the class of <code>Key</code> (checked against the generated key list) with the constructor <code>(net, tag, units..., Name=Value)</code>; <code>parameter</code> (struct or one-row table) gives the Name=Value, omitted ones keep the class defaults</li>
-            <li>Tag: class header + next number among the global controllers of this network + network tag, e.g. <code>AGC1IEEE9bus</code></li>
+            <li>Tag: network tag + class header + next number among the global controllers of this network, e.g. <code>IEEE9busAGC1</code></li>
             <li>Resolve each controlled unit of <code>a_Unit</code> (component object or tag) among the components of <code>net.a_Bus</code></li>
             <li>Network only read: <code>a_PowerNetwork</code> stays empty until MB-07</li>
           </ul><ul lang="ja">
             <li>1 回の呼び出しで制御器を 1 つ作成: <code>Key</code>（生成済みのキー一覧で検査）のクラスをコンストラクタ <code>(net, tag, units..., Name=Value)</code> で作成。Name=Value は <code>parameter</code>（struct または 1 行の table）、省略したものはクラスの既定値</li>
-            <li>タグ: クラスの接頭辞 + このネットワークのグローバル制御器の中での次の番号 + ネットワークのタグ（例: <code>AGC1IEEE9bus</code>）</li>
+            <li>タグ: ネットワークのタグ + クラスの接頭辞 + このネットワークのグローバル制御器の中での次の番号（例: <code>IEEE9busAGC1</code>）</li>
             <li><code>a_Unit</code> の制御対象（機器のオブジェクトまたはタグ）を <code>net.a_Bus</code> の機器から解決</li>
             <li>ネットワークは読み取りのみ: <code>a_PowerNetwork</code> は MB-07 まで空</li>
           </ul></dd>
@@ -537,14 +537,14 @@ b1.l_isSlack = true;</code></pre>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Message: the tag path from the edited layer up and the log, e.g. <code>powerflow/SG1B005/B005/TestSystem: edit P: 0.5 -&gt; 0.6</code></li>
+            <li>Message: the tag of the edited layer (for a parameter, the group and the owner tag) and the log, e.g. <code>powerflow/B005SG1: edit P: 0.5 -&gt; 0.6</code></li>
             <li>Call <code>handle_edit(a_layer, tag, log)</code> on every layer from the edited one up the <code>parent</code> chain, also before the first initialize; <code>a_layer</code> is the edited layer (the owner for a <code>Parameter</code> container)</li>
             <li>Each layer compares <code>a_layer == obj</code> and the tag, and appends the message to its own stale tags that the edit affects (e.g. <code>obj.sct_stale.equilibrium(end+1,1) = log</code>)</li>
             <li>Network (<code>PowerNetwork.handle_edit</code>): keep one slack bus; mark <code>powerflow</code> for baseMVA, topology of buses and branches, bus parameters (powerflow, dynamics), the slack bus, components connected / replaced / removed, branch dynamics, component powerflow</li>
             <li>Component, local and global controller: mark <code>equilibrium</code> and <code>odefcn</code> for their own dynamics, <code>equilibrium</code> for their own <code>"Topology"</code> (a controller added, replaced or removed)</li>
             <li>A network <code>Hz</code> edit marks the network <code>odefcn</code> only (told from baseMVA by <code>s_lastEdited</code> of the <code>base</code> container); in <code>initialize</code> each model compares <code>r_odefcnHz</code> with <code>get_Hz()</code></li>
           </ul><ul lang="ja">
-            <li>メッセージ: 編集した層から上へのタグのパスとログ。例: <code>powerflow/SG1B005/B005/TestSystem: edit P: 0.5 -&gt; 0.6</code></li>
+            <li>メッセージ: 編集した層のタグ（パラメータは区分と所有者のタグ）とログ。例: <code>powerflow/B005SG1: edit P: 0.5 -&gt; 0.6</code></li>
             <li>編集した層から <code>parent</code> をたどる各層の <code>handle_edit(a_layer, tag, log)</code> を呼び出し（最初の initialize の前も）。<code>a_layer</code> は編集した層（<code>Parameter</code> コンテナの場合は所有者）</li>
             <li>各層は <code>a_layer == obj</code> とタグを比べ、編集が影響する自分の stale タグにメッセージを追加（例 <code>obj.sct_stale.equilibrium(end+1,1) = log</code>）</li>
             <li>ネットワーク（<code>PowerNetwork.handle_edit</code>）: slack 母線を 1 つに維持。baseMVA、母線とブランチのトポロジー、母線のパラメータ（powerflow、dynamics）、slack 母線、機器の接続・置き換え・削除、ブランチの dynamics、機器の powerflow で <code>powerflow</code> を印付け</li>
@@ -684,7 +684,7 @@ b1.l_isSlack = true;</code></pre>
     <p lang="ja">結果はオブジェクトの木そのもの。すべてのモデルクラスは <code>LayerPackage &lt; handle</code> を継承するため、変数が持つのは参照。<code>gen = net.a_Bus{1}.a_Component{1}</code> はネットワーク内と同じオブジェクト。</p>
     <figure class="dg-figure">
       <svg class="dg-svg dg-sv fmb-ref dg-only-wide" viewBox="0 0 760 500" role="img" aria-labelledby="fmb-ref-title">
-        <title id="fmb-ref-title">Object references of a built network: net holds buses B001 and B002, branch EL001 and global controller AGC1PowerNetwork; B001 holds SG1B001, which holds CA1SG1B001, which holds CP2SG1B001; B002 holds LPQ1B002. Each child refers back to its parent. EL001 refers to its two end buses and AGC1PowerNetwork to the components it controls without being their parent.</title>
+        <title id="fmb-ref-title">Object references of a built network: net holds buses B001 and B002, branch EL001 and global controller PowerNetworkAGC1; B001 holds B001SG1, which holds B001SG1CA1, which holds B001SG1CP2; B002 holds B002LPQ1. Each child refers back to its parent. EL001 refers to its two end buses and PowerNetworkAGC1 to the components it controls without being their parent.</title>
         <defs>
           <marker id="fmb-own" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
           <marker id="fmb-back" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="fmb-open" d="M1 1L10 6L1 11"/></marker>
@@ -718,7 +718,7 @@ b1.l_isSlack = true;</code></pre>
         <text class="dg-mono is-b" x="496" y="166" text-anchor="middle">B002</text>
         <text class="is-sm is-muted" x="496" y="184" text-anchor="middle">Bus</text>
         <rect class="dg-sv-box" x="612" y="145" width="136" height="50" rx="8"/>
-        <text class="dg-mono is-b" x="680" y="166" text-anchor="middle">AGC1PowerNetwork</text>
+        <text class="dg-mono is-b" x="680" y="166" text-anchor="middle">PowerNetworkAGC1</text>
         <text class="is-sm is-muted" x="680" y="184" text-anchor="middle">GlobalController</text>
         <!-- branch end buses (association) -->
         <path class="fmb-assoc" d="M222 170H160" marker-end="url(#fmb-as)"/>
@@ -733,10 +733,10 @@ b1.l_isSlack = true;</code></pre>
         <text class="dg-mono is-accent fmb-l" x="506" y="226">a_Component{1}</text>
         <text class="dg-mono is-muted fmb-l" x="506" y="242">a_Bus</text>
         <rect class="dg-sv-box" x="20" y="265" width="136" height="50" rx="8"/>
-        <text class="dg-mono is-b" x="88" y="286" text-anchor="middle">SG1B001</text>
+        <text class="dg-mono is-b" x="88" y="286" text-anchor="middle">B001SG1</text>
         <text class="is-sm is-muted" x="88" y="304" text-anchor="middle">Component</text>
         <rect class="dg-sv-box" x="428" y="265" width="136" height="50" rx="8"/>
-        <text class="dg-mono is-b" x="496" y="286" text-anchor="middle">LPQ1B002</text>
+        <text class="dg-mono is-b" x="496" y="286" text-anchor="middle">B002LPQ1</text>
         <text class="is-sm is-muted" x="496" y="304" text-anchor="middle">Component</text>
         <!-- global controller units (association) -->
         <path class="fmb-assoc" d="M680 197V372H132V319" marker-end="url(#fmb-as)"/>
@@ -746,13 +746,13 @@ b1.l_isSlack = true;</code></pre>
         <text class="dg-mono is-accent fmb-l" x="98" y="340">a_LocalController{1}</text>
         <text class="dg-mono is-muted fmb-l" x="98" y="356">a_Component</text>
         <rect class="dg-sv-box" x="20" y="385" width="136" height="50" rx="8"/>
-        <text class="dg-mono is-b" x="88" y="406" text-anchor="middle">CA1SG1B001</text>
+        <text class="dg-mono is-b" x="88" y="406" text-anchor="middle">B001SG1CA1</text>
         <text class="is-sm is-muted" x="88" y="424" text-anchor="middle">LocalController</text>
         <path class="dg-sv-line" d="M158 410H290" marker-start="url(#fmb-back)" marker-end="url(#fmb-own)"/>
         <text class="dg-mono is-accent fmb-l" x="224" y="400" text-anchor="middle">a_LocalController{1}</text>
         <text class="dg-mono is-muted fmb-l" x="224" y="428" text-anchor="middle">a_Component</text>
         <rect class="dg-sv-box" x="292" y="385" width="136" height="50" rx="8"/>
-        <text class="dg-mono is-b" x="360" y="406" text-anchor="middle">CP2SG1B001</text>
+        <text class="dg-mono is-b" x="360" y="406" text-anchor="middle">B001SG1CP2</text>
         <text class="is-sm is-muted" x="360" y="424" text-anchor="middle">LocalController</text>
         <!-- legend -->
         <path class="dg-sv-line" d="M24 470H62" marker-start="url(#fmb-back)" marker-end="url(#fmb-own)"/>

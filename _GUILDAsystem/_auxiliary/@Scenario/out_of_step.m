@@ -23,7 +23,7 @@ function verdict = out_of_step(result, opt)
 % result  = net.simulate(sc);
 % verdict = Scenario.out_of_step(result);           % same as sc.judge(result) by default
 % verdict = Scenario.out_of_step(result, Reference="COI", Threshold=180);
-% sc.Judge = @(r) Scenario.out_of_step(r, Reference="SG1B003");
+% sc.Judge = @(r) Scenario.out_of_step(r, Reference="B003SG1");
 % ```
 %
 % See also Scenario.judge, ResultODE

@@ -7,7 +7,7 @@ function remove_global_controller(obj, sr_GconTag)
 %
 % <@Examples>
 % ```matlab
-% agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"]);
+% agc = net.add_global_controller("agc-PI", ["B001SG1","B002SG1"]);
 % net.remove_global_controller(agc.s_tag)
 % ```
 %

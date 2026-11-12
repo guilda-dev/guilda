@@ -77,7 +77,7 @@ classdef TEST31bus < PowerNetwork
 % net = network.TEST31bus();
 % res = net.calculate_powerflow();
 % sc  = Scenario("offset");
-% sc.add_offset("SG1B001", "delta", 0.1, 1);
+% sc.add_offset("B001SG1", "delta", 0.1, 1);
 % net.add_scenario(sc);
 % sol = net.simulate([0,10], sc);
 % ```

@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Tags read parent first; labels use the own tag",
+    "date": "2026-11-12",
+    "type": "feature",
+    "content": "Automatic tags now start with the tag of the parent: a generator on bus B001 is B001SG1 (was SG1B001), its AVR B001SG1CA1 (was CA1SG1B001), a global controller PowerNetworkAGC1 (was AGC1PowerNetwork). Variable labels (get_sys names, get_variable_map Label, ResultODE columns) are the name and the tag of the owner only, e.g. delta_B001SG1, omega_B001SG1CP2, Vre_B001, and the stale messages name the edited layer only (powerflow/B001: edit V: ...). Scripts that write tags or labels out by hand need updating."
+  },
+  {
     "title": "Model functions without the bus current",
     "date": "2026-11-11",
     "type": "model",

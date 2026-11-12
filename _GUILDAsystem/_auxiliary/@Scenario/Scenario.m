@@ -57,12 +57,12 @@ classdef (Sealed = true) Scenario < auxiliary
 %
 % ```matlab
 % sc2 = Scenario("steps");
-% sc2.add_offset("SG1B001", "delta", 0.1, 0);
-% sc2.add_input("SG1B002", ["Pmech"; "Vfield"], {0.05; @(t) 0.01*t}, [1, 1.5]);
+% sc2.add_offset("B001SG1", "delta", 0.1, 0);
+% sc2.add_input("B002SG1", ["Pmech"; "Vfield"], {0.05; @(t) 0.01*t}, [1, 1.5]);
 % net.add_scenario(sc2);
 % result = net.simulate([0, 10], sc, sc2);      % the disturbances of both
 % sc3 = Scenario("trip");
-% sc3.add_trip("SG1B002", [1, 2]);
+% sc3.add_trip("B002SG1", [1, 2]);
 % net.add_scenario(sc3);
 % result = net.simulate([0, 10], sc3);
 % other = network.IEEE14bus();

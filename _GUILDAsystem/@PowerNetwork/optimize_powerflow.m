@@ -54,11 +54,11 @@ function varargout = optimize_powerflow(obj, varargin)
 % res.Plot();
 % % Spinning reserve of two generators; its price is the dual of the named constraint
 % res = net.optimize_powerflow(Method="DC OPF", Constraint=@(v, p) struct("Reserve", ...
-%           (2 - v.Component.SG1B001.P) + (2 - v.Component.SG1B002.P) >= 0.5));
+%           (2 - v.Component.B001SG1.P) + (2 - v.Component.B002SG1.P) >= 0.5));
 % res.lambda.Constraints.Reserve
 % % Solve a modified problem
 % [prob, x0] = net.build_opf_problem(Method="DC OPF");
-% prob.Constraints.Cap = prob.Variables.SG1B001 <= 0.4;
+% prob.Constraints.Cap = prob.Variables.B001SG1 <= 0.4;
 % res = net.optimize_powerflow(Method="DC OPF", Problem=prob, InitialPoint=x0);
 % ```
 %
