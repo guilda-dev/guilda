@@ -351,7 +351,7 @@ sys = net.get_sys(Algorithm="Kron", Output=["V","omega_SG1B001_B001_PowerNetwork
 
 - **SH4:** `solver_LIN.Coordinate` と `OptionMap` の項目を追加します(既定 `"theta&rho"`)。
 - **SH5:** 外側の `sys.InputGroup` / `OutputGroup` の設定(`@Component/get_sys.m:105-106`)をやめます。内部の結線に使うのは内側の `rec=false` と `tag=false` の制御器だけです [事実]。`LocalController` は `tag=true` のときだけ省きます(`@LocalController/get_sys.m:67-68`)。Bus は既にグループなしで動いています。テスト: `test_F7_linearization.m`。
-- **SH6:** `class-design.html:141` に「`PowerNetwork.get_sys` は v3 互換で、状態を出力とする。Kron, DAE の状態順は大域制御器が先」と明記し、`:278` の「別の順序を定義しない」に `get_ss` の例外を記します。`:202` は「状態も読む」に直します。**次の 2 点は変更しません(v3 互換):** DAE の `theta1` などの番号付きの名前、Kron の空の `OutputName`。
+- **SH6:** `class-design.html:141` に「`PowerNetwork.get_sys` は v3 互換で、状態を出力とする。Kron, DAE の状態順はグローバル制御器が先」と明記し、`:278` の「別の順序を定義しない」に `get_ss` の例外を記します。`:202` は「状態も読む」に直します。**次の 2 点は変更しません(v3 互換):** DAE の `theta1` などの番号付きの名前、Kron の空の `OutputName`。
 
 ### 5.6 引数と層の API
 
@@ -423,7 +423,7 @@ end
 
 ### 5.9 重複と未使用のコード
 
-- **DU1 [d]:** `all_controllers`(3 か所)を `LayerPackage` の Hidden メソッドに、`shape`(2 か所)と I2V の変換(3 か所)を `+tools` に、`get_ss` の局所 `complex2matrix` を `tools.complex2matrix` にまとめます。大域制御器の閉ループ(行列と `feedback`)は検算にもなるので**残します。** 動作が変わらないことは F7 で確かめられます。
+- **DU1 [d]:** `all_controllers`(3 か所)を `LayerPackage` の Hidden メソッドに、`shape`(2 か所)と I2V の変換(3 か所)を `+tools` に、`get_ss` の局所 `complex2matrix` を `tools.complex2matrix` にまとめます。グローバル制御器の閉ループ(行列と `feedback`)は検算にもなるので**残します。** 動作が変わらないことは F7 で確かめられます。
 - **DU2 [b]:** `tools.for_ss.*`, `tools.ssfeedback`, `GUILDA.config("Model","port_vw")`、`local_LQR_retrofit`、`get_environment`。リポジトリの中では使われていません [事実]。共同開発者のスクリプトで使われている可能性があるので、**確認してから削除してください。** v2 の 2 つは作れない / 動かないので、`archive` への移動でも構いません。`class-design.html:345` の記述も一緒に消します。
 
 ### 5.10 テストと文書
@@ -460,7 +460,7 @@ end
 2026-11-01、`docs/87-get-sys-docs` で反映しました。R2026a で実測した内容に合わせています。
 
 - **反映済み:** `class-design.html`(各層の出力、変数順の例外、ポート、Hz の表)、`api-design.html`、`get_sys` / `linearize` / `get_ss` / `Component.get_sys` の help、`v4-migration.md`。
-- **修正不要:** `class-design.html` の `rv_Xequilibrium` の例、大域制御器が状態を読む記述、作業データの一覧(いずれも統合時点で正しい)。
+- **修正不要:** `class-design.html` の `rv_Xequilibrium` の例、グローバル制御器が状態を読む記述、作業データの一覧(いずれも統合時点で正しい)。
 - **未反映:** `initialize` の help の OPF の記述。IEEE9bus の OPF 初期化で残差は 0.39 のままで、コードの修正(Issue #56)と合わせて直します。
 - **v3 互換で残したもの:** DAE の `theta1` などの番号付きの名前、Kron の空の `OutputName`、`Feedback` の `Vst` の出力行。
 

@@ -548,7 +548,7 @@ b1.l_isSlack = true;</code></pre>
             <li>編集した層から <code>parent</code> を順にたどり、各層の <code>handle_edit(a_layer, tag, log)</code> を呼び出します（最初の initialize の前でも同じです）。<code>a_layer</code> は編集した層（<code>Parameter</code> コンテナの場合は所有者）です。</li>
             <li>各層は <code>a_layer == obj</code> とタグを比べ、編集が影響する自分の stale タグにメッセージを追加します（例: <code>obj.sct_stale.equilibrium(end+1,1) = log</code>）。</li>
             <li>ネットワーク（<code>PowerNetwork.handle_edit</code>）は slack 母線を 1 つに保ちます。また、baseMVA、母線とブランチのトポロジー、母線のパラメータ（powerflow、dynamics）、slack 母線、機器の接続・置き換え・削除、ブランチの dynamics、機器の powerflow のいずれかが編集されると、<code>powerflow</code> に印を付けます。</li>
-            <li>機器と局所・グローバル制御器は、自分の dynamics が編集されると <code>equilibrium</code> と <code>odefcn</code> に、自分の <code>"Topology"</code>（制御器の追加・置き換え・削除）が編集されると <code>equilibrium</code> に印を付けます。</li>
+            <li>機器とローカル制御器・グローバル制御器は、自分の dynamics が編集されると <code>equilibrium</code> と <code>odefcn</code> に、自分の <code>"Topology"</code>（制御器の追加・置き換え・削除）が編集されると <code>equilibrium</code> に印を付けます。</li>
             <li>ネットワークの <code>Hz</code> の編集は、ネットワークの <code>odefcn</code> だけに印を付けます（baseMVA とは <code>base</code> コンテナの <code>s_lastEdited</code> で区別します）。<code>initialize</code> で各モデルが <code>r_odefcnHz</code> と <code>get_Hz()</code> を比較します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>

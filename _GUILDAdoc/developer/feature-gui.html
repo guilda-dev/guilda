@@ -62,7 +62,7 @@ h = net.gui(h_container);   % fills h_container</code></pre>
       </li>
     </ul>
     <ul lang="ja">
-      <li><code>gui(obj, h_container)</code> は <code>PowerSystemModel</code> の public メソッドです。そのため、ネットワーク、母線、ブランチ、機器、局所制御器、広域制御器のどれからでも呼べます。</li>
+      <li><code>gui(obj, h_container)</code> は <code>PowerSystemModel</code> の public メソッドです。そのため、ネットワーク、母線、ブランチ、機器、ローカル制御器、グローバル制御器のどれからでも呼べます。</li>
       <li>コンテナを渡さない場合（<code>[]</code> を渡した場合も同じ）は、クラス名とタグを名前にした <code>uifigure</code> を新しく開きます。</li>
       <li>コンテナを渡すと、その中に GUI を展開します。渡せるのは、<code>uifigure()</code> で作った図に属する <code>uifigure</code>、<code>uipanel</code>、<code>uitab</code>、<code>uigridlayout</code> です。レイアウトはコンテナの大きさに合わせて変わります。</li>
       <li>戻り値の <code>h</code> は <code>DrawerModelGUI</code> です。<code>h.a_target</code> で表示中のモデルを、<code>h.h_container</code> でコンテナを参照できます。<code>h.render(model)</code> を呼ぶと、同じ場所に別のモデルを表示します。</li>
@@ -217,7 +217,7 @@ h = net.gui(h_container);   % fills h_container</code></pre>
             <li><code>Equilibrium</code>: one row per bus: <code>Tag</code>, <code>Type</code> (<code>s_bustype</code>), <code>V</code>, <code>|V|</code>, <code>∠V [rad]</code>, <code>I</code>.</li>
           </ul></td>
           <td lang="ja" data-label="ページ"><ul>
-            <li><code>Summary</code>: 母線、ブランチ、機器（全母線の合計）、広域制御器の数です。</li>
+            <li><code>Summary</code>: 母線、ブランチ、機器（全母線の合計）、グローバル制御器の数です。</li>
             <li><code>Equilibrium</code>: 母線ごとに 1 行です。列は <code>Tag</code>、<code>Type</code>（<code>s_bustype</code>）、<code>V</code>、<code>|V|</code>、<code>∠V [rad]</code>、<code>I</code> です。</li>
           </ul></td></tr>
         <tr><td><code>Bus</code></td>

@@ -48,9 +48,9 @@
 | PF-2 | `SolverPF` の `PFconst_slack` | 角度に `atan(Vim/Vre)` を使う | バグ |
 | GEN-1 | `component.generator.abstract` | `avr` / `pss` / `governor` と `set_*` が動かない | バグ |
 | NET-1 | 同梱ネットワーク、`import_csv` | タグが `"PowerNetwork"` のまま | 整理 |
-| SIM-1 | `SolverODE.getODEJacobian` | 大域制御器の入力に `u_connect` を掛けない | バグ |
-| SIM-2 | `SolverODE.getODEJacobian` | 大域制御器のブロックの列の並び | 整理 |
-| SIM-3 | 解列(トリップ) | 機器を解列しても局所制御器の状態は残る | 仕様・コメント不一致 |
+| SIM-1 | `SolverODE.getODEJacobian` | グローバル制御器の入力に `u_connect` を掛けない | バグ |
+| SIM-2 | `SolverODE.getODEJacobian` | グローバル制御器のブロックの列の並び | 整理 |
+| SIM-3 | 解列(トリップ) | 機器を解列してもローカル制御器の状態は残る | 仕様・コメント不一致 |
 | SIM-4 | `SolverODE.getNextPhase` | 平衡点からの再開が発電機だけ | 仕様・コメント不一致 |
 | LIN-1 | 質量行列 | シミュレーションと線形化で呼び方が違う | 整理 |
 | LIN-2 | `Component.get_sys` (`linearize_alone`) | 線形化は `I` 依存を拒否、シミュレーションは対応 | 仕様・コメント不一致 |
@@ -143,9 +143,9 @@
 ### INI-2 `GlobalController.get_equilibrium` の呼ばれる順
 
 - **対象:** `@PowerNetwork/initialize.m` 111–114 行、`@GlobalController/GlobalController.m` 34 行、`_GUILDAdoc/developer/model-implementation.html`
-- **内容:** `initialize` は大域制御器の `get_equilibrium` を、母線の `set_equilibrium`(機器の平衡点を書く処理)より前に呼びます。ヘルプは "Called by PowerNetwork.initialize after the equilibria of the components are set."、`model-implementation.html` は "Called after the components are set." と書いています。
+- **内容:** `initialize` はグローバル制御器の `get_equilibrium` を、母線の `set_equilibrium`(機器の平衡点を書く処理)より前に呼びます。ヘルプは "Called by PowerNetwork.initialize after the equilibria of the components are set."、`model-implementation.html` は "Called after the components are set." と書いています。
 - **再現・根拠:** [事実]
-- **影響:** 機器の平衡点を読む大域制御器は、前回の平衡点(初回は空)を読みます。
+- **影響:** 機器の平衡点を読むグローバル制御器は、前回の平衡点(初回は空)を読みます。
 - **分類:** 仕様・コメント不一致(コードと文書のどちらに合わせるかは未決)
 
 ## GlobalController / LocalController
@@ -169,7 +169,7 @@
 ### GC-3 `set_parent` のアクセス
 
 - **対象:** `@GlobalController/GlobalController.m` 218 行
-- **内容:** `methods (Access={?Component,?LocalController,?PowerNetwork})` ですが、`GlobalController.set_parent` を呼ぶのは `PowerNetwork`(`add_global_controller`、`remove_global_controller`)だけです。`Component` から呼ぶ `set_parent` は局所制御器のものです。
+- **内容:** `methods (Access={?Component,?LocalController,?PowerNetwork})` ですが、`GlobalController.set_parent` を呼ぶのは `PowerNetwork`(`add_global_controller`、`remove_global_controller`)だけです。`Component` から呼ぶ `set_parent` はローカル制御器のものです。
 - **再現・根拠:** [事実]
 - **影響:** 動作への影響はありません。
 - **分類:** 整理
@@ -290,7 +290,7 @@
 
 ## シミュレーション
 
-### SIM-1 ヤコビ行列で大域制御器の入力に `u_connect` を掛けない
+### SIM-1 ヤコビ行列でグローバル制御器の入力に `u_connect` を掛けない
 
 - **対象:** `_auxiliary/@SolverODE/SolverODE.m` の `getODEJacobian`(687–702 行)
 - **内容:** `getODEFunction` は、解列した制御対象の入力を 0 にするため `u_connect * u_GC` を渡します(632–635 行)。`getODEJacobian` は `u_GC` をそのまま渡し、列にも `u_connect` を掛けません。
@@ -298,18 +298,18 @@
 - **影響:** 制御対象を解列した区間で、ヤコビ行列が式と一致しません。ode15s の収束が遅くなるか失敗する可能性があります(解が誤るかは未確認)。
 - **分類:** バグ
 
-### SIM-2 大域制御器のブロックの列の並び
+### SIM-2 グローバル制御器のブロックの列の並び
 
 - **対象:** `_auxiliary/@SolverODE/SolverODE.m` 691、701–702 行
-- **内容:** 列は `lh_GC = [iv_odeX; iv_odeU]` ですが、足すブロックは `[Axx, Bxv, Bxu, Bxi]` の 4 列分です。大域制御器には V と I のポートがなく `Bxv` / `Bxi` が空なので、たまたま合っています。
+- **内容:** 列は `lh_GC = [iv_odeX; iv_odeU]` ですが、足すブロックは `[Axx, Bxv, Bxu, Bxi]` の 4 列分です。グローバル制御器には V と I のポートがなく `Bxv` / `Bxi` が空なので、たまたま合っています。
 - **再現・根拠:** [事実]
 - **影響:** 現状は正しい値です。ポートの扱いを変えると壊れます。
 - **分類:** 整理
 
-### SIM-3 解列した機器の局所制御器の状態
+### SIM-3 解列した機器のローカル制御器の状態
 
 - **対象:** `_auxiliary/@EventODE/EventODE.m` の `getInitialCondition`(328–337 行)と `getStateTags`
-- **内容:** 解列では、状態のタグが `TripUnit` に一致する変数を `EM` で除きます。局所制御器の状態には制御器自身のタグが付くので、機器を解列しても制御器の状態は除かれず、NaN にもならず、積分が続きます。
+- **内容:** 解列では、状態のタグが `TripUnit` に一致する変数を `EM` で除きます。ローカル制御器の状態には制御器自身のタグが付くので、機器を解列しても制御器の状態は除かれず、NaN にもならず、積分が続きます。
 - **再現・根拠:** [事実] コードを読んで確認しました。実行はしていません。
 - **影響:** 解列中の制御器の状態が意味のない値に動き、結果に残ります。
 - **分類:** 仕様・コメント不一致(期待する扱いが文書にありません)
@@ -388,5 +388,5 @@
 
 ## 確認して外した項目
 
-- **`SolverODE.restore_working_data` が `rv_Xoffset` / `rv_Uoffset` を機器だけ戻す:** オフセットを設定するのは `EventODE.setEventCondition`(216、255 行)で、対象は機器だけです。局所制御器と大域制御器のオフセットは変わらないので、現状では不具合ではありません。ただし既定値が違います(機器は空、制御器は `0` と `@(t) 0`)。
+- **`SolverODE.restore_working_data` が `rv_Xoffset` / `rv_Uoffset` を機器だけ戻す:** オフセットを設定するのは `EventODE.setEventCondition`(216、255 行)で、対象は機器だけです。ローカル制御器とグローバル制御器のオフセットは変わらないので、現状では不具合ではありません。ただし既定値が違います(機器は空、制御器は `0` と `@(t) 0`)。
 - **`+tools/+for_ss` が「線形化の経路にない」:** 経路にないだけでなく、どこからも呼ばれていません。DEAD-1 にまとめました。

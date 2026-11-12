@@ -487,7 +487,7 @@
     <ul lang="ja">
       <li><strong>ハンドル:</strong> 新しくは作りません。<code>f_*</code> ハンドルは <code>net.initialize()</code> が作ったものを使います。</li>
       <li><strong>実行中の作業データ:</strong> <code>build_layout</code> が <code>Bus.iv_CPFV</code> と <code>Component.f_PQ2Bus</code> に、<code>UseInternalState</code> が true なら <code>Component.iv_CPFX</code> にも書き込みます。これらを設定できるのは <code>SolverCPF</code> だけです。値は実行後もオブジェクトに残り、次の実行で上書きされますが、ほかの処理からは使いません。</li>
-      <li><strong>stale 状態:</strong> ネットワークと機器の stale 状態を読むだけで、書き換えません（CPF-04）。ネットワークか機器を古くする編集をすると、<code>net.initialize()</code> をやり直すまで次の呼び出しは止まります。ネットワークの <code>Hz</code> の変更もこれに含まれます（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照）。<code>operation</code>、<code>OPF</code>、<code>graph</code> のパラメータや、局所制御器・広域制御器を編集しても止まりません。</li>
+      <li><strong>stale 状態:</strong> ネットワークと機器の stale 状態を読むだけで、書き換えません（CPF-04）。ネットワークか機器を古くする編集をすると、<code>net.initialize()</code> をやり直すまで次の呼び出しは止まります。ネットワークの <code>Hz</code> の変更もこれに含まれます（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照）。<code>operation</code>、<code>OPF</code>、<code>graph</code> のパラメータや、ローカル制御器・グローバル制御器を編集しても止まりません。</li>
       <li>ソルバーの設定は変わりません。結果はネットワークへの参照を持っています。</li>
     </ul>
 

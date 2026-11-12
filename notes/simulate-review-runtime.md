@@ -135,7 +135,7 @@
 | `FaultBus="B999"`, `TripUnit="NOPE"`, `OffsetUnit="NOPE"`, `OffsetState="nope"` | **エラーも警告もなく無外乱の結果を `flag=1` で返す** **[実機]**(`max\|omega\|≈1e-14`) |
 | 他の系統のイベント | `PhaseFailed` / 添字エラー **[実機]**。`odeNetwork` と `net` の一致検査はない(`odeSimulator.m:178`、`odeEventSet.m:222`) |
 | 機器追加より前に作ったイベント | `MATLAB:innerdim` **[実機]**(`:352-362,377`) |
-| 局所制御器のタグを `TripUnit` に指定 | 受理される。LC の x, u は除去され、右辺は x=0 の出力を親の入力へ流す(`:353-362`、`LC/gda.m:40`、`Comp/gda.m:30`)。`:47` の説明の対象外 |
+| ローカル制御器のタグを `TripUnit` に指定 | 受理される。LC の x, u は除去され、右辺は x=0 の出力を親の入力へ流す(`:353-362`、`LC/gda.m:40`、`Comp/gda.m:30`)。`:47` の説明の対象外 |
 
 ## 3. 実行フェーズ
 
@@ -145,7 +145,7 @@
 2. イベントなしなら `NoAction` を生成(`:170-176`)
 3. `table` で区間表を作成(`:178`)
 4. `initialize_index`: 全変数の添字を割当(`:179,340-409`)
-5. `onCleanup` で大域制御器の接続を復元する予約(`:180`)
+5. `onCleanup` でグローバル制御器の接続を復元する予約(`:180`)
 6. `ctx`: `net`, `Ymat`, `rv_odeV`, `absYmat`(`:182-186`)
 7. `makeODE`、`odeset`(`:188-189`)
 8. `odeProgress` を作り、`OutputFcn` と `EventDefinition` を設定(`:201-203`)
@@ -167,9 +167,9 @@
 `getNextPhase`(`odeSimulator.m:639-697`):
 
 - `x0 = EM*x_end`、`M0 = EM*M*EM.'` で全次元に戻す(`:642-643`)。**除去された変数の質量は 0 のまま**。
-- 解列中の **発電機** の状態を、現在の電圧・電流 0 の平衡値に、質量を `f_Mass` に戻す。局所制御器も同様(`:652-676`)。判定は `isa(...,'component.generator.abstract')`。
+- 解列中の **発電機** の状態を、現在の電圧・電流 0 の平衡値に、質量を `f_Mass` に戻す。ローカル制御器も同様(`:652-676`)。判定は `isa(...,'component.generator.abstract')`。
 - 地絡母線の V, I は **事故前の平衡値** に戻す(`:679-684`)。
-- 解列中の大域制御器は平衡値と `f_Mass` に戻す(`:689-696`)。
+- 解列中のグローバル制御器は平衡値と `f_Mass` に戻す(`:689-696`)。
 - 解列機器の u は 0 のまま(`EM` 由来)で復元しない。残りの不整合は ode15s の初期値補正か §3.5 のフォールバックに任せる。
 
 次の `getInitialCondition` が `x0` にオフセットを加え(`odeEventSet.m:365-376`)、`RM*x0`, `RM*M0*RM.'` で縮約する(`:377,384`)。第 1 区間は平衡点+オフセット、入力は `rv_Uequilibrium + rv_Uoffset(0)` で作る(`:366,498`)。
@@ -182,7 +182,7 @@
 
 ```
 母線1 { 機器1 {x, u}, LC1 {x, u}, LC2 {x, u}, 機器2 {...} }, 母線2 {...}, ...
-大域制御器 k の x (u, y は持たず他の添字を参照)
+グローバル制御器 k の x (u, y は持たず他の添字を参照)
 母線 i の V(re, im), I(re, im)
 ```
 
@@ -195,7 +195,7 @@
 ### 3.4 右辺 1 回の評価順(`getODEFunction` `:422-486`)
 
 1. `x = EM*x`、`I = Ymat*V`、`absI = absYmat*|V|`(`:425-431`)
-2. 大域制御器ごと: 接続中のみ `f_dx`, `f_Y`。入力は機器の状態 × 接続マスク(`dcellfun` の対角行列)(`:438-451`)
+2. グローバル制御器ごと: 接続中のみ `f_dx`, `f_Y`。入力は機器の状態 × 接続マスク(`dcellfun` の対角行列)(`:438-451`)
 3. 母線ごと、機器ごと:
    1. `ue = 平衡 + y_GC + rv_Uoffset(t)`(`:464-466`)
    2. `Component.get_dx_algebraic`:
@@ -206,7 +206,7 @@
    3. 母線の項を加算し残差を丸める(`:471-480`)
 4. `odeX(lg)` を返す(`:484`)
 
-**置換の帰結**: 入力イベントと大域制御器の出力は `ue` に足されたあとで LC 出力に **上書きされる**。AVR 付き発電機の `Vfield` に `InputValue=0.5` を与えても変化量 `1.5e-12`、エラーも警告も出ない **[実機]**。
+**置換の帰結**: 入力イベントとグローバル制御器の出力は `ue` に足されたあとで LC 出力に **上書きされる**。AVR 付き発電機の `Vfield` に `InputValue=0.5` を与えても変化量 `1.5e-12`、エラーも警告も出ない **[実機]**。
 
 ### 3.5 ソルバーの使い方とフォールバック
 
@@ -236,7 +236,7 @@
 ### 3.6 ヤコビアンと右辺の不一致
 
 - **解列機器**: 右辺は `l_isConnect * f_I`(`Comp/gda.m:34`)だが、ヤコビアンは `-Div, -Dii` を接続状態によらず母線行へ足す(`odeSimulator.m:618-619`)。
-- **大域制御器のマスク**: 右辺は `u_connect*u_GC`(`:447-450`)、ヤコビアンは `u_GC` のまま(`:514-515`)。
+- **グローバル制御器のマスク**: 右辺は `u_connect*u_GC`(`:447-450`)、ヤコビアンは `u_GC` のまま(`:514-515`)。
 - **LC による入力上書き**: `-Cyx_GC` は `iv_odeY` 行へ足される(`:517-518`)が、右辺では LC に上書きされて効かない(`Comp/gda.m:30`)。
 - **残差の丸め**(`:480`)はヤコビアンに反映されない(影響はごく小さいと **[推測]**)。
 - 影響: ニュートン法の収束が悪化するが解の精度には直接影響しない **[推測]**。誤差の大きさは **[未確認]**。
@@ -250,19 +250,19 @@
 | `iv_odeX/U` 機器・LC | `Component.m:93-94`, `LocalController.m:74-75` | `odeSimulator.m:402,405` | 右辺、ヤコビアン、`getNextPhase`、結果生成 | なし(次回上書き) |
 | `iv_odeY` LC | `LocalController.m:76` | `:360,367` | `:557,598` | なし |
 | `iv_odeY` 機器 | `Component.m:95` | **書かない** | `:536`(未使用変数) | — |
-| `iv_odeX/U/Y` 大域 | `GlobalController.m:60-62` | `:379-387` | 右辺、ヤコビアン | なし |
+| `iv_odeX/U/Y` グローバル制御器 | `GlobalController.m:60-62` | `:379-387` | 右辺、ヤコビアン | なし |
 | `iv_odeX/I` 母線 | `Bus.m:57-58` | `:392,394` | 同上 | なし |
 | `iv_odeU` 母線 | `Bus.m:59` | **書かない** | 読まない | — |
 | `rv_Xoffset` 機器 | `Component.m:122`(**public 書込み可**) | `odeEventSet.m:245,251` | `:373,498` | なし |
 | `rv_Uoffset` 機器 | `Component.m:123`(同上) | `odeEventSet.m:282` | `odeSimulator.m:466`、`odeEventSet.m:498` | **なし**(クロージャが残る **[実機]**) |
-| `rv_X/Uoffset` LC, 大域 | `LocalController.m:78-79`, `GlobalController.m:64-65` | 書かない(定数) | LC は `getXM` のみ | — |
+| `rv_X/Uoffset` LC, グローバル制御器 | `LocalController.m:78-79`, `GlobalController.m:64-65` | 書かない(定数) | LC は `getXM` のみ | — |
 | `l_isConnect` 機器 | `Component.m:119` | `odeEventSet.m:497` | `Comp/gda.m:34`, `odeSimulator.m:447,652` | **なし**(解列中に終わると `false` のまま **[実機]**、次の実行で上書き) |
 | `l_isConnect` LC | `LocalController.m:81` | `odeEventSet.m:497` | **読まない** | なし |
-| `l_isConnect` 大域 | `GlobalController.m:67` | `odeSimulator.m:418` | `:440,503,691` | **`onCleanup` で復元**(`:180`、`F6:626`) |
+| `l_isConnect` グローバル制御器 | `GlobalController.m:67` | `odeSimulator.m:418` | `:440,503,691` | **`onCleanup` で復元**(`:180`、`F6:626`) |
 | `l_isFault` 母線 | `Bus.m:37` | `odeEventSet.m:333` | `odeSimulator.m:679` | **なし**(地絡中に終わると `true` のまま **[実機]**) |
 | `odeIteration` イベント | `odeEventSet.m:65` | `:287` | **読まない** | なし(イベントオブジェクトを書き換える) |
 
-- エラー・`Ctrl+C` 時も、後片付けは大域制御器の接続だけ。機器の `l_isConnect`、母線の `l_isFault`、オフセットは途中の値が残る(**[事実]**、エラー経路で残ることはコードから、正常終了時は実機で確認)。
+- エラー・`Ctrl+C` 時も、後片付けはグローバル制御器の接続だけ。機器の `l_isConnect`、母線の `l_isFault`、オフセットは途中の値が残る(**[事実]**、エラー経路で残ることはコードから、正常終了時は実機で確認)。
 - 残った値が他の解析に漏れる経路: `l_isConnect`, `l_isFault`, `rv_*offset` の読み手は上表のみで、線形化(`odeLinearizer`)は使わない **[事実]**(grep)。**現状で実害は確認していない**。
 - `iv_odeX` などは結果生成(`odeSimulationResult.m:286-296`)が読むが、結果生成後は読まない。
 
@@ -275,9 +275,9 @@
 
 ### 4.3 制御器の内部状態とサンプル周期
 
-- 局所・大域制御器の内部状態はすべて DAE の状態に含まれ、`persistent` やメモリは持たない。`_GUILDAobject/+controller` と `@*Controller` の grep で `sample/sampling/persistent/discrete` は 0 件 **[事実]**。
+- ローカル制御器・グローバル制御器の内部状態はすべて DAE の状態に含まれ、`persistent` やメモリは持たない。`_GUILDAobject/+controller` と `@*Controller` の grep で `sample/sampling/persistent/discrete` は 0 件 **[事実]**。
 - **サンプル周期の概念は存在しない**: 制御器はすべて連続時間。離散制御を書く枠組みもない。
-- 大域制御器の入出力は 1 機あたりスカラー 1 個に限られる(`odeSimulator.m:386-387`)。
+- グローバル制御器の入出力は 1 機あたりスカラー 1 個に限られる(`odeSimulator.m:386-387`)。
 - `odeSimulator` のネストは **機器→LC1→LC2 の 2 段に固定**(`:354-369,552,657-672`)だが、`getTM`, `getXM`, `LC/gda.m`, `all_controllers` は再帰で書かれている。`add_local_controller` は AVR→PSS の 2 段しか作らないので現状では矛盾しない(`add_local_controller.m:4-8`)。
 
 ## 5. 結果と進捗
@@ -291,12 +291,12 @@
 |---|---|
 | `rv_t` | 時刻。**区間境界は 2 回現れる** |
 | `tab_variable` | 実行時の変数表 |
-| `rm_variable` | 全変数の軌道。列は x(機器+LC)、大域 x、V、**機器の** u |
+| `rm_variable` | 全変数の軌道。列は x(機器+LC)、グローバル制御器の x、V、**機器の** u |
 | `rm_I` | `Y*V` で後計算した電流(`odeEventSet.m:422-423`)。DAE の `I` 行そのものではない |
 | `sv_bus`, `c_component` | タグ |
 | `odeResults`(Dependent) | 初回アクセスで `build_view` し `sct_view` にキャッシュ(`:127-132,218-261`) |
 
-- **結果に残らない変数**: LC の入力、母線 `I` の状態、大域の入出力。
+- **結果に残らない変数**: LC の入力、母線 `I` の状態、グローバル制御器の入出力。
 - 解列機器の x は NaN(`odeEventSet.m:418-420`)。**u は 0、LC の状態は実行値** のまま。
 - 生成の流れ: `Event2State` が行列を `table` に包み(`odeEventSet.m:425-429`)、`cell2mat` で戻し(`odeSimulationResult.m:118-120`)、`simulator_columns` で並べ替える(`:122-124`)。不一致なら `VariableMap` エラー(`:301-304`)。
 - `get_point`: 区間内は線形補間、境界は `Side` で選択(`:134-190`)。
@@ -305,7 +305,7 @@
 
 - `Plot=true` は全母線の `Vabs` を新規 figure に描き、軸は呼び出し側に返さない(`simulate.m:60-62`、`Plot.m:34-39`)。途中停止時はタイトルに明記(`Plot.m:44-50`)。
 - `Export`: `.csv/.txt/.xlsx/.xls` は横長テーブル、`.mat` は `odeResults, options, flag, output`(`Export.m:19-27`)。
-  - **LC・大域制御器の状態はどちらにも含まれない**(`Export.m:35-49`)。`.mat` にも `rm_variable`, `tab_variable` はない。
+  - **LC・グローバル制御器の状態はどちらにも含まれない**(`Export.m:35-49`)。`.mat` にも `rm_variable`, `tab_variable` はない。
   - 拡張子の検査はシミュレーション **完了後**。`Export="a.json"` は計算後に `ExportFormat` で落ち、**結果を失う** **[実機]**(`simulate.m:63-67`)。
 
 ### 5.3 `odeProgress` と `TimeLimit`
@@ -373,7 +373,7 @@
 
 ### 6.3 `F6` のカバー範囲
 
-**カバー済み**: 結果構造、変数表、`get_point`、`flag/output`、Name-Value の非破壊性、`TimeLimit`、v3 名、未知名、`Plot/Export`、地絡、解列(発電機、負荷、大域)、オフセット(時刻 0・途中・解列中・1 回限り)、入力(数値、関数、順序、合算)、範囲外、複数イベント、繰り返し実行、AVR/PSS/LQR、AGC(1 台・2 台)、Hz、大系統の静止区間、ソルバー停止、`PhaseFailed`。
+**カバー済み**: 結果構造、変数表、`get_point`、`flag/output`、Name-Value の非破壊性、`TimeLimit`、v3 名、未知名、`Plot/Export`、地絡、解列(発電機、負荷、グローバル制御器)、オフセット(時刻 0・途中・解列中・1 回限り)、入力(数値、関数、順序、合算)、範囲外、複数イベント、繰り返し実行、AVR/PSS/LQR、AGC(1 台・2 台)、Hz、大系統の静止区間、ソルバー停止、`PhaseFailed`。
 
 **未テスト**
 
@@ -382,13 +382,13 @@
 - `FaultBus/TripUnit/OffsetUnit/OffsetState` の誤指定、タグ重複、他系統のイベント、古いイベント
 - スカラーの fault / trip / input
 - フォールバック経路の設定反映、`UnfeasibleDAE`、`decic` 失敗
-- 解列・地絡で終わる実行後の内部状態(`F6:626` は大域のみ)
+- 解列・地絡で終わる実行後の内部状態(`F6:626` はグローバル制御器のみ)
 - 系統全体で組み立てた `getODEJacobian` の精度(`jacobian_error` はモデル単体のみ、`test_F7_linearization.m:135,149`)。解列・地絡時も含む
 - LC が駆動する入力への入力イベント・AGC 出力
-- 被制御機解列時の大域制御器(`u_connect`)
+- 被制御機解列時のグローバル制御器(`u_connect`)
 - `t0≠0` と `Progress="dialog"/"disp"` の表示(F6 は `"none"` が基本)
 - `Export` の `.xlsx` と部分結果
-- 局所制御器タグの `TripUnit`
+- ローカル制御器タグの `TripUnit`
 
 ## 7. API 決定事項・コメントと実装の乖離
 
@@ -401,11 +401,11 @@
 | 5 | `SolverOptions` は `Solver` と一致が必要 | 不一致でも黙って `SolverOptions` 側に合わせる | `odeSimulator.m:30-31` **[実機]** |
 | 6 | 互換コードのフックは `% COMPAT(v3)` 付き 1 行 | `simulate.m:54` は準拠。`odeSimulator.m:81,108,109` は 3 行(プロパティ+アクセサ)。性質上やむを得ないが例外 | 左記 |
 | 7 | fault / trip / input は `t_start` から `t_end` まで | スカラーは次の境界まで | `odeEventSet.m:29-31` **[実機]** |
-| 8 | `TripUnit` は機器か大域制御器 | LC のタグも受理、未知タグも無視 | `odeEventSet.m:47,354` |
-| 9 | `Export` は全軌道(`all trajectories`) | LC・大域の状態がない | `odeSimulationResult.m:15-16`, `Export.m:35-49` |
+| 8 | `TripUnit` は機器かグローバル制御器 | LC のタグも受理、未知タグも無視 | `odeEventSet.m:47,354` |
+| 9 | `Export` は全軌道(`all trajectories`) | LC・グローバル制御器の状態がない | `odeSimulationResult.m:15-16`, `Export.m:35-49` |
 | 10 | 解列機器の状態は NaN | LC の状態と u は対象外 | `odeSimulationResult.m:46`, `odeEventSet.m:409-420` |
-| 11 | 大域制御器の入力は機器の **出力** | 実装は機器の **状態** を名前で読む | `GlobalController.m:3-6,27` vs `odeSimulator.m:386` |
-| 12 | 大域制御器の V, I は `zeros(2,1)` | 実行時は `[]`。ヤコビアンの列順 `[Axx,Bxv,Bxu,Bxi]` は V, I が空のときだけ整合 | `GlobalController.m:34-36` vs `odeSimulator.m:449,514,517` |
+| 11 | グローバル制御器の入力は機器の **出力** | 実装は機器の **状態** を名前で読む | `GlobalController.m:3-6,27` vs `odeSimulator.m:386` |
+| 12 | グローバル制御器の V, I は `zeros(2,1)` | 実行時は `[]`。ヤコビアンの列順 `[Axx,Bxv,Bxu,Bxi]` は V, I が空のときだけ整合 | `GlobalController.m:34-36` vs `odeSimulator.m:449,514,517` |
 | 13 | `time` は `[t0,tend]` | `[]` も可、3 要素以上は黙って先頭 2 個 | `simulate.m:42`, `getTimeSpan.m:13` |
 | 14 | `SeparateComplexParts` の説明 | JSON の説明が `'MaxStep' option` のまま | `TimeSim.json:19` |
 | 15 | `TimeLimit` の説明「超過で終了」 | 区間ごと・部分結果を返す | `TimeSim.json:34`, `odeSimulator.m:50-52` |
@@ -467,7 +467,7 @@
 | H1 | **`Solver` 単独指定が黙って無視され、`result.options` には指定どおり記録される** | §3.5 **[実機]** | 既定の `SolverOptions` を `Solver` から決め、不一致はエラーにする |
 | H2 | **フォールバック経路(解列の開始区間など)で `Solver`, `SolverOptions`, `TimeLimit`, 解析ヤコビアン, 進捗がすべて無視される** | §3.5 **[実機]** | `decic` の結果を `o.InitialValue` に入れて同じ `ode` オブジェクトで解き直す |
 | H3 | **`FaultBus/TripUnit/OffsetUnit/OffsetState` の誤記が無外乱の成功結果になる** | §2.4 **[実機]** | `validate_input` を全種類へ拡張する |
-| H4 | **LC が駆動する入力へのイベントと大域制御器の出力が黙って上書きされる** | §3.4 **[実機]**、`Comp/gda.m:30` | 加算する仕様か、検出してエラーかを決める |
+| H4 | **LC が駆動する入力へのイベントとグローバル制御器の出力が黙って上書きされる** | §3.4 **[実機]**、`Comp/gda.m:30` | 加算する仕様か、検出してエラーかを決める |
 | H5 | **既定 `TimeLimit=10` 秒で停止しても無通知で部分解を返す** | §5.3 **[実機]** | `flag≠1` で警告を出す。既定値の見直し |
 
 ### 中
@@ -482,11 +482,11 @@
 | M6 | 機器の `l_isConnect`、母線の `l_isFault`、オフセットが実行後も残る(「モデルを変更しない」原則に反する) | §4.1 **[実機]** | `onCleanup` で全部復元、または `ctx` へ移す |
 | M7 | 区間内の例外で完了済み区間を失う | §5.4 | `flag=-1` の部分結果に統一するか、例外に部分結果を添える |
 | M8 | `Export` の拡張子エラーが計算後で、結果を失う | §5.2 **[実機]** | 計算前に検査 |
-| M9 | `Export` に LC・大域の状態がない | §5.2 | `rm_variable` を基に書き出す |
+| M9 | `Export` に LC・グローバル制御器の状態がない | §5.2 | `rm_variable` を基に書き出す |
 | M10 | 密行列の `EM/RM/Y/J/M` | §8.1 | 実測のうえ疎行列・添字代入へ(性能課題の本命) |
 | M11 | 右辺内の `ismember`, `cellfun` | §8.2 | 区間開始時に前計算 |
 | M12 | `decic` の失敗が無視され、微分状態も黙って動く | §3.5 | `exitFlag` の確認と、緩和時の通知 |
-| M13 | 大域制御器の入力の説明(出力)と実装(状態)が違い、スカラー前提 | §7 #11, §4.3 | 仕様を決めて統一 |
+| M13 | グローバル制御器の入力の説明(出力)と実装(状態)が違い、スカラー前提 | §7 #11, §4.3 | 仕様を決めて統一 |
 | M14 | ブランチ開放イベントがなく `Ymat` が固定 | §2.1 | 区間別 `Ymat` の設計(機能追加) |
 
 ### 低
