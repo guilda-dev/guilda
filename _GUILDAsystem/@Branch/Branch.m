@@ -14,6 +14,9 @@ classdef Branch < PowerSystemModel
 % - Refers to its two end buses (`a_Bus`, from and to), but is not their parent and does
 %   not own their voltages. The end voltages and currents it shows are derived from the
 %   buses. The order of `a_Bus` is the row and column order of the 2x2 matrix.
+% - struct(br) is the LayerPackage struct with one more field, `cm_Y`: the 2x2 matrix of
+%   get_admittance_matrix. A network snapshot (struct(net, false)) thus carries the
+%   admittance of every branch, also of a branch class of your own; ResultPF reads it.
 % - Has no states and no function-handle cache. It takes part in the simulation only
 %   through the admittance matrix built when an analysis starts.
 % - Created only by `PowerNetwork.add_branch`; only the network sets and clears
@@ -109,6 +112,9 @@ classdef Branch < PowerSystemModel
     end
 
 %% Methods
+    methods(Hidden)
+        [out, sct_visited] = struct(obj, l_disp, s_header, sct_visited)
+    end
     methods(Access={?PowerNetwork})
         initialize(obj)
     end

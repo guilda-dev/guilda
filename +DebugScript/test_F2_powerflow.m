@@ -301,8 +301,8 @@ assert(error_id(@() net.calculate_powerflow(Export="pf.csv")) ~= "")
 assert(error_id(@() net.initialize(Method="powerflow", Export="pf.csv")) ~= "")
 
 
-%% Branch flows of the result use the admittance of each branch class
-% ResultPF は枝のアドミタンスを struct のクラス名と dynamics パラメータから求める。各クラスの get_admittance_matrix と一致すること
+%% Branch flows of the result use the admittance matrix in the snapshot
+% Branch.struct はスナップショットに枝のアドミタンス行列 cm_Y を加え、ResultPF はそれで枝潮流を求める
 net = PowerNetwork();
 for i = 1:4
     net.add_bus();
@@ -324,6 +324,26 @@ for k = 1:numel(net.a_Branch)
     I_ft = br.get_admittance_matrix() * cv_V(iv);
     assert(norm([res.tab_branch{k,"Ifrom"}; res.tab_branch{k,"Ito"}] - I_ft) < 1e-12, string(class(br)))
 end
+% スナップショットの cm_Y は get_admittance_matrix と同じ (2 度目に出会う枝はパスのまま)
+sct = struct(net, false);
+for k = 1:numel(net.a_Branch)
+    assert(isequal(sct.a_Branch{k}.cm_Y, net.a_Branch{k}.get_admittance_matrix()))
+end
+assert(isequal(struct(net.a_Branch{1}).cm_Y, net.a_Branch{1}.get_admittance_matrix()))
+[s_path, ~] = net.a_Branch{1}.struct(false, "x", struct("a_obj", {{net.a_Branch{1}}}, "sv_path", "net.a_Branch{1}"));
+assert(s_path == "net.a_Branch{1}")
+% 利用者の枝クラス: ResultPF はクラス名ではなく cm_Y を使う (クラス名を変えても同じ潮流、cm_Y を変えれば潮流も変わる)
+sct_user = sct;
+sct_user.a_Branch{1}.class = "user.MyBranch";
+res_user = ResultPF(tab_pf, cm_Y, sct_user, struct("flag", 1));
+assert(isequal(res_user.tab_branch, res.tab_branch))
+sct_user.a_Branch{1}.cm_Y = 2*sct_user.a_Branch{1}.cm_Y;
+res_user = ResultPF(tab_pf, cm_Y, sct_user, struct("flag", 1));
+assert(abs(res_user.tab_branch{1,"Ifrom"} - 2*res.tab_branch{1,"Ifrom"}) < 1e-12)
+% cm_Y のない struct (Branch.struct を通らないもの) では NaN
+sct_user.a_Branch{1} = rmfield(sct_user.a_Branch{1}, "cm_Y");
+res_user = ResultPF(tab_pf, cm_Y, sct_user, struct("flag", 1));
+assert(isnan(res_user.tab_branch{1,"Pfrom"}) && ~any(isnan(res_user.tab_branch{2,"Pfrom"})))
 % 結果は系統の後の編集で変わらない
 net.a_Branch{1}.tab_parameter.dynamics.X = 0.5;
 assert(res.sct_network.a_Branch{1}.tab_parameter.dynamics.X == 0.1)

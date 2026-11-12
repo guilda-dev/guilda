@@ -52,8 +52,8 @@
 - 新しいプロパティ: `tab_PFcondition`、`cm_Y`、`sct_network`(すべて SetAccess=private)。
 - `ResultBase` には `[]` を渡し、`s_network` は `ResultPF` が設定します。**`ResultBase` は変えていません**(ヘルプの例だけ `Format="GUILDAorigin"` を加えました)。
 - **`tools.distribute_power` の変更:** スナップショットの母線(struct)も受け付けるようにしました。内部の `group` が struct なら `tab_parameter.(グループ名)` を読みます。オブジェクトでの動作は変わりません。
-- **枝のアドミタンス:** スナップショットのクラス名と dynamics パラメータから、`@ResultPF/private/branch_admittance.m` で計算します。式は `branch.pi`・`pi_transformer`・`T`・`two_winding_transformer` の `get_admittance_matrix` と同じで、一致は F2 のテスト「Branch flows of the result use the admittance of each branch class」で確かめています。
-  **要判断:** 式が枝のクラスと 2 か所にあります。また、利用者が作った枝のクラスは NaN の潮流になります。代わりに、系統が枝ごとの 2×2 のアドミタンス行列をスナップショットに加える方法があります(式は 1 か所、利用者の枝のクラスも動きます。ただしスナップショットが `struct(net, false)` そのものではなくなります)。
+- **枝のアドミタンス(案 C、ユーザーの決定、2026-11-12):** `Branch` が `struct` を上書きし(`LayerPackage.struct` と同じ引数 `l_disp`・`s_header`・`sct_visited`、Hidden)、`LayerPackage.struct` の結果にフィールド `cm_Y`(`get_admittance_matrix` の 2×2 複素行列)を加えます。`ResultPF` はスナップショットの `cm_Y` で枝潮流を求めるので、式は枝のクラスだけにあり、利用者が作った枝のクラスでも潮流が求まります。`cm_Y` のない struct の枝は NaN です。最初の実装の `@ResultPF/private/branch_admittance.m`(クラス名ごとの式)は削除しました。
+  テストは F2「Branch flows of the result use the admittance matrix in the snapshot」で、4 つの組み込みクラスの一致、2 度目に出会う枝がパスのままであること、クラス名を変えても `cm_Y` で潮流が決まること(利用者の枝クラスの代わり)を確かめています。利用者の枝クラスそのものは、`add_branch` が `GUILDA.keymap` に登録されたキーしか受け付けないため、テストでは作っていません。
 - `ResultPF.Export` の JSON は保存した `tab_PFcondition` と `cm_Y` を使います。持たない結果(`ResultPF()`、平衡点からの結果)では、これまでどおり `GUILDA:ResultPF:NoNetwork` です(本文を新しい形に合わせました)。
 - **動作の変化:** `initialize` の FixedInput と平衡点からの `ResultPF` も、枝潮流と運転制約の違反を持つようになりました(以前は空)。`r_elapsed` はソルバーの時間で、結果の組み立ては含みません。
 

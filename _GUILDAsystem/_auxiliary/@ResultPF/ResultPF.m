@@ -13,9 +13,9 @@ classdef ResultPF < ResultBase
 % - `tab_branch` has the branch tags as row names. "from" is the first bus of the branch,
 %   "to" the second. Pfrom, Qfrom, Pto, Qto: power flowing into the branch at each end;
 %   Ifrom, Ito: current phasors into the branch; Ploss, Qloss: losses of the branch (sum
-%   of both ends). The admittance of each branch comes from its class and its dynamics
-%   parameters in the snapshot (branch.pi, branch.pi_transformer, branch.T,
-%   branch.two_winding_transformer); a branch of another class gets NaN flows.
+%   of both ends). The admittance of each branch is the field cm_Y of the branch in the
+%   snapshot (Branch.struct adds it from get_admittance_matrix), so every branch class,
+%   also one of your own, gets its flows.
 % - `cm_Vhistory` has one column per iteration, or per ODE step ("dynamic").
 % - `tab_violation` records the operating limits (tab_parameter.operation of the
 %   snapshot) that the solution violates by more than Tolerance; the power flow itself
