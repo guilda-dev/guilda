@@ -1,6 +1,6 @@
 # `simulate` と `SolverODE` の再設計(仕様)
 
-ブランチは `docs/simulate-redesign-spec` です。調査の基準コミットは `9940b9d6` で、2026-11-12 の利用者の回答(§0.2)を反映した版の基準は `78cd96a1`(`refactor/design-alignment`)です。**この文書は仕様で、コードは変えていません。** §7 の手順でサブセッションに分けて実装します。
+ブランチは `docs/simulate-redesign-spec` です。調査の基準コミットは `9940b9d6` で、2026-11-12 の利用者の回答(§0.2, §0.3)を反映した版の基準は `c3dc7b05`(`refactor/design-alignment`)です。**この文書は仕様で、コードは変えていません。** §7 の手順でサブセッションに分けて実装します。
 
 **根拠の区別**
 
@@ -42,6 +42,16 @@
 | Q12 | `gui` を `LayerPackage` に移す | §2.5 |
 | Q13 | シナリオは系統と一緒に管理する。`PowerNetwork.import_csv` の読むフォルダに `scenario/` があれば、シナリオを `<タグ>.json` で読み、`export_csv` も書く。単独のシナリオの読み込み(`Scenario.import_csv`)はなくす | §1.7, §2.8, §6, §7, §8 |
 | Q14 | `simulate` の `Export` オプションは削除。利用者は `result.export(...)` を呼ぶ。`ResultODE.Export` は `export` に改名(潮流計算の作業も同じ変更をする) | §1.6, §2.1, §5.4, §6, §7 |
+
+### 0.3 追加の回答(2026-11-12)
+
+| # | 回答 | 反映した節 |
+|---|---|---|
+| R1 | 出力 y は DAE の変数ではないので計算し直す。`ResultODE` のコンストラクタが計算してプロパティに持つ。`Format="struct"` は繰り返し実行の負担を減らすためのものなので、y を計算せず、`.y` も持たない | §5.2, §5.3, §8.2 |
+| R2 | `Format="struct"` の table に `Time` の列は置かない。時間は `sol.t` だけ | §5.3 |
+| R3 | **シナリオは関数ハンドルを一切持たない。** 持つのは外乱の種類、時間、対象、時系列のデータだけ。`Judge` を削除し、関数の `InputValue` は時系列のデータ(`[t, 値]`、`SolverODE` が補間)か一定値に置き換える。シナリオの JSON は単純なデータだけになり、`Judge` の項目、`ScenarioJudgeNotSaved`、`ScenarioFunctionHandle` はなくなる | §2.2, §2.4, §2.8, §2.9, §2.10, §3.4, §4.1, §6, §7, §8 |
+| 改名 | `PowerNetwork.import_csv` → `PowerNetwork.import`、`export_csv` → `export`(データが CSV だけではなくなるため)。`import` は MATLAB の組み込み関数なので、実装の最初に R2026a で定義と呼び出しを確かめ、だめなら代わりの名前にする | §2.11, §6, §7, §8 |
+| 説明 | `SolverOptions` とは何か、`Method` はあるか、の説明を加える | §2.1, §2.7 |
 
 ## 1. 現状の構造: `SolverODE` が系統を読む箇所
 
@@ -184,6 +194,11 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
 
   `TimeLimit` の設定値が正でないときは `Inf` にします(現行 `get_options.m:38-40` と同じ)。設定ファイルの値は `GUILDA.setting` の検査(type、options)に任せます。
 - **`SolverOptions` と `MaxStep`, `InitialStep` の優先順位 [提案]:** 呼び出しの `MaxStep` / `InitialStep` > 呼び出しの `SolverOptions` の値 > `GUILDA.setting` の `MaxStep` / `InitialStep` > ソルバーの既定。呼び出しで `SolverOptions` を渡したときは、設定ファイルの `MaxStep` / `InitialStep` を当てません(利用者が渡したオブジェクトの値を設定ファイルが黙って変えないため)。`SolverOptions` のクラスが `Solver` と合わないときは現行どおり止まります(`@SolverODE/private/validate_options.m` の検査を `simulate` へ移す)。
+- **`Solver` と `SolverOptions`(と `Method` がないこと)[決定、説明]:**
+  - `Solver` は積分のアルゴリズムを選びます(`"ode15s"` / `"ode23t"`)。潮流計算の再設計と同じく「`Solver` = アルゴリズム」の規則です。
+  - `SolverOptions` は、選んだソルバーの `matlab.ode.Options` オブジェクト(`matlab.ode.options.ODE15s` など)で、`MaxStep`、`InitialStep`、`MaxOrder`、`BDF` などそのソルバー固有の設定を持ちます。呼び出しだけで渡します。
+  - `simulate` に別の `Method` オプションはありません。`Method` という名前は `initialize` の平衡点の求め方などに使っており、時間応答ではアルゴリズムの選択も `Solver` です。
+  - **重なり:** `MaxStep` と `InitialStep` は `SolverOptions` のフィールドでもあるので、`simulate` の Name-Value(と設定)の `MaxStep` / `InitialStep` と重なります。設定ファイルに保存できるのは後者だけ(`matlab.ode.Options` は JSON に書けない)なので、よく使う 2 つだけを別の名前でも受け、重なりは下の優先順位で解きます。両方を与えたときはエラーにせず、Name-Value の `MaxStep` / `InitialStep` が勝ちます(`SolverOptions` を使い回しながら刻みだけ変えられるように)。
 - **将来の固定刻みソルバー [決定 Q6 の背景]:** Y 法を手本にした自作ソルバーを加えるときは、`Solver` の選択肢を増やし、`SolverODE.solve` の中で `ode` オブジェクトの代わりにそのソルバーを使います。`sct_dae` などのデータの約束(§3)は MATLAB の `ode` に依存しないように作るので、モデル側の変更は要りません。そのソルバーの設定を `SolverOptions` で渡すかどうかは、そのときに決めます(`opt.SolverOptions` の型を `matlab.ode.Options` から広げる)。
 - **検証関数の置き場所 [提案]:** `mustBeScenarioOf`、`mustBePositiveOrNaN`、`mustBeProgress`、`mustBePlotFcn` は `@PowerNetwork/private/` に置きます。`mustBeSimulationTime` は今 `@Scenario/private/` にあり、`PowerNetwork` からは呼べないので、`_GUILDAsystem/_auxiliary/SystemTools/` 直下へ移して両方から使います。`mustBePlotFcn` は `refactor/powerflow-structure` の `calculate_powerflow` も使う名前なので、統合の順で重複しないよう、後から入る側が既存のものを使います(§7 の注意)。
 - **`mustBeScenarioOf` のエラー [提案]:** `GUILDA:PowerNetwork:ScenarioNotFound`(既存のキー)。本文に系統のシナリオのタグを最大 10 個並べ、`net.add_scenario` を案内します。シナリオがない系統では「`net.add_scenario("name")` で作る(`Time` の既定は `[0, 10]`)」と案内します。
@@ -228,7 +243,6 @@ function sc = add_scenario(obj, s_tag, opt)
         s_tag (1,1) string {mustBeNonzeroLengthText}   % Tag of the new scenario; a number is added when a child of the network has it.
         opt.Time (1,2) double {mustBeSimulationTime}   % [s] Simulation time [t0, tend]. Default: From.Time, else [0, 10].
         opt.Description (1,1) string   % Free text. Default: From.Description, else "".
-        opt.Judge (1,1) function_handle   % verdict = Judge(result). Default: From.Judge, else @Scenario.out_of_step.
         opt.From Scenario {mustBeScalarOrEmpty}   % Scenario to copy the disturbances and settings from (of this or another network).
     end
     arguments (Output)
@@ -240,6 +254,7 @@ function sc = add_scenario(obj, s_tag, opt)
 - `From` の外乱は、この系統に対して `validate` します(失敗すると何も作りません)。`From` は変わりません。**移動**は `net2.add_scenario(tag, From=sc)` と `net1.remove_scenario(tag)` の 2 つの呼び出しです [決定 Q5]。
 - 平衡点は古くならず、`log_edit` も呼びません。
 - 現行の `add_scenario(sc)`(物体またはセルを受ける)はなくなります。
+- `Judge` の引数はありません [決定 R3]。判定は結果に対して行います(§2.9)。
 
 ### 2.3 `PowerNetwork.remove_scenario`
 
@@ -266,7 +281,6 @@ classdef (Sealed) Scenario < LayerPackage
     end
     properties (Access=public) % Settings
         Time (1,2) double {mustBeSimulationTime} = [0, 10]      % [s] Simulation time [t0, tend] of net.simulate.
-        Judge (1,1) function_handle = @Scenario.out_of_step     % (unchanged)
         Description (1,1) string = ""                           % (unchanged)
     end
     properties (Dependent) % Parameter
@@ -301,14 +315,16 @@ classdef (Sealed) Scenario < LayerPackage
         add_from_json_struct(obj, sct, s_file)    % Settings and disturbances from <tag>.json.
     end
     % add_fault, add_trip, add_open_branch, add_offset, add_input, add_disturbance,
-    % remove_disturbance, judge, out_of_step: unchanged signatures
+    % remove_disturbance: unchanged signatures; add_input, add_disturbance: InputValue is data (section 2.10)
+    % judge, out_of_step: removed (section 2.9)
     % compile: new signature (section 3.4)
 end
 ```
 
 - **作り方は `add_scenario` だけ** [提案]。コンストラクタは `Access={?PowerNetwork}` です(#119 のモデルの物体と同じ)。`Scenario("x")` の直接の作成は `MATLAB:class:MethodRestricted` になります。
 - **`Time` [決定 Q2]:** 既定は `[0, 10]` で、空は許しません。外乱の時間幅から決める規則(`compile.m:69-78`、`private/getTimeSpan.m` の時間が空の分岐)はなくします。時間の外にある外乱の警告 `GUILDA:Scenario:OutsideTimeSpan` は残します。
-- **削除:** `Options`, `set.Options`, `l_compat`, `copy`, `string.m`(`LayerPackage.string` と同じ)、`import_csv`, `export_csv`(§2.8)、`validate(obj, net)` の `net` 引数。`validate` は `obj.a_PowerNetwork` に対して検査します。
+- **関数ハンドルを持たない [決定 R3]。** シナリオが持つのは、外乱の種類、時間、対象(タグと状態・入力の名前)、値(数値、時系列)と、`Time`, `Description` だけです。`struct(net, false)` と JSON にそのまま書けます。
+- **削除:** `Judge`, `judge`, `out_of_step`(§2.9)、関数の `InputValue`(§2.10)、`Options`, `set.Options`, `l_compat`, `copy`, `string.m`(`LayerPackage.string` と同じ)、`import_csv`, `export_csv`(§2.8)、`validate(obj, net)` の `net` 引数。`validate` は `obj.a_PowerNetwork` に対して検査します。
 - **改名:** `sc.s_tag = "new"` は `LayerPackage.set.s_tag` を通り、兄弟と重なれば番号を足します(他の層と同じ)。`log_edit` は何もしないので、`PowerNetwork.handle_edit` の `n_revOPF`(タグの編集で増える、`@PowerNetwork/handle_edit.m:66`)も増えません。
 - **`LayerPackage.log_edit` の上書き [提案]:** `log_edit` は `LayerPackage` の protected メソッド(`@LayerPackage/LayerPackage.m:74`)なので、`Scenario` が同じ名前の protected メソッドを定義して上書きします。[未確認] `set.s_tag` からの呼び出しが `Scenario` 版になることは、実装時に確かめます。
 
@@ -320,14 +336,14 @@ end
 |---|---|
 | `LayerPackage.set.s_tag`(`LayerPackage.m:88-106`) | シナリオも兄弟になります。母線などのタグとシナリオのタグは同じ名前空間です [決定 3] |
 | `LayerPackage.disp_tree`(`disp_tree.m:23`) | 既定の `sr_ignore = "Parameter"` のままでシナリオを表示します。行は `case1 @Scenario` |
-| `LayerPackage.struct`(`struct.m`) | `a_Scenario` はこれまで `auxiliary` で `"out of target."` でした。`LayerPackage` になると再帰して `class`, `s_tag`, `a_PowerNetwork`(訪問済みのパス), `tab_disturbance`, `Time`, `Judge`, `Description`, `tab_parameter` を持ちます。関数ハンドルはそのまま入ります。`ResultPF` と `ResultODE` のスナップショット `struct(net, false)` にも入ります |
+| `LayerPackage.struct`(`struct.m`) | `a_Scenario` はこれまで `auxiliary` で `"out of target."` でした。`LayerPackage` になると再帰して `class`, `s_tag`, `a_PowerNetwork`(訪問済みのパス), `tab_disturbance`, `Time`, `Description`, `tab_parameter` を持ちます。関数ハンドルはありません [決定 R3]。`ResultPF` と `ResultODE` のスナップショット `struct(net, false)` にも入ります |
 | `LayerPackage.table` | `tab_parameter`(空の表) |
 | `LayerPackage.string` | `s_tag`。`Scenario/string.m` は削除 |
 | `PowerSystemModel.gui`(`@PowerSystemModel/gui.m`) | `gui` を `LayerPackage` へ移し、`gui_content` の既定(空のページ)を `LayerPackage` に置きます [決定 Q12]。`f_model` が `Scenario` の protected の `parent`, `children`, `gui_content` を読めるようにするためと、カードの「Open in new window」(`build_navigation.m:32`、`UserData.gui()`)がシナリオでも動くようにするためです。`Parameter` も `gui` を持ちますが、カードに出ないので影響はありません |
-| `DrawerModelGUI/render.m:76-85` | `build_parameter_tab` を `a_Parameter` を持つ物体だけで作ります(`isprop(a_target, "a_Parameter")`)。シナリオはパラメータのタブなしで、`gui_content` のページ(Disturbances: `tab_disturbance`、Settings: Time, Description, Judge)だけを表示します |
+| `DrawerModelGUI/render.m:76-85` | `build_parameter_tab` を `a_Parameter` を持つ物体だけで作ります(`isprop(a_target, "a_Parameter")`)。シナリオはパラメータのタブなしで、`gui_content` のページ(Disturbances: `tab_disturbance`、Settings: Time, Description)だけを表示します |
 | `DrawerModelGUI/private/build_navigation.m:18` | `sv_kind` に `"Scenario"` を加え、`gui_palette.m` に色を加えます |
 | `PowerNetwork.gui_content`(Summary の表) | `Item` に `"Scenario"` と個数を加えます |
-| `PowerNetwork.export_csv` / `import_csv` | `scenario/` サブフォルダを読み書きします(§2.8) |
+| `PowerNetwork.export` / `import`(旧 `export_csv` / `import_csv`、§2.11) | `scenario/` サブフォルダを読み書きします(§2.8) |
 | 系統の複製 | `PowerNetwork` に複製のメソッドはありません [事実]。シナリオの複製は `add_scenario(tag, From=sc)` |
 | `PowerNetwork.handle_edit` | 呼ばれません(`Scenario.log_edit` が何もしない) |
 | `get_variable_map`、解析 | `a_Bus` などを直接読むので影響なし |
@@ -382,7 +398,9 @@ end
 
 ### 2.8 シナリオのファイル(`scenario/<タグ>.json`)[決定 Q13、提案]
 
-**フォルダ:** `PowerNetwork.export_csv(path)` が書くフォルダに `scenario/` を加えます。
+`PowerNetwork.import_csv` / `export_csv` は `import` / `export` に改名します(§2.11)。この節は新しい名前で書きます。
+
+**フォルダ:** `PowerNetwork.export(path)` が書くフォルダに `scenario/` を加えます。
 
 ```
 <path>/network/parameter.csv
@@ -392,13 +410,13 @@ end
 <path>/scenario/<scenario tag>.json      ← 追加: シナリオ 1 つに 1 ファイル
 ```
 
-- `export_csv` は `net.a_Scenario` の各シナリオを `scenario/<s_tag>.json` に書きます。シナリオがなければ `scenario/` を作りません。`Overwrite=true` で消すサブフォルダに `scenario` を加えます(`export_csv.m:57`)。タグは `isvarname` なので、そのままファイル名に使えます。
-- `import_csv(path, ...)` は、母線・ブランチ・機器を作った後、`initialize` の前に、`scenario/*.json` を名前の順に読み、`net.add_scenario(<ファイル名>, Time=, Description=, Judge=)` で作ってから外乱を足します。外乱の検査(タグがこの系統にあるか)は `add_disturbance` と同じです。JSON の構文と項目の検査は、ほかの表と同じく系統を変える前に行います。外乱のタグの検査は機器を作った後でないとできないので、そこで失敗すると系統は途中まで作られた状態で止まります(`import_csv` の既存の説明「A later failure ... can leave obj partly built」と同じ扱い)。
-- **同梱の系統:** 同梱の系統クラスはコンストラクタで `import_csv(..., Network=obj)` を呼ぶので、そのフォルダに `scenario/` を置けば、系統を作るとシナリオも付きます。
+- `export` は `net.a_Scenario` の各シナリオを `scenario/<s_tag>.json` に書きます。シナリオがなければ `scenario/` を作りません。`Overwrite=true` で消すサブフォルダに `scenario` を加えます(`export_csv.m:57`)。タグは `isvarname` なので、そのままファイル名に使えます。
+- `import(path, ...)` は、母線・ブランチ・機器を作った後、`initialize` の前に、`scenario/*.json` を名前の順に読み、`net.add_scenario(<ファイル名>, Time=, Description=)` で作ってから外乱を足します。外乱の検査(タグがこの系統にあるか)は `add_disturbance` と同じです。JSON の構文と項目の検査は、ほかの表と同じく系統を変える前に行います。外乱のタグの検査は機器を作った後でないとできないので、そこで失敗すると系統は途中まで作られた状態で止まります(現行 `import_csv` の説明「A later failure ... can leave obj partly built」と同じ扱い)。
+- **同梱の系統:** 同梱の系統クラスはコンストラクタで `import(..., Network=obj)`(現行 `import_csv`)を呼ぶので、そのフォルダに `scenario/` を置けば、系統を作るとシナリオも付きます。
 - **順序:** シナリオの順(`a_Scenario`)はファイル名の順になり、追加した順は保存しません。
 - **単独の読み込みはなくします。** `Scenario.import_csv` と `Scenario.export_csv` は削除し、読み書きは `@PowerNetwork/private/read_scenarios.m`・`write_scenarios.m`(`Scenario` の `to_json_struct` / `add_from_json_struct` を呼ぶ)にします。
 
-**JSON の内容 [要確認]**
+**JSON の内容 [提案、R3 で関数ハンドルを除いた形]**
 
 ```json
 {
@@ -406,24 +424,103 @@ end
   "version": 1,
   "Description": "fault B008, EL003 opened",
   "Time": [0, 20],
-  "Judge": "Scenario.out_of_step",
   "Disturbances": [
     {"Tag": "fault",  "TimeSpan": [0.10, 0.17], "FaultBus": ["B008"]},
     {"Tag": "open",   "TimeSpan": [0.17, 20],   "OpenBranch": ["EL003"]},
     {"Tag": "trip",   "TimeSpan": [1, 2],       "TripUnit": ["B002SG1"]},
     {"Tag": "offset", "TimeSpan": 0,            "OffsetUnit": "B001SG1", "OffsetState": ["delta"], "OffsetValue": [0.1]},
-    {"Tag": "step",   "TimeSpan": [1, 1.5],     "InputUnit": "B002SG1", "InputName": ["Pmech", "Vfield"], "InputValue": [0.05, 0.01]}
+    {"Tag": "step",   "TimeSpan": [1, 1.5],     "InputUnit": "B002SG1", "InputName": ["Pmech", "Vfield"], "InputValue": [0.05, 0.01]},
+    {"Tag": "ramp",   "TimeSpan": [2, 4],       "InputUnit": "B002SG1", "InputName": ["Pmech"],
+     "InputValue": {"Time": [0, 1, 2], "Value": [[0], [0.05], [0.05]]}}
   ]
 }
 ```
 
 - タグはファイル名だけに持ち、JSON には書きません(2 か所で食い違わないため)。
 - `Disturbances` の各要素は `add_disturbance` の Name-Value と同じ名前で、空の項目は書きません。読むときは要素ごとに `sc.add_disturbance(Tag, 項目...)` を呼びます。リストは 1 つでも配列で書き、読むときは `string(...)` で列にします(`jsonencode` の 1 要素の扱いに依らないため)。
-- **`Judge`:** 名前のある関数(`func2str` が `@(` で始まらない。例 `"Scenario.out_of_step"`, `"my_judge"`)は名前だけを書き、読むときは `str2func` で戻します。項目がなければ既定(`@Scenario.out_of_step`)です。**無名関数は書かず**、`GUILDA:PowerNetwork:ScenarioJudgeNotSaved` を警告します(関数の中身と束縛した変数を保存できないため)。
-- **`InputValue` の関数ハンドル:** 書けないので、現行の CSV(`GUILDA:Scenario:CsvFunctionHandle`)と同じく `GUILDA:PowerNetwork:ScenarioFunctionHandle` で止めます(書き出しの前に全シナリオを検査し、何も書かない)。
-- 未知の項目は警告(`GUILDA:import_csv:UnknownScenarioField`)して無視します(CSV の未知の列と同じ)。`version` が読める値より大きければ止めます。
+- `InputValue` は、一定値なら数値の配列(入力名ごとに 1 つ)、時系列なら `Time` と `Value` を持つオブジェクトです(§2.10)。形で区別できるように、時系列を数値の 2 次元配列だけで書く形は使いません(`jsondecode` は 1 行の 2 次元配列とベクトルを区別しにくいため)。
+- 関数ハンドルを書く場面はありません [決定 R3]。`Judge` の項目もありません。
+- 未知の項目(古いファイルの `Judge` を含む)は警告(`GUILDA:import:UnknownScenarioField`)して無視します(CSV の未知の列と同じ)。`version` が読める値より大きければ止めます。
 
 **`_GUILDAverification` への影響 [要確認]:** IEEJ の比較スクリプト 3 つは、1 つの CSV の多数のシナリオを `Scenario.import_csv` で読んでいます(§1.7)。単独の読み込みがなくなるので、(a) それぞれの CSV を同梱の系統のフォルダの `scenario/<tag>.json` に変換するか、(b) スクリプト内の小さな読み込み関数(`_GUILDAverification` のローカル関数で、GUILDA の API ではない)で CSV から `add_scenario` と `add_disturbance` を呼ぶか、のどちらかにします。推奨は (b) です。検証の表は 1 つの CSV のほうが比べやすく、(a) では同梱の系統を作るたびに数十のシナリオが付くためです。
+
+### 2.9 判定(安定・脱調)[決定 R3、提案]
+
+`Scenario.Judge` と `sc.judge(result)` を削除し、判定は結果のメソッドにします。
+
+```matlab
+verdict = result.judge_out_of_step(Reference="slack", Threshold=360)
+```
+
+- 中身は現行の `Scenario.out_of_step(result, opt)`(`@Scenario/out_of_step.m`)そのもので、引数と出力の struct(`Verdict`, `Time`, `Units`, `MaxAngle`, `Reference`, `Threshold`)も同じです。基準のスラック母線と慣性 `M` は `sct_network` のスナップショットから読みます(§5.2)。
+- **推奨は `ResultODE` のメソッド**です。理由: 判定が読むのは結果だけ(回転子角の軌道とスナップショット)で、シナリオのデータを読みません。シナリオから関数ハンドルをなくすと、判定をシナリオに置く理由もなくなります。`Scenario.out_of_step` のような静的メソッドで残すと、シナリオのクラスに結果を読む処理が残ります。
+- 別の判定(IEEJ の比較の `judge_table4_5` など)は、利用者の関数 `v = my_judge(result)` を呼ぶだけです。GUILDA に登録の仕組みは設けません。
+- メソッドの名前は §9.2 の R6 で確認します(`judge_out_of_step` を推奨。`api-design` の動詞_名詞の形)。
+
+**`sc.Judge` / `sc.judge` を使う箇所 [事実]**
+
+| 箇所 | 使い方 | 移行 |
+|---|---|---|
+| `@Scenario/judge.m`, `Scenario.m:89, 116, 146` | 定義 | 削除 |
+| `@Scenario/out_of_step.m` | 既定の `Judge` | `@ResultODE/judge_out_of_step.m` へ移す |
+| `@Scenario/copy.m:12` | 複製 | `copy` ごと削除 |
+| `@Scenario/export_csv.m:49` | 既定以外の `Judge` を警告 | `export_csv` ごと削除 |
+| `+DebugScript/test_F31_scenario.m:235, 242, 267, 270-271` | `sc.judge(r)`、利用者の `Judge` | `r.judge_out_of_step()` と利用者の関数の直接の呼び出しに |
+| `_GUILDAverification/IEEJ_EAST10/compare_table4_3.m:73` | `sc.judge(result)` | `result.judge_out_of_step()` |
+| `_GUILDAverification/IEEJ_EAST30/compare_table4_9.m:80, 83, 87` | `sc.Judge = @(r) Scenario.out_of_step(r, Reference=..., Threshold=360)` | `result.judge_out_of_step(Reference=s_ref, Threshold=360)` |
+| `_GUILDAverification/IEEJ_WEST10/compare_table4_5.m:61, 70` | `sc.Judge = @judge_table4_5` | `v = judge_table4_5(result)`(関数の中の `Scenario.out_of_step` も `result.judge_out_of_step`) |
+| `_GUILDAverification/IEEJ_WEST30/compare_table4_13.m:91` | `sc.judge(result)` | `result.judge_out_of_step()` |
+| ヘルプの例(`Scenario.m`, `ResultODE.m`, `simulate.m`)、`feature-simulation.html`、`v4-migration.md` §1.18 | 説明 | 書き換え |
+
+### 2.10 入力の時系列(`InputValue`)[決定 R3、提案]
+
+関数の `InputValue`(`@(t) ...`)をなくし、一定値か時系列のデータにします。
+
+| 形 | `add_input(unit, name, value, [t1 t2])` の `value` | 意味 |
+|---|---|---|
+| 一定値 | 数値のベクトル(入力名ごとに 1 つ。1 つなら全部に共通、現行どおり) | `[t1, t2]` の間、入力に足す一定値(ステップ) |
+| 時系列(行列) | `n × (1 + n_name)` の数値行列 `[t, v_1, ..., v_n]` | 1 列目は外乱の開始 `t1` からの時刻 [s](現行の関数の引数と同じ基準) |
+| 時系列(table) | 変数 `Time` と入力名の変数を持つ table | 列は名前で対応させます(順は問わない) |
+
+- **時刻の条件:** `t` は有限で狭義に増加し、`t(1) = 0` です。違えば `GUILDA:Scenario:InvalidInputSeries` で止まります。
+- **補間 [提案]:** 点の間は**線形補間**、最後の点より後は最後の値を保ちます(`t2` まで)。線形にするのは、値が区間の中で連続になり、可変刻みのソルバーが区間の中の飛びに出会わないためです。値を飛ばしたいときは、別の外乱(区間の境界)に分けます。
+- **`tab_disturbance` での持ち方:** `InputValue` の列のセルに、一定値は数値の列、時系列は `[t, v]` の行列で入れます(table で渡したものも行列にする)。関数ハンドルは入りません。
+- **`compile` の出力との対応:** 現行は `event2fhandle`(`compile.m:245-259`)が値や関数を「区間の開始からの時刻の関数」にし、同じ入力の複数の外乱を関数の和にして `c_Uoffset{j}` に入れます(`compile.m:225-238`)。新しい `compile` は関数を作らず、`sct_event(k).c_input` に入力の行ごとのデータを入れます(§3.4)。
+  - 一定値は 1 点の時系列 `t = 0`, `v` とします。
+  - 区間の開始からの時刻に直すため、`t` から `ts = 区間の開始 - 外乱の開始` を引きます(現行の `exV(t+ts)` と同じずらし)。
+  - 同じ入力の複数の外乱は、時刻の和集合の上で補間した値の和にして、1 つの時系列にします。
+- **`SolverODE` での評価:** 区間の開始で入力の行ごとに `griddedInterpolant(t, v, "linear", "nearest")`(範囲外は端の値)を 1 回作り、右辺で `e(iv_row) += F(t)` とします(現行 `getODEFunction.m:77-80` の関数の呼び出しの置き換え)。右辺のヤコビアンには入りません(現行と同じ。入力は時刻だけの関数)。
+- **JSON:** 一定値は数値の配列、時系列は `{"Time": [...], "Value": [[...], ...]}`(`Value` は時刻ごとの行)です(§2.8)。
+- **数値の違い:** 関数を時系列にした計算は、標本の取り方の分だけ現行と違います。線形の関数(例 `@(t) 0.01*t`)は 2 点の時系列で表せますが、補間の丸めの分だけ一致しないことがあります(§8.3)。
+
+### 2.11 `import_csv` / `export_csv` の改名 [決定、提案]
+
+`PowerNetwork.import_csv(path, opt)`(Static)を `PowerNetwork.import(path, opt)` に、`net.export_csv(path, opt)` を `net.export(path, opt)` に改名します。データが CSV だけではなくなる(§2.8 の JSON)ためです。引数と動作は §2.8 の追加のほかは変えません。
+
+**最初の確認(S6 の最初のコミットの前)[未確認]:** `import` は MATLAB の組み込み関数です(`which import` は `built-in (.../toolbox/matlab/general/import)`、`iskeyword('import')` は 0)。S6 は R2026a で次を確かめてから改名します。
+
+1. `classdef` の `methods (Static)` に `net = import(path, opt)` を宣言でき、`@PowerNetwork/import.m` に定義できる。
+2. コマンドウィンドウとスクリプトで `net = PowerNetwork.import(path)` が静的メソッドを呼ぶ。
+3. ほかの GUILDA の関数の中(`import` 文を使う関数を含む)と、同梱の系統クラスのコンストラクタの中の `PowerNetwork.import(path, Network=obj)` が静的メソッドを呼び、パッケージの `import` 文と衝突しない。
+4. `functionSignatures.json`、`doc`、ヘルプの生成が `PowerNetwork.import` を扱える。
+
+どれかが成り立たないときの代わりの名前は **`import_network` / `export_network`** を推奨します(対で揃えるため、`export` だけ短くはしません)。`load_network` / `save_network` は MATLAB の `load` / `save`(MAT ファイル)と紛らわしいので勧めません。`export` は組み込み関数ではありませんが、`ResultODE.export` などの結果の `export`(Q14)とは別のクラスのメソッドなので衝突しません。
+
+**改名で変える箇所 [事実: grep、`c3dc7b05`]**
+
+| 種類 | 箇所 |
+|---|---|
+| 定義 | `@PowerNetwork/import_csv.m`, `export_csv.m`(ファイル名とヘルプ)、`PowerNetwork.m` の宣言、`import_matpower.m` のヘルプの参照 |
+| メッセージのカタログ | `SystemTools/GUILDA/en/import_csv.xml`, `export_csv.xml`(ID `GUILDA:import_csv:*`, `GUILDA:export_csv:*` を `GUILDA:import:*`, `GUILDA:export:*` に。[未確認] `msg` がカタログのファイル名と呼び出し元の名前をどう対応させるかは実装時に確認) |
+| 同梱の系統クラス(コンストラクタ) | `_GUILDAobject/+network/` の `IEEE9bus`, `IEEE14bus`, `IEEE14bus_NoTap`, `IEEE14bus_lossless`, `IEEE68bus`, `IEEJ_EAST10`, `IEEJ_EAST30`, `IEEJ_WEST10`, `IEEJ_WEST30`, `Ishizaki6Bus`, `TEST31bus`, `Txt3Bus` |
+| 生成するクラスファイル | `export_csv.m` の `class_file`(書き出すクラスファイルの中の `PowerNetwork.import_csv(...)` の行) |
+| 互換の包み | `_VersionSupport/@CsvNetHandler/import.m`, `export.m`, `CsvNetHandler.m`(呼び出しの名前だけを変える。決定 5 の「他の `_VersionSupport` は触らない」の例外で、呼び先の改名に合わせる最小の変更) |
+| テスト | `test_F16_csv_io`, `test_F8_utilities`, `test_F30_governor`, `test_I91_slack_power_assignment`, `test_F31_scenario`, `test_levels.m`(節の名前) |
+| 検証 | `_GUILDAverification/IEEJ_EAST10/compare_table4_3.m`, `IEEJ_EAST30/compare_table4_9.m`, `IEEJ_WEST10/compare_table4_5.m`, `IEEJ_WEST30/compare_table4_13.m` |
+| 文書 | `_GUILDAdoc/developer/` の `api-design`, `feature-data-io`, `feature-initialize`, `feature-model-building`, `feature-simulation`, `folder-structure`、Update log、`notes/v4-migration.md`, `status.md`(過去の記録のノートは変えない) |
+| 保留中 | `_GUILDAtutorial/*.mlx`(#113 の保留に含まれるので変えない) |
+
+**利用者への影響:** 以前に `export_csv(..., ClassFile=true)` で書き出したクラスファイルは `PowerNetwork.import_csv` を呼ぶので動かなくなります(互換は設けない)。もう一度 `export` で書き出すか、その 1 行を書き換えます。
 
 ## 3. `SolverODE.solve` のデータの約束
 
@@ -521,7 +618,7 @@ function [tab_phase, sct_event] = compile(obj, sct_dae, time)
 | `iv_faultBus` | double 列 | 地絡中の母線(位置) |
 | `iv_openBranch` | double 列, 昇順 | 開放中のブランチ(位置) |
 | `iv_offset`, `rv_offset` | double 列 ×2 | この区間の開始で状態に足す値。行は `tab_variable` の x の行。**第 1 区間は空**(初期値に含める、§3.5) |
-| `c_input` | cell, k × 2 | `{iv_row, f}`: 入力の行(`tab_variable` の u の行)と、区間の開始からの時刻の関数 `f(t)`(列ベクトル)。同じ入力の複数の外乱は合計済み |
+| `c_input` | cell, k × 3 | `{iv_row, rv_t, rm_v}`: 入力の行(`tab_variable` の u の行)、区間の開始からの時刻(狭義に増加)、その時刻の値(`numel(rv_t) × numel(iv_row)`)。同じ入力の複数の外乱は合計済み。関数ハンドルはない(§2.10) |
 | `sr_event` | string 列 | 有効な外乱のタグ(進捗の表示用) |
 
 - タグから位置への変換に使うのは `sct_dae.sv_bus`, `sv_branch`, `sv_comp`, `sv_gc` です。状態と入力の名前は `tab_variable` の `Owner` と `Name` で行に変えます(現行 `compile.m:194-242` の `comp.sv_x`, `comp.sv_u` の照合と同じ結果)。
@@ -534,7 +631,7 @@ function [tab_phase, sct_event] = compile(obj, sct_dae, time)
 ```
 rv_x0 = sct_dae.rv_equilibrium
 rv_x0(x の行)  += 第 1 区間で有効なオフセット(開始時刻にかかわらず全部。現行 compile.m:185 の Iteration == 1)
-rv_x0(u の行)  += 第 1 区間の入力関数の t = 0 の値(現行 initial_condition.m:36-39)
+rv_x0(u の行)  += 第 1 区間の入力の時系列の t = 0 の値(現行 initial_condition.m:36-39 の入力関数の値)
 ```
 
 母線電流 I の初期値は `sct_dae.rv_Iequilibrium` から `SolverODE` が入れます(`rv_x0` は `tab_variable` の変数の行だけ)。
@@ -550,7 +647,7 @@ rv_x0(u の行)  += 第 1 区間の入力関数の t = 0 の値(現行 initial_c
 | 地絡 `iv_faultBus` | 母線の Vre, Vim と Ire, Iim の行を外す(電圧は 0 に固定) | — | 戻るとき平衡点の V と I(`getNextPhase.m:38-44`) |
 | 開放 `iv_openBranch` | — | `Y = cm_Y - Σ c_branchY{k}` を `im_branchBus(k,:)` の位置に。集合が変わったときだけ作り直す(現行 `set_admittance.m:13-15`) | 次の区間の集合で作り直す |
 | オフセット `iv_offset` | — | — | 区間の開始で `x0(iv_offset) += rv_offset` |
-| 入力 `c_input` | — | `e(iv_row) += f(t)`(現行 `getODEFunction.m:77-80`) | — |
+| 入力 `c_input` | — | `e(iv_row) += F(t)`。`F` は区間の開始で作る線形補間(範囲外は端の値、§2.10。現行 `getODEFunction.m:77-80` の関数の呼び出しを置き換え) | — |
 
 ### 4.2 区間の初期化と整合する初期条件 [事実、変更なし]
 
@@ -584,20 +681,33 @@ rv_x0(u の行)  += 第 1 区間の入力関数の t = 0 の値(現行 initial_c
 `ResultPF(tab_powerflow, cm_Y, sct_network, sct_solver)` に揃えます。
 
 ```matlab
-function obj = ResultODE(sct_sol, tab_variable, sct_network, sct_solver)
+function obj = ResultODE(sct_sol, sct_dae, sct_network, sct_solver)
     arguments (Input)
         sct_sol      struct = struct()   % Raw solver data (section 5.1).
-        tab_variable table  = table()    % Variable rows of get_variable_map (x, Vre, Vim, u, uc), the columns of sct_sol.rm_variable.
+        sct_dae      struct = struct()   % Data of the run (section 3.2): tab_variable and the blocks, to recompute the outputs y.
         sct_network  struct = struct()   % Snapshot of the network: struct(net, false).
         sct_solver   struct = struct()   % solver, options, flag, output, elapsed.
     end
 ```
 
 - `ResultODE.tab_variable` と `rm_variable` は x, Vre, Vim, u の行・列だけにします(現行と同じ。`get_point` が uc を `UnknownVariable` にする説明もそのまま)。
-- `sv_bus`, `c_component` は `sct_network`(`a_Bus{i}.s_tag`、`a_Bus{i}.a_Component{j}.s_tag`)から、`c_index` は `tab_variable` の `Kind`, `Owner`, `Bus` から作ります(`get_variable_map` の `c_idxBus` を使わない)。`simulator_columns.m` の検査 `GUILDA:ResultODE:VariableMap` は不要になります。
+- **出力 y [決定 R1]:** y は DAE の変数ではないので、コンストラクタがブロックの `f_Y` を各時刻で評価し直してプロパティに持ちます。ハンドルそのものは持ちません(結果はデータだけ)。
+
+  | プロパティ | 型・大きさ | 内容 |
+  |---|---|---|
+  | `tab_output` | table, n_out × 7 | `get_variable_map` の Kind が `"y"`(機器の出力)と `"yc"`(制御器の出力)の行。列は `tab_variable` と同じ(Index, Kind, Role, Owner, Name, Label, Bus) |
+  | `rm_output` | double, n_t × n_out | 出力の軌道。行 k は `rv_t(k)`、列 m は `tab_output(m,:)`。解列中の機器・GC の出力は NaN |
+
+  - 評価は機器 `f_Y(t, x, V)`、LC `f_Y(t, x, V, u)`、GC `f_Y(t, x, V_all, u)` で、t は区間の開始からの時刻(ソルバーと同じ規約、`sct_sol.rv_phase` から作る)です。現行の右辺は接続が読む出力だけを計算します(`build_index.m:156-160` の `l_y`)が、ここではすべての出力を計算します。
+  - 名前は `rv_t` / `tab_variable` / `rm_variable` に揃えます(`tab_output` と `rm_output`)。`get_variable_map` の Role は `"signal"` ですが、利用者向けには「出力」が分かりやすいので `output` にします。
+  - `odeResults.Bus(i).Component(j)` に `Y`(列は `sv_y`)を加えます。制御器の出力は `rm_output` だけです(状態と同じ扱い)。
+  - `export` の表は、変数の列の後に出力の列(`Label` の名前)を加えます。MAT ファイルには `rm_output`, `tab_output` を加えます。
+  - `get_point` は変数だけを返します(出力は線形化の点ではないため。現行どおり)。
+  - [未確認] 費用は時刻 × ブロックの数だけの `f_Y` の評価です。S3 で IEEE68 の時間を計ります。
+- `tab_variable` は `sct_dae.tab_variable` の x, Vre, Vim, u の行から作ります。`sv_bus`, `c_component` は `sct_network`(`a_Bus{i}.s_tag`、`a_Bus{i}.a_Component{j}.s_tag`)から、`c_index` は `tab_variable` の `Kind`, `Owner`, `Bus` から作ります(`get_variable_map` の `c_idxBus` を使わない)。`simulator_columns.m` の検査 `GUILDA:ResultODE:VariableMap` は不要になります。
 - `ResultBase` には `[]` を渡し、`s_network` は `ResultODE` が設定します(`ResultPF` と同じ)。`a_PowerNetwork` は空です。
 - 新しいプロパティ: `sct_network`(SetAccess=private)。
-- **系統の情報が要る理由:** 結果のメソッド(`Plot`, `get_point`, `export`, `odeResults`)は系統を読みません。読むのは `Scenario.out_of_step` の基準(スラック母線、慣性 `M`)だけで、`out_of_step` はスナップショットから `l_isSlack` と `tab_parameter.dynamics.M` を読みます。[未確認] `struct(net, false)` の時間(IEEE68 など)は計っていません。S3 で計り、§8.2 のとおり記録します。
+- **系統の情報が要る理由:** 結果のメソッド(`Plot`, `get_point`, `export`, `odeResults`)は系統を読みません。読むのは判定 `judge_out_of_step`(§2.9)の基準(スラック母線、慣性 `M`)だけで、スナップショットから `l_isSlack` と `tab_parameter.dynamics.M` を読みます。[未確認] `struct(net, false)` の時間(IEEE68 など)は計っていません。S3 で計り、§8.2 のとおり記録します。
 
 ### 5.3 `Format="struct"` の形 [決定 Q9、2026-11-12 に形を確定]
 
@@ -635,12 +745,12 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | `a_GlobalController{k}.x` | 状態の名前 | `rm_variable`。解列中は NaN |
 | `a_GlobalController{k}.u` | `<入力名>_<機器タグ>` | GC の uc は制御対象ごとにあるので、列名に制御対象のタグを付けます(`get_variable_map` の `Label` から GC のタグを除いた形)。解列中は NaN |
 
-- **時間はトップの `sol.t` だけ [提案]。** 各 table に `Time` の列は重ねません。どの table の行も `sol.t` の同じ行に対応します。理由: (1) 時刻を 1 か所だけに持つので、table ごとに時刻がずれる余地がありません。(2) `x` や `u` の列が変数だけになり、`sol.a_Bus{1}.a_Component{1}.x.omega` や `x{:,:}` で数値の行列としてそのまま使えます(`Time` の列があると、行列にするときに除く手間がかかります)。(3) 母線・機器・制御器の数だけ同じ列を複製しない分、大きな系統でメモリが少なくて済みます。描くときは `plot(sol.t, x.omega)` です。timetable にしない理由も同じで、区間の境界の重複した時刻を行の時刻として持つより、`sol.t` 1 つに揃えるほうが単純です。
+- **時間はトップの `sol.t` だけ [決定 R2]。** 各 table に `Time` の列は重ねません。どの table の行も `sol.t` の同じ行に対応します。理由: (1) 時刻を 1 か所だけに持つので、table ごとに時刻がずれる余地がありません。(2) `x` や `u` の列が変数だけになり、`sol.a_Bus{1}.a_Component{1}.x.omega` や `x{:,:}` で数値の行列としてそのまま使えます(`Time` の列があると、行列にするときに除く手間がかかります)。(3) 母線・機器・制御器の数だけ同じ列を複製しない分、大きな系統でメモリが少なくて済みます。描くときは `plot(sol.t, x.omega)` です。timetable にしない理由も同じで、区間の境界の重複した時刻を行の時刻として持つより、`sol.t` 1 つに揃えるほうが単純です。
 - **入れ子のローカル制御器:** モデルと同じ入れ子です。AVR の下の PSS は `a_Component{j}.a_LocalController{k}.a_LocalController{m}` です。制御器のない層の `a_LocalController` は空のセル(0×1)です。機器のない母線の `a_Component` も空のセルです。
 - **タグ:** 各要素に `s_tag` の項目(string)を持たせます(モデルの物体のプロパティと同じ名前)。セルの番号は `net.a_Bus`, `a_Component`, `a_LocalController`, `a_GlobalController` の順と同じなので、`net` の同じ位置の物体と対応します。タグで探す例: `i = find(cellfun(@(b) b.s_tag, sol.a_Bus) == "B001")`。
-- **出力 y [要確認、R1]:** 利用者の指定には出力がありません。推奨は、機器と制御器に `.y`(列は出力の名前。GC は `<出力名>_<機器タグ>`)を**加える**ことです。理由: GC が観測する機器の出力や、制御器の出力(例: AVR の `Vfield`、ガバナの `Pmech`)は、解析でよく見る量なのに `rm_variable` にないので、ほかの方法では得られません。出力は記録しないので `f_Y` を各時刻で評価します(機器 `f_Y(t, x, V)`、LC `f_Y(t, x, V, u)`、GC `f_Y(t, x, V_all, u)`。解列中は NaN)。費用は時刻 × ブロックの数だけの関数の評価で、`Format="struct"` のときだけです。加えない場合は、`I` の評価(`f_I`)だけになります。
-- **列名の重なり:** 状態・入力・出力・電流は別の table なので、名前が重なっても問題ありません(以前の案の `y_<名前>` は不要です)。
-- **計算量:** `a_Component{j}.I`(と `.y`)の評価は、`Format="struct"` のときだけ行います。
+- **出力 y は含めません [決定 R1]。** `Format="struct"` は繰り返しの実行の負担を減らすためのものなので、出力の評価(`f_Y`)をしません。出力が要るときは `Format="GUILDAorigin"` の `result.rm_output` を使います。
+- **列名の重なり:** 状態・入力・電流は別の table なので、名前が重なっても問題ありません。
+- **計算量:** `Format="struct"` で追加に評価するのは機器の電流 `a_Component{j}.I`(`f_I`)だけです。
 
 ### 5.4 `export` への改名 [決定 Q14]
 
@@ -658,7 +768,11 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | `_GUILDAsystem/_VersionSupport/ODEevent.m` | 削除 |
 | `_GUILDAsystem/_auxiliary/@Scenario/copy.m` | 削除(`add_scenario(tag, From=sc)`) |
 | `_GUILDAsystem/_auxiliary/@Scenario/string.m` | 削除(`LayerPackage.string`) |
-| `_GUILDAsystem/_auxiliary/@Scenario/import_csv.m`, `export_csv.m` | 削除(`PowerNetwork.import_csv` / `export_csv` の `scenario/*.json`) |
+| `_GUILDAsystem/_auxiliary/@Scenario/import_csv.m`, `export_csv.m` | 削除(`PowerNetwork.import` / `export` の `scenario/*.json`) |
+| `_GUILDAsystem/_auxiliary/@Scenario/judge.m` | 削除(§2.9) |
+| `_GUILDAsystem/_auxiliary/@Scenario/out_of_step.m` | `@ResultODE/judge_out_of_step.m` へ移す(§2.9) |
+| `_GUILDAsystem/@PowerNetwork/import_csv.m`, `export_csv.m` | `import.m`, `export.m` に改名(§2.11。代わりの名前になる場合あり) |
+| `SystemTools/GUILDA/en/import_csv.xml`, `export_csv.xml` | 改名に合わせる(§2.11) |
 | `_GUILDAsystem/_auxiliary/@Scenario/private/getTimeSpan.m` | 時間が空のときの規則を削除(`phase_table` に吸収してもよい) |
 | `_GUILDAsystem/_auxiliary/@Scenario/private/mustBeSimulationTime.m` | `SystemTools/` 直下へ移す(`PowerNetwork` からも使う)。`[]` を受けない形に |
 | `_GUILDAsystem/_auxiliary/@SolverODE/get_options.m` | 削除(設定の合成は `simulate`) |
@@ -681,6 +795,9 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | `Scenario.l_compat` | 削除 |
 | `Scenario.copy` | 削除 |
 | `Scenario.import_csv`, `Scenario.export_csv`(Static) | 削除 |
+| `Scenario.Judge`, `Scenario.judge`, `Scenario.out_of_step`(Static) | 削除。判定は `ResultODE.judge_out_of_step`(§2.9) |
+| `Scenario.add_input`, `add_disturbance` の `InputValue` | 関数ハンドルを受けない。一定値か時系列(§2.10) |
+| `PowerNetwork.import_csv`(Static), `export_csv` | `import`, `export`(§2.11) |
 | `Scenario(tag, opt)`(公開コンストラクタ) | `Scenario(net, s_tag)`、`Access={?PowerNetwork}` |
 | `Scenario.Time` | 既定 `[]` → `[0, 10]`、`(1,2)` に固定 |
 | `Scenario.validate(obj, net)` | `validate(obj)` |
@@ -688,18 +805,19 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | `Scenario.to_json_struct`, `add_from_json_struct` | 追加(`Access={?PowerNetwork}`) |
 | `Scenario.Ver` | 2.0 → 3.0、「1.x: ODEevent」の説明を削除 |
 | `Scenario` の親クラス `auxiliary` | `LayerPackage` |
-| `PowerNetwork.add_scenario(sc)` | `sc = add_scenario(s_tag, Time=, Description=, Judge=, From=)` |
+| `PowerNetwork.add_scenario(sc)` | `sc = add_scenario(s_tag, Time=, Description=, From=)` |
 | `PowerNetwork.simulate(time, sc..., NV)` | `simulate(s_scenario, Time=, ..., Format=)` |
 | `PowerNetwork.build_simulation_data` | 追加(Hidden)[決定 Q11] |
 | `PowerNetwork.children` | `a_Scenario` を含める |
-| `PowerNetwork.import_csv` / `export_csv` | `scenario/<tag>.json` を読み書き |
+| `PowerNetwork.import` / `export` | `scenario/<tag>.json` を読み書き |
 | `LayerPackage.gui`, `LayerPackage.gui_content`(既定) | 追加(`PowerSystemModel.gui` から移す) |
 | `SolverODE.OptionMap`, `get_options`, `progress_mode` | 削除 |
 | `SolverODE.solve(net, time, c_events, sct_options)` | `solve(sct_dae, sct_event, rv_x0, sct_options)` |
 | `SolverODE.build_index(net)` | `build_index(sct_dae)` |
 | `SolverODE.set_admittance(ctx, sv_open, l_force)` | `set_admittance(ctx, iv_open, l_force)` |
 | `ctx.net`, `ctx.c_comp{j}.comp`, `ctx.c_lc{k}.con`, `ctx.c_gc{k}.gc`, `ctx.sv_owner` | 削除(位置と `f_reconnect`) |
-| `ResultODE(net, solver, options, flag, output, elapsed, c_phase)` | `ResultODE(sct_sol, tab_variable, sct_network, sct_solver)` |
+| `ResultODE(net, solver, options, flag, output, elapsed, c_phase)` | `ResultODE(sct_sol, sct_dae, sct_network, sct_solver)` |
+| `ResultODE.tab_output`, `rm_output`, `judge_out_of_step` | 追加(§5.2, §2.9) |
 | `ResultODE` の `a_PowerNetwork` | 空。`sct_network` を追加 |
 | `ResultBase.Export` と各結果クラスの `Export` | `export` |
 | simulate の `Export` オプション | 削除 [決定 Q14] |
@@ -721,7 +839,10 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | `GUILDA:Scenario:UnknownOption` | 削除 |
 | `GUILDA:Scenario:OtherNetwork`, `ScenarioArray`, `DuplicateRunTag` | 削除(シナリオは常に系統の子、1 回に 1 つ) |
 | `GUILDA:Scenario:Csv*`(`CsvFileExists`, `CsvFunctionHandle`, `CsvMissingColumn`, `CsvUnknownColumn`, `CsvInvalidNetwork`, `CsvNotSaved` など) | 削除 |
-| `GUILDA:PowerNetwork:ScenarioFunctionHandle`, `ScenarioJudgeNotSaved`, `GUILDA:import_csv:ScenarioJson`, `UnknownScenarioField` | 追加(§2.8) |
+| `GUILDA:import:ScenarioJson`, `GUILDA:import:UnknownScenarioField` | 追加(§2.8)。`ScenarioFunctionHandle`, `ScenarioJudgeNotSaved` は設けない [決定 R3] |
+| `GUILDA:Scenario:InvalidNargin`, `InvalidInputType`(関数の `InputValue`) | 削除。`GUILDA:Scenario:InvalidInputSeries` を追加(§2.10) |
+| `GUILDA:Scenario:NoRotorAngle`, `NoSlackGenerator`, `NoInertia`(判定) | `GUILDA:ResultODE:` に改名(§2.9) |
+| `GUILDA:import_csv:*`, `GUILDA:export_csv:*` | `GUILDA:import:*`, `GUILDA:export:*`(§2.11) |
 | `GUILDA:resolve_options:UnknownName`(simulate の経路) | MATLAB の arguments ブロックのエラーに変わる |
 | `GUILDA:SolverODE:Stale`, `InputEdited`, `GconNoTarget`, `OpenBranchIsland` | `GUILDA:PowerNetwork:SimulateStale`, `SimulateInputEdited`, `GconNoTarget`, `OpenBranchIsland` に改名(モデル側の検査になるため。`msg` は呼び出し元のクラスの ID しか受け付けない、powerflow-structure と同じ理由) |
 | 現行 `validate_options` の `SolverOptions` の不一致の ID | `GUILDA:PowerNetwork:` の ID に改名 [未確認: 現行の ID 名は実装時に確認] |
@@ -744,7 +865,11 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | `net.simulate(..., Export="sim.csv")` | `res = net.simulate(...); res.export("sim.csv")` |
 | `res.Export(...)`(全結果クラス) | `res.export(...)` |
 | `other.add_scenario(sc.copy())` | `other.add_scenario("f", From=sc)` |
-| `Scenario.import_csv(file, Network=net)` / `Scenario.export_csv(file, net.a_Scenario)` | `net.export_csv(folder)` が `folder/scenario/<tag>.json` を書き、`PowerNetwork.import_csv(folder)` が読む。単独の読み書きはない |
+| `Scenario.import_csv(file, Network=net)` / `Scenario.export_csv(file, net.a_Scenario)` | `net.export(folder)` が `folder/scenario/<tag>.json` を書き、`PowerNetwork.import(folder)` が読む。単独の読み書きはない |
+| `PowerNetwork.import_csv(path)` / `net.export_csv(path)` | `PowerNetwork.import(path)` / `net.export(path)`。古いクラスファイルの `import_csv` の行も書き換える |
+| `sc.judge(result)` / `Scenario.out_of_step(result, ...)` | `result.judge_out_of_step(...)` |
+| `sc.Judge = @my_judge; sc.judge(result)` | `my_judge(result)` |
+| `sc.add_input(u, n, @(t) 0.01*t, [1 3])` | `sc.add_input(u, n, [0 0; 2 0.02], [1 3])`(`[t, 値]`、線形補間) |
 | `ODEevent(tag, net, ...)` | `net.add_scenario(tag).add_disturbance(tag, ...)` |
 | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `Progress=v` / `Tolerance=v` |
 | `res.a_PowerNetwork` | `res.sct_network`(スナップショット)。系統そのものは呼び出し側の変数 |
@@ -758,17 +883,17 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 |---|---|---|---|---|
 | **S0** 基準の記録 | 軌道の比較用の基準を保存する(§8.3)。コードは変えない | `+DebugScript/+helper/simulate_baseline.m`(新規)、基準の MAT は作業用フォルダ(コミットしない) | 基準の作成だけ | なし |
 | **S1** v3 の削除 | `v3_simulate_args.m`, `ODEevent.m`, `Deprecated.xml` の 2 項目, `Scenario.l_compat`, `simulate.m:83`、v4-migration の表 | `_VersionSupport/` の 2 ファイル, `Deprecated.xml`, `Scenario.m`(l_compat の 2 行), `simulate.m`(1 行) | F6「Deprecated option names still work」、F31「Compatibility」の節と `test_levels` の該当行を削除 | S0 |
-| **S2** `Scenario` を `LayerPackage` に | §2.2-2.5: `add_scenario(tag)`(改名と INFO), `remove_scenario`(delete), `From`, `copy` の削除, `Time` の既定 `[0, 10]` と時間の規則の削除, `children`, `log_edit` の上書き, `gui` の移動, GUI の描画, `disp_tree`, `sig_methods` の add/remove | `@Scenario/*`(`compile.m` の時間の分岐を含む。`out_of_step.m`, `import_csv.m`, `export_csv.m` を除く), `@Scenario/private/getTimeSpan.m`, `mustBeSimulationTime.m`(SystemTools へ), `@PowerNetwork/PowerNetwork.m`, `add_scenario.m`, `remove_scenario.m`, `gui_content.m`, `@LayerPackage/`, `@PowerSystemModel/gui.m`, `@DrawerModelGUI/`, `@GUILDA/update_keymap.m`, `functionSignatures.json`, `+DebugScript/+helper/scenario.m`, `noop_event.m` | F31 の書き換え(CSV の節を除く)、F32/F33(GUI のシナリオのカード)、F24(タグの名前空間)、F34、I53, I54(時間の規則)、新規は §8.2 | S1 |
-| **S3** `ResultODE` をデータから、`export` | §5.2, §5.4: 新しいコンストラクタ, `sct_network`, `simulator_columns` の書き換え, `out_of_step` のスナップショット読み, `ResultODE.Export` → `export`(`ResultBase` の改名が統合済みであること、下記) | `@ResultODE/*`, `@Scenario/out_of_step.m`, `@SolverODE/solve.m`(231 行の 1 か所だけ。暫定で `net` から入力を作る), `simulate.m`(`Export` の呼び出し 95-99 行を `export` に) | F6 の結果の節、F31 の判定、I63(export)、新規: 系統を消した後(`delete(net)`)も `Plot`, `get_point`, `export`, 判定が動く | S1、`ResultBase.export` |
+| **S2** `Scenario` を `LayerPackage` に | §2.2-2.5, §2.10 の前半: `add_scenario(tag)`(改名と INFO), `remove_scenario`(delete), `From`, `copy` の削除, `Judge`・`judge` の削除, `InputValue` の時系列(検査と `tab_disturbance` での持ち方。`compile` は暫定で時系列から補間の関数を作る), `Time` の既定 `[0, 10]` と時間の規則の削除, `children`, `log_edit` の上書き, `gui` の移動, GUI の描画, `disp_tree`, `sig_methods` の add/remove | `@Scenario/*`(`compile.m` の時間の分岐を含む。`out_of_step.m`, `import_csv.m`, `export_csv.m` を除く), `@Scenario/private/getTimeSpan.m`, `mustBeSimulationTime.m`(SystemTools へ), `@PowerNetwork/PowerNetwork.m`, `add_scenario.m`, `remove_scenario.m`, `gui_content.m`, `@LayerPackage/`, `@PowerSystemModel/gui.m`, `@DrawerModelGUI/`, `@GUILDA/update_keymap.m`, `functionSignatures.json`, `+DebugScript/+helper/scenario.m`, `noop_event.m` | F31 の書き換え(CSV と判定の節を除く。判定の節は削除し S3 の新しいテストへ)、関数の `InputValue` を使うテスト(F6, F31, I58 など)を時系列に、F32/F33(GUI のシナリオのカード)、F24(タグの名前空間)、F34、I53, I54(時間の規則)、新規は §8.2 | S1 |
+| **S3** `ResultODE` をデータから、`export`、判定 | §2.9, §5.2, §5.4: 新しいコンストラクタ, `sct_network`, 出力 `tab_output`/`rm_output` の計算, `simulator_columns` の書き換え, `out_of_step` を `ResultODE.judge_out_of_step` へ移す, `ResultODE.Export` → `export`(`ResultBase` の改名が統合済みであること、下記) | `@ResultODE/*`, `@Scenario/out_of_step.m`(削除), `@SolverODE/solve.m`(231 行の 1 か所だけ。暫定で `net` から入力と出力のハンドルを作る), `_GUILDAverification` の判定の行, 新規 `+DebugScript/test_F38_result_judge.m`, `simulate.m`(`Export` の呼び出し 95-99 行を `export` に) | F6 の結果の節、I63(export)、新規 F38(判定。F31 の判定の節を移す)、新規: 系統を消した後(`delete(net)`)も `Plot`, `get_point`, `export`, 判定が動く、出力の値 | S1、`ResultBase.export` |
 | **S4** `simulate` の引数と設定 | §2.1, §2.7: タグの引数, `Time` の上書き, arguments ブロック, 設定の合成, `SolverOptions` と `MaxStep`/`InitialStep` の優先順位, `Format`(`"struct"` は S5 で完成。S4 では `"GUILDAorigin"` だけ受け付けてもよい), `Export` オプションの削除, `Scenario.Options` の削除, `get_options` 等の削除, `sig_methods` の simulate, 呼び出し元(`_GUILDAobject` のヘルプの例 20 ファイル、`_GUILDAverification` の 4 ファイルの simulate の行) | `simulate.m`, `@PowerNetwork/private/`(検証関数, `progress_mode`, `check_solver_options`), `@SolverODE/SolverODE.m`, `get_options.m`, `progress_mode.m`, `private/makeODE.m`, `validate_options.m`, `mustBeProgress.m`, `@Scenario/Scenario.m`(Options), `DefaultTimeSimulation.json`, `update_keymap.m`, `functionSignatures.json`, `+DebugScript/*`(simulate の呼び出し約 230 か所) | 全 simulate テストの書き換え、I54(時間の検査)、I63(`Export` オプションの節を `export` に)、新規は §8.2 | S2(`Scenario.m`, `update_keymap.m`), S3(`simulate.m` の export の行) |
-| **S5** `SolverODE` のデータの約束、`Format="struct"` | §3, §4, §5.1, §5.3: `build_simulation_data`, `compile` の位置化, 初期値, `check_islands` の移動, `build_index` の分割, `set_phase`/`set_admittance`/`initial_condition`/`getNextPhase`/`phase_result` の位置化(uc も記録), `solve` のシグネチャ, `struct_result`, S3 の暫定の除去 | `simulate.m`, `@PowerNetwork/PowerNetwork.m`(Hidden の宣言), `@PowerNetwork/build_simulation_data.m`, `@PowerNetwork/private/`(収集, `struct_result`), `@Scenario/compile.m`, `@SolverODE/*` | F6, F29, F35(`PhaseProbe` で `solve` を直接呼ぶ箇所を `build_simulation_data` に)、I50-I64、§8.3 の軌道の一致、新規は §8.2 | S3, S4 |
-| **S6** シナリオの JSON | §2.8: `export_csv` / `import_csv` の `scenario/`, `read_scenarios`/`write_scenarios`, `to_json_struct`/`add_from_json_struct`, `Scenario.import_csv`/`export_csv` の削除, `_GUILDAverification` の 3 スクリプトのシナリオの読み込み | `@PowerNetwork/import_csv.m`, `export_csv.m`, `@PowerNetwork/private/read_scenarios.m`, `write_scenarios.m`, `@Scenario/import_csv.m`, `export_csv.m`, `Scenario.m`(2 メソッドの宣言), `_GUILDAverification/IEEJ_*/compare_table*.m` | F16(CSV の往復)にシナリオを追加、F31 の CSV の節を JSON に置き換え、新規は §8.2 | S4(`Scenario.m`、検証スクリプト) |
+| **S5** `SolverODE` のデータの約束、`Format="struct"` | §3, §4, §5.1, §5.3, §2.10 の後半(`compile` の時系列の出力と `SolverODE` の補間): `build_simulation_data`, `compile` の位置化, 初期値, `check_islands` の移動, `build_index` の分割, `set_phase`/`set_admittance`/`initial_condition`/`getNextPhase`/`phase_result` の位置化(uc も記録), `solve` のシグネチャ, `struct_result`, S3 の暫定の除去 | `simulate.m`, `@PowerNetwork/PowerNetwork.m`(Hidden の宣言), `@PowerNetwork/build_simulation_data.m`, `@PowerNetwork/private/`(収集, `struct_result`), `@Scenario/compile.m`, `@SolverODE/*` | F6, F29, F35(`PhaseProbe` で `solve` を直接呼ぶ箇所を `build_simulation_data` に)、I50-I64、§8.3 の軌道の一致、新規は §8.2 | S3, S4 |
+| **S6** 系統のファイル: 改名とシナリオの JSON | §2.11 の確認(最初に R2026a で `PowerNetwork.import` を確かめ、結果をノートに記録)、`import_csv`/`export_csv` → `import`/`export`(または代わりの名前)と §2.11 の表の全箇所、§2.8: `scenario/`, `read_scenarios`/`write_scenarios`, `to_json_struct`/`add_from_json_struct`, `Scenario.import_csv`/`export_csv` の削除, `_GUILDAverification` の 3 スクリプトのシナリオの読み込み | `@PowerNetwork/import_csv.m`, `export_csv.m`(改名), `PowerNetwork.m`, `import_matpower.m`(ヘルプ), カタログの 2 ファイル, `_GUILDAobject/+network/` の 12 クラス, `_VersionSupport/@CsvNetHandler/`(呼び出しの名前), `@PowerNetwork/private/read_scenarios.m`, `write_scenarios.m`, `@Scenario/import_csv.m`, `export_csv.m`, `Scenario.m`(2 メソッドの宣言), `_GUILDAverification/IEEJ_*/compare_table*.m`, テスト(F8, F16, F30, F31, I91, `test_levels`) | F16(往復)にシナリオを追加、F31 の CSV の節を JSON に置き換え、新規は §8.2 | S3(検証スクリプトの判定の行), S4(`Scenario.m`、検証スクリプト), S5(`PowerNetwork.m`) |
 | **S7** 文書 | `feature-simulation.html`(シーケンス図、SIM-xx の手順、オプション表)、`feature-data-io.html`(`scenario/` の JSON)、`api-design.html`, `class-design.html`, Update log, `v4-migration.md`, `status.md`、ヘルプの `<@Examples>` の残り | `_GUILDAdoc/`, `notes/` | 文書の検査スクリプト(あれば) | S5, S6(利用者向けの部分は S4 の後に並行可) |
 
 **並行できる組 [提案]**
 
 - S2 と S3 は並行できます(重なるファイルはありません。S3 は `@Scenario/out_of_step.m` だけ、S2 はそれ以外の `@Scenario/*` のうち CSV と `out_of_step` 以外)。ただし S3 は `ResultBase` の改名の統合を待ちます(下記)。
-- S5 と S6 は並行できます(S5 は `compile.m`, `simulate.m`, `build_simulation_data.m`, `@SolverODE/*`、S6 は `import_csv.m`, `export_csv.m`, `@Scenario/import_csv.m`・`export_csv.m`, 検証スクリプト。`Scenario.m` は S6 だけ、`PowerNetwork.m` は S5 だけが触る。`@PowerNetwork/private/` は別のファイル名)。
+- S5 と S6 は、`PowerNetwork.m` を両方が触る(S5 は `build_simulation_data` の宣言、S6 は `import`/`export` の宣言)ため、**S6 は S5 の統合の後**にします。S6 の最初の確認(§2.11 の 1-4、コードを変えない)だけは S5 と並行できます。
 - S7 の利用者向け(Tutorial 以外のページ、v4-migration)は S4 の後、S5 と並行できます。`feature-simulation.html` は S5 の後、`feature-data-io.html` は S6 の後です。
 - `_GUILDAtutorial/*.mlx` はチュートリアルの保留(#113)に含まれるため、この計画では変えません。
 
@@ -777,7 +902,7 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 - **`Export` → `export` の改名:** `ResultBase.Export` は全結果クラスの共有の約束です(§1.6)。潮流計算の作業(`refactor/powerflow-structure`)が `ResultPF` で同じ改名をするので、**その作業が `ResultBase`(`ResultBase.m:85`, `Export.m`, `error_unsupported.m` の本文)と `ResultPF`, `ResultOPF`, `ResultCPF` とその呼び出し元をまとめて先に改名する**ことを推奨します。S3 はその統合の後に始め、`ResultODE` だけを改名します。潮流計算の作業が `ResultBase` を触らない場合は、S3 の前に小さな手順「S2.5 `ResultBase` と OPF・CPF の `export`」を挟みます(どちらが行うかはコーディネーターが決める)。
 - `refactor/powerflow-structure`(未統合)も `@PowerNetwork/private/` に `mustBePlotFcn` を置く可能性があります。S4 の開始時に統合済みならそれを使い、未統合なら S4 で作り、後から統合する側が片方を消します。
 - `update_keymap.m` と `functionSignatures.json` は S2 と S4 が触るので、S4 は S2 の統合後に始めます。
-- `PowerNetwork.import_csv` / `export_csv` は S6 だけが触ります。§9.3 の「接続を JSON、パラメータを CSV」の設計を行う場合は、S6 の後にします。
+- `PowerNetwork.import_csv` / `export_csv`(改名後 `import` / `export`)は S6 だけが触ります。§9.3 の「接続を JSON、パラメータを CSV」の設計を行う場合は、S6 の後にします。
 
 ## 8. テスト計画
 
@@ -791,6 +916,9 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 | `ODEevent`, `l_compat` | F31, `test_levels.m:97` |
 | `.Options` / `Options=` | F31 (66, 75, 325 行) |
 | `Scenario.import_csv`, `export_csv` | F31 (182-218 行) |
+| `PowerNetwork.import_csv`, `export_csv` | F16, F8, F30, F31, I91, `test_levels.m` |
+| `.judge(` / `.Judge` | F31 (235, 242, 267, 270-271 行) |
+| 関数の `InputValue`(`@(t)`) | F6, F31 など(S2 で grep して時系列に) |
 | `solver_ODE.solve(` | F29 (52, 192 行), F35 (300 行) |
 | `SolverOptions=` | F6(残る。`MaxStep` との優先順位の節を加える) |
 | `.Export(` / `Export=` | I63, F6, I62, F2, F4, F5, F10(33 か所。`ResultBase` の改名と一緒に) |
@@ -810,9 +938,14 @@ sol.a_GlobalController{k}.s_tag, .x, .u
 - `disp_tree` の出力にシナリオの行がある。GUI のシナリオのカードとページ(F32/F33 の形で、表示を開いて閉じる)。
 - `add_scenario` のタグが母線のタグと重なると番号を足した `sc.s_tag` になり、INFO が出る(`evalc` で確かめる)。
 - `remove_scenario` の後、その変数の `isvalid` が false。`From` で別の系統へ複製すると元は残る。
-- JSON: `export_csv` → `import_csv` の往復で、各シナリオの `Time`, `Description`, `tab_disturbance`、名前のある `Judge` が一致。無名の `Judge` は `ScenarioJudgeNotSaved` を警告して既定に戻る。関数の `InputValue` は `ScenarioFunctionHandle` で止まり何も書かない。`scenario/` のないフォルダは従来どおり読める。壊れた JSON は系統を変える前に止まる。
+- JSON: `export` → `import` の往復で、各シナリオの `Time`, `Description`, `tab_disturbance`(一定値と時系列の `InputValue` を含む)が一致。`scenario/` のないフォルダは従来どおり読める。壊れた JSON は系統を変える前に止まる。古いファイルの `Judge` の項目は `UnknownScenarioField` の警告で無視される。
+- 改名: `PowerNetwork.import(path)` がスクリプト、関数の中、同梱の系統のコンストラクタから動く(§2.11 の確認)。`export(..., ClassFile=true)` が書くクラスファイルが `PowerNetwork.import` を呼ぶ。
+- シナリオが関数ハンドルを持たない: `struct(sc)` と `tab_disturbance` に `function_handle` がない。`add_input` に関数を渡すと止まる。
+- 入力の時系列: `[0 0; 2 0.02]` の入力で、入力の軌道(`result.rm_variable` の u の列)が線形補間の値と一致し、`t1 + 2` 以後は 0.02 を保つ。table で渡しても同じ。`t` が増加しない、`t(1) ≠ 0` は `InvalidInputSeries`。同じ入力の 2 つの外乱の和。一定値の入力は基準と `isequaln`。
+- 判定: `result.judge_out_of_step()` が現行の `Scenario.out_of_step(result)` と同じ struct を返す(F31 の判定の節を F38 へ移す)。
+- 出力: `result.rm_output` の機器の出力が、同じ時刻の `f_Y` の値と一致。解列中は NaN。`odeResults` の `Y`。`export` の表に出力の列がある。`Format="struct"` に `.y` がない。
 - `solve` が系統を読まない: `build_simulation_data` の後で系統を `delete` し、`solve` が同じ結果を返す(S5)。
-- `ResultODE` が系統を読まない: 系統を `delete` した後で `Plot`, `get_point`, `odeResults`, `export`, `Scenario.out_of_step(result)`(`Reference="slack"`, `"COI"`)が動く(S3。シナリオは系統と一緒に消えるので、判定は `out_of_step` を直接呼ぶ)。`struct(net, false)` の時間を IEEE68 で記録する。
+- `ResultODE` が系統を読まない: 系統を `delete` した後で `Plot`, `get_point`, `odeResults`, `export`, `result.judge_out_of_step()`(`Reference="slack"`, `"COI"`)、`rm_output` が動く(S3)。`struct(net, false)` の時間を IEEE68 で記録する。
 
 ### 8.3 軌道が変わらないことの確認 [提案]
 
@@ -824,7 +957,7 @@ S0 で、基準コミットのコードで次の実行の `rv_t`, `rm_variable`,
 | IEEE68bus(`LocalController=false`) | 外乱なし `[0, 5]`(t = 0 の停止の回帰) |
 | IEEE14bus(AVR+PSS) | SG1B003 の解列 `[1, 1.2]`(再接続)、`[0, 5]` |
 | IEEE14bus | EL003 の開放 `[1, 3]`、`[0, 5]` |
-| IEEE9bus | オフセット(`delta` +0.1)と入力(`Pmech` 0.05、関数入力)、`[0, 5]` |
+| IEEE9bus | オフセット(`delta` +0.1)と一定値の入力(`Pmech` 0.05)、`[0, 5]`。関数の入力は時系列に置き換わるので基準から外し、線形の関数とその 2 点の時系列の差を `Tolerance` 以内として別に確かめる |
 | AGC 付きの系統(F18 の構成) | GC の解列、GC が観測する機器の解列、`[0, 5]` |
 
 各手順の後に同じ実行をして比べます。
@@ -837,17 +970,21 @@ S0 で、基準コミットのコードで次の実行の `rv_t`, `rm_variable`,
 
 ### 9.1 回答済み(2026-11-12)
 
-§0.2 の表のとおりです。回答の前の推奨と違う決定は Q1(時間の上書きを許す)、Q2(既定 `[0, 10]`)、Q3(改名と INFO)、Q6(`SolverOptions` を残す)、Q9(モデルの階層を写した struct と table)、Q13(系統のフォルダの JSON)、Q14(`Export` オプションの削除と `export` への改名)です。
+§0.2 と §0.3 の表のとおりです。回答の前の推奨と違う決定は Q1(時間の上書きを許す)、Q2(既定 `[0, 10]`)、Q3(改名と INFO)、Q6(`SolverOptions` を残す)、Q9(モデルの階層を写した struct と table)、Q13(系統のフォルダの JSON)、Q14(`Export` オプションの削除と `export` への改名)です。
 
-### 9.2 利用者の確認を待つ事項
+### 9.2 確認の状況と、利用者の確認を待つ事項
 
 | # | 事項 | 推奨 |
 |---|---|---|
-| R1 | `Format="struct"` の機器と制御器に出力 `.y` を加えるか(§5.3) | 加える。制御器の出力や GC が観測する出力は、ほかの方法では得られないため |
-| R2 | `Format="struct"` の各 table に `Time` の列を重ねるか(§5.3) | 重ねない。時間はトップの `sol.t` だけにする |
-| R3 | シナリオの JSON(§2.8): タグはファイル名だけ、`Judge` は名前だけ(無名関数は警告して保存しない)、関数の `InputValue` はエラー | 案のとおり |
+| R1 | ~~`Format="struct"` に出力 `.y` を加えるか~~ | **決定(§0.3):** `ResultODE` が計算して `rm_output` に持つ。`Format="struct"` は持たない |
+| R2 | ~~`Format="struct"` の table に `Time` の列を重ねるか~~ | **決定(§0.3):** 重ねない。`sol.t` だけ |
+| R3 | ~~シナリオの JSON と関数ハンドル~~ | **決定(§0.3):** シナリオは関数ハンドルを持たない。JSON は単純なデータだけ |
 | R4 | `_GUILDAverification` の IEEJ のシナリオ(§2.8 末) | 検証スクリプトのローカル関数で CSV を読み、`add_scenario` と `add_disturbance` を呼ぶ |
 | R5 | `Export` → `export` の改名をだれが行うか(§7 の注意) | 潮流計算の作業が `ResultBase` と PF・OPF・CPF をまとめて先に行い、S3 は `ResultODE` だけ |
+| R6 | 判定のメソッドの名前と置き場所(§2.9) | `ResultODE.judge_out_of_step(Reference=, Threshold=)`。静的メソッド `Scenario.out_of_step` は残さない |
+| R7 | 入力の時系列の補間と時刻の基準(§2.10) | 線形補間、最後の点の後は値を保つ、時刻は外乱の開始から(`t(1) = 0`)。値の飛びは外乱を分ける |
+| R8 | `import` を使えないときの代わりの名前(§2.11) | `import_network` / `export_network` |
+| R9 | `ResultODE` が出力をいつも計算すること(§5.2) | いつも計算する。IEEE68 で時間が問題になれば、初めて読んだときに計算する(`odeResults` と同じ遅延)に変える |
 
 ### 9.3 別の設計課題: 系統の接続を JSON、パラメータを CSV に
 
