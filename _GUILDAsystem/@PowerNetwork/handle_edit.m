@@ -12,14 +12,7 @@ function handle_edit(obj, a_layer, tag, log)
 %     a branch        dynamics
 %     a component     powerflow
 % - The stale tag input is marked for an edit of the inputs of a component (set_input):
-%   only initialize(Method="FixedInput") keeps them; no revision counter changes.
-% - The revision counters are increased for the same edits; the solvers compare them with
-%   the values their warm start and cache were made with:
-%     n_revY         the network base (baseMVA) and Topology, bus dynamics (shunt), branch
-%                    dynamics: the bus admittance matrix
-%     n_revPF        every n_revY edit, and bus powerflow, Slack and Topology, component
-%                    powerflow: the power flow equations
-%     n_revTopology  the network Topology: the warm start (and every cache)
+%   only initialize(Method="FixedInput") keeps them.
 % - The stale tag odefcn is marked for a Hz edit of the network (base, told from baseMVA
 %   by s_lastEdited of its base container): the edit does not reach the models, whose handles bind
 %   the frequency.
@@ -40,28 +33,20 @@ function handle_edit(obj, a_layer, tag, log)
             obj.sct_stale.odefcn(end+1,1) = log;
             return
         end
-        l_Y        = matches(tag, ["base","Topology"]);
-        l_powerflow = l_Y;
-        obj.n_revTopology = obj.n_revTopology + (tag == "Topology");
+        l_powerflow = matches(tag, ["base","Topology"]);
     elseif isa(a_layer, "Bus")
-        l_Y         = tag == "dynamics";
         l_powerflow = matches(tag, ["dynamics","powerflow","Slack","Topology"]);
     elseif isa(a_layer, "Branch")
-        l_Y         = tag == "dynamics";
-        l_powerflow = l_Y;
+        l_powerflow = tag == "dynamics";
     elseif isa(a_layer, "Component")
-        l_Y         = false;
         l_powerflow = tag == "powerflow";
         if tag == "input"
             obj.sct_stale.input(end+1,1) = log;
         end
     else
-        l_Y         = false;
         l_powerflow = false;
     end
-    obj.n_revY = obj.n_revY + l_Y;
     if l_powerflow
-        obj.n_revPF = obj.n_revPF + 1;
         obj.sct_stale.powerflow(end+1,1) = log;
     end
 end

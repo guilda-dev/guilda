@@ -338,17 +338,17 @@
     </div>
     <ul lang="en">
       <li><code>solver_*</code> properties: class-validated (<code>solver_PF SolverPF {mustBeScalarOrEmpty}</code>, ...); a subclass of the network may replace a solver with a subclass of it</li>
-      <li><code>net.solver_PF</code>: no settings; keeps the last converged solution (<code>WarmStart</code>) and a cache of the admittance matrix and the power equations, checked against the revision counters <code>n_revY</code>, <code>n_revPF</code>, <code>n_revTopology</code> of the network (increased by <code>handle_edit</code>)</li>
+      <li><code>net.solver_PF</code>: no settings; keeps only the last converged solution with its bus tags (private <code>cv_Vwarm</code>, <code>sv_warmBus</code>), used with <code>WarmStart</code> when the bus tags of the next run are the same in the same order. It builds the power equations at every call (no cache)</li>
       <li><code>net.solver_OPF</code>: no settings and no conditions; keeps only the bus voltages of the last solved AC OPF with their bus tags (private <code>rm_Vwarm</code>, <code>sv_warmBus</code>), used with <code>WarmStart</code> when the bus tags of the next run are the same in the same order. It builds the problem at every call (no cache)</li>
       <li><code>net.solver_CPF</code>: keeps the condition <code>LoadBus</code> (public property); <code>net.solver_ODE</code>, <code>net.solver_LIN</code>: no settings</li>
-      <li><code>net.solver_PF</code> discards the kept solution only on a <code>Topology</code> edit of the network; <code>net.solver_OPF</code> ignores its kept voltages when the bus tags differ; <code>net.reset_solver()</code> replaces every solver</li>
+      <li><code>net.solver_PF</code> and <code>net.solver_OPF</code> ignore their kept solution when the bus tags differ; <code>net.reset_solver()</code> replaces every solver</li>
     </ul>
     <ul lang="ja">
       <li><code>solver_*</code> プロパティにはクラス検証があります（<code>solver_PF SolverPF {mustBeScalarOrEmpty}</code> など）。ネットワークのサブクラスは、ソルバーをそのサブクラスに置き換えられます</li>
-      <li><code>net.solver_PF</code> は設定を持ちません。最後の収束解（<code>WarmStart</code>）と、アドミタンス行列・電力方程式のキャッシュを保持します。ネットワークの版番号 <code>n_revY</code>、<code>n_revPF</code>、<code>n_revTopology</code>（<code>handle_edit</code> が増やします）で照合します</li>
+      <li><code>net.solver_PF</code> は設定を持ちません。保持するのは、最後の収束解とその母線のタグ（private の <code>cv_Vwarm</code>、<code>sv_warmBus</code>）だけで、次の実行の母線のタグが同じ順序で一致するときに <code>WarmStart</code> で使います。電力方程式は呼び出しのたびに作ります（キャッシュはありません）</li>
       <li><code>net.solver_OPF</code> は設定も条件も持ちません。保持するのは、最後に解いた AC OPF の母線電圧とその母線のタグ（private の <code>rm_Vwarm</code>、<code>sv_warmBus</code>）だけで、次の実行の母線のタグが同じ順序で一致するときに <code>WarmStart</code> で使います。問題は呼び出しのたびに構築します（キャッシュはありません）</li>
       <li><code>net.solver_CPF</code> は、条件 <code>LoadBus</code>（public プロパティ）を保持します。<code>net.solver_ODE</code> と <code>net.solver_LIN</code> は設定を持ちません</li>
-      <li><code>net.solver_PF</code> が保持した解を破棄するのは、ネットワークの <code>Topology</code> の編集のときだけです。<code>net.solver_OPF</code> は、母線のタグが違えば保持した電圧を使いません。<code>net.reset_solver()</code> はすべてのソルバーを置き換えます</li>
+      <li><code>net.solver_PF</code> と <code>net.solver_OPF</code> は、母線のタグが違えば保持した解を使いません。<code>net.reset_solver()</code> はすべてのソルバーを置き換えます</li>
     </ul>
     <h3 id="settings-files"><span lang="en">Settings files and their version</span><span lang="ja">設定ファイルとその版</span></h3>
     <ul lang="en">
