@@ -481,11 +481,11 @@ net = network.IEEE14bus_NoTap;
 
 % Minimal structure of a manually assembled network
 net = PowerNetwork("TestSystem");
-net.add_bus();
-net.add_bus();
+bus1 = net.add_bus();
+bus2 = net.add_bus();
 net.add_branch("pi", [1, 2]);
-net.a_Bus{1}.add_component("gen-park");
-net.a_Bus{2}.add_component("load-power");</code></pre>
+bus1.add_component("gen-park");
+bus2.add_component("load-power");</code></pre>
 
       <h2><span lang="en">2. Set and Initialize the Operating Point</span><span lang="ja">2. 動作点の設定と初期化</span></h2>
       <p lang="en">Set the power-flow parameters on buses and components, check the power-flow solution if needed, then initialize the model. Initialization gives each object its equilibrium voltage, current, active power and reactive power.</p>
@@ -527,8 +527,8 @@ eig(sys.A)</code></pre>
       <p lang="en">Local controllers attach to components; global controllers attach to the network. After changing the controller structure, reinitialize the network, then repeat the simulation or linearization.</p>
       <p lang="ja">ローカル制御器は機器に、グローバル制御器はネットワークに取り付け。制御器の構成の変更後はネットワークを再初期化し、シミュレーションや近似線形化をやり直し。</p>
 <pre><code>gen = net.a_Bus{1}.a_Component{1};
-avr = gen.add_local_controller("avr-ST1");
-pss = gen.add_local_controller("pss-PSS1");
+gen.add_local_controller("avr-ST1");
+gen.add_local_controller("pss-PSS1");
 net.initialize();
 
 sc = Scenario("fault");
