@@ -52,7 +52,7 @@
     if (!container) return 0;
     const items = entries();
     if (items.length === 0) {
-      container.innerHTML = `<p class="ulog-empty">${bilingual('No update log data found.', '更新履歴のデータなし。')}</p>`;
+      container.innerHTML = `<p class="ulog-empty">${bilingual('No update log data found.', '更新履歴のデータがありません。')}</p>`;
       return 0;
     }
     const shown = options.limit ? items.slice(0, options.limit) : items;

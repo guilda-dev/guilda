@@ -53,7 +53,7 @@
 - 状態方程式 M·dx/dt = `fcn_dx(t, x, V, I, u, param, omega0)`、電流 `fcn_I(...)`(複素数を返す)、出力 `fcn_Y(...)`。
 - V = [Vre; Vim]、I = [Ire; Iim](機器が母線へ注入する向き)。`f_*` はパラメータと周波数を束縛したハンドル `@(t,x,V,I,u)`(`set_odefcn`)。
 - 平衡点 `get_equilibrium(obj, c_V, c_I, r_P, r_Q)` は母線電圧と注入電流から [x, u] を返す(閉じた式。反復なし)。
-  `Component.set_equilibrium` が呼び、`c_Iequilibrium` / `rv_Xequilibrium` / `rv_Uequilibrium` を書き、局所制御器の `get_equilibrium(c_V, u)` と `initialize(true)` を呼ぶ。
+  `Component.set_equilibrium` が呼び、`c_Iequilibrium` / `rv_Xequilibrium` / `rv_Uequilibrium` を書き、ローカル制御器の `get_equilibrium(c_V, u)` と `initialize(true)` を呼ぶ。
 - ヤコビアン `f_JacobiDx` / `f_JacobiI` / `f_JacobiY` は常に存在(`Jacobi_dx` などの解析式があればそれ、なければ `@Component/private/Jacobi_*_num.m` の `tools.fd_jacobian`、刻み 1e-5)。
   出力は `[Axx,Bxv,Bxi,Bxu]` / `[Cix,Div,Dii,Diu]`(電流は [Ire; Iim] に対する微分)。
 
@@ -154,7 +154,7 @@
 ### 現状
 
 - `@Component/Component.m`: `rv_Xequilibrium` / `rv_Uequilibrium` / `c_Iequilibrium` は `properties(SetAccess=protected)`、既定 `zeros(0,1)`(`c_Iequilibrium` は `[]`)。
-- `Component.set_equilibrium(obj, c_V, c_I, r_P, r_Q)` は `Access={?Bus}`。必ず `get_equilibrium` を呼んで 3 つを書き、`sct_stale.equilibrium` を空にし、局所制御器の `get_equilibrium(c_V, u)` と `initialize(true)` を呼ぶ。
+- `Component.set_equilibrium(obj, c_V, c_I, r_P, r_Q)` は `Access={?Bus}`。必ず `get_equilibrium` を呼んで 3 つを書き、`sct_stale.equilibrium` を空にし、ローカル制御器の `get_equilibrium(c_V, u)` と `initialize(true)` を呼ぶ。
 - 編集の記録: `LayerPackage.log_edit(obj, log, tag)` が編集した層から最上位まで `handle_edit(a_owner, tag, message)` を呼ぶ。
   - パラメータ表は `Parameter.set.tab_parameter` が列ごとに `log_edit("edit <名前>: <旧> -> <新>", <グループ>)`。母線の `set.l_isSlack` は `"Slack"`。
   - `Component.handle_edit`: `"dynamics"` で equilibrium と odefcn、`"Topology"` で equilibrium が stale。

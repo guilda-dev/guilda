@@ -27,7 +27,7 @@
     <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">GUI Feature Design</span><span lang="ja">GUI 機能の設計</span></h1>
     <p class="page-lead" lang="en"><code>obj.gui()</code> shows any model (network, bus, branch, component, controller) in a window: a breadcrumb from the root, its class and tag, a Docs button, the stale state, the children as cards, editable parameter tables and the equilibrium tables. The tables come from the six abstract classes, and the meaning of the parameters and the model is in the class reference that the Docs button opens, so a new model class needs no GUI code.</p>
-    <p class="page-lead" lang="ja"><code>obj.gui()</code>: 任意のモデル（ネットワーク、母線、ブランチ、機器、制御器）をウィンドウに表示する機能。表示内容はルートからのパンくず、クラスとタグ、Docs ボタン、stale 状態、子のカード、編集できるパラメータの表、平衡点の表。表は抽象クラス 6 つが作成し、パラメータとモデルの説明は Docs ボタンで開くクラスのリファレンスに掲載。そのため新しいモデルクラスには GUI 用のコードが不要。</p>
+    <p class="page-lead" lang="ja"><code>obj.gui()</code> は、ネットワーク、母線、ブランチ、機器、制御器のどのモデルでもウィンドウに表示します。画面には、ルートからのパンくず、クラスとタグ、Docs ボタン、stale 状態、子のカード、編集できるパラメータの表、平衡点の表が並びます。表は 6 つの抽象クラスが作り、パラメータやモデルの説明は Docs ボタンで開くクラスのリファレンスに載っています。そのため、新しいモデルクラスを作っても GUI 用のコードを書く必要はありません。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#purpose"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></a>
@@ -62,15 +62,15 @@ h = net.gui(h_container);   % fills h_container</code></pre>
       </li>
     </ul>
     <ul lang="ja">
-      <li><code>gui(obj, h_container)</code>: <code>PowerSystemModel</code> の public メソッド。ネットワーク、母線、ブランチ、機器、局所・広域制御器のすべてが保持</li>
-      <li>コンテナなし（または <code>[]</code>）: クラス名とタグを名前にした新しい <code>uifigure</code></li>
-      <li>コンテナあり: <code>uifigure()</code> で作った図の <code>uifigure</code>、<code>uipanel</code>、<code>uitab</code>、<code>uigridlayout</code> に展開。レイアウトはコンテナの大きさに追従</li>
-      <li>出力: <code>DrawerModelGUI</code> の <code>h</code>。<code>h.a_target</code> は表示中のモデル、<code>h.h_container</code> はコンテナ。<code>h.render(model)</code> で同じ場所に別のモデルを表示</li>
-      <li>GUI がモデルに対して実行するのはパラメータの書き込みのみ。<code>initialize</code> などの関数は実行しない</li>
-      <li><code>figure()</code> で作った図は対象外。その中のパネルも同様（<code>GUILDA:DrawerModelGUI:NotUIContainer</code>）:
+      <li><code>gui(obj, h_container)</code> は <code>PowerSystemModel</code> の public メソッドです。そのため、ネットワーク、母線、ブランチ、機器、ローカル制御器、グローバル制御器のどれからでも呼べます。</li>
+      <li>コンテナを渡さない場合（<code>[]</code> を渡した場合も同じ）は、クラス名とタグを名前にした <code>uifigure</code> を新しく開きます。</li>
+      <li>コンテナを渡すと、その中に GUI を展開します。渡せるのは、<code>uifigure()</code> で作った図に属する <code>uifigure</code>、<code>uipanel</code>、<code>uitab</code>、<code>uigridlayout</code> です。レイアウトはコンテナの大きさに合わせて変わります。</li>
+      <li>戻り値の <code>h</code> は <code>DrawerModelGUI</code> です。<code>h.a_target</code> で表示中のモデルを、<code>h.h_container</code> でコンテナを参照できます。<code>h.render(model)</code> を呼ぶと、同じ場所に別のモデルを表示します。</li>
+      <li>GUI がモデルに対して行うのは、パラメータの書き込みだけです。<code>initialize</code> などの解析は実行しません。</li>
+      <li><code>figure()</code> で作った図には表示できません。その図の中のパネルを渡しても同じです（<code>GUILDA:DrawerModelGUI:NotUIContainer</code>）。理由は次のとおりです。
         <ul>
-          <li>GUI の部品は UI コンポーネント（<code>uigridlayout</code>、<code>uibutton</code>、<code>uihyperlink</code>、<code>uitable</code>、<code>uialert</code>）で、<code>uifigure</code> 用</li>
-          <li>R2025a より前の <code>figure()</code> には配置不可。R2025a 以降は配置可能なため、<code>uifigure()</code> だけが追加する動的プロパティ <code>isUIFigure</code> で判定。どのリリースでも使えるコンテナは同じ</li>
+          <li>GUI は UI コンポーネント（<code>uigridlayout</code>、<code>uibutton</code>、<code>uihyperlink</code>、<code>uitable</code>、<code>uialert</code>）で組み立てています。これらは <code>uifigure</code> に置くための部品です。</li>
+          <li>R2025a より前の <code>figure()</code> には、これらの部品を置けません。R2025a 以降は置けるので、<code>uifigure()</code> だけが追加する動的プロパティ <code>isUIFigure</code> を見て判定しています。こうすると、どのリリースでも同じコンテナが使えます。</li>
         </ul>
       </li>
     </ul>
@@ -130,7 +130,7 @@ h = net.gui(h_container);   % fills h_container</code></pre>
         <text class="gui-sm" x="252" y="280" lang="ja">a_Parameter のコンテナごとに 1 つのパネル</text>
       </svg>
       <figcaption lang="en">A bus in <code>network.IEEE14bus</code>. The card column is 200 px wide; the tabs take the rest. A model without children has no card column, and the tabs take the full width.</figcaption>
-      <figcaption lang="ja"><code>network.IEEE14bus</code> の母線の例。カードの列は幅 200 px、残りはタブ。子のないモデルではカードの列なし、タブが全幅。</figcaption>
+      <figcaption lang="ja"><code>network.IEEE14bus</code> の母線を表示した例です。カードの列は幅 200 px で、残りの幅をタブが使います。子のないモデルではカードの列がなく、タブが全幅に広がります。</figcaption>
     </figure>
     <ul lang="en">
       <li><strong>Header:</strong> a band in the blue of the logo over a lime line.
@@ -154,23 +154,23 @@ h = net.gui(h_container);   % fills h_container</code></pre>
       </li>
     </ul>
     <ul lang="ja">
-      <li><strong>ヘッダ:</strong> ロゴの青の帯と、その下のライムの線
+      <li><strong>ヘッダ:</strong> ロゴと同じ青の帯で、下にライムの線を引きます。
         <ul>
-          <li>1 行目はパンくず: ルートから表示中のモデルまでを <code>›</code> で連結。表示中のモデル以外はリンク。クリックでそのモデルを同じコンテナに表示</li>
-          <li>2 行目: タグ（太字）、クラス、<code>Docs</code> ボタン、stale 状態。<code>Docs</code> は <code>GUILDA.doc("class", class(model))</code> を実行し、クラスのリファレンスのページを表示。stale 状態は <code>sct_stale</code> から作成: <code>Stale: none</code>、または stale のタグごとに最初のメッセージと残りの件数（警告色）</li>
+          <li>1 行目はパンくずです。ルートから表示中のモデルまでを <code>›</code> でつなぎます。表示中のモデル以外はリンクになっていて、クリックするとそのモデルを同じコンテナに表示します。</li>
+          <li>2 行目には、タグ（太字）、クラス、<code>Docs</code> ボタン、stale 状態が並びます。<code>Docs</code> を押すと <code>GUILDA.doc("class", class(model))</code> が実行され、そのクラスのリファレンスが開きます。stale 状態は <code>sct_stale</code> をもとに表示します。古い層がなければ <code>Stale: none</code> と表示し、あれば stale のタグごとに最初のメッセージと残りの件数を警告色で示します。</li>
         </ul>
       </li>
-      <li><strong>子カード:</strong> 子を種類ごとにまとめて表示。順は <code>Bus</code>、<code>Branch</code>、<code>Component</code>、<code>LocalController</code>、<code>GlobalController</code>（その他のモデルは最後）。各グループの上に件数付きのラベル。<code>Parameter</code> のコンテナは除外
+      <li><strong>子カード:</strong> 子のモデルを種類ごとにまとめて並べます。並び順は <code>Bus</code>、<code>Branch</code>、<code>Component</code>、<code>LocalController</code>、<code>GlobalController</code> で、それ以外のモデルは最後に置きます。各グループの上には件数付きのラベルが付きます。<code>Parameter</code> のコンテナはカードにしません。
         <ul>
-          <li>カードの内容は子の種類、タグ、クラス。色は種類の色</li>
-          <li>クリックでそのモデルを同じコンテナに表示。コンテキストメニュー <code>Open in new window</code> でそのモデルの <code>gui()</code> を実行</li>
-          <li>カードが収まらない場合は列をスクロール。子のないモデルではカードの列なし、タブが全幅</li>
+          <li>カードには子の種類、タグ、クラスを書き、種類ごとの色で塗ります。</li>
+          <li>カードをクリックすると、そのモデルを同じコンテナに表示します。コンテキストメニューの <code>Open in new window</code> を選ぶと、そのモデルの <code>gui()</code> を実行します。</li>
+          <li>カードが収まらないときは、列をスクロールできます。子のないモデルではカードの列がなく、タブが全幅に広がります。</li>
         </ul>
       </li>
       <li><strong>タブ</strong>（この順）:
         <ol>
-          <li><code>Parameter</code>: 各パラメータの意味は Docs を参照するよう促す 1 行と、<code>a_Parameter</code> のコンテナごとに編集できる表のパネル。題は <code>s_tag</code>。1 パラメータ 1 列の横並び。列幅は内容に合わせ、収まらない場合は横にスクロール。コンテナがない場合は <code>No parameters.</code></li>
-          <li>抽象クラスの表（<code>Summary</code>、<code>Equilibrium</code>。<a href="#pages">抽象クラスごとのページ</a>を参照）。平衡点の表は 1 変数 1 行の縦並び</li>
+          <li><code>Parameter</code>: 先頭に、各パラメータの意味は Docs で確認するよう促す 1 行があります。その下に、<code>a_Parameter</code> のコンテナごとに編集できる表をパネルにして並べます。パネルの題は <code>s_tag</code> です。表では 1 つのパラメータが 1 列になり、横に並びます。列幅は内容に合わせ、収まらないときは横にスクロールします。コンテナがなければ <code>No parameters.</code> と表示します。</li>
+          <li>続いて、抽象クラスが作る表のタブ（<code>Summary</code>、<code>Equilibrium</code>）が並びます。詳しくは<a href="#pages">抽象クラスごとのページ</a>を参照してください。平衡点の表では、1 つの変数が 1 行になり、縦に並びます。</li>
         </ol>
       </li>
     </ul>
@@ -184,30 +184,30 @@ h = net.gui(h_container);   % fills h_container</code></pre>
       <li>The theme of the figure of a given container is left as it is; the GUI does not change the app it is embedded in.</li>
     </ul>
     <ul lang="ja">
-      <li>GUILDA のロゴをもとにした固定のライトテーマ。MATLAB のテーマには追従しない。ダークテーマで一部の部品だけ色を設定し、残りをテーマに任せると読めない箇所が生じるため</li>
-      <li>色はすべて <code>@DrawerModelGUI/private/gui_palette.m</code> に集約。RGB の 3 要素の構造体で返却。各部品は背景、文字、表の行の色をここから設定</li>
-      <li><code>gui()</code> が作る新しい <code>uifigure</code>: <code>Theme</code> プロパティがあれば <code>Theme="light"</code> を設定</li>
-      <li>渡されたコンテナの図のテーマは変更しない。埋め込み先のアプリは変えない方針</li>
+      <li>GUILDA のロゴの色をもとにした、固定のライトテーマを使います。MATLAB のテーマには合わせません。ダークテーマで一部の部品だけ色を指定し、残りをテーマに任せると、読めない箇所が出るためです。</li>
+      <li>色はすべて <code>@DrawerModelGUI/private/gui_palette.m</code> にまとめています。この関数は色を RGB の 3 要素で持つ構造体を返し、各部品は背景や文字、表の行の色をそこから取ります。</li>
+      <li><code>gui()</code> が新しく作る <code>uifigure</code> には、<code>Theme</code> プロパティがあれば <code>Theme="light"</code> を設定します。</li>
+      <li>渡されたコンテナの図のテーマは変えません。埋め込み先のアプリには手を加えない方針です。</li>
     </ul>
     <table class="dg-table gui-colors">
       <thead><tr><th lang="en">Part</th><th lang="ja">部分</th><th lang="en">Color</th><th lang="ja">色</th></tr></thead>
       <tbody>
         <tr><td lang="en">Header band, Docs text</td><td lang="ja">ヘッダの帯、Docs の文字</td><td lang="en" data-label="Color">logo blue <code>#005BAA</code></td><td lang="ja" data-label="色">ロゴの青 <code>#005BAA</code></td></tr>
-        <tr><td lang="en">Line under the header</td><td lang="ja">ヘッダの下の線</td><td lang="en" data-label="Color">logo lime <code>#D4DE24</code>, for accent lines only</td><td lang="ja" data-label="色">ロゴのライム <code>#D4DE24</code>。強調の線のみに使用</td></tr>
-        <tr><td lang="en">Background, panels, tables</td><td lang="ja">背景、パネル、表</td><td lang="en" data-label="Color">light grays; table rows striped</td><td lang="ja" data-label="色">明るい灰色。表の行は縞模様</td></tr>
-        <tr><td lang="en">Child cards</td><td lang="ja">子カード</td><td lang="en" data-label="Color">one pale color per kind: <code>Bus</code> blue, <code>Branch</code> gray, <code>Component</code> lime, <code>LocalController</code> warm, <code>GlobalController</code> purple, others gray</td><td lang="ja" data-label="色">種類ごとの淡い色: <code>Bus</code> 青、<code>Branch</code> 灰、<code>Component</code> ライム、<code>LocalController</code> 暖色、<code>GlobalController</code> 紫、その他は灰</td></tr>
-        <tr><td lang="en">Stale state</td><td lang="ja">stale 状態</td><td lang="en" data-label="Color">header note color when none; orange text on a pale orange background when stale</td><td lang="ja" data-label="色">なしはヘッダの注記の色。stale ありは淡い橙の背景に橙の文字</td></tr>
+        <tr><td lang="en">Line under the header</td><td lang="ja">ヘッダの下の線</td><td lang="en" data-label="Color">logo lime <code>#D4DE24</code>, for accent lines only</td><td lang="ja" data-label="色">ロゴのライム <code>#D4DE24</code> です。強調の線にだけ使います。</td></tr>
+        <tr><td lang="en">Background, panels, tables</td><td lang="ja">背景、パネル、表</td><td lang="en" data-label="Color">light grays; table rows striped</td><td lang="ja" data-label="色">明るい灰色です。表の行は縞模様です。</td></tr>
+        <tr><td lang="en">Child cards</td><td lang="ja">子カード</td><td lang="en" data-label="Color">one pale color per kind: <code>Bus</code> blue, <code>Branch</code> gray, <code>Component</code> lime, <code>LocalController</code> warm, <code>GlobalController</code> purple, others gray</td><td lang="ja" data-label="色">種類ごとに淡い色を使います。<code>Bus</code> は青、<code>Branch</code> は灰、<code>Component</code> はライム、<code>LocalController</code> は暖色、<code>GlobalController</code> は紫、その他は灰です。</td></tr>
+        <tr><td lang="en">Stale state</td><td lang="ja">stale 状態</td><td lang="en" data-label="Color">header note color when none; orange text on a pale orange background when stale</td><td lang="ja" data-label="色">stale がなければヘッダの注記と同じ色です。stale があれば、淡い橙の背景に橙の文字で示します。</td></tr>
       </tbody>
     </table>
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
       <p lang="en">Embedded in a figure with a dark theme, the tab titles and the header row of the tables take the colors of that theme: <code>uitabgroup</code> has no color property for its tab strip, and <code>uitable</code> none for its header row. The rest of the GUI keeps the light colors.</p>
-      <p lang="ja">ダークテーマの図に埋め込んだ場合、タブの見出しと表の見出し行はそのテーマの色。<code>uitabgroup</code> にはタブの見出しの色の、<code>uitable</code> には見出し行の色のプロパティがないため。GUI の他の部分はライトの配色のまま。</p>
+      <p lang="ja">ダークテーマの図に埋め込むと、タブの見出しと表の見出し行だけはそのテーマの色になります。<code>uitabgroup</code> にはタブの見出しの色を、<code>uitable</code> には見出し行の色を指定するプロパティがないためです。それ以外の部分はライトの配色のままです。</p>
     </div>
 
     <!-- ============================== PAGES ============================== -->
     <h2 id="pages"><span lang="en">Pages of each abstract class</span><span lang="ja">抽象クラスごとのページ</span></h2>
     <p lang="en">Each abstract class puts its own pages first, then those of <code>PowerSystemModel</code>, whose base implementation returns none. Every page is a read-only table. Values in the tables are as of the last <code>net.initialize()</code>; the header shows whether they are stale.</p>
-    <p lang="ja">各抽象クラスは自分のページを先に置き、続いて <code>PowerSystemModel</code> のページ（基底の実装は空）。ページはすべて編集不可の表。表の値は最後の <code>net.initialize()</code> の時点のもの。古いかどうかはヘッダに表示。</p>
+    <p lang="ja">各抽象クラスは自分のページを先に置き、その後ろに <code>PowerSystemModel</code> のページを続けます（基底の実装は空です）。ページはどれも編集できない表です。表の値は最後に <code>net.initialize()</code> を実行した時点の値で、古くなっているかどうかはヘッダでわかります。</p>
     <table class="dg-table gui-pages">
       <thead><tr><th lang="en">Class</th><th lang="ja">クラス</th><th lang="en">Pages</th><th lang="ja">ページ</th></tr></thead>
       <tbody>
@@ -217,24 +217,24 @@ h = net.gui(h_container);   % fills h_container</code></pre>
             <li><code>Equilibrium</code>: one row per bus: <code>Tag</code>, <code>Type</code> (<code>s_bustype</code>), <code>V</code>, <code>|V|</code>, <code>∠V [rad]</code>, <code>I</code>.</li>
           </ul></td>
           <td lang="ja" data-label="ページ"><ul>
-            <li><code>Summary</code>: 母線、ブランチ、機器（全母線の合計）、広域制御器の数</li>
-            <li><code>Equilibrium</code>: 母線ごとに 1 行。<code>Tag</code>、<code>Type</code>（<code>s_bustype</code>）、<code>V</code>、<code>|V|</code>、<code>∠V [rad]</code>、<code>I</code></li>
+            <li><code>Summary</code>: 母線、ブランチ、機器（全母線の合計）、グローバル制御器の数です。</li>
+            <li><code>Equilibrium</code>: 母線ごとに 1 行です。列は <code>Tag</code>、<code>Type</code>（<code>s_bustype</code>）、<code>V</code>、<code>|V|</code>、<code>∠V [rad]</code>、<code>I</code> です。</li>
           </ul></td></tr>
         <tr><td><code>Bus</code></td>
           <td lang="en" data-label="Pages"><code>Equilibrium</code>: <code>Name</code> and <code>Value</code> (text) for <code>Type</code>, <code>V</code> (a+bj), <code>|V|</code>, <code>∠V [rad]</code>, <code>I</code> (a+bj).</td>
-          <td lang="ja" data-label="ページ"><code>Equilibrium</code>: <code>Type</code>、<code>V</code>（a+bj）、<code>|V|</code>、<code>∠V [rad]</code>、<code>I</code>（a+bj）の <code>Name</code> と <code>Value</code>（文字列）</td></tr>
+          <td lang="ja" data-label="ページ"><code>Equilibrium</code>: <code>Type</code>、<code>V</code>（a+bj）、<code>|V|</code>、<code>∠V [rad]</code>、<code>I</code>（a+bj）について、<code>Name</code> と <code>Value</code>（文字列）を並べます。</td></tr>
         <tr><td><code>Branch</code></td>
           <td lang="en" data-label="Pages"><code>Equilibrium</code>: rows <code>from</code> and <code>to</code>, columns <code>Bus</code> (tag of the end bus), <code>V</code>, <code>I</code>; no rows for a branch without end buses.</td>
-          <td lang="ja" data-label="ページ"><code>Equilibrium</code>: 行は <code>from</code> と <code>to</code>、列は <code>Bus</code>（端の母線のタグ）、<code>V</code>、<code>I</code>。端の母線がないブランチでは行なし</td></tr>
+          <td lang="ja" data-label="ページ"><code>Equilibrium</code>: 行は <code>from</code> と <code>to</code>、列は <code>Bus</code>（端の母線のタグ）、<code>V</code>、<code>I</code> です。端の母線がないブランチでは行がありません。</td></tr>
         <tr><td><code>Component</code></td>
           <td lang="en" data-label="Pages"><code>Equilibrium</code>: <code>Kind</code> (<code>State</code>, <code>Input</code>, <code>Voltage</code>, <code>Current</code>), <code>Name</code>, <code>Value</code> (text) for each state (<code>sv_x</code>), each input (<code>sv_u</code>), then <code>V</code> and <code>I</code> (a+bj); no rows before the equilibrium is computed.</td>
-          <td lang="ja" data-label="ページ"><code>Equilibrium</code>: 状態（<code>sv_x</code>）、入力（<code>sv_u</code>）ごと、続いて <code>V</code> と <code>I</code>（a+bj）の <code>Kind</code>（<code>State</code>、<code>Input</code>、<code>Voltage</code>、<code>Current</code>）、<code>Name</code>、<code>Value</code>（文字列）。平衡点の計算前は行なし</td></tr>
+          <td lang="ja" data-label="ページ"><code>Equilibrium</code>: 状態（<code>sv_x</code>）と入力（<code>sv_u</code>）を 1 つずつ並べ、続けて <code>V</code> と <code>I</code>（a+bj）を並べます。列は <code>Kind</code>（<code>State</code>、<code>Input</code>、<code>Voltage</code>、<code>Current</code>）、<code>Name</code>、<code>Value</code>（文字列）です。平衡点を計算する前は行がありません。</td></tr>
         <tr><td><code>LocalController</code></td>
           <td lang="en" data-label="Pages"><code>Equilibrium</code>: as for <code>Component</code>; <code>V</code> and <code>I</code> are those of the parent component.</td>
-          <td lang="ja" data-label="ページ"><code>Equilibrium</code>: <code>Component</code> と同じ形式。<code>V</code> と <code>I</code> は親の機器の値</td></tr>
+          <td lang="ja" data-label="ページ"><code>Equilibrium</code>: <code>Component</code> と同じ形式です。<code>V</code> と <code>I</code> は親の機器の値です。</td></tr>
         <tr><td><code>GlobalController</code></td>
           <td lang="en" data-label="Pages"><code>Equilibrium</code>: <code>Kind</code>, <code>Name</code>, <code>Value</code> for each state and input; names <code>x1, x2, …</code> and <code>u1, u2, …</code> when <code>sv_x</code> or <code>sv_u</code> has another number of entries than the values.</td>
-          <td lang="ja" data-label="ページ"><code>Equilibrium</code>: 状態と入力ごとの <code>Kind</code>、<code>Name</code>、<code>Value</code>。<code>sv_x</code> または <code>sv_u</code> の要素数が値の数と異なる場合、名前は <code>x1, x2, …</code> と <code>u1, u2, …</code></td></tr>
+          <td lang="ja" data-label="ページ"><code>Equilibrium</code>: 状態と入力ごとに <code>Kind</code>、<code>Name</code>、<code>Value</code> を並べます。<code>sv_x</code> や <code>sv_u</code> の要素数が値の数と合わないときは、名前を <code>x1, x2, …</code> と <code>u1, u2, …</code> にします。</td></tr>
       </tbody>
     </table>
 
@@ -245,10 +245,10 @@ h = net.gui(h_container);   % fills h_container</code></pre>
       <li><strong>Tables:</strong> from the properties of the abstract class (<code>sv_x</code>, <code>sv_u</code>, the equilibrium, <code>a_Parameter</code>), which every model already fills.</li>
       <li><strong>Meaning of the parameters and the model:</strong> in the class reference, made from the class help as in <a href="class-documentation.html#class-page">Class Documentation</a>; the <code>Docs</code> button opens it.</li>
     </ul>
-    <p lang="ja">不要。抽象クラスから作るクラス（新しい発電機、負荷、制御器、ブランチ、ネットワーク）には、GUI のためのメソッドもプロパティも追加なし:</p>
+    <p lang="ja">何も書く必要はありません。抽象クラスから作るクラス（新しい発電機、負荷、制御器、ブランチ、ネットワーク）に、GUI のためのメソッドやプロパティを足すことはありません。</p>
     <ul lang="ja">
-      <li><strong>表:</strong> 抽象クラスのプロパティ（<code>sv_x</code>、<code>sv_u</code>、平衡点、<code>a_Parameter</code>）から作成。どのモデルも設定済み</li>
-      <li><strong>パラメータとモデルの説明:</strong> クラスのリファレンスに掲載。<a href="class-documentation.html#class-page">クラスのドキュメント</a>に従って書いたクラスの help から作成。<code>Docs</code> ボタンで表示</li>
+      <li><strong>表:</strong> 抽象クラスのプロパティ（<code>sv_x</code>、<code>sv_u</code>、平衡点、<code>a_Parameter</code>）から作ります。これらはどのモデルにも必ず設定されています。</li>
+      <li><strong>パラメータとモデルの説明:</strong> クラスのリファレンスに載せます。リファレンスは、<a href="class-documentation.html#class-page">クラスのドキュメント</a>に沿って書いたクラスの help から作られ、<code>Docs</code> ボタンで開きます。</li>
     </ul>
 
     <!-- ============================== EDITING ============================== -->
@@ -260,10 +260,10 @@ h = net.gui(h_container);   % fills h_container</code></pre>
       <li>The equilibrium tables are not editable and keep the values of the last <code>initialize</code>; the GUI does not run it. Run <code>net.initialize()</code> from the command line, then <code>h.render()</code> to show the new values.</li>
     </ul>
     <ul lang="ja">
-      <li>セルを編集すると、そのパネルの表全体を <code>Parameter</code> コンテナの <code>tab_parameter</code> に即座に書き込み（<code>edit_parameter</code>）。適用ボタンなし</li>
-      <li>その後の処理は、コマンドラインからの編集と同じく <code>Parameter</code> が担当: クラス・名前・高さ・行名の検査、変更した値だけのログ、層の stale への反映（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照）。GUI はヘッダの stale 状態を更新</li>
-      <li>エラーの場合: 表を保存済みの値に戻し、アラートでメッセージを表示。何も保存しない</li>
-      <li>平衡点の表は編集不可。値は最後の <code>initialize</code> の時点のもの。GUI からは実行しない。コマンドラインで <code>net.initialize()</code> を実行し、<code>h.render()</code> で新しい値を表示</li>
+      <li>セルを編集すると、そのパネルの表全体をすぐに <code>Parameter</code> コンテナの <code>tab_parameter</code> へ書き込みます（<code>edit_parameter</code>）。適用ボタンはありません。</li>
+      <li>その後の処理は、コマンドラインから編集したときと同じく <code>Parameter</code> が行います。クラス、名前、高さ、行名を検査し、変わった値だけをログに残し、層の stale に反映します（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照）。GUI はそれを受けて、ヘッダの stale 状態を更新します。</li>
+      <li>エラーになったときは、表を保存済みの値に戻し、アラートでメッセージを表示します。この場合は何も保存しません。</li>
+      <li>平衡点の表は編集できません。値は最後に <code>initialize</code> を実行した時点の値です。GUI からは <code>initialize</code> を実行しないので、新しい値を見るにはコマンドラインで <code>net.initialize()</code> を実行し、<code>h.render()</code> で表示し直します。</li>
     </ul>
 
     <!-- ============================== MECHANISM ============================== -->
@@ -275,9 +275,9 @@ h = net.gui(h_container);   % fills h_container</code></pre>
       <li><code>_GUILDAsystem/_auxiliary/@DrawerModelGUI/</code>: the UI. <code>render.m</code> draws a model; <code>private/</code> holds the parts (<code>build_header</code>, <code>build_navigation</code>, <code>build_parameter_tab</code>, <code>build_page</code>, <code>edit_parameter</code>, <code>update_stale</code>, <code>show_alert</code>, <code>is_ui_container</code>) and the colors (<code>gui_palette</code>).</li>
     </ul>
     <ul lang="ja">
-      <li><code>_GUILDAsystem/_auxiliary/@PowerSystemModel/gui.m</code>: 入口。<code>f_model</code> と <code>DrawerModelGUI</code> を作成</li>
-      <li><code>_GUILDAsystem/_auxiliary/@PowerSystemModel/gui_content.m</code>（空の基底）と <code>_GUILDAsystem/@&lt;抽象クラス&gt;/gui_content.m</code>: ページ定義</li>
-      <li><code>_GUILDAsystem/_auxiliary/@DrawerModelGUI/</code>: UI。<code>render.m</code> がモデルを描画。<code>private/</code> に部品（<code>build_header</code>、<code>build_navigation</code>、<code>build_parameter_tab</code>、<code>build_page</code>、<code>edit_parameter</code>、<code>update_stale</code>、<code>show_alert</code>、<code>is_ui_container</code>）と配色（<code>gui_palette</code>）</li>
+      <li><code>_GUILDAsystem/_auxiliary/@PowerSystemModel/gui.m</code>: 入口です。<code>f_model</code> と <code>DrawerModelGUI</code> を作成します。</li>
+      <li><code>_GUILDAsystem/_auxiliary/@PowerSystemModel/gui_content.m</code>（空の基底）と <code>_GUILDAsystem/@&lt;抽象クラス&gt;/gui_content.m</code>: ページを定義します。</li>
+      <li><code>_GUILDAsystem/_auxiliary/@DrawerModelGUI/</code>: UI の本体です。<code>render.m</code> がモデルを描きます。<code>private/</code> には、部品を作る関数（<code>build_header</code>、<code>build_navigation</code>、<code>build_parameter_tab</code>、<code>build_page</code>、<code>edit_parameter</code>、<code>update_stale</code>、<code>show_alert</code>、<code>is_ui_container</code>）と配色の関数（<code>gui_palette</code>）があります。</li>
     </ul>
 
     <h3><span lang="en">Page definitions: <code>gui_content</code></span><span lang="ja">ページ定義: <code>gui_content</code></span></h3>
@@ -293,15 +293,15 @@ h = net.gui(h_container);   % fills h_container</code></pre>
       <li>A page of another type shows the label <code>Unknown page type: ...</code> in its tab.</li>
     </ul>
     <ul lang="ja">
-      <li><code>sct_page = gui_content(obj)</code>: protected メソッド。<code>Parameter</code> の後のタブ 1 つにつき 1 要素の構造体の列を返却。フィールドは 3 つ:
+      <li><code>sct_page = gui_content(obj)</code>: protected メソッドです。<code>Parameter</code> の後ろに並ぶタブ 1 つにつき 1 要素となる、構造体の配列を返します。フィールドは次の 3 つです。
         <ul>
-          <li><code>s_title</code>: タブ名</li>
-          <li><code>s_type</code>: <code>"table"</code>。ページの種類はこれのみ</li>
-          <li><code>content</code>: MATLAB の table。列幅を内容に合わせた編集不可の <code>uitable</code> で描画</li>
+          <li><code>s_title</code>: タブ名です。</li>
+          <li><code>s_type</code>: <code>"table"</code> です。ページの種類はこれだけです。</li>
+          <li><code>content</code>: MATLAB の table です。編集できない <code>uitable</code> に、列幅を内容に合わせて描きます。</li>
         </ul>
       </li>
-      <li><code>PowerSystemModel</code> の基底の実装は空の列を返却。オーバーライドするのは抽象クラス 6 つのみ。モデルのクラスは何も実装しない</li>
-      <li>他の種類のページ: タブに <code>Unknown page type: ...</code> のラベルを表示</li>
+      <li><code>PowerSystemModel</code> の基底の実装は空の配列を返します。これをオーバーライドするのは 6 つの抽象クラスだけで、モデルのクラスは何も実装しません。</li>
+      <li>それ以外の種類のページは、タブに <code>Unknown page type: ...</code> というラベルを表示します。</li>
     </ul>
 
     <h3><span lang="en"><code>DrawerModelGUI</code> and <code>render</code></span><span lang="ja"><code>DrawerModelGUI</code> と <code>render</code></span></h3>
@@ -313,11 +313,11 @@ h = net.gui(h_container);   % fills h_container</code></pre>
       <li>Nothing is cached: each <code>render</code> reads the model again, so it shows the current state.</li>
     </ul>
     <ul lang="ja">
-      <li><code>DrawerModelGUI(a_target, h_container, f_model)</code>（<code>_auxiliary</code> のクラス）: コンテナを検査（またはライトテーマの <code>uifigure</code> を作成）し、コンテナと <code>f_model</code> を保持して <code>render(a_target)</code> を実行</li>
-      <li><code>render(a_target)</code>（public）: モデルの GUI 全体を描画。パンくず、子カード、埋め込み先のアプリが呼び出し。<code>render()</code> は表示中のモデルを再描画</li>
-      <li>削除するのは前に自分が描いたものだけ: コンテナの子のうち <code>Tag</code> が <code>"DrawerModelGUI"</code> のものと、その子カードのコンテキストメニュー（図が所有）。コンテナの他の部品は残存。<code>uigridlayout</code> のコンテナでは、新しいグリッドが古いグリッドの <code>Layout</code>（行と列）を継承</li>
-      <li>続いて親をたどってルートまでのパンくずを求め、2 × 2 の <code>uigridlayout</code>（<code>Tag</code> は <code>"DrawerModelGUI"</code>）を作成: 上段にヘッダ、下段に子カード（200 px）とタブグループ。子がない場合はタブグループが 2 列にまたがる。<code>uifigure</code> のコンテナではウィンドウ名も設定</li>
-      <li>キャッシュなし: <code>render</code> のたびにモデルを読み直し、現在の状態を表示</li>
+      <li><code>DrawerModelGUI(a_target, h_container, f_model)</code>（<code>_auxiliary</code> のクラス）: コンテナを検査し（コンテナがなければライトテーマの <code>uifigure</code> を作り）、コンテナと <code>f_model</code> を保持してから <code>render(a_target)</code> を実行します。</li>
+      <li><code>render(a_target)</code>（public）: モデルの GUI 全体を描きます。パンくず、子カード、埋め込み先のアプリから呼ばれます。引数なしの <code>render()</code> は、表示中のモデルを描き直します。</li>
+      <li>最初に、前回自分が描いた部品だけを削除します。対象は、コンテナの子のうち <code>Tag</code> が <code>"DrawerModelGUI"</code> の部品と、子カードのコンテキストメニュー（図が所有）です。コンテナにある他の部品はそのまま残ります。<code>uigridlayout</code> のコンテナでは、新しいグリッドが古いグリッドの <code>Layout</code>（行と列）を引き継ぎます。</li>
+      <li>次に、親をたどってルートまでのパンくずを求め、2 × 2 の <code>uigridlayout</code>（<code>Tag</code> は <code>"DrawerModelGUI"</code>）を作ります。上段にヘッダを、下段に子カード（200 px）とタブグループを置きます。子がなければ、タブグループが 2 列分を使います。<code>uifigure</code> のコンテナでは、ウィンドウ名も設定します。</li>
+      <li>キャッシュは持ちません。<code>render</code> のたびにモデルを読み直すので、常に現在の状態が表示されます。</li>
     </ul>
 
     <h3><span lang="en">Why <code>f_model</code></span><span lang="ja"><code>f_model</code> を使う理由</span></h3>
@@ -328,16 +328,16 @@ h = net.gui(h_container);   % fills h_container</code></pre>
       <li><code>DrawerModelGUI</code> keeps it in a private property and calls it for every model it shows, and for each parent on the way to the root. The members stay protected; no public accessor is added for the GUI.</li>
     </ul>
     <ul lang="ja">
-      <li><code>parent</code>、<code>children</code>、<code>gui_content</code> はモデルの protected メンバー。<code>DrawerModelGUI</code> はモデルの継承階層の外にあるため、読み取り不可</li>
-      <li><code>gui</code> が <code>PowerSystemModel</code> のメソッド内で無名関数を作成。無名関数は作った場所のアクセス権を保持:
+      <li><code>parent</code>、<code>children</code>、<code>gui_content</code> はモデルの protected メンバーです。<code>DrawerModelGUI</code> はモデルの継承階層の外にあるので、これらを直接は読めません。</li>
+      <li>そこで <code>gui</code> は、<code>PowerSystemModel</code> のメソッドの中で無名関数を作ります。無名関数は、作られた場所のアクセス権を持ち続けます。
 <pre><code>f_model = @(o) struct("parent", {o.parent}, "children", {o.children}, "pages", {o.gui_content()});</code></pre></li>
-      <li><code>DrawerModelGUI</code> は private プロパティに保持し、表示するすべてのモデルと、ルートまでの各親で呼び出し。メンバーは protected のまま。GUI のための public なアクセサーは追加なし</li>
+      <li><code>DrawerModelGUI</code> はこの関数を private プロパティに持ち、表示するモデルと、ルートまでの各親に対して呼び出します。これでメンバーは protected のままで済み、GUI のために public なアクセサーを足す必要もありません。</li>
     </ul>
 
     <!-- ============================== EMBEDDING ============================== -->
     <h2 id="embedding"><span lang="en">Embedding in another app</span><span lang="ja">別のアプリへの埋め込み</span></h2>
     <p lang="en">An app passes its own panel and switches the model with <code>render</code>. Here a list on the left chooses the network or a bus:</p>
-    <p lang="ja">アプリは自分のパネルを渡し、<code>render</code> で表示するモデルを切り替え。次の例では左のリストでネットワークか母線を選択:</p>
+    <p lang="ja">アプリは自分のパネルを渡し、<code>render</code> で表示するモデルを切り替えます。次の例では、左のリストでネットワークか母線を選びます。</p>
 <pre><code>net = network.IEEE14bus();
 net.initialize();
 a_model = [{net}, net.a_Bus(:).'];
@@ -357,10 +357,10 @@ h_list.ValueChangedFcn = @(src, ~) h.render(a_model{src.Value});</code></pre>
       <li>Closing the figure deletes the GUI with it; <code>render</code> on a deleted container does nothing.</li>
     </ul>
     <ul lang="ja">
-      <li>リストとパネルはアプリのもの。<code>render</code> が置き換えるのはパネル内の GUI のみ</li>
-      <li>パンくずのリンクや子カードのクリックでも <code>render</code> が実行されるため、パネルにリストで選んでいないモデルが表示される場合あり。表示中のモデルは <code>h.a_target</code> で確認</li>
-      <li><code>fig</code> のテーマは変更なし。ダークテーマでは、タブの見出しと表の見出し行がその色（<a href="#theme">テーマと配色</a>を参照）</li>
-      <li>図を閉じると GUI も削除。削除されたコンテナへの <code>render</code> は何もしない</li>
+      <li>リストとパネルはアプリのものです。<code>render</code> が置き換えるのは、パネルの中の GUI だけです。</li>
+      <li>パンくずのリンクや子カードのクリックでも <code>render</code> が実行されるため、パネルにリストで選んでいないモデルが表示される場合があります。表示中のモデルは <code>h.a_target</code> で確認します。</li>
+      <li><code>fig</code> のテーマは変えません。ダークテーマの場合、タブの見出しと表の見出し行だけはそのテーマの色になります（<a href="#theme">テーマと配色</a>を参照）。</li>
+      <li>図を閉じると GUI も削除されます。削除されたコンテナへの <code>render</code> は何もしません。</li>
     </ul>
 
     <!-- ============================== FAILURE ============================== -->
@@ -368,19 +368,19 @@ h_list.ValueChangedFcn = @(src, ~) h.render(a_model{src.Value});</code></pre>
     <table class="dg-table">
       <thead><tr><th lang="en">When</th><th lang="ja">発生する時点</th><th lang="en">Behavior</th><th lang="ja">動作</th></tr></thead>
       <tbody>
-        <tr><td lang="en">Container not of a <code>uifigure</code></td><td lang="ja">コンテナが <code>uifigure</code> のものでない</td><td lang="en" data-label="Behavior">error <code>GUILDA:DrawerModelGUI:NotUIContainer</code>, naming the class of the container</td><td lang="ja" data-label="動作">エラー <code>GUILDA:DrawerModelGUI:NotUIContainer</code>（コンテナのクラスを表示）</td></tr>
-        <tr><td lang="en">Edited value rejected</td><td lang="ja">編集した値が不可</td><td lang="en" data-label="Behavior">the table goes back to the stored values; an alert with the message of <code>Parameter</code></td><td lang="ja" data-label="動作">表を保存済みの値に戻し、<code>Parameter</code> のメッセージをアラートで表示</td></tr>
-        <tr><td lang="en">Alert in a hidden figure</td><td lang="ja">非表示の図でのアラート</td><td lang="en" data-label="Behavior">warning <code>GUILDA:DrawerModelGUI:HiddenAlert</code> instead (<code>uialert</code> needs a visible figure)</td><td lang="ja" data-label="動作">代わりに警告 <code>GUILDA:DrawerModelGUI:HiddenAlert</code>（<code>uialert</code> は表示中の図が必要）</td></tr>
-        <tr><td lang="en">Page of a type other than <code>table</code></td><td lang="ja"><code>table</code> 以外の種類のページ</td><td lang="en" data-label="Behavior"><code>Unknown page type: ...</code> in its tab; the other tabs are drawn</td><td lang="ja" data-label="動作">そのタブに <code>Unknown page type: ...</code> を表示。他のタブは描画</td></tr>
-        <tr><td lang="en">Model deleted</td><td lang="ja">モデルが削除済み</td><td lang="en" data-label="Behavior"><code>The model has been deleted.</code> in place of the GUI</td><td lang="ja" data-label="動作">GUI の代わりに <code>The model has been deleted.</code> を表示</td></tr>
+        <tr><td lang="en">Container not of a <code>uifigure</code></td><td lang="ja">コンテナが <code>uifigure</code> のものでない</td><td lang="en" data-label="Behavior">error <code>GUILDA:DrawerModelGUI:NotUIContainer</code>, naming the class of the container</td><td lang="ja" data-label="動作">エラー <code>GUILDA:DrawerModelGUI:NotUIContainer</code> になります。メッセージにはコンテナのクラス名が入ります。</td></tr>
+        <tr><td lang="en">Edited value rejected</td><td lang="ja">編集した値の拒否</td><td lang="en" data-label="Behavior">the table goes back to the stored values; an alert with the message of <code>Parameter</code></td><td lang="ja" data-label="動作">表を保存済みの値に戻し、<code>Parameter</code> のメッセージをアラートで表示します。</td></tr>
+        <tr><td lang="en">Alert in a hidden figure</td><td lang="ja">非表示の図でのアラート</td><td lang="en" data-label="Behavior">warning <code>GUILDA:DrawerModelGUI:HiddenAlert</code> instead (<code>uialert</code> needs a visible figure)</td><td lang="ja" data-label="動作">代わりに警告 <code>GUILDA:DrawerModelGUI:HiddenAlert</code> を出します。<code>uialert</code> は表示中の図にしか出せないためです。</td></tr>
+        <tr><td lang="en">Page of a type other than <code>table</code></td><td lang="ja"><code>table</code> 以外の種類のページ</td><td lang="en" data-label="Behavior"><code>Unknown page type: ...</code> in its tab; the other tabs are drawn</td><td lang="ja" data-label="動作">そのタブに <code>Unknown page type: ...</code> を表示します。他のタブは描画します。</td></tr>
+        <tr><td lang="en">Model deleted</td><td lang="ja">モデルが削除済み</td><td lang="en" data-label="Behavior"><code>The model has been deleted.</code> in place of the GUI</td><td lang="ja" data-label="動作">GUI の代わりに <code>The model has been deleted.</code> を表示します。</td></tr>
       </tbody>
     </table>
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
       <p lang="en">The IDs name entries of <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/DrawerModelGUI.xml</code>, read by <code>msg</code>; <code>error(msg(...))</code> passes only the text, so the MATLAB exception has an empty identifier.</p>
-      <p lang="ja">ID は <code>msg</code> が読む <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/DrawerModelGUI.xml</code> のエントリ名。<code>error(msg(...))</code> は本文だけを渡すため、MATLAB の例外の識別子は空。</p>
+      <p lang="ja">ID は <code>msg</code> が読む <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/DrawerModelGUI.xml</code> のエントリ名です。<code>error(msg(...))</code> にはメッセージ本文だけを渡すので、MATLAB の例外識別子は空になります。</p>
     </div>
     <p lang="en">Side effects: the GUI changes the model only through a parameter edit. The <code>Docs</code> button runs <code>GUILDA.doc</code>, which may export the class reference again when the sources changed, then opens it in the browser; it does not change the model.</p>
-    <p lang="ja">副作用: GUI がモデルを変えるのはパラメータの編集のみ。<code>Docs</code> ボタンは <code>GUILDA.doc</code> を実行。ソースが変わっていればクラスのリファレンスを再出力し、ブラウザで表示。モデルは変更しない。</p>
+    <p lang="ja">GUI がモデルを変えるのは、パラメータを編集したときだけです。<code>Docs</code> ボタンは <code>GUILDA.doc</code> を実行し、ソースが変わっていればクラスのリファレンスを作り直してからブラウザで開きます。このときもモデルは変わりません。</p>
 
     <!-- ============================== EXTENSION ============================== -->
     <h2 id="extension"><span lang="en">Where to extend the feature</span><span lang="ja">機能を拡張する箇所</span></h2>
@@ -392,11 +392,11 @@ h_list.ValueChangedFcn = @(src, ~) h.render(a_model{src.Value});</code></pre>
       <li>Tests: <code>+DebugScript/test_F32_model_gui.m</code> and <code>test_F33_model_gui_network.m</code> build the GUI in hidden figures; an alert there becomes the <code>HiddenAlert</code> warning.</li>
     </ul>
     <ul lang="ja">
-      <li><strong>新しいモデルクラス:</strong> 追加不要。<a href="#subclass">モデルクラスが GUI のために書くもの</a>を参照</li>
-      <li><strong>ある種類のすべてのモデルに共通の表:</strong> その抽象クラスの <code>gui_content</code>（<code>_GUILDAsystem/@&lt;抽象クラス&gt;/gui_content.m</code>）。新しいページを先に置き、続いて <code>gui_content@PowerSystemModel(obj)</code>。種類は <code>table</code> のみ。classdef には <code>methods(Access=protected) sct_page = gui_content(obj) end</code> と宣言</li>
-      <li><strong>すべてのモデルに共通の表:</strong> <code>_GUILDAsystem/_auxiliary/@PowerSystemModel/gui_content.m</code></li>
-      <li><strong>色:</strong> <code>gui_palette.m</code> のみで変更。各部品はここから色を取得</li>
-      <li>テスト: <code>+DebugScript/test_F32_model_gui.m</code> と <code>test_F33_model_gui_network.m</code> が非表示の図で GUI を作成。そこでのアラートは警告 <code>HiddenAlert</code> に変化</li>
+      <li><strong>新しいモデルクラス:</strong> GUI のために追加するものはありません。<a href="#subclass">モデルクラスが GUI のために書くもの</a>を参照してください。</li>
+      <li><strong>ある種類のすべてのモデルに共通の表:</strong> その抽象クラスの <code>gui_content</code>（<code>_GUILDAsystem/@&lt;抽象クラス&gt;/gui_content.m</code>）に書きます。新しいページを先に並べ、その後ろに <code>gui_content@PowerSystemModel(obj)</code> の結果を続けます。ページの種類は <code>table</code> だけです。classdef には <code>methods(Access=protected) sct_page = gui_content(obj) end</code> と宣言します。</li>
+      <li><strong>すべてのモデルに共通の表:</strong> <code>_GUILDAsystem/_auxiliary/@PowerSystemModel/gui_content.m</code> に書きます。</li>
+      <li><strong>色:</strong> 変えるのは <code>gui_palette.m</code> だけです。各部品はここから色を取ります。</li>
+      <li>テストは <code>+DebugScript/test_F32_model_gui.m</code> と <code>test_F33_model_gui_network.m</code> です。どちらも非表示の図に GUI を作るので、アラートは警告 <code>HiddenAlert</code> に置き換わります。</li>
     </ul>
 
     <!-- ============================== RELATED ============================== -->

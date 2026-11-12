@@ -45,7 +45,7 @@
     <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Optimal Power Flow Feature Design</span><span lang="ja">最適潮流計算機能の設計</span></h1>
     <p class="page-lead" lang="en"><code>net.optimize_powerflow()</code> finds the operating point of least generation cost within the operating limits. <code>SolverOPF</code> reads the parameters of the buses, components, and branches and builds one <code>optimproblem</code>; the Optimization Toolbox solves it. Output: a <code>ResultOPF</code>; the network is unchanged.</p>
-    <p class="page-lead" lang="ja"><code>net.optimize_powerflow()</code>: 運用上の制約のもとで発電コスト最小の運転点を求める機能。<code>SolverOPF</code> が母線・機器・ブランチのパラメータを読み取って 1 つの <code>optimproblem</code> を構築し、Optimization Toolbox が求解。出力は <code>ResultOPF</code>、ネットワークは不変。</p>
+    <p class="page-lead" lang="ja"><code>net.optimize_powerflow()</code> は、運用上の制約を守りながら発電コストが最小になる運転点を求めます。<code>SolverOPF</code> が母線、機器、ブランチのパラメータを読み取って 1 つの <code>optimproblem</code> を組み立て、Optimization Toolbox で解きます。結果は <code>ResultOPF</code> として返し、ネットワークには手を加えません。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#purpose"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></a>
@@ -69,55 +69,55 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
       <li>A Name-Value option applies to this call only.</li>
     </ul>
     <ul lang="ja">
-      <li>設定: <code>GUILDA.setting</code> の OptimalPowerFlow セクション。実行のたびに <code>GUILDA.config("OptimalPowerFlow")</code> から読み込み: <code>@GUILDA/config/DefaultOptimalPowerFlow.json</code>（<code>@GUILDA/user/</code> の同名ファイルで上書き）</li>
-      <li>条件 <code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code>: <code>net.solver_OPF</code>（<code>SolverOPF</code>）の public プロパティ。実行をまたいで保持</li>
-      <li>Name-Value オプション: その呼び出しのみに適用</li>
+      <li>設定は <code>GUILDA.setting</code> の OptimalPowerFlow セクションにあり、実行のたびに <code>GUILDA.config("OptimalPowerFlow")</code> で読み込みます。既定値は <code>@GUILDA/config/DefaultOptimalPowerFlow.json</code> にあり、<code>@GUILDA/user/</code> に同名のファイルを置くと上書きできます。</li>
+      <li>条件 <code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code> は <code>net.solver_OPF</code>（<code>SolverOPF</code>）の public プロパティで、実行をまたいで残ります。</li>
+      <li>Name-Value オプションは、その呼び出しにだけ効きます。</li>
     </ul>
     <table class="dg-table opf-opts">
       <thead><tr><th lang="en">Option</th><th lang="ja">オプション</th><th lang="en">Setting or condition and default</th><th lang="ja">設定・条件と既定値</th></tr></thead>
       <tbody>
         <tr><td><code>Method</code></td>
           <td lang="en" data-label="Setting and default"><code>Method = "AC OPF"</code>; <code>"ELD"</code> (economic load dispatch, branches ignored), <code>"DC OPF"</code> (<code>|V| = 1</code>, lossless), <code>"AC OPF"</code> (AC power flow equations)</td>
-          <td lang="ja" data-label="設定と既定値"><code>Method = "AC OPF"</code>。<code>"ELD"</code>（経済負荷配分、ブランチは無視）、<code>"DC OPF"</code>（<code>|V| = 1</code>、損失なし）、<code>"AC OPF"</code>（交流の潮流方程式）</td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>Method = "AC OPF"</code>。<code>"ELD"</code> は経済負荷配分で、ブランチを考えません。<code>"DC OPF"</code> は <code>|V| = 1</code> とし、損失を無視します。<code>"AC OPF"</code> は交流の潮流方程式を使います。</td></tr>
         <tr><td><code>Solver</code></td>
           <td lang="en" data-label="Setting and default"><code>Solver = "auto"</code>: the solver that <code>solve</code> chooses (<code>linprog</code>, <code>quadprog</code>, or <code>fmincon</code>)</td>
-          <td lang="ja" data-label="設定と既定値"><code>Solver = "auto"</code>: <code>solve</code> が選ぶソルバー（<code>linprog</code>、<code>quadprog</code>、<code>fmincon</code>）</td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>Solver = "auto"</code>。<code>solve</code> が <code>linprog</code>、<code>quadprog</code>、<code>fmincon</code> から選びます。</td></tr>
         <tr><td><code>Tolerance</code></td>
           <td lang="en" data-label="Setting and default"><code>Tolerance = NaN</code>: <code>OptimalityTolerance</code> of the solver (NaN: the solver's default)</td>
-          <td lang="ja" data-label="設定と既定値"><code>Tolerance = NaN</code>: ソルバーの <code>OptimalityTolerance</code>（NaN: ソルバーの既定値）</td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>Tolerance = NaN</code>。ソルバーの <code>OptimalityTolerance</code> に渡します。NaN ならソルバーの既定値を使います。</td></tr>
         <tr><td><code>MaxIteration</code></td>
           <td lang="en" data-label="Setting and default"><code>MaxIteration = NaN</code> (the solver's default)</td>
-          <td lang="ja" data-label="設定と既定値"><code>MaxIteration = NaN</code>（ソルバーの既定値）</td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>MaxIteration = NaN</code>。NaN ならソルバーの既定値を使います。</td></tr>
         <tr><td><code>Verbose</code></td>
           <td lang="en" data-label="Setting and default"><code>Verbose = false</code>; the solver's <code>Display</code> is <code>"iter"</code> for <code>true</code> and <code>"none"</code> for <code>false</code></td>
-          <td lang="ja" data-label="設定と既定値"><code>Verbose = false</code>。ソルバーの <code>Display</code> は <code>true</code> で <code>"iter"</code>、<code>false</code> で <code>"none"</code></td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>Verbose = false</code>。ソルバーの <code>Display</code> を、<code>true</code> なら <code>"iter"</code>、<code>false</code> なら <code>"none"</code> にします。</td></tr>
         <tr><td><code>Cost</code></td>
           <td lang="en" data-label="Setting and default">condition (<code>net.solver_OPF</code>); <code>Cost = []</code>: function handle <code>@(v, p)</code> returning a scalar added to the objective (see <a href="class-design.html#opf">Class Design: OPF customization</a>)</td>
-          <td lang="ja" data-label="設定と既定値">条件（<code>net.solver_OPF</code>）。<code>Cost = []</code>: 目的関数に加えるスカラーを返す関数ハンドル <code>@(v, p)</code>（<a href="class-design.html#opf">クラス設計: OPF のカスタマイズ</a> を参照）</td></tr>
+          <td lang="ja" data-label="設定と既定値">ソルバーの条件（<code>net.solver_OPF</code>）で、既定値は <code>Cost = []</code> です。目的関数に足すスカラーを返す関数ハンドル <code>@(v, p)</code> を指定します（<a href="class-design.html#opf">クラス設計: OPF のカスタマイズ</a>を参照）。</td></tr>
         <tr><td><code>Constraint</code></td>
           <td lang="en" data-label="Setting and default">condition; <code>Constraint = []</code>: function handle <code>@(v, p)</code> returning <code>struct(name, constraint, ...)</code>; field <code>&lt;name&gt;</code> → <code>prob.Constraints.&lt;name&gt;</code></td>
-          <td lang="ja" data-label="設定と既定値">条件。<code>Constraint = []</code>: <code>struct(name, constraint, ...)</code> を返す関数ハンドル <code>@(v, p)</code>。フィールド <code>&lt;name&gt;</code> → <code>prob.Constraints.&lt;name&gt;</code></td></tr>
+          <td lang="ja" data-label="設定と既定値">ソルバーの条件で、既定値は <code>Constraint = []</code> です。<code>struct(name, constraint, ...)</code> を返す関数ハンドル <code>@(v, p)</code> を指定すると、各フィールド <code>&lt;name&gt;</code> が <code>prob.Constraints.&lt;name&gt;</code> になります。</td></tr>
         <tr><td><code>DefaultCost</code></td>
           <td lang="en" data-label="Setting and default">condition; <code>DefaultCost = true</code>; <code>false</code> leaves out the <code>tab_parameter.OPF</code> costs of all components</td>
-          <td lang="ja" data-label="設定と既定値">条件。<code>DefaultCost = true</code>。<code>false</code> で全機器の <code>tab_parameter.OPF</code> のコストを除外</td></tr>
+          <td lang="ja" data-label="設定と既定値">ソルバーの条件で、既定値は <code>DefaultCost = true</code> です。<code>false</code> にすると、全機器の <code>tab_parameter.OPF</code> のコストを目的関数に入れません。</td></tr>
         <tr><td><code>ReferenceBus</code></td>
           <td lang="en" data-label="Setting and default">condition; <code>ReferenceBus = "auto"</code>: bus of <code>tools.slack_bus_index</code> (else the first bus); a bus tag; <code>"none"</code> fixes no angle</td>
-          <td lang="ja" data-label="設定と既定値">条件。<code>ReferenceBus = "auto"</code>: <code>tools.slack_bus_index</code> の母線（なければ最初の母線）。母線のタグ、または <code>"none"</code>（位相角を固定しない）</td></tr>
+          <td lang="ja" data-label="設定と既定値">ソルバーの条件で、既定値は <code>ReferenceBus = "auto"</code> です。このとき <code>tools.slack_bus_index</code> の母線（なければ最初の母線）を基準にします。母線のタグを指定することも、<code>"none"</code> で位相角を固定しないこともできます。</td></tr>
         <tr><td><code>PlotFcn</code></td>
           <td lang="en" data-label="Setting and default"><code>PlotFcn = "none"</code>: live display during the analysis, fmincon only: keys of the plot functions of fmincon, key <code>k</code> → <code>optimplot&lt;k&gt;</code> (<code>"fval"</code>, <code>"constrviolation"</code>, <code>"fvalconstr"</code>, <code>"firstorderopt"</code>, <code>"stepsize"</code>, <code>"funccount"</code>, <code>"x"</code>), or a function handle passed to fmincon as it is; with linprog / quadprog: <code>GUILDA:SolverOPF:PlotFcnUnsupported</code>; the figure after the analysis: <code>result.Plot()</code></td>
-          <td lang="ja" data-label="設定と既定値"><code>PlotFcn = "none"</code>: 解析中のライブ表示（fmincon のみ）。fmincon のプロット関数のキー（キー <code>k</code> → <code>optimplot&lt;k&gt;</code>: <code>"fval"</code>、<code>"constrviolation"</code>、<code>"fvalconstr"</code>、<code>"firstorderopt"</code>、<code>"stepsize"</code>、<code>"funccount"</code>、<code>"x"</code>）、または fmincon にそのまま渡す関数ハンドル。linprog・quadprog では <code>GUILDA:SolverOPF:PlotFcnUnsupported</code>。解析後の図は <code>result.Plot()</code></td></tr>
+          <td lang="ja" data-label="設定と既定値">既定値は <code>PlotFcn = "none"</code> です。解析中の経過をライブで表示します（fmincon のみ）。fmincon のプロット関数のキーか、fmincon にそのまま渡す関数ハンドルを指定します。キー <code>k</code> は <code>optimplot&lt;k&gt;</code> を表し、<code>"fval"</code>、<code>"constrviolation"</code>、<code>"fvalconstr"</code>、<code>"firstorderopt"</code>、<code>"stepsize"</code>、<code>"funccount"</code>、<code>"x"</code> を使えます。linprog と quadprog では <code>GUILDA:SolverOPF:PlotFcnUnsupported</code> になります。解析後の図は <code>result.Plot()</code> で描きます。</td></tr>
         <tr><td><code>Export</code></td>
           <td lang="en" data-label="Setting and default">call only; <code>false</code>: call <code>result.Export(...)</code> afterwards</td>
-          <td lang="ja" data-label="設定と既定値">呼び出しのみ。<code>false</code>: 実行後に <code>result.Export(...)</code> を呼び出し</td></tr>
+          <td lang="ja" data-label="設定と既定値">呼び出しのときだけ指定できます。既定値は <code>false</code> で、指定すると実行後に <code>result.Export(...)</code> を呼び出します。</td></tr>
         <tr><td><code>Problem</code>, <code>InitialPoint</code></td>
           <td lang="en" data-label="Setting and default">call only, not stored: an <code>optimproblem</code> from <code>net.build_opf_problem</code> (same <code>Method</code>, possibly modified) to solve as it is; the initial point (default: the <code>x0</code> of OPF-04, with <code>WarmStart</code> applied)</td>
-          <td lang="ja" data-label="設定と既定値">呼び出しのみ（保存しない）: そのまま解く <code>net.build_opf_problem</code> の <code>optimproblem</code>（同じ <code>Method</code>、変更可）、初期点（既定: <code>WarmStart</code> を反映した OPF-04 の <code>x0</code>）</td></tr>
+          <td lang="ja" data-label="設定と既定値">呼び出しのときだけ指定でき、保存はされません。<code>Problem</code> には <code>net.build_opf_problem</code> が返した <code>optimproblem</code> を渡し、そのまま解かせます。<code>Method</code> は同じにし、中身は変更してかまいません。<code>InitialPoint</code> は初期点で、既定では OPF-04 の <code>x0</code>（<code>WarmStart</code> を反映したもの）を使います。</td></tr>
         <tr><td><code>WarmStart</code></td>
           <td lang="en" data-label="Setting and default">call only, not stored; default <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>false</code>; <code>true</code>: <code>"AC OPF"</code> starts from the bus voltages of the last solved <code>"AC OPF"</code> of this network (kept by <code>net.solver_OPF</code>); <code>false</code>, or none kept: flat start (angle 0, magnitude 1; set <code>V</code> at PV and slack buses, set <code>Varg</code> at the slack bus)</td>
-          <td lang="ja" data-label="設定と既定値">呼び出しのみ（保存しない）。既定値 <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>false</code>。<code>true</code>: このネットワークで最後に解いた <code>"AC OPF"</code> の母線電圧（<code>net.solver_OPF</code> が保持）から <code>"AC OPF"</code> を開始。<code>false</code>、または保持なし: フラットスタート（角度 0、大きさ 1。PV・slack 母線は指定 <code>V</code>、slack 母線は指定 <code>Varg</code>）</td></tr>
+          <td lang="ja" data-label="設定と既定値">呼び出しのときだけ指定でき、保存はされません。既定値は <code>GUILDA.config("OptimalPowerFlow", "WarmStart")</code> = <code>false</code> です。<code>true</code> にすると、このネットワークで最後に解いた <code>"AC OPF"</code> の母線電圧（<code>net.solver_OPF</code> が保持）から <code>"AC OPF"</code> を始めます。<code>false</code> のときや保持した電圧がないときは、フラットスタート（角度 0、大きさ 1）で始めます。ただし PV 母線と slack 母線は指定の <code>V</code>、slack 母線は指定の <code>Varg</code> を使います。</td></tr>
         <tr><td><span lang="en">settings only</span><span lang="ja">設定のみ</span></td>
           <td lang="en" data-label="Setting and default">named <code>&lt;Solver&gt;&lt;option&gt;</code>, given only to that solver (NaN: the solver's default): <code>LinprogAlgorithm = "dual-simplex-highs"</code>, <code>QuadprogAlgorithm = "interior-point-convex"</code>, <code>FminconAlgorithm = "interior-point"</code>, <code>QuadprogStepTolerance = NaN</code>, <code>FminconStepTolerance = NaN</code>, <code>FminconMaxFunctionEvaluations = NaN</code>, <code>FminconUseParallel = false</code></td>
-          <td lang="ja" data-label="設定と既定値">名前は <code>&lt;Solver 名&gt;&lt;オプション名&gt;</code>。そのソルバーにだけ渡す（NaN はソルバーの既定値）: <code>LinprogAlgorithm = "dual-simplex-highs"</code>、<code>QuadprogAlgorithm = "interior-point-convex"</code>、<code>FminconAlgorithm = "interior-point"</code>、<code>QuadprogStepTolerance = NaN</code>、<code>FminconStepTolerance = NaN</code>、<code>FminconMaxFunctionEvaluations = NaN</code>、<code>FminconUseParallel = false</code></td></tr>
+          <td lang="ja" data-label="設定と既定値">名前は <code>&lt;Solver 名&gt;&lt;オプション名&gt;</code> の形で、そのソルバーにだけ渡します。NaN ならソルバーの既定値を使います。次の設定があります。<code>LinprogAlgorithm = "dual-simplex-highs"</code>、<code>QuadprogAlgorithm = "interior-point-convex"</code>、<code>FminconAlgorithm = "interior-point"</code>、<code>QuadprogStepTolerance = NaN</code>、<code>FminconStepTolerance = NaN</code>、<code>FminconMaxFunctionEvaluations = NaN</code>、<code>FminconUseParallel = false</code></td></tr>
       </tbody>
     </table>
     <p lang="en">Preconditions:</p>
@@ -129,15 +129,15 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
       <li>an infinite bound (<code>-Inf</code> / <code>Inf</code>; NaN for the branch limits) adds no limit.</li>
     </ul>
     <p lang="en">No <code>initialize</code> needed; the stale state is not checked. User terms: <code>Cost</code>, <code>Constraint</code>, <code>Problem</code> (see <a href="class-design.html#opf">Class Design: OPF customization</a>).</p>
-    <p lang="ja">前提条件:</p>
+    <p lang="ja">前提条件は次のとおりです。</p>
     <ul lang="ja">
-      <li>Optimization Toolbox（解析の開始時に確認。<code>net.initialize(Method="OPF")</code> も同様）</li>
-      <li>機器: <code>tab_parameter.OPF</code>（コスト <code>HP·P² + fP·P + HQ·Q² + fQ·Q</code>、初期点 <code>P0</code>、<code>Q0</code>）と <code>tab_parameter.operation</code>（制約）</li>
-      <li>母線: <code>operation</code>（<code>Vmin</code>、<code>Vmax</code>）と <code>powerflow</code>（<code>Varg</code>、<code>V</code>: 基準位相角とフラットスタート）</li>
-      <li>ブランチ: <code>operation</code>（<code>Pmax</code>、<code>Qmax</code>、<code>Imax</code>、<code>Smax</code>、<code>Vargmax</code>）</li>
-      <li>無限大の上下限（<code>-Inf</code> / <code>Inf</code>、ブランチの制約値は NaN も）は制約なし</li>
+      <li>Optimization Toolbox。解析を始めるときに確認します。<code>net.initialize(Method="OPF")</code> でも同じです。</li>
+      <li>機器の <code>tab_parameter.OPF</code> と <code>tab_parameter.operation</code>。前者はコスト <code>HP·P² + fP·P + HQ·Q² + fQ·Q</code> と初期点 <code>P0</code>、<code>Q0</code> を、後者は制約を表します。</li>
+      <li>母線の <code>operation</code>（<code>Vmin</code>、<code>Vmax</code>）と <code>powerflow</code>。<code>powerflow</code> の <code>Varg</code> と <code>V</code> は、基準位相角とフラットスタートに使います。</li>
+      <li>ブランチの <code>operation</code>（<code>Pmax</code>、<code>Qmax</code>、<code>Imax</code>、<code>Smax</code>、<code>Vargmax</code>）。</li>
+      <li>上下限を無限大（<code>-Inf</code> / <code>Inf</code>）にすると、その制約はかかりません。ブランチの制約値は NaN でも同じです。</li>
     </ul>
-    <p lang="ja"><code>initialize</code> は不要、stale 状態も未確認。ユーザー定義の項は <code>Cost</code>、<code>Constraint</code>、<code>Problem</code>（<a href="class-design.html#opf">クラス設計: OPF のカスタマイズ</a> を参照）。</p>
+    <p lang="ja"><code>initialize</code> を先に実行する必要はなく、stale 状態も確かめません。独自の項は <code>Cost</code>、<code>Constraint</code>、<code>Problem</code> で加えます（<a href="class-design.html#opf">クラス設計: OPF のカスタマイズ</a>を参照）。</p>
 
     <!-- ============================== SEQUENCE ============================== -->
     <h2 id="sequence"><span lang="en">Call sequence between classes</span><span lang="ja">クラス間の呼び出し順</span></h2>
@@ -206,19 +206,19 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         <text x="156" y="666"><tspan class="opf-num">16</tspan> <tspan class="dg-mono">result, flag, output</tspan></text>
       </svg>
       <figcaption lang="en">Numbers: the step IDs below (OPF-01 to OPF-16). Light boxes: private functions of <code>SolverOPF</code> (<code>_auxiliary/@SolverOPF/private/</code>). <code>net.build_opf_problem</code> runs OPF-02 and OPF-04 to OPF-10 only. <code>"ELD"</code> skips the branches and the reference angle.</figcaption>
-      <figcaption lang="ja">番号は下の処理ステップの ID（OPF-01〜OPF-16）。薄い枠は <code>SolverOPF</code> の非公開関数（<code>_auxiliary/@SolverOPF/private/</code>）。<code>net.build_opf_problem</code> は OPF-02 と OPF-04〜OPF-10 のみ。<code>"ELD"</code> ではブランチと基準位相角を省略。</figcaption>
+      <figcaption lang="ja">番号は下の処理ステップの ID（OPF-01〜OPF-16）です。薄い枠は <code>SolverOPF</code> の非公開関数（<code>_auxiliary/@SolverOPF/private/</code>）を表します。<code>net.build_opf_problem</code> は OPF-02 と OPF-04〜OPF-10 だけを実行します。<code>"ELD"</code> では、ブランチの処理と基準位相角の固定を行いません。</figcaption>
     </figure>
 
     <!-- ============================== STEPS ============================== -->
     <h2 id="steps"><span lang="en">Processing steps in detail</span><span lang="ja">処理ステップの詳細</span></h2>
     <p lang="en">Private helpers: <code>build_bus</code>, <code>build_component</code>, <code>build_branch</code>, <code>apply</code>, <code>variables</code>, <code>param</code> in <code>_GUILDAsystem/_auxiliary/@SolverOPF/private/</code>; local functions in the file of the calling method (<code>@SolverOPF/solve.m</code>, <code>@SolverOPF/build_problem.m</code>, ...). The classes Bus, Component and Branch only hold the parameters; they have no OPF method.</p>
-    <p lang="ja">非公開の補助関数: <code>_GUILDAsystem/_auxiliary/@SolverOPF/private/</code> の <code>build_bus</code>、<code>build_component</code>、<code>build_branch</code>、<code>apply</code>、<code>variables</code>、<code>param</code>。ほかは呼び出し元メソッドのファイル（<code>@SolverOPF/solve.m</code>、<code>@SolverOPF/build_problem.m</code> など）のローカル関数。Bus、Component、Branch はパラメータを保持するのみで、OPF のメソッドなし。</p>
+    <p lang="ja">非公開の補助関数は、<code>_GUILDAsystem/_auxiliary/@SolverOPF/private/</code> にある <code>build_bus</code>、<code>build_component</code>、<code>build_branch</code>、<code>apply</code>、<code>variables</code>、<code>param</code> です。それ以外は、呼び出し元のメソッドのファイル（<code>@SolverOPF/solve.m</code>、<code>@SolverOPF/build_problem.m</code> など）にあるローカル関数です。Bus、Component、Branch はパラメータを持つだけで、OPF 用のメソッドはありません。</p>
     <ol class="fs-steps">
       <li class="fs-step" id="OPF-01">
         <p class="fs-head"><b class="fs-id">OPF-01</b> <span class="fs-call">user → <code>PowerNetwork.optimize_powerflow</code></span><small><code>v3_opf_args</code>, <code>take_call_options</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Maps the deprecated option <code>methods</code> to <code>Method</code>; separates the call-only options <code>Export</code>, <code>Problem</code>, <code>InitialPoint</code>, <code>WarmStart</code> from the solver options; <code>WarmStart</code> is added to <code>sct_options</code> after OPF-02.</span><span lang="ja">非推奨オプション <code>methods</code> を <code>Method</code> に変換。呼び出しのみのオプション <code>Export</code>、<code>Problem</code>、<code>InitialPoint</code>、<code>WarmStart</code> をソルバーのオプションから分離。<code>WarmStart</code> は OPF-02 の後に <code>sct_options</code> へ追加</span></dd>
+          <dd><span lang="en">Maps the deprecated option <code>methods</code> to <code>Method</code>; separates the call-only options <code>Export</code>, <code>Problem</code>, <code>InitialPoint</code>, <code>WarmStart</code> from the solver options; <code>WarmStart</code> is added to <code>sct_options</code> after OPF-02.</span><span lang="ja">非推奨のオプション <code>methods</code> を <code>Method</code> に読み替えます。呼び出しのときだけ使うオプション <code>Export</code>、<code>Problem</code>、<code>InitialPoint</code>、<code>WarmStart</code> は、ソルバーのオプションと分けておきます。<code>WarmStart</code> は OPF-02 の後で <code>sct_options</code> に加えます。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>varargin</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -229,18 +229,18 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         <p class="fs-head"><b class="fs-id">OPF-02</b> <span class="fs-call"><code>optimize_powerflow</code> → <code>SolverOPF.get_options</code></span><small>→ <code>tools.resolve_options</code>, <code>validate_options</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Maps the Name-Value names through <code>OptionMap</code>, checks the values (<code>PlotFcn</code>: <code>tools.check_plotfcn</code>), fills the rest from the OptimalPowerFlow section of <code>GUILDA.setting</code> and the conditions of the solver.</span><span lang="ja">Name-Value の名前を <code>OptionMap</code> で対応づけ、値を検査（<code>PlotFcn</code>: <code>tools.check_plotfcn</code>）。残りは <code>GUILDA.setting</code> の OptimalPowerFlow セクションとソルバーの条件から補完</span></dd>
+          <dd><span lang="en">Maps the Name-Value names through <code>OptionMap</code>, checks the values (<code>PlotFcn</code>: <code>tools.check_plotfcn</code>), fills the rest from the OptimalPowerFlow section of <code>GUILDA.setting</code> and the conditions of the solver.</span><span lang="ja">Name-Value の名前を <code>OptionMap</code> で設定名に対応させ、値を検査します（<code>PlotFcn</code> は <code>tools.check_plotfcn</code> で検査）。指定のない設定は、<code>GUILDA.setting</code> の OptimalPowerFlow セクションとソルバーの条件から埋めます。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>c_nv</code>; <code>GUILDA.config("OptimalPowerFlow")</code>; public properties of <code>net.solver_OPF</code></span><span lang="ja"><code>c_nv</code>、<code>GUILDA.config("OptimalPowerFlow")</code>、<code>net.solver_OPF</code> の public プロパティ</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>sct_options</code>: struct with 16 fields (<code>Method</code>, <code>Solver</code>, <code>&lt;Solver&gt;Algorithm</code>, <code>Verbose</code>, <code>MaxIteration</code>, ..., <code>PlotFcn</code>, <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code>). Solver and settings file unchanged.</span><span lang="ja"><code>sct_options</code>: 16 フィールドの構造体（<code>Method</code>、<code>Solver</code>、<code>Algorithm_*</code>、<code>Display</code>、<code>MaxIteration</code>、…、<code>PlotFcn</code>、<code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code>）。ソルバーと設定ファイルは不変</span></dd>
+          <dd><span lang="en"><code>sct_options</code>: struct with 16 fields (<code>Method</code>, <code>Solver</code>, <code>&lt;Solver&gt;Algorithm</code>, <code>Verbose</code>, <code>MaxIteration</code>, ..., <code>PlotFcn</code>, <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code>). Solver and settings file unchanged.</span><span lang="ja"><code>sct_options</code> は 16 個のフィールドを持つ構造体です（<code>Method</code>、<code>Solver</code>、<code>Algorithm_*</code>、<code>Display</code>、<code>MaxIteration</code>、…、<code>PlotFcn</code>、<code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code>）。ソルバーと設定ファイルはそのままです。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="OPF-03">
         <p class="fs-head"><b class="fs-id">OPF-03</b> <span class="fs-call"><code>optimize_powerflow</code> → <code>SolverOPF.solve(net, sct_options, sct_input)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Checks Optimization Toolbox (<code>tools.require_toolbox("optim", "OPF")</code>); starts the timer; runs OPF-04 to OPF-15.</span><span lang="ja">Optimization Toolbox を確認（<code>tools.require_toolbox("optim", "OPF")</code>）。タイマー開始。OPF-04〜OPF-15 を実行</span></dd>
+          <dd><span lang="en">Checks Optimization Toolbox (<code>tools.require_toolbox("optim", "OPF")</code>); starts the timer; runs OPF-04 to OPF-15.</span><span lang="ja">Optimization Toolbox があるかを確かめます（<code>tools.require_toolbox("optim", "OPF")</code>）。続いてタイマーを動かし、OPF-04〜OPF-15 を実行します。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>sct_options.Method</code>; <code>sct_input</code>: <code>Problem</code>, <code>InitialPoint</code> when given</span><span lang="ja"><code>sct_options.Method</code>、<code>sct_input</code>: 指定された <code>Problem</code>、<code>InitialPoint</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -259,12 +259,12 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
               <li>With <code>Problem</code>: builds without <code>Cost</code> and <code>Constraint</code>, only for <code>x0</code> and the check of OPF-11.</li>
               <li>Initial bus voltages (local <code>initial_voltage</code>): with <code>sct_options.WarmStart</code> true and the same buses (by object) and <code>n_revTopology</code>, the kept <code>"AC OPF"</code> solution; otherwise the flat start. <code>net.build_opf_problem</code> gives no <code>WarmStart</code>: its <code>x0</code> is the flat start.</li>
             </ul><ul lang="ja">
-              <li><code>solve</code> から（内部関数 <code>cached_problem</code>）: ネットワーク、<code>n_revOPF</code>、設定、初期点、変数の上下限が同じなら前回の <code>solve</code> が保持した問題（<a href="#side-effects">副作用</a>を参照）。それ以外は <code>build_problem</code> で構築し、新しい問題を保持</li>
-              <li>OPF の設定とネットワークの木構造を問題の <code>Description</code> に記録</li>
-              <li><code>optimproblem</code> を作成（最小化、<code>Objective.GenCost = 0</code>）</li>
-              <li><code>"ELD"</code>: 単一の需給式 <code>const.P = 0</code> を用意</li>
-              <li><code>Problem</code> の指定時: <code>Cost</code> と <code>Constraint</code> なしで構築。<code>x0</code> と OPF-11 の確認のみに使用</li>
-              <li>母線の初期電圧（内部関数 <code>initial_voltage</code>）: <code>sct_options.WarmStart</code> が true で、母線（オブジェクトで照合）と <code>n_revTopology</code> が同じなら保持した <code>"AC OPF"</code> の解。それ以外はフラットスタート。<code>net.build_opf_problem</code> は <code>WarmStart</code> を渡さないため、その <code>x0</code> はフラットスタート</li>
+              <li><code>solve</code> から呼ばれた場合は、内部関数 <code>cached_problem</code> がキャッシュを調べます。ネットワーク、<code>n_revOPF</code>、設定、初期点、変数の上下限が前回と同じなら、前回の <code>solve</code> で保持した問題をそのまま使います（<a href="#side-effects">副作用</a>を参照）。違えば <code>build_problem</code> で組み立て直し、新しい問題を保持します。</li>
+              <li>OPF の設定とネットワークの木構造を、問題の <code>Description</code> に書き込みます。</li>
+              <li>最小化の <code>optimproblem</code> を作り、<code>Objective.GenCost = 0</code> から始めます。</li>
+              <li><code>"ELD"</code> では、需給式を <code>const.P = 0</code> の 1 本だけ用意します。</li>
+              <li><code>Problem</code> を指定したときは、<code>Cost</code> と <code>Constraint</code> を入れずに組み立てます。この問題は <code>x0</code> を作ることと、OPF-11 の確認にだけ使います。</li>
+              <li>母線の初期電圧は内部関数 <code>initial_voltage</code> で決めます。<code>sct_options.WarmStart</code> が true で、母線（オブジェクトで照合）と <code>n_revTopology</code> が前回と同じなら、保持している <code>"AC OPF"</code> の解を使います。そうでなければフラットスタートです。<code>net.build_opf_problem</code> は <code>WarmStart</code> を渡さないので、その <code>x0</code> は常にフラットスタートになります。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>tab_parameter</code> (<code>operation</code>, <code>powerflow</code>, <code>OPF</code>) of buses, components, branches; <code>disp_tree</code></span><span lang="ja">母線・機器・ブランチの <code>tab_parameter</code>（<code>operation</code>、<code>powerflow</code>、<code>OPF</code>）、<code>disp_tree</code></span></dd>
@@ -276,7 +276,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         <p class="fs-head"><b class="fs-id">OPF-05</b> <span class="fs-call"><code>build_problem</code> → <code>build_bus(bus, prob, x0, const, m)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">For each bus in <code>net.a_Bus</code> order: the bus variable and the shunt terms of its power balance (see the table below); then its components (OPF-06).</span><span lang="ja"><code>net.a_Bus</code> の順に母線ごとに、母線の変数と需給式のシャント項を追加（下の表を参照）。続いて接続する機器（OPF-06）</span></dd>
+          <dd><span lang="en">For each bus in <code>net.a_Bus</code> order: the bus variable and the shunt terms of its power balance (see the table below); then its components (OPF-06).</span><span lang="ja"><code>net.a_Bus</code> の順に母線を 1 つずつ処理します。母線の変数を作り、需給式にシャントの項を入れます（下の表を参照）。次に、その母線につながる機器を処理します（OPF-06）。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">initial voltage of the bus (OPF-04)</span><span lang="ja">母線の初期電圧（OPF-04）</span>, <code>tab_parameter.operation</code> (<code>Vmin</code>, <code>Vmax</code>), <code>tab_parameter.dynamics</code> (<code>Gshunt</code>, <code>Bshunt</code>)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -292,9 +292,9 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
               <li>Adds the cost of <code>tab_parameter.OPF</code> when <code>DefaultCost</code> is true; <code>cost_term</code> leaves out zero coefficients.</li>
               <li>A load (<code>component.load.abstract</code>) with infinite bounds is fixed to its power-flow <code>P</code> / <code>Q</code>.</li>
             </ul><ul lang="ja">
-              <li>出力の変数を上下限付きで追加し、その母線の需給式に加算</li>
-              <li><code>DefaultCost</code> が true なら <code>tab_parameter.OPF</code> のコストを追加。<code>cost_term</code> はゼロの係数を省略</li>
-              <li>上下限が無限大の負荷（<code>component.load.abstract</code>）は潮流計算の <code>P</code> / <code>Q</code> に固定</li>
+              <li>機器の出力を、上下限付きの変数として加えます。その値は接続先の母線の需給式に足し込みます。</li>
+              <li><code>DefaultCost</code> が true なら、<code>tab_parameter.OPF</code> のコストを目的関数に加えます。係数がゼロの項は <code>cost_term</code> が省きます。</li>
+              <li>上下限が無限大の負荷（<code>component.load.abstract</code>）は、出力を潮流計算の <code>P</code> / <code>Q</code> に固定します。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>tab_parameter.OPF</code> (<code>P0</code>, <code>Q0</code>, <code>HP</code>, <code>fP</code>, <code>HQ</code>, <code>fQ</code>), <code>tab_parameter.operation</code> (<code>Pmin</code>, <code>Pmax</code>, <code>Qmin</code>, <code>Qmax</code>), <code>tab_parameter.powerflow</code> (loads)</span><span lang="ja"><code>tab_parameter.OPF</code>（<code>P0</code>、<code>Q0</code>、<code>HP</code>、<code>fP</code>、<code>HQ</code>、<code>fQ</code>）、<code>tab_parameter.operation</code>（<code>Pmin</code>、<code>Pmax</code>、<code>Qmin</code>、<code>Qmax</code>）、<code>tab_parameter.powerflow</code>（負荷）</span></dd>
@@ -306,7 +306,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         <p class="fs-head"><b class="fs-id">OPF-07</b> <span class="fs-call"><code>build_problem</code></span><small><code>add_reference</code>, <code>tools.slack_bus_index</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Fixes the angle of the <code>ReferenceBus</code> to its power-flow <code>Varg</code> (0 when NaN). <code>"auto"</code>: the bus of <code>tools.slack_bus_index</code>, or the first bus; a tag: that bus; <code>"none"</code> and <code>"ELD"</code>: no fixed angle. <code>l_isSlack</code> is not set.</span><span lang="ja"><code>ReferenceBus</code> の位相角を潮流計算の <code>Varg</code>（NaN なら 0）に固定。<code>"auto"</code>: <code>tools.slack_bus_index</code> の母線（なければ最初の母線）、タグ: その母線、<code>"none"</code> と <code>"ELD"</code>: 固定なし。<code>l_isSlack</code> は設定しない</span></dd>
+          <dd><span lang="en">Fixes the angle of the <code>ReferenceBus</code> to its power-flow <code>Varg</code> (0 when NaN). <code>"auto"</code>: the bus of <code>tools.slack_bus_index</code>, or the first bus; a tag: that bus; <code>"none"</code> and <code>"ELD"</code>: no fixed angle. <code>l_isSlack</code> is not set.</span><span lang="ja"><code>ReferenceBus</code> の母線の位相角を、潮流計算の <code>Varg</code> に固定します（NaN なら 0）。<code>"auto"</code> なら <code>tools.slack_bus_index</code> の母線（なければ最初の母線）、タグならその母線を使います。<code>"none"</code> と <code>"ELD"</code> では固定しません。<code>l_isSlack</code> には書き込みません。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>ReferenceBus</code>, <code>Bus.l_isSlack</code>, component <code>Q</code> settings, <code>tab_parameter.powerflow.Varg</code></span><span lang="ja"><code>ReferenceBus</code>、<code>Bus.l_isSlack</code>、機器の <code>Q</code> 設定、<code>tab_parameter.powerflow.Varg</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -322,11 +322,11 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
               <li>one variable per end, <code>&lt;branch&gt;_&lt;bus&gt;</code>: the flow from the branch into that bus (initial point: the flow at the initial bus voltages);</li>
               <li>the definitions of the flows from the end-bus variables, and the flow limits;</li>
               <li>the end flows to the balance of each end bus.</li>
-            </ul><span lang="ja">各ブランチについて追加（<code>"ELD"</code> 以外）:</span><ul lang="ja">
+            </ul><span lang="ja"><code>"ELD"</code> 以外では、ブランチごとに次のものを加えます。</span><ul lang="ja">
               <li>位相角差の制約</li>
-              <li>端ごとに 1 つの変数 <code>&lt;branch&gt;_&lt;bus&gt;</code>: ブランチからその母線へ流れ込む潮流（初期点は母線の初期電圧での潮流）</li>
-              <li>両端の母線変数による潮流の定義と、潮流の制約</li>
-              <li>各端の母線の需給式への端の潮流</li>
+              <li>端ごとに 1 つの変数 <code>&lt;branch&gt;_&lt;bus&gt;</code>。ブランチからその母線へ流れ込む潮流を表し、初期点は母線の初期電圧で計算した潮流です。</li>
+              <li>両端の母線変数から潮流を定める式と、潮流の制約</li>
+              <li>両端の母線の需給式に入る、各端の潮流</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>sct_var</code> and <code>x0</code> of the end buses; <code>tab_parameter.operation</code> (<code>Pmax</code>, <code>Qmax</code>, <code>Imax</code>, <code>Smax</code>, <code>Vargmax</code>); <code>get_admittance_matrix</code> (AC); <code>X</code>, <code>tap</code>, <code>phase</code> (DC)</span><span lang="ja">両端の母線の <code>sct_var</code> と <code>x0</code>、<code>tab_parameter.operation</code>（<code>Pmax</code>、<code>Qmax</code>、<code>Imax</code>、<code>Smax</code>、<code>Vargmax</code>）、<code>get_admittance_matrix</code>（AC）、<code>X</code>、<code>tap</code>、<code>phase</code>（DC）</span></dd>
@@ -338,7 +338,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         <p class="fs-head"><b class="fs-id">OPF-09</b> <span class="fs-call"><code>build_problem</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Turns every collected injection sum into an equality: the power balance of each bus, also when its bounds are infinite.</span><span lang="ja">集めた注入の和をすべて等式制約に変換。上下限が無限大でも各母線の需給式は残存</span></dd>
+          <dd><span lang="en">Turns every collected injection sum into an equality: the power balance of each bus, also when its bounds are infinite.</span><span lang="ja">集めた注入の和を、すべて等式制約にします。上下限が無限大の母線でも、需給式は残ります。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>const</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -353,15 +353,15 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
               <li><code>Cost(v, p)</code> → added to <code>GenCost</code></li>
               <li>each field <code>&lt;name&gt;</code> of <code>Constraint(v, p)</code> → <code>prob.Constraints.&lt;name&gt;</code> (a name already in the problem is an error)</li>
               <li><code>v</code>: every object by tag (<code>v.Component.(tag).P</code>, <code>v.Bus.(tag).V</code>, <code>v.Branch.(tag).Pfrom</code>, ...); <code>p</code>: <code>Method</code> and <code>base</code></li>
-            </ul><span lang="ja">ユーザー定義の項を追加。どちらも <code>[]</code> なら何もしない</span><ul lang="ja">
-              <li><code>Cost(v, p)</code> → <code>GenCost</code> に加算</li>
-              <li><code>Constraint(v, p)</code> の各フィールド <code>&lt;name&gt;</code> → <code>prob.Constraints.&lt;name&gt;</code>（問題にある名前はエラー）</li>
-              <li><code>v</code>: タグで各オブジェクトを参照（<code>v.Component.(tag).P</code>、<code>v.Bus.(tag).V</code>、<code>v.Branch.(tag).Pfrom</code> など）、<code>p</code>: <code>Method</code> と <code>base</code></li>
+            </ul><span lang="ja">ユーザーが定義した項を加えます。どちらも <code>[]</code> なら何もしません。</span><ul lang="ja">
+              <li><code>Cost(v, p)</code> の値は <code>GenCost</code> に足します。</li>
+              <li><code>Constraint(v, p)</code> の各フィールド <code>&lt;name&gt;</code> は <code>prob.Constraints.&lt;name&gt;</code> になります。問題に同じ名前がすでにあるとエラーです。</li>
+              <li><code>v</code> からは、タグで各オブジェクトの変数を参照できます（<code>v.Component.(tag).P</code>、<code>v.Bus.(tag).V</code>、<code>v.Branch.(tag).Pfrom</code> など）。<code>p</code> には <code>Method</code> と <code>base</code> が入ります。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>sct_options.Cost</code>, <code>sct_options.Constraint</code>; <code>sct_var</code>; <code>net.tab_parameter.base</code></span><span lang="ja"><code>sct_options.Cost</code>、<code>sct_options.Constraint</code>、<code>sct_var</code>、<code>net.tab_parameter.base</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>prob</code>, <code>x0</code> (struct, one field per variable); <code>net.build_opf_problem</code> returns them here; with <code>validate=true</code>, the constraints evaluated at <code>x0</code> are printed</span><span lang="ja"><code>prob</code>、<code>x0</code>（変数ごとに 1 フィールドの構造体）。<code>net.build_opf_problem</code> はここで返却。<code>validate=true</code> では <code>x0</code> で評価した制約を表示</span></dd>
+          <dd><span lang="en"><code>prob</code>, <code>x0</code> (struct, one field per variable); <code>net.build_opf_problem</code> returns them here; with <code>validate=true</code>, the constraints evaluated at <code>x0</code> are printed</span><span lang="ja"><code>prob</code> と <code>x0</code>（変数ごとに 1 フィールドの構造体）です。<code>net.build_opf_problem</code> はここで値を返します。<code>validate=true</code> のときは、<code>x0</code> で評価した制約を表示します。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="OPF-11">
@@ -372,8 +372,8 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
               <li><code>Problem</code> given: checks that it has every variable of the built problem with the same size, then solves it as it is.</li>
               <li><code>InitialPoint</code> given: replaces <code>x0</code>. A <code>Problem</code> with added variables needs one that covers them.</li>
             </ul><ul lang="ja">
-              <li><code>Problem</code> の指定時: 構築した問題の全変数を同じサイズで持つか確認し、そのまま求解</li>
-              <li><code>InitialPoint</code> の指定時: <code>x0</code> を置き換え。変数を加えた <code>Problem</code> ではその変数も含むものが必要</li>
+              <li><code>Problem</code> を指定したときは、組み立てた問題の変数がすべて同じサイズで含まれているかを確かめ、その問題をそのまま解きます。</li>
+              <li><code>InitialPoint</code> を指定したときは、<code>x0</code> をそれで置き換えます。<code>Problem</code> に変数を加えた場合は、その変数の初期値も必要です。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>sct_input</code></dd>
@@ -390,21 +390,21 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
               <li>Always passes <code>Display</code> from <code>Verbose</code> (<code>"iter"</code> or <code>"none"</code>); the other settings only when they differ from the solver's defaults (NaN: the default).</li>
               <li><code>PlotFcn</code>: keys as <code>optimplot&lt;key&gt;</code> (key list: <code>private/plot_keys.m</code>), a handle as it is; with linprog / quadprog a value other than <code>"none"</code> stops with <code>GUILDA:SolverOPF:PlotFcnUnsupported</code>.</li>
             </ul><ul lang="ja">
-              <li>ソルバーを選択: <code>"auto"</code> では <code>solvers(prob)</code>、名前を指定した場合はその問題を表せるか確認</li>
-              <li><code>Display</code> は常に <code>Verbose</code> から指定（<code>"iter"</code> または <code>"none"</code>）。他の設定はソルバーの既定値と異なるときだけ指定（NaN は既定値）</li>
-              <li><code>PlotFcn</code>: キーは <code>optimplot&lt;キー&gt;</code>（キーの一覧は <code>private/plot_keys.m</code>）、関数ハンドルはそのまま。linprog・quadprog では <code>"none"</code> 以外で <code>GUILDA:SolverOPF:PlotFcnUnsupported</code></li>
+              <li>ソルバーを決めます。<code>"auto"</code> なら <code>solvers(prob)</code> の結果を使います。名前を指定したときは、そのソルバーで問題を表せるかを確かめます。</li>
+              <li><code>Display</code> は常に <code>Verbose</code> から決めます（<code>"iter"</code> または <code>"none"</code>）。ほかの設定は、ソルバーの既定値と違うときだけ渡します（NaN は既定値の意味です）。</li>
+              <li><code>PlotFcn</code> のキーは <code>optimplot&lt;キー&gt;</code> に置き換え、関数ハンドルはそのまま渡します。キーの一覧は <code>private/plot_keys.m</code> にあります。linprog と quadprog で <code>"none"</code> 以外を指定すると <code>GUILDA:SolverOPF:PlotFcnUnsupported</code> になります。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>prob</code>, <code>sct_options</code>, <code>optimoptions(solver)</code></span><span lang="ja"><code>prob</code>、<code>sct_options</code>、<code>optimoptions(solver)</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>c_nv</code>: <code>{"Solver", name}</code> and <code>{"Options", optimoptions(...)}</code> when needed</span><span lang="ja"><code>c_nv</code>: 必要に応じて <code>{"Solver", name}</code> と <code>{"Options", optimoptions(...)}</code></span></dd>
+          <dd><span lang="en"><code>c_nv</code>: <code>{"Solver", name}</code> and <code>{"Options", optimoptions(...)}</code> when needed</span><span lang="ja"><code>c_nv</code>。必要に応じて <code>{"Solver", name}</code> と <code>{"Options", optimoptions(...)}</code> を入れます。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="OPF-13">
         <p class="fs-head"><b class="fs-id">OPF-13</b> <span class="fs-call"><code>SolverOPF.solve</code> → <code>solve(prob, x0, c_nv{:})</code></span><small>Optimization Toolbox</small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Solves the problem. A struct objective value is summed into one number.</span><span lang="ja">問題を求解。構造体の目的関数値は 1 つの数値に合計</span></dd>
+          <dd><span lang="en">Solves the problem. A struct objective value is summed into one number.</span><span lang="ja">問題を解きます。目的関数の値が構造体で返ったときは、合計して 1 つの数値にします。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>prob</code>, <code>x0</code></span><span lang="ja"><code>prob</code>、<code>x0</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -419,10 +419,10 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
               <li>bus values, and the injections of each connection (in bus order: components, then branch ends);</li>
               <li>branch flows into the branch at each end, with losses.</li>
               <li>In <code>"AC OPF"</code> the component current is <code>(P − jQ)/conj(V)</code>.</li>
-            </ul><span lang="ja"><code>sol</code> から結果の表を作成</span><ul lang="ja">
-              <li>母線の値と各接続の注入（母線の順に、機器、続いてブランチ端）</li>
-              <li>各端でブランチへ流れ込む潮流と損失</li>
-              <li><code>"AC OPF"</code> では機器の電流を <code>(P − jQ)/conj(V)</code> とする</li>
+            </ul><span lang="ja"><code>sol</code> から次の表を作ります。</span><ul lang="ja">
+              <li>母線の値と、各接続からの注入（母線ごとに、機器、ブランチ端の順）</li>
+              <li>各端でブランチへ流れ込む潮流と、損失</li>
+              <li><code>"AC OPF"</code> では、機器の電流を <code>(P − jQ)/conj(V)</code> で求めます。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>sol</code>, <code>net.a_Bus</code>, <code>net.a_Branch</code>, <code>Branch.a_Bus</code></span><span lang="ja"><code>sol</code>、<code>net.a_Bus</code>、<code>net.a_Branch</code>、<code>Branch.a_Bus</code></span></dd>
@@ -434,7 +434,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         <p class="fs-head"><b class="fs-id">OPF-15</b> <span class="fs-call"><code>SolverOPF.solve</code> → <code>ResultOPF(...)</code></span><small>→ <code>ResultBase</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Stores the result, the effective settings, the outcome, and the elapsed time. A solved <code>"AC OPF"</code> (<code>flag &gt; 0</code>): <code>net.solver_OPF</code> keeps <code>[Varg, V]</code> of <code>tab_bus</code> for the next <code>WarmStart</code>.</span><span lang="ja">結果、実際に使った設定、成否、経過時間を保存。解けた <code>"AC OPF"</code>（<code>flag &gt; 0</code>）: 次の <code>WarmStart</code> 用に <code>net.solver_OPF</code> が <code>tab_bus</code> の <code>[Varg, V]</code> を保持</span></dd>
+          <dd><span lang="en">Stores the result, the effective settings, the outcome, and the elapsed time. A solved <code>"AC OPF"</code> (<code>flag &gt; 0</code>): <code>net.solver_OPF</code> keeps <code>[Varg, V]</code> of <code>tab_bus</code> for the next <code>WarmStart</code>.</span><span lang="ja">結果、実際に使った設定、成否、経過時間を保存します。<code>"AC OPF"</code> が解けた（<code>flag &gt; 0</code>）ときは、次の <code>WarmStart</code> に備えて、<code>tab_bus</code> の <code>[Varg, V]</code> を <code>net.solver_OPF</code> に保持します。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">the outputs of OPF-13 and OPF-14; <code>net</code>; the <code>tic</code> of OPF-03</span><span lang="ja">OPF-13 と OPF-14 の出力、<code>net</code>、OPF-03 の <code>tic</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -449,8 +449,8 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
               <li>Runs <code>Export</code> when asked.</li>
               <li>With 6 outputs: the deprecated tuple <code>[powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob]</code> through <code>v3_optimize_powerflow</code>, with a deprecation warning.</li>
             </ul><ul lang="ja">
-              <li>指定があれば <code>Export</code> を実行</li>
-              <li>出力 6 個の呼び出し: <code>v3_optimize_powerflow</code> が非推奨の出力 <code>[powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob]</code> を警告付きで返却</li>
+              <li><code>Export</code> が指定されていれば書き出します。</li>
+              <li>出力を 6 個受け取る古い呼び出し方では、<code>v3_optimize_powerflow</code> が非推奨の出力 <code>[powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob]</code> を警告付きで返します。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>opt</code>, <code>nargout</code></span><span lang="ja"><code>opt</code>、<code>nargout</code></span></dd>
@@ -462,7 +462,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
 
     <h3><span lang="en">Optimization problem of each formulation</span><span lang="ja">定式化ごとの最適化問題</span></h3>
     <p lang="en">Variable names: the tags. Powers: injections in per unit; angles: radians. A bound set to <code>-Inf</code> / <code>Inf</code> in <code>tab_parameter.operation</code> (NaN also for the branch limits) adds no limit; the object's share of the power balance always stays.</p>
-    <p lang="ja">変数名: タグ。電力: 注入方向の単位法、位相角: ラジアン。<code>tab_parameter.operation</code> の上下限を <code>-Inf</code> / <code>Inf</code>（ブランチの制約値は NaN も）にすると制約なし。オブジェクトの需給式への寄与は常に残存。</p>
+    <p lang="ja">変数名にはタグを使います。電力は注入の向きを正とする単位法、位相角はラジアンで表します。<code>tab_parameter.operation</code> の上下限を <code>-Inf</code> / <code>Inf</code> にすると、その制約はかかりません（ブランチの制約値は NaN でも同じです）。それでも、各オブジェクトが需給式に入る項は残ります。</p>
     <table class="dg-table opf-prob">
       <thead><tr><th lang="en">Object</th><th lang="ja">オブジェクト</th><th>"ELD"</th><th>"DC OPF"</th><th>"AC OPF"</th></tr></thead>
       <tbody>
@@ -490,42 +490,42 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
     <!-- ============================== DATA ============================== -->
     <h2 id="data"><span lang="en">Data the feature produces</span><span lang="ja">この機能が生成するデータ</span></h2>
     <p lang="en"><code>ResultOPF</code> (subclass of <code>ResultBase</code>): computed values only; columns depend on the formulation. Sizes for <code>network.IEEE14bus</code> (14 buses, 17 components, 20 branches: 57 connections).</p>
-    <p lang="ja"><code>ResultOPF</code>（<code>ResultBase</code> のサブクラス）: 計算した値のみ保持。列は定式化に依存。サイズは <code>network.IEEE14bus</code>（母線 14、機器 17、ブランチ 20、接続 57）の場合。</p>
+    <p lang="ja"><code>ResultOPF</code> は <code>ResultBase</code> のサブクラスで、計算した値だけを持ちます。列は定式化によって変わります。下のサイズは <code>network.IEEE14bus</code>（母線 14、機器 17、ブランチ 20、接続 57）の場合です。</p>
     <table class="dg-table opf-data">
       <thead><tr><th lang="en">Property</th><th lang="ja">プロパティ</th><th lang="en">Contents and unit</th><th lang="ja">内容と単位</th><th lang="en">Size (AC / DC / ELD)</th><th lang="ja">サイズ（AC / DC / ELD）</th></tr></thead>
       <tbody>
         <tr><td><code>tab_bus</code></td>
           <td lang="en" data-label="Contents">one row per bus: <code>Varg</code> [rad], <code>V</code>, <code>P</code>, <code>Q</code>, <code>Vphasor</code>, <code>Iphasor</code> [pu] (AC); <code>Varg</code>, <code>V</code> (= 1), <code>P</code> (DC); <code>P</code> (ELD)</td>
-          <td lang="ja" data-label="内容">母線ごとに 1 行。<code>Varg</code> [rad]、<code>V</code>、<code>P</code>、<code>Q</code>、<code>Vphasor</code>、<code>Iphasor</code> [pu]（AC）、<code>Varg</code>、<code>V</code>（= 1）、<code>P</code>（DC）、<code>P</code>（ELD）</td>
+          <td lang="ja" data-label="内容">母線ごとに 1 行です。列は、AC では <code>Varg</code> [rad]、<code>V</code>、<code>P</code>、<code>Q</code>、<code>Vphasor</code>、<code>Iphasor</code> [pu]、DC では <code>Varg</code>、<code>V</code>（= 1）、<code>P</code>、ELD では <code>P</code> です。</td>
           <td data-label="Size" data-label-ja="サイズ">14×6 / 14×3 / 14×1</td></tr>
         <tr><td><code>tab_cub</code></td>
           <td lang="en" data-label="Contents">injection into the bus of each connection: rows <code>&lt;component&gt;</code> then <code>&lt;branch&gt;_&lt;bus&gt;</code>; <code>Iphasor</code>, <code>P</code>, <code>Q</code> (AC); <code>P</code> (DC, ELD; NaN for branch ends in ELD)</td>
-          <td lang="ja" data-label="内容">各接続から母線への注入。行は <code>&lt;component&gt;</code>、続いて <code>&lt;branch&gt;_&lt;bus&gt;</code>。<code>Iphasor</code>、<code>P</code>、<code>Q</code>（AC）、<code>P</code>（DC、ELD。ELD ではブランチ端は NaN）</td>
+          <td lang="ja" data-label="内容">各接続から母線への注入です。行は <code>&lt;component&gt;</code> が先で、その後に <code>&lt;branch&gt;_&lt;bus&gt;</code> が続きます。列は、AC では <code>Iphasor</code>、<code>P</code>、<code>Q</code>、DC と ELD では <code>P</code> です。ELD ではブランチ端の値は NaN になります。</td>
           <td data-label="Size" data-label-ja="サイズ">57×3 / 57×1 / 57×1</td></tr>
         <tr><td><code>tab_branch</code></td>
           <td lang="en" data-label="Contents">flows into the branch at each end (from = <code>a_Bus{1}</code>): <code>Pfrom</code>, <code>Qfrom</code>, <code>Pto</code>, <code>Qto</code>, <code>Ifrom</code>, <code>Ito</code>, <code>Ploss</code>, <code>Qloss</code> (AC); <code>Pfrom</code>, <code>Pto</code>, <code>Ploss</code> (DC; NaN in ELD)</td>
-          <td lang="ja" data-label="内容">各端でブランチへ流れ込む潮流（from = <code>a_Bus{1}</code>）。<code>Pfrom</code>、<code>Qfrom</code>、<code>Pto</code>、<code>Qto</code>、<code>Ifrom</code>、<code>Ito</code>、<code>Ploss</code>、<code>Qloss</code>（AC）、<code>Pfrom</code>、<code>Pto</code>、<code>Ploss</code>（DC。ELD では NaN）</td>
+          <td lang="ja" data-label="内容">各端でブランチへ流れ込む潮流です（from は <code>a_Bus{1}</code>）。列は、AC では <code>Pfrom</code>、<code>Qfrom</code>、<code>Pto</code>、<code>Qto</code>、<code>Ifrom</code>、<code>Ito</code>、<code>Ploss</code>、<code>Qloss</code>、DC では <code>Pfrom</code>、<code>Pto</code>、<code>Ploss</code> です。ELD ではすべて NaN です。</td>
           <td data-label="Size" data-label-ja="サイズ">20×8 / 20×3 / 20×3</td></tr>
         <tr><td><code>r_cost</code></td>
           <td lang="en" data-label="Contents">optimal objective value, in the unit of the cost coefficients</td>
-          <td lang="ja" data-label="内容">目的関数の最適値。単位はコスト係数のもの</td>
+          <td lang="ja" data-label="内容">目的関数の最適値です。単位はコスト係数に合わせます。</td>
           <td data-label="Size" data-label-ja="サイズ">1×1</td></tr>
         <tr><td><code>lambda</code></td>
           <td lang="en" data-label="Contents">Lagrange multipliers from <code>solve</code>: <code>lambda.Constraints.&lt;name&gt;</code> and <code>lambda.Variables.&lt;name&gt;.Lower</code> / <code>.Upper</code>. The nodal price of active power is <code>−lambda.Constraints.balancedP_&lt;bus&gt;</code>.</td>
-          <td lang="ja" data-label="内容"><code>solve</code> によるラグランジュ乗数。<code>lambda.Constraints.&lt;name&gt;</code> と <code>lambda.Variables.&lt;name&gt;.Lower</code> / <code>.Upper</code>。有効電力の地点別価格: <code>−lambda.Constraints.balancedP_&lt;bus&gt;</code></td>
+          <td lang="ja" data-label="内容"><code>solve</code> が返すラグランジュ乗数です。<code>lambda.Constraints.&lt;name&gt;</code> と <code>lambda.Variables.&lt;name&gt;.Lower</code> / <code>.Upper</code> があります。有効電力の地点別価格は <code>−lambda.Constraints.balancedP_&lt;bus&gt;</code> で求まります。</td>
           <td data-label="Size" data-label-ja="サイズ">struct</td></tr>
         <tr><td><code>OPFprob</code></td>
           <td lang="en" data-label="Contents">the solved <code>optimproblem</code> (built, or the given <code>Problem</code>); its <code>Description</code> records the OPF settings of the run</td>
-          <td lang="ja" data-label="内容">解いた <code>optimproblem</code>（構築したもの、または指定した <code>Problem</code>）。<code>Description</code> に実行時の OPF の設定を記録</td>
+          <td lang="ja" data-label="内容">解いた <code>optimproblem</code> です。組み立てたもの、または指定された <code>Problem</code> が入ります。<code>Description</code> には実行時の OPF の設定が書かれています。</td>
           <td data-label="Size" data-label-ja="サイズ">1×1</td></tr>
         <tr><td><code>flag</code>, <code>output</code>, <code>options</code>, <code>s_solver</code>, <code>r_elapsed</code>, <code>l_success</code></td>
           <td lang="en" data-label="Contents">from <code>ResultBase</code>: the exit flag and output of <code>solve</code>, <code>sct_options</code>, <code>"SolverOPF"</code>, the time [s]; <code>l_success</code> is true when the flag is positive</td>
-          <td lang="ja" data-label="内容"><code>ResultBase</code> から: <code>solve</code> の終了フラグと出力、<code>sct_options</code>、<code>"SolverOPF"</code>、経過時間 [s]。<code>l_success</code> はフラグが正のとき true</td>
+          <td lang="ja" data-label="内容"><code>ResultBase</code> から受け継ぐプロパティです。<code>solve</code> の終了フラグと出力、<code>sct_options</code>、<code>"SolverOPF"</code>、経過時間 [s] が入ります。<code>l_success</code> はフラグが正のとき true です。</td>
           <td data-label="Size" data-label-ja="サイズ">—</td></tr>
       </tbody>
     </table>
     <p lang="en">Nothing is written back to the model objects. Only <code>net.initialize(Method="OPF")</code> sets the AC solution as the equilibrium: each component gets its <code>P</code>, <code>Q</code> from <code>tab_cub</code> (see <a href="feature-initialize.html">Initialization</a>).</p>
-    <p lang="ja">モデルのオブジェクトへの書き戻しなし。交流の解を平衡点に設定するのは <code>net.initialize(Method="OPF")</code> のみで、各機器に <code>tab_cub</code> の <code>P</code>、<code>Q</code> を設定（<a href="feature-initialize.html">初期化</a>を参照）。</p>
+    <p lang="ja">モデルのオブジェクトには何も書き戻しません。交流の解を平衡点として使うのは <code>net.initialize(Method="OPF")</code> だけで、このときは各機器に <code>tab_cub</code> の <code>P</code>、<code>Q</code> を設定します（<a href="feature-initialize.html">初期化</a>を参照）。</p>
 
     <!-- ============================== SIDE EFFECTS ============================== -->
     <h2 id="side-effects"><span lang="en">Side effects on the model and caches</span><span lang="ja">モデルへの副作用とキャッシュ</span></h2>
@@ -538,12 +538,12 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
       <li>The result keeps a reference to the network, not a copy. Record of the settings of the run: <code>OPFprob.Description</code>.</li>
     </ul>
     <ul lang="ja">
-      <li>ネットワーク、stale 状態は不変</li>
-      <li><code>net.solver_OPF</code> は <code>solve</code> が最後に構築した問題と <code>x0</code> を保持（private）。ネットワーク（オブジェクト）、<code>net.n_revOPF</code>（<code>n_revPF</code> の編集すべて、<code>operation</code>・<code>OPF</code> パラメータ、タグ、<code>Hz</code> の編集で <code>handle_edit</code> が増加）、<code>Method</code>、<code>Cost</code>・<code>Constraint</code>（関数ハンドルで比較）、<code>DefaultCost</code>、<code>ReferenceBus</code>、初期点が同じなら再利用。<code>optimproblem</code> の変数はハンドルで、<code>result.OPFprob</code> の上下限の変更が保持した問題に及ぶため、再利用の前に変数の上下限と型を照合。<code>net.build_opf_problem</code> は毎回新しい問題を構築</li>
-      <li><code>net.solver_OPF</code> は <code>WarmStart</code> 用に、最後に解いた <code>"AC OPF"</code>（<code>flag &gt; 0</code>）の母線電圧を、対応する母線と <code>n_revTopology</code> とともに保持（private）。<code>Topology</code> の編集後は不使用。設定は不変</li>
-      <li>stale タグの読み取りなし、平衡点も不要。未初期化のネットワークや初期化後に編集したネットワークでも実行可能</li>
-      <li>ユーザー定義の項はモデルではなく <code>net.solver_OPF</code>（<code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code>）に保持。<code>operation</code> と <code>OPF</code> のパラメータの編集は区分のタグで編集として報告し、何も古くしない（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照）</li>
-      <li>結果が持つのはネットワークのコピーではなく参照。実行時の設定の記録は <code>OPFprob.Description</code></li>
+      <li>ネットワークと stale 状態は変わりません。</li>
+      <li><code>net.solver_OPF</code> は、<code>solve</code> が最後に組み立てた問題と <code>x0</code> を private で保持します。次の値がすべて同じなら、その問題を使い回します。ネットワーク（オブジェクト）、<code>net.n_revOPF</code>、<code>Method</code>、<code>Cost</code> と <code>Constraint</code>（関数ハンドルで比較）、<code>DefaultCost</code>、<code>ReferenceBus</code>、初期点です。<code>net.n_revOPF</code> は、<code>n_revPF</code> が増える編集のほか、<code>operation</code> や <code>OPF</code> のパラメータ、タグ、<code>Hz</code> を編集したときに <code>handle_edit</code> が増やします。<code>optimproblem</code> の変数はハンドルなので、<code>result.OPFprob</code> で上下限を変えると保持した問題にも及びます。そのため、使い回す前に変数の上下限と型を照合します。<code>net.build_opf_problem</code> は毎回新しく組み立てます。</li>
+      <li><code>net.solver_OPF</code> は <code>WarmStart</code> のために、最後に解けた <code>"AC OPF"</code>（<code>flag &gt; 0</code>）の母線電圧を、対応する母線と <code>n_revTopology</code> と一緒に private で保持します。<code>Topology</code> を編集した後は使いません。設定は変わりません。</li>
+      <li>stale タグは読まず、平衡点も使いません。そのため、初期化していないネットワークや、初期化の後に編集したネットワークでも実行できます。</li>
+      <li>ユーザーが定義した項はモデルに置かず、<code>net.solver_OPF</code> の <code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code> に持たせます。<code>operation</code> と <code>OPF</code> のパラメータを編集すると、その区分のタグで編集として記録されますが、古くなる層はありません（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照）。</li>
+      <li>結果はネットワークのコピーではなく参照を持ちます。実行時の設定は <code>OPFprob.Description</code> に残ります。</li>
     </ul>
 
     <!-- ============================== FAILURE ============================== -->
@@ -555,23 +555,23 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
       <li>the tables: built from the last point the solver returned.</li>
     </ul>
     <p lang="en">Errors stop the call before or during the build:</p>
-    <p lang="ja">解けなかった問題はエラーにならない:</p>
+    <p lang="ja">問題が解けなくてもエラーにはなりません。次のように結果で知らせます。</p>
     <ul lang="ja">
-      <li><code>flag</code>: <code>solve</code> の終了フラグ（<code>OptimalSolution</code> などの <code>optim.problemdef.ExitFlag</code>、または数値）</li>
-      <li><code>result.l_success</code>: フラグが正のときのみ true。<code>output.message</code> に結果の説明</li>
-      <li>表: ソルバーが返した最後の点から作成</li>
+      <li><code>flag</code> は <code>solve</code> の終了フラグです。<code>OptimalSolution</code> などの <code>optim.problemdef.ExitFlag</code>、または数値が入ります。</li>
+      <li><code>result.l_success</code> は、フラグが正のときだけ true になります。結果の説明は <code>output.message</code> に入ります。</li>
+      <li>表は、ソルバーが最後に返した点から作ります。</li>
     </ul>
-    <p lang="ja">エラーは問題の構築前か構築中に呼び出しを停止:</p>
+    <p lang="ja">次のエラーは、問題を組み立てる前か途中で呼び出しを止めます。</p>
     <table class="dg-table">
       <thead><tr><th lang="en">When</th><th lang="ja">発生する時点</th><th lang="en">Error</th><th lang="ja">エラー</th></tr></thead>
       <tbody>
-        <tr><td>OPF-02</td><td lang="en" data-label="Error"><code>GUILDA:resolve_options:UnknownName</code>; validation errors of <code>validate_options</code> (e.g. <code>Tolerance</code> not positive); <code>GUILDA:SolverOPF:InvalidHandle</code> when <code>Cost</code> or <code>Constraint</code> is not a function handle or <code>[]</code></td><td lang="ja" data-label="エラー"><code>GUILDA:resolve_options:UnknownName</code>、<code>validate_options</code> の検査エラー（例: 正でない <code>Tolerance</code>）。<code>Cost</code> や <code>Constraint</code> が関数ハンドルでも <code>[]</code> でもなければ <code>GUILDA:SolverOPF:InvalidHandle</code></td></tr>
-        <tr><td>OPF-03</td><td lang="en" data-label="Error"><code>GUILDA:require_toolbox:Unavailable</code>: Optimization Toolbox is not installed or not licensed</td><td lang="ja" data-label="エラー"><code>GUILDA:require_toolbox:Unavailable</code>: Optimization Toolbox がインストールされていない、またはライセンスがない</td></tr>
-        <tr><td>OPF-07</td><td lang="en" data-label="Error"><code>GUILDA:SolverOPF:UnknownReferenceBus</code>: no bus has the tag of <code>ReferenceBus</code></td><td lang="ja" data-label="エラー"><code>GUILDA:SolverOPF:UnknownReferenceBus</code>: <code>ReferenceBus</code> のタグの母線がない</td></tr>
-        <tr><td>OPF-10</td><td lang="en" data-label="Error"><code>GUILDA:SolverOPF:InvalidCost</code>, <code>InvalidConstraint</code>, <code>InvalidConstraintField</code>, <code>DuplicateName</code>; <code>GUILDA:SolverOPF:HandleError</code> (a real <code>MException</code> identifier) when a user handle fails, with the original error as its cause</td><td lang="ja" data-label="エラー"><code>GUILDA:SolverOPF:InvalidCost</code>、<code>InvalidConstraint</code>、<code>InvalidConstraintField</code>、<code>DuplicateName</code>。ユーザーのハンドルの失敗時は <code>GUILDA:SolverOPF:HandleError</code>（実際の <code>MException</code> 識別子）。元のエラーを原因として保持</td></tr>
-        <tr><td>OPF-11</td><td lang="en" data-label="Error"><code>GUILDA:SolverOPF:InvalidProblem</code> (not an <code>optimproblem</code>), <code>GUILDA:SolverOPF:ProblemMismatch</code> (variables missing or resized, e.g. built for another <code>Method</code>)</td><td lang="ja" data-label="エラー"><code>GUILDA:SolverOPF:InvalidProblem</code>（<code>optimproblem</code> でない）、<code>GUILDA:SolverOPF:ProblemMismatch</code>（変数の不足やサイズ違い。例: 別の <code>Method</code> で構築）</td></tr>
-        <tr><td>OPF-12</td><td lang="en" data-label="Error"><code>GUILDA:SolverOPF:UnsupportedSolver</code>: the named <code>Solver</code> cannot express the problem (e.g. <code>linprog</code> with a quadratic cost); the message lists the usable names</td><td lang="ja" data-label="エラー"><code>GUILDA:SolverOPF:UnsupportedSolver</code>: 指定した <code>Solver</code> では表せない問題（例: 二次のコストに <code>linprog</code>）。メッセージに使用可能な名前を表示</td></tr>
-        <tr><td>OPF-13</td><td lang="en" data-label="Error">errors of the Optimization Toolbox itself</td><td lang="ja" data-label="エラー">Optimization Toolbox 自体のエラー</td></tr>
+        <tr><td>OPF-02</td><td lang="en" data-label="Error"><code>GUILDA:resolve_options:UnknownName</code>; validation errors of <code>validate_options</code> (e.g. <code>Tolerance</code> not positive); <code>GUILDA:SolverOPF:InvalidHandle</code> when <code>Cost</code> or <code>Constraint</code> is not a function handle or <code>[]</code></td><td lang="ja" data-label="エラー"><code>GUILDA:resolve_options:UnknownName</code> と、<code>validate_options</code> の検査エラー（たとえば <code>Tolerance</code> が正でない場合）です。<code>Cost</code> や <code>Constraint</code> が関数ハンドルでも <code>[]</code> でもないときは <code>GUILDA:SolverOPF:InvalidHandle</code> になります。</td></tr>
+        <tr><td>OPF-03</td><td lang="en" data-label="Error"><code>GUILDA:require_toolbox:Unavailable</code>: Optimization Toolbox is not installed or not licensed</td><td lang="ja" data-label="エラー"><code>GUILDA:require_toolbox:Unavailable</code>。Optimization Toolbox がインストールされていないか、ライセンスがありません。</td></tr>
+        <tr><td>OPF-07</td><td lang="en" data-label="Error"><code>GUILDA:SolverOPF:UnknownReferenceBus</code>: no bus has the tag of <code>ReferenceBus</code></td><td lang="ja" data-label="エラー"><code>GUILDA:SolverOPF:UnknownReferenceBus</code>。<code>ReferenceBus</code> のタグを持つ母線がありません。</td></tr>
+        <tr><td>OPF-10</td><td lang="en" data-label="Error"><code>GUILDA:SolverOPF:InvalidCost</code>, <code>InvalidConstraint</code>, <code>InvalidConstraintField</code>, <code>DuplicateName</code>; <code>GUILDA:SolverOPF:HandleError</code> (a real <code>MException</code> identifier) when a user handle fails, with the original error as its cause</td><td lang="ja" data-label="エラー"><code>GUILDA:SolverOPF:InvalidCost</code>、<code>InvalidConstraint</code>、<code>InvalidConstraintField</code>、<code>DuplicateName</code> です。ユーザーのハンドルが失敗したときは <code>GUILDA:SolverOPF:HandleError</code> になります。これは実際の <code>MException</code> の識別子で、元のエラーを原因として持ちます。</td></tr>
+        <tr><td>OPF-11</td><td lang="en" data-label="Error"><code>GUILDA:SolverOPF:InvalidProblem</code> (not an <code>optimproblem</code>), <code>GUILDA:SolverOPF:ProblemMismatch</code> (variables missing or resized, e.g. built for another <code>Method</code>)</td><td lang="ja" data-label="エラー"><code>GUILDA:SolverOPF:InvalidProblem</code> は、渡されたものが <code>optimproblem</code> でない場合です。<code>GUILDA:SolverOPF:ProblemMismatch</code> は、変数が足りないかサイズが違う場合で、たとえば別の <code>Method</code> で組み立てた問題を渡したときに起きます。</td></tr>
+        <tr><td>OPF-12</td><td lang="en" data-label="Error"><code>GUILDA:SolverOPF:UnsupportedSolver</code>: the named <code>Solver</code> cannot express the problem (e.g. <code>linprog</code> with a quadratic cost); the message lists the usable names</td><td lang="ja" data-label="エラー"><code>GUILDA:SolverOPF:UnsupportedSolver</code>。指定した <code>Solver</code> では問題を表せません（たとえば二次のコストに <code>linprog</code> を指定した場合）。メッセージに使えるソルバー名を示します。</td></tr>
+        <tr><td>OPF-13</td><td lang="en" data-label="Error">errors of the Optimization Toolbox itself</td><td lang="ja" data-label="エラー">Optimization Toolbox 自体のエラーです。</td></tr>
       </tbody>
     </table>
     <ul lang="en">
@@ -579,8 +579,8 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
       <li>When <code>fmincon</code> cannot start: <code>net.build_opf_problem(validate=true)</code> evaluates every constraint at <code>x0</code> and prints those giving NaN, Inf, or an error.</li>
     </ul>
     <ul lang="ja">
-      <li><code>HandleError</code> 以外の ID: メッセージ項目の名前。MATLAB の識別子ではない（<a href="class-design.html#conventions">クラス設計: クラス実装の規約</a> を参照）</li>
-      <li><code>fmincon</code> が開始できないときの調査: <code>net.build_opf_problem(validate=true)</code> がすべての制約を <code>x0</code> で評価し、NaN・Inf・エラーになるものを表示</li>
+      <li><code>HandleError</code> 以外の ID はメッセージ項目の名前で、MATLAB の識別子ではありません（<a href="class-design.html#conventions">クラス設計: クラス実装の規約</a>を参照）。</li>
+      <li><code>fmincon</code> が始められないときは、<code>net.build_opf_problem(validate=true)</code> で原因を調べます。すべての制約を <code>x0</code> で評価し、NaN や Inf になるもの、エラーになるものを表示します。</li>
     </ul>
 
     <!-- ============================== EXTENSION ============================== -->
@@ -595,20 +595,20 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
             <li>A different cost or constraint: the options <code>Cost</code> / <code>Constraint</code> (or a modified <code>Problem</code>), not a new method.</li>
           </ul></td>
           <td lang="ja" data-label="必要なもの"><ul>
-            <li>すべての機器が持つパラメータ群のみ: <code>OPF</code>（<code>P0</code>、<code>Q0</code>、<code>HP</code>、<code>HQ</code>、<code>fP</code>、<code>fQ</code>）と <code>operation</code>（<code>Pmin</code>、<code>Pmax</code>、<code>Qmin</code>、<code>Qmax</code>）</li>
-            <li>負荷は <code>component.load.abstract</code> を継承: 上下限が無限大の間、電力を潮流計算の設定に固定</li>
-            <li>コストや制約の変更: 新しいメソッドではなくオプション <code>Cost</code> / <code>Constraint</code>（または変更した <code>Problem</code>）</li>
+            <li>必要なのは、すべての機器が持つパラメータ群 <code>OPF</code>（<code>P0</code>、<code>Q0</code>、<code>HP</code>、<code>HQ</code>、<code>fP</code>、<code>fQ</code>）と <code>operation</code>（<code>Pmin</code>、<code>Pmax</code>、<code>Qmin</code>、<code>Qmax</code>）だけです。</li>
+            <li>負荷は <code>component.load.abstract</code> を継承します。上下限が無限大のあいだ、電力は潮流計算の設定値に固定されます。</li>
+            <li>コストや制約を変えたいときは、新しいメソッドを作らずに、オプション <code>Cost</code> / <code>Constraint</code> を使います。変更した <code>Problem</code> を渡す方法もあります。</li>
           </ul></td></tr>
         <tr><td><code>Branch</code></td>
           <td lang="en" data-label="Needs"><code>get_admittance_matrix</code> (used by <code>"AC OPF"</code>), the dynamics parameters <code>X</code> and, for a transformer, <code>tap</code> and <code>phase</code> (used by <code>"DC OPF"</code>), and the <code>operation</code> limits.</td>
-          <td lang="ja" data-label="必要なもの"><code>get_admittance_matrix</code>（<code>"AC OPF"</code> で使用）、動特性パラメータ <code>X</code> と、変圧器では <code>tap</code> と <code>phase</code>（<code>"DC OPF"</code> で使用）、<code>operation</code> の制約値。</td></tr>
+          <td lang="ja" data-label="必要なもの"><code>get_admittance_matrix</code>（<code>"AC OPF"</code> で使用）、動特性パラメータの <code>X</code>、変圧器では <code>tap</code> と <code>phase</code>（<code>"DC OPF"</code> で使用）、それに <code>operation</code> の制約値を使います。</td></tr>
         <tr><td><code>LocalController</code>, <code>GlobalController</code></td>
           <td lang="en" data-label="Needs">Not part of the OPF.</td>
-          <td lang="ja" data-label="必要なもの">OPF に関与しない</td></tr>
+          <td lang="ja" data-label="必要なもの">OPF には関わりません。</td></tr>
       </tbody>
     </table>
     <p lang="en">Classes: <a href="model-implementation.html#contracts">Model Implementation: Contracts a model implements</a>, <a href="model-implementation.html#other">Branches and networks</a>. User terms: <a href="class-design.html#opf">Class Design: OPF customization</a>.</p>
-    <p lang="ja">クラス: <a href="model-implementation.html#contracts">モデルの実装: モデルが実装する契約</a>、<a href="model-implementation.html#other">ブランチとネットワーク</a>。ユーザー定義の項: <a href="class-design.html#opf">クラス設計: OPF のカスタマイズ</a>。</p>
+    <p lang="ja">クラスについては<a href="model-implementation.html#contracts">モデルの実装: モデルが実装する契約</a>と<a href="model-implementation.html#other">ブランチとネットワーク</a>を、ユーザー定義の項については<a href="class-design.html#opf">クラス設計: OPF のカスタマイズ</a>を参照してください。</p>
 
     <!-- ============================== RELATED ============================== -->
     <h2 id="related"><span lang="en">Related pages</span><span lang="ja">関連ページ</span></h2>

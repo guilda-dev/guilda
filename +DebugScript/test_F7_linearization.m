@@ -344,7 +344,7 @@ DebugScript.helper.quiet(@() net.initialize);
 sys = net.get_sys("Method","Kron");
 assert(size(sys.A,1) == n_x + 1)
 assert(same_eigs(eig_finite(sys), eig_finite(net.get_sys("Method","Feedback")), 1e-6))
-% 大域制御器の状態: Kron / DAE は先頭、Feedback は末尾 (v3 と同じ。get_ss の help)
+% グローバル制御器の状態: Kron / DAE は先頭、Feedback は末尾 (v3 と同じ。get_ss の help)
 res = net.linearize();
 sv_K = string(res.get_ss("Kron").StateName);
 sv_D = string(res.get_ss("DAE").StateName);
@@ -428,7 +428,7 @@ assert(numel(sys.StateName) == size(sys.A,1))
 
 
 %% Two global controllers in three algorithms
-% 大域制御器が複数でも 3 方式の固有値が一致し、状態は制御器の数だけ増える
+% グローバル制御器が複数でも 3 方式の固有値が一致し、状態は制御器の数だけ増える
 net = new_net();
 net.add_global_controller("agc-PI", "B001SG1");
 net.add_global_controller("agc-PI", ["B002SG1", "B003SG1"], parameter=struct(kI=200));
@@ -703,7 +703,7 @@ assert(sum(tab.Kind == "x") == n_x && sum(tab.Kind == "Vre" | tab.Kind == "Vim")
 assert(isequal(tab.Kind, [repmat("x",n_x,1); repmat(["Vre";"Vim"],n_v/2,1); repmat("u",n_u,1)]))
 assert(n_v == 2*numel(net.a_Bus) && numel(res.rv_point) == height(tab))
 assert(isequal(size(res.rm_Axv), [n_x n_v]) && isequal(size(res.rm_Avx), [n_v n_x]) && isequal(size(res.rm_Bv), [n_v n_u]) && isequal(size(res.rm_E), [n_x n_x]))
-% 状態と入力の名前は get_ss の StateName / InputName と同じもの (大域制御器の状態は get_ss("Kron") では先頭)
+% 状態と入力の名前は get_ss の StateName / InputName と同じもの (グローバル制御器の状態は get_ss("Kron") では先頭)
 sK = res.get_ss("Kron");
 assert(isequal(sort(tab.Label(tab.Kind == "x")), sort(string(sK.StateName))))
 assert(isequal(tab.Label(tab.Kind == "u"), string(sK.InputName)))
@@ -923,7 +923,7 @@ end
 
 
 %% Point from a simulation with controllers at an equilibrium time
-% 局所制御器 (AVR + PSS, AVR) と大域制御器 (AGC) の状態も結果に入るので、外乱のない
+% ローカル制御器 (AVR + PSS, AVR) とグローバル制御器 (AGC) の状態も結果に入るので、外乱のない
 % シミュレーションの途中の時刻で線形化すると既定 (平衡点) と同じ行列になる
 net = new_net();
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
@@ -1000,7 +1000,7 @@ sc = gen1.get_sys("Point", {sim, t});
 assert(norm(sc.A - res.rm_Axx(iv_cx,iv_cx), 1) < 1e-10)
 assert(norm(sc.A - res0.rm_Axx(iv_cx,iv_cx), 1) > 1e-6, "制御器付きの機器の行列が平衡点のまま")
 assert(isequal(gen1.get_sys("Point", x(iv_c)).A, sc.A))
-% 大域制御器の状態は Point の値のまま
+% グローバル制御器の状態は Point の値のまま
 assert(isequal(res.rv_point(c_idxGC{1}), x(c_idxGC{1})))
 
 

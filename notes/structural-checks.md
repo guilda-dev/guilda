@@ -4,7 +4,7 @@
 
 ## 決定事項(利用者の決定)
 
-- モデルの物体(機器、ブランチ、局所制御器、大域制御器)は、キーで作る `add_*` と `replace_component` からしか作れないようにする。
+- モデルの物体(機器、ブランチ、ローカル制御器、グローバル制御器)は、キーで作る `add_*` と `replace_component` からしか作れないようにする。
 - 外した物体は親の参照を外す(`[]` を代入する)のではなく `delete` する。
 - その結果起きえなくなった「親が空か、親の型が正しいか」の検査と、親なしの単体利用のための経路を消す。互換や念のための防御的な検査は残さない。
 
@@ -29,8 +29,8 @@ R2026a で、変更前に具体クラスのコンストラクタを直接呼ん�
 
 ### 外した物体の削除
 
-- 新しい関数 `tools.delete_layers(c_layer)` が、物体とその下の物体を `delete` します(母線は機器ごと、機器と局所制御器は局所制御器ごと)。層の型で振り分けます。
-- 対象: `remove_component`、`replace_component`(`Controllers="drop"` で残らない局所制御器を含む)、`remove_bus`(機器とその制御器ごと)、`remove_branch`、`remove_local_controller`、`remove_global_controller`、`add_local_controller` による AVR・ガバナ・PSS の置き換えと、AVR 以外への置き換えで行き場のない PSS。
+- 新しい関数 `tools.delete_layers(c_layer)` が、物体とその下の物体を `delete` します(母線は機器ごと、機器とローカル制御器はローカル制御器ごと)。層の型で振り分けます。
+- 対象: `remove_component`、`replace_component`(`Controllers="drop"` で残らないローカル制御器を含む)、`remove_bus`(機器とその制御器ごと)、`remove_branch`、`remove_local_controller`、`remove_global_controller`、`add_local_controller` による AVR・ガバナ・PSS の置き換えと、AVR 以外への置き換えで行き場のない PSS。
 - `add_global_controller` が接続の検査で止まるときは、作った制御器を `delete` してから止まります。
 - `add_local_controller` で置き換えのログに古い制御器のタグを使う箇所は、削除の前にタグを読むよう順序を変えました。
 
@@ -69,7 +69,7 @@ R2026a で、変更前に具体クラスのコンストラクタを直接呼ん�
 | `@LocalController/resolve_observe.m:18` | 機器がないときの分岐 | `resolve_observe` は付けた直後だけ呼ばれる |
 | `@LocalController/parent_equilibrium.m:14` | `isempty(obj.a_Component)` | 制御器は必ず親を持つ |
 | `@LocalController/validate.m:20` | `GUILDA:LocalController:ValidateNotAttached` | 同上 |
-| `@GlobalController/get_sys.m:55-77,91-107` | 系統のない制御器の名前付けとハンドルの作成 | 大域制御器は `add_global_controller` が作って付け、外すと削除する |
+| `@GlobalController/get_sys.m:55-77,91-107` | 系統のない制御器の名前付けとハンドルの作成 | グローバル制御器は `add_global_controller` が作って付け、外すと削除する |
 | `@PowerNetwork/add_global_controller.m:63-69` | `GUILDA:PowerNetwork:GconOtherNetwork` | `GlobalController` のコンストラクタが、制御対象がこの系統の機器であることを確かめる(`InvalidComponent`)。機器は必ず母線と系統にある |
 | `_auxiliary/@SolverODE/build_index.m:166-176` | `GUILDA:SolverODE:ForeignControlledUnit` | 同上。制御対象の機器と母線は、制御器がある間は削除も置換もできない |
 | `_auxiliary/@PowerSystemModel/get_Hz.m:12-19` | 系統がないときの `GUILDA.config("Model","Hz")` | 親を上にたどると必ず系統に着く |
@@ -85,7 +85,7 @@ R2026a で、変更前に具体クラスのコンストラクタを直接呼ん�
 | `_auxiliary/@LayerPackage/LayerPackage.m:88` (`set.s_tag`) | `~isempty(obj.parent)` | 構築途中: コンストラクタがタグを設定する時点では親が未設定。`add_local_controller` も親を付ける前にタグを付け替える |
 | `+controller/@local_LQR/log_change.m:8` | `~isempty(obj.a_Component)` | 構築途中: コンストラクタが `Q`、`R`、`V0` を代入すると set メソッドから呼ばれる |
 | `@GlobalController/GlobalController.m:151-163` | `isa(arg, 'Component')`、別の系統の機器 | 利用者の入力(`add_global_controller` の制御対象)の検査 |
-| `@GlobalController/get_sys.m` の `GlobalControllerPort` | 制御対象の出力・入力の不足 | 起きえる: 追加の後で局所制御器を編集すると、出力の行き先がなくなることがある |
+| `@GlobalController/get_sys.m` の `GlobalControllerPort` | 制御対象の出力・入力の不足 | 起きえる: 追加の後でローカル制御器を編集すると、出力の行き先がなくなることがある |
 | `@PowerNetwork/add_global_controller.m` の `GconTagInUse` | タグの重複 | 親の検査ではない(対象外) |
 | `@Component/get_variable_map.m:76`、`@LocalController/get_sys.m`・`observed_component.m` の `while isa(..., "LocalController")`、`PowerNetwork/handle_edit.m`、`SolverLIN/point_vector.m`、`SolverLIN/solve.m:43`、`Parameter.m:63` | 層の型での振り分け | 振り分けであり、親の検査ではない |
 | `tools/slack_bus_index.m`、`SolverLIN/solve.m:168`、`SolverODE/private/check_islands.m`、`import_matpower.m:126`、`Bus.m:138` | `isempty(b.a_Component)` | 機器のない母線は起きえる |

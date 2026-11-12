@@ -316,7 +316,7 @@ function sys = gc_v3_ports(gc, sv_x)
 % v4 の制御器の線形モデルを v3 の入力にそろえる。v3 の制御器は電圧を読まず状態を読んだので、
 % 母線電圧の入力を除き、機器の出力 "Y_" + 状態名の入力を状態名に戻す
     arguments (Input)
-        gc    % 広域制御器
+        gc    % グローバル制御器
         sv_x  % 状態の名前
     end
     arguments (Output)

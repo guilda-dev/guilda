@@ -1,4 +1,4 @@
-% I67 replace_component の局所制御器の扱い (Issue #67)
+% I67 replace_component のローカル制御器の扱い (Issue #67)
 %
 %   既定では制御器を新しい機器へ渡さず、置き換えた機器ごと削除して GUILDA:Bus:ControllersDropped で警告する
 %   Controllers="keep" で引き継ぎ、引き継げない置換は GUILDA:Bus:ControllersNotKept で何も変更しない

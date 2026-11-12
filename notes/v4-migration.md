@@ -227,12 +227,12 @@ v3 の編集ログ(`tab_editLog`)はありません。各層は、古くなっ�
 | 機器・制御器の `dynamics`(`local_LQR` の `Q`、`R`、`V0` を含む) | その層の `equilibrium`、`odefcn` |
 | ローカル制御器の追加 / 置換 / 削除 | 機器の `equilibrium` |
 | 機器・制御器を付ける(`set_bus`、`set_parent`) | 付けた層の `equilibrium`、`odefcn` |
-| 大域制御器の追加 | その制御器の `equilibrium`(系統の `powerflow` は古くならない) |
-| 大域制御器の削除 | なし |
+| グローバル制御器の追加 | その制御器の `equilibrium`(系統の `powerflow` は古くならない) |
+| グローバル制御器の削除 | なし |
 | 系統の `Hz` | 系統の `odefcn`(子へは届かない。各モデルは `initialize` で、ハンドルを作った周波数 `r_odefcnHz` と比べて作り直す) |
 | `operation`、`OPF`、`graph`、`Tag`(改名) | なし |
 
-- **最新にするのは `net.initialize()` だけです。** `powerflow` が古いか `Method` を明示したときだけ潮流計算を解き、`Bus.set_equilibrium` で書き込みます。その後、母線 → 機器 → ローカル制御器、ブランチ、大域制御器(最後)の順に、各層が自分のタグから判断して、古いハンドルを作り直し、まだ古い平衡点を保持している V と I から計算し直します。最後に系統の `powerflow` と `odefcn` を空にします。何も古くなければ、大域制御器の平衡点の再計算(常に行う)のほかは何も変わりません。
+- **最新にするのは `net.initialize()` だけです。** `powerflow` が古いか `Method` を明示したときだけ潮流計算を解き、`Bus.set_equilibrium` で書き込みます。その後、母線 → 機器 → ローカル制御器、ブランチ、グローバル制御器(最後)の順に、各層が自分のタグから判断して、古いハンドルを作り直し、まだ古い平衡点を保持している V と I から計算し直します。最後に系統の `powerflow` と `odefcn` を空にします。何も古くなければ、グローバル制御器の平衡点の再計算(常に行う)のほかは何も変わりません。
   - 動特性だけの編集: 潮流計算を解かず、編集したモデルだけを計算し直します。
   - Hz だけの編集: ハンドルを作り直すだけです(`local_LQR` は保持している平衡点で `K` を設計し直します)。
   - `Method="equilibrium"`: 潮流計算を解きません。`powerflow` が古いときは `GUILDA:PowerNetwork:InitializeEquilibriumEdited` で止まります。
@@ -240,13 +240,13 @@ v3 の編集ログ(`tab_editLog`)はありません。各層は、古くなっ�
 
   | 解析 | 読むタグ | エラー |
   |---|---|---|
-  | `simulate`(`solver_ODE.solve`、`initialize_index` のループ内) | 系統の `powerflow`・`odefcn`、機器・ローカル制御器・大域制御器の `equilibrium`・`odefcn` | `GUILDA:SolverODE:Stale` |
+  | `simulate`(`solver_ODE.solve`、`initialize_index` のループ内) | 系統の `powerflow`・`odefcn`、機器・ローカル制御器・グローバル制御器の `equilibrium`・`odefcn` | `GUILDA:SolverODE:Stale` |
   | `linearize`、`net.get_sys`(`solver_LIN.solve`) | 同上 | `GUILDA:SolverLIN:Stale` |
   | `calculate_continuation_powerflow`(`solver_CPF.solve`) | 系統の `powerflow`・`odefcn`、機器の `equilibrium`・`odefcn`(制御器は読まない) | `GUILDA:SolverCPF:Stale` |
   | `comp.get_sys`(`Point` なし) | 系統、機器とその制御器 | `GUILDA:Component:Stale` |
   | `bus.get_sys`(`Point` なし) | 系統、母線の機器(制御器は `comp.get_sys` が読む) | `GUILDA:Bus:Stale` |
   | `con.get_sys`、`con.validate` | 系統、その制御器 | `GUILDA:LocalController:Stale` |
-  | `gc.get_sys` | 系統、その大域制御器 | `GUILDA:GlobalController:Stale` |
+  | `gc.get_sys` | 系統、そのグローバル制御器 | `GUILDA:GlobalController:Stale` |
 
   検査はソルバーの中にあるので、ソルバーを直接呼んでも検査されます。
 - **改名は何も古くしません。** 母線を改名しても、その機器のタグは変わりません(タグは永続的な ID として扱います)。
@@ -290,7 +290,7 @@ net.add_branch(Type, ["B001","B002"], ...)       % buses may be given by tag
   `set_network` step after construction and `reset_odeset` (Bus, Branch,
   PowerNetwork) are gone.
 - **存在しないタグの削除はエラーです。** `net.remove_branch` は `GUILDA:PowerNetwork:BranchNotFound` で止まります。複数のタグの一部だけが不明な場合も何も削除しません。以前は不明なタグを無視していました。`bus.remove_component` と `bus.replace_component` は `GUILDA:Bus:ComponentNotFound` で止まります。存在しないタグを渡して無視させていたスクリプトは、`string(net.a_Branch)` や `string(bus.a_Component)` で確かめてから呼んでください。
-- **大域制御器が制御する機器は削除も置換もできません。** `remove_component` と `replace_component` は `GUILDA:Bus:ComponentControlled` で止まり、何も変えません。先に `net.remove_global_controller(tag)` を呼び、機器を編集してから制御器を作り直してください。
+- **グローバル制御器が制御する機器は削除も置換もできません。** `remove_component` と `replace_component` は `GUILDA:Bus:ComponentControlled` で止まり、何も変えません。先に `net.remove_global_controller(tag)` を呼び、機器を編集してから制御器を作り直してください。
 - **`add_branch` の検査。** 次の場合はエラーで止まり、系統は変わりません。
 
   | ID | 条件 | 対応 |
@@ -419,12 +419,12 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
   | `GUILDA:Component:NotExtAvr` | AVR がないのに PSS を付けた | 先に AVR を付ける |
 
   入力名の綴りの誤りはエラーになりません(平衡点の値を読みます)。`con.validate` の `flag.inputs` に `equilibrium (not connected)` と出るので確認できます(第 2 章)。
-- **大域制御器の検査。** `GlobalController` の作成時に、不明なタグや機器でない値、別の系統の機器は `GUILDA:GlobalController:InvalidComponent` で止まります。`net.add_global_controller` は、対象の機器がこの系統にないと `GUILDA:PowerNetwork:GconOtherNetwork` で、機器に制御器の `sv_u` の状態や `sv_y` の入力がないと `GUILDA:PowerNetwork:GconPorts` で止まります。後者は以前は `simulate` で初めて失敗していました。機器を削除や置換した後は、制御器を現在の機器で作り直してください。
+- **グローバル制御器の検査。** `GlobalController` の作成時に、不明なタグや機器でない値、別の系統の機器は `GUILDA:GlobalController:InvalidComponent` で止まります。`net.add_global_controller` は、対象の機器がこの系統にないと `GUILDA:PowerNetwork:GconOtherNetwork` で、機器に制御器の `sv_u` の状態や `sv_y` の入力がないと `GUILDA:PowerNetwork:GconPorts` で止まります。後者は以前は `simulate` で初めて失敗していました。機器を削除や置換した後は、制御器を現在の機器で作り直してください。
 - **制御器の `tab_parameter` に代入できます。** 機器や送電線と同じ書き方で、編集が記録されます。
 
   ```matlab
   avr.tab_parameter.dynamics.kap = 200;
-  agc.tab_parameter.dynamics.kP  = [200; 300];   % 大域制御器は対象の機器ごとに 1 行
+  agc.tab_parameter.dynamics.kP  = [200; 300];   % グローバル制御器は対象の機器ごとに 1 行
   agc.tab_parameter.dynamics.kP(2) = 300;
   ```
 
@@ -781,7 +781,7 @@ Option names:
     | ID | 条件 |
     |----|------|
     | `GUILDA:Scenario:UnknownFaultBus` | `FaultBus` が系統の母線でない |
-    | `GUILDA:Scenario:UnknownTripUnit` | `TripUnit` が機器でも大域制御器でもない(ローカル制御器は解列できない) |
+    | `GUILDA:Scenario:UnknownTripUnit` | `TripUnit` が機器でもグローバル制御器でもない(ローカル制御器は解列できない) |
     | `GUILDA:Scenario:UnknownOffsetUnit`, `UnknownOffsetState` | `OffsetUnit` が機器でない、`OffsetState` がその状態でない |
     | `GUILDA:Scenario:InvalidTimeSpan` | `TimeSpan` に NaN がある、または順序が逆 |
     | `GUILDA:Scenario:ValueCountMismatch` | 値の数が `OffsetState` や `InputName` の数と合わない(1 つの値は全部に共通) |
@@ -789,7 +789,7 @@ Option names:
     | `GUILDA:Scenario:DuplicateTag`, `ReservedTag` | タグの重複、または `t1`, `t2`, `Properties`, `Row`, `Variables`, 空, `NoAction<数字>` |
     | `GUILDA:Scenario:ScenarioArray` | シナリオを配列で渡した。`net.simulate(time, sc1, sc2)` のように別の引数で渡す |
 
-    イベントは系統のタグや状態数の写しを持たなくなったので、作成後に大域制御器を足すなど構成を変えても、そのイベントは使えます。
+    イベントは系統のタグや状態数の写しを持たなくなったので、作成後にグローバル制御器を足すなど構成を変えても、そのイベントは使えます。
   - **`simulate` の時間の検査。** `time` は有限で `t0 < tend` の `[t0, tend]`、またはイベントの時間幅を使う `[]` だけです。他の値は `GUILDA:PowerNetwork:SimulateTime` で止まり、理由を示します。以前は 3 点以上の時間を渡すと無言で短い区間だけを計算することがありました。時刻の列が欲しいスクリプトは `res.get_point` で読み出してください。引数の順序(時間、イベント、Name-Value)の誤りは `GUILDA:PowerNetwork:SimulateArguments` で止まります。
   - **初期条件の失敗の説明。** 区間の開始の初期条件が解けない場合は、これまでどおり `flag = -1` で `output.exception` が `GUILDA:SolverODE:InitialConditionFailed` です。`output.message` が理由と対処を示すようになりました。よくある原因は、故障で供給できなくなる定電力負荷(`"load-power"`)です。その負荷を `"load-impedance"` にするか、別の母線を故障させてください。同じ故障が定インピーダンス負荷なら完走することをテストで確認しています。
   - **区間の開始では微分状態を動かしません。** 区間の境界で微分状態はそのまま引き継ぎ、代数変数だけを新しい区間の網で解き直します(解析的なヤコビアンによるニュートン法。`decic` とソルバ自身の初期条件の計算は使いません)。解けなければ `InitialConditionFailed` で止まり、ソルバが微分状態を動かした場合も止まります。以前は、解けないと微分状態も動かして続け、`GUILDA:SolverODE:InitialConditionRelaxed` を警告するだけでした(IEEJ WEST10 の B003 の地絡で回転子角が最大 2.16 rad 跳んでいました)。この警告と緩めた再計算は `8bd906c`(`fix/ode-initial-condition-jump`、統合は `bf7512b`)で削除しました。
@@ -927,7 +927,7 @@ Option names:
   (`GUILDA.config("Model","Hz")`, 100 MVA); a bus column `baseMVA` is
   ignored. Equilibria and controllers are not saved.
 - **母線の列 `V0`、`Varg0` は読みません。** 古いフォルダの `bus/parameter.csv` にあれば、INFO `GUILDA:import_csv:RemovedColumn` を表示して無視します。`import_matpower` は VM を初期値として使いません(発電機のない母線の `V` には使います)。`tools.network_to_mpc` の VM/VA は母線の平衡点の電圧(`initialize` の前は 1、0)です。
-- **保存しない制御器を警告します。** `export_csv` は書き出しを終えた後、制御器が残っていると `GUILDA:PowerNetwork:ControllersNotSaved` で警告し、ローカル制御器(`<機器>/<AVR>/<PSS>`)と大域制御器を列挙します。読み込んだ系統には戻らないので、`import_csv` の後に付け直してください。
+- **保存しない制御器を警告します。** `export_csv` は書き出しを終えた後、制御器が残っていると `GUILDA:PowerNetwork:ControllersNotSaved` で警告し、ローカル制御器(`<機器>/<AVR>/<PSS>`)とグローバル制御器を列挙します。読み込んだ系統には戻らないので、`import_csv` の後に付け直してください。
 - **往復でタグを保持します。** 母線、ブランチ、機器の表に `FullTag` 列を追加しました。欠番や改名を含めて保存時のタグが戻ります。`FullTag` のないフォルダや空の値は、これまでどおり自動のタグになります。母線の `Tag` 列は接頭辞(タグの末尾の数字を除いた部分)です。`FullTag` の重複は番号を付けて改名します。
 - **`import_csv` は系統を変える前に表を検査します。** 間違ったファイル、列、行番号では `Network=` の系統は変わりません(モデルのキーが不明な場合や潮流の失敗など、検査の後の失敗では途中まで作られることがあるので、作り直してください)。
 
@@ -1200,10 +1200,10 @@ there.
 | `con.key == "avr"`(役割) | `con.s_role == "avr"` |
 | `remove_local_controller("CAavr1")` | `remove_local_controller(avr.s_tag)` |
 
-- キー: `avr-ST1`, `avr-DC1`, `pss-PSS1`, `gov-LPT1`, `gov-LPT3`, `gov-LPT4`, `local-LQR`(局所)、`agc-PI`(大域)。一覧は起動時に `GUILDA.dictionary` から作ります(`add_component` と同じ)。`controller.local_LQR_retrofit` は抽象クラスのままでキーはありません。
+- キー: `avr-ST1`, `avr-DC1`, `pss-PSS1`, `gov-LPT1`, `gov-LPT3`, `gov-LPT4`, `local-LQR`(ローカル制御器)、`agc-PI`(グローバル制御器)。一覧は起動時に `GUILDA.dictionary` から作ります(`add_component` と同じ)。`controller.local_LQR_retrofit` は抽象クラスのままでキーはありません。
 - `parameter` はコンストラクタの Name=Value の struct か 1 行の table です。省いたものはクラスの既定値になります。
-- 両メソッドは作った制御器を返します。タグは自動で付きます。局所: 機器のタグ・種類の頭文字・番号(例: `B001SG1CA1`、`B001SG1CP2`)。大域: 系統のタグ・`AGC`・番号(例: `PowerNetworkAGC1`)(1.23)。番号は使用中の最大 + 1 です。同梱の系統(`network.IEEE9bus` など)の制御器のタグも変わりました。
-- 制御器クラスの `key` はモデルのキー(機器の `"gen-park"` と同じ)になり、付ける場所を表していた役割(`"avr"`, `"pss"`, `"local"`, `"governor"`, `"agc"`)は定数プロパティ `s_role` に移りました。新しい制御器クラスは具象クラスに `key`、自身か基底クラスに `s_role` を定義し、コンストラクタを `(tag, Name=Value)`(大域は `(net, tag, 機器..., Name=Value)`)にします。追加後に `GUILDA` を実行するとキーの一覧に載ります。
+- 両メソッドは作った制御器を返します。タグは自動で付きます。ローカル制御器: 機器のタグ・種類の頭文字・番号(例: `B001SG1CA1`、`B001SG1CP2`)。グローバル制御器: 系統のタグ・`AGC`・番号(例: `PowerNetworkAGC1`)(1.23)。番号は使用中の最大 + 1 です。同梱の系統(`network.IEEE9bus` など)の制御器のタグも変わりました。
+- 制御器クラスの `key` はモデルのキー(機器の `"gen-park"` と同じ)になり、付ける場所を表していた役割(`"avr"`, `"pss"`, `"local"`, `"governor"`, `"agc"`)は定数プロパティ `s_role` に移りました。新しい制御器クラスは具象クラスに `key`、自身か基底クラスに `s_role` を定義し、コンストラクタを `(tag, Name=Value)`(グローバル制御器は `(net, tag, 機器..., Name=Value)`)にします。追加後に `GUILDA` を実行するとキーの一覧に載ります。
 - `GUILDA:Component:SharedController` はなくなりました。呼び出しのたびに新しい制御器を作るので、別の機器に付いた制御器を付け直すことは起きません。外した制御器を付け直すこともできません(同じキーでもう一度追加します)。`InvalidControllerKey` と `PssParentKey` は `s_role` を調べます。
 - `add_local_controller.m` と `add_global_controller.m` は、ほかのキーで作るメソッドと同じく通常の追跡対象のファイルです(1.22)。
 
@@ -1288,15 +1288,15 @@ of its parent, so the labels stay unique within a network.
 
 ### 1.24 モデルの物体は追加メソッドで作り、外すと削除する(Issue #119)
 
-- **作成。** 機器・ブランチ・局所制御器・大域制御器は、キーで作るメソッド(`add_component`、`replace_component`、`add_branch`、`add_local_controller`、`add_global_controller`)の中でしか作れません。具体クラスのコンストラクタを直接呼ぶと `MATLAB:class:MethodRestricted` で止まります(例: `controller.avr.AVR_ST1("1")`、`component.generator.park("1", nan, opt)`、`branch.pi("1", opt)`)。以前は制御器、発電機、ブランチのコンストラクタは公開でした。
-- **削除。** 外した物体は `delete` されます(1.4)。外した制御器を別の機器に付け直したり、外した機器を読んだりしていたスクリプトは、キーで新しく作ってください。`replace_component` の `Controllers="drop"`(既定)で残らなかった局所制御器も削除されます。
+- **作成。** 機器・ブランチ・ローカル制御器・グローバル制御器は、キーで作るメソッド(`add_component`、`replace_component`、`add_branch`、`add_local_controller`、`add_global_controller`)の中でしか作れません。具体クラスのコンストラクタを直接呼ぶと `MATLAB:class:MethodRestricted` で止まります(例: `controller.avr.AVR_ST1("1")`、`component.generator.park("1", nan, opt)`、`branch.pi("1", opt)`)。以前は制御器、発電機、ブランチのコンストラクタは公開でした。
+- **削除。** 外した物体は `delete` されます(1.4)。外した制御器を別の機器に付け直したり、外した機器を読んだりしていたスクリプトは、キーで新しく作ってください。`replace_component` の `Controllers="drop"`(既定)で残らなかったローカル制御器も削除されます。
 - **親のない物体の扱いの廃止。** 親のない物体がなくなったため、それを前提にした動作もなくなりました: 系統にない層の `get_sys` が古いハンドルを作り直す動作、`comp.c_Vequilibrium` / `con.c_Vequilibrium` が `[]` を返す動作、`gc.get_sys` の系統外の名前付け、`get_Hz` の `GUILDA.config("Model","Hz")` への切り替え。エラー ID `GUILDA:Component:InputNotConnected`、`GUILDA:LocalController:ValidateNotAttached`、`GUILDA:local_LQR:NotOnComponent`、`GUILDA:PowerNetwork:GconOtherNetwork`、`GUILDA:SolverODE:ForeignControlledUnit` はなくなりました(起きえない状況の検査)。
 
 ## 2. Changes so far — model authors
 
 新しいモデルの実装手順は `_GUILDAdoc/developer/model-implementation.html` を見てください。
 
-- **コンストラクタのアクセス(Issue #119)。** 具体クラスはコンストラクタを作成する親クラスにだけ公開します: 機器は `methods (Access={?Bus})`、局所制御器は `{?Component}`、ブランチと大域制御器は `{?PowerNetwork}`。基底クラスを呼ぶだけでも宣言が必要です(コンストラクタのないクラスは公開の既定のコンストラクタを継承するため)。property の set メソッドは属性のない `methods` ブロックに置く必要があるので、コンストラクタとは別のブロックにします(`controller.local_LQR`)。メソッドの中では親が常にあるものとして書き、`isempty(obj.a_Bus)` などの検査は書きません(`class-design.html#parents`)。
+- **コンストラクタのアクセス(Issue #119)。** 具体クラスはコンストラクタを作成する親クラスにだけ公開します: 機器は `methods (Access={?Bus})`、ローカル制御器は `{?Component}`、ブランチとグローバル制御器は `{?PowerNetwork}`。基底クラスを呼ぶだけでも宣言が必要です(コンストラクタのないクラスは公開の既定のコンストラクタを継承するため)。property の set メソッドは属性のない `methods` ブロックに置く必要があるので、コンストラクタとは別のブロックにします(`controller.local_LQR`)。メソッドの中では親が常にあるものとして書き、`isempty(obj.a_Bus)` などの検査は書きません(`class-design.html#parents`)。
 
 - **Function signatures** (no bus current, no output feedthrough; see
   `notes/controller-signal-routing.md`). A component has

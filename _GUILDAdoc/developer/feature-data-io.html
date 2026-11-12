@@ -51,7 +51,7 @@
     <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Data Import and Export Feature Design</span><span lang="ja">データの入出力機能の設計</span></h1>
     <p class="page-lead" lang="en">Reads a network from a CSV model folder or a MATPOWER case; writes it to a CSV model folder or a MATPOWER case struct. The importers check the input, then build the network through the public <code>add_*</code> methods, so an imported network is the same as one built by hand.</p>
-    <p class="page-lead" lang="ja">ネットワークの読み込み元は CSV のモデルフォルダまたは MATPOWER のケース、書き出し先は CSV のモデルフォルダまたは MATPOWER のケース構造体。読み込みは入力を検査してから公開の <code>add_*</code> メソッドで組み立てるため、読み込んだネットワークは手で組み立てたものと同一。</p>
+    <p class="page-lead" lang="ja">ネットワークは、CSV のモデルフォルダか MATPOWER のケースから読み込めます。書き出し先は、CSV のモデルフォルダか MATPOWER のケース構造体です。読み込みでは、まず入力を検査し、それから公開の <code>add_*</code> メソッドでネットワークを組み立てます。そのため、読み込んだネットワークは手で組み立てたネットワークと変わりません。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#entry"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></a>
@@ -83,21 +83,21 @@
       <li><code>CsvNetHandler.import(path, net, Initialize=tf)</code> and <code>CsvNetHandler.export(net, ModelName, savepath=d)</code>: call <code>import_csv</code> / <code>export_csv</code> and warn that they are deprecated</li>
     </ul>
     <ul lang="ja">
-      <li>既定値: これらの関数の arguments ブロック。<code>solver_*</code> の設定は不使用</li>
-      <li>出力: ネットワーク、フォルダのパス、構造体（<code>[result, flag, output]</code> ではない）。失敗はエラー</li>
-      <li><code>import_matpower</code> の <code>mpc</code>: 構造体、パス上のケース名（<code>"case14"</code>）、<code>.m</code> または <code>.mat</code> ファイル、関数ハンドルのいずれか</li>
-      <li>MATPOWER 本体は不要</li>
-      <li><code>CsvNetHandler.import(path, net, Initialize=tf)</code> と <code>CsvNetHandler.export(net, ModelName, savepath=d)</code>: <code>import_csv</code> / <code>export_csv</code> を呼び出し、非推奨の警告を表示</li>
+      <li>オプションの既定値は、各関数の arguments ブロックで決めています。<code>solver_*</code> の設定は使いません。</li>
+      <li>戻り値はネットワーク、フォルダのパス、構造体のどれかで、<code>[result, flag, output]</code> の形ではありません。失敗したときはエラーになります。</li>
+      <li><code>import_matpower</code> の <code>mpc</code> には、構造体、パス上のケース名（<code>"case14"</code>）、<code>.m</code> や <code>.mat</code> のファイル、関数ハンドルのどれでも渡せます。</li>
+      <li>MATPOWER 本体をインストールする必要はありません。</li>
+      <li><code>CsvNetHandler.import(path, net, Initialize=tf)</code> と <code>CsvNetHandler.export(net, ModelName, savepath=d)</code> は、非推奨の警告を出したうえで <code>import_csv</code> / <code>export_csv</code> を呼びます。</li>
     </ul>
     <p lang="en">Preconditions:</p>
-    <p lang="ja">前提条件:</p>
+    <p lang="ja">前提条件は次のとおりです。</p>
     <ul lang="en">
       <li><code>GUILDA</code> already run, so that <code>add_branch</code> and <code>add_component</code> know the model keys used in the files</li>
       <li>For <code>export_csv</code>: the parent folder exists</li>
     </ul>
     <ul lang="ja">
-      <li><code>GUILDA</code> を実行済み（ファイルで使うモデルのキーを <code>add_branch</code> と <code>add_component</code> が認識するため）</li>
-      <li><code>export_csv</code> の場合: 親フォルダが存在</li>
+      <li>先に <code>GUILDA</code> を実行しておく必要があります。そうしないと、ファイルに書かれたモデルのキーを <code>add_branch</code> と <code>add_component</code> が認識できません。</li>
+      <li><code>export_csv</code> では、書き出し先の親フォルダがあらかじめ存在している必要があります。</li>
     </ul>
 
     <!-- ============================== 2. SEQUENCE ============================== -->
@@ -291,7 +291,7 @@
         <li><b>IO-21</b> <span lang="en">Caller</span><span lang="ja">呼び出し側</span> → <code>tools.network_to_mpc</code></li>
       </ol>
       <figcaption lang="en">Numbers: step IDs of the list below. The <code>add_*</code> calls run the steps of <a href="feature-model-building.html">Model Building</a>, <code>initialize</code> those of <a href="feature-initialize.html">Initialization</a>.</figcaption>
-      <figcaption lang="ja">番号は下のステップ一覧の ID。<code>add_*</code> は<a href="feature-model-building.html">モデル構築</a>のステップ、<code>initialize</code> は<a href="feature-initialize.html">初期化</a>のステップを実行。</figcaption>
+      <figcaption lang="ja">番号は下のステップ一覧の ID です。<code>add_*</code> は<a href="feature-model-building.html">モデル構築</a>のステップを、<code>initialize</code> は<a href="feature-initialize.html">初期化</a>のステップを実行します。</figcaption>
     </figure>
 
     <!-- ============================== 3. STEPS ============================== -->
@@ -306,9 +306,9 @@
             <li>Uses the given <code>Network</code> (a scalar <code>PowerNetwork</code>) or creates <code>PowerNetwork(&lt;folder name&gt;)</code></li>
             <li>Folder name not a valid MATLAB name: tag <code>"PowerNetwork"</code></li>
           </ul><ul lang="ja">
-            <li>フォルダの存在を確認</li>
-            <li>与えられた <code>Network</code>（スカラーの <code>PowerNetwork</code>）を使用、または <code>PowerNetwork(&lt;フォルダ名&gt;)</code> を作成</li>
-            <li>MATLAB の名前として無効なフォルダ名: タグは <code>"PowerNetwork"</code></li>
+            <li>フォルダの存在を確認します。</li>
+            <li><code>Network</code>（スカラーの <code>PowerNetwork</code>）が渡されていればそれを使い、なければ <code>PowerNetwork(&lt;フォルダ名&gt;)</code> を作ります。</li>
+            <li>フォルダ名が MATLAB の名前として無効な場合、タグは <code>"PowerNetwork"</code> になります。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>path</code>, <code>opt.Network</code></dd>
@@ -328,17 +328,17 @@
             <li>Checks that <code>From</code>/<code>To</code> are bus row numbers</li>
             <li>Reads <code>FullTag</code> as text</li>
           </ul><ul lang="ja">
-            <li><code>network/parameter.csv</code>（任意）、<code>bus/parameter.csv</code>、<code>branch/parameter.csv</code> を読み込み</li>
-            <li>ブランチの列 <code>tap</code>/<code>phase</code> を <code>Tap</code>/<code>Phase</code> に対応付け</li>
-            <li>必須列を検査、未知の列は警告</li>
-            <li>母線の旧列 <code>V0</code>、<code>Varg0</code>: INFO メッセージ <code>GUILDA:import_csv:RemovedColumn</code> を出して無視</li>
-            <li><code>From</code>/<code>To</code> が母線の行番号であることを確認</li>
-            <li><code>FullTag</code> を文字列として読み込み</li>
+            <li><code>network/parameter.csv</code>（任意）、<code>bus/parameter.csv</code>、<code>branch/parameter.csv</code> を読み込みます。</li>
+            <li>ブランチの列 <code>tap</code>/<code>phase</code> を <code>Tap</code>/<code>Phase</code> に対応付けます。</li>
+            <li>必須列を検査し、未知の列は警告します。</li>
+            <li>母線の古い列 <code>V0</code> と <code>Varg0</code> は、INFO メッセージ <code>GUILDA:import_csv:RemovedColumn</code> を出して読み飛ばします。</li>
+            <li><code>From</code>/<code>To</code> が母線の行番号であることを確認します。</li>
+            <li><code>FullTag</code> を文字列として読み込みます。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">CSV files (see <a href="#data">Data produced</a>)</span><span lang="ja">CSV ファイル（<a href="#data">生成されるデータ</a>参照）</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>tab_net</code>, <code>tab_bus</code> (n_bus rows), <code>tab_bra</code>, <span lang="en">optional column lists, full tags; network not changed yet</span><span lang="ja">任意列の一覧、フルタグ。ネットワークはまだ変更なし</span></dd>
+          <dd><code>tab_net</code>, <code>tab_bus</code> (n_bus rows), <code>tab_bra</code>, <span lang="en">optional column lists, full tags; network not changed yet</span><span lang="ja">任意列の一覧、フルタグです。ネットワークはまだ変更しません。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="IO-03">
@@ -351,10 +351,10 @@
             <li>Checks the columns, the bus rows and that every ID exists in the referenced file</li>
             <li>Missing <code>component</code> folder: warning</li>
           </ul><ul lang="ja">
-            <li><code>component/&lt;key&gt;/</code> の各サブフォルダ（<code>.</code> で始まらないもの）: <code>main.csv</code> を読み込み</li>
-            <li><code>main.csv</code> に <code>ParameterID</code> があれば <code>dynamics.csv</code>、<code>OpfID</code> があれば <code>opf.csv</code> を読み込み</li>
-            <li>列、母線の行番号、各 ID が参照先のファイルにあることを検査</li>
-            <li><code>component</code> フォルダがない場合: 警告</li>
+            <li><code>component/&lt;key&gt;/</code> の各サブフォルダから <code>main.csv</code> を読み込みます。名前が <code>.</code> で始まるフォルダは飛ばします。</li>
+            <li><code>main.csv</code> に <code>ParameterID</code> があれば <code>dynamics.csv</code>、<code>OpfID</code> があれば <code>opf.csv</code> を読み込みます。</li>
+            <li>列、母線の行番号、各 ID が参照先のファイルにあることを検査します。</li>
+            <li><code>component</code> フォルダがない場合は警告します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>component/&lt;key&gt;/main.csv</code>, <code>dynamics.csv</code>, <code>opf.csv</code></dd>
@@ -370,8 +370,8 @@
             <li>Writes <code>Hz</code> and <code>baseMVA</code> when the file gives a non-NaN value</li>
             <li>Otherwise the network keeps its own values</li>
           </ul><ul lang="ja">
-            <li>ファイルに NaN でない値があれば <code>Hz</code> と <code>baseMVA</code> を書き込み</li>
-            <li>なければネットワーク自身の値を維持</li>
+            <li>ファイルに NaN でない値があれば <code>Hz</code> と <code>baseMVA</code> を書き込みます。</li>
+            <li>なければネットワーク自身の値を維持します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>tab_net</code></dd>
@@ -388,9 +388,9 @@
             <li><code>Tag</code> passed only when the row has no <code>FullTag</code></li>
             <li>Bus <em>i</em> of the file = <code>net.a_Bus{i}</code> of a new network</li>
           </ul><ul lang="ja">
-            <li>行ごとに行の順で呼び出し: <code>V</code>、<code>Varg</code>、<code>FullTag</code> と、存在する任意列</li>
-            <li><code>Tag</code> は行に <code>FullTag</code> がないときだけ渡す</li>
-            <li>新しいネットワークでは、ファイルの母線 <em>i</em> = <code>net.a_Bus{i}</code></li>
+            <li>ファイルの行の順に 1 行ずつ呼び出します。渡すのは <code>V</code>、<code>Varg</code>、<code>FullTag</code> と、ファイルにある任意列です。</li>
+            <li><code>Tag</code> は行に <code>FullTag</code> がないときだけ渡します。</li>
+            <li>新しいネットワークでは、ファイルの母線 <em>i</em> が <code>net.a_Bus{i}</code> になります。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>tab_bus</code></dd>
@@ -406,8 +406,8 @@
             <li>One call per row with <code>Type</code>, the tags of the buses in rows <code>From</code> and <code>To</code>, and the optional columns</li>
             <li>Then sets <code>FullTag</code> as the tag (a <code>"Tag"</code> edit)</li>
           </ul><ul lang="ja">
-            <li>行ごとに <code>Type</code>、<code>From</code>・<code>To</code> 行の母線のタグ、任意列で呼び出し</li>
-            <li>その後 <code>FullTag</code> をタグに設定（<code>"Tag"</code> の編集）</li>
+            <li>1 行ずつ呼び出します。渡すのは <code>Type</code>、<code>From</code> と <code>To</code> が指す母線のタグ、任意列です。</li>
+            <li>その後 <code>FullTag</code> をタグに設定します（<code>"Tag"</code> の編集）。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>tab_bra</code>, <code>a_Bus</code></dd>
@@ -425,10 +425,10 @@
             <li><code>parameter</code> = the <code>dynamics.csv</code> row with the same <code>ParameterID</code> (a one-row table; the class takes its <code>sv_para</code> columns)</li>
             <li>Then sets <code>FullTag</code></li>
           </ul><ul lang="ja">
-            <li>キーのフォルダと行ごと: <code>Bus</code> 行の母線で <code>add_component(key, "P", P, "Q", Q, ...)</code> を呼び出し</li>
-            <li>任意列と、同じ <code>OpfID</code> を持つ <code>opf.csv</code> の行の 8 つの OPF 列も渡す</li>
-            <li><code>parameter</code> = 同じ <code>ParameterID</code> を持つ <code>dynamics.csv</code> の行（1 行の table。クラスはその <code>sv_para</code> 列を使用）</li>
-            <li>その後 <code>FullTag</code> を設定</li>
+            <li>キーのフォルダごと、行ごとに、<code>Bus</code> が指す母線で <code>add_component(key, "P", P, "Q", Q, ...)</code> を呼びます。</li>
+            <li>任意列も渡します。<code>opf.csv</code> からは、同じ <code>OpfID</code> を持つ行の OPF 列 8 つを渡します。</li>
+            <li><code>parameter</code> には、<code>dynamics.csv</code> のうち同じ <code>ParameterID</code> を持つ行を 1 行の table として渡します。クラスはその中の <code>sv_para</code> の列を使います。</li>
+            <li>その後 <code>FullTag</code> を設定します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">component structs</span><span lang="ja">機器の構造体</span></dd>
@@ -445,9 +445,9 @@
             <li>First bus row whose <code>Slack</code> is 1 (or the text <code>"1"</code> / <code>"true"</code>) becomes the slack bus</li>
             <li>Runs inside <code>evalc</code> so that the SetSlack message is not printed</li>
           </ul><ul lang="ja">
-            <li>機器の作成後に実行</li>
-            <li><code>Slack</code> が 1（または文字列 <code>"1"</code> / <code>"true"</code>）である最初の母線の行を slack 母線に設定</li>
-            <li>SetSlack のメッセージを表示しないよう <code>evalc</code> の中で実行</li>
+            <li>機器の作成後に実行します。</li>
+            <li><code>Slack</code> が 1（または文字列 <code>"1"</code> / <code>"true"</code>）である最初の母線の行を slack 母線に設定します。</li>
+            <li>SetSlack のメッセージを表示しないよう、<code>evalc</code> の中で実行します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>tab_bus.Slack</code></dd>
@@ -463,13 +463,13 @@
             <li>Only with <code>Initialize=true</code> (default)</li>
             <li>Network classes pass <code>false</code> and add their controllers first</li>
           </ul><ul lang="ja">
-            <li><code>Initialize=true</code>（既定値）のときのみ</li>
-            <li>ネットワーククラスは <code>false</code> を渡し、先に制御器を追加</li>
+            <li><code>Initialize=true</code>（既定値）のときだけ実行します。</li>
+            <li>ネットワーククラスは <code>false</code> を渡し、先に制御器を追加します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>net</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en">equilibrium, every layer up to date (see <a href="feature-initialize.html">Initialization</a>)</span><span lang="ja">平衡点、全層が最新（<a href="feature-initialize.html">初期化</a>参照）</span></dd>
+          <dd><span lang="en">equilibrium, every layer up to date (see <a href="feature-initialize.html">Initialization</a>)</span><span lang="ja">平衡点です。全層が最新になります（<a href="feature-initialize.html">初期化</a>を参照）。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="IO-10">
@@ -482,10 +482,10 @@
             <li><code>Overwrite=true</code>: deletes only the subfolders <code>network</code>, <code>bus</code>, <code>branch</code>, <code>component</code> and the class file</li>
             <li>Then creates the four subfolders</li>
           </ul><ul lang="ja">
-            <li>末尾の区切り文字を除去</li>
-            <li>クラス名（<code>ClassFile</code> のとき）、親フォルダ、既存のフォルダを検査</li>
-            <li><code>Overwrite=true</code>: サブフォルダ <code>network</code>・<code>bus</code>・<code>branch</code>・<code>component</code> とクラスファイルだけを削除</li>
-            <li>その後 4 つのサブフォルダを作成</li>
+            <li>末尾の区切り文字を除去します。</li>
+            <li>クラス名（<code>ClassFile</code> のとき）、親フォルダ、既存のフォルダを検査します。</li>
+            <li><code>Overwrite=true</code> のときは、サブフォルダ <code>network</code>、<code>bus</code>、<code>branch</code>、<code>component</code> とクラスファイルだけを削除します。</li>
+            <li>その後 4 つのサブフォルダを作成します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>path</code>, <code>opt</code></dd>
@@ -502,9 +502,9 @@
             <li>One bus row per <code>a_Bus</code> entry (<code>Tag</code> = tag without trailing digits, <code>Slack</code> = 0/1)</li>
             <li>One branch row per <code>a_Branch</code> entry (<code>Type</code> = key, <code>From</code>/<code>To</code> = row numbers of the end buses)</li>
           </ul><ul lang="ja">
-            <li>基準値を書き出し</li>
-            <li><code>a_Bus</code> の要素ごとに母線の行（<code>Tag</code> = 末尾の数字を除いたタグ、<code>Slack</code> = 0/1）</li>
-            <li><code>a_Branch</code> の要素ごとにブランチの行（<code>Type</code> = キー、<code>From</code>/<code>To</code> = 両端の母線の行番号）</li>
+            <li>基準値を書き出します。</li>
+            <li><code>a_Bus</code> の要素ごとに母線の行を書き出します（<code>Tag</code> = 末尾の数字を除いたタグ、<code>Slack</code> = 0/1）。</li>
+            <li><code>a_Branch</code> の要素ごとにブランチの行を書き出します（<code>Type</code> = キー、<code>From</code>/<code>To</code> = 両端の母線の行番号）。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>tab_parameter.base</code>; <span lang="en">bus</span><span lang="ja">母線の</span> <code>tab_parameter.powerflow</code>, <code>tab_parameter.operation</code>, <code>tab_parameter.dynamics</code>, <code>tab_parameter.graph</code>, <code>l_isSlack</code>; <span lang="en">branch</span><span lang="ja">ブランチの</span> <code>key</code>, <code>a_Bus</code>, <code>tab_parameter</code></dd>
@@ -521,9 +521,9 @@
             <li>Distinct dynamics rows and distinct OPF rows (<code>unique(..., "rows", "stable")</code>) become <code>dynamics.csv</code> and <code>opf.csv</code></li>
             <li><code>main.csv</code> refers to them by <code>ParameterID</code> and <code>OpfID</code></li>
           </ul><ul lang="ja">
-            <li>機器をキーごとに分類</li>
-            <li>重複のない dynamics の行と OPF の行（<code>unique(..., "rows", "stable")</code>）を <code>dynamics.csv</code> と <code>opf.csv</code> に出力</li>
-            <li><code>main.csv</code> は <code>ParameterID</code> と <code>OpfID</code> でそれらを参照</li>
+            <li>機器をキーごとに分類します。</li>
+            <li>重複のない dynamics の行と OPF の行（<code>unique(..., "rows", "stable")</code>）を <code>dynamics.csv</code> と <code>opf.csv</code> に出力します。</li>
+            <li><code>main.csv</code> は <code>ParameterID</code> と <code>OpfID</code> でそれらを参照します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">component</span><span lang="ja">機器の</span> <code>key</code>, <code>a_Bus</code>, <code>tab_parameter.powerflow</code>, <code>tab_parameter.operation</code>, <code>tab_parameter.graph</code>, <code>tab_parameter.dynamics</code>, <code>tab_parameter.OPF</code></dd>
@@ -540,9 +540,9 @@
             <li>Its constructor calls <code>PowerNetwork.import_csv(folder, Network=obj)</code></li>
             <li>Then warns with the list of local controllers (as <code>component/avr/pss</code> paths) and global controllers that are not written</li>
           </ul><ul lang="ja">
-            <li><code>ClassFile</code> のとき: <code>private/export_csv_class.txt</code> から <code>&lt;Name&gt;.m</code> を書き出し（クラス名、日付、母線・ブランチ・発電機・負荷・その他の数）</li>
-            <li>そのコンストラクタは <code>PowerNetwork.import_csv(folder, Network=obj)</code> を呼び出し</li>
-            <li>その後、書き出されないローカル制御器（<code>component/avr/pss</code> のパス）とグローバル制御器を列挙して警告</li>
+            <li><code>ClassFile</code> が true なら、<code>private/export_csv_class.txt</code> をひな形にして <code>&lt;Name&gt;.m</code> を書き出します。ファイルには、クラス名、日付、母線・ブランチ・発電機・負荷・その他の機器の数が入ります。</li>
+            <li>このクラスのコンストラクタは、<code>PowerNetwork.import_csv(folder, Network=obj)</code> を呼んでネットワークを組み立てます。</li>
+            <li>最後に、書き出されないローカル制御器（<code>component/avr/pss</code> の形のパスで示します）とグローバル制御器を並べて警告します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>a_Bus{:}.a_Component</code>, <code>a_LocalController</code>, <code>a_GlobalController</code></dd>
@@ -560,10 +560,10 @@
             <li>Checks that the version is not 1 and the column counts (≥ 13, 10, 13)</li>
             <li>Checks that the bus numbers in <code>gen</code> and <code>branch</code> exist and that no bus has type 4</li>
           </ul><ul lang="ja">
-            <li>入力を構造体と名前に変換（<code>.m</code> ファイルのフォルダは呼び出しの間だけパスに追加）</li>
-            <li>フィールド <code>baseMVA</code>・<code>bus</code>・<code>gen</code>・<code>branch</code> を検査</li>
-            <li>version が 1 でないこと、列数（13・10・13 以上）を検査</li>
-            <li><code>gen</code> と <code>branch</code> の母線番号の存在、種類 4 の母線がないことを確認</li>
+            <li>入力をケース構造体とケース名に変換します。<code>.m</code> ファイルを渡した場合は、呼び出しの間だけそのフォルダをパスに加えます。</li>
+            <li>フィールド <code>baseMVA</code>、<code>bus</code>、<code>gen</code>、<code>branch</code> があるかを検査します。</li>
+            <li>version が 1 でないこと、列数が bus で 13、gen で 10、branch で 13 以上あることを検査します。</li>
+            <li><code>gen</code> と <code>branch</code> の母線番号が存在し、種類 4 の母線がないことを確認します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>mpc</code></dd>
@@ -579,8 +579,8 @@
             <li>Creates the network</li>
             <li>Sets <code>Hz</code> (MATPOWER has none) and <code>baseMVA = mpc.baseMVA</code></li>
           </ul><ul lang="ja">
-            <li>ネットワークを作成</li>
-            <li><code>Hz</code>（MATPOWER にはない）と <code>baseMVA = mpc.baseMVA</code> を設定</li>
+            <li>ネットワークを作成します。</li>
+            <li><code>Hz</code> と <code>baseMVA = mpc.baseMVA</code> を設定します。<code>Hz</code> は MATPOWER のケースにないため、オプションの値を使います。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>opt.Tag</code>, <code>opt.Hz</code>, <code>mpc.baseMVA</code></dd>
@@ -598,10 +598,10 @@
             <li>STARTUP and SHUTDOWN copied as is</li>
             <li>Constant <code>c0</code> dropped with a warning</li>
           </ul><ul lang="ja">
-            <li>MW 単位の多項式コスト（MODEL 2、2 次まで）を単位法に変換: <code>HP = c2*baseMVA^2</code>、<code>fP = c1*baseMVA</code></li>
-            <li><code>ng+1:2*ng</code> 行は <code>HQ</code>・<code>fQ</code></li>
-            <li>STARTUP と SHUTDOWN はそのまま複写</li>
-            <li>定数 <code>c0</code> は警告付きで破棄</li>
+            <li>MW 単位の多項式コスト（MODEL 2、2 次まで）を、<code>HP = c2*baseMVA^2</code>、<code>fP = c1*baseMVA</code> として単位法に直します。</li>
+            <li><code>ng+1:2*ng</code> 行目があれば、無効電力のコスト <code>HQ</code> と <code>fQ</code> になります。</li>
+            <li>STARTUP と SHUTDOWN はそのまま複写します。</li>
+            <li>定数 <code>c0</code> は警告を出して破棄します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>mpc.gencost</code> <span lang="en">(optional)</span><span lang="ja">（任意）</span></dd>
@@ -620,11 +620,11 @@
             <li><code>Gshunt</code>/<code>Bshunt</code> = GS/BS ÷ baseMVA; <code>Vmin</code>, <code>Vmax</code>, <code>baseKV</code></li>
             <li>Bus numbers serve only to resolve gen and branch rows</li>
           </ul><ul lang="ja">
-            <li><code>mpc.bus</code> の行ごとに行の順で母線を作成</li>
+            <li><code>mpc.bus</code> の行ごとに、行の順で母線を作成します。</li>
             <li><code>V</code> = その母線で最初に運転中の発電機の VG（なければ VM）</li>
             <li><code>Varg</code> = VA [rad]</li>
             <li><code>Gshunt</code>/<code>Bshunt</code> = GS/BS ÷ baseMVA、<code>Vmin</code>、<code>Vmax</code>、<code>baseKV</code></li>
-            <li>母線番号は gen と branch の行の解決にだけ使用</li>
+            <li>母線番号は gen と branch の行の解決にだけ使います。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>mpc.bus</code>, <code>mpc.gen</code></dd>
@@ -641,9 +641,9 @@
             <li>Then a <code>LoadModel</code> on each bus with nonzero PD or QD: <code>P</code> = −PD/baseMVA, <code>Q</code> = −QD/baseMVA, cost 0</li>
             <li>First REF bus (type 3) becomes the slack bus</li>
           </ul><ul lang="ja">
-            <li>まず運転中の gen 行ごとに <code>GeneratorModel</code> を追加: <code>P</code> = PG/baseMVA、<code>Q = NaN</code>、<code>baseMVA</code> = MBASE、上下限 ÷ baseMVA、OPF の初期値 PG/QG ÷ baseMVA、IO-16 のコスト、<code>parameter</code> = <code>GeneratorParameter</code></li>
-            <li>次に PD または QD が 0 でない母線ごとに <code>LoadModel</code> を追加: <code>P</code> = −PD/baseMVA、<code>Q</code> = −QD/baseMVA、コスト 0</li>
-            <li>最初の REF 母線（種類 3）を slack 母線に設定</li>
+            <li>まず、運転中の gen の行ごとに <code>GeneratorModel</code> を追加します。値は <code>P</code> = PG/baseMVA、<code>Q = NaN</code>、<code>baseMVA</code> = MBASE とし、上下限と OPF の初期値（PG/QG）は baseMVA で割ります。コストには IO-16 の結果を、<code>parameter</code> には <code>GeneratorParameter</code> を渡します。</li>
+            <li>次に、PD か QD が 0 でない母線ごとに <code>LoadModel</code> を追加します。値は <code>P</code> = −PD/baseMVA、<code>Q</code> = −QD/baseMVA で、コストは 0 です。</li>
+            <li>最初の REF 母線（種類 3）を slack 母線に設定します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>mpc.gen</code>, <code>mpc.bus</code>, <code>rm_cost</code>, <code>opt.GeneratorModel</code>, <code>opt.LoadModel</code></dd>
@@ -662,8 +662,8 @@
             <li><code>Smax</code> = RATE_A/baseMVA (0 → Inf)</li>
             <li><code>Vargmax</code> = the smaller of |ANGMIN| and |ANGMAX| below 360° (Inf when both are 0 or ≥ 360°)</li>
           </ul><ul lang="ja">
-            <li>運転中の行ごとにブランチを作成</li>
-            <li>種類: TAP が 0 か 1 で SHIFT が 0 なら <code>"pi"</code>、それ以外は <code>"pi_transformer"</code>（タップは from 側）</li>
+            <li>運転中の行ごとにブランチを作成します。</li>
+            <li>TAP が 0 か 1 で、SHIFT が 0 のブランチは <code>"pi"</code> にします。それ以外は <code>"pi_transformer"</code> にし、タップは from 側に置きます。</li>
             <li><code>R</code>、<code>X</code>、<code>C</code> = BR_B/2、<code>Tap</code>、<code>Phase</code> = SHIFT [rad]</li>
             <li><code>Smax</code> = RATE_A/baseMVA（0 → Inf）</li>
             <li><code>Vargmax</code> = 360° 未満の |ANGMIN| と |ANGMAX| の小さい方（両方 0 または 360° 以上なら Inf）</li>
@@ -681,7 +681,7 @@
           <dd><ul lang="en">
             <li>Only with <code>Initialize=true</code> (default)</li>
           </ul><ul lang="ja">
-            <li><code>Initialize=true</code>（既定値）のときのみ</li>
+            <li><code>Initialize=true</code>（既定値）のときだけ実行します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>net</code></dd>
@@ -701,17 +701,17 @@
             <li>Each branch fitted from its 2×2 matrix to R, X, B, TAP, SHIFT</li>
             <li>Asymmetric shunts moved to the bus GS/BS</li>
           </ul><ul lang="ja">
-            <li>母線の行 <em>i</em> = <code>a_Bus{i}</code>: 種類は PQ、負荷以外の機器があれば PV、<code>tools.slack_bus_index</code> の母線は REF（VA = その <code>Varg</code>）</li>
-            <li>VM/VA = 母線の <code>|c_Vequilibrium|</code>/<code>angle(c_Vequilibrium)</code>（<code>initialize</code> の前は 1/0）</li>
-            <li>負荷（<code>component.load.abstract</code>）は −P、−Q を PD/QD に加算</li>
-            <li>それ以外の機器: gen の行（PG/QG = OPF の <code>P0</code>/<code>Q0</code>、VG = 母線の <code>V</code>（NaN なら 1）、上下限と多項式コスト（<code>c2 = HP/baseMVA^2</code>、<code>c1 = fP/baseMVA</code>））</li>
-            <li>各ブランチは 2×2 行列から R・X・B・TAP・SHIFT に当てはめ</li>
-            <li>非対称なシャントは母線の GS/BS に移動</li>
+            <li>母線の <em>i</em> 行目は <code>a_Bus{i}</code> に対応します。種類は基本的に PQ で、負荷以外の機器がある母線は PV にします。<code>tools.slack_bus_index</code> が返す母線は REF にし、VA にはその母線の <code>Varg</code> を入れます。</li>
+            <li>VM と VA には、母線の <code>|c_Vequilibrium|</code> と <code>angle(c_Vequilibrium)</code> を入れます。<code>initialize</code> の前なら 1 と 0 です。</li>
+            <li>負荷（<code>component.load.abstract</code>）は −P、−Q を PD/QD に加算します。</li>
+            <li>負荷以外の機器は gen の行にします。PG と QG には OPF の <code>P0</code> と <code>Q0</code> を、VG には母線の <code>V</code>（NaN なら 1）を入れます。上下限と多項式コスト（<code>c2 = HP/baseMVA^2</code>、<code>c1 = fP/baseMVA</code>）も書き込みます。</li>
+            <li>各ブランチは、2×2 のアドミタンス行列から R、X、B、TAP、SHIFT を求めます。</li>
+            <li>非対称なシャントは母線の GS/BS に移します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">bus, component and branch parameters, <code>get_admittance_matrix</code></span><span lang="ja">母線・機器・ブランチのパラメータ、<code>get_admittance_matrix</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>mpc</code> <span lang="en">(network not changed)</span><span lang="ja">（ネットワークは変更なし）</span></dd>
+          <dd><code>mpc</code> <span lang="en">(network not changed)</span><span lang="ja">（ネットワークは変更しません）</span></dd>
         </dl>
       </li>
     </ol>
@@ -726,21 +726,21 @@
       <li>Missing optional value: default of the <code>add_*</code> method</li>
     </ul>
     <ul lang="ja">
-      <li><code>export_csv</code> が書き出し、<code>import_csv</code> が読み込み</li>
-      <li>母線は行で番号付け。<code>From</code>・<code>To</code>・<code>Bus</code> はその番号を参照</li>
-      <li>必須列には <b>*</b>。それ以外の列は任意</li>
-      <li>任意の値がない場合: <code>add_*</code> メソッドの既定値</li>
+      <li><code>export_csv</code> が書き出し、<code>import_csv</code> が読み込みます。</li>
+      <li>母線は行で番号付けします。<code>From</code>・<code>To</code>・<code>Bus</code> はその番号を参照します。</li>
+      <li>必須列には <b>*</b> を付けています。それ以外の列は任意です。</li>
+      <li>任意の値がない場合は、<code>add_*</code> メソッドの既定値を使います。</li>
     </ul>
     <table class="dg-table fio-files">
       <thead><tr><th><span lang="en">File</span><span lang="ja">ファイル</span></th><th><span lang="en">One row per</span><span lang="ja">1 行が表すもの</span></th><th><span lang="en">Columns</span><span lang="ja">列</span></th></tr></thead>
       <tbody>
         <tr><td><code>network/parameter.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">network (optional file)</span><span lang="ja">ネットワーク（任意のファイル）</span></td><td data-label="Columns" data-label-ja="列"><code>Hz</code>, <code>baseMVA</code></td></tr>
-        <tr><td><code>bus/parameter.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">bus</span><span lang="ja">母線</span></td><td data-label="Columns" data-label-ja="列"><code>V</code>*, <code>Varg</code>*, <code>Tag</code>, <code>FullTag</code>, <code>baseKV</code>, <code>Vmin</code>, <code>Vmax</code>, <code>Gshunt</code>, <code>Bshunt</code>, <code>Xaxis</code>, <code>Yaxis</code>, <code>Marker</code>, <code>Slack</code> <span lang="en">(a column <code>baseMVA</code> is accepted and ignored; old columns <code>V0</code>, <code>Varg0</code> are ignored with an INFO message)</span><span lang="ja">（列 <code>baseMVA</code> は受け付けて無視。旧列 <code>V0</code>、<code>Varg0</code> は INFO メッセージを出して無視）</span></td></tr>
+        <tr><td><code>bus/parameter.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">bus</span><span lang="ja">母線</span></td><td data-label="Columns" data-label-ja="列"><code>V</code>*, <code>Varg</code>*, <code>Tag</code>, <code>FullTag</code>, <code>baseKV</code>, <code>Vmin</code>, <code>Vmax</code>, <code>Gshunt</code>, <code>Bshunt</code>, <code>Xaxis</code>, <code>Yaxis</code>, <code>Marker</code>, <code>Slack</code> <span lang="en">(a column <code>baseMVA</code> is accepted and ignored; old columns <code>V0</code>, <code>Varg0</code> are ignored with an INFO message)</span><span lang="ja">（列 <code>baseMVA</code> は受け付けて無視します。旧列 <code>V0</code>、<code>Varg0</code> は INFO メッセージを出して無視します）</span></td></tr>
         <tr><td><code>branch/parameter.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">branch</span><span lang="ja">ブランチ</span></td><td data-label="Columns" data-label-ja="列"><code>Type</code>*, <code>From</code>*, <code>To</code>*, <code>FullTag</code>, <code>R</code>, <code>X</code>, <code>C</code>, <code>tap</code> | <code>Tap</code>, <code>phase</code> | <code>Phase</code>, <code>Smax</code>, <code>Imax</code>, <code>Pmax</code>, <code>Qmax</code>, <code>Vargmax</code>, <code>MidXaxis</code>, <code>MidYaxis</code>, <code>Marker</code></td></tr>
         <tr><td><code>component/&lt;key&gt;/main.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">component of type <code>&lt;key&gt;</code></span><span lang="ja">種類 <code>&lt;key&gt;</code> の機器</span></td><td data-label="Columns" data-label-ja="列"><code>Bus</code>*, <code>P</code>*, <code>Q</code>*, <code>FullTag</code>, <code>baseMVA</code>, <code>Pmin</code>, <code>Pmax</code>, <code>Qmin</code>, <code>Qmax</code>, <code>Xaxis</code>, <code>Yaxis</code>, <code>Marker</code>, <code>MidXaxis</code>, <code>MidYaxis</code>, <code>ParameterID</code>, <code>OpfID</code></td></tr>
-        <tr><td><code>component/&lt;key&gt;/dynamics.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">distinct parameter set</span><span lang="ja">異なるパラメータの組</span></td><td data-label="Columns" data-label-ja="列"><code>ParameterID</code>*, <span lang="en">the <code>sv_para</code> of the class (not checked by the importer)</span><span lang="ja">クラスの <code>sv_para</code>（読み込み側では検査しない）</span></td></tr>
+        <tr><td><code>component/&lt;key&gt;/dynamics.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">distinct parameter set</span><span lang="ja">異なるパラメータの組</span></td><td data-label="Columns" data-label-ja="列"><code>ParameterID</code>*, <span lang="en">the <code>sv_para</code> of the class (not checked by the importer)</span><span lang="ja">クラスの <code>sv_para</code>（読み込み側では検査しません）</span></td></tr>
         <tr><td><code>component/&lt;key&gt;/opf.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">distinct OPF setting</span><span lang="ja">異なる OPF 設定</span></td><td data-label="Columns" data-label-ja="列"><code>OpfID</code>*, <code>OPFinit_P0</code>*, <code>OPFinit_Q0</code>*, <code>OPFcost_HP</code>*, <code>OPFcost_HQ</code>*, <code>OPFcost_fP</code>*, <code>OPFcost_fQ</code>*, <code>OPFcost_startup</code>*, <code>OPFcost_shutdown</code>*</td></tr>
-        <tr><td><code>&lt;Name&gt;.m</code></td><td data-label="One row per" data-label-ja="1 行が表すもの">—</td><td data-label="Columns" data-label-ja="列"><span lang="en">class file, written when the folder is <code>@&lt;Name&gt;</code> or <code>ClassFile=true</code></span><span lang="ja">クラスファイル。フォルダが <code>@&lt;Name&gt;</code> のとき、または <code>ClassFile=true</code> のときに書き出し</span></td></tr>
+        <tr><td><code>&lt;Name&gt;.m</code></td><td data-label="One row per" data-label-ja="1 行が表すもの">—</td><td data-label="Columns" data-label-ja="列"><span lang="en">class file, written when the folder is <code>@&lt;Name&gt;</code> or <code>ClassFile=true</code></span><span lang="ja">クラスファイルです。フォルダが <code>@&lt;Name&gt;</code> のとき、または <code>ClassFile=true</code> のときに書き出します。</span></td></tr>
       </tbody>
     </table>
     <h3><span lang="en">MATPOWER case</span><span lang="ja">MATPOWER のケース</span></h3>
@@ -749,8 +749,8 @@
       <li>For <code>network.IEEE9bus</code>: 9×13, 3×21, 9×13, 3×7</li>
     </ul>
     <ul lang="ja">
-      <li><code>tools.network_to_mpc</code> の戻り値: <code>version = '2'</code>、<code>baseMVA</code>、<code>bus</code>（n_bus×13）、<code>gen</code>（n_gen×21）、<code>branch</code>（n_branch×13）、<code>gencost</code>（n_gen×7、Q のコストがあれば 2·n_gen×7）、<code>bus_name</code>・<code>gen_name</code>・<code>branch_name</code>（GUILDA のタグの cell）</li>
-      <li><code>network.IEEE9bus</code> では 9×13、3×21、9×13、3×7</li>
+      <li><code>tools.network_to_mpc</code> が返す構造体のフィールドは、<code>version = '2'</code>、<code>baseMVA</code>、<code>bus</code>（n_bus×13）、<code>gen</code>（n_gen×21）、<code>branch</code>（n_branch×13）、<code>gencost</code>（n_gen×7、Q のコストがあれば 2·n_gen×7）、<code>bus_name</code>・<code>gen_name</code>・<code>branch_name</code>（GUILDA のタグの cell）です。</li>
+      <li><code>network.IEEE9bus</code> では 9×13、3×21、9×13、3×7 です。</li>
     </ul>
     <h3><span lang="en">Round trips between formats</span><span lang="ja">形式間の往復変換</span></h3>
     <div class="fio-trip">
@@ -767,7 +767,7 @@
             <li>母線・ブランチ・機器とそのキー、タグ</li>
             <li>潮流・運転制約（operation）・OPF・dynamics・graph のパラメータ</li>
             <li>slack 母線、<code>Hz</code>、<code>baseMVA</code></li>
-            <li><code>network.IEEE9bus</code> の潮流計算結果: 完全に再現</li>
+            <li><code>network.IEEE9bus</code> の潮流計算結果は完全に再現します。</li>
           </ul></dd>
           <dt><span lang="en">Lost or changed in the round trip</span><span lang="ja">往復で失われる・変わるもの</span></dt>
           <dd><ul lang="en">
@@ -805,12 +805,12 @@
             <li>branch Imax, Pmax, Qmax (the export refuses finite values)</li>
             <li>generator power-flow <code>P</code>: PG is written from the OPF initial value <code>P0</code>, so after the round trip <code>P</code> equals the <code>P0</code> before export</li>
           </ul><ul lang="ja">
-            <li>機器のクラス: 発電機はすべて <code>GeneratorModel</code>、負荷はすべて <code>LoadModel</code>、母線の負荷は 1 つに統合</li>
+            <li>機器のクラス（発電機はすべて <code>GeneratorModel</code>、負荷はすべて <code>LoadModel</code> になり、1 つの母線の負荷は 1 つにまとまります）</li>
             <li>dynamics パラメータ、制御器</li>
             <li>タグ（再生成）</li>
             <li>負荷の OPF コスト</li>
-            <li>ブランチの Imax・Pmax・Qmax（書き出しは有限値を拒否）</li>
-            <li>発電機の潮流 <code>P</code>: PG は OPF の初期値 <code>P0</code> から書き出すため、往復後の <code>P</code> は書き出し前の <code>P0</code></li>
+            <li>ブランチの Imax・Pmax・Qmax（書き出しでは有限値を拒否します）</li>
+            <li>発電機の潮流の <code>P</code>（PG は OPF の初期値 <code>P0</code> から書き出すので、往復後の <code>P</code> は書き出し前の <code>P0</code> になります）</li>
           </ul></dd>
         </dl>
       </div>
@@ -828,13 +828,13 @@
       <li>A file or struct is a snapshot: later edits of the network not reflected until the next export</li>
     </ul>
     <ul lang="ja">
-      <li>読み込みは <code>add_bus</code>・<code>add_branch</code>・<code>add_component</code>・<code>l_isSlack</code> で組み立て。参照、編集フラグ、ハンドルの状態は<a href="feature-model-building.html#side-effects">モデル構築</a>と同じ</li>
-      <li>新しいネットワーク: <code>initialize</code> の前は何も記録しない</li>
-      <li><code>import_csv(path, Network=obj)</code>: <code>obj</code> を空にせずに追加。ファイルにあれば <code>Hz</code> と <code>baseMVA</code> を上書き</li>
-      <li><code>export_csv</code> と <code>network_to_mpc</code>: ネットワークの読み取りのみ</li>
-      <li><code>export_csv</code> はディスクに書き込み。<code>Overwrite=true</code> では既存の書き出しの 4 つのサブフォルダとクラスファイルを削除（フォルダ内の他のファイルは残す）</li>
-      <li>キャッシュは無関係</li>
-      <li>ファイルや構造体はその時点の写し。ネットワークを後で編集しても、次に書き出すまで反映なし</li>
+      <li>読み込みは <code>add_bus</code>・<code>add_branch</code>・<code>add_component</code>・<code>l_isSlack</code> で組み立てます。参照、編集フラグ、ハンドルの状態は<a href="feature-model-building.html#side-effects">モデル構築</a>と同じです。</li>
+      <li>新しいネットワークには、<code>initialize</code> を実行するまで何も記録されません。</li>
+      <li><code>import_csv(path, Network=obj)</code> は、<code>obj</code> の中身を消さずに、そこへ追加します。<code>Hz</code> と <code>baseMVA</code> は、ファイルに値があれば上書きします。</li>
+      <li><code>export_csv</code> と <code>network_to_mpc</code> は、ネットワークを読み取るだけです。</li>
+      <li><code>export_csv</code> はディスクに書き込みます。<code>Overwrite=true</code> のときは、前に書き出した 4 つのサブフォルダとクラスファイルを削除します。フォルダにあるそれ以外のファイルは残します。</li>
+      <li>キャッシュは関係しません。</li>
+      <li>ファイルや構造体はその時点の写しです。ネットワークを後で編集しても、次に書き出すまで反映されません。</li>
     </ul>
 
     <!-- ============================== 6. FAILURES ============================== -->
@@ -845,9 +845,9 @@
       <li><code>import_matpower</code> checks the case (IO-14, IO-16) before it builds</li>
     </ul>
     <ul lang="ja">
-      <li><code>import_csv</code> はネットワークを変更する前にすべての table を読んで検査（IO-02、IO-03）。ファイル・列・行番号の誤りでは <code>Network</code> は不変</li>
-      <li>その後の失敗（未知のモデルのキー、dynamics の列の誤り、<code>initialize</code> の失敗など）では、途中まで組み立てた状態が残る場合あり</li>
-      <li><code>import_matpower</code> は組み立ての前にケースを検査（IO-14、IO-16）</li>
+      <li><code>import_csv</code> は、ネットワークに手を加える前にすべての table を読んで検査します（IO-02、IO-03）。そのため、ファイル、列、行番号に誤りがあっても <code>Network</code> は変わりません。</li>
+      <li>その後の失敗（未知のモデルのキー、dynamics の列の誤り、<code>initialize</code> の失敗など）では、途中まで組み立てた状態が残る場合があります。</li>
+      <li><code>import_matpower</code> は組み立ての前にケースを検査します（IO-14、IO-16）。</li>
     </ul>
     <table class="dg-table fio-fail">
       <thead><tr><th><span lang="en">Call</span><span lang="ja">呼び出し</span></th><th><span lang="en">What the caller sees</span><span lang="ja">呼び出し側に見えるもの</span></th></tr></thead>
@@ -862,7 +862,7 @@
     </table>
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
       <p lang="en">Most IDs: entry names of <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>, read by <code>msg</code>. <code>error(msg(...))</code> passes only the text, so those exceptions have an empty identifier. Only the <code>assert</code> calls of <code>import_csv</code> set the identifier.</p>
-      <p lang="ja">ほとんどの ID は <code>msg</code> が読む <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のエントリ名。<code>error(msg(...))</code> は本文だけを渡すため、その例外の識別子は空。識別子を設定するのは <code>import_csv</code> の <code>assert</code> のみ。</p>
+      <p lang="ja">ほとんどの ID は、<code>msg</code> が読む <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のエントリ名です。<code>error(msg(...))</code> にはメッセージ本文だけを渡すので、例外の識別子は空になります。識別子が付くのは、<code>import_csv</code> の <code>assert</code> で出るエラーだけです。</p>
     </div>
 
     <!-- ============================== 7. EXTENSION ============================== -->
@@ -893,28 +893,28 @@
     <ul lang="ja">
       <li><b>機器</b>
         <ul>
-          <li>新しいクラスは入出力のコードを変えずに読み書き可能</li>
-          <li>キー: <code>component/</code> の下のフォルダ名</li>
-          <li><code>dynamics.csv</code> はその形で渡されるため、コンストラクタは <code>component.generator.abstract</code> と同様に <code>parameter</code> を 1 行の table として受け取り、その <code>sv_para</code> 列を使うことが必要</li>
-          <li><code>network_to_mpc</code> は、<code>component.load.abstract</code> を継承しない限り発電機として扱う</li>
+          <li>新しいクラスは、入出力のコードを変えずに読み書きできます。</li>
+          <li>キーは <code>component/</code> の下のフォルダ名です。</li>
+          <li><code>dynamics.csv</code> の行は 1 行の table として渡されます。そのため、コンストラクタは <code>component.generator.abstract</code> と同じように <code>parameter</code> を 1 行の table で受け取り、その中の <code>sv_para</code> の列を使う必要があります。</li>
+          <li><code>network_to_mpc</code> は、<code>component.load.abstract</code> を継承しない限り、機器を発電機として扱います。</li>
         </ul>
       </li>
       <li><b>ブランチ</b>
         <ul>
-          <li>CSV の行は <code>R</code>・<code>X</code>・<code>C</code>・<code>tap</code>・<code>phase</code> と上下限のみ。他のパラメータを持つブランチのクラスは保存不可</li>
-          <li><code>network_to_mpc</code> は、アドミタンス行列が MATPOWER のブランチモデルに当てはまるブランチを受け付け</li>
+          <li>CSV の行は <code>R</code>・<code>X</code>・<code>C</code>・<code>tap</code>・<code>phase</code> と上下限だけです。他のパラメータを持つブランチのクラスは保存できません。</li>
+          <li><code>network_to_mpc</code> は、アドミタンス行列が MATPOWER のブランチモデルに当てはまるブランチを受け付けます。</li>
         </ul>
       </li>
       <li><b>制御器</b>
         <ul>
-          <li>保存対象外</li>
-          <li>ネットワーククラスが、<code>network.IEEE9bus</code> と同様に、<code>import_csv(..., Initialize=false)</code> の後にコンストラクタで追加</li>
+          <li>制御器はファイルに保存されません。</li>
+          <li>制御器が必要なら、<code>network.IEEE9bus</code> のように、ネットワーククラスのコンストラクタで <code>import_csv(..., Initialize=false)</code> の後に追加します。</li>
         </ul>
       </li>
-      <li><b>新しい列</b>: <code>import_csv</code> の必須または任意の一覧、<code>export_csv</code> の table、その値を受け取る <code>add_*</code> のオプションに追加</li>
+      <li><b>新しい列</b>: 3 か所に追加します。<code>import_csv</code> の必須列か任意列の一覧、<code>export_csv</code> が作る table、その値を受け取る <code>add_*</code> のオプションです。</li>
     </ul>
     <p lang="en">Network classes: see <a href="model-implementation.html#other">Model Implementation: New branches and networks</a>.</p>
-    <p lang="ja">ネットワーククラス: <a href="model-implementation.html#other">モデルの実装: 新しいブランチとネットワーク</a>を参照。</p>
+    <p lang="ja">ネットワーククラスについては、<a href="model-implementation.html#other">モデルの実装: 新しいブランチとネットワーク</a>を参照してください。</p>
 
     <!-- ============================== 8. RELATED ============================== -->
     <h2 id="related"><span lang="en">8. Related pages</span><span lang="ja">8. 関連ページ</span></h2>

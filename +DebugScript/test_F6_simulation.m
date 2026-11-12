@@ -55,7 +55,7 @@ assert(abs(V1 - net.a_Bus{1}.c_Vequilibrium) < 1e-8)
 
 %% Trajectory follows the variable map
 % 結果は軌道を変数の表 (net.get_variable_map) の順に 1 回だけ持つ: rm_variable の列 = tab_variable の行。
-% 局所・大域制御器の状態も入り、odeResults はその見え方 (同じ値)
+% ローカル制御器・グローバル制御器の状態も入り、odeResults はその見え方 (同じ値)
 net = DebugScript.helper.build_ieee14();
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
@@ -333,7 +333,7 @@ assert(all(isfinite(X(r.t < 1,:)), "all"))
 
 
 %% Trip generator in a network with local controllers
-% 局所制御器 (AVR) が付いた系統でも、解列した機器だけの状態が NaN になる
+% ローカル制御器 (AVR) が付いた系統でも、解列した機器だけの状態が NaN になる
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.05], "TripUnit", "B002SG1");
@@ -633,7 +633,7 @@ assert(abs(r0.Bus(1).Component(1).X.omega(end)) > 10*abs(omega(end)))
 
 
 %% Tripped global controller gives no output
-% 大域制御器を解列すると、解列中の出力は 0 (機器の入力は定常値のまま)
+% グローバル制御器を解列すると、解列中の出力は 0 (機器の入力は定常値のまま)
 net = DebugScript.helper.build_ieee14();
 agc = net.add_global_controller("agc-PI", ["B001SG1", "B002SG1"], parameter=struct(kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
@@ -651,7 +651,7 @@ assert(~isprop(agc, "l_isConnect"), "解列の状態はモデルに書かない 
 
 
 %% Two global controllers act together
-% 大域制御器は何台でも扱える。同じ発電機を alpha を半分ずつにした 2 台の AGC で制御すると、
+% グローバル制御器は何台でも扱える。同じ発電機を alpha を半分ずつにした 2 台の AGC で制御すると、
 % 出力の和が 1 台の AGC と等しいので、同じ応答になる
 net1 = DebugScript.helper.build_ieee14();
 net1.add_global_controller("agc-PI", ["B001SG1", "B002SG1"], parameter=struct(alpha=[1;1], kP=100, kI=500));

@@ -1,5 +1,5 @@
 classdef RoutingGCStub < GlobalController
-% 大域制御器の観測と出力の振り分けを確かめるための制御器 (テスト専用)
+% グローバル制御器の観測と出力の振り分けを確かめるための制御器 (テスト専用)
 %
 %   c  = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_routing_gc", ...
 %            Replace=["sv_y = ""Pmech""", "sv_y = ""Pref"""]);

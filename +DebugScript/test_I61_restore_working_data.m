@@ -82,7 +82,7 @@ function v = bad_input(t)
 end
 
 function c = snapshot(net)
-% すべての母線・機器・局所制御器・大域制御器のプロパティの値
+% すべての母線・機器・ローカル制御器・グローバル制御器のプロパティの値
     a_obj = [net.a_Bus; net.a_GlobalController];
     for i = 1:numel(net.a_Bus)
         for j = 1:numel(net.a_Bus{i}.a_Component)

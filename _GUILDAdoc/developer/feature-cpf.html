@@ -46,7 +46,7 @@
     <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Continuation Power Flow Feature Design</span><span lang="ja">連続潮流計算機能の設計</span></h1>
     <p class="page-lead" lang="en"><code>net.calculate_continuation_powerflow()</code> starts from the equilibrium of <code>net.initialize</code>, scales the power of the components on the load buses by <code>(1 + λ)</code>, and traces the power-flow solution with a predictor-corrector method past the maximum loading point (the nose of the PV curve). Output: the path as a <code>ResultCPF</code>.</p>
-    <p class="page-lead" lang="ja"><code>net.calculate_continuation_powerflow()</code>: <code>net.initialize</code> の平衡点から出発し、負荷母線の機器の電力を <code>(1 + λ)</code> 倍しながら、予測子・修正子法で最大負荷点（PV カーブの先端）の先まで潮流解を追跡する機能。出力は経路を持つ <code>ResultCPF</code>。</p>
+    <p class="page-lead" lang="ja"><code>net.calculate_continuation_powerflow()</code> は、<code>net.initialize</code> で求めた平衡点から出発し、負荷母線にある機器の電力を <code>(1 + λ)</code> 倍しながら潮流解をたどります。予測子・修正子法を使うので、最大負荷点（PV カーブの先端）を越えた先まで追跡できます。たどった経路は <code>ResultCPF</code> として返します。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#purpose"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></a>
@@ -69,46 +69,46 @@
       <li>A Name-Value option applies to this call only.</li>
     </ul>
     <ul lang="ja">
-      <li>設定: <code>GUILDA.setting</code> の ContinuationPowerFlow セクション。実行のたびに <code>GUILDA.config("ContinuationPowerFlow")</code> から読み込み: <code>@GUILDA/config/DefaultContinuationPowerFlow.json</code>（<code>@GUILDA/user/</code> の同名ファイルで上書き）</li>
-      <li>条件 <code>LoadBus</code>: <code>net.solver_CPF</code>（<code>SolverCPF</code>）の public プロパティ。実行をまたいで保持</li>
-      <li>Name-Value オプション: その呼び出しのみに適用</li>
+      <li>設定は <code>GUILDA.setting</code> の ContinuationPowerFlow セクションにあり、実行のたびに <code>GUILDA.config("ContinuationPowerFlow")</code> から読み込みます。既定値は <code>@GUILDA/config/DefaultContinuationPowerFlow.json</code> にあり、<code>@GUILDA/user/</code> に同じ名前のファイルを置くと上書きできます。</li>
+      <li>条件の <code>LoadBus</code> は <code>net.solver_CPF</code>（<code>SolverCPF</code>）の public プロパティで、一度設定すると次の実行でも使われます。</li>
+      <li>Name-Value で渡したオプションは、その呼び出しにだけ効きます。</li>
     </ul>
     <table class="dg-table cpf-opts">
       <thead><tr><th lang="en">Option</th><th lang="ja">オプション</th><th lang="en">Setting or condition and default</th><th lang="ja">設定・条件と既定値</th></tr></thead>
       <tbody>
         <tr><td><code>LoadBus</code></td>
           <td lang="en" data-label="Setting and default">condition (<code>net.solver_CPF</code>); <code>LoadBus = strings(1,0)</code>: tags of the buses whose components are scaled by <code>(1 + λ)</code>. Required: per call or on the solver.</td>
-          <td lang="ja" data-label="設定と既定値">条件（<code>net.solver_CPF</code>）。<code>LoadBus = strings(1,0)</code>: 機器を <code>(1 + λ)</code> 倍する母線のタグ。必須: 呼び出しごとに指定、またはソルバーに設定</td></tr>
+          <td lang="ja" data-label="設定と既定値">条件（<code>net.solver_CPF</code>）です。<code>LoadBus = strings(1,0)</code>: 機器の電力を <code>(1 + λ)</code> 倍する母線のタグです。省略できないので、呼び出しのたびに渡すか、ソルバーに設定しておきます。</td></tr>
         <tr><td><code>InitialLambda</code></td>
           <td lang="en" data-label="Setting and default"><code>InitialLambda = 0</code>: λ at the starting point</td>
-          <td lang="ja" data-label="設定と既定値"><code>InitialLambda = 0</code>: 出発点での λ</td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>InitialLambda = 0</code>: 出発点での λ です。</td></tr>
         <tr><td><code>MaxIteration</code></td>
           <td lang="en" data-label="Setting and default"><code>MaxIteration = 500</code>: maximum number of predictor-corrector steps</td>
-          <td lang="ja" data-label="設定と既定値"><code>MaxIteration = 500</code>: 予測子・修正子のステップの最大数</td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>MaxIteration = 500</code>: 予測子・修正子のステップの最大数です。</td></tr>
         <tr><td><code>StepSize</code></td>
           <td lang="en" data-label="Setting and default"><code>StepSize = 0.5</code>: factor of the predictor (tangent at the first step, secant afterwards)</td>
-          <td lang="ja" data-label="設定と既定値"><code>StepSize = 0.5</code>: 予測子の係数（最初のステップは接線、以降は割線）</td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>StepSize = 0.5</code>: 予測子の係数です。最初のステップでは接線に、以降は割線に掛けます。</td></tr>
         <tr><td><code>ArcLength</code></td>
           <td lang="en" data-label="Setting and default"><code>ArcLength = 1e-3</code>: the corrected point satisfies <code>|x − x_current|² = ArcLength</code></td>
-          <td lang="ja" data-label="設定と既定値"><code>ArcLength = 1e-3</code>: 修正後の点が満たす条件 <code>|x − x_current|² = ArcLength</code></td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>ArcLength = 1e-3</code>: 修正後の点が満たす条件 <code>|x − x_current|² = ArcLength</code> の値です。</td></tr>
         <tr><td><code>Tolerance</code></td>
           <td lang="en" data-label="Setting and default"><code>Tolerance = 1e-5</code>: <code>ConvTol</code> of the Newton-Raphson corrector (every element of the step below it)</td>
-          <td lang="ja" data-label="設定と既定値"><code>Tolerance = 1e-5</code>: ニュートン・ラフソン修正子の <code>ConvTol</code>（更新量のすべての要素がこれ未満）</td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>Tolerance = 1e-5</code>: ニュートン・ラフソン修正子の <code>ConvTol</code> です。更新量のすべての要素がこの値を下回れば収束とみなします。</td></tr>
         <tr><td><code>UseInternalState</code></td>
           <td lang="en" data-label="Setting and default"><code>UseInternalState = false</code>: when true, the generator powers follow their state equations through <code>getCompPQ</code></td>
-          <td lang="ja" data-label="設定と既定値"><code>UseInternalState = false</code>: true で発電機の電力が <code>getCompPQ</code> を通じて状態方程式に追従</td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>UseInternalState = false</code>: true にすると、発電機の電力を <code>getCompPQ</code> で状態方程式から求めます。</td></tr>
         <tr><td><code>Verbose</code></td>
           <td lang="en" data-label="Setting and default"><code>Verbose = false</code>: print λ at each step</td>
-          <td lang="ja" data-label="設定と既定値"><code>Verbose = false</code>: 各ステップの λ を表示</td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>Verbose = false</code>: 各ステップの λ を表示します。</td></tr>
         <tr><td><code>Limits</code></td>
           <td lang="en" data-label="Setting and default"><code>Limits = "none"</code>: operating limits (<code>tab_parameter.operation</code>) applied along the path: a subset of <code>"Q"</code>, <code>"V"</code>, <code>"S"</code>, or <code>"all"</code> / <code>"none"</code> (see CPF-11)</td>
-          <td lang="ja" data-label="設定と既定値"><code>Limits = "none"</code>: 経路上で課す運転制約（<code>tab_parameter.operation</code>）。<code>"Q"</code>、<code>"V"</code>、<code>"S"</code> の部分集合、または <code>"all"</code> / <code>"none"</code>（CPF-11 を参照）</td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>Limits = "none"</code>: 経路上で守る運転制約（<code>tab_parameter.operation</code>）です。<code>"Q"</code>、<code>"V"</code>、<code>"S"</code> から選んで組み合わせるか、<code>"all"</code> または <code>"none"</code> を指定します（CPF-11 を参照）。</td></tr>
         <tr><td><code>PlotFcn</code></td>
           <td lang="en" data-label="Setting and default"><code>PlotFcn = "none"</code>: live display during the analysis. <code>"pvcurve"</code>: |V| of every bus against λ, extended at each step (one reused figure, Tag <code>GUILDA:PlotFcn:pvcurve</code>, redrawn at most every 0.2 s and at the end). Function handle: <code>stop = f(x, optimValues, state)</code> at the starting point and each step (<code>x</code> complex bus voltages, <code>optimValues.iteration</code>, <code>.lambda</code>, <code>.correctorIterations</code>); a true <code>stop</code> ends the path there. The PV curves after the analysis: <code>result.Plot()</code></td>
-          <td lang="ja" data-label="設定と既定値"><code>PlotFcn = "none"</code>: 解析中のライブ表示。<code>"pvcurve"</code>: 全母線の |V| を λ に対して描き、ステップごとに伸ばす（図は 1 枚を使い回し、Tag <code>GUILDA:PlotFcn:pvcurve</code>。再描画は最短 0.2 秒ごとと終了時）。関数ハンドル: 初期点と各ステップで <code>stop = f(x, optimValues, state)</code>（<code>x</code> は母線の複素電圧、<code>optimValues.iteration</code>、<code>.lambda</code>、<code>.correctorIterations</code>）。<code>stop</code> が true ならその点で経路を終了。解析後の PV 曲線は <code>result.Plot()</code></td></tr>
+          <td lang="ja" data-label="設定と既定値"><code>PlotFcn = "none"</code>: 解析中のライブ表示です。<code>"pvcurve"</code> を指定すると、全母線の |V| を λ に対して描き、ステップが進むたびに線を伸ばします。図は 1 枚を使い回し、Tag は <code>GUILDA:PlotFcn:pvcurve</code> です。描き直しは最短でも 0.2 秒おきで、終了時にも描きます。関数ハンドルを渡すと、初期点と各ステップで <code>stop = f(x, optimValues, state)</code> を呼びます。<code>x</code> は母線の複素電圧で、<code>optimValues</code> には <code>.iteration</code>、<code>.lambda</code>、<code>.correctorIterations</code> が入ります。<code>stop</code> が true を返すと、その点で経路を打ち切ります。解析後に PV 曲線を描くには <code>result.Plot()</code> を使います。</td></tr>
         <tr><td><code>Export</code></td>
           <td lang="en" data-label="Setting and default">call only; <code>false</code>: call <code>result.Export(...)</code> afterwards</td>
-          <td lang="ja" data-label="設定と既定値">呼び出しのみ。<code>false</code>: 実行後に <code>result.Export(...)</code> を呼び出し</td></tr>
+          <td lang="ja" data-label="設定と既定値">呼び出しのときにだけ指定できます。既定値は <code>false</code> で、それ以外を渡すと実行後に <code>result.Export(...)</code> を呼びます。</td></tr>
       </tbody>
     </table>
     <p lang="en">Preconditions:</p>
@@ -117,12 +117,12 @@
       <li>bus types from <code>Bus.get_pf_condition</code>: the slack bus is the one <code>l_isSlack</code> marks.</li>
     </ul>
     <p lang="en">Other settings of the corrector, in <code>GUILDA.config("ContinuationPowerFlow")</code>, no Name-Value option: <code>CorrectorMaxIteration = 1000</code>, <code>CorrectorStepSize = 1</code>, <code>Increment = 1e-4</code> (step of the numerical Jacobian of the predictor and the corrector).</p>
-    <p lang="ja">前提条件:</p>
+    <p lang="ja">前提条件は次のとおりです。</p>
     <ul lang="ja">
-      <li><code>net.initialize()</code> が成功済みで、その後に層を古くする編集なし</li>
-      <li>母線の種別は <code>Bus.get_pf_condition</code> で決定: スラック母線は <code>l_isSlack</code> が示す母線</li>
+      <li><code>net.initialize()</code> が成功していて、その後に層を古くする編集をしていない必要があります。</li>
+      <li>母線の種別は <code>Bus.get_pf_condition</code> で決まります。スラック母線は <code>l_isSlack</code> が示す母線です。</li>
     </ul>
-    <p lang="ja">修正子のその他の設定（<code>GUILDA.config("ContinuationPowerFlow")</code>。Name-Value なし）: <code>CorrectorMaxIteration = 1000</code>、<code>CorrectorStepSize = 1</code>、<code>Increment = 1e-4</code>（予測子と修正子の数値ヤコビアンの刻み）。</p>
+    <p lang="ja">修正子にはほかに <code>CorrectorMaxIteration = 1000</code>、<code>CorrectorStepSize = 1</code>、<code>Increment = 1e-4</code> の設定があります。<code>Increment</code> は、予測子と修正子が数値ヤコビアンを求めるときの刻み幅です。これらは <code>GUILDA.config("ContinuationPowerFlow")</code> で変えられますが、Name-Value では渡せません。</p>
 
     <!-- ============================== SEQUENCE ============================== -->
     <h2 id="sequence"><span lang="en">Call sequence between classes</span><span lang="ja">クラス間の呼び出し順</span></h2>
@@ -193,19 +193,19 @@
         <text x="166" y="656"><tspan class="cpf-num">14</tspan> <tspan class="dg-mono">result, flag, output</tspan></text>
       </svg>
       <figcaption lang="en">Numbers: the step IDs below (CPF-01 to CPF-14). Steps 9 to 11 repeat for each point of the path. Inside step 10 the Newton-Raphson method evaluates <code>pf_equation</code>, which reads the buses and components.</figcaption>
-      <figcaption lang="ja">番号は下の処理ステップの ID（CPF-01〜CPF-14）。ステップ 9〜11 は経路の点ごとに反復。ステップ 10 の中でニュートン・ラフソン法が <code>pf_equation</code> を評価し、母線と機器を参照。</figcaption>
+      <figcaption lang="ja">番号は、下にある処理ステップの ID（CPF-01〜CPF-14）です。ステップ 9〜11 は経路の点ごとに繰り返します。ステップ 10 では、ニュートン・ラフソン法が <code>pf_equation</code> を評価し、そこから母線と機器を参照します。</figcaption>
     </figure>
 
     <!-- ============================== STEPS ============================== -->
     <h2 id="steps"><span lang="en">Processing steps in detail</span><span lang="ja">処理ステップの詳細</span></h2>
     <p lang="en"><code>check_network</code>: local function of <code>@SolverCPF/solve.m</code>. <code>build_layout</code>, <code>pf_equation</code>, <code>predict</code>, <code>correct</code>: <code>@SolverCPF/private/</code>. Steps marked on the left repeat for each point of the path.</p>
-    <p lang="ja"><code>check_network</code>: <code>@SolverCPF/solve.m</code> のローカル関数。<code>build_layout</code>、<code>pf_equation</code>、<code>predict</code>、<code>correct</code>: <code>@SolverCPF/private/</code>。左に印のあるステップは経路の点ごとに反復。</p>
+    <p lang="ja"><code>check_network</code> は <code>@SolverCPF/solve.m</code> のローカル関数です。<code>build_layout</code>、<code>pf_equation</code>、<code>predict</code>、<code>correct</code> は <code>@SolverCPF/private/</code> にあります。左に印のあるステップは、経路の点ごとに繰り返します。</p>
     <ol class="fs-steps">
       <li class="fs-step" id="CPF-01">
         <p class="fs-head"><b class="fs-id">CPF-01</b> <span class="fs-call">user → <code>PowerNetwork.calculate_continuation_powerflow</code></span><small><code>take_call_options</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Separates <code>Export</code> from the solver options.</span><span lang="ja"><code>Export</code> をソルバーのオプションから分離</span></dd>
+          <dd><span lang="en">Separates <code>Export</code> from the solver options.</span><span lang="ja"><code>Export</code> をソルバーのオプションから分離します。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>varargin</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -216,18 +216,18 @@
         <p class="fs-head"><b class="fs-id">CPF-02</b> <span class="fs-call"><code>calculate_continuation_powerflow</code> → <code>SolverCPF.get_options</code></span><small>→ <code>tools.resolve_options</code>, <code>validate_options</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Maps the Name-Value names through <code>OptionMap</code>, checks the values (<code>PlotFcn</code>: <code>tools.check_plotfcn</code>), fills the rest from the ContinuationPowerFlow section of <code>GUILDA.setting</code> and the condition <code>LoadBus</code> of the solver.</span><span lang="ja">Name-Value の名前を <code>OptionMap</code> で対応づけ、値を検査（<code>PlotFcn</code>: <code>tools.check_plotfcn</code>）。残りは <code>GUILDA.setting</code> の ContinuationPowerFlow セクションとソルバーの条件 <code>LoadBus</code> から補完</span></dd>
+          <dd><span lang="en">Maps the Name-Value names through <code>OptionMap</code>, checks the values (<code>PlotFcn</code>: <code>tools.check_plotfcn</code>), fills the rest from the ContinuationPowerFlow section of <code>GUILDA.setting</code> and the condition <code>LoadBus</code> of the solver.</span><span lang="ja">Name-Value の名前を <code>OptionMap</code> で内部の名前に変換し、値を検査します（<code>PlotFcn</code> は <code>tools.check_plotfcn</code> で検査します）。渡されなかった項目は、<code>GUILDA.setting</code> の ContinuationPowerFlow セクションと、ソルバーに設定された <code>LoadBus</code> で補います。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>c_nv</code>; <code>GUILDA.config("ContinuationPowerFlow")</code>; <code>net.solver_CPF.LoadBus</code></span><span lang="ja"><code>c_nv</code>、<code>GUILDA.config("ContinuationPowerFlow")</code>、<code>net.solver_CPF.LoadBus</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>sct_options</code>: struct with 13 fields (the 12 keys of the section and <code>LoadBus</code> as a 1 × n string row). Solver and settings file unchanged.</span><span lang="ja"><code>sct_options</code>: 13 フィールドの構造体（セクションの 12 個のキーと、1 × n の string 行の <code>LoadBus</code>）。ソルバーと設定ファイルは不変</span></dd>
+          <dd><span lang="en"><code>sct_options</code>: struct with 13 fields (the 12 keys of the section and <code>LoadBus</code> as a 1 × n string row). Solver and settings file unchanged.</span><span lang="ja"><code>sct_options</code>: 13 フィールドの構造体（セクションの 12 個のキーと、1 × n の string 行の <code>LoadBus</code>）です。ソルバーと設定ファイルは変更しません。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="CPF-03">
         <p class="fs-head"><b class="fs-id">CPF-03</b> <span class="fs-call"><code>calculate_continuation_powerflow</code> → <code>SolverCPF.solve(net, sct_options)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Starts the timer; runs CPF-04 to CPF-13.</span><span lang="ja">タイマー開始。CPF-04〜CPF-13 を実行</span></dd>
+          <dd><span lang="en">Starts the timer; runs CPF-04 to CPF-13.</span><span lang="ja">タイマーを開始し、CPF-04〜CPF-13 を実行します。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>sct_options</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -242,10 +242,10 @@
               <li>a component has no equilibrium;</li>
               <li>a stale tag it reads is not empty, checked in the same loop over the buses and components: <code>powerflow</code> and <code>odefcn</code> of the network, <code>equilibrium</code> and <code>odefcn</code> of each component (not the controllers). The error <code>GUILDA:SolverCPF:Stale</code> names up to three different messages and asks for <code>net.initialize()</code>;</li>
               <li><code>LoadBus</code> is empty or names a bus not in the network.</li>
-            </ul><span lang="ja">次の場合に停止:</span><ul lang="ja">
-              <li>平衡点を持たない機器がある</li>
-              <li>読み取る stale タグが空でない（同じ母線・機器のループで確認）: ネットワークの <code>powerflow</code> と <code>odefcn</code>、各機器の <code>equilibrium</code> と <code>odefcn</code>（制御器は対象外）。エラー <code>GUILDA:SolverCPF:Stale</code> は異なるメッセージを最大 3 件示し、<code>net.initialize()</code> を促す</li>
-              <li><code>LoadBus</code> が空、またはネットワークにない母線を含む</li>
+            </ul><span lang="ja">次のいずれかの場合に停止します。</span><ul lang="ja">
+              <li>平衡点を持たない機器があります。</li>
+              <li>読み取る stale タグのどれかが空ではありません。調べるのはネットワークの <code>powerflow</code> と <code>odefcn</code>、各機器の <code>equilibrium</code> と <code>odefcn</code> で、制御器は調べません。上と同じ母線・機器のループの中で確認します。エラー <code>GUILDA:SolverCPF:Stale</code> は、内容の異なるメッセージを 3 件まで示し、<code>net.initialize()</code> の実行を促します。</li>
+              <li><code>LoadBus</code> が空か、ネットワークにない母線を含んでいます。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>Component.c_Iequilibrium</code>, <code>sct_stale</code> of the network and the components, <code>LoadBus</code>, bus tags</span><span lang="ja"><code>Component.c_Iequilibrium</code>、ネットワークと機器の <code>sct_stale</code>、<code>LoadBus</code>、母線のタグ</span></dd>
@@ -261,7 +261,7 @@
               <li>which entries of the full vector are unknown;</li>
               <li>which are fixed at the equilibrium;</li>
               <li>which equations are solved.</li>
-            </ul><span lang="ja">母線ごとに CPF の変数を配置（下の表を参照）</span><ul lang="ja">
+            </ul><span lang="ja">母線ごとに CPF の変数を配置し、次の点を決めます（下の表を参照）。</span><ul lang="ja">
               <li>全体ベクトルのどの要素が未知数か</li>
               <li>どの要素を平衡点の値に固定するか</li>
               <li>どの方程式を解くか</li>
@@ -276,7 +276,7 @@
         <p class="fs-head"><b class="fs-id">CPF-06</b> <span class="fs-call"><code>build_layout</code> → <code>Bus.get_pf_condition</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Gets the bus type and stores where the bus voltage is in the full vector. Type: <code>"slack"</code>; <code>"PV"</code> when the summed <code>Q</code> of the components is NaN; else <code>"PQ"</code>.</span><span lang="ja">母線の種別を取得し、全体ベクトルでの母線電圧の位置を保存。種別: <code>"slack"</code>、機器の <code>Q</code> の和が NaN なら <code>"PV"</code>、それ以外は <code>"PQ"</code></span></dd>
+          <dd><span lang="en">Gets the bus type and stores where the bus voltage is in the full vector. Type: <code>"slack"</code>; <code>"PV"</code> when the summed <code>Q</code> of the components is NaN; else <code>"PQ"</code>.</span><span lang="ja">母線の種別を調べ、母線電圧が全体ベクトルのどこにあるかを記録します。スラック母線は <code>"slack"</code>、機器の <code>Q</code> の和が NaN になる母線は <code>"PV"</code>、それ以外は <code>"PQ"</code> です。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>l_isSlack</code>, <code>tab_parameter.powerflow</code> of the bus and its components</span><span lang="ja">母線とその機器の <code>l_isSlack</code>、<code>tab_parameter.powerflow</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -290,9 +290,9 @@
           <dd><span lang="en">Sets the power function of each component:</span><ul lang="en">
               <li>default: the equilibrium power <code>V·conj(I)</code>, constant;</li>
               <li>with <code>UseInternalState</code>: <code>getCompPQ(x, V, u, param)</code> and the place of the states in the full vector (slack and PV buses only).</li>
-            </ul><span lang="ja">各機器の電力関数を設定</span><ul lang="ja">
-              <li>既定: 一定値の平衡点電力 <code>V·conj(I)</code></li>
-              <li><code>UseInternalState</code>: <code>getCompPQ(x, V, u, param)</code> と全体ベクトルでの状態の位置（スラック母線と PV 母線のみ）</li>
+            </ul><span lang="ja">各機器の電力関数を設定します。</span><ul lang="ja">
+              <li>既定では、平衡点での電力 <code>V·conj(I)</code> を一定値として使います。</li>
+              <li><code>UseInternalState</code> が true のときは、<code>getCompPQ(x, V, u, param)</code> で電力を求めます。あわせて、状態が全体ベクトルのどこにあるかも記録します（スラック母線と PV 母線の機器だけです）。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>c_Vequilibrium</code>, <code>c_Iequilibrium</code>, <code>tab_parameter.dynamics</code></span><span lang="ja"><code>c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>tab_parameter.dynamics</code></span></dd>
@@ -308,10 +308,10 @@
               <li><code>f_PF</code>: <code>pf_equation</code> bound to the network, the layout, <code>LoadBus</code>, and the admittance matrix.</li>
               <li>Jacobian: central difference with <code>Increment</code> (<code>tools.fd_jacobian</code>); the predictor uses it too.</li>
               <li><code>ConvTol</code> = <code>Tolerance</code> (largest residual); <code>MaxIter</code> = <code>CorrectorMaxIteration</code>, <code>StepSize</code> = <code>CorrectorStepSize</code>, <code>Increment</code> from <code>GUILDA.config("ContinuationPowerFlow")</code>.</li>
-            </ul><span lang="ja">修正子を作成</span><ul lang="ja">
-              <li><code>f_PF</code>: ネットワーク、配置、<code>LoadBus</code>、アドミタンス行列を束縛した <code>pf_equation</code></li>
-              <li>ヤコビアン: <code>Increment</code> による中心差分（<code>tools.fd_jacobian</code>）。予測子も使用</li>
-              <li><code>ConvTol</code> = <code>Tolerance</code>（残差の最大値）。<code>MaxIter</code> = <code>CorrectorMaxIteration</code>、<code>StepSize</code> = <code>CorrectorStepSize</code>、<code>Increment</code> は <code>GUILDA.config("ContinuationPowerFlow")</code> から</li>
+            </ul><span lang="ja">修正子を作成します。</span><ul lang="ja">
+              <li><code>f_PF</code> は、ネットワーク、変数の配置、<code>LoadBus</code>、アドミタンス行列を引数に固定した <code>pf_equation</code> です。</li>
+              <li>ヤコビアンは、刻み幅 <code>Increment</code> の中心差分で求めます（<code>tools.fd_jacobian</code>）。予測子も同じヤコビアンを使います。</li>
+              <li>収束判定の <code>ConvTol</code> には <code>Tolerance</code> を使い、残差の最大値と比べます。<code>MaxIter</code> には <code>CorrectorMaxIteration</code> を、<code>StepSize</code> には <code>CorrectorStepSize</code> を使います。これらと <code>Increment</code> は <code>GUILDA.config("ContinuationPowerFlow")</code> から読みます。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>get_admittance_matrix</code>, <code>w</code>, <code>sct_options</code></span><span lang="ja"><code>get_admittance_matrix</code>、<code>w</code>、<code>sct_options</code></span></dd>
@@ -327,8 +327,8 @@
               <li>First step: the unit tangent of the solution curve, from the null space of the Jacobian (LU pivots), oriented so that λ increases; <code>x_pred = x_current + StepSize·t</code>.</li>
               <li>Later steps: the secant <code>x_pred = x_current + StepSize·(x_current − x_past)</code>.</li>
             </ul><ul lang="ja">
-              <li>最初のステップ: ヤコビアンの零空間（LU のピボット）による解曲線の単位接線。λ が増える向き。<code>x_pred = x_current + StepSize·t</code></li>
-              <li>以降のステップ: 割線 <code>x_pred = x_current + StepSize·(x_current − x_past)</code></li>
+              <li>最初のステップでは、ヤコビアンの零空間（LU のピボットから求めます）から解曲線の単位接線 t を求め、λ が増える向きにそろえます。予測点は <code>x_pred = x_current + StepSize·t</code> です。</li>
+              <li>2 回目以降は割線を使い、<code>x_pred = x_current + StepSize·(x_current − x_past)</code> とします。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>x_current</code>, <code>x_past</code>, <code>f_Jac</code></span><span lang="ja"><code>x_current</code>、<code>x_past</code>、<code>f_Jac</code></span></dd>
@@ -345,11 +345,11 @@
               <li>subtracts the component powers, multiplied by <code>(1 + λ)</code> on the buses of <code>LoadBus</code> (on every bus with <code>UseInternalState</code>);</li>
               <li>adds the state equations <code>f_dx</code> (first one replaced by the active-power balance);</li>
               <li>keeps the rows of <code>rm_BusRM</code>.</li>
-            </ul><span lang="ja"><code>x_pred</code> から、潮流方程式に弧長の条件 <code>|x − x_current|² − ArcLength = 0</code> を加えた式を求解。<code>pf_equation</code> の処理:</span><ul lang="ja">
-              <li>未知数を全体ベクトルに戻し、<code>V·conj(Y·V)</code> を計算</li>
-              <li>機器の電力を減算。<code>LoadBus</code> の母線（<code>UseInternalState</code> ではすべての母線）では <code>(1 + λ)</code> 倍</li>
-              <li>状態方程式 <code>f_dx</code> を追加（最初の式は有効電力の釣り合いに置換）</li>
-              <li><code>rm_BusRM</code> の行を抽出</li>
+            </ul><span lang="ja"><code>x_pred</code> から、潮流方程式に弧長の条件 <code>|x − x_current|² − ArcLength = 0</code> を加えた式を解きます。<code>pf_equation</code> の処理は次のとおりです。</span><ul lang="ja">
+              <li>未知数を全体ベクトルに戻し、<code>V·conj(Y·V)</code> を計算します。</li>
+              <li>機器の電力を減算します。<code>LoadBus</code> の母線（<code>UseInternalState</code> ではすべての母線）では <code>(1 + λ)</code> 倍します。</li>
+              <li>状態方程式 <code>f_dx</code> を追加します（最初の式は有効電力の釣り合いに置き換えます）。</li>
+              <li><code>rm_BusRM</code> の行を抽出します。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>Component.f_PQ2Bus</code>, <code>f_dx</code>, <code>rv_Uequilibrium</code>, <code>iv_CPFX</code>; <code>Bus.iv_CPFV</code>; <code>ArcLength</code></span><span lang="ja"><code>Component.f_PQ2Bus</code>、<code>f_dx</code>、<code>rv_Uequilibrium</code>、<code>iv_CPFX</code>、<code>Bus.iv_CPFV</code>、<code>ArcLength</code></span></dd>
@@ -371,14 +371,14 @@
               <li>Appends the point; prints λ when <code>Verbose</code> (and the limit reached).</li>
               <li>Ends the loop when λ of the corrected point is below 0 (the path came back past the nose) or a <code>"V"</code> / <code>"S"</code> limit was reached; otherwise continues up to <code>MaxIteration</code> steps.</li>
             </ul><ul lang="ja">
-              <li><code>Limits</code> の指定時: 修正後の点を <code>limit_set</code> の制約と比較（Inf・NaN は制約なし）。値が制約を <code>Tolerance</code> より大きく超えたら、その点を制約に達する点に置き換え: 直前の 2 点の線形内挿の後、経路上へ修正（<code>correct_at</code>）。ステップ内で最初に達した制約が対象
+              <li><code>Limits</code> を指定したときは、修正後の点を <code>limit_set</code> の制約と比べます。Inf や NaN の制約は無視します。値が制約を <code>Tolerance</code> より大きく超えたら、その点を、ちょうど制約に達する点に置き換えます。置き換える点は、直前の 2 点から線形内挿で求めたあと、経路の上へ修正します（<code>correct_at</code>）。1 つのステップで複数の制約を超えたときは、最初に達した制約を使います。
                 <ul>
-                  <li><code>"Q"</code>: PV 母線の発電機（<code>powerflow</code> の <code>Q = NaN</code> の機器）の Q と、その <code>Qmin</code> / <code>Qmax</code> の合計を比較。母線は Q を固定した PQ 母線に切替（<code>w.rv_Qfix</code>、<code>lv_PQ</code> 付きの <code>build_layout</code>）。PV には戻さない。点はその λ で修正し、予測子は接線から再開。スラック母線は対象外。<code>UseInternalState</code> では使用不可</li>
-                  <li><code>"V"</code>: 母線の <code>|V|</code> と <code>Vmin</code> / <code>Vmax</code>。<code>"S"</code>: ブランチ両端の大きい方の <code>|S|</code> と <code>Smax</code>。その点で経路を終了</li>
-                  <li>初期点で既に違反している制約: <code>"Q"</code> は初期点で切替、<code>"V"</code>・<code>"S"</code> は最初の点で経路を終了</li>
+                  <li><code>"Q"</code>: PV 母線にある発電機（<code>powerflow</code> で <code>Q = NaN</code> の機器）の Q を、それらの <code>Qmin</code> / <code>Qmax</code> の合計と比べます。制約に達した母線は、Q を固定した PQ 母線に切り替え（<code>w.rv_Qfix</code>、<code>lv_PQ</code> を渡した <code>build_layout</code>）、PV には戻しません。その点は同じ λ のまま修正し直し、予測子は接線からやり直します。スラック母線は対象外で、<code>UseInternalState</code> とは併用できません。</li>
+                  <li><code>"V"</code> では母線の <code>|V|</code> を <code>Vmin</code> / <code>Vmax</code> と比べます。<code>"S"</code> では、ブランチの両端のうち大きい方の <code>|S|</code> を <code>Smax</code> と比べます。どちらも、制約に達した点で経路を打ち切ります。</li>
+                  <li>初期点ですでに制約を破っている場合、<code>"Q"</code> はその場で PQ に切り替え、<code>"V"</code> と <code>"S"</code> は最初の点で経路を打ち切ります。</li>
                 </ul></li>
-              <li>点を追加。<code>Verbose</code> なら λ（と達した制約）を表示</li>
-              <li>修正後の点の λ が 0 未満（先端を越えて戻った）、または <code>"V"</code> / <code>"S"</code> の制約に達したらループ終了。それ以外は <code>MaxIteration</code> ステップまで継続</li>
+              <li>求めた点を経路に加えます。<code>Verbose</code> が true なら、λ と、達した制約があればその制約を表示します。</li>
+              <li>修正後の点の λ が 0 を下回ったとき（先端を越えて戻ってきたとき）や、<code>"V"</code> / <code>"S"</code> の制約に達したときは、ループを抜けます。そうでなければ <code>MaxIteration</code> ステップまで続けます。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>x_current(end)</code>, <code>MaxIteration</code>, <code>Limits</code>, <code>Tolerance</code>; <code>operation</code> of the buses, components and branches</span><span lang="ja"><code>x_current(end)</code>、<code>MaxIteration</code>、<code>Limits</code>、<code>Tolerance</code>、母線・機器・ブランチの <code>operation</code></span></dd>
@@ -394,8 +394,8 @@
               <li>Builds the bus phasors from the full vectors.</li>
               <li>Finds the nose (largest λ). <code>flag</code> is true when the largest λ is neither the first nor the last point (the path passed the nose), or when a <code>"V"</code> / <code>"S"</code> limit ended the path after at least one step.</li>
             </ul><ul lang="ja">
-              <li>全体ベクトルから母線のフェーザを作成</li>
-              <li>先端（λ の最大値）を探索。<code>flag</code> は最大の λ が最初の点でも最後の点でもないとき（先端を通過済み）、または 1 ステップ以上の後に <code>"V"</code> / <code>"S"</code> の制約で経路が終了したときに true</li>
+              <li>全体ベクトルから母線のフェーザを作成します。</li>
+              <li>λ が最大になる点を先端として探します。最大の λ が最初の点でも最後の点でもなければ、先端を通り過ぎたので <code>flag</code> を true にします。1 ステップ以上進んだ後に <code>"V"</code> / <code>"S"</code> の制約で経路が終わった場合も true です。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>w.rm_BusEM</code>, <code>w.CONSTANT</code>, <code>w.rv_BusVi</code></span><span lang="ja"><code>w.rm_BusEM</code>、<code>w.CONSTANT</code>、<code>w.rv_BusVi</code></span></dd>
@@ -407,7 +407,7 @@
         <p class="fs-head"><b class="fs-id">CPF-13</b> <span class="fs-call"><code>SolverCPF.solve</code> → <code>ResultCPF(...)</code></span><small>→ <code>ResultBase</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Stores the path; computes <code>r_lambdaMax</code> and <code>r_noseStep</code>.</span><span lang="ja">経路を保存し、<code>r_lambdaMax</code> と <code>r_noseStep</code> を算出</span></dd>
+          <dd><span lang="en">Stores the path; computes <code>r_lambdaMax</code> and <code>r_noseStep</code>.</span><span lang="ja">経路を保存し、<code>r_lambdaMax</code> と <code>r_noseStep</code> を算出します。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">the outputs of CPF-12; bus tags</span><span lang="ja">CPF-12 の出力、母線のタグ</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -418,7 +418,7 @@
         <p class="fs-head"><b class="fs-id">CPF-14</b> <span class="fs-call"><code>calculate_continuation_powerflow</code> → user</span><small><code>result.Export</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Runs <code>Export</code> when asked.</span><span lang="ja">指定があれば <code>Export</code> を実行</span></dd>
+          <dd><span lang="en">Runs <code>Export</code> when asked.</span><span lang="ja">指定があれば <code>Export</code> を実行します。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>opt</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
@@ -434,9 +434,9 @@
       <li>Plus one unknown λ and one equation, the arc-length condition.</li>
     </ul>
     <ul lang="ja">
-      <li><code>build_layout</code> が決定</li>
-      <li>全体ベクトル: すべての母線の <code>[|V|; ∠V]</code>（<code>UseInternalState</code> ではスラック母線と PV 母線の機器の状態も）。未知数でない要素は平衡点の値に固定</li>
-      <li>追加: 未知数 λ と、方程式として弧長の条件を 1 つずつ</li>
+      <li>変数の配置は <code>build_layout</code> が決めます。</li>
+      <li>全体ベクトルには、すべての母線の <code>[|V|; ∠V]</code> が入ります。<code>UseInternalState</code> が true なら、スラック母線と PV 母線にある機器の状態も入ります。未知数でない要素は、平衡点の値のまま動かしません。</li>
+      <li>さらに、未知数 λ と、方程式として弧長の条件を 1 つずつ追加します。</li>
     </ul>
     <table class="dg-table cpf-layout">
       <thead><tr><th lang="en">Bus type</th><th lang="ja">母線種別</th><th><code>UseInternalState = false</code></th><th><code>UseInternalState = true</code></th></tr></thead>
@@ -449,32 +449,32 @@
           <td data-label="true"><span lang="en">unknowns</span><span lang="ja">未知数</span> <code>|V|</code>, <code>∠V</code>, <span lang="en">states 1 and 3…n</span><span lang="ja">状態 1 と 3…n</span>; <span lang="en">equations</span><span lang="ja">方程式</span> <code>P</code>, <code>Q</code>, <code>f_dx</code> 1 <span lang="en">(as the active-power balance)</span><span lang="ja">（有効電力の釣り合いとして）</span> <span lang="en">and</span><span lang="ja">と</span> 3…n</td></tr>
         <tr><td>PQ</td>
           <td data-label="false"><span lang="en">unknowns</span><span lang="ja">未知数</span> <code>|V|</code>, <code>∠V</code>; <span lang="en">equations</span><span lang="ja">方程式</span> <code>P</code>, <code>Q</code></td>
-          <td data-label="true"><span lang="en">the same; the states of components on PQ buses are not variables</span><span lang="ja">同じ。PQ 母線の機器の状態は変数に含めない</span></td></tr>
+          <td data-label="true"><span lang="en">the same; the states of components on PQ buses are not variables</span><span lang="ja">同じです。PQ 母線の機器の状態は変数に含めません。</span></td></tr>
       </tbody>
     </table>
 
     <!-- ============================== DATA ============================== -->
     <h2 id="data"><span lang="en">Data the feature produces</span><span lang="ja">この機能が生成するデータ</span></h2>
     <p lang="en"><code>ResultCPF</code> (subclass of <code>ResultBase</code>): the traced path. Sizes for <code>network.IEEE14bus</code> with <code>LoadBus=["B009","B014"]</code> and the defaults: 361 steps, so 362 points; nose at point 186 (λ ≈ 5.21).</p>
-    <p lang="ja"><code>ResultCPF</code>（<code>ResultBase</code> のサブクラス）: 追跡した経路。サイズは <code>network.IEEE14bus</code>、<code>LoadBus=["B009","B014"]</code>、既定の設定の場合: 361 ステップ（362 点）、先端は 186 点目（λ ≈ 5.21）。</p>
+    <p lang="ja">結果は <code>ResultCPF</code>（<code>ResultBase</code> のサブクラス）で、追跡した経路を持ちます。表のサイズは、<code>network.IEEE14bus</code> に <code>LoadBus=["B009","B014"]</code> を指定し、ほかは既定の設定で実行した場合の値です。このとき経路は 361 ステップ（362 点）で、先端は 186 点目（λ ≈ 5.21）です。</p>
     <table class="dg-table cpf-data">
       <thead><tr><th lang="en">Property</th><th lang="ja">プロパティ</th><th lang="en">Contents and unit</th><th lang="ja">内容と単位</th><th lang="en">Size</th><th lang="ja">サイズ</th></tr></thead>
       <tbody>
-        <tr><td><code>sv_bus</code></td><td lang="en" data-label="Contents">bus tags, the rows of <code>cm_Vbus</code></td><td lang="ja" data-label="内容">母線のタグ。<code>cm_Vbus</code> の行</td><td data-label="Size" data-label-ja="サイズ">n_bus × 1 (14 × 1)</td></tr>
-        <tr><td><code>rv_lambda</code></td><td lang="en" data-label="Contents">λ at each point; the first point is the equilibrium</td><td lang="ja" data-label="内容">各点の λ。最初の点は平衡点</td><td data-label="Size" data-label-ja="サイズ">1 × n_point (1 × 362)</td></tr>
+        <tr><td><code>sv_bus</code></td><td lang="en" data-label="Contents">bus tags, the rows of <code>cm_Vbus</code></td><td lang="ja" data-label="内容">母線のタグです。<code>cm_Vbus</code> の行に対応します。</td><td data-label="Size" data-label-ja="サイズ">n_bus × 1 (14 × 1)</td></tr>
+        <tr><td><code>rv_lambda</code></td><td lang="en" data-label="Contents">λ at each point; the first point is the equilibrium</td><td lang="ja" data-label="内容">各点の λ です。最初の点は平衡点です。</td><td data-label="Size" data-label-ja="サイズ">1 × n_point (1 × 362)</td></tr>
         <tr><td><code>cm_Vbus</code></td><td lang="en" data-label="Contents">bus voltage phasors [pu]</td><td lang="ja" data-label="内容">母線電圧のフェーザ [pu]</td><td data-label="Size" data-label-ja="サイズ">n_bus × n_point (14 × 362)</td></tr>
         <tr><td><code>r_lambdaMax</code>, <code>r_noseStep</code></td><td lang="en" data-label="Contents">largest λ and its index in <code>rv_lambda</code></td><td lang="ja" data-label="内容">λ の最大値と、その <code>rv_lambda</code> での位置</td><td data-label="Size" data-label-ja="サイズ">1 × 1</td></tr>
-        <tr><td><code>rm_x</code></td><td lang="en" data-label="Contents">full vector at each point: <code>[|V|; ∠V]</code> per bus [pu, rad] (then the component states with <code>UseInternalState</code>), λ in the last row</td><td lang="ja" data-label="内容">各点の全体ベクトル。母線ごとの <code>[|V|; ∠V]</code> [pu、rad]（<code>UseInternalState</code> では続いて機器の状態）、最後の行が λ</td><td data-label="Size" data-label-ja="サイズ">(2·n_bus + 1) × n_point (29 × 362)</td></tr>
-        <tr><td><code>rm_xPredicted</code></td><td lang="en" data-label="Contents">predicted points in the layout of <code>rm_x</code>; the first column is NaN</td><td lang="ja" data-label="内容"><code>rm_x</code> と同じ配置の予測点。最初の列は NaN</td><td data-label="Size" data-label-ja="サイズ">29 × 362</td></tr>
-        <tr><td><code>tab_switch</code></td><td lang="en" data-label="Contents">PV buses switched to PQ by <code>Limits</code> <code>"Q"</code>: <code>lambda</code> and <code>Step</code> (index in <code>rv_lambda</code>) of the switch point, <code>Bus</code>, <code>Limit</code> (<code>"Qmin"</code> / <code>"Qmax"</code>), <code>Bound</code> (fixed Q [pu]); 0 rows without switches</td><td lang="ja" data-label="内容"><code>Limits</code> の <code>"Q"</code> で PQ に切り替えた PV 母線: 切替点の <code>lambda</code> と <code>Step</code>（<code>rv_lambda</code> での位置）、<code>Bus</code>、<code>Limit</code>（<code>"Qmin"</code> / <code>"Qmax"</code>）、<code>Bound</code>（固定した Q [pu]）。切替がなければ 0 行</td><td data-label="Size" data-label-ja="サイズ">n_switch × 5</td></tr>
-        <tr><td><code>tab_stop</code></td><td lang="en" data-label="Contents">limit of <code>Limits</code> <code>"V"</code> / <code>"S"</code> that ended the path: <code>lambda</code>, <code>Step</code> (the last point), <code>Class</code> (<code>"Bus"</code> / <code>"Branch"</code>), <code>Object</code> (tag), <code>Limit</code> (<code>"Vmin"</code>, <code>"Vmax"</code>, <code>"Smax"</code>), <code>Bound</code> [pu]; 0 rows otherwise. <code>r_lambdaMax</code> is the λ of the stop when it comes before the nose</td><td lang="ja" data-label="内容"><code>Limits</code> の <code>"V"</code> / <code>"S"</code> で経路を終えた制約: <code>lambda</code>、<code>Step</code>（最後の点）、<code>Class</code>（<code>"Bus"</code> / <code>"Branch"</code>）、<code>Object</code>（タグ）、<code>Limit</code>（<code>"Vmin"</code>、<code>"Vmax"</code>、<code>"Smax"</code>）、<code>Bound</code> [pu]。それ以外は 0 行。先端より前で止まったとき、<code>r_lambdaMax</code> は停止点の λ</td><td data-label="Size" data-label-ja="サイズ">0 or 1 × 6</td></tr>
-        <tr><td><code>tab_path</code> <small>Dependent</small></td><td lang="en" data-label="Contents"><code>lambda</code>, then <code>V_&lt;bus&gt;</code> and <code>Varg_&lt;bus&gt;</code>; what <code>Export</code> writes</td><td lang="ja" data-label="内容"><code>lambda</code>、続いて <code>V_&lt;bus&gt;</code> と <code>Varg_&lt;bus&gt;</code>。<code>Export</code> が書き出す表</td><td data-label="Size" data-label-ja="サイズ">n_point × (1 + 2·n_bus) (362 × 29)</td></tr>
+        <tr><td><code>rm_x</code></td><td lang="en" data-label="Contents">full vector at each point: <code>[|V|; ∠V]</code> per bus [pu, rad] (then the component states with <code>UseInternalState</code>), λ in the last row</td><td lang="ja" data-label="内容">各点の全体ベクトルです。母線ごとの <code>[|V|; ∠V]</code> [pu、rad]（<code>UseInternalState</code> では続いて機器の状態）を並べ、最後の行が λ です。</td><td data-label="Size" data-label-ja="サイズ">(2·n_bus + 1) × n_point (29 × 362)</td></tr>
+        <tr><td><code>rm_xPredicted</code></td><td lang="en" data-label="Contents">predicted points in the layout of <code>rm_x</code>; the first column is NaN</td><td lang="ja" data-label="内容"><code>rm_x</code> と同じ配置の予測点です。最初の列は NaN です。</td><td data-label="Size" data-label-ja="サイズ">29 × 362</td></tr>
+        <tr><td><code>tab_switch</code></td><td lang="en" data-label="Contents">PV buses switched to PQ by <code>Limits</code> <code>"Q"</code>: <code>lambda</code> and <code>Step</code> (index in <code>rv_lambda</code>) of the switch point, <code>Bus</code>, <code>Limit</code> (<code>"Qmin"</code> / <code>"Qmax"</code>), <code>Bound</code> (fixed Q [pu]); 0 rows without switches</td><td lang="ja" data-label="内容"><code>Limits</code> の <code>"Q"</code> で PQ に切り替えた PV 母線の一覧です。列は、切り替えた点の <code>lambda</code> と <code>Step</code>（<code>rv_lambda</code> での位置）、<code>Bus</code>、<code>Limit</code>（<code>"Qmin"</code> / <code>"Qmax"</code>）、<code>Bound</code>（固定した Q [pu]）です。切り替えがなければ 0 行です。</td><td data-label="Size" data-label-ja="サイズ">n_switch × 5</td></tr>
+        <tr><td><code>tab_stop</code></td><td lang="en" data-label="Contents">limit of <code>Limits</code> <code>"V"</code> / <code>"S"</code> that ended the path: <code>lambda</code>, <code>Step</code> (the last point), <code>Class</code> (<code>"Bus"</code> / <code>"Branch"</code>), <code>Object</code> (tag), <code>Limit</code> (<code>"Vmin"</code>, <code>"Vmax"</code>, <code>"Smax"</code>), <code>Bound</code> [pu]; 0 rows otherwise. <code>r_lambdaMax</code> is the λ of the stop when it comes before the nose</td><td lang="ja" data-label="内容"><code>Limits</code> の <code>"V"</code> / <code>"S"</code> で経路を打ち切った制約です。列は <code>lambda</code>、<code>Step</code>（最後の点）、<code>Class</code>（<code>"Bus"</code> / <code>"Branch"</code>）、<code>Object</code>（タグ）、<code>Limit</code>（<code>"Vmin"</code>、<code>"Vmax"</code>、<code>"Smax"</code>）、<code>Bound</code> [pu] です。制約で止まらなければ 0 行です。先端より前で止まった場合、<code>r_lambdaMax</code> は止まった点の λ になります。</td><td data-label="Size" data-label-ja="サイズ">0 or 1 × 6</td></tr>
+        <tr><td><code>tab_path</code> <small>Dependent</small></td><td lang="en" data-label="Contents"><code>lambda</code>, then <code>V_&lt;bus&gt;</code> and <code>Varg_&lt;bus&gt;</code>; what <code>Export</code> writes</td><td lang="ja" data-label="内容"><code>Export</code> が書き出す表です。列は <code>lambda</code> と、母線ごとの <code>V_&lt;bus&gt;</code> と <code>Varg_&lt;bus&gt;</code> です。</td><td data-label="Size" data-label-ja="サイズ">n_point × (1 + 2·n_bus) (362 × 29)</td></tr>
         <tr><td><code>tab_nose</code> <small>Dependent</small></td><td lang="en" data-label="Contents"><code>V</code>, <code>Varg</code>, <code>Vphasor</code> of each bus at the nose</td><td lang="ja" data-label="内容">先端での各母線の <code>V</code>、<code>Varg</code>、<code>Vphasor</code></td><td data-label="Size" data-label-ja="サイズ">n_bus × 3 (14 × 3)</td></tr>
-        <tr><td><code>flag</code>, <code>output</code>, <code>options</code>, <code>s_solver</code>, <code>r_elapsed</code>, <code>l_success</code></td><td lang="en" data-label="Contents">from <code>ResultBase</code>: <code>flag</code> is true when the path passed the nose or a <code>"V"</code> / <code>"S"</code> limit ended it (CPF-12); <code>output.iterations</code> (number of steps), <code>output.correctorIterations</code> (1 × steps), <code>output.message</code>; <code>sct_options</code>; <code>"SolverCPF"</code>; time [s]</td><td lang="ja" data-label="内容"><code>ResultBase</code> から: <code>flag</code> は経路が先端を越えたとき、または <code>"V"</code> / <code>"S"</code> の制約で終了したとき true（CPF-12）。<code>output.iterations</code>（ステップ数）、<code>output.correctorIterations</code>（1 × ステップ数）、<code>output.message</code>、<code>sct_options</code>、<code>"SolverCPF"</code>、経過時間 [s]</td><td data-label="Size" data-label-ja="サイズ">—</td></tr>
+        <tr><td><code>flag</code>, <code>output</code>, <code>options</code>, <code>s_solver</code>, <code>r_elapsed</code>, <code>l_success</code></td><td lang="en" data-label="Contents">from <code>ResultBase</code>: <code>flag</code> is true when the path passed the nose or a <code>"V"</code> / <code>"S"</code> limit ended it (CPF-12); <code>output.iterations</code> (number of steps), <code>output.correctorIterations</code> (1 × steps), <code>output.message</code>; <code>sct_options</code>; <code>"SolverCPF"</code>; time [s]</td><td lang="ja" data-label="内容"><code>ResultBase</code> から継承したプロパティです。<code>flag</code> は、経路が先端を越えたときか、<code>"V"</code> / <code>"S"</code> の制約で終わったときに true になります（CPF-12）。<code>output</code> には <code>iterations</code>（ステップ数）、<code>correctorIterations</code>（1 × ステップ数）、<code>message</code> が入ります。残りは順に <code>sct_options</code>、<code>"SolverCPF"</code>、経過時間 [s] です。</td><td data-label="Size" data-label-ja="サイズ">—</td></tr>
       </tbody>
     </table>
     <p lang="en">Nothing is written back to the model: equilibrium, parameters, and stale state unchanged. A bus switched to PQ by <code>Limits</code> stays PV in the model.</p>
-    <p lang="ja">モデルへの書き戻しなし。平衡点、パラメータ、stale 状態は不変。<code>Limits</code> で PQ に切り替えた母線もモデルでは PV のまま。</p>
+    <p lang="ja">モデルへは書き戻しません。平衡点、パラメータ、stale 状態は変わりません。<code>Limits</code> で PQ に切り替えた母線も、モデルでは PV のままです。</p>
 
     <!-- ============================== SIDE EFFECTS ============================== -->
     <h2 id="side-effects"><span lang="en">Side effects on the model and caches</span><span lang="ja">モデルへの副作用とキャッシュ</span></h2>
@@ -485,10 +485,10 @@
       <li>Solver settings unchanged; the result keeps a reference to the network.</li>
     </ul>
     <ul lang="ja">
-      <li><strong>ハンドル:</strong> 作成なし。<code>f_*</code> ハンドルは <code>net.initialize()</code> が作成</li>
-      <li><strong>実行中の作業データ:</strong> <code>Bus.iv_CPFV</code>、<code>Component.f_PQ2Bus</code>、<code>UseInternalState</code> では <code>Component.iv_CPFX</code>。<code>build_layout</code> が書き込み（設定は <code>SolverCPF</code> のみ可能）。実行後もオブジェクトに残り、次の実行で上書き。他からの参照なし</li>
-      <li><strong>stale 状態:</strong> 読み取りのみ（ネットワークと機器、CPF-04）。ネットワークか機器を古くする編集（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照。ネットワークの <code>Hz</code> も含む）の後は、<code>net.initialize()</code> を再実行するまで次の呼び出しが停止。<code>operation</code>、<code>OPF</code>、<code>graph</code> のパラメータと局所・広域制御器の編集では停止しない</li>
-      <li>ソルバーの設定は不変。結果はネットワークへの参照を保持</li>
+      <li><strong>ハンドル:</strong> 新しくは作りません。<code>f_*</code> ハンドルは <code>net.initialize()</code> が作ったものを使います。</li>
+      <li><strong>実行中の作業データ:</strong> <code>build_layout</code> が <code>Bus.iv_CPFV</code> と <code>Component.f_PQ2Bus</code> に、<code>UseInternalState</code> が true なら <code>Component.iv_CPFX</code> にも書き込みます。これらを設定できるのは <code>SolverCPF</code> だけです。値は実行後もオブジェクトに残り、次の実行で上書きされますが、ほかの処理からは使いません。</li>
+      <li><strong>stale 状態:</strong> ネットワークと機器の stale 状態を読むだけで、書き換えません（CPF-04）。ネットワークか機器を古くする編集をすると、<code>net.initialize()</code> をやり直すまで次の呼び出しは止まります。ネットワークの <code>Hz</code> の変更もこれに含まれます（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照）。<code>operation</code>、<code>OPF</code>、<code>graph</code> のパラメータや、ローカル制御器・グローバル制御器を編集しても止まりません。</li>
+      <li>ソルバーの設定は変わりません。結果はネットワークへの参照を持っています。</li>
     </ul>
 
     <!-- ============================== FAILURE ============================== -->
@@ -500,18 +500,18 @@
       <li>The IDs name message entries in <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>, not MATLAB identifiers (see <a href="class-design.html#conventions">Class Design: Coding conventions of the classes</a>).</li>
     </ul>
     <ul lang="ja">
-      <li><code>flag</code>（logical）: λ の最大値が経路の内側にあるとき、つまり先端を越えたとき、または 1 ステップ以上の後に <code>Limits</code> の <code>"V"</code> / <code>"S"</code> の制約で経路が終了したときに <code>true</code>。初期点で違反している制約では 1 点の経路で <code>flag = false</code></li>
-      <li><code>MaxIteration</code> ステップ以内に先端を越えない場合: <code>flag = false</code>。<code>output.message</code> が <code>MaxIteration</code> または <code>StepSize</code> の拡大を提案。途中までの経路は返却</li>
-      <li>修正子の非収束: 警告のみ。到達した点から追跡を継続</li>
-      <li>ID: <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のメッセージ項目の名前。MATLAB の識別子ではない（<a href="class-design.html#conventions">クラス設計: クラス実装の規約</a> を参照）</li>
+      <li><code>flag</code>（logical）は、λ の最大値が経路の途中にあるとき、つまり先端を越えたときに <code>true</code> になります。1 ステップ以上進んだ後に <code>Limits</code> の <code>"V"</code> / <code>"S"</code> の制約で経路が終わったときも <code>true</code> です。初期点ですでに制約を破っていると、経路は 1 点だけになり、<code>flag = false</code> です。</li>
+      <li><code>MaxIteration</code> ステップのうちに先端を越えなければ、<code>flag = false</code> になります。<code>output.message</code> では、<code>MaxIteration</code> か <code>StepSize</code> を大きくするよう勧めます。途中までの経路はそのまま返します。</li>
+      <li>修正子が収束しなくても、警告を出すだけで止まらず、たどり着いた点から追跡を続けます。</li>
+      <li>下の表の ID は、<code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> にあるメッセージ項目の名前で、MATLAB の例外識別子ではありません（<a href="class-design.html#conventions">クラス設計: クラス実装の規約</a>を参照）。</li>
     </ul>
     <table class="dg-table">
       <thead><tr><th lang="en">When</th><th lang="ja">発生する時点</th><th lang="en">Error or warning</th><th lang="ja">エラー・警告</th></tr></thead>
       <tbody>
-        <tr><td>CPF-02</td><td lang="en" data-label="ID"><code>GUILDA:resolve_options:UnknownName</code>; validation errors of <code>validate_options</code>, <code>GUILDA:SolverCPF:InvalidLimits</code> (also for a stored <code>Limits</code> set directly)</td><td lang="ja" data-label="ID"><code>GUILDA:resolve_options:UnknownName</code>、<code>validate_options</code> の検査エラー、<code>GUILDA:SolverCPF:InvalidLimits</code>（直接設定した <code>Limits</code> の保存値も対象）</td></tr>
-        <tr><td>CPF-04</td><td lang="en" data-label="ID"><code>GUILDA:SolverCPF:NoEquilibrium</code> (a component has no equilibrium: run <code>net.initialize</code>), <code>GUILDA:SolverCPF:Stale</code>, <code>EmptyLoadBus</code>, <code>UnknownLoadBus</code>; <code>LimitsInternalState</code> (<code>Limits</code> with <code>"Q"</code> and <code>UseInternalState=true</code>)</td><td lang="ja" data-label="ID"><code>GUILDA:SolverCPF:NoEquilibrium</code>（平衡点のない機器がある。<code>net.initialize</code> を実行）、<code>GUILDA:SolverCPF:Stale</code>、<code>EmptyLoadBus</code>、<code>UnknownLoadBus</code>、<code>LimitsInternalState</code>（<code>"Q"</code> を含む <code>Limits</code> と <code>UseInternalState=true</code>）</td></tr>
-        <tr><td>CPF-07</td><td lang="en" data-label="ID"><code>GUILDA:build_layout:MissingGetCompPQ</code>: <code>UseInternalState=true</code> and a component without <code>getCompPQ</code></td><td lang="ja" data-label="ID"><code>GUILDA:build_layout:MissingGetCompPQ</code>: <code>UseInternalState=true</code> で <code>getCompPQ</code> のない機器がある</td></tr>
-        <tr><td>CPF-10</td><td lang="en" data-label="ID">warning <code>GUILDA:MethodNewtonRaphson:MaxIteration</code> after <code>MaxIter</code> Newton iterations</td><td lang="ja" data-label="ID"><code>MaxIter</code> 回のニュートン反復の後に警告 <code>GUILDA:MethodNewtonRaphson:MaxIteration</code></td></tr>
+        <tr><td>CPF-02</td><td lang="en" data-label="ID"><code>GUILDA:resolve_options:UnknownName</code>; validation errors of <code>validate_options</code>, <code>GUILDA:SolverCPF:InvalidLimits</code> (also for a stored <code>Limits</code> set directly)</td><td lang="ja" data-label="ID"><code>GUILDA:resolve_options:UnknownName</code>、<code>validate_options</code> の検査エラー、<code>GUILDA:SolverCPF:InvalidLimits</code>（ソルバーに直接設定した <code>Limits</code> も検査します）</td></tr>
+        <tr><td>CPF-04</td><td lang="en" data-label="ID"><code>GUILDA:SolverCPF:NoEquilibrium</code> (a component has no equilibrium: run <code>net.initialize</code>), <code>GUILDA:SolverCPF:Stale</code>, <code>EmptyLoadBus</code>, <code>UnknownLoadBus</code>; <code>LimitsInternalState</code> (<code>Limits</code> with <code>"Q"</code> and <code>UseInternalState=true</code>)</td><td lang="ja" data-label="ID"><code>GUILDA:SolverCPF:NoEquilibrium</code>（平衡点のない機器があります。<code>net.initialize</code> を実行してください）、<code>GUILDA:SolverCPF:Stale</code>、<code>EmptyLoadBus</code>、<code>UnknownLoadBus</code>、<code>LimitsInternalState</code>（<code>"Q"</code> を含む <code>Limits</code> と <code>UseInternalState=true</code> を同時に指定したとき）</td></tr>
+        <tr><td>CPF-07</td><td lang="en" data-label="ID"><code>GUILDA:build_layout:MissingGetCompPQ</code>: <code>UseInternalState=true</code> and a component without <code>getCompPQ</code></td><td lang="ja" data-label="ID"><code>GUILDA:build_layout:MissingGetCompPQ</code>（<code>UseInternalState=true</code> なのに、<code>getCompPQ</code> を持たない機器があるとき）</td></tr>
+        <tr><td>CPF-10</td><td lang="en" data-label="ID">warning <code>GUILDA:MethodNewtonRaphson:MaxIteration</code> after <code>MaxIter</code> Newton iterations</td><td lang="ja" data-label="ID"><code>MaxIter</code> 回のニュートン反復の後に警告 <code>GUILDA:MethodNewtonRaphson:MaxIteration</code> を出します。</td></tr>
       </tbody>
     </table>
 
@@ -525,14 +525,14 @@
       <li><strong>Another live display for <code>PlotFcn</code></strong>: a key in the <code>options</code> of <code>PlotFcn</code> (<code>DefaultContinuationPowerFlow.json</code>) and in the key list of <code>tools.check_plotfcn</code> in <code>SolverCPF.get_options</code>, and its drawing in <code>@SolverCPF/private/live_pvcurve.m</code> (called with the full point at the start, each step and the end).</li>
     </ul>
     <ul lang="ja">
-      <li><strong>すべての機器</strong>: 平衡点（<code>get_equilibrium</code> による <code>c_Vequilibrium</code>、<code>c_Iequilibrium</code>。<a href="feature-initialize.html">初期化</a>を参照）のみで参加。電力は一定、<code>LoadBus</code> の母線では <code>(1 + λ)</code> 倍</li>
-      <li><strong><code>UseInternalState=true</code></strong>: すべての機器に <code>getCompPQ(obj, x, V, u, param)</code> が必要。注入する <code>[P; Q]</code> [pu] を返却。<code>V</code> は <code>[|V|; ∠V]</code>、<code>param</code> は <code>sv_para</code> の順の動特性パラメータ。スラック母線と PV 母線の機器は発電機として配置: 状態 1 は回転子角（スラック母線では固定）、状態 2 は速度偏差（0 に固定）、残りの方程式は <code>f_dx</code></li>
-      <li>ブランチ: <code>get_admittance_matrix</code> を通じてのみ関与。制御器: CPF に関与しない</li>
-      <li><strong><code>Limits</code> への運転制約の追加</strong>（例: ブランチの <code>Imax</code>、<code>Pmax</code>）: <code>@SolverCPF/private/limit_set.m</code> に有限の制約ごとの行（種類、対象、<code>Limit</code>、<code>Bound</code>、上限か下限か）、<code>limit_values.m</code> に点での値、<code>validate_options</code> と JSON の説明に種類を追加。経路を終える制約はそれだけで対応。<code>"Q"</code> のように方程式を変える制約は <code>solve</code> にも処理を追加</li>
-      <li><strong><code>PlotFcn</code> へのライブ表示の追加</strong>: <code>PlotFcn</code> の <code>options</code>（<code>DefaultContinuationPowerFlow.json</code>）と <code>SolverCPF.get_options</code> の <code>tools.check_plotfcn</code> のキーの一覧にキーを追加し、<code>@SolverCPF/private/live_pvcurve.m</code>（初期点・各ステップ・終了時に全変数の点で呼ばれる）に描画を追加</li>
+      <li><strong>すべての機器</strong>: CPF が使うのは機器の平衡点だけです（<code>get_equilibrium</code> で求めた <code>c_Vequilibrium</code> と <code>c_Iequilibrium</code>。<a href="feature-initialize.html">初期化</a>を参照）。電力は一定とし、<code>LoadBus</code> の母線ではそれを <code>(1 + λ)</code> 倍します。</li>
+      <li><strong><code>UseInternalState=true</code></strong>: すべての機器に <code>getCompPQ(obj, x, V, u, param)</code> が必要です。この関数は、機器が母線に注入する <code>[P; Q]</code> [pu] を返します。<code>V</code> は <code>[|V|; ∠V]</code>、<code>param</code> は <code>sv_para</code> の順に並べた動特性パラメータです。スラック母線と PV 母線の機器は発電機として扱います。状態 1 は回転子角（スラック母線では固定）、状態 2 は速度偏差（0 に固定）とし、残りの状態には <code>f_dx</code> を方程式として使います。</li>
+      <li>ブランチは <code>get_admittance_matrix</code> を通じてだけ関わります。制御器は CPF には関わりません。</li>
+      <li><strong><code>Limits</code> への運転制約の追加</strong>（例: ブランチの <code>Imax</code>、<code>Pmax</code>）: 3 か所に手を入れます。<code>@SolverCPF/private/limit_set.m</code> では、有限の制約 1 つごとに行（種類、対象、<code>Limit</code>、<code>Bound</code>、上限か下限か）を作ります。<code>limit_values.m</code> では、ある点での値を求めます。<code>validate_options</code> と JSON の説明には、新しい種類を加えます。経路を打ち切るだけの制約なら、これで足ります。<code>"Q"</code> のように方程式を変える制約では、<code>solve</code> にも処理を加えます。</li>
+      <li><strong><code>PlotFcn</code> へのライブ表示の追加</strong>: 新しいキーを 2 か所に加えます。1 つは <code>DefaultContinuationPowerFlow.json</code> にある <code>PlotFcn</code> の <code>options</code>、もう 1 つは <code>SolverCPF.get_options</code> が <code>tools.check_plotfcn</code> に渡すキーの一覧です。描画は <code>@SolverCPF/private/live_pvcurve.m</code> に加えます。この関数は、初期点、各ステップ、終了時に、全変数を並べた点を受け取って呼ばれます。</li>
     </ul>
     <p lang="en">See <a href="model-implementation.html#contracts">Model Implementation: Contracts a model implements</a>.</p>
-    <p lang="ja">参照: <a href="model-implementation.html#contracts">モデルの実装: モデルが実装する契約</a>。</p>
+    <p lang="ja"><a href="model-implementation.html#contracts">モデルの実装: モデルが実装する契約</a>も参照してください。</p>
 
     <!-- ============================== RELATED ============================== -->
     <h2 id="related"><span lang="en">Related pages</span><span lang="ja">関連ページ</span></h2>

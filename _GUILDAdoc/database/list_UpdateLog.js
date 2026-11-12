@@ -1,33 +1,39 @@
 const updateLogData = [
   {
-    "title": "Model objects are created by add methods and deleted when removed",
+    "title": "Removed objects are deleted",
     "date": "2026-11-12",
     "type": "feature",
-    "content": "Components, branches, local and global controllers are created only from their model keys by add_component, replace_component, add_branch, add_local_controller and add_global_controller; calling the constructor of a model class directly (e.g. controller.avr.AVR_ST1(\"1\")) stops with an error. remove_bus, remove_branch, remove_component, replace_component, remove_local_controller, remove_global_controller and a controller replaced by add_local_controller now delete the removed objects (a removed bus with its components), so a variable that still holds one is an invalid handle. Local controllers dropped by replace_component are deleted too. A model class of your own declares its constructor with Access={?Bus} (components), {?Component} (local controllers) or {?PowerNetwork} (branches, global controllers)."
+    "content": "Generators, loads, branches, AVRs, PSSs, governors and AGCs are made only with add_component, replace_component, add_branch, add_local_controller and add_global_controller; calling a model class directly, such as controller.avr.AVR_ST1(\"1\"), stops with an error. An object you remove or replace (remove_bus, remove_branch, remove_component, replace_component, remove_local_controller, remove_global_controller, or a controller replaced by add_local_controller) is deleted, together with what was attached to it, so a variable that still holds it can no longer be used. To use it again, add a new one with its key. In a model class of your own, declare the constructor with Access={?Bus} (components), Access={?Component} (local controllers) or Access={?PowerNetwork} (branches and global controllers)."
   },
   {
-    "title": "Tags read parent first; labels use the own tag",
+    "title": "Show the signal connections",
     "date": "2026-11-12",
     "type": "feature",
-    "content": "Automatic tags now start with the tag of the parent: a generator on bus B001 is B001SG1 (was SG1B001), its AVR B001SG1CA1 (was CA1SG1B001), a global controller PowerNetworkAGC1 (was AGC1PowerNetwork). Variable labels (get_sys names, get_variable_map Label, ResultODE columns) are the name and the tag of the owner only, e.g. delta_B001SG1, omega_B001SG1CP2, Vre_B001, and the stale messages name the edited layer only (powerflow/B001: edit V: ...). Scripts that write tags or labels out by hand need updating."
+    "content": "New net.disp_connection prints, for each input of the components and controllers, the signals that drive it (local, global, observe or equilibrium), grouped by bus, component and controller. Options Kind and Owner narrow the view; with one output it returns the text."
   },
   {
-    "title": "Model functions without the bus current",
-    "date": "2026-11-11",
-    "type": "model",
-    "content": "No model function receives the bus current I any more. A component has fcn_dx, fcn_I and fcn_Mass (t, x, V, u, param, omega0) and fcn_Y (t, x, V, param, omega0), so its outputs do not depend on u; controllers have (t, x, V, u, param, omega0). The Jacobians and the f_* handles drop I too. Model classes written for the old arguments need updating."
+    "title": "New automatic tag names",
+    "date": "2026-11-12",
+    "type": "feature",
+    "content": "Automatic tags now start with the tag of the parent: a generator on bus B001 is B001SG1 (was SG1B001), its AVR B001SG1CA1 (was CA1SG1B001), and an AGC of the network PowerNetworkAGC1 (was AGC1PowerNetwork). Variable names in the results of get_sys, get_variable_map and the time simulation use the tag of the owner only, e.g. delta_B001SG1 and Vre_B001. Scripts that write tags or variable names by hand need updating."
   },
   {
-    "title": "Global controllers observe outputs and route by name",
+    "title": "Your own model classes: no bus current argument",
     "date": "2026-11-11",
     "type": "feature",
-    "content": "A global controller reads the outputs (else the states) of its units and the voltages of all buses. Each output goes to every local controller of the unit with an input of that name, else to the unit input; add_global_controller prints where each output goes, and an edit of the local controllers that changes it prints the change. net.get_variable_map also lists the controller inputs and the outputs (column Role) and returns the connection map as its fourth output. With the Feedback method, get_sys lets a global controller read the voltages and component outputs of the buses that the method eliminates."
+    "content": "Model functions no longer receive the bus current I. In a component class of your own, write fcn_dx, fcn_I and fcn_Mass as (t, x, V, u, param, omega0) and fcn_Y as (t, x, V, param, omega0); in a controller class of your own, use (t, x, V, u, param, omega0). Model classes written for the old arguments need updating."
+  },
+  {
+    "title": "Global controllers connect by input name",
+    "date": "2026-11-11",
+    "type": "feature",
+    "content": "A global controller reads the outputs of the components it controls (their states if they have no outputs) and the voltages of all buses. Each of its outputs drives the input of the same name of a local controller on that component, or else the component input; add_global_controller prints where each output goes. net.get_variable_map lists the inputs and outputs of the controllers and returns these connections as its fourth output. get_sys with Method=\"Feedback\" also works for global controllers that read buses the method eliminates."
   },
   {
     "title": "Change settings by command",
     "date": "2026-11-10",
     "type": "feature",
-    "content": "GUILDA.setting(\"PowerFlowCalculation\", Tolerance=1e-10) changes settings without opening the window and saves them. A new version of GUILDA may reset the settings of a category to their defaults; GUILDA then prints INFO at startup."
+    "content": "GUILDA.setting(\"PowerFlowCalculation\", Tolerance=1e-10) changes and saves a setting without opening the settings window. After an update of GUILDA, the settings of a category may return to their defaults; GUILDA says so at startup."
   },
   {
     "title": "OPF fixes",
@@ -291,54 +297,54 @@ const updateLogData = [
     "title": "Solver chooses the algorithm",
     "date": "2026-11-10",
     "type": "feature",
-    "content": "Every analysis chooses its numerical algorithm with Solver: net.calculate_powerflow(Solver=\"levenberg-marquardt\") (was Method; the key of the PowerFlowCalculation section of GUILDA.setting too), and net.initialize passes Solver on to the power flow or the OPF. Method says what is solved or built: net.linearize and net.get_sys take Method=\"Kron\"|\"Feedback\"|\"DAE\" (was Algorithm, which still works with the warning GUILDA:Deprecated:LinearizeAlgorithm)."
+    "content": "Every analysis chooses its numerical algorithm with Solver, e.g. net.calculate_powerflow(Solver=\"levenberg-marquardt\"), and net.initialize passes Solver on to the power flow or the OPF. Scripts and saved settings that use Method for the power flow algorithm switch to Solver. Method now says what is built: net.linearize and net.get_sys take Method=\"Kron\", \"Feedback\" or \"DAE\" (Algorithm still works, with a warning)."
   },
   {
     "title": "Equilibrium with the inputs held",
     "date": "2026-11-10",
     "type": "feature",
-    "content": "comp.set_input(u) edits the inputs of a component at the equilibrium, and net.initialize(Method=\"FixedInput\") solves the states, bus voltages and currents with those inputs held; the Pmech of the first generator of the slack bus balances the power. Until then the analyses and net.initialize() stop with InputEdited; Method=\"powerflow\" replaces the edited inputs. The load properties Z and PQ_st are removed (the values are rv_Uequilibrium)."
+    "content": "comp.set_input(u) sets the inputs of a component at the equilibrium, and net.initialize(Method=\"FixedInput\") finds the states and bus voltages with those inputs held; the first generator of the slack bus balances the power. Until then, the analyses and net.initialize() stop with an error, and net.initialize(Method=\"powerflow\") discards the edited inputs. The load properties Z and PQ_st are removed: scripts that read them use rv_Uequilibrium instead."
   },
   {
     "title": "Operating limits in the continuation power flow",
     "date": "2026-11-10",
     "type": "feature",
-    "content": "net.calculate_continuation_powerflow(Limits=[\"Q\",\"V\",\"S\"]) applies the operating limits (tab_parameter.operation) along the path. \"Q\": a PV bus whose generators reach their total Qmin or Qmax becomes a PQ bus with Q fixed at that bound, and the trace goes on. \"V\" (Vmin/Vmax of a bus) and \"S\" (Smax of a branch): the trace stops at the first point that reaches the limit. The switches are in result.tab_switch and the stop in result.tab_stop. Limits=\"all\" applies all three; the default is \"none\" (ContinuationPowerFlow section of GUILDA.setting)."
+    "content": "net.calculate_continuation_powerflow(Limits=[\"Q\",\"V\",\"S\"]) applies the operating limits in tab_parameter.operation along the path. With \"Q\", a PV bus whose generators reach their total Qmin or Qmax becomes a PQ bus at that bound and the trace goes on; with \"V\" (bus Vmin/Vmax) and \"S\" (branch Smax), the trace stops at the first point that reaches the limit. result.tab_switch and result.tab_stop show where this happened. Limits=\"all\" applies all three; the default is \"none\"."
   },
   {
     "title": "Limit violations of the power flow",
     "date": "2026-11-10",
     "type": "feature",
-    "content": "result.tab_violation of net.calculate_powerflow (ResultPF) lists the operating limits (tab_parameter.operation) of buses, branches and components that the solution violates, one row per limit, with 0 rows when there is none. The power flow itself does not apply the limits."
+    "content": "result.tab_violation of net.calculate_powerflow lists the operating limits (tab_parameter.operation) of buses, branches and components that the solution violates, one row per limit, and has no rows when there is none. The power flow itself does not apply the limits."
   },
   {
     "title": "Power flow tolerance and warm start",
     "date": "2026-11-10",
     "type": "feature",
-    "content": "The default Tolerance of net.calculate_powerflow is 1e-8, the largest P/Q mismatch [pu], with the same meaning for every Solver. The defaults can be changed in the PowerFlowCalculation section of GUILDA.setting. The power flow starts from the last solution of the network (WarmStart, on by default; WarmStart=false for a flat start), so repeated runs with small parameter changes need fewer iterations. The bus parameters V0 and Varg0 are removed: scripts that set them must be changed."
+    "content": "The default Tolerance of net.calculate_powerflow is 1e-8, the largest P/Q mismatch in pu, with the same meaning for every Solver; change the default in the PowerFlowCalculation section of GUILDA.setting. The power flow starts from the last solution of the network (WarmStart=false for a flat start), so repeated runs with small changes need fewer iterations. The bus parameters V0 and Varg0 are removed: scripts that set them need updating."
   },
   {
     "title": "Tags must be valid variable names",
     "date": "2026-11-10",
-    "type": "fix",
-    "content": "Every tag (network, bus, branch, component, controller; s_tag, Tag and FullTag of add_bus, the FullTag column of CSV data) must be a valid MATLAB variable name (isvarname: a letter first, then letters, digits and underscores); any other tag stops with GUILDA:LayerPackage:InvalidTag. The branches of network.IEEJ_WEST10 are now named like LINE20_1 and G1_TR (were LINE20-1, G1-TR), and the AC OPF of IEEJ_WEST10 now solves."
+    "type": "feature",
+    "content": "Every tag of a network, bus, branch, component or controller, including the tags in CSV data, must be a valid MATLAB variable name: a letter first, then letters, digits and underscores. Any other tag stops with an error. The branches of network.IEEJ_WEST10 are renamed like LINE20_1 and G1_TR (were LINE20-1 and G1-TR), and the AC OPF of IEEJ_WEST10 now solves."
   },
   {
-    "title": "Analysis defaults in GUILDA.setting; PlotFcn replaces Plot",
+    "title": "Analysis defaults in GUILDA.setting",
     "date": "2026-11-10",
     "type": "feature",
-    "content": "The defaults of every analysis (power flow, OPF, continuation power flow, time simulation, linearization) are set in GUILDA.setting (new section Linearization); Name-Value options apply to one call. net.solver_OPF keeps only Cost, Constraint, DefaultCost and ReferenceBus, net.solver_CPF only LoadBus; setting other solver properties such as net.solver_ODE.RelativeTolerance or net.solver_OPF.Method stops with an error, so scripts that set them must pass the option in the call instead. Renamed settings: Tolerance (OPF, time simulation) and MaxIteration (continuation power flow); changed values of the old names return to the default. The option Plot=true is removed: draw with result.Plot(). PlotFcn, a live display during the analysis, accepts only \"none\" for now."
+    "content": "The defaults of every analysis (power flow, OPF, continuation power flow, time simulation, linearization) are set in GUILDA.setting; a Name-Value option changes them for one call. Solver properties such as net.solver_ODE.RelativeTolerance or net.solver_OPF.Method can no longer be set: pass the option in the call instead. net.solver_OPF keeps Cost, Constraint, DefaultCost and ReferenceBus, and net.solver_CPF keeps LoadBus. Renamed settings: Tolerance (OPF, time simulation) and MaxIteration (continuation power flow). The option Plot=true is removed: draw with result.Plot()."
   },
   {
     "title": "Watch an analysis while it runs with PlotFcn",
     "date": "2026-11-10",
     "type": "feature",
-    "content": "PlotFcn shows the progress of an analysis in a figure. net.calculate_powerflow(PlotFcn=\"residual\") draws the residual of each power equation at every iteration (every Solver). net.optimize_powerflow(PlotFcn=[\"fval\",\"constrviolation\"]) shows the plot functions of fmincon (optimplotfval, optimplotconstrviolation, ...; AC OPF, or Solver=\"fmincon\"). net.calculate_continuation_powerflow(PlotFcn=\"pvcurve\") extends the PV curves of all buses at each step. A function handle stop = f(x, optimValues, state), as in optimoptions, is called instead and can stop the analysis. The default is set by PlotFcn in GUILDA.setting. The OPF setting Display is replaced by Verbose (false by default: the solver prints nothing; true: each iteration)."
+    "content": "PlotFcn shows the progress of an analysis in a figure. net.calculate_powerflow(PlotFcn=\"residual\") draws the residual of each power equation at every iteration. net.optimize_powerflow(PlotFcn=[\"fval\",\"constrviolation\"]) shows the fmincon plot functions (AC OPF, or Solver=\"fmincon\"). net.calculate_continuation_powerflow(PlotFcn=\"pvcurve\") extends the PV curves of all buses at each step. A function handle stop = f(x, optimValues, state), as in optimoptions, can also be passed and can stop the analysis. The OPF setting Display is replaced by Verbose (false by default)."
   },
   {
-    "title": "Uniform setting names in GUILDA.setting",
+    "title": "Renamed keys in GUILDA.setting",
     "date": "2026-11-10",
     "type": "feature",
-    "content": "The settings of the analyses follow one rule: a key has the name and type of its Name-Value option, a setting of one solver is named <Solver><MATLAB option> (LinprogAlgorithm, QuadprogAlgorithm, FminconAlgorithm, QuadprogStepTolerance, FminconStepTolerance, FminconMaxFunctionEvaluations, FminconUseParallel for the OPF; FsolveMaxFunctionEvaluations for the power flow), NaN means automatic or the solver default (MaxIteration and GradientStepSize of the power flow, where 0 meant automatic), and on/off settings are logical (SeparateComplexParts of the time simulation). The power flow has the setting Verbose. Saved values of renamed keys return to the default; a saved MaxIteration or GradientStepSize of 0 must be changed to NaN."
+    "content": "Each key of GUILDA.setting now has the name of its Name-Value option, and a setting of one solver is named after the solver and its MATLAB option, e.g. FminconAlgorithm or FsolveMaxFunctionEvaluations. NaN means automatic (MaxIteration and GradientStepSize of the power flow, where 0 meant automatic), and on/off settings are true/false. The power flow has the new setting Verbose. Saved values of renamed keys return to the default; change a saved MaxIteration or GradientStepSize of 0 to NaN."
   }
 ];

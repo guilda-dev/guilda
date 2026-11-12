@@ -48,7 +48,7 @@
     <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Power Flow Feature Design</span><span lang="ja">潮流計算機能の設計</span></h1>
     <p class="page-lead" lang="en"><code>net.calculate_powerflow()</code>: bus voltages from the power-flow settings of the buses and components. <code>SolverPF</code> builds the equations and runs <code>fsolve</code> or <code>ode15s</code>; values returned in a <code>ResultPF</code>, not written to the model.</p>
-    <p class="page-lead" lang="ja"><code>net.calculate_powerflow()</code>: 母線と機器の潮流設定から母線電圧を計算。<code>SolverPF</code> が方程式を組み立てて <code>fsolve</code> または <code>ode15s</code> を実行。結果は <code>ResultPF</code> として返却し、モデルには書き込まない。</p>
+    <p class="page-lead" lang="ja"><code>net.calculate_powerflow()</code> は、母線と機器の潮流設定から母線電圧を求めます。<code>SolverPF</code> が方程式を組み立て、<code>fsolve</code> または <code>ode15s</code> を実行します。結果は <code>ResultPF</code> として返し、モデルには書き込みません。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#entry"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></a>
@@ -72,12 +72,12 @@
       <li>Summed <code>Q</code> = <code>NaN</code> → PV bus (a generator leaves <code>Q = NaN</code>)</li>
     </ul>
     <ul lang="ja">
-      <li>すべての母線の定常電圧フェーザを計算</li>
-      <li>slack 母線: <code>V</code> と <code>Varg</code> を固定</li>
-      <li>PV 母線: <code>P</code> と <code>V</code> を固定</li>
-      <li>PQ 母線: <code>P</code> と <code>Q</code> を固定</li>
-      <li>母線の <code>P</code>・<code>Q</code>: その母線にある機器の <code>tab_parameter.powerflow</code> の和</li>
-      <li><code>Q</code> の和が <code>NaN</code> → PV 母線（発電機は <code>Q = NaN</code>）</li>
+      <li>すべての母線について、定常状態の電圧フェーザを求めます。</li>
+      <li>slack 母線では <code>V</code> と <code>Varg</code> を固定します。</li>
+      <li>PV 母線では <code>P</code> と <code>V</code> を固定します。</li>
+      <li>PQ 母線では <code>P</code> と <code>Q</code> を固定します。</li>
+      <li>母線の <code>P</code> と <code>Q</code> は、その母線にある機器の <code>tab_parameter.powerflow</code> を足したものです。</li>
+      <li><code>Q</code> の和が <code>NaN</code> になる母線は PV 母線として扱います。発電機は <code>Q = NaN</code> を持つためです。</li>
     </ul>
 <pre><code>[result, flag, output] = net.calculate_powerflow(Name=Value, ...)</code></pre>
     <table class="dg-table fpf-opts">
@@ -90,11 +90,11 @@
           <li><code>"fsolve"</code>: <code>fsolve</code> on the power equations (<code>MethodFsolve</code>; Optimization Toolbox)</li>
           <li><code>"dynamic"</code>: virtual bus dynamics integrated by <code>ode15s</code> until the mismatch is below the tolerance (<code>MethodDynamic</code>)</li>
         </ul><ul lang="ja">
-          <li><code>"newton"</code>: 解析的なヤコビ行列によるニュートン・ラフソン法（<code>MethodNewtonRaphson</code>）</li>
-          <li><code>"gradient"</code>: 離散的な勾配ステップ <code>θ += α·ΔP</code>、<code>V += α·ΔQ/V</code>（<code>MethodGradient</code>）</li>
-          <li><code>"levenberg-marquardt"</code>: 解析的なヤコビ行列による減衰付きガウス・ニュートン法（<code>MethodLevenbergMarquardt</code>）</li>
-          <li><code>"fsolve"</code>: 電力方程式を <code>fsolve</code> で求解（<code>MethodFsolve</code>。Optimization Toolbox）</li>
-          <li><code>"dynamic"</code>: 仮想的な母線ダイナミクスを <code>ode15s</code> で積分。不平衡量が許容値を下回るまで継続（<code>MethodDynamic</code>）</li>
+          <li><code>"newton"</code>: ヤコビ行列を解析的に求めるニュートン・ラフソン法です（<code>MethodNewtonRaphson</code>）。</li>
+          <li><code>"gradient"</code>: <code>θ += α·ΔP</code>、<code>V += α·ΔQ/V</code> の勾配ステップを繰り返します（<code>MethodGradient</code>）。</li>
+          <li><code>"levenberg-marquardt"</code>: 解析的なヤコビ行列を使う、減衰付きのガウス・ニュートン法です（<code>MethodLevenbergMarquardt</code>）。</li>
+          <li><code>"fsolve"</code>: 電力方程式を <code>fsolve</code> で解きます（<code>MethodFsolve</code>）。Optimization Toolbox が必要です。</li>
+          <li><code>"dynamic"</code>: 母線に仮想的なダイナミクスを持たせ、不平衡量が許容値を下回るまで <code>ode15s</code> で積分します（<code>MethodDynamic</code>）。</li>
         </ul></td></tr>
         <tr><td><code>Tolerance</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>1e-8</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li>Every method: largest P/Q mismatch [pu] of a converged solution (positive)</li>
@@ -102,29 +102,29 @@
           <li>fsolve: its square is also passed as <code>FunctionTolerance</code> (a tolerance on the sum of squares) and <code>OptimalityTolerance</code></li>
           <li>dynamic: also sets the ODE tolerances <code>AbsTol = min(Tolerance, 1e-5)</code>, <code>RelTol = min(100·Tolerance, 1e-4)</code></li>
         </ul><ul lang="ja">
-          <li>すべての計算方法: 収束解の P/Q 不平衡量の最大値 [pu]（正の値）</li>
-          <li>newton・levenberg-marquardt・fsolve: 指定 |V| と slack の角度の残差も対象</li>
-          <li>fsolve: 2 乗を <code>FunctionTolerance</code>（二乗和の許容値）と <code>OptimalityTolerance</code> としても指定</li>
-          <li>dynamic: ODE の許容誤差 <code>AbsTol = min(Tolerance, 1e-5)</code>、<code>RelTol = min(100·Tolerance, 1e-4)</code> も設定</li>
+          <li>どの計算方法でも、収束した解に残る P と Q の不平衡量の最大値 [pu] です。正の値を指定します。</li>
+          <li>newton、levenberg-marquardt、fsolve では、指定した |V| と slack の角度の残差もこの値で判定します。</li>
+          <li>fsolve では、この値の 2 乗を <code>FunctionTolerance</code>（二乗和の許容値）と <code>OptimalityTolerance</code> にも渡します。</li>
+          <li>dynamic では、ODE の許容誤差を <code>AbsTol = min(Tolerance, 1e-5)</code>、<code>RelTol = min(100·Tolerance, 1e-4)</code> とします。</li>
         </ul></td></tr>
         <tr><td><code>MaxIteration</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>NaN</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li>Maximum number of iterations</li>
           <li><code>NaN</code>: method default (newton: 50; gradient: 1e6; levenberg-marquardt: 100; fsolve: 400)</li>
           <li>Unused by <code>"dynamic"</code></li>
         </ul><ul lang="ja">
-          <li>反復回数の上限</li>
-          <li><code>NaN</code>: 計算方法の既定値（newton: 50、gradient: 1e6、levenberg-marquardt: 100、fsolve: 400）</li>
-          <li><code>"dynamic"</code> では未使用</li>
+          <li>反復回数の上限です。</li>
+          <li><code>NaN</code> なら計算方法ごとの既定値を使います（newton は 50、gradient は 1e6、levenberg-marquardt は 100、fsolve は 400）。</li>
+          <li><code>"dynamic"</code> では使いません。</li>
         </ul></td></tr>
-        <tr><td><code>Verbose</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Print each iteration and the final message; <code>get_options</code> sets <code>Display</code> of the Method class: <code>"iter"</code> (true) or <code>"none"</code> (false)</span><span lang="ja">反復ごとの表示と終了時のメッセージ。<code>get_options</code> が Method クラスの <code>Display</code> を設定: <code>"iter"</code>（true）または <code>"none"</code>（false）</span></td></tr>
+        <tr><td><code>Verbose</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Print each iteration and the final message; <code>get_options</code> sets <code>Display</code> of the Method class: <code>"iter"</code> (true) or <code>"none"</code> (false)</span><span lang="ja">反復ごとの表示と、終了時のメッセージを出すかどうかです。<code>get_options</code> が、true なら <code>"iter"</code>、false なら <code>"none"</code> を Method クラスの <code>Display</code> に設定します。</span></td></tr>
         <tr><td><code>WarmStart</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>true</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li><code>true</code>: starts from the last converged solution of this network, kept by <code>net.solver_PF</code></li>
           <li><code>false</code>, or no kept solution: flat start (angle 0, magnitude 1; set <code>V</code> at PV and slack buses, set <code>Varg</code> at the slack bus)</li>
           <li>gradient, dynamic: the fixed values (slack angle and voltage, PV voltages) always start at their set values</li>
         </ul><ul lang="ja">
-          <li><code>true</code>: このネットワークの最後の収束解から開始（<code>net.solver_PF</code> が保持）</li>
-          <li><code>false</code>、または保持した解なし: フラットスタート（角度 0、大きさ 1。PV・slack 母線は指定 <code>V</code>、slack 母線は指定 <code>Varg</code>）</li>
-          <li>gradient・dynamic: 固定値（slack の角度・電圧、PV の電圧）は常に指定値から開始</li>
+          <li><code>true</code> なら、このネットワークで最後に収束した解から始めます。この解は <code>net.solver_PF</code> が持っています。</li>
+          <li><code>false</code> のときや保持した解がないときは、フラットスタート（角度 0、大きさ 1）で始めます。ただし PV 母線と slack 母線は指定の <code>V</code>、slack 母線は指定の <code>Varg</code> を使います。</li>
+          <li>gradient と dynamic では、固定する値（slack の角度と電圧、PV の電圧）は常に指定値から始めます。</li>
         </ul></td></tr>
         <tr><td><code>PlotFcn</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>"none"</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li>Live display during the calculation, every Solver</li>
@@ -132,17 +132,17 @@
           <li>Function handle: <code>stop = f(x, optimValues, state)</code> at every iterate; <code>x</code> complex bus voltages, <code>optimValues.iteration</code>, <code>.fval</code> (residuals), <code>.residual</code> (largest), <code>.time</code> (dynamic); a true <code>stop</code> ends with flag -1</li>
           <li>The figure after the calculation: <code>result.Plot()</code></li>
         </ul><ul lang="ja">
-          <li>計算中のライブ表示。全 Solver 共通</li>
-          <li><code>"residual"</code>: 電力方程式 1 本につき棒 1 本（母線あたり 2 本: P または slack の角度、Q または PV・slack の |V|）。高さはその反復の |残差|（対数軸、Tolerance を破線）。図は 1 枚を使い回し（Tag <code>GUILDA:PlotFcn:residual</code>）、再描画は最短 0.2 秒ごとと終了時（dynamic は仮想時間に沿って更新）</li>
-          <li>関数ハンドル: 反復ごとに <code>stop = f(x, optimValues, state)</code>。<code>x</code> は母線の複素電圧、<code>optimValues.iteration</code>、<code>.fval</code>（残差）、<code>.residual</code>（最大値）、<code>.time</code>（dynamic）。<code>stop</code> が true なら flag -1 で終了</li>
-          <li>計算後の図は <code>result.Plot()</code></li>
+          <li>計算中の経過をライブで表示します。どの Solver でも使えます。</li>
+          <li><code>"residual"</code> は、電力方程式 1 本につき 1 本の棒を描きます。母線ごとに 2 本で、P または slack の角度と、Q または PV・slack の |V| です。棒の高さはその反復の |残差| で、対数軸に Tolerance を破線で示します。図は 1 枚を使い回し（Tag <code>GUILDA:PlotFcn:residual</code>）、描き直すのは 0.2 秒以上の間隔と終了時です。dynamic では仮想時間に沿って更新します。</li>
+          <li>関数ハンドルを渡すと、反復ごとに <code>stop = f(x, optimValues, state)</code> を呼び出します。<code>x</code> は母線の複素電圧です。<code>optimValues</code> には <code>optimValues.iteration</code>、<code>.fval</code>（残差）、<code>.residual</code>（最大値）、<code>.time</code>（dynamic のみ）が入ります。<code>stop</code> に true を返すと、flag -1 で終わります。</li>
+          <li>計算後の図は <code>result.Plot()</code> で描きます。</li>
         </ul></td></tr>
         <tr><td><code>Export</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small><span lang="en">call option</span><span lang="ja">呼び出しオプション</span></small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li><code>true</code>: calls <code>result.Export()</code> with the default file name</li>
           <li>String: the file name</li>
         </ul><ul lang="ja">
-          <li><code>true</code>: 既定のファイル名で <code>result.Export()</code> を呼び出し</li>
-          <li>文字列: ファイル名</li>
+          <li><code>true</code> なら、既定のファイル名で <code>result.Export()</code> を呼び出します。</li>
+          <li>文字列ならファイル名として使います。</li>
         </ul></td></tr>
       </tbody>
     </table>
@@ -163,23 +163,23 @@
       <li><code>net.solver_PF</code>: no settings; keeps the warm start solution and the cache (see <a href="#side-effects">Side effects</a>)</li>
     </ul>
     <ul lang="ja">
-      <li>Name-Value の名前: <code>SolverPF.OptionMap</code> にあるものと <code>Export</code></li>
-      <li>config: <code>GUILDA.setting</code> の PowerFlowCalculation セクション（<code>GUILDA.config("PowerFlowCalculation")</code>。既定値は <code>@GUILDA/config/DefaultPowerFlowCalculation.json</code>）。呼び出しのたびに読み込み</li>
-      <li>Name-Value オプションはその呼び出しに限り上書き。設定ファイルへの書き込みなし</li>
-      <li>その他の設定: Name-Value なし。<code>GUILDA.setting</code> で設定
+      <li>Name-Value で指定できる名前は、<code>SolverPF.OptionMap</code> にあるものと <code>Export</code> です。</li>
+      <li>既定値は <code>GUILDA.setting</code> の PowerFlowCalculation セクション（<code>GUILDA.config("PowerFlowCalculation")</code>）から、呼び出しのたびに読み込みます。元の値は <code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> にあります。</li>
+      <li>Name-Value オプションは、その呼び出しの間だけ設定を上書きします。設定ファイルには書き込みません。</li>
+      <li>次の設定は Name-Value では指定できず、<code>GUILDA.setting</code> で変更します。
         <ul>
           <li><code>NewtonStepSize</code>（<code>1</code>。newton）</li>
-          <li><code>GradientStepSize</code>（<code>NaN</code>: <code>α = 0.5/(max|Y_ii|·Vmax²)</code>。Vmax は指定母線電圧の最大値、なければ 1。gradient）</li>
-          <li><code>FsolveUseParallel</code>（<code>false</code>）、<code>FsolveMaxFunctionEvaluations</code>（<code>NaN</code>: fsolve の既定値）（fsolve）</li>
-          <li>名前: 1 つの Solver の設定は <code>&lt;Solver 名&gt;&lt;オプション名&gt;</code>。自動の値がある設定はすべて <code>NaN</code> が自動</li>
+          <li><code>GradientStepSize</code>（gradient 用）。<code>NaN</code> なら <code>α = 0.5/(max|Y_ii|·Vmax²)</code> を使います。Vmax は指定された母線電圧の最大値で、指定がなければ 1 です。</li>
+          <li><code>FsolveUseParallel</code>（既定値 <code>false</code>）と <code>FsolveMaxFunctionEvaluations</code>（<code>NaN</code> なら fsolve の既定値）。どちらも fsolve 用です。</li>
+          <li>1 つの Solver だけに効く設定は <code>&lt;Solver 名&gt;&lt;オプション名&gt;</code> という名前にします。自動で決まる値を持つ設定は、どれも <code>NaN</code> にすると自動になります。</li>
           <li><code>WhenFailed</code>（<code>"WARN"</code>）</li>
         </ul>
       </li>
-      <li>dynamic: <code>MethodDynamic</code> のクラスの既定値（<code>Mass = 0</code>、<code>Damper = 1</code>、<code>foh_PQ = 0</code>）。設定なし</li>
-      <li><code>net.solver_PF</code>: 設定なし。ウォームスタートの解とキャッシュを保持（<a href="#side-effects">副作用</a>参照）</li>
+      <li>dynamic には設定項目がなく、<code>MethodDynamic</code> のクラスの既定値（<code>Mass = 0</code>、<code>Damper = 1</code>、<code>foh_PQ = 0</code>）を使います。</li>
+      <li><code>net.solver_PF</code> は設定を持たず、ウォームスタート用の解とキャッシュだけを持ちます（<a href="#side-effects">副作用</a>を参照）。</li>
     </ul>
     <p lang="en">Preconditions and notes:</p>
-    <p lang="ja">前提条件と注意:</p>
+    <p lang="ja">前提条件と注意点は次のとおりです。</p>
     <ul lang="en">
       <li>At least one bus, and a slack bus or at least one bus with a component</li>
       <li><code>net.initialize()</code> not needed</li>
@@ -188,11 +188,11 @@
       <li><code>calculate_powerflow("dynamic")</code> and the options <code>"export"</code> / <code>"filename"</code> are deprecated: <code>v3_powerflow_args</code> converts them with a warning</li>
     </ul>
     <ul lang="ja">
-      <li>母線が 1 つ以上あり、slack 母線があるか、機器を持つ母線が 1 つ以上あること</li>
-      <li><code>net.initialize()</code> は不要</li>
-      <li>MATLAB 本体だけで実行可能: <code>"fsolve"</code> 以外のすべての計算方法</li>
-      <li><code>"fsolve"</code> には Optimization Toolbox が必要。ない場合は <code>GUILDA:require_toolbox:Unavailable</code> で停止</li>
-      <li><code>calculate_powerflow("dynamic")</code> とオプション <code>"export"</code> / <code>"filename"</code> は非推奨: <code>v3_powerflow_args</code> が警告を出して変換</li>
+      <li>母線が 1 つ以上必要です。さらに、slack 母線があるか、機器を持つ母線が 1 つ以上なければなりません。</li>
+      <li><code>net.initialize()</code> を先に実行する必要はありません。</li>
+      <li><code>"fsolve"</code> 以外の計算方法は、MATLAB 本体だけで動きます。</li>
+      <li><code>"fsolve"</code> には Optimization Toolbox が必要です。ないときは <code>GUILDA:require_toolbox:Unavailable</code> で止まります。</li>
+      <li><code>calculate_powerflow("dynamic")</code> という書き方と、オプション <code>"export"</code> / <code>"filename"</code> は非推奨です。<code>v3_powerflow_args</code> が警告を出して新しい形に直します。</li>
     </ul>
     <!-- ============================== 2. SEQUENCE ============================== -->
     <h2 id="sequence"><span lang="en">2. Call sequence between classes</span><span lang="ja">2. クラス間の呼び出し順</span></h2>
@@ -320,7 +320,7 @@
         <li><b>PF-12</b> <code>PowerNetwork</code> → <code>ResultPF.Export</code></li>
       </ol>
       <figcaption lang="en">Numbers: step IDs of the list below. Solid arrows: calls; dashed arrows: returns. PF-03 runs only when no bus has <code>l_isSlack = true</code>. PF-07 and PF-08: alternatives selected by <code>Solver</code>.</figcaption>
-      <figcaption lang="ja">番号: 下のリストのステップ ID。実線は呼び出し、破線は戻り値。PF-03 は <code>l_isSlack = true</code> の母線がないときだけ実行。PF-07 と PF-08 は <code>Solver</code> でどちらか一方を選択。</figcaption>
+      <figcaption lang="ja">番号は下のリストのステップ ID です。実線は呼び出し、破線は戻り値を表します。PF-03 は <code>l_isSlack = true</code> の母線がないときだけ実行します。PF-07 と PF-08 は、<code>Solver</code> に応じてどちらか一方だけを実行します。</figcaption>
     </figure>
 
     <!-- ============================== 3. STEPS ============================== -->
@@ -334,13 +334,13 @@
             <li>Converts deprecated arguments (<code>v3_powerflow_args</code>)</li>
             <li>Separates <code>Export</code> from the solver options (<code>take_call_options</code>)</li>
           </ul><ul lang="ja">
-            <li>非推奨の引数を変換（<code>v3_powerflow_args</code>）</li>
-            <li><code>Export</code> をソルバーのオプションから分離（<code>take_call_options</code>）</li>
+            <li>非推奨の引数を新しい形に直します（<code>v3_powerflow_args</code>）。</li>
+            <li><code>Export</code> は、ソルバーのオプションとは分けて取り出します（<code>take_call_options</code>）。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>varargin</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>c_nv</code> <span lang="en">(solver Name-Value cell)</span><span lang="ja">（ソルバー用 Name-Value の cell）</span>, <code>opt.Export</code></dd>
+          <dd><code>c_nv</code> <span lang="en">(solver Name-Value cell)</span><span lang="ja">（ソルバーに渡す Name-Value の cell）</span>, <code>opt.Export</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-02">
@@ -352,14 +352,14 @@
             <li>Applies the overrides to it: <code>tools.resolve_options(sct_options, SolverPF.OptionMap, nv)</code></li>
             <li>Checks the values (<code>validate_options</code>; <code>PlotFcn</code>: <code>tools.check_plotfcn</code>)</li>
           </ul><ul lang="ja">
-            <li>セクションの各設定の <code>Value</code> と <code>Display = "none"</code> から構造体を作成</li>
-            <li>上書き値を適用: <code>tools.resolve_options(sct_options, SolverPF.OptionMap, nv)</code></li>
-            <li>値を検査（<code>validate_options</code>。<code>PlotFcn</code>: <code>tools.check_plotfcn</code>）</li>
+            <li>セクションの各設定の <code>Value</code> に <code>Display = "none"</code> を加えて、構造体を作ります。</li>
+            <li><code>tools.resolve_options(sct_options, SolverPF.OptionMap, nv)</code> で、指定された値を上書きします。</li>
+            <li>値を検査します（<code>validate_options</code>。<code>PlotFcn</code> は <code>tools.check_plotfcn</code> で検査）。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>GUILDA.config("PowerFlowCalculation")</code>, <code>c_nv</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>sct_options</code> <span lang="en">(1×1 struct: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunctionEvaluations, WhenFailed, Verbose, WarmStart, PlotFcn, Display); solver and settings file unchanged</span><span lang="ja">（1×1 構造体: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunctionEvaluations, WhenFailed, Verbose, WarmStart, PlotFcn, Display）。ソルバーと設定ファイルは変更なし</span></dd>
+          <dd><code>sct_options</code> <span lang="en">(1×1 struct: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunctionEvaluations, WhenFailed, Verbose, WarmStart, PlotFcn, Display); solver and settings file unchanged</span><span lang="ja">（1×1 の構造体。フィールドは Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunctionEvaluations, WhenFailed, Verbose, WarmStart, PlotFcn, Display）。ソルバーと設定ファイルはそのままです。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-03">
@@ -371,14 +371,14 @@
             <li><code>select_slack_bus</code> takes the bus of <code>tools.slack_bus_index</code>: first bus with a component with <code>Q = NaN</code>, else first bus with a component</li>
             <li>Prints an INFO line and sets it</li>
           </ul><ul lang="ja">
-            <li>slack 母線がないときだけ</li>
-            <li><code>select_slack_bus</code> が <code>tools.slack_bus_index</code> の母線を選択: <code>Q = NaN</code> の機器を持つ最初の母線、なければ機器を持つ最初の母線</li>
-            <li>INFO を表示して設定</li>
+            <li>slack 母線が 1 つもないときだけ実行します。</li>
+            <li><code>select_slack_bus</code> が <code>tools.slack_bus_index</code> の母線を選びます。<code>Q = NaN</code> の機器を持つ最初の母線を選び、なければ機器を持つ最初の母線を選びます。</li>
+            <li>INFO を表示してから slack に設定します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>Bus.l_isSlack</code>, <code>a_Component</code>, <span lang="en">component</span><span lang="ja">機器の</span> <code>tab_parameter.powerflow.Q</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>Bus.l_isSlack = true</code>; <span lang="en"><code>set.l_isSlack</code> reports a <code>"Slack"</code> edit (<code>LayerPackage.log_edit</code>), which makes <code>net.sct_stale.powerflow</code> stale</span><span lang="ja"><code>set.l_isSlack</code> が <code>"Slack"</code> の編集を報告（<code>LayerPackage.log_edit</code>）。<code>net.sct_stale.powerflow</code> が古くなる</span></dd>
+          <dd><code>Bus.l_isSlack = true</code>; <span lang="en"><code>set.l_isSlack</code> reports a <code>"Slack"</code> edit (<code>LayerPackage.log_edit</code>), which makes <code>net.sct_stale.powerflow</code> stale</span><span lang="ja"><code>set.l_isSlack</code> が <code>"Slack"</code> の編集として記録します（<code>LayerPackage.log_edit</code>）。これで <code>net.sct_stale.powerflow</code> が古くなります。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-04">
@@ -392,16 +392,16 @@
             <li>Initial voltages (local <code>initial_voltage</code>): the kept solution with <code>WarmStart = true</code>, otherwise the flat start</li>
             <li>Runs PF-07 to PF-11; keeps <code>cv_Vbus</code> as the warm start solution when <code>flag == 1</code></li>
           </ul><ul lang="ja">
-            <li>タイマーを開始（<code>tic</code>）</li>
-            <li>キャッシュとネットワークを比較（内部関数 <code>equations</code>）: 母線（オブジェクトの同一性で判定）または <code>n_revTopology</code> が異なる → ウォームスタートの解とキャッシュを破棄</li>
-            <li>PF-05 は <code>n_revY</code> がキャッシュと異なるときだけ、PF-06 は <code>n_revPF</code> が異なるときだけ。それ以外はキャッシュの <code>cm_Y</code> と方程式</li>
-            <li>初期電圧（内部関数 <code>initial_voltage</code>）: <code>WarmStart = true</code> なら保持した解、それ以外はフラットスタート</li>
-            <li>PF-07 から PF-11 を実行。<code>flag == 1</code> なら <code>cv_Vbus</code> をウォームスタートの解として保持</li>
+            <li>タイマーを動かします（<code>tic</code>）。</li>
+            <li>内部関数 <code>equations</code> がキャッシュとネットワークを比べます。母線（オブジェクトが同じかで判定）か <code>n_revTopology</code> が違えば、ウォームスタート用の解とキャッシュを捨てます。</li>
+            <li>PF-05 は <code>n_revY</code> がキャッシュと違うときだけ、PF-06 は <code>n_revPF</code> が違うときだけ実行します。それ以外はキャッシュにある <code>cm_Y</code> と方程式を使います。</li>
+            <li>初期電圧は内部関数 <code>initial_voltage</code> で決めます。<code>WarmStart = true</code> なら保持している解を使い、そうでなければフラットスタートにします。</li>
+            <li>PF-07 から PF-11 を実行します。<code>flag == 1</code> で収束したら、<code>cv_Vbus</code> を次のウォームスタート用に保持します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>net</code> (<code>a_Bus</code>, <code>n_revY</code>, <code>n_revPF</code>, <code>n_revTopology</code>), <code>sct_options</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>[result, flag, output]</code>; <span lang="en">private properties of <code>net.solver_PF</code> (warm start solution, cache)</span><span lang="ja"><code>net.solver_PF</code> の private プロパティ（ウォームスタートの解、キャッシュ）</span></dd>
+          <dd><code>[result, flag, output]</code>; <span lang="en">private properties of <code>net.solver_PF</code> (warm start solution, cache)</span><span lang="ja"><code>net.solver_PF</code> の private プロパティ（ウォームスタート用の解とキャッシュ）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-05">
@@ -412,13 +412,13 @@
             <li>Adds the 2×2 matrix of every branch at its two end buses</li>
             <li>Adds the bus shunt <code>Gshunt + 1j*Bshunt</code> on the diagonal</li>
           </ul><ul lang="ja">
-            <li>各ブランチの 2×2 行列を両端の母線の位置に加算</li>
-            <li>母線のシャント <code>Gshunt + 1j*Bshunt</code> を対角に加算</li>
+            <li>各ブランチの 2×2 行列を、両端の母線に当たる位置に足し込みます。</li>
+            <li>母線のシャント <code>Gshunt + 1j*Bshunt</code> を対角に足します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">branch</span><span lang="ja">ブランチの</span> <code>tab_parameter.dynamics</code> (R, X, C, tap, phase), <code>Branch.a_Bus</code>; <span lang="en">bus</span><span lang="ja">母線の</span> <code>tab_parameter.dynamics</code> (Gshunt, Bshunt)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>cm_Y</code> <span lang="en">(n_bus×n_bus complex [pu], rows and columns in the order of <code>a_Bus</code>)</span><span lang="ja">（n_bus×n_bus の複素数 [pu]。行と列は <code>a_Bus</code> の順）</span></dd>
+          <dd><code>cm_Y</code> <span lang="en">(n_bus×n_bus complex [pu], rows and columns in the order of <code>a_Bus</code>)</span><span lang="ja">（n_bus×n_bus の複素数 [pu]。行と列は <code>a_Bus</code> の順に並びます）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-06">
@@ -431,15 +431,15 @@
             <li>Otherwise: sums <code>P</code> and <code>Q</code> of the components</li>
             <li><code>Q</code> = NaN → PV, else PQ</li>
           </ul><ul lang="ja">
-            <li>母線の種類と指定値を決定</li>
+            <li>母線の種類と指定値を決めます。</li>
             <li>slack → <code>[Varg, V]</code></li>
-            <li>それ以外: 機器の <code>P</code>・<code>Q</code> を合計</li>
-            <li><code>Q</code> が NaN → PV、それ以外 → PQ</li>
+            <li>slack 以外の母線では、機器の <code>P</code> と <code>Q</code> を合計します。</li>
+            <li><code>Q</code> が NaN なら PV 母線、そうでなければ PQ 母線とします。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>l_isSlack</code>, <span lang="en">bus</span><span lang="ja">母線の</span> <code>tab_parameter.powerflow</code> (V, Varg), <span lang="en">component</span><span lang="ja">機器の</span> <code>tab_parameter.powerflow</code> (P, Q)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>tab_PFcondition</code> <span lang="en">(n_bus×5 table: Type, Varg, V, P, Q; NaN where the type does not set a value; row names = bus tags); with it <code>private/power_equation</code> builds the equations of PF-07, both cached</span><span lang="ja">（n_bus×5 の table: Type, Varg, V, P, Q。種類が決めない値は NaN。行名は母線のタグ）。これから <code>private/power_equation</code> が PF-07 の方程式を作成し、いずれもキャッシュ</span></dd>
+          <dd><code>tab_PFcondition</code> <span lang="en">(n_bus×5 table: Type, Varg, V, P, Q; NaN where the type does not set a value; row names = bus tags); with it <code>private/power_equation</code> builds the equations of PF-07, both cached</span><span lang="ja">（n_bus×5 の table。列は Type, Varg, V, P, Q で、種類で決まらない値は NaN にします。行名は母線のタグです）。<code>private/power_equation</code> はこの表から PF-07 の方程式を作ります。表も方程式もキャッシュに入れます。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-07">
@@ -460,18 +460,18 @@
             <li>fsolve: <code>tools.require_toolbox("optim", ...)</code>, then <code>fsolve</code> with <code>SpecifyObjectiveGradient</code> (<code>MethodFsolve</code>); flag 1 when exitflag &gt; 0 and the largest |F| is at most <code>Tolerance</code>, 0 for exitflag 0, −2 otherwise</li>
             <li>Every iterate is recorded (gradient: every iterate up to 1000, then every 1000th and the last)</li>
           </ul><ul lang="ja">
-            <li><code>private/power_equation</code>: 電力方程式の残差 F(x) と疎なヤコビ行列。x は母線電圧の実部と虚部</li>
-            <li>母線ごとに 2 つの残差: slack（角度、|V|）、PV（P、|V|）、PQ（P、Q）</li>
-            <li>ヤコビ行列: <code>J_V + J_I*Y</code></li>
-            <li>初期値: PF-04 の初期電圧（ウォームスタートまたはフラットスタート）</li>
-            <li><code>SolverPF.solve</code> が設定から Method オブジェクトを作成（0 → 計算方法の既定値）し、その結果を <code>cv_Vbus</code>、<code>flag</code>、<code>output</code>、<code>cm_Vhistory</code>、<code>rv_step</code> に変換</li>
-            <li>Method クラスはすべて <code>MethodBase</code> を継承し、flag と output を自身で作成。|F| の最大値が <code>Tolerance</code> 以下で収束</li>
-            <li>newton: <code>Fcn</code> = F、<code>Jac</code> = ヤコビ行列とした <code>MethodNewtonRaphson</code>。ヤコビ行列が特異（slack 母線のない島）なら最小ノルムのステップ（<code>lsqminnorm</code>）。|F| &gt; <code>Tolerance</code> のままステップが x の丸め誤差の大きさになると flag −2</li>
-            <li>ブランチのない slack 以外の母線: 電圧が定まらないため、計算方法（dynamic を含む）を実行せずに flag −2</li>
-            <li>gradient: <code>power_equation</code> の方向 <code>[ΔP; ΔQ/V]</code> を使う <code>MethodGradient</code>。極座標。slack の角度・電圧と PV の電圧は指定値に固定。<code>θ += α·ΔP</code>（slack 以外）、<code>V += α·ΔQ/V</code>（PQ）。|ΔP|、|ΔQ| の最大値が <code>Tolerance</code> 以下で停止</li>
-            <li>levenberg-marquardt: <code>MethodLevenbergMarquardt</code>。<code>(JᵀJ + μI) dx = −JᵀF</code>。|F| が減るステップの後は μ ÷ 3、減らなければ μ × 4 で再試行。|F| の最大値が <code>Tolerance</code> 以下で停止</li>
-            <li>fsolve: <code>tools.require_toolbox("optim", ...)</code> の後、<code>SpecifyObjectiveGradient</code> を指定した <code>fsolve</code>（<code>MethodFsolve</code>）。exitflag &gt; 0 かつ |F| の最大値が <code>Tolerance</code> 以下で flag 1、exitflag 0 で 0、それ以外は −2</li>
-            <li>各反復の値を記録（gradient: 1000 回目までは毎回、以降は 1000 回ごとと最後）</li>
+            <li><code>private/power_equation</code> は、電力方程式の残差 F(x) と疎なヤコビ行列を返します。x は母線電圧の実部と虚部を並べたものです。</li>
+            <li>残差は母線ごとに 2 つです。slack では角度と |V|、PV では P と |V|、PQ では P と Q を使います。</li>
+            <li>ヤコビ行列は <code>J_V + J_I*Y</code> で求めます。</li>
+            <li>初期値には PF-04 の初期電圧（ウォームスタートかフラットスタート）を使います。</li>
+            <li><code>SolverPF.solve</code> は設定から Method オブジェクトを作り（0 は計算方法の既定値の意味）、その結果を <code>cv_Vbus</code>、<code>flag</code>、<code>output</code>、<code>cm_Vhistory</code>、<code>rv_step</code> に直します。</li>
+            <li>Method クラスはどれも <code>MethodBase</code> を継承し、flag と output を自分で作ります。|F| の最大値が <code>Tolerance</code> 以下になれば収束です。</li>
+            <li>newton は、<code>Fcn</code> に F、<code>Jac</code> にヤコビ行列を渡した <code>MethodNewtonRaphson</code> です。slack 母線のない島があってヤコビ行列が特異になるときは、最小ノルムのステップ（<code>lsqminnorm</code>）を使います。|F| が <code>Tolerance</code> を上回ったままステップが x の丸め誤差ほどに小さくなると、flag −2 で終わります。</li>
+            <li>ブランチが 1 本もつながっていない slack 以外の母線があると、電圧が決まりません。この場合は計算方法（dynamic も含む）を実行せずに flag −2 を返します。</li>
+            <li>gradient は、<code>power_equation</code> から得た方向 <code>[ΔP; ΔQ/V]</code> を使う <code>MethodGradient</code> です。極座標で計算し、slack の角度と電圧、PV の電圧は指定値のままにします。更新は <code>θ += α·ΔP</code>（slack 以外）と <code>V += α·ΔQ/V</code>（PQ）です。|ΔP| と |ΔQ| の最大値が <code>Tolerance</code> 以下になると止まります。</li>
+            <li>levenberg-marquardt は <code>MethodLevenbergMarquardt</code> で、<code>(JᵀJ + μI) dx = −JᵀF</code> を解いて進みます。|F| が減ったら μ を 3 で割り、減らなければ μ を 4 倍してやり直します。|F| の最大値が <code>Tolerance</code> 以下になると止まります。</li>
+            <li>fsolve は、<code>tools.require_toolbox("optim", ...)</code> で確認したあと、<code>SpecifyObjectiveGradient</code> を指定した <code>fsolve</code> を実行します（<code>MethodFsolve</code>）。exitflag &gt; 0 で |F| の最大値が <code>Tolerance</code> 以下なら flag 1、exitflag が 0 なら flag 0、それ以外は flag −2 です。</li>
+            <li>各反復の値を記録します。gradient では 1000 回目までは毎回、その後は 1000 回ごとと最後の値を記録します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options</code> (<code>Tolerance</code>, <code>MaxIteration</code>, <code>Display</code>, <code>NewtonStepSize</code>, <code>GradientStepSize</code>, <code>FsolveMaxFunctionEvaluations</code>, <code>FsolveUseParallel</code>)</dd>
@@ -493,17 +493,17 @@
             <li>Stops (event functions or the end of the interval <code>[0, 1e4]</code>): convergence (largest |ΔP| non-slack, |ΔQ| PQ at most <code>Tolerance</code>) → flag 1; voltage collapse (a PQ bus below 0.01 pu), angle instability (|angle| ≥ 10π) or integration failure → flag −2; virtual time 1e4 (safety limit) → flag 0</li>
             <li>Last point = solution</li>
           </ul><ul lang="ja">
-            <li>各母線の角度とその変化率、|V| とその変化率（4·n_bus 個の状態）を積分。P・Q の不平衡量で駆動</li>
-            <li>質量行列とヤコビ行列パターンを指定</li>
-            <li>slack 母線は固定。PV 母線は |V| = <code>V</code> を維持</li>
-            <li>初期電圧: PF-04 の初期電圧（受け取る <code>PFcondition</code> の table に列 <code>Varg0</code>、<code>V0</code> として追加）。slack・PV の値は指定値</li>
-            <li>ODE の許容誤差: <code>AbsTol = min(Tolerance, 1e-5)</code>、<code>RelTol = min(100·Tolerance, 1e-4)</code></li>
-            <li>開始時点で収束済み（ウォームスタートなど）: 直ちに flag 1 で終了</li>
-            <li>停止（イベント関数または区間 <code>[0, 1e4]</code> の終わり）: 収束（slack 以外の |ΔP|、PQ の |ΔQ| の最大値が <code>Tolerance</code> 以下）→ flag 1。電圧崩壊（PQ 母線が 0.01 pu 未満）、角度の不安定（|角度| ≥ 10π）、積分の失敗 → flag −2。仮想時間 1e4（安全上の上限）→ flag 0</li>
-            <li>最後の点を解として採用</li>
+            <li>各母線の角度と |V|、およびそれぞれの変化率（合わせて 4·n_bus 個の状態）を積分します。動きを生むのは P と Q の不平衡量です。</li>
+            <li>質量行列と、ヤコビ行列の非ゼロパターンを指定します。</li>
+            <li>slack 母線は動かしません。PV 母線は |V| を <code>V</code> に保ちます。</li>
+            <li>初期電圧には PF-04 の初期電圧を使います。受け取った <code>PFcondition</code> の table に、列 <code>Varg0</code> と <code>V0</code> として加えます。slack と PV で固定する値は指定値です。</li>
+            <li>ODE の許容誤差は <code>AbsTol = min(Tolerance, 1e-5)</code>、<code>RelTol = min(100·Tolerance, 1e-4)</code> です。</li>
+            <li>ウォームスタートなどで最初から収束しているときは、すぐに flag 1 で終わります。</li>
+            <li>積分はイベント関数で止まるか、区間 <code>[0, 1e4]</code> の終わりで止まります。slack 以外の |ΔP| と PQ の |ΔQ| の最大値が <code>Tolerance</code> 以下になれば収束で、flag 1 です。電圧崩壊（PQ 母線が 0.01 pu 未満）、角度の不安定（|角度| ≥ 10π）、積分の失敗では flag −2 です。安全のための上限である仮想時間 1e4 に達したときは flag 0 です。</li>
+            <li>最後の点を解とします。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options.Tolerance</code> → <span lang="en">properties <code>Y</code>, <code>PFcondition</code>, <code>Tolerance</code> of <code>MethodDynamic</code>; <code>Mass = 0</code>, <code>Damper = 1</code>, <code>foh_PQ = 0</code> are its class defaults</span><span lang="ja"><code>MethodDynamic</code> のプロパティ <code>Y</code>、<code>PFcondition</code>、<code>Tolerance</code>。<code>Mass = 0</code>、<code>Damper = 1</code>、<code>foh_PQ = 0</code> はクラスの既定値</span></dd>
+          <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options.Tolerance</code> → <span lang="en">properties <code>Y</code>, <code>PFcondition</code>, <code>Tolerance</code> of <code>MethodDynamic</code>; <code>Mass = 0</code>, <code>Damper = 1</code>, <code>foh_PQ = 0</code> are its class defaults</span><span lang="ja"><code>MethodDynamic</code> のプロパティ <code>Y</code>、<code>PFcondition</code>、<code>Tolerance</code> に渡します。<code>Mass = 0</code>、<code>Damper = 1</code>、<code>foh_PQ = 0</code> はクラスの既定値のままです。</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>cv_Vbus</code> (n_bus×1), <code>flag</code> <span lang="en">(1 / 0 / −2)</span><span lang="ja">（1 / 0 / −2）</span>, <code>output</code> <span lang="en">(iterations = number of ODE steps, algorithm, residual, message)</span><span lang="ja">（iterations = ODE のステップ数、algorithm、residual、message）</span>, <code>cm_Vhistory</code> (n_bus×n_t), <code>rv_step</code> = <span lang="en">virtual times</span><span lang="ja">仮想時刻</span></dd>
         </dl>
@@ -516,8 +516,8 @@
             <li>Computes <code>I = Y*V</code> and <code>S = V.*conj(I)</code> of the buses</li>
             <li>Current and power into each branch at both ends, from its own 2×2 matrix (from = <code>a_Bus{1}</code>, to = <code>a_Bus{2}</code>)</li>
           </ul><ul lang="ja">
-            <li>母線の <code>I = Y*V</code> と <code>S = V.*conj(I)</code> を計算</li>
-            <li>各ブランチ自身の 2×2 行列から、両端でブランチに流れ込む電流と電力を計算（from = <code>a_Bus{1}</code>、to = <code>a_Bus{2}</code>）</li>
+            <li>母線ごとに <code>I = Y*V</code> と <code>S = V.*conj(I)</code> を求めます。</li>
+            <li>各ブランチ自身の 2×2 行列を使い、両端でブランチに流れ込む電流と電力を求めます（from は <code>a_Bus{1}</code>、to は <code>a_Bus{2}</code>）。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>cv_Vbus</code>, <code>cm_Y</code>, <code>net.a_Branch</code></dd>
@@ -534,14 +534,14 @@
             <li><code>ResultBase</code> keeps a reference to the network, its tag, the solver class name, the options, flag and output</li>
             <li>Converts the <code>tic</code> value to the elapsed time</li>
           </ul><ul lang="ja">
-            <li>結果を作成</li>
-            <li><code>ResultBase</code> がネットワークへの参照、そのタグ、ソルバーのクラス名、オプション、flag と output を保持</li>
-            <li><code>tic</code> の値を経過時間に変換</li>
+            <li>結果を作ります。</li>
+            <li><code>ResultBase</code> が、ネットワークへの参照とそのタグ、ソルバーのクラス名、オプション、flag と output を持ちます。</li>
+            <li><code>tic</code> の値から経過時間を求めます。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>net</code>, <code>sct_options</code>, <code>flag</code>, <code>output</code>, <code>t0</code>, <span lang="en">tables, history</span><span lang="ja">各 table、履歴</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>ResultPF</code> <span lang="en">(see <a href="#data">Data produced</a>)</span><span lang="ja">（<a href="#data">生成されるデータ</a>参照）</span></dd>
+          <dd><code>ResultPF</code> <span lang="en">(see <a href="#data">Data produced</a>)</span><span lang="ja">（<a href="#data">生成されるデータ</a>を参照）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-11">
@@ -555,16 +555,16 @@
             <li><code>"DISP"</code>: prints <code>output.message</code></li>
             <li><code>"NONE"</code>: nothing</li>
           </ul><ul lang="ja">
-            <li><code>flag &lt;= 0</code> のときだけ: <code>WhenFailed</code> に従う</li>
-            <li><code>"WARN"</code>: 警告</li>
-            <li><code>"ERROR"</code>: エラー</li>
-            <li><code>"DISP"</code>: <code>output.message</code> を表示</li>
-            <li><code>"NONE"</code>: 何もしない</li>
+            <li><code>flag &lt;= 0</code> のときだけ、<code>WhenFailed</code> の値に従って次のように動きます。</li>
+            <li><code>"WARN"</code> なら警告を出します。</li>
+            <li><code>"ERROR"</code> ならエラーにします。</li>
+            <li><code>"DISP"</code> なら <code>output.message</code> を表示します。</li>
+            <li><code>"NONE"</code> なら何もしません。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>flag</code>, <code>sct_options.WhenFailed</code>, <code>output.message</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en">warning or error <code>GUILDA:SolverPF:NotConverged</code> (text = <code>output.message</code>)</span><span lang="ja">警告またはエラー <code>GUILDA:SolverPF:NotConverged</code>（本文 = <code>output.message</code>）</span></dd>
+          <dd><span lang="en">warning or error <code>GUILDA:SolverPF:NotConverged</code> (text = <code>output.message</code>)</span><span lang="ja">警告またはエラー <code>GUILDA:SolverPF:NotConverged</code>。本文は <code>output.message</code> です。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-12">
@@ -576,12 +576,12 @@
             <li><code>Export</code>: writes <code>tab_bus</code> or <code>tab_branch</code> (.csv, .txt, .xlsx, .xls), or the iteration history (.json)</li>
             <li>.json also reads the bus types and Y from the network</li>
           </ul><ul lang="ja">
-            <li><code>Export</code> のときだけ。図（母線ごとの |V| と角度）は呼び出し側が <code>result.Plot()</code> で描画</li>
-            <li><code>Export</code>: <code>tab_bus</code> または <code>tab_branch</code>（.csv, .txt, .xlsx, .xls）、または反復履歴（.json）を書き出し</li>
-            <li>.json では母線の種類と Y もネットワークから読み取り</li>
+            <li><code>Export</code> を指定したときだけ実行します。図（母線ごとの |V| と角度）は、呼び出し側が <code>result.Plot()</code> で描きます。</li>
+            <li><code>Export</code> は、<code>tab_bus</code> か <code>tab_branch</code> を .csv、.txt、.xlsx、.xls で、または反復履歴を .json で書き出します。</li>
+            <li>.json のときは、母線の種類と Y もネットワークから読み取ります。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>result</code>; <span lang="en">for .json also <code>result.a_PowerNetwork</code></span><span lang="ja">.json では <code>result.a_PowerNetwork</code> も</span></dd>
+          <dd><code>result</code>; <span lang="en">for .json also <code>result.a_PowerNetwork</code></span><span lang="ja">.json のときは <code>result.a_PowerNetwork</code> も</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en">file</span><span lang="ja">ファイル</span></dd>
         </dl>
@@ -596,9 +596,9 @@
       <li>Sizes for <code>network.IEEE9bus</code>: <code>tab_bus</code> 9×6, <code>tab_branch</code> 9×8, <code>cm_Vhistory</code> 9×n_iter (one column per iteration) or 9×n_time (dynamic)</li>
     </ul>
     <ul lang="ja">
-      <li><code>result</code>: <code>ResultPF</code>（<code>ResultBase</code> のサブクラス）</li>
-      <li>行は <code>net.a_Bus</code> と <code>net.a_Branch</code> の順。行名はタグ</li>
-      <li><code>network.IEEE9bus</code> でのサイズ: <code>tab_bus</code> 9×6、<code>tab_branch</code> 9×8、<code>cm_Vhistory</code> 9×n_iter（反復ごとに 1 列）または 9×n_time（dynamic）</li>
+      <li><code>result</code> は <code>ResultPF</code> で、<code>ResultBase</code> のサブクラスです。</li>
+      <li>行は <code>net.a_Bus</code> と <code>net.a_Branch</code> の順に並び、行名はタグです。</li>
+      <li><code>network.IEEE9bus</code> では、<code>tab_bus</code> が 9×6、<code>tab_branch</code> が 9×8、<code>cm_Vhistory</code> が 9×n_iter（反復ごとに 1 列）、dynamic では 9×n_time になります。</li>
     </ul>
     <table class="dg-table fpf-data">
       <thead><tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Size, unit</span><span lang="ja">サイズ・単位</span></th><th><span lang="en">Content</span><span lang="ja">内容</span></th></tr></thead>
@@ -615,27 +615,27 @@
           <li>Branch: <code>Pmax</code>, <code>Qmax</code>, <code>Smax</code>, <code>Imax</code> on the larger of |P|, |Q|, |S|, |I| at its two ends; <code>Vargmax</code> on |Varg_from − Varg_to|</li>
           <li>0 rows when none, or when <code>flag ≠ 1</code>; no warning or error; the power flow never applies the limits</li>
         </ul><ul lang="ja">
-          <li>解が <code>Tolerance</code> を超えて違反する運転制約（<code>tab_parameter.operation</code>）。1 行が 1 つの制約（<code>private/violation_table</code>。機器の P、Q は <code>initialize</code> と同じ <code>tools.distribute_power</code> の値）</li>
-          <li>列: <code>Class</code>（"Bus"、"Component"、"Branch"）、<code>Object</code>（タグ）、<code>Limit</code>、<code>Value</code>、<code>Bound</code>、<code>Excess</code>（= |Value − Bound|）</li>
-          <li>母線: <code>V</code> に対する <code>Vmin</code>、<code>Vmax</code></li>
-          <li>機器: <code>initialize</code> が与える P・Q に対する <code>Pmin</code>、<code>Pmax</code>、<code>Qmin</code>、<code>Qmax</code></li>
-          <li>ブランチ: 両端の |P|、|Q|、|S|、|I| の大きい方に対する <code>Pmax</code>、<code>Qmax</code>、<code>Smax</code>、<code>Imax</code>。|Varg_from − Varg_to| に対する <code>Vargmax</code></li>
-          <li>違反なし、または <code>flag ≠ 1</code> なら 0 行。警告・エラーなし。潮流計算は制約を適用しない</li>
+          <li>解が <code>Tolerance</code> を超えて破っている運転制約（<code>tab_parameter.operation</code>）を、1 行に 1 つずつ並べます（<code>private/violation_table</code>）。機器の P と Q には、<code>initialize</code> と同じく <code>tools.distribute_power</code> で配分した値を使います。</li>
+          <li>列は <code>Class</code>（"Bus"、"Component"、"Branch"）、<code>Object</code>（タグ）、<code>Limit</code>、<code>Value</code>、<code>Bound</code>、<code>Excess</code>（= |Value − Bound|）です。</li>
+          <li>母線では、<code>V</code> を <code>Vmin</code> と <code>Vmax</code> と比べます。</li>
+          <li>機器では、<code>initialize</code> が与える P と Q を <code>Pmin</code>、<code>Pmax</code>、<code>Qmin</code>、<code>Qmax</code> と比べます。</li>
+          <li>ブランチでは、両端の |P|、|Q|、|S|、|I| の大きい方を <code>Pmax</code>、<code>Qmax</code>、<code>Smax</code>、<code>Imax</code> と比べ、|Varg_from − Varg_to| を <code>Vargmax</code> と比べます。</li>
+          <li>違反がないときや <code>flag ≠ 1</code> のときは 0 行です。警告やエラーは出しません。潮流計算そのものは、これらの制約を課しません。</li>
         </ul></td></tr>
         <tr><td><code>flag</code>, <code>output</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位"><span lang="en">scalar, struct</span><span lang="ja">スカラー、構造体</span></td><td data-label="Content" data-label-ja="内容"><ul lang="en">
           <li>Same as the 2nd and 3rd outputs</li>
           <li>Every method: 1 / 0 / −2 and a struct with iterations, algorithm, residual, message; fsolve also exitflag (the fsolve exitflag)</li>
         </ul><ul lang="ja">
-          <li>2 番目・3 番目の出力と同じ</li>
-          <li>すべての計算方法: 1 / 0 / −2 と、iterations, algorithm, residual, message を持つ構造体。fsolve は exitflag（fsolve の exitflag）も</li>
+          <li>2 番目と 3 番目の出力と同じものです。</li>
+          <li>どの計算方法でも、flag は 1 / 0 / −2 で、output は iterations, algorithm, residual, message を持つ構造体です。fsolve では exitflag（fsolve の exitflag）も入ります。</li>
         </ul></td></tr>
-        <tr><td><code>l_success</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">logical</td><td data-label="Content" data-label-ja="内容"><span lang="en">Dependent: true for a logical true or a numeric flag &gt; 0</span><span lang="ja">Dependent: logical の true、または数値の flag &gt; 0 のとき true</span></td></tr>
+        <tr><td><code>l_success</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">logical</td><td data-label="Content" data-label-ja="内容"><span lang="en">Dependent: true for a logical true or a numeric flag &gt; 0</span><span lang="ja">Dependent プロパティです。flag が logical の true か、数値で flag &gt; 0 のとき true になります。</span></td></tr>
         <tr><td><code>options</code>, <code>s_solver</code>, <code>r_elapsed</code>, <code>s_network</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">struct, string, [s], string</td><td data-label="Content" data-label-ja="内容"><ul lang="en">
           <li><code>sct_options</code> of the run, <code>"SolverPF"</code>, elapsed time, network tag</li>
           <li>Hidden <code>a_PowerNetwork</code>: refers to the analysed network (a handle, not a copy)</li>
         </ul><ul lang="ja">
-          <li>実行時の <code>sct_options</code>、<code>"SolverPF"</code>、経過時間、ネットワークのタグ</li>
-          <li>非表示の <code>a_PowerNetwork</code>: 解析したネットワークを参照（コピーではなくハンドル）</li>
+          <li>実行時の <code>sct_options</code>、<code>"SolverPF"</code>、経過時間、ネットワークのタグが入ります。</li>
+          <li>非表示の <code>a_PowerNetwork</code> は、解析したネットワークをコピーではなくハンドルで参照します。</li>
         </ul></td></tr>
       </tbody>
     </table>
@@ -645,9 +645,9 @@
       <li><code>Bus.set_equilibrium</code> sets <code>Bus.c_Vequilibrium</code> and distributes P and Q to <code>Component.set_equilibrium</code> (see <a href="feature-initialize.html">Initialization</a>)</li>
     </ul>
     <ul lang="ja">
-      <li>モデルのオブジェクトへの書き戻しなし</li>
-      <li><code>net.initialize()</code>（Method <code>"powerflow"</code>）が <code>calculate_powerflow</code> を呼び出し、<code>result.tab_bus</code> を <code>Bus.set_equilibrium</code> で母線に書き込み</li>
-      <li><code>Bus.set_equilibrium</code> は <code>Bus.c_Vequilibrium</code> を設定し、P と Q を <code>Component.set_equilibrium</code> に配分（<a href="feature-initialize.html">初期化</a>参照）</li>
+      <li>モデルのオブジェクトには何も書き戻しません。</li>
+      <li><code>net.initialize()</code>（Method <code>"powerflow"</code>）は <code>calculate_powerflow</code> を呼び出し、<code>result.tab_bus</code> を <code>Bus.set_equilibrium</code> で各母線に書き込みます。</li>
+      <li><code>Bus.set_equilibrium</code> は <code>Bus.c_Vequilibrium</code> を設定し、P と Q を <code>Component.set_equilibrium</code> で機器に配分します（<a href="feature-initialize.html">初期化</a>を参照）。</li>
     </ul>
 
     <!-- ============================== 5. SIDE EFFECTS ============================== -->
@@ -676,27 +676,27 @@
       <li>An existing <code>ResultPF</code> keeps its values, but its <code>a_PowerNetwork</code> is the live network: a JSON export after an edit reads the edited bus types and admittance matrix</li>
     </ul>
     <ul lang="ja">
-      <li>ネットワークへの書き込み: PF-03 のみ</li>
-      <li>設定された slack 母線は呼び出し後も残存。<code>net.initialize()</code> は、自身の潮流計算が失敗したときだけ解除</li>
-      <li><code>net.solver_PF</code> は設定なし。<code>sct_options</code> は呼び出しごとに作成</li>
-      <li><code>net.solver_PF</code> が保持するもの（private プロパティ）:
+      <li>ネットワークに書き込むのは PF-03 だけです。</li>
+      <li>PF-03 で設定した slack 母線は、呼び出しの後も残ります。<code>net.initialize()</code> は、自分が実行した潮流計算が失敗したときだけ、この設定を元に戻します。</li>
+      <li><code>net.solver_PF</code> は設定を持ちません。<code>sct_options</code> は呼び出しのたびに作ります。</li>
+      <li><code>net.solver_PF</code> は、次のものを private プロパティに持ちます。
         <ul>
-          <li>最後の収束解。<code>WarmStart = true</code> で使用。母線との対応はタグではなくオブジェクトの同一性</li>
-          <li>母線アドミタンス行列（キー: <code>net.n_revY</code>）と潮流条件・方程式（キー: <code>net.n_revPF</code>）のキャッシュ</li>
-          <li>母線が異なる、または <code>net.n_revTopology</code> が変化（母線・ブランチの追加、削除、置換）すると両方を破棄。<code>net.reset_solver()</code> はソルバーを置き換え、両方を破棄</li>
+          <li>最後に収束した解。<code>WarmStart = true</code> のときに使います。母線との対応は、タグではなくオブジェクトが同じかどうかで決めます。</li>
+          <li>母線アドミタンス行列のキャッシュ（キーは <code>net.n_revY</code>）と、潮流条件と方程式のキャッシュ（キーは <code>net.n_revPF</code>）。</li>
+          <li>母線が変わったときや <code>net.n_revTopology</code> が変わったとき（母線やブランチの追加、削除、置き換え）は、この両方を捨てます。<code>net.reset_solver()</code> はソルバーを新しくするので、やはり両方とも消えます。</li>
         </ul>
       </li>
-      <li><code>PowerNetwork</code> の版番号（private）。<code>handle_edit</code> が増加:
+      <li><code>PowerNetwork</code> は private の版番号を持ち、次の編集があると <code>handle_edit</code> がそれぞれを 1 つ増やします。
         <ul>
-          <li><code>n_revY</code>: ネットワークの <code>base</code>・<code>Topology</code>、母線の <code>dynamics</code>、ブランチの <code>dynamics</code></li>
-          <li><code>n_revPF</code>: <code>n_revY</code> のすべての編集、母線の <code>powerflow</code>・<code>Slack</code>・<code>Topology</code>、機器の <code>powerflow</code></li>
-          <li><code>n_revTopology</code>: ネットワークの <code>Topology</code></li>
+          <li><code>n_revY</code> は、ネットワークの <code>base</code> と <code>Topology</code>、母線の <code>dynamics</code>、ブランチの <code>dynamics</code> の編集で増えます。</li>
+          <li><code>n_revPF</code> は、<code>n_revY</code> が増える編集すべてと、母線の <code>powerflow</code>、<code>Slack</code>、<code>Topology</code>、機器の <code>powerflow</code> の編集で増えます。</li>
+          <li><code>n_revTopology</code> は、ネットワークの <code>Topology</code> の編集で増えます。</li>
         </ul>
       </li>
-      <li>stale の確認なし。<code>f_*</code> ハンドルの使用・作成なし。<code>sct_stale</code> の読み取り・変更なし</li>
-      <li>未使用: 平衡点、機器の dynamics パラメータ、OPF パラメータ。operation パラメータは <code>tab_violation</code> のみで使用</li>
-      <li>潮流計算を変える編集は版番号を増やすため、次の呼び出しがキャッシュの該当部分を作り直して反映</li>
-      <li>先に作られた <code>ResultPF</code> は値を保持。ただし <code>a_PowerNetwork</code> は現在のネットワークのため、編集後の JSON 書き出しは編集後の母線の種類とアドミタンス行列を読み取り</li>
+      <li>stale は確かめません。<code>f_*</code> ハンドルは使わず、作りもしません。<code>sct_stale</code> は読みも書きもしません。</li>
+      <li>平衡点、機器の dynamics パラメータ、OPF パラメータは使いません。operation パラメータを使うのは <code>tab_violation</code> だけです。</li>
+      <li>潮流計算に影響する編集は版番号を増やします。そのため次の呼び出しでは、キャッシュのうち影響を受けた部分だけを作り直します。</li>
+      <li>以前に作った <code>ResultPF</code> の値は変わりません。ただし <code>a_PowerNetwork</code> は今のネットワークを指すので、編集後に JSON へ書き出すと、編集後の母線の種類とアドミタンス行列が使われます。</li>
     </ul>
 
     <!-- ============================== 6. FAILURES ============================== -->
@@ -710,36 +710,36 @@
           <li>PF-11 adds a warning (default <code>"WARN"</code>), an error, a printed message or nothing</li>
         </ul><ul lang="ja">
           <li><code>flag &lt;= 0</code></li>
-          <li><code>result</code> は最後の反復値で返却。<code>l_success = false</code></li>
-          <li>PF-11 により警告（既定値 <code>"WARN"</code>）、エラー、メッセージ表示、何もしない、のいずれか</li>
+          <li><code>result</code> は最後の反復の値で返り、<code>l_success = false</code> になります。</li>
+          <li>PF-11 で、警告（既定値 <code>"WARN"</code>）、エラー、メッセージの表示、何もしない、のどれかになります。</li>
         </ul></td></tr>
-        <tr><td><span lang="en">dynamic stop reasons</span><span lang="ja">dynamic の停止理由</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en"><code>output.message</code>: converged (flag 1); voltage collapse, phase angle instability or integration failure (flag −2); virtual time 1e4 reached without convergence (flag 0)</span><span lang="ja"><code>output.message</code>: 収束（flag 1）。電圧崩壊、位相角の不安定、積分の失敗（flag −2）。収束せずに仮想時間 1e4 に到達（flag 0）</span></td></tr>
+        <tr><td><span lang="en">dynamic stop reasons</span><span lang="ja">dynamic の停止理由</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en"><code>output.message</code>: converged (flag 1); voltage collapse, phase angle instability or integration failure (flag −2); virtual time 1e4 reached without convergence (flag 0)</span><span lang="ja"><code>output.message</code> に理由が入ります。収束なら flag 1、電圧崩壊、位相角の不安定、積分の失敗なら flag −2、収束しないまま仮想時間 1e4 に達したら flag 0 です。</span></td></tr>
         <tr><td><span lang="en"><code>Solver="fsolve"</code> without Optimization Toolbox</span><span lang="ja">Optimization Toolbox なしの <code>Solver="fsolve"</code></span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:require_toolbox:Unavailable</code></td></tr>
         <tr><td><span lang="en">Unknown option name / odd argument list</span><span lang="ja">未知のオプション名・引数が対にならない</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><ul lang="en">
           <li><code>GUILDA:resolve_options:UnknownName</code> (lists the accepted names) / <code>GUILDA:resolve_options:InvalidPairs</code></li>
           <li>Invalid value: stops with the MATLAB validation error of <code>validate_options</code></li>
         </ul><ul lang="ja">
-          <li><code>GUILDA:resolve_options:UnknownName</code>（受け付ける名前を列挙）/ <code>GUILDA:resolve_options:InvalidPairs</code></li>
-          <li>不正な値: <code>validate_options</code> の MATLAB 検証エラーで停止</li>
+          <li><code>GUILDA:resolve_options:UnknownName</code>（受け付ける名前を一覧で示します）または <code>GUILDA:resolve_options:InvalidPairs</code></li>
+          <li>値が不正なときは、<code>validate_options</code> による MATLAB の検証エラーで止まります。</li>
         </ul></td></tr>
         <tr><td><span lang="en">No bus / no component</span><span lang="ja">母線がない・機器がない</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:PowerNetwork:NoBus</code> / <code>GUILDA:PowerNetwork:NoSlackCandidate</code></td></tr>
         <tr><td><span lang="en">Slack bus without a component with Q = NaN</span><span lang="ja">Q = NaN の機器がない slack 母線</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><ul lang="en">
           <li>Warning <code>GUILDA:Bus:SlackWithoutQnan</code> from <code>set.l_isSlack</code></li>
           <li>Power flow still runs (the bus settings ignore component P and Q)</li>
         </ul><ul lang="ja">
-          <li><code>set.l_isSlack</code> による警告 <code>GUILDA:Bus:SlackWithoutQnan</code></li>
-          <li>潮流計算は実行（slack 母線は機器の P・Q を不使用）</li>
+          <li><code>set.l_isSlack</code> が警告 <code>GUILDA:Bus:SlackWithoutQnan</code> を出します。</li>
+          <li>潮流計算は実行します。slack 母線では機器の P と Q を使いません。</li>
         </ul></td></tr>
         <tr><td><span lang="en">Unknown export extension</span><span lang="ja">未知の書き出し拡張子</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:ResultPF:ExportFormat</code></td></tr>
-        <tr><td><span lang="en">Called from <code>initialize</code></span><span lang="ja"><code>initialize</code> からの呼び出し</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en">Non-converged result → error <code>GUILDA:PowerNetwork:InitializePowerflowFailed</code>, or <code>InitializePowerflowIsland</code> for a split network</span><span lang="ja">収束しない結果 → エラー <code>GUILDA:PowerNetwork:InitializePowerflowFailed</code>。ネットワークが分断されている場合は <code>InitializePowerflowIsland</code></span></td></tr>
+        <tr><td><span lang="en">Called from <code>initialize</code></span><span lang="ja"><code>initialize</code> からの呼び出し</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en">Non-converged result → error <code>GUILDA:PowerNetwork:InitializePowerflowFailed</code>, or <code>InitializePowerflowIsland</code> for a split network</span><span lang="ja">収束しなかった場合はエラー <code>GUILDA:PowerNetwork:InitializePowerflowFailed</code> になります。ネットワークが分断されているときは <code>InitializePowerflowIsland</code> になります。</span></td></tr>
       </tbody>
     </table>
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
       <p lang="en">The IDs above: entry names in <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>, read by <code>msg</code>. <code>error(msg(...))</code> passes only the text, so the MATLAB exception has an empty identifier; a warning (<code>show_msg("warning", ...)</code>) has the ID as identifier in <code>lastwarn</code>. Check <code>flag</code> or <code>result.l_success</code> instead of catching by identifier.</p>
-      <p lang="ja">上の ID: <code>msg</code> が読む <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のエントリ名。<code>error(msg(...))</code> は本文だけを渡すため、MATLAB の例外の識別子は空。警告 (<code>show_msg("warning", ...)</code>) は <code>lastwarn</code> の識別子に ID を保持。識別子での catch ではなく、<code>flag</code> または <code>result.l_success</code> で確認。</p>
+      <p lang="ja">上の ID は、<code>msg</code> が読む <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> の項目名です。<code>error(msg(...))</code> は本文しか渡さないので、MATLAB の例外の識別子は空になります。警告（<code>show_msg("warning", ...)</code>）では、<code>lastwarn</code> の識別子に ID が入ります。失敗を調べるときは、識別子で catch するのではなく、<code>flag</code> か <code>result.l_success</code> を見てください。</p>
     </div>
     <p lang="en">The slack equation compares <code>atan(Vim/Vre)</code> with <code>Varg</code>: the slack angle must lie between −90° and 90°.</p>
-    <p lang="ja">slack の方程式は <code>atan(Vim/Vre)</code> を <code>Varg</code> と比較。このため slack 母線の角度は −90° から 90° の範囲に限定。</p>
+    <p lang="ja">slack の方程式は、<code>atan(Vim/Vre)</code> と <code>Varg</code> を比べます。そのため、slack 母線の角度は −90° から 90° の範囲でしか指定できません。</p>
 
     <!-- ============================== 7. EXTENSION ============================== -->
     <h2 id="extension"><span lang="en">7. Where to extend the feature</span><span lang="ja">7. 機能を拡張する箇所</span></h2>
@@ -779,38 +779,38 @@
     <ul lang="ja">
       <li><b>機器</b>
         <ul>
-          <li>潮流計算はモデル関数を呼び出さない</li>
-          <li>読み取りは <code>tab_parameter.powerflow</code> の <code>P</code> と <code>Q</code> のみ。<code>Component</code> のコンストラクタが <code>add_component</code> のオプションから設定</li>
-          <li>電圧を制御する電源は、<code>component.generator.abstract</code> と同様にコンストラクタで <code>Q = NaN</code> に設定</li>
-          <li>状態の平衡点は後で <code>net.initialize()</code> の <code>get_equilibrium</code> で決定</li>
+          <li>潮流計算は、モデルの関数を呼び出しません。</li>
+          <li>読むのは <code>tab_parameter.powerflow</code> の <code>P</code> と <code>Q</code> だけです。これらは <code>Component</code> のコンストラクタが <code>add_component</code> のオプションから設定します。</li>
+          <li>電圧を制御する電源は、<code>component.generator.abstract</code> と同じように、コンストラクタで <code>Q = NaN</code> にしておきます。</li>
+          <li>状態の平衡点は、あとで <code>net.initialize()</code> の中の <code>get_equilibrium</code> が決めます。</li>
         </ul>
       </li>
       <li><b>ブランチ</b>
         <ul>
-          <li><code>get_admittance_matrix</code> を実装（2×2 の複素数 [pu]。<code>[V_from; V_to]</code> からブランチへ流れ込む電流への写像）</li>
-          <li>用途: 母線アドミタンス行列（PF-05）とブランチ潮流（PF-09）</li>
+          <li><code>get_admittance_matrix</code> を実装します。返すのは 2×2 の複素数行列 [pu] で、<code>[V_from; V_to]</code> からブランチへ流れ込む電流を求めるものです。</li>
+          <li>この行列は、母線アドミタンス行列（PF-05）とブランチ潮流（PF-09）の計算に使います。</li>
         </ul>
       </li>
-      <li><b>母線の種類</b>: 新しい種類に必要なもの
+      <li><b>母線の種類</b>: 新しい種類を加えるには、次の箇所に手を入れます。
         <ul>
           <li><code>Bus.get_pf_condition</code> の <code>Type</code></li>
-          <li><code>private/power_equation</code> での 2 つの残差とそのヤコビ行列の行</li>
-          <li><code>power_equation</code> の勾配方向と <code>MethodDynamic</code> での固定する値と更新する値</li>
+          <li><code>private/power_equation</code> の 2 つの残差と、それに対応するヤコビ行列の行</li>
+          <li><code>power_equation</code> の勾配の方向と、<code>MethodDynamic</code> で固定する値と更新する値</li>
         </ul>
       </li>
-      <li><b>計算方法</b>: 追加するもの
+      <li><b>計算方法</b>: 新しい方法を加えるには、次のものを用意します。
         <ul>
-          <li><code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> の <code>Solver</code> の <code>options</code> と <code>validate_options</code> への名前</li>
-          <li><code>_auxiliary/</code> の <code>Method*</code> クラス（設定はコンストラクタの Name-Value で与える public プロパティ、その後 <code>solve</code>）</li>
-          <li>それを作成し、結果を <code>[cv_Vbus, flag, output, cm_Vhistory, rv_step]</code> に変換する <code>SolverPF.solve</code> の <code>run_method</code> の分岐</li>
-          <li><code>PlotFcn</code> 用: <code>f_iter(x, k, state)</code> の呼び出し（<code>"init"</code>、反復ごとの <code>"iter"</code>、<code>"done"</code>。true が返れば flag -1 で終了）と、<code>@SolverPF/private/live_residual.m</code> の <code>voltage</code> での反復値 <code>x</code> から母線電圧への変換</li>
+          <li><code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> の <code>Solver</code> の <code>options</code> と、<code>validate_options</code> に加える名前</li>
+          <li><code>_auxiliary/</code> に置く <code>Method*</code> クラス。設定はコンストラクタの Name-Value で public プロパティに渡し、そのあと <code>solve</code> を呼びます。</li>
+          <li><code>SolverPF.solve</code> の <code>run_method</code> に加える分岐。そのクラスを作り、結果を <code>[cv_Vbus, flag, output, cm_Vhistory, rv_step]</code> に直します。</li>
+          <li><code>PlotFcn</code> への対応。<code>f_iter(x, k, state)</code> を <code>"init"</code>、反復ごとの <code>"iter"</code>、<code>"done"</code> で呼び、true が返れば flag -1 で終えます。また、<code>@SolverPF/private/live_residual.m</code> の <code>voltage</code> に、反復値 <code>x</code> を母線電圧に直す処理を加えます。</li>
         </ul>
       </li>
-      <li><b>ライブ表示</b>: <code>PlotFcn</code> の <code>options</code>（<code>DefaultPowerFlowCalculation.json</code>）、<code>SolverPF.get_options</code> が <code>tools.check_plotfcn</code> に渡すキーの一覧、<code>live_residual</code> の描画に新しいキーを追加</li>
-      <li><b>制御器</b>: 潮流計算に関与しない</li>
+      <li><b>ライブ表示</b>: 新しいキーを加えるには、<code>PlotFcn</code> の <code>options</code>（<code>DefaultPowerFlowCalculation.json</code>）、<code>SolverPF.get_options</code> が <code>tools.check_plotfcn</code> に渡すキーの一覧、<code>live_residual</code> の描画の 3 か所を変えます。</li>
+      <li><b>制御器</b>: 潮流計算には関わりません。</li>
     </ul>
     <p lang="en">Model contracts: <a href="model-implementation.html#contracts">Model Implementation</a>.</p>
-    <p lang="ja">モデルが満たすべき約束: <a href="model-implementation.html#contracts">モデルの実装</a>。</p>
+    <p lang="ja">モデルが守るべき約束は<a href="model-implementation.html#contracts">モデルの実装</a>にまとめています。</p>
 
     <!-- ============================== 8. RELATED ============================== -->
     <h2 id="related"><span lang="en">8. Related pages</span><span lang="ja">8. 関連ページ</span></h2>
