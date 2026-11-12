@@ -52,7 +52,7 @@ assert(rank(sys.E) < size(sys.E,1))
 n1 = new_net();
 n1.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 n1.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
-n1.add_global_controller("agc-PI", ["SG1B001", "SG1B002"]);
+n1.add_global_controller("agc-PI", ["B001SG1", "B002SG1"]);
 c_net = {new_net(), n1, network.Ishizaki6Bus(), network.IEEE9bus()};
 n_removed = [0, 1, 0, 3];
 for k = 1:numel(c_net)
@@ -430,8 +430,8 @@ assert(numel(sys.StateName) == size(sys.A,1))
 %% Two global controllers in three algorithms
 % 大域制御器が複数でも 3 方式の固有値が一致し、状態は制御器の数だけ増える
 net = new_net();
-net.add_global_controller("agc-PI", "SG1B001");
-net.add_global_controller("agc-PI", ["SG1B002", "SG1B003"], parameter=struct(kI=200));
+net.add_global_controller("agc-PI", "B001SG1");
+net.add_global_controller("agc-PI", ["B002SG1", "B003SG1"], parameter=struct(kI=200));
 DebugScript.helper.quiet(@() net.initialize);
 sys = net.get_sys("Method","Kron");
 assert(size(sys.A,1) == n_x + 2)
@@ -444,9 +444,9 @@ assert(same_eigs(e, eig_finite(net.get_sys("Method","DAE")),      1e-6))
 
 % 制御対象を系統の順と逆に並べても同じ系になる (端子は名前で対応付ける)
 netA = new_net();
-netA.add_global_controller("agc-PI", ["SG1B001", "SG1B002"], parameter=struct(alpha=[2;1], beta=[1;3]));
+netA.add_global_controller("agc-PI", ["B001SG1", "B002SG1"], parameter=struct(alpha=[2;1], beta=[1;3]));
 netB = new_net();
-netB.add_global_controller("agc-PI", ["SG1B002", "SG1B001"], parameter=struct(alpha=[1;2], beta=[3;1]));
+netB.add_global_controller("agc-PI", ["B002SG1", "B001SG1"], parameter=struct(alpha=[1;2], beta=[3;1]));
 DebugScript.helper.quiet(@() netA.initialize);
 DebugScript.helper.quiet(@() netB.initialize);
 eA = eig_finite(netA.get_sys("Method","Feedback"));
@@ -622,7 +622,7 @@ n4.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 n4.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
 n4.a_Bus{2}.a_Component{1}.add_local_controller("avr-DC1", parameter=struct(kap=20));
 n4.add_global_controller("agc-PI", {n4.a_Bus{1}.a_Component{1}, n4.a_Bus{2}.a_Component{1}}, parameter=struct(alpha=[1;1], beta=[1;1]));
-n4.add_global_controller("agc-PI", "SG1B003", parameter=struct(kI=200));
+n4.add_global_controller("agc-PI", "B003SG1", parameter=struct(kI=200));
 nets{end+1} = n4;  nonunit{end+1} = [];
 for key = ["gen-1axis","gen-droop","load-impedance"]
     nets{end+1} = DebugScript.helper.build_3bus(key);  nonunit{end+1} = []; %#ok<SAGROW>
@@ -671,7 +671,7 @@ end
 net = new_net();
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
-net.add_global_controller("agc-PI", ["SG1B001", "SG1B002"]);
+net.add_global_controller("agc-PI", ["B001SG1", "B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
 [tab_all, c_idxAll, c_idxGCAll, tab_c] = net.get_variable_map();
 % 表は変数 (x, Vre, Vim, u, uc) の後に信号 (y, yc)。線形化の変数は先頭の x, Vre, Vim, u
@@ -711,7 +711,7 @@ assert(any(tab.Owner == s_gc) && all(tab.Bus(tab.Owner == s_gc) == "") && isequa
 % 制御器の状態は機器の直後 (AVR, その下の PSS の順)
 iv = find(tab.Bus == "B001" & tab.Kind == "x");
 avr = net.a_Bus{1}.a_Component{1}.a_LocalController{1};
-assert(isequal(tab.Owner(iv), [repmat("SG1B001",numel(net.a_Bus{1}.a_Component{1}.sv_x),1); ...
+assert(isequal(tab.Owner(iv), [repmat("B001SG1",numel(net.a_Bus{1}.a_Component{1}.sv_x),1); ...
                                repmat(avr.s_tag,numel(avr.sv_x),1); repmat(avr.a_LocalController{1}.s_tag,numel(avr.a_LocalController{1}.sv_x),1)]))
 % 母線・機器の変数の表は系統の表の該当行と同じ順
 for i = 1:numel(net.a_Bus)
@@ -724,8 +724,8 @@ for i = 1:numel(net.a_Bus)
 end
 % 平衡点の値: 機器の平衡点と母線電圧
 gen = net.a_Bus{1}.a_Component{1};
-assert(isequal(res.rv_point(tab.Owner == "SG1B001" & tab.Kind == "x"), gen.rv_Xequilibrium))
-assert(isequal(res.rv_point(tab.Owner == "SG1B001" & tab.Kind == "u"), gen.rv_Uequilibrium))
+assert(isequal(res.rv_point(tab.Owner == "B001SG1" & tab.Kind == "x"), gen.rv_Xequilibrium))
+assert(isequal(res.rv_point(tab.Owner == "B001SG1" & tab.Kind == "u"), gen.rv_Uequilibrium))
 V = net.a_Bus{3}.c_Vequilibrium;
 assert(isequal(res.rv_point(tab.Bus == "B003" & tab.Kind ~= "x" & tab.Kind ~= "u"), [real(V); imag(V)]))
 assert(res.output.l_equilibrium && res.l_success)
@@ -737,7 +737,7 @@ net = new_net();
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
 net.a_Bus{2}.a_Component{1}.add_local_controller("avr-DC1", parameter=struct(kap=20));
-net.add_global_controller("agc-PI", ["SG1B001", "SG1B002"]);
+net.add_global_controller("agc-PI", ["B001SG1", "B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
 res0 = net.linearize();
 res1 = net.linearize("Point", res0.rv_point);
@@ -929,7 +929,7 @@ net = new_net();
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
 net.a_Bus{2}.a_Component{1}.add_local_controller("avr-DC1", parameter=struct(kap=20));
-net.add_global_controller("agc-PI", ["SG1B001", "SG1B002"]);
+net.add_global_controller("agc-PI", ["B001SG1", "B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
 sim  = net.simulate([0,1]);
 res0 = net.linearize();
@@ -954,7 +954,7 @@ end
 net = new_net();
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
-net.add_global_controller("agc-PI", ["SG1B002", "SG1B006"], parameter=struct(kP=100, kI=500));   % SG1B001, SG1B003 は AGC の外
+net.add_global_controller("agc-PI", ["B002SG1", "B006SG1"], parameter=struct(kP=100, kI=500));   % B001SG1, B003SG1 は AGC の外
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
 sim = net.simulate([0,1.5], ev);
@@ -1113,13 +1113,13 @@ catch ME
     assert(contains(ME.message, "more"), ME.message)
 end
 % トリップ中の {sim, t}: 解列した機器の状態が NaN
-sim = n14.simulate([0,2], DebugScript.helper.scenario("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "SG1B002"));
+sim = n14.simulate([0,2], DebugScript.helper.scenario("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "B002SG1"));
 try
     n14.get_sys("Point", {sim, 1.2});
     error("DebugScript:NoError", "トリップ中の Point がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "SG1B002") && contains(ME.message, "trip"), ME.message)
+    assert(contains(ME.message, "B002SG1") && contains(ME.message, "trip"), ME.message)
 end
 assert(n14.linearize("Point", {sim, 0.5}).l_success)
 
@@ -1128,7 +1128,7 @@ assert(n14.linearize("Point", {sim, 0.5}).l_success)
 % トリップの区間だけ NaN の点で止まり、境界は Side に従う。復帰後は機器を含めた通常の点として線形化する
 n14 = new_net();
 DebugScript.helper.quiet(@() n14.initialize);
-sim = n14.simulate([0,2], DebugScript.helper.scenario("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "SG1B002"), Progress="none");
+sim = n14.simulate([0,2], DebugScript.helper.scenario("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "B002SG1"), Progress="none");
 res0 = n14.linearize();
 tab  = res0.tab_variable;
 for c_point = {{sim,1}, {sim,1.2}, {sim,1.5,"before"}}
@@ -1137,7 +1137,7 @@ for c_point = {{sim,1}, {sim,1.2}, {sim,1.5,"before"}}
         error("DebugScript:NoError", "トリップ中の Point がエラーにならない")
     catch ME
         assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
-        assert(contains(ME.message, "SG1B002") && contains(ME.message, "trip"), ME.message)
+        assert(contains(ME.message, "B002SG1") && contains(ME.message, "trip"), ME.message)
     end
 end
 for c_point = {{sim,1,"before"}, {sim,1.5}, {sim,1.8}}
@@ -1344,7 +1344,7 @@ end
 net = new_net();
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
-net.add_global_controller("agc-PI", ["SG1B001", "SG1B002"]);
+net.add_global_controller("agc-PI", ["B001SG1", "B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
 res = net.linearize();
 tab = res.tab_variable;
@@ -1458,7 +1458,7 @@ DebugScript.helper.quiet(@() run_task_linearization());
 % Hessian は機器・制御器のクラスごとの任意の解析。定義していないクラスはクラス名を示すエラー
 net = new_net();
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
-net.add_global_controller("agc-PI", "SG1B001");
+net.add_global_controller("agc-PI", "B001SG1");
 DebugScript.helper.quiet(@() net.initialize);
 obj = {net.a_Bus{1}.a_Component{1}, net.a_Bus{1}.a_Component{1}.a_LocalController{1}, net.a_GlobalController{1}};
 sr_id = ["GUILDA:Component:HessianNotSupported", "GUILDA:LocalController:HessianNotSupported", "GUILDA:GlobalController:HessianNotSupported"];

@@ -127,7 +127,7 @@ classdef GlobalController < PowerSystemModel
             % tags. Anything else stops with GUILDA:GlobalController:InvalidComponent.
             arguments (Input)
                 net (1,1) PowerNetwork   % Network whose components are controlled.
-                tag (1,1) string         % Tag of the controller.
+                tag (1,1) string         % Class header and number of the tag (e.g. "AGC1"); the tag of net is put in front.
             end
             arguments (Input, Repeating)
                 varargin   % Controlled components of net, as Component objects or tags.
@@ -135,7 +135,7 @@ classdef GlobalController < PowerSystemModel
             arguments (Output)
                 obj   % New GlobalController object.
             end
-            obj.s_tag = tag;
+            obj.s_tag = net.s_tag + tag;
             obj.sct_stale = struct("equilibrium", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
             % tab_parameter column dynamics: one row per controlled unit (row names: the unit
             % tags); the sv_para columns are passed as param
@@ -160,7 +160,7 @@ classdef GlobalController < PowerSystemModel
                     else
                         s_arg = class(arg);
                     end
-                    error(msg("GUILDA:GlobalController:InvalidComponent", s_arg, char(tag), char(net.s_tag)))
+                    error(msg("GUILDA:GlobalController:InvalidComponent", s_arg, char(obj.s_tag), char(net.s_tag)))
                 end
 
                 obj.controlledUnits = [obj.controlledUnits; cls_comp(lv_comp)];

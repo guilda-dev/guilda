@@ -57,7 +57,7 @@ function set_network(obj, net)
         for j = 1:n_compi
             a_compij = a_compi{j};
             i_comp   = i_comp+1;
-            obj.sv_component(i_comp) = replace(string(a_compij), s_busi, '');
+            obj.sv_component(i_comp) = regexprep(string(a_compij), "^" + s_busi, "");   % short name without the leading bus tag
             tab_classi = array2table(string(class(a_compij)), "VariableNames","class");
             obj.tab_component{i_comp} = [tab_busindex, tab_classi, a_compij.tab_parameter(:,["operation","graph"])];
             if any( isnan( obj.tab_component{i_comp}.graph{:,["Xaxis","Yaxis"]} ))

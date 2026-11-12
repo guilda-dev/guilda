@@ -9,11 +9,11 @@
 %
 % 手動の確認 (このスクリプトの実行後、sys, b1, b4, b5, g1 がワークスペースにある状態で)
 % コマンドウィンドウ:
-%   1. b1.replace_component(  で Tab → "SG1B001"
-%   2. b5.replace_component(  で Tab → "LRX1B005" と "LPQ2B005" (b5 には機器を 1 つ追加済み)
+%   1. b1.replace_component(  で Tab → "B001SG1"
+%   2. b5.replace_component(  で Tab → "B005LRX1" と "B005LPQ2" (b5 には機器を 1 つ追加済み)
 %   3. sys.a_Bus{5}.remove_component(  で Tab → b5 と同じタグ
-%   4. b1.replace_component("SG1B001",  で Tab → 機器のキーの一覧 ("gen-park" など)
-%   5. b1.replace_component("SG1B001", "gen-park", Controllers=  で Tab → "drop" "keep"
+%   4. b1.replace_component("B001SG1",  で Tab → 機器のキーの一覧 ("gen-park" など)
+%   5. b1.replace_component("B001SG1", "gen-park", Controllers=  で Tab → "drop" "keep"
 %   6. b4.replace_component(  で Tab → 機器のタグはない (文字列の変数が出ることはある)。続けて
 %      "x",  の後で Tab → キーの一覧
 %   7. sys.add_branch(  で Tab → ブランチのキー。sys.add_branch("pi",  の後 → 母線のタグ
@@ -22,10 +22,10 @@
 %  10. g1.remove_local_controller(  で Tab → AVR と PSS のタグ。sys.a_Bus{1}.a_Component{1}.remove_local_controller(
 %      では候補が出ない (波括弧の添字が 2 つ続く式は MATLAB が型を解決しない)
 % エディター (新しいスクリプト、まだ実行しない):
-%  11. sys = network.IEEE9bus;  b1 = sys.a_Bus{1};  b1.replace_component("SG1B001",  と書く
+%  11. sys = network.IEEE9bus;  b1 = sys.a_Bus{1};  b1.replace_component("B001SG1",  と書く
 %      → Ctrl+Space / Tab でキーの一覧 (変数がなくても出る)
 %  12. 同じファイルの  b1.replace_component(  → タグは出ない (変数がまだない)。スクリプトを
-%      実行した後 (またはブレークポイントで止めた状態) なら "SG1B001"
+%      実行した後 (またはブレークポイントで止めた状態) なら "B001SG1"
 % ライブエディター: 11 と 12 を新しいライブスクリプトで同じように確かめる。
 
 evalc('GUILDA.addpath');
@@ -46,8 +46,8 @@ sc_case = {
     "tags of bus 5",                 'b5.replace_component('
     "indexed expression",            'sys.a_Bus{5}.remove_component('
     "function form",                 'replace_component(sys.a_Bus{1}, '
-    "Key after the tag",             'b1.replace_component("SG1B001", '
-    "Controllers=",                  'b1.replace_component("SG1B001", "gen-park", Controllers='
+    "Key after the tag",             'b1.replace_component("B001SG1", '
+    "Controllers=",                  'b1.replace_component("B001SG1", "gen-park", Controllers='
     "empty bus",                     'b4.replace_component('
     "empty bus, after the tag",      'b4.replace_component("x", '
     "Key of add_branch",             'sys.add_branch('

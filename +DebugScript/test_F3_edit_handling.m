@@ -54,7 +54,7 @@ h_dx = comp.f_dx;
 D0 = comp.tab_parameter.dynamics.D;
 
 comp.tab_parameter.dynamics.D = 5;
-s_msg = "dynamics/" + comp.s_tag + "/B002/" + net.s_tag + ": edit D: " + tools.value_text(D0) + " -> 5";
+s_msg = "dynamics/" + comp.s_tag + ": edit D: " + tools.value_text(D0) + " -> 5";
 assert(isequal(comp.sct_stale.equilibrium, s_msg) && isequal(comp.sct_stale.odefcn, s_msg))
 assert(isempty(net.sct_stale.powerflow))                 % 潮流は古くならない
 assert(isequal(h_dx, comp.f_dx) && DebugScript.helper.is_stale(net))   % 編集しただけでは作り直さない
@@ -129,7 +129,7 @@ assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
 % 潮流設定の母線パラメータも同じ
 DebugScript.helper.quiet(@() net.initialize);
 net.a_Bus{2}.tab_parameter.powerflow.V = 1.01;
-assert(contains(net.sct_stale.powerflow, "powerflow/B002/"))
+assert(contains(net.sct_stale.powerflow, "powerflow/B002: "))
 res = DebugScript.helper.quiet(@() net.initialize);
 assert(res.s_solver ~= "equilibrium" && ~DebugScript.helper.is_stale(net))
 
@@ -329,7 +329,7 @@ assert(norm(agc.f_dx(0,x,[],u) - agc.fcn_dx(0,x,[],u,para,60)) < 1e-12, ...
 %% Global controller add marks only the controller and remove marks nothing
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
-agc = net.add_global_controller("agc-PI", "SG1B001");
+agc = net.add_global_controller("agc-PI", "B001SG1");
 assert(isempty(net.sct_stale.powerflow) && DebugScript.helper.is_stale(net))
 assert(agc.sct_stale.equilibrium(1) == agc.s_notInitialized)   % 新しい制御器は未初期化のまま
 res = DebugScript.helper.quiet(@() net.initialize);

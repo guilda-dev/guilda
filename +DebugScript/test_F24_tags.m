@@ -39,9 +39,9 @@ bus = net.a_Bus{2};
 s_comp = comp.s_tag;
 bus.s_tag = "BX";
 
-assert(comp.s_tag == s_comp && endsWith(s_comp, "B002"))
+assert(comp.s_tag == s_comp && startsWith(s_comp, "B002"))
 comp_new = bus.add_component("load-power", "P",-0.1, "Q",-0.1);
-assert(endsWith(comp_new.s_tag, "BX"))
+assert(comp_new.s_tag == "BXLPQ1")
 assert(comp.s_tag == s_comp)
 
 
@@ -63,9 +63,9 @@ assert(isempty(DebugScript.helper.stale(net)))
 %% Messages of later edits name the new tag
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
-net.a_Bus{2}.s_tag = "BX";
+comp.s_tag = "GX";
 comp.tab_parameter.dynamics.D = comp.tab_parameter.dynamics.D + 1;
-assert(all(contains(comp.sct_stale.equilibrium, "/" + comp.s_tag + "/BX/" + net.s_tag + ": edit D: ")))
+assert(all(startsWith(comp.sct_stale.equilibrium, "dynamics/GX: edit D: ")), join(comp.sct_stale.equilibrium, "; "))
 
 
 %% Renaming a network, branch or component makes nothing stale
@@ -137,7 +137,7 @@ assert(net.a_Bus{2}.s_tag == "B001002")
 
 
 %% Automatic tags of the built-in networks are valid variable names
-% 母線 (B001)、機器 (SG1B001 など)、送電線、制御器の自動のタグと、同梱の CSV の FullTag
+% 母線 (B001)、機器 (B001SG1 など)、送電線、制御器の自動のタグと、同梱の CSV の FullTag
 for s_net = ["IEEE9bus", "IEEE14bus", "Ishizaki6Bus", "IEEJ_WEST10"]
     net = DebugScript.helper.quiet(@() network.(s_net)());
     a_Comp = tools.vcellfun(@(b) b.a_Component, net.a_Bus);
@@ -145,6 +145,18 @@ for s_net = ["IEEE9bus", "IEEE14bus", "Ishizaki6Bus", "IEEJ_WEST10"]
     sv_tag = [string(net); string(net.a_Bus); string(net.a_Branch); string(a_Comp); string(a_Lcon); string(net.a_GlobalController)];
     assert(all(arrayfun(@(s) isvarname(char(s)), sv_tag)), s_net + ": " + strjoin(sv_tag(~arrayfun(@(s) isvarname(char(s)), sv_tag)), ", "))
 end
+
+
+%% Labels are the name and the tag of the owner
+% 自動のタグは親のタグを含むので、ラベルは名前 + "_" + 所有者のタグだけで網の中で一意
+evalc("net = network.Tutorial10bus();");
+tab = net.get_variable_map();
+sv_expected = ["delta_B001SG1"; "omega_B001SG1CP2"; "Vre_B001"; ...
+               "Y_omega_B001SG1"; "xi_PowerNetworkAGC1"; "Pmech_B001SG1_PowerNetworkAGC1"];
+assert(all(ismember(sv_expected, tab.Label)), strjoin(sv_expected(~ismember(sv_expected, tab.Label)), ", "))
+lv = ismember(tab.Kind, ["x", "u", "Vre", "Vim"]);
+assert(isequal(tab.Label(lv), tab.Name(lv) + "_" + tab.Owner(lv)))
+assert(net.a_Bus{1}.attach_tag("Vre") == "Vre_B001")
 
 
 % ---- local functions ----

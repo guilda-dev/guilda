@@ -162,13 +162,13 @@ classdef Component < PowerSystemModel
         function obj = Component(s_tag, opt)
             % Create the parameters of a component (called by the subclass constructors).
             arguments (Input)
-                s_tag (1,1) string   % Tag of the component.
-                opt   (1,1) struct   % Settings of add_component (without parameter).
+                s_tag (1,1) string   % Class header and number of the tag, e.g. "SG1".
+                opt   (1,1) struct   % Settings of add_component (without parameter), and BusTag: the tag of the bus, put in front of s_tag.
             end
             arguments (Output)
                 obj   % New Component object.
             end
-            obj.s_tag          = s_tag;
+            obj.s_tag          = opt.BusTag + s_tag;
             obj.sct_stale      = struct("equilibrium", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
             % tab_parameter columns:
             % - dynamics: model parameters, per unit on the system base; the sv_para columns are passed to the model functions

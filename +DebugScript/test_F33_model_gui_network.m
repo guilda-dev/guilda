@@ -31,7 +31,7 @@ tab = page_table(h, "Summary");
 assert(isequal(tab.Item, ["Bus";"Branch";"Component";"GlobalController"]))
 n_comp = sum(cellfun(@(b) numel(b.a_Component), net.a_Bus));
 assert(isequal(tab.Number, [9; numel(net.a_Branch); n_comp; 0]) && n_comp > 0)
-net.add_global_controller("agc-PI", {"SG1B001","SG1B002"});
+net.add_global_controller("agc-PI", {"B001SG1","B002SG1"});
 h.render();
 tab = page_table(h, "Summary");
 assert(tab.Number(4) == 1)

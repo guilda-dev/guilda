@@ -6,7 +6,7 @@ function s_tag = add_input(obj, unit, name, value, time, opt)
 %
 % <@Examples>
 % ```matlab
-% sc.add_input("SG1B002", ["Pmech"; "Vfield"], {0.05; @(t) 0.01*t}, [1, 1.5]);
+% sc.add_input("B002SG1", ["Pmech"; "Vfield"], {0.05; @(t) 0.01*t}, [1, 1.5]);
 % ```
     arguments (Input)
         obj

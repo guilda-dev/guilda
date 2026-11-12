@@ -6,7 +6,7 @@ function s_tag = add_offset(obj, unit, state, value, time, opt)
 %
 % <@Examples>
 % ```matlab
-% sc.add_offset("SG1B001", ["delta"; "omega"], [0.1; 0], 0);
+% sc.add_offset("B001SG1", ["delta"; "omega"], [0.1; 0], 0);
 % ```
     arguments (Input)
         obj

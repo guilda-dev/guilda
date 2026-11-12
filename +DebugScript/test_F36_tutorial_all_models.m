@@ -67,7 +67,7 @@ assert(max(real(eK(~lv_zero))) < -1e-3, "最大の実部 %g", max(real(eK(~lv_ze
 [tab, ~, ~, tab_c] = net.get_variable_map();
 gc = net.a_GlobalController{1};
 sv_unit = string(cellfun(@(c) c.s_tag, gc.controlledUnits, "UniformOutput", false));
-assert(isequal(sort(sv_unit(:)), ["SG1B001"; "SG1B002"; "SG1B003"; "SG1B004"]), join(sv_unit, ", "))
+assert(isequal(sort(sv_unit(:)), ["B001SG1"; "B002SG1"; "B003SG1"; "B004SG1"]), join(sv_unit, ", "))
 for s_unit = reshape(sv_unit, 1, [])
     unit = gc.controlledUnits{sv_unit == s_unit};
     % AGC の出力 Pmech は機器の入力 Pmech へ (調速機は Pmech の入力を持たない)

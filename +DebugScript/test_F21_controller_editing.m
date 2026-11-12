@@ -79,7 +79,7 @@ assert(isempty(gen.a_LocalController))
 avr = gen.add_local_controller("avr-ST1");
 pss = gen.add_local_controller("pss-PSS1");
 assert(gen.a_LocalController{1} == avr && avr.a_LocalController{1} == pss)
-assert(avr.s_tag == "CA1" + gen.s_tag && pss.s_tag == "CP2" + gen.s_tag)
+assert(avr.s_tag == gen.s_tag + "CA1" && pss.s_tag == gen.s_tag + "CP2")
 
 % 既定の LQR の出力は接続時に機器の全入力になり、選んだ入力も通る
 [net, gen] = fresh_network();

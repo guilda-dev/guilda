@@ -6,6 +6,6 @@ function handle_edit(obj, a_layer, tag, log)
         obj            % Layer on the path from the edited layer to the top.
         a_layer        % Edited layer (the owner for a parameter edit).
         tag string     % Kind of edit (see log_edit).
-        log string     % Message: tags of the edited layer, ": ", what was edited.
+        log string     % Message: tag of the edited layer, ": ", what was edited (see log_edit).
     end
 end

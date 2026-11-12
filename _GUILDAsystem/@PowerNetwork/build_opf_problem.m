@@ -28,7 +28,7 @@ function varargout = build_opf_problem(obj, varargin)
 % [prob, x0] = net.build_opf_problem(Method="AC OPF", validate=true);
 % % Add a constraint and solve the modified problem
 % [prob, x0] = net.build_opf_problem(Method="DC OPF");
-% prob.Constraints.Cap = prob.Variables.SG1B001 <= 0.4;
+% prob.Constraints.Cap = prob.Variables.B001SG1 <= 0.4;
 % res = net.optimize_powerflow(Method="DC OPF", Problem=prob, InitialPoint=x0);
 % ```
 %

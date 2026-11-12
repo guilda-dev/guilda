@@ -43,15 +43,15 @@ assert(isequal(string(out_sc.phases.Properties.VariableNames), ["t1","t2","fault
 net = new_ieee14();
 sc1 = Scenario("a");
 sc1.add_disturbance("f", TimeSpan=[1,1.05], FaultBus="B008");
-sc1.add_disturbance("os", TimeSpan=0, OffsetUnit="SG1B001", OffsetState="delta", OffsetValue=0.1);
+sc1.add_disturbance("os", TimeSpan=0, OffsetUnit="B001SG1", OffsetState="delta", OffsetValue=0.1);
 sc2 = Scenario("b");
 sc2.add_fault("B008", [1,1.05], Tag="f");
-sc2.add_offset("SG1B001", "delta", 0.1, 0, Tag="os");
+sc2.add_offset("B001SG1", "delta", 0.1, 0, Tag="os");
 assert(isequaln(sc1.tab_disturbance, sc2.tab_disturbance))
 % 自動のタグは種類ごとに番号を付ける
-sc2.add_trip("SG1B002", [2,3]);
-sc2.add_trip("SG1B003", [2,3]);
-sc2.add_input("SG1B002", "Pmech", 0.01, [1,2]);
+sc2.add_trip("B002SG1", [2,3]);
+sc2.add_trip("B003SG1", [2,3]);
+sc2.add_input("B002SG1", "Pmech", 0.01, [1,2]);
 assert(isequal(sc2.tab_disturbance.Tag.', ["f","os","trip1","trip2","input1"]))
 sc2.remove_disturbance(["trip1","os"]);
 assert(isequal(sc2.tab_disturbance.Tag.', ["f","trip2","input1"]))
@@ -73,7 +73,7 @@ assert(res.rv_t(end) == 1.5 && res.options.Tolerance == 1e-5 && res.options.Abso
 assert(GUILDA.config("TimeSimulation", "Tolerance") ~= 1e-6, "GUILDA.setting は変わらない")
 % 異なる Time や Options のシナリオを一緒に実行するときは呼び出しで与える
 other = Scenario("other", Time=[0,3], Options=struct("Tolerance", 1e-5));
-other.add_offset("SG1B002", "delta", 0.01, 0);
+other.add_offset("B002SG1", "delta", 0.01, 0);
 net.add_scenario(other);
 assert(error_id(@() net.simulate(sc, other)) == "GUILDA:PowerNetwork:ScenarioTimeConflict")
 assert(error_id(@() net.simulate([0,2], sc, other)) == "GUILDA:PowerNetwork:ScenarioOptionConflict")
@@ -136,9 +136,9 @@ sc = Scenario("tags");
 net.add_scenario(sc);
 assert(error_id(@() sc.add_fault("B999", [1,2])) == "GUILDA:Scenario:UnknownFaultBus")
 assert(error_id(@() sc.add_open_branch("EL999", [1,2])) == "GUILDA:Scenario:UnknownOpenBranch")
-assert(error_id(@() sc.add_trip("SG1B999", [1,2])) == "GUILDA:Scenario:UnknownTripUnit")
-assert(error_id(@() sc.add_offset("SG1B001", "nosuch", 0.1)) == "GUILDA:Scenario:UnknownOffsetState")
-assert(error_id(@() sc.add_input("SG1B002", "nosuch", 0.1, [1,2])) == "GUILDA:Scenario:UnknownInputName")
+assert(error_id(@() sc.add_trip("B999SG1", [1,2])) == "GUILDA:Scenario:UnknownTripUnit")
+assert(error_id(@() sc.add_offset("B001SG1", "nosuch", 0.1)) == "GUILDA:Scenario:UnknownOffsetState")
+assert(error_id(@() sc.add_input("B002SG1", "nosuch", 0.1, [1,2])) == "GUILDA:Scenario:UnknownInputName")
 assert(height(sc.tab_disturbance) == 0)
 
 % 系統に属さないシナリオは系統へ追加するときに検査する
@@ -148,7 +148,7 @@ assert(error_id(@() net.add_scenario(loose)) == "GUILDA:Scenario:UnknownFaultBus
 assert(isempty(loose.a_PowerNetwork) && numel(net.a_Scenario) == 1)
 
 % 実行時に、そのときの系統で再び検査する (系統の編集後)
-agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"]);
+agc = net.add_global_controller("agc-PI", ["B001SG1","B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
 sc.add_trip(agc.s_tag, [1,2]);
 [~, flag] = DebugScript.helper.quiet(@() net.simulate([0,2], sc));
@@ -173,9 +173,9 @@ s1 = Scenario("case1", Time=[0,20], Description="fault B008, EL003 and EL004 ope
 s1.add_fault("B008", [0.1,0.17]);
 s1.add_open_branch(["EL003";"EL004"], [0.17,20]);
 s2 = Scenario("case2");
-s2.add_offset("SG1B001", ["delta";"omega"], [0.1; 1e-3], 0);
-s2.add_input("SG1B002", ["Pmech";"Vfield"], {0.05; 0.1/3}, [1,1.5], Tag="in");
-s2.add_disturbance("both", TimeSpan=[2,2.05], FaultBus=["B003";"B005"], TripUnit="SG1B003");
+s2.add_offset("B001SG1", ["delta";"omega"], [0.1; 1e-3], 0);
+s2.add_input("B002SG1", ["Pmech";"Vfield"], {0.05; 0.1/3}, [1,1.5], Tag="in");
+s2.add_disturbance("both", TimeSpan=[2,2.05], FaultBus=["B003";"B005"], TripUnit="B003SG1");
 s3 = Scenario("empty", Description="no disturbance, a comma, and ""quotes""");
 s_file = tempname + ".csv";
 c_rm = onCleanup(@() delete(s_file));
@@ -205,7 +205,7 @@ assert(error_id(@() Scenario.import_csv(s_file, Network=net)) == "GUILDA:PowerNe
 
 % 関数ハンドルは CSV に書けない
 s4 = Scenario("fun");
-s4.add_input("SG1B002", "Pmech", @(t) 0.01*t, [1,2]);
+s4.add_input("B002SG1", "Pmech", @(t) 0.01*t, [1,2]);
 assert(error_id(@() Scenario.export_csv(s_file, s4, Overwrite=true)) == "GUILDA:Scenario:CsvFunctionHandle")
 % 必要な列は Scenario だけ。未知の列は警告して無視する。空の Tag は event<n>
 writelines(["Scenario,Tag,TimeStart,FaultBus,TimeEnd,Memo"; "m,,1,B008,1.05,note"; "m,f2,2,B003;B005,2.05,"], s_file);
@@ -234,7 +234,7 @@ n9.add_scenario({short, long});
 [r_short, f_short] = DebugScript.helper.quiet(@() n9.simulate(short));
 v = short.judge(r_short);
 assert(f_short == 1 && v.Verdict == "stable" && isnan(v.Time) && isempty(v.Units), v.Verdict)
-assert(v.Reference == "SG1B001" && v.Threshold == 360 && v.MaxAngle < 360)
+assert(v.Reference == "B001SG1" && v.Threshold == 360 && v.MaxAngle < 360)
 
 ws = warning("off", "all");  c_ws = onCleanup(@() warning(ws));
 r_long = DebugScript.helper.quiet(@() n9.simulate(long));
@@ -245,8 +245,8 @@ assert(v.Verdict == "out-of-step" && v.Time > 1 && ~isempty(v.Units) && v.MaxAng
 % 基準: 重心 (COI) と機器のタグ
 v = Scenario.out_of_step(r_short, Reference="COI");
 assert(v.Verdict == "stable" && v.Reference == "COI")
-v = Scenario.out_of_step(r_long, Reference="SG1B002");
-assert(v.Verdict == "out-of-step" && v.Reference == "SG1B002")
+v = Scenario.out_of_step(r_long, Reference="B002SG1");
+assert(v.Verdict == "out-of-step" && v.Reference == "B002SG1")
 assert(error_id(@() Scenario.out_of_step(r_short, Reference="B001")) == "GUILDA:Scenario:UnknownReference")
 % しきい値を小さくすると短い地絡でも脱調と判定する
 v = Scenario.out_of_step(r_short, Threshold=1);
@@ -280,12 +280,12 @@ ev = DebugScript.helper.quiet(@() ODEevent("fault", net, "TimeSpan", [1,1.05], "
 assert(string(DebugScript.helper.msg_id()) == "GUILDA:Deprecated:ODEevent")
 assert(isa(ev, "Scenario") && ev.a_PowerNetwork == net && ev.s_tag == "fault" && ev.tab_disturbance.Tag == "fault")
 lastwarn("");
-ev2 = DebugScript.helper.quiet(@() ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002"));
+ev2 = DebugScript.helper.quiet(@() ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "B002SG1"));
 assert(isempty(lastwarn()), "警告は 1 回だけ")
 r_old = DebugScript.helper.quiet(@() net.simulate([0,2], ev, ev2));
 sc = Scenario("new");
 sc.add_fault("B008", [1,1.05], Tag="fault");
-sc.add_trip("SG1B002", [1,1.2], Tag="trip");
+sc.add_trip("B002SG1", [1,1.2], Tag="trip");
 net.add_scenario(sc);
 r_new = DebugScript.helper.quiet(@() net.simulate([0,2], sc));
 assert(isequaln(r_old.rm_variable, r_new.rm_variable) && isequal(r_old.output.phases, r_new.output.phases))

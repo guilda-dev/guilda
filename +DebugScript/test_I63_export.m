@@ -8,7 +8,7 @@ net = DebugScript.helper.build_ieee14();
 avr1 = net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 pss1 = net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
 avr2 = net.a_Bus{2}.a_Component{1}.add_local_controller("avr-ST1");
-agc  = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"]);
+agc  = net.add_global_controller("agc-PI", ["B001SG1","B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.1,0.15], "FaultBus", "B008");
 s_dir = tempname;  mkdir(s_dir);
@@ -64,8 +64,8 @@ for k = 1:height(tab_ctrl)
     assert(max(abs(tab.(tab_ctrl.Label(k)) - rv)) < 1e-10, tab_ctrl.Label(k))
 end
 % 既存の列はそのまま
-assert(sv(1) == "t" && any(sv == "SG1B001_omega") && any(sv == "B008_Q"))
-assert(max(abs(tab.SG1B001_omega - sol.odeResults.Bus(1).Component(1).X.omega)) < 1e-10)
+assert(sv(1) == "t" && any(sv == "B001SG1_omega") && any(sv == "B008_Q"))
+assert(max(abs(tab.B001SG1_omega - sol.odeResults.Bus(1).Component(1).X.omega)) < 1e-10)
 
 
 %% Network without controllers keeps its columns

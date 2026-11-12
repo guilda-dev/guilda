@@ -51,7 +51,7 @@ DebugScript.helper.quiet(@() net.initialize);
 txt = evalc("net.info");
 assert(contains(txt, "Total Buses: 14"))
 assert(contains(txt, "Total Branches: " + numel(net.a_Branch)))
-assert(contains(txt, "SG1B001"))
+assert(contains(txt, "B001SG1"))
 
 % 表示する項目は選べる
 txt = evalc("net.info(""parameter"", false, ""equilibrium"", false)");
@@ -368,7 +368,7 @@ net = DebugScript.helper.build_ieee14();
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
 net.a_Bus{2}.a_Component{1}.add_local_controller("local-LQR");
-net.add_global_controller("agc-PI", "SG1B003");
+net.add_global_controller("agc-PI", "B003SG1");
 DebugScript.helper.quiet(@() net.initialize);
 res = net.linearize();
 sim = net.simulate([0,1], Progress="none");

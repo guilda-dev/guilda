@@ -28,7 +28,7 @@ para = net.a_Bus{1}.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", net.a_Bus{1}.
 V = para.tab_parameter.V;
 para.tab_parameter.V = V + 0.01;
 assert(para.tab_parameter.V == V + 0.01)
-assert(isequal(DebugScript.helper.stale(net), "powerflow/B001/" + net.s_tag + ": edit V: " + tools.value_text(V) + " -> " + tools.value_text(V + 0.01)))
+assert(isequal(DebugScript.helper.stale(net), "powerflow/B001: edit V: " + tools.value_text(V) + " -> " + tools.value_text(V + 0.01)))
 assert(isequal(net.sct_stale.powerflow, DebugScript.helper.stale(net)))
 
 %% Same value is not an edit

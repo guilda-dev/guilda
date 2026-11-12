@@ -17,8 +17,8 @@ function comp = replace_component(obj, s_tag, Key, parameter, opt)
 %
 % <@Examples>
 % ```matlab
-% net.a_Bus{1}.replace_component("SG1B001", "gen-classical");
-% net.a_Bus{1}.replace_component("SG1B001", "gen-1axis", Controllers="keep");
+% net.a_Bus{1}.replace_component("B001SG1", "gen-classical");
+% net.a_Bus{1}.replace_component("B001SG1", "gen-1axis", Controllers="keep");
 % ```
 %
 % See also Bus.add_component, Bus.remove_component
@@ -59,15 +59,15 @@ function comp = replace_component(obj, s_tag, Key, parameter, opt)
     opt_comp.OPFcost_startup  = tab_opf.startup;
     opt_comp.OPFcost_shutdown = tab_opf.shutdown;
 
-    % keep the number of the replaced component: "<header><number><bus tag>"
-    s_num     = regexp(extractBefore(comp_pre.s_tag, strlength(comp_pre.s_tag)-strlength(obj.s_tag)+1), "\d+$", "match", "once");
-    s_index   = string(s_num)+obj.s_tag;
+    % keep the number of the replaced component: "<bus tag><header><number>"
+    s_index   = string(regexp(extractAfter(comp_pre.s_tag, strlength(obj.s_tag)), "\d+$", "match", "once"));
 
     
     % get component function
     dic    = GUILDA.keymap("Component");
     mkInst = str2func(dic(string(Key)));
     s_controllers = opt.Controllers;
+    opt_comp.BusTag = obj.s_tag;
     comp = mkInst(s_index, parameter, opt_comp);
     a_con = controllers_of(comp_pre);
     if s_controllers == "keep"

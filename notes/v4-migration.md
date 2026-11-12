@@ -77,6 +77,16 @@
 > - **潮流計算の解の数値。** `Tolerance` の既定は全手法で最大 P/Q 不平衡 1e-8 [pu] です(以前は手法ごとに意味と既定値が異なり、`"dynamic"` は 1e-5、`"fsolve"` は fsolve の既定)。また既定の `WarmStart=true` では、2 回目以降の計算は同じ系統の前回の収束解から始まります。解は `Tolerance` の範囲で変わり、`"dynamic"` では以前より代数解に近くなります。初期値を固定したい計算は `WarmStart=false`(フラットスタート)を渡してください(1.8)。
 > - **`@GUILDA/user/` の改名した設定キーは無視されます。** OptimalPowerFlow の `OptimalityTolerance`、ContinuationPowerFlow の `MaxIterations`、TimeSimulation の `RelativeTolerance` は読まれず(表示だけで警告なし)、新しいキー `Tolerance` / `MaxIteration` の既定値で計算します。新しいキー名で書き直してください(「解析の設定は GUILDA.setting」の節)。
 > - **`local_LQR` のゲインは系統の Hz の編集に追従します。** Hz の編集後の `get_sys` や `simulate` で、保持している平衡点から `K` を設計し直します。以前は古い Hz の `K` のままだったので、Hz を編集するスクリプトでは数値が変わります(1.6)。
+> - **Automatic tags read parent first, and variable labels are
+>   `<name>_<s_tag>`.** A component on bus `B001` is `B001SG1` (was
+>   `SG1B001`), its AVR `B001SG1CA1` (was `CA1SG1B001`), a global controller
+>   `PowerNetworkAGC1` (was `AGC1PowerNetwork`). Every label (`StateName`,
+>   `InputName`, `OutputName`, the `Label` column of `get_variable_map`, the
+>   controller columns of `Export`) ends with the tag of its owner only:
+>   `delta_SG1B001_B001_IEEE9bus` is now `delta_B001SG1`. A script that
+>   looks a tag or a label up by a hard-coded string finds nothing; `ismember`
+>   and `==` return false without an error. The messages in `sct_stale` name
+>   the edited layer only, and `LayerPackage.get_tag` is removed (1.23).
 
 ---
 
@@ -205,7 +215,7 @@ v3 の編集ログ(`tab_editLog`)はありません。各層は、古くなっ�
 | `Bus`、`Branch` | なし |
 
 - **初期値。** 各タグは作成時に `"initialize has not been run"` を持ちます。各クラスは自分のフィールドにだけ追加し、自分のコードで空にします。
-- **メッセージ。** 「編集した層から上のタグを `/` でつないだもの」+ `": "` + 編集内容(値を含む)。例: `"dynamics/SG1B001/B001/IEEE9bus: edit D: 2 -> 2.1"`。重複は解析のエラー表示で除きます。
+- **メッセージ。** 「編集した層のタグ」+ `": "` + 編集内容(値を含む)。パラメータの編集は「パラメータの区分 `/` 所有者のタグ」、それ以外は編集した層のタグです(1.23)。例: `"dynamics/B001SG1: edit D: 2 -> 2.1"`。重複は解析のエラー表示で除きます。
 - **編集の種類(タグ)。** パラメータのグループ名(`dynamics`、`powerflow`、`base`、`operation`、`OPF`、`graph`)、`Topology`、`Slack`、`Tag`。
 
 | 編集 | 古くなるもの |
@@ -244,7 +254,7 @@ v3 の編集ログ(`tab_editLog`)はありません。各層は、古くなっ�
 
 ```matlab
 net.a_Bus{2}.tab_parameter.powerflow.V = 1.02;
-net.sct_stale.powerflow      % "powerflow/B002/IEEE9bus: edit V: 1.025 -> 1.02"
+net.sct_stale.powerflow      % "powerflow/B002: edit V: 1.025 -> 1.02"
 net.simulate([0 10]);        % error GUILDA:SolverODE:Stale
 net.initialize();
 net.simulate([0 10]);        % OK
@@ -345,7 +355,7 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
     `[~, ~, ~, tab_connection] = net.get_variable_map()` (rows of `Kind`
     `"global"`, see 1.12). `add_global_controller` prints these connections
     as an INFO line (`Source -> Target` by Label, e.g.
-    `Pmech_SG1B001_AGC1IEEE9bus -> Pmech_SG1B001_B001_IEEE9bus`). Nothing is
+    `Pmech_B001SG1_IEEE9busAGC1 -> Pmech_B001SG1`). Nothing is
     stored on the controller (`gc.sv_route` is removed). When
     `comp.add_local_controller` or `comp.remove_local_controller` changes
     where an output of a global controller of that component goes, the edit
@@ -874,7 +884,7 @@ Option names:
   `port` is `[Vre; Vim]` in and `[Ire; Iim]` out for `port="V2I"`, the
   inverse for `"I2V"`. Controllers are listed depth first. States are
   never outputs and every name is unique; an output named like a state of
-  its owner is `Y_<name>` (e.g. `Y_omega_SG1B001_B001_PowerNetwork`). A controller input
+  its owner is `Y_<name>` (e.g. `Y_omega_B001SG1`). A controller input
   adds to the internal signal it drives (as `u_mac` does). `full` is
   ignored. The `I2V` outputs `y` now account for V being an output, and
   the outputs of a component with controllers keep their tags.
@@ -1190,7 +1200,7 @@ there.
 
 - キー: `avr-ST1`, `avr-DC1`, `pss-PSS1`, `gov-LPT1`, `gov-LPT3`, `gov-LPT4`, `local-LQR`(局所)、`agc-PI`(大域)。一覧は起動時に `GUILDA.dictionary` から作ります(`add_component` と同じ)。`controller.local_LQR_retrofit` は抽象クラスのままでキーはありません。
 - `parameter` はコンストラクタの Name=Value の struct か 1 行の table です。省いたものはクラスの既定値になります。
-- 両メソッドは作った制御器を返します。タグは自動で付きます。局所: 種類の頭文字・番号・機器のタグ(例: `CA1SG1B001`、`CP2SG1B001`)。大域: `AGC`・番号・系統のタグ。番号は使用中の最大 + 1 です。同梱の系統(`network.IEEE9bus` など)の制御器のタグも変わりました。
+- 両メソッドは作った制御器を返します。タグは自動で付きます。局所: 機器のタグ・種類の頭文字・番号(例: `B001SG1CA1`、`B001SG1CP2`)。大域: 系統のタグ・`AGC`・番号(例: `PowerNetworkAGC1`)(1.23)。番号は使用中の最大 + 1 です。同梱の系統(`network.IEEE9bus` など)の制御器のタグも変わりました。
 - 制御器クラスの `key` はモデルのキー(機器の `"gen-park"` と同じ)になり、付ける場所を表していた役割(`"avr"`, `"pss"`, `"local"`, `"governor"`, `"agc"`)は定数プロパティ `s_role` に移りました。新しい制御器クラスは具象クラスに `key`、自身か基底クラスに `s_role` を定義し、コンストラクタを `(tag, Name=Value)`(大域は `(net, tag, 機器..., Name=Value)`)にします。追加後に `GUILDA` を実行するとキーの一覧に載ります。
 - `GUILDA:Component:SharedController` はなくなりました。呼び出しのたびに新しい制御器を作るので、別の機器に付いた制御器を付け直すことは起きません。外した制御器を付け直すこともできません(同じキーでもう一度追加します)。`InvalidControllerKey` と `PssParentKey` は `s_role` を調べます。
 - `add_local_controller.m` と `add_global_controller.m` は、ほかのキーで作るメソッドと同じく通常の追跡対象のファイルです(1.22)。
@@ -1206,6 +1216,71 @@ there.
 - **コード補完。** `_GUILDAsystem/resources/functionSignatures.json`(追跡対象)が、キーで作るメソッドと `remove_component`・`remove_branch`・`remove_bus`・`remove_global_controller`・`remove_local_controller` の補完候補を与えます。`Key` にはそのカテゴリのキー、タグの引数にはそのオブジェクトの今のタグ(例: `bus.replace_component(` で、その母線の機器のタグ)が出ます。JSON の項目は `arguments` ブロックの候補を置き換えるため、全引数を含みます。
 - **開発者向け。** これらのメソッドの `arguments` ブロックを変えたら `GUILDA.update_keymap(Signature=true)` で JSON を作り直します(内容が変わったときだけ書きます)。名前・種類・クラス・既定値は `?Class` のメタデータから、説明は各引数の行末のコメントから取ります。テスト `test_F34_signatures` が JSON と `arguments` ブロックの一致を確かめます。
 - タグの候補は、変数がワークスペースにあるときだけ出ます(エディターでコードを実行する前は出ません)。キーの候補は常に出ます。
+
+### 1.23 Parent-first automatic tags; variable labels are `<name>_<s_tag>` (`get_tag` removed)
+
+**Automatic tags read parent first** (2026-11-12): the tag of the parent,
+then the class header, then the number. Buses (`B001`) and branches
+(`EL004`) have no parent part and do not change.
+
+| Object | before | now |
+| --- | --- | --- |
+| component | `SG1B001`, `LPQ1B008` | `B001SG1`, `B008LPQ1` |
+| local controller | `CA1SG1B001` | `B001SG1CA1` |
+| local controller under the AVR (PSS) | `CP2SG1B001` | `B001SG1CP2` |
+| global controller | `AGC1PowerNetwork` | `PowerNetworkAGC1` |
+
+- The numbering is the same: per bus for components; across all the local
+  controllers of a component, nested ones included; per network for global
+  controllers. The number suffix `%.3d` that `set.s_tag` adds to a tag in
+  use stays at the end.
+- `Bus.replace_component` keeps the number of the replaced component
+  (`B001SG2` replaced by a load is `B001LPQ2`). A component added to a renamed bus takes the new
+  bus tag first (`BXSG1`); the tags of existing children do not follow.
+- `tools.next_tag_number(sv_tags, s_prefix)` counts the tags that start
+  with the parent tag (it took a suffix before).
+- The model constructors still pass the header and the number (`"SG" +
+  index`, `"CA" + tag`, `"AGC" + tag`). The base classes put the parent tag
+  in front: `Component` takes the bus tag from the field `BusTag` of its
+  options (set by `add_component` and `replace_component`), and
+  `GlobalController` takes the tag of its network, so the messages of the
+  constructors already name the full tag. `add_local_controller` puts the
+  component tag in front after the constructor.
+
+**Labels** made by `attach_tag` (the names of states, inputs and outputs in
+`get_sys`, `linearize` and `ResultLIN`, the `Label` column and the
+`Source` / `Target` columns of `get_variable_map`, the INFO line of
+`add_global_controller`, the controller columns of `ResultODE.Export`) are
+the name, `"_"` and the tag of the owner layer. Before, the tags of all the
+parents up to the network were appended. A generated tag starts with the tag
+of its parent, so the labels stay unique within a network.
+
+| | v4 before | now |
+| --- | --- | --- |
+| component state | `delta_SG1B001_B001_PowerNetwork` | `delta_B001SG1` |
+| local controller state | `omega_CP2SG1B001_CA1SG1B001_SG1B001_B001_PowerNetwork` | `omega_B001SG1CP2` |
+| bus voltage | `Vre_B001_PowerNetwork` | `Vre_B001` |
+| output named like a state | `Y_omega_SG1B001_B001_PowerNetwork` | `Y_omega_B001SG1` |
+| global controller state | `xi_AGC1PowerNetwork_PowerNetwork` | `xi_PowerNetworkAGC1` |
+| global controller signal of a unit | `Pmech_SG1B001_AGC1PowerNetwork_PowerNetwork` | `Pmech_B001SG1_PowerNetworkAGC1` |
+
+- The signals of a global controller per controlled unit are
+  `gc.attach_tag(name + "_" + unit tag)`, as before.
+- No compatibility: an old tag or a label with the old suffix is not
+  recognized (e.g. in `add_global_controller`, `Scenario.add_offset`,
+  `get_ss(Output=...)` or `sys(name, name)`). Use `string(obj)` or
+  `obj.attach_tag(name)`, or read the labels from `get_variable_map`,
+  instead of writing them out.
+- Messages of edits (`log_edit`, `sct_stale`, the `Stale` errors) name the
+  edited layer only: `"<tag>: <log>"`, and for a parameter
+  `"<group>/<owner tag>: <log>"` (`powerflow/B001: edit V: 1.06 -> 1.02`,
+  before `powerflow/B001/IEEE14bus: ...`). A layer renamed after it was
+  added is named by its new tag; its children keep their tags.
+- Removed: `LayerPackage.get_tag` (private; it built the parent chain).
+- Known limit: a user-set tag equal to the tag of a non-sibling layer (two
+  components tagged `G1` on different buses) gives the same labels on both;
+  the lookups by `Owner` do not tell them apart either. Keep tags unique in
+  the network.
 
 ---
 

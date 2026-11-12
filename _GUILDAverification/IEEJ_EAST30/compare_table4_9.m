@@ -11,7 +11,7 @@ function [tab, r_agree] = compare_table4_9(opt)
 % For each section the network is built (network.IEEJ_EAST30 with Section and Governor),
 % the scenarios are imported into it with Scenario.import_csv(..., Network=net), and each
 % selected scenario is simulated and judged by Scenario.out_of_step with the reference
-% SG1B3010 (G18, the slack) and the threshold 360 degrees. A simulation that stops early
+% B3010SG1 (G18, the slack) and the threshold 360 degrees. A simulation that stops early
 % without an out-of-step ("incomplete") is run again with the relative tolerance
 % RetryTolerance; if it is incomplete again the case does not agree.
 %
@@ -67,7 +67,7 @@ function [tab, r_agree] = compare_table4_9(opt)
     tab.Tolerance = nan(n,1);
     tab.Agree     = false(n,1);
 
-    s_ref   = "SG1B3010";   % G18, the slack bus B3010
+    s_ref   = "B3010SG1";   % G18, the slack bus B3010
     s_sec   = "";
     for k = 1:n
         if tab.Section(k) ~= s_sec

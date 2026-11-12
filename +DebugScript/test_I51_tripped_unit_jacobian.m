@@ -11,20 +11,20 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 inwin = @(t,a,b) t > a & t < b;
 % 第 1 区間 [0,1] の代数変数を大きく解き直す入力
-offset = @(n, val) DebugScript.helper.scenario("offset", n, "TimeSpan", 0, "OffsetUnit", "SG1B002", ...
+offset = @(n, val) DebugScript.helper.scenario("offset", n, "TimeSpan", 0, "OffsetUnit", "B002SG1", ...
                                "OffsetState", "delta", "OffsetValue", val);
 
 
 c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
 
 %% Jacobian matches the right-hand side while a generator is tripped
-err = jacobian_errors(net, [0,2], {DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003")});
+err = jacobian_errors(net, [0,2], {DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "B003SG1")});
 assert(numel(err) == 3)
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Jacobian matches the right-hand side while a load is tripped
-err = jacobian_errors(net, [0,2], {DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "LPQ2B003")});
+err = jacobian_errors(net, [0,2], {DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "B003LPQ2")});
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
@@ -34,21 +34,21 @@ assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Jacobian matches the right-hand side with a tripped unit under a global controller
-agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"], parameter=struct(kP=100, kI=500));
+agc = net.add_global_controller("agc-PI", ["B001SG1","B002SG1"], parameter=struct(kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
-err = jacobian_errors(net, [0,2], {DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002")});
+err = jacobian_errors(net, [0,2], {DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "B002SG1")});
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Jacobian matches the right-hand side with local controllers on other units
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
-err = jacobian_errors(net, [0,2], {DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002")});
+err = jacobian_errors(net, [0,2], {DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "B002SG1")});
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Trip does not depend on the tolerance
-ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003");
+ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "B003SG1");
 r1 = net.simulate([0,2], ev).odeResults;
 r2 = net.simulate([0,2], ev, Tolerance=1e-8, AbsoluteTolerance=1e-8).odeResults;
 X1 = r1.Bus(3).Component(1).X;
@@ -60,7 +60,7 @@ assert(abs(d1 - d2) < 1e-3, "復帰時の delta: " + d1 + ", " + d2)
 
 
 %% MaxStep applies in the trip phase
-ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003");
+ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "B003SG1");
 opt = matlab.ode.options.ODE15s;
 opt.MaxStep = 1e-3;
 r = net.simulate([0,2], ev, SolverOptions=opt).odeResults;
@@ -95,7 +95,7 @@ assert(strlength(str) > 0)
 
 %% Phases after an offset start without its initial slope
 % 次の区間で状態の数が変わっても、前の区間の InitialSlope を持ち越さない
-tr = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.5,0.6], "TripUnit", "SG1B003");
+tr = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.5,0.6], "TripUnit", "B003SG1");
 [~, flag] = net.simulate([0,1], offset(net,1), tr);
 assert(flag == 1)
 
@@ -124,12 +124,12 @@ assert(contains(ME.message, "phase 1") && contains(ME.message, "differential sta
 
 %% Trip does not warn about the initial condition
 lastwarn("");
-net.simulate([0,2], DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003"));
+net.simulate([0,2], DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "B003SG1"));
 assert(isempty(lastwarn()), lastwarn())
 
 
 %% Failed initial condition stops with flag -1 naming the phase
-ev = DebugScript.helper.scenario("nan", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", NaN);
+ev = DebugScript.helper.scenario("nan", net, "TimeSpan", [1,1.2], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", NaN);
 w = warning("off", "GUILDA:PowerNetwork:SimulationIncomplete");
 c_warn = onCleanup(@() warning(w));
 [~, flag, output] = net.simulate([0,2], ev);

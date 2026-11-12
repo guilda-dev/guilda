@@ -11,7 +11,7 @@ DebugScript.helper.quiet(@() net.initialize);
 s_id = "GUILDA:PowerNetwork:SimulationIncomplete";
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 % 第 1 区間 [0,1] の代数変数を大きく解き直す入力
-offset = @(n) DebugScript.helper.scenario("offset", n, "TimeSpan", 0, "OffsetUnit", "SG1B002", ...
+offset = @(n) DebugScript.helper.scenario("offset", n, "TimeSpan", 0, "OffsetUnit", "B002SG1", ...
                           "OffsetState", "delta", "OffsetValue", 1);
 
 
@@ -39,7 +39,7 @@ assert(contains(s_msg, output.message))
 
 %% Stop by the solver warns too
 % 入力が t = 2.5 で発散するとソルバーが止まる
-ev_in = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) 1/(1.5-t));
+ev_in = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", @(t) 1/(1.5-t));
 lastwarn("");
 [~, flag, output] = net.simulate([0,4], ev_in);
 [s_msg, s_got] = lastwarn(); s_got = DebugScript.helper.msg_id(s_msg, s_got);
@@ -95,7 +95,7 @@ assert(output.tEnd < 5)
 
 %% Limit includes the time of the initial condition
 % 区間ごとに初期条件を計算してから solve する。その後で計時を始め直さない
-c_ev = {offset(net), DebugScript.helper.scenario("trip", net, "TimeSpan", [0.5,0.6], "TripUnit", "SG1B003")};
+c_ev = {offset(net), DebugScript.helper.scenario("trip", net, "TimeSpan", [0.5,0.6], "TripUnit", "B003SG1")};
 assert(run_with_delay(net, [0,1], c_ev, 0, Inf) == 1)
 [flag, output] = run_with_delay(net, [0,1], c_ev, 1, 0.9);
 assert(flag == 0, "flag " + flag)
