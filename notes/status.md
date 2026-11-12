@@ -173,7 +173,7 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - 収束しないときの ID は `GUILDA:PowerNetwork:PowerflowNotConverged` です。
 - **テスト(MATLAB R2026a):** small はコードの手順ごと(`6ecc6903`、`847e5b76`、`335c9162`)に FAIL 0(`335c9162` は I69 の修正後に該当テストを再実行)。最後の small 513 件、PASS 511 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1。medium 688 件、PASS 686 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、545 s。追加の 3 手順(`96f131f9` Export の削除、`737c287d` 既定 Format、`254a2602` `Branch.struct`)も small を手順ごとに実行して 513 件中 FAIL 0、最後に medium 688 件、PASS 686 / KNOWN 1 / FAIL 0 / SKIP 1、525 s。その後の 2 手順(`eefdce1b` `export` への改名、n×4 の配列を使う `initialize`)も small を手順ごとに FAIL 0、最後に medium 688 件、PASS 686 / KNOWN 1 / FAIL 0 / SKIP 1、512 s。改名した `export` を使う large のテスト 5 件(F2・F4・F5・F6 の Plot/Export)は個別に実行して PASS。large は未実行。
 - 枝潮流は `Branch.struct` がスナップショットに加える `cm_Y` から求めます(案 C)。
-- **要判断:** powerflow-structure.md の「5.」の表示メソッドの一覧。
+- `ResultPF` に `disp_summary`・`disp_bus`・`disp_branch`・`disp_violation` と `plot_voltage`(Vmin・Vmax の線)を追加し、すべての結果クラスの `Plot` を `plot_*` に改名しました(2026-11-12)。`plot_branch`・`plot_convergence`・`plot_network` は後で実装します。
 - **未対応:** `_GUILDAtutorial/*.mlx`(保留中のチュートリアルの作業)。`PowerNetwork.n_revY`・`n_revPF` はどのソルバーも読まなくなったので、削除を検討します。
 
 ## 未決事項

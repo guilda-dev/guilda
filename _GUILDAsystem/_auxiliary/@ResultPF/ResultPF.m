@@ -36,7 +36,11 @@ classdef ResultPF < ResultBase
 % result.tab_bus           % Varg, V, P, Q, Vphasor, Iphasor of each bus
 % result.tab_branch        % flows and losses of each branch
 % result.tab_violation     % violated operating limits (0 rows when none)
-% result.plot_voltage();           % voltage profile
+% result.disp_summary();           % outcome, sums, |V| range, violations
+% result.disp_bus(Unit="SI");      % bus table in kV, MW, Mvar
+% result.disp_branch(Sort="loss"); % branch flows, largest loss first
+% result.disp_violation();         % violated operating limits by kind
+% result.plot_voltage();           % voltage profile with Vmin / Vmax
 % result.export("pf.csv", Table="branch");
 % ```
 %
@@ -96,6 +100,10 @@ classdef ResultPF < ResultBase
         end
 
         fig = plot_voltage(obj, opt)
+        varargout = disp_summary(obj)
+        varargout = disp_bus(obj, opt)
+        varargout = disp_branch(obj, opt)
+        varargout = disp_violation(obj, opt)
         s_file = export(obj, filename, opt)
     end
 end

@@ -562,12 +562,14 @@
       <li><code>result</code>: the form of <code>Format</code>; <code>"V"</code>, <code>"powerflow(mat)"</code> and <code>"powerflow(tab)"</code> are listed in the <a href="#entry">options table</a></li>
       <li><code>Format="GUILDAorigin"</code> (default): a <code>ResultPF</code> (subclass of <code>ResultBase</code>) with the properties below</li>
       <li>Rows follow the order of <code>net.a_Bus</code> and <code>net.a_Branch</code>; row names are the tags</li>
+      <li>Views that read only these properties: <code>disp_summary</code>, <code>disp_bus</code> (<code>Bus</code>, <code>Unit</code> "pu"/"SI", <code>Sort</code>), <code>disp_branch</code> (<code>Branch</code>, <code>Unit</code>, <code>Sort</code> "tag"/"loss"/"loading"), <code>disp_violation</code> (<code>Class</code>) and <code>plot_voltage</code> (<code>Parent</code>, <code>Quantity</code>, <code>Limit</code>: the finite Vmin and Vmax of the snapshot); a <code>disp_*</code> method returns its text when one output is requested</li>
       <li>Sizes for <code>network.IEEE9bus</code>: <code>tab_bus</code> 9×6, <code>tab_branch</code> 9×8, <code>cm_Vhistory</code> 9×n_iter (one column per iteration) or 9×n_time (dynamic)</li>
     </ul>
     <ul lang="ja">
       <li><code>result</code> の形は <code>Format</code> で決まります。<code>"V"</code>、<code>"powerflow(mat)"</code>、<code>"powerflow(tab)"</code> は<a href="#entry">オプションの表</a>にあります。</li>
       <li><code>Format="GUILDAorigin"</code>（既定）では、<code>result</code> は <code>ResultBase</code> のサブクラスである <code>ResultPF</code> で、次のプロパティを持ちます。</li>
       <li>行は <code>net.a_Bus</code> と <code>net.a_Branch</code> の順に並び、行名はタグです。</li>
+      <li>これらのプロパティだけを読む表示のメソッドがあります。<code>disp_summary</code>、<code>disp_bus</code>（<code>Bus</code>、<code>Unit</code> "pu"/"SI"、<code>Sort</code>）、<code>disp_branch</code>（<code>Branch</code>、<code>Unit</code>、<code>Sort</code> "tag"/"loss"/"loading"）、<code>disp_violation</code>（<code>Class</code>）、<code>plot_voltage</code>（<code>Parent</code>、<code>Quantity</code>、<code>Limit</code>。スナップショットの有限の Vmin と Vmax を描きます）です。<code>disp_*</code> は、出力を 1 つ求めると文字列を返します。</li>
       <li><code>network.IEEE9bus</code> では、<code>tab_bus</code> が 9×6、<code>tab_branch</code> が 9×8、<code>cm_Vhistory</code> が 9×n_iter（反復ごとに 1 列）、dynamic では 9×n_time になります。</li>
     </ul>
     <table class="dg-table fpf-data">
