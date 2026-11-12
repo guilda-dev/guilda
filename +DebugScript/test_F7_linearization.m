@@ -1285,23 +1285,17 @@ for c_arg = {{}, {"NonUnit", 1:2}}
 end
 assert(isempty(net_load.get_sys("Method", "Kron").A))
 assert(size(net_load.get_sys("Method", "DAE").A, 1) == 4)
-% 出力のない機器の AGC は追加で止まる。追加前に get_sys しても同じ原因を示す
+% 出力のない機器の AGC は追加で止まり、原因 (機器と入力 omega) を示す。系統は変わらない
 net_droop = DebugScript.helper.build_3bus("gen-droop");
 gen_droop = net_droop.a_Bus{2}.a_Component{1};
-agc = controller.agc.broadcast_PI_AGC(net_droop, "agc", gen_droop);
 try
     net_droop.add_global_controller("agc-PI", gen_droop);
     error("DebugScript:NoError", "エラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:GconPorts", DebugScript.helper.msg_id(ME))
-end
-try
-    agc.get_sys(0, zeros(2,1), 0);
-    error("DebugScript:NoError", "エラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:GlobalController:GlobalControllerPort", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, gen_droop.s_tag) && contains(ME.message, "omega"), ME.message)
 end
+assert(isempty(net_droop.a_GlobalController))
 
 
 %% Coordinate is an option of linearize and get_sys
@@ -1475,7 +1469,7 @@ end
 
 %% Hessian contract of a class that overrides it
 % Hessian_dx を定義したクラスは n_x x n_z x n_z (z = [x; V; u]) を返す。Hessian_I が無ければ H_I は要求したときだけエラー
-c = DebugScript.helper.HessianStub();
+[c, c_reg] = DebugScript.helper.stub_component("HessianStub");
 x = [0.3; 0.7];  V = [1.01; 0.05];  u = 0.4;
 H = c.get_hessian(x, V, u);
 assert(isequal(size(H), [2 5 5]))
@@ -1515,7 +1509,7 @@ sct = res.get_ss(res.options.Method, Format="struct");
 assert(isequal(sct.A, res.A))
 c_call = {@() res.get_ss("Kron"), @() net.get_sys(Format="ss"), ...
     @() net.a_Bus{1}.a_Component{1}.get_sys(Format="ss"), ...
-    @() controller.local_LQR("1"), ...
+    @() net.a_Bus{1}.a_Component{1}.add_local_controller("local-LQR"), ...
     @() controller.modeling.get_environment(net, 1)};
 sv_feature = ["ResultLIN.get_ss", "ResultLIN.get_ss", "ResultLIN.get_ss", ...
     "controller.local_LQR", "controller.modeling.get_environment"];

@@ -1,11 +1,10 @@
 % I71 層別 get_sys と連続潮流計算の編集の検査
 %
 % comp / bus / con / gc の get_sys と net.calculate_continuation_powerflow は、古いハンドルで結果を返さない。
-%   - 系統に属する層は、平衡点を使うとき系統と自分 (と使う下の層) の sct_stale を確認し、古いもの
+%   - 各層は、平衡点を使うとき系統と自分 (と使う下の層) の sct_stale を確認し、古いもの
 %     (平衡点・ハンドル・周波数) があれば net.initialize() を促す層ごとのエラーにする。何も作り直さない
 %   - Point を指定した comp / bus の get_sys と、x, V, u を与えた comp / con の get_sys は
 %     平衡点を使わないので確認しない (与えた点で今のハンドルを使って線形化する)
-%   - net に接続されていない層は確認を省略し、古いハンドルだけを作る
 %
 % 実行: runtests("DebugScript.test_I71_layer_get_sys")  または  DebugScript.run_all("Features","I71")
 
@@ -118,11 +117,6 @@ DebugScript.helper.quiet(@() net.initialize);
 A1 = gen.get_sys("Point", rv_point(c_idx{1})).A;
 assert(~isequal(A1, A0))
 assert(~isequal(bus.get_sys("Point", rv_point).A, A0_bus))
-
-
-%% Layers without a network skip the equilibrium check
-avr = controller.avr.AVR_ST1("avr1");
-assert(~isequal(error_id(@() avr.get_sys()), "GUILDA:LocalController:Stale"))
 
 
 %% Global controller get_sys checks edits

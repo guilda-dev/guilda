@@ -1,6 +1,6 @@
 % I67 replace_component の局所制御器の扱い (Issue #67)
 %
-%   既定では制御器を新しい機器へ渡さず GUILDA:Bus:ControllersDropped で警告する
+%   既定では制御器を新しい機器へ渡さず、置き換えた機器ごと削除して GUILDA:Bus:ControllersDropped で警告する
 %   Controllers="keep" で引き継ぎ、引き継げない置換は GUILDA:Bus:ControllersNotKept で何も変更しない
 %
 % 実行: runtests("DebugScript.test_I67_replace_controllers")  または  DebugScript.run_all("Features","I67")
@@ -9,18 +9,18 @@ c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "n
 
 %% The default drops the controllers with a warning naming them
 [net, bus, gen, avr, pss] = network_with_avr_pss();
+sv_tag = [gen.s_tag, avr.s_tag, pss.s_tag];
 [new, id, str] = replace_warned(@() bus.replace_component(gen.s_tag, "gen-1axis"));
 assert(id == "GUILDA:Bus:ControllersDropped")
-assert(contains(str, avr.s_tag) && contains(str, pss.s_tag) && contains(str, gen.s_tag))
+assert(all(contains(str, sv_tag)))
 assert(isempty(new.a_LocalController))
 assert(bus.a_Component{1} == new)
 
 
-%% The default leaves the controllers on the replaced component
+%% The default deletes the controllers with the replaced component
 [net, bus, gen, avr, pss] = network_with_avr_pss();
 replace_warned(@() bus.replace_component(gen.s_tag, "gen-1axis"));
-assert(gen.a_LocalController{1} == avr && avr.a_Component == gen)
-assert(avr.a_LocalController{1} == pss && pss.a_Component == avr)
+assert(~isvalid(gen) && ~isvalid(avr) && ~isvalid(pss))
 
 
 %% A component without controllers is replaced without a warning
@@ -38,7 +38,7 @@ assert(isempty(new.a_LocalController))
 assert(id == "")
 assert(new.a_LocalController{1} == avr && avr.a_Component == new)
 assert(avr.a_LocalController{1} == pss && pss.a_Component == avr)
-assert(isempty(gen.a_LocalController))
+assert(~isvalid(gen))
 
 
 %% "keep" with the parameter given uses that parameter

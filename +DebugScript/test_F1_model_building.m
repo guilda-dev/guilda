@@ -195,19 +195,19 @@ assert(numel(gen.a_LocalController) == 1 && gen.a_LocalController{1} == avr2)
 assert(numel(avr2.a_LocalController) == 1 && avr2.a_LocalController{1} == pss1)
 assert(avr2.a_Component == gen && pss1.a_Component == avr2)
 
-% 外した AVR は機器・PSS への参照を持たない
-assert(isempty(avr1.a_Component) && isempty(avr1.a_LocalController))
+% 外した AVR は削除される (変数は無効なハンドル)
+assert(~isvalid(avr1))
 
-% PSS の置き換え: 古い PSS は外れる
+% PSS の置き換え: 古い PSS は削除される
 evalc("pss2 = gen.add_local_controller(""pss-PSS1"")");
 assert(numel(avr2.a_LocalController) == 1 && avr2.a_LocalController{1} == pss2)
-assert(pss2.a_Component == avr2 && isempty(pss1.a_Component))
+assert(pss2.a_Component == avr2 && ~isvalid(pss1))
 
 % AVR を置き換えてから PSS を付けると、移った PSS が新しい PSS に置き換わる
 evalc("avr3 = gen.add_local_controller(""avr-ST1"")");
 evalc("pss3 = gen.add_local_controller(""pss-PSS1"")");
 assert(gen.a_LocalController{1} == avr3 && avr3.a_LocalController{1} == pss3)
-assert(isempty(pss2.a_Component) && isempty(avr2.a_LocalController))
+assert(~isvalid(pss2) && ~isvalid(avr2))
 % 番号は使用中の最大 + 1 (外れた制御器の番号は数えない)
 assert(avr3.s_tag == gen.s_tag + "CA5" && pss3.s_tag == gen.s_tag + "CP6")
 
@@ -264,7 +264,7 @@ assert(norm(lqr.f_Y(0, [], [], gen.rv_Xequilibrium) - gen.rv_Uequilibrium) < 1e-
 
 % 駆動する入力を選べる。Q, R はベクトルなら対角行列
 evalc("lqr2 = gen.add_local_controller(""local-LQR"", parameter=struct(Input=""Vfield"", Q=[1 10 1 1 1 1], R=2))");      % 置き換え (警告)
-assert(gen.a_LocalController{1} == lqr2 && isempty(lqr.a_Component))
+assert(gen.a_LocalController{1} == lqr2 && ~isvalid(lqr))
 assert(lqr2.sv_y == "Vfield" && isequal(lqr2.Q, diag([1 10 1 1 1 1])) && lqr2.R == 2)
 DebugScript.helper.quiet(@() net.initialize);
 assert(isequal(size(lqr2.K), [1, numel(gen.sv_x)]))
@@ -306,7 +306,7 @@ end
 
 
 %% LQR replaces an AVR and its PSS
-% LQR は AVR と同じ位置に付くので、AVR を置き換え、AVR に付いていた PSS は外れる
+% LQR は AVR と同じ位置に付くので、AVR を置き換え、AVR に付いていた PSS は削除される
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{1}.a_Component{1};
 avr = gen.add_local_controller("avr-ST1");
@@ -319,7 +319,7 @@ assert(all(avr.iv_obsY == 0) && all(avr.iv_obsX == 0))
 str = evalc("lqr = gen.add_local_controller(""local-LQR"")");
 assert(contains(str, "replaces"))
 assert(gen.a_LocalController{1} == lqr)
-assert(isempty(avr.a_Component) && isempty(pss.a_Component) && isempty(avr.a_LocalController))
+assert(~isvalid(avr) && ~isvalid(pss))
 
 % LQR の下には PSS を付けられない
 try
@@ -329,9 +329,9 @@ catch ME
     assert(DebugScript.helper.msg_id(ME) ~= "DebugScript:noError", ME.message)
 end
 
-% AVR を付け直すと LQR が外れる
+% AVR を付け直すと LQR が削除される
 evalc("avr2 = gen.add_local_controller(""avr-ST1"")");
-assert(gen.a_LocalController{1} == avr2 && isempty(lqr.a_Component))
+assert(gen.a_LocalController{1} == avr2 && ~isvalid(lqr))
 DebugScript.helper.quiet(@() net.initialize);
 
 
@@ -401,11 +401,35 @@ assert(isa(comp, "component.load.impedance"))
 assert(numel(net.a_Bus{5}.a_Component) == 1)
 assert(comp.tab_parameter.powerflow.P == -1.0)       % 潮流設定は引き継がれる
 
-% 置き換えられた機器は母線への参照を持たない
+% 置き換えられた機器は削除される (変数は無効なハンドル)
 assert(comp.a_Bus == net.a_Bus{5})
 comp_old = net.a_Bus{5}.a_Component{1};
 net.a_Bus{5}.replace_component(string(comp_old), "load-power");
-assert(isempty(comp_old.a_Bus) && isempty(comp_old.c_Vequilibrium))
+assert(~isvalid(comp_old))
+
+
+%% Model objects are created only by the add methods
+% 具体クラスのコンストラクタは作成する親クラスからだけ呼べる (Issue #119)
+net = DebugScript.helper.build_9bus();
+gen = net.a_Bus{1}.a_Component{1};
+opt = struct("BusTag", "B001");
+c_new = {@() component.generator.park("9", nan, opt), @() component.generator.classical("9", nan, opt), ...
+         @() component.load.power("9", nan, opt), @() branch.pi("9", struct()), ...
+         @() controller.avr.AVR_ST1("9"), @() controller.pss.PSS1("9"), @() controller.governor.IEEJ_LPT1("9"), ...
+         @() controller.local_LQR("9"), @() controller.agc.broadcast_PI_AGC(net, "AGC9", gen)};
+for k = 1:numel(c_new)
+    try
+        c_new{k}();
+        error("DebugScript:noError", "直接作成できてしまった: %s", func2str(c_new{k}))
+    catch ME
+        assert(string(ME.identifier) == "MATLAB:class:MethodRestricted", "%s: %s", func2str(c_new{k}), ME.identifier)
+    end
+end
+% キーで作るメソッドからは作れる
+assert(isa(net.a_Bus{5}.add_component("gen-classical"), "component.generator.classical"))
+assert(isa(net.add_branch("pi", [1,2], "X", 0.1), "branch.pi"))
+assert(isa(gen.add_local_controller("gov-LPT1"), "controller.governor.IEEJ_LPT1"))
+assert(isa(net.add_global_controller("agc-PI", {net.a_Bus{2}.a_Component{1}}), "controller.agc.broadcast_PI_AGC"))
 
 
 %% Remove component
@@ -417,9 +441,8 @@ comp = net.a_Bus{5}.a_Component{1};
 net.a_Bus{5}.remove_component(s_tag);
 assert(isempty(net.a_Bus{5}.a_Component))
 
-% 削除した機器は母線への参照を持たない (元の母線の電圧に追従しない)
-assert(isempty(comp.a_Bus))
-assert(isempty(comp.c_Vequilibrium))
+% 削除した機器は削除される (変数は無効なハンドル)
+assert(~isvalid(comp))
 
 % 存在しないタグはエラー
 try
@@ -443,10 +466,10 @@ assert(~ismember(s_tag, string(net.a_Branch)))
 Y_after = net.get_admittance_matrix;
 assert(Y_after{"B008","B009"} == 0 && Y_before{"B008","B009"} ~= 0)
 
-% 削除した送電線は系統・母線への参照を持たない
+% 削除した送電線は削除される (変数は無効なハンドル)
 br = net.a_Branch{1};
 net.remove_branch(string(br));
-assert(isempty(br.a_PowerNetwork) && isempty(br.a_Bus))
+assert(~isvalid(br))
 
 
 %% Automatic branch tags stay unique after remove_branch
@@ -504,7 +527,7 @@ bus = net.a_Bus{10};
 net.remove_bus("B010");
 assert(numel(net.a_Bus) == 9)
 assert(~ismember("B010", string(net.a_Bus)))
-assert(isempty(bus.a_PowerNetwork))                 % 削除した母線は系統への参照を持たない
+assert(~isvalid(bus))                               % 削除した母線は無効なハンドル
 assert(any(contains(net.sct_stale.powerflow, "---remove->> B010")))   % 潮流が古くなる
 
 % 存在しないタグはエラー
@@ -528,9 +551,12 @@ assert(numel(net.a_Bus) == 9 && numel(net.a_Branch) == n_branch)
 % RemoveBranches=true なら、つながった送電線も一緒に削除する
 lv_conn = cellfun(@(br) any(string(br.a_Bus) == "B005"), net.a_Branch);
 a_conn  = net.a_Branch(lv_conn);
+bus5    = net.a_Bus{5};
+a_comp5 = bus5.a_Component;
 net.remove_bus("B005", "RemoveBranches", true);
+assert(~isvalid(bus5) && ~isempty(a_comp5) && ~any(cellfun(@isvalid, a_comp5)))   % 母線の機器も削除される
 assert(numel(net.a_Bus) == 8 && numel(net.a_Branch) == n_branch - nnz(lv_conn))
-assert(all(cellfun(@(br) isempty(br.a_PowerNetwork), a_conn)))
+assert(~any(cellfun(@isvalid, a_conn)))
 
 % 新しい母線のタグは既存のタグと重ならない
 bus = net.add_bus();
@@ -551,15 +577,16 @@ assert(numel(net.a_Bus) == 14)
 %% Remove global controller
 net = DebugScript.helper.build_ieee14();
 agc = net.add_global_controller("agc-PI", "B001SG1");
+s_agc = agc.s_tag;
 DebugScript.helper.quiet(@() net.initialize);
-net.remove_global_controller(agc.s_tag);
+net.remove_global_controller(s_agc);
 assert(isempty(net.a_GlobalController))
-assert(isempty(agc.a_PowerNetwork))                   % 削除した制御器は系統への参照を持たない
+assert(~isvalid(agc))                                 % 削除した制御器は無効なハンドル
 assert(~DebugScript.helper.is_stale(net))             % 削除は何も古くしない
 
 % 存在しないタグはエラー
 try
-    net.remove_global_controller(agc.s_tag);
+    net.remove_global_controller(s_agc);
     error("DebugScript:noError", "存在しない大域制御器の削除がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:GconNotFound", ME.message)
@@ -656,9 +683,8 @@ gen1.remove_local_controller(avr.s_tag);
 assert(any(contains(gen1.sct_stale.equilibrium, "remove")) && DebugScript.helper.is_stale(net))
 assert(~any(contains(DebugScript.helper.stale(net), "kap")))   % 外した制御器の古さは系統に残らない
 
-% 切り離した制御器の編集は系統に届かない。機器に付けると機器と制御器が古くなる
-avr.tab_parameter.dynamics.kap = 33;
-assert(~any(contains(DebugScript.helper.stale(net), "kap")))
+% 外した制御器は削除される。新しく機器に付けると機器と制御器が古くなる
+assert(~isvalid(avr))
 avr = gen3.add_local_controller("avr-ST1");
 assert(any(contains(avr.sct_stale.equilibrium, "attached to " + string(gen3))))
 assert(any(contains(gen3.sct_stale.equilibrium, "<<-Add---")))

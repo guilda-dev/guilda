@@ -1,5 +1,5 @@
 classdef BadPortStub < Component
-% 入力名にポート名 (Vre) を使った機器。validate の検査を確かめる (テスト専用)
+% 入力名にポート名 (Vre) を使った機器。validate の検査を確かめる (テスト専用。DebugScript.helper.stub_component で母線に付ける)
     properties (Constant)
         key = "test-bad-port-stub"  % 機器の種類のキー
         sv_x = strings(0,1)         % 状態の名前
@@ -8,16 +8,17 @@ classdef BadPortStub < Component
         sv_para = strings(0,1)      % 動的パラメータの名前
     end
     methods
-        function obj = BadPortStub()
+        function obj = BadPortStub(s_tag, ~, opt)
+            % add_component から (タグの番号, parameter, 設定) で呼ばれる
+            arguments (Input)
+                s_tag  % タグの接尾辞
+                ~      % add_component の parameter (使わない)
+                opt    % add_component の設定
+            end
             arguments (Output)
                 obj  % 作成したオブジェクト
             end
-            opt = struct("baseMVA",100, "Pmin",-inf, "Pmax",inf, "Qmin",-inf, "Qmax",inf, ...
-                         "P",0, "Q",0, "OPFinit_P0",0, "OPFinit_Q0",0, "OPFcost_HP",1, ...
-                         "OPFcost_HQ",0, "OPFcost_fP",1, "OPFcost_fQ",0, "OPFcost_startup",0, ...
-                         "OPFcost_shutdown",0, "Xaxis",nan, "Yaxis",nan, "Marker","o", ...
-                         "MidXaxis","", "MidYaxis","", "BusTag","");
-            obj@Component("BP1", opt);
+            obj@Component("BP" + s_tag, opt);
         end
         function [x, u] = get_equilibrium(~, ~, ~, ~, ~)
             arguments (Input)

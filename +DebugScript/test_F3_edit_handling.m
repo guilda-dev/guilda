@@ -203,12 +203,10 @@ assert(any(contains(comp.sct_stale.equilibrium, "replace")))
 DebugScript.helper.quiet(@() net.initialize);
 assert(~DebugScript.helper.is_stale(net))
 
-% 系統に属さない機器への追加は系統を古くしない
+% 外した機器は削除される (付けた制御器ごと)
+avr2 = comp.a_LocalController{1};
 net.a_Bus{1}.remove_component(string(comp));
-evalc("net.a_Bus{2}.l_isSlack = true;");     % スラック母線に機器がないと平衡点にならない
-DebugScript.helper.quiet(@() net.initialize);
-comp.add_local_controller("avr-ST1");
-assert(~DebugScript.helper.is_stale(net))
+assert(~isvalid(comp) && ~isvalid(avr2))
 
 
 %% LQR add and weight edit make the equilibrium stale
@@ -483,8 +481,6 @@ net.tab_parameter.base.Hz = 50;
 net.add_bus("V",1.0);
 gen = net.a_Bus{1}.add_component("gen-1axis");
 assert(gen.get_Hz() == 50 && isempty(gen.f_dx))
-avr = controller.avr.AVR_ST1("avr1");
-assert(avr.get_Hz() == GUILDA.config("Model","Hz") && isempty(avr.f_dx))
 avr = gen.add_local_controller("avr-ST1");
 assert(avr.get_Hz() == 50 && isempty(avr.f_dx))
 assert_stale_error(@() gen.get_sys(), "GUILDA:Component:Stale")    % 解析はハンドルを作らない
@@ -508,16 +504,6 @@ a_model = {comp, avr, pss};
 assert(isempty(avr.f_dx) && isempty(pss.f_dx))
 DebugScript.helper.quiet(@() net.initialize);
 assert(~any(cellfun(@(m) isempty(m.f_dx), a_model)))
-
-% 系統に属さない機器を直接使う: get_sys と validate がハンドルを作る
-stub = DebugScript.helper.HessianStub();
-assert(isempty(stub.f_dx))
-sys = stub.get_sys([1;2], [1;0], 0);
-assert(~isempty(stub.f_dx) && isequal(size(sys.A), [2 2]))
-assert(DebugScript.helper.handle_Hz(stub) == GUILDA.config("Model","Hz"))
-stub = DebugScript.helper.HessianStub();
-flag = stub.validate(false);
-assert(isstruct(flag) && isfield(flag, "contract"))
 
 
 %% A component has no base column

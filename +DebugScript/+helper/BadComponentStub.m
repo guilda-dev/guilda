@@ -1,7 +1,7 @@
 classdef BadComponentStub < Component
-% validate が契約違反を検出することを確かめるための機器 (テスト専用、系統には追加しない)
+% validate が契約違反を検出することを確かめるための機器 (テスト専用)
 %
-%   comp = DebugScript.helper.BadComponentStub("equilibrium")
+%   comp = DebugScript.helper.stub_component("BadComponentStub", "equilibrium")
 %
 % 正常な形は dx = u - x, I = x1 + j x2, y = x1, 平衡点 x = u = [Ire; Iim]。
 % 引数で次の1つの誤りを入れる ("none" は誤りなし)。
@@ -24,22 +24,15 @@ classdef BadComponentStub < Component
     end
 
     methods
-        function obj = BadComponentStub(s_bad, s_tag, opt)
+        function obj = BadComponentStub(s_tag, s_bad, opt)
+            % add_component から (タグの番号, parameter, 設定) で呼ばれる
             arguments (Input)
-                s_bad           % 入れる誤りの種類
-                s_tag = "1"     % タグの接尾辞
-                opt   = struct  % add_component の設定 (省略時は既定値)
+                s_tag  % タグの接尾辞
+                s_bad  % 入れる誤りの種類 (add_component の parameter)
+                opt    % add_component の設定
             end
             arguments (Output)
                 obj  % 作成したオブジェクト
-            end
-            if nargin < 3   % 系統につなぐときは add_component が渡す
-                s_tag = "1";
-                opt = struct("baseMVA",100, "Pmin",-inf, "Pmax",inf, "Qmin",-inf, "Qmax",inf, ...
-                         "P",0, "Q",0, "OPFinit_P0",0, "OPFinit_Q0",0, "OPFcost_HP",1, ...
-                         "OPFcost_HQ",0, "OPFcost_fP",1, "OPFcost_fQ",0, "OPFcost_startup",0, ...
-                         "OPFcost_shutdown",0, "Xaxis",nan, "Yaxis",nan, "Marker","o", ...
-                         "MidXaxis","", "MidYaxis","", "BusTag","");
             end
             obj@Component("BS" + s_tag, opt);
             obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", struct( ...

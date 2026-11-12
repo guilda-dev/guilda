@@ -2,16 +2,16 @@
 %
 %   制御器は add_local_controller がキーから毎回作るため、別の機器に付いた制御器を付け直すことはできない
 %   (以前の SharedController の検査は不要になった)。ここでは差し替えで外れた制御器が
-%   どの機器も参照しないこと、PSS が新しい AVR へ移ることを確かめる
+%   削除されること (無効なハンドル)、PSS が新しい AVR へ移ることを確かめる
 %
 % 実行: runtests("DebugScript.test_I66_shared_local_controller")  または  DebugScript.run_all("Features","I66")
 
 
-%% A replaced AVR is detached
+%% A replaced AVR is deleted
 [net, gen1, gen2] = fresh_network();
 old = gen1.add_local_controller("avr-ST1");
 new = quiet_replace(@() gen1.add_local_controller("avr-DC1"));
-assert(isempty(old.a_Component))
+assert(~isvalid(old))
 assert(new.a_Component == gen1 && gen1.a_LocalController{1} == new)
 
 
@@ -21,15 +21,15 @@ avr1 = gen1.add_local_controller("avr-ST1");
 pss  = gen1.add_local_controller("pss-PSS1");
 avr2 = quiet_replace(@() gen1.add_local_controller("avr-DC1"));
 assert(pss.a_Component == avr2 && avr2.a_LocalController{1} == pss)
-assert(isempty(avr1.a_LocalController))
+assert(~isvalid(avr1))
 
 
-%% A PSS is detached with its AVR when a local controller replaces the AVR
+%% A PSS is deleted with its AVR when a local controller replaces the AVR
 [net, gen1, gen2] = fresh_network();
 gen1.add_local_controller("avr-ST1");
 pss = gen1.add_local_controller("pss-PSS1");
 quiet_replace(@() gen1.add_local_controller("local-LQR"));
-assert(isempty(pss.a_Component))
+assert(~isvalid(pss))
 
 
 %% A PSS without an AVR still reports the missing AVR

@@ -109,13 +109,13 @@ assert(numel(gen.rv_Xequilibrium_all) == n0 + numel(avr.sv_x) + numel(pss.sv_x))
 
 gen.remove_local_controller(pss.s_tag);
 assert(DebugScript.helper.is_stale(net) && any(contains(gen.sct_stale.equilibrium, "---remove->>")))
-assert(gen.a_LocalController{1} == avr && isempty(avr.a_LocalController) && isempty(pss.a_Component))
+assert(gen.a_LocalController{1} == avr && isempty(avr.a_LocalController) && ~isvalid(pss))
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(gen.rv_Xequilibrium_all) == n0 + numel(avr.sv_x))
 
 gen.remove_local_controller(avr.s_tag);
 assert(DebugScript.helper.is_stale(net) && any(contains(gen.sct_stale.equilibrium, "---remove->>")))
-assert(isempty(gen.a_LocalController) && isempty(avr.a_Component))
+assert(isempty(gen.a_LocalController) && ~isvalid(avr))
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(gen.rv_Xequilibrium_all) == n0)
 assert(size(net.get_sys().A,1) == nx0)
@@ -134,10 +134,10 @@ assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:ControllerHasNested" &
 assert(gen.a_LocalController{1} == avr && avr.a_LocalController{1} == pss && pss.a_Component == avr)
 assert(~DebugScript.helper.is_stale(net) && isequal(DebugScript.helper.stale(net), sv_log))
 
+s_pss = pss.s_tag;
 gen.remove_local_controller(avr.s_tag, RemoveNested=true);
-assert(isempty(gen.a_LocalController) && isempty(avr.a_LocalController))
-assert(isempty(avr.a_Component) && isempty(pss.a_Component))
-assert(numel(gen.sct_stale.equilibrium) == 1 && contains(gen.sct_stale.equilibrium, pss.s_tag))
+assert(isempty(gen.a_LocalController) && ~isvalid(avr) && ~isvalid(pss))
+assert(numel(gen.sct_stale.equilibrium) == 1 && contains(gen.sct_stale.equilibrium, s_pss))
 
 
 %% remove_local_controller: an unknown tag changes nothing
@@ -155,7 +155,7 @@ assert(gen.a_LocalController{1} == avr && ~DebugScript.helper.is_stale(net))
 lqr = gen.add_local_controller("local-LQR");
 DebugScript.helper.quiet(@() net.initialize);
 gen.remove_local_controller(lqr.s_tag);
-assert(isempty(gen.a_LocalController) && isempty(lqr.a_Component))
+assert(isempty(gen.a_LocalController) && ~isvalid(lqr))
 
 
 function [net, gen] = fresh_network()

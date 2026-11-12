@@ -13,12 +13,14 @@ r_tol = 1e-4;
 c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
 
 %% Parameters are appended after the existing ones
-avr = controller.avr.AVR_DC1("avr1", Vfld_max=4, Vfld_min=0);
+[~, gen] = DebugScript.helper.build_3bus("gen-1axis");
+avr = gen.add_local_controller("avr-DC1", parameter=struct(Vfld_max=4, Vfld_min=0));
 assert(isequal(avr.sv_para(end-1:end), ["Vfld_max"; "Vfld_min"]))
 assert(isequal(avr.sv_para(1:11), ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"]))
 tab = avr.tab_parameter.dynamics;
 assert(tab{:,"Vfld_max"} == 4 && tab{:,"Vfld_min"} == 0)
-tab = controller.avr.AVR_DC1("avr1").tab_parameter.dynamics;
+[~, gen] = DebugScript.helper.build_3bus("gen-1axis");
+tab = gen.add_local_controller("avr-DC1").tab_parameter.dynamics;
 assert(tab{:,"Vfld_max"} == Inf && tab{:,"Vfld_min"} == -Inf)
 
 
@@ -76,7 +78,8 @@ end
 
 
 %% Jacobi_dx matches finite differences inside and at the limits
-avr = controller.avr.AVR_DC1("avr1", kap=20, Vfld_max=4, Vfld_min=0);
+[~, gen] = DebugScript.helper.build_3bus("gen-1axis");
+avr = gen.add_local_controller("avr-DC1", parameter=struct(kap=20, Vfld_max=4, Vfld_min=0));
 param = avr.tab_parameter.dynamics{:, cellstr(avr.sv_para)}';
 V = [1.0; 0.1];  u = [1.1; 0];
 % 制限の内側: 有限差分と一致する

@@ -17,16 +17,17 @@ r_step = -0.05;    % B001SG1 の Pmech のステップ (負荷の増加と同じ
 c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
 
 %% Governors have the key, ports, tag and figure defaults of the report
-gov = controller.governor.IEEJ_LPT1("g");
-assert(gov.s_role == "governor" && gov.key == "gov-LPT1" && gov.s_tag == "CGg")
+[~, comp, gov] = build_gov("gov-LPT1");
+assert(gov.s_role == "governor" && gov.key == "gov-LPT1" && gov.s_tag == comp.s_tag + "CG1")
 assert(isequal(gov.sv_u, ["omega";"Pref";"Plimit"]) && gov.sv_y == "Pmech")
 assert(isequal(gov.sv_x, ["Pgov";"Psv";"Pch";"Prh"]))
 tab = gov.tab_parameter.dynamics;
 assert(tab.droop == 4 && tab.Tg == 0.2 && tab.Ks == 5 && tab.rate_max == 0.2 && tab.rate_min == -1000)
 assert(tab.pos_max == 1.05 && tab.pos_min == 0 && tab.Tch == 0.25 && tab.Trh == 9 && tab.Fhp == 0.3 && tab.Frh == 0.7)
-tab = controller.governor.IEEJ_LPT3("g").tab_parameter.dynamics;
+[~, ~, gov] = build_gov("gov-LPT3");
+tab = gov.tab_parameter.dynamics;
 assert(tab.droop == 5 && tab.Tg == 10 && tab.Ts == 0.3 && tab.rate_max == 0.1 && tab.pos_max == 1.05)
-gov = controller.governor.IEEJ_LPT4("g");
+[~, ~, gov] = build_gov("gov-LPT4");
 assert(isequal(gov.sv_x, ["Pgov";"Pdr";"Psv";"Pw"]))
 tab = gov.tab_parameter.dynamics;
 assert(tab.droop == 4 && tab.Tg == 4 && tab.Kt == 0.6 && tab.Tt == 12 && tab.Ts == 7 && tab.rate_max == 0.1)
@@ -187,7 +188,7 @@ rm_point = [0.01, 0.50, 0.52, 0.60;
             0.00, 1.06, 1.20, 1.30;
             0.00, 1.06, 0.90, 1.30];
 for k = 1:numel(c_cls)
-    gov = feval(c_cls(k), "g", pos_max=1.05);
+    [~, ~, gov] = build_gov(c_key(k), struct(pos_max=1.05));
     param = gov.tab_parameter.dynamics{:, cellstr(gov.sv_para)}';
     for m = 1:height(rm_point)
         [x, u] = branch_point(gov, rm_point(m,:));
@@ -220,7 +221,7 @@ assert(r_err < 0.01, "relative error %g", r_err)
 %% remove_local_controller removes one slot and leaves the other
 [net, comp, avr, pss, gov] = build_full("after");
 comp.remove_local_controller(gov.s_tag);
-assert(same_list(comp.a_LocalController, {avr}) && avr.a_LocalController{1} == pss && isempty(gov.a_Component))
+assert(same_list(comp.a_LocalController, {avr}) && avr.a_LocalController{1} == pss && ~isvalid(gov))
 assert(DebugScript.helper.is_stale(net))
 gov = comp.add_local_controller("gov-LPT1", parameter=struct(PLM=5));
 ME = caught(@() comp.remove_local_controller(avr.s_tag));
@@ -231,7 +232,7 @@ assert(same_list(comp.a_LocalController, {avr; gov}) && isempty(avr.a_LocalContr
 pss = comp.add_local_controller("pss-PSS1");
 comp.remove_local_controller(avr.s_tag, RemoveNested=true);
 assert(same_list(comp.a_LocalController, {gov}) && gov.a_Component == comp)
-assert(isempty(avr.a_Component) && isempty(pss.a_Component))
+assert(~isvalid(avr) && ~isvalid(pss))
 DebugScript.helper.quiet(@() net.initialize);
 sol = DebugScript.helper.quiet(@() net.simulate([0,2]));
 assert(sol.flag == 1 && DebugScript.helper.max_state_drift(sol) < 1e-9)
@@ -243,12 +244,13 @@ assert(same_list(comp.a_LocalController, {gov}))
 
 %% A new governor replaces the attached one with a warning
 [net, comp, avr, ~, gov] = build_full("after");
+s_gov = gov.s_tag;
 lastwarn("", "");
 gov2 = comp.add_local_controller("gov-LPT3");
 [str, id] = lastwarn();
 assert(string(DebugScript.helper.msg_id(str, id)) == "GUILDA:Component:ReplaceController")
-assert(contains(str, gov2.s_tag) && contains(str, gov.s_tag) && contains(str, "Governor"))
-assert(same_list(comp.a_LocalController, {avr; gov2}) && isempty(gov.a_Component))
+assert(contains(str, gov2.s_tag) && contains(str, s_gov) && contains(str, "Governor"))
+assert(same_list(comp.a_LocalController, {avr; gov2}) && ~isvalid(gov))
 % AVR を置き換えても調速機は残る
 lastwarn("", "");
 comp.add_local_controller("avr-ST1");
@@ -290,7 +292,7 @@ assert(ME.identifier == "GUILDA:Component:ControllerOutput" && isempty(comp.a_Lo
 bus = comp.a_Bus;
 new = bus.replace_component(comp.s_tag, "gen-1axis", Controllers="keep");
 assert(same_list(new.a_LocalController, {avr; gov}) && avr.a_LocalController{1} == pss)
-assert(avr.a_Component == new && gov.a_Component == new && isempty(comp.a_LocalController))
+assert(avr.a_Component == new && gov.a_Component == new && ~isvalid(comp))
 DebugScript.helper.quiet(@() net.initialize);
 sol = DebugScript.helper.quiet(@() net.simulate([0,2]));
 assert(sol.flag == 1 && DebugScript.helper.max_state_drift(sol) < 1e-9)
