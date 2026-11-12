@@ -876,6 +876,7 @@ ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBu
 sim = net.simulate([0,1.5], ev);
 r   = sim.odeResults;
 tab = net.get_variable_map();
+tab = tab(ismember(tab.Kind, ["x","Vre","Vim","u"]), :);   % rv_point の行 (信号 y は含まない)
 k   = find(r.t > 0.8, 1);
 t   = r.t(k);
 x   = zeros(height(tab),1);
