@@ -672,6 +672,8 @@ Option names:
 
 ### 1.11 Time simulation
 
+> **再設計の予定(未実装):** `simulate` と `Scenario` の API は [simulate-redesign.md](simulate-redesign.md) の仕様で変わります(1 回に 1 つのシナリオをタグで選ぶ、`add_scenario(tag)`、`Scenario.Options` と v3 互換の削除)。この節と §1.18 は現行の動作です。
+
 | v3 | v4 |
 |----|----|
 | `[out, l_stop] = net.simulate(t, ev1, ev2)` | `[res, flag, output] = net.simulate(t, ev1, ev2)` |
