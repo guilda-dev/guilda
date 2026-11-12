@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Show the signal connections",
+    "date": "2026-11-12",
+    "type": "feature",
+    "content": "New net.disp_connection prints, for each input of the components and controllers, the signals that drive it (local, global, observe or equilibrium), grouped by bus, component and controller. Options Kind and Owner narrow the view; with one output it returns the text."
+  },
+  {
     "title": "Tags read parent first; labels use the own tag",
     "date": "2026-11-12",
     "type": "feature",
