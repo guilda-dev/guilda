@@ -70,7 +70,7 @@ function con = add_global_controller(obj, Key, a_Unit, opt)
 
     % The connections of the controller, from the map of the network with it: each input
     % must observe its unit ("observe") and each output drive an input ("global")
-    % (with the network set: the labels of the controller carry its tag)
+    % (with the network set, as after a successful add)
     obj.a_GlobalController = [obj.a_GlobalController; {con}];
     con.a_PowerNetwork = obj;
     try
