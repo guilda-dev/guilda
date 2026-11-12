@@ -682,11 +682,11 @@ verdict = sc.judge(result)</code></pre>
       </tbody>
     </table>
     <ul lang="en">
-      <li><code>get_point(t, tab_map, Side=…)</code>: the variables at a time (linear interpolation; <code>"after"</code> or <code>"before"</code> at a phase boundary); input of <code>net.linearize(Point={sim, t})</code>.</li>
+      <li><code>get_point(t, tab_map, Side=…)</code>: the variables at a time (linear interpolation; <code>"after"</code> or <code>"before"</code> at a phase boundary); input of <code>net.get_sys(Point={sim, t})</code>.</li>
       <li><code>plot_trajectory(Quantity=…, Bus=…)</code>, <code>export(filename)</code>.</li>
     </ul>
     <ul lang="ja">
-      <li><code>get_point(t, tab_map, Side=…)</code> は、ある時刻の変数の値を線形補間で返します。フェーズの境目では <code>"after"</code> か <code>"before"</code> を選びます。返した値は <code>net.linearize(Point={sim, t})</code> にそのまま渡せます。</li>
+      <li><code>get_point(t, tab_map, Side=…)</code> は、ある時刻の変数の値を線形補間で返します。フェーズの境目では <code>"after"</code> か <code>"before"</code> を選びます。返した値は <code>net.get_sys(Point={sim, t})</code> にそのまま渡せます。</li>
       <li><code>plot_trajectory(Quantity=…, Bus=…)</code>、<code>export(filename)</code></li>
     </ul>
     <p lang="en"><code>output</code>: <code>message</code>, <code>tEnd</code> [s], <code>nPhases</code>, <code>nPhasesDone</code> (a phase cut short is not counted), <code>phases</code> (the phase table), <code>isSparse</code> (false after a fallback to dense matrices), <code>exception</code>.</p>

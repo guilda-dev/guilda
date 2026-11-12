@@ -382,7 +382,7 @@ s.inputs          % Vref: "equilibrium (not connected)", Vpss: "output of B002SG
     <ol class="dg-list is-numbered">
       <li><div><span class="dg-item-title"><span lang="en">Stay at the equilibrium</span><span lang="ja">平衡点にとどまる</span></span><p lang="en"><code>net.simulate</code> without scenarios keeps the states at <code>rv_Xequilibrium</code>.</p><p lang="ja">シナリオなしの <code>net.simulate</code> を実行し、状態が <code>rv_Xequilibrium</code> にとどまることを確かめます。</p></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Run through a fault and a trip</span><span lang="ja">地絡と解列を最後までシミュレーションする</span></span><p lang="en">Run a fault and a trip with a <code>Scenario</code> (<code>add_fault</code>, <code>add_trip</code>). <code>flag</code> is <code>1</code> when the simulation completes. A trip calls <code>get_equilibrium</code> with <code>I = P = Q = 0</code>.</p><p lang="ja"><code>Scenario</code>（<code>add_fault</code>、<code>add_trip</code>）で地絡と解列（トリップ）を起こします。シミュレーションが最後まで進めば <code>flag</code> は <code>1</code> です。解列では <code>I = P = Q = 0</code> で <code>get_equilibrium</code> が呼ばれます。</p></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Look at the linear model</span><span lang="ja">線形モデルを調べる</span></span><p lang="en"><code>eig(net.get_sys())</code>. A network of synchronous machines has an eigenvalue near zero from the common rotation of the rotor angles. The others: in the left half plane unless intended. An unstable result can also come from the rest of the test network, so compare with an existing model on the same network.</p><p lang="ja"><code>eig(net.get_sys())</code> を確認します。同期機からなるネットワークには、回転子角がそろって回る動きに対応する 0 付近の固有値があります。それ以外の固有値は、意図した場合を除いて左半平面にあるはずです。不安定な結果がテスト用ネットワークのほかの部分から来ることもあるので、同じネットワークで既存のモデルと比べてください。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Look at the linear model</span><span lang="ja">線形モデルを調べる</span></span><p lang="en"><code>eig(net.get_sys(Format="ss"))</code>. A network of synchronous machines has an eigenvalue near zero from the common rotation of the rotor angles. The others: in the left half plane unless intended. An unstable result can also come from the rest of the test network, so compare with an existing model on the same network.</p><p lang="ja"><code>eig(net.get_sys(Format="ss"))</code> を確認します。同期機からなるネットワークには、回転子角がそろって回る動きに対応する 0 付近の固有値があります。それ以外の固有値は、意図した場合を除いて左半平面にあるはずです。不安定な結果がテスト用ネットワークのほかの部分から来ることもあるので、同じネットワークで既存のモデルと比べてください。</p></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Compare with a known model</span><span lang="ja">既知のモデルと比較する</span></span><p lang="en">When an existing class reduces to your model, the eigenvalues should agree, as below.</p><p lang="ja">既存のクラスが新しいモデルに帰着する場合は、下のように固有値が一致します。</p></div></li>
     </ol>
 
@@ -403,9 +403,9 @@ assert(~any(g2.validate(false).contract.status == "FAIL"))
 X = net.simulate([0,5], Progress="none").odeResults.Bus(2).Component(1).X;
 assert(max(abs(X{:,:} - g2.rv_Xequilibrium.'), [], "all") &lt; 1e-9)
 
-eig_new = sort(eig(net.get_sys()));
+eig_new = sort(eig(net.get_sys(Format="ss")));
 net = make_network("gen-classical", table(100,10,0.3,0.3, VariableNames=["M","D","Xd","Xq"]));
-assert(norm(eig_new - sort(eig(net.get_sys()))) &lt; 1e-6)
+assert(norm(eig_new - sort(eig(net.get_sys(Format="ss")))) &lt; 1e-6)
 
 %% AVR: contract, inputs, comparison with AVR_ST1
 [net, g2] = make_network("gen-simple", table(100,10,0.3, VariableNames=["M","D","Xs"]));
@@ -415,11 +415,11 @@ s = avr.validate(false);
 assert(~any(s.contract.status == "FAIL"))
 assert(s.inputs.source("Vref") == "equilibrium (not connected)")
 
-eig_new = sort(eig(net.get_sys()));
+eig_new = sort(eig(net.get_sys(Format="ss")));
 g2.remove_local_controller(avr.s_tag);
 g2.add_local_controller("avr-ST1", parameter=struct(kap=30, tap=0.05));
 net.initialize();
-assert(norm(eig_new - sort(eig(net.get_sys()))) &lt; 1e-6)
+assert(norm(eig_new - sort(eig(net.get_sys(Format="ss")))) &lt; 1e-6)
 
 function [net, g2] = make_network(s_key, para)
     net = PowerNetwork();

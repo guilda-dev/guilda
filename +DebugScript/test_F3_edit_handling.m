@@ -8,9 +8,9 @@
 %   base(Hz) の編集 → 系統の odefcn (機器・制御器には届かず、initialize でハンドルを作った Hz と比べる)
 %   operation / OPF / graph の編集、タグの変更 → 何も古くならない
 % 最新にするのは net.initialize() だけ。潮流が古いときだけ潮流計算をし、古い関数ハンドル f_* と
-% 平衡点だけを作り直す。simulate / get_sys / linearize は確認するだけで、古いものがあれば
-% net.initialize() を促す解析ごとのエラー (GUILDA:SolverODE:Stale、SolverLIN:Stale、
-% Component:Stale など) にする。
+% 平衡点だけを作り直す。simulate / get_sys は確認するだけで、古いものがあれば
+% net.initialize() を促す解析ごとのエラー (GUILDA:SolverODE:Stale、すべての層の get_sys の
+% PowerSystemModel:Stale など) にする。
 % ハンドルは f_dx (未作成は空、作り直したかは以前のハンドルとの isequal) で、古さは
 % sct_stale と DebugScript.helper.stale / is_stale で確認する。
 %
@@ -24,26 +24,23 @@ c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "n
 %% Simulate and get_sys before initialize ask for initialize
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 assert_stale_error(@() net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]), "GUILDA:SolverODE:Stale")
-assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 assert(DebugScript.helper.edit_flag(net) == "unset")
 
 
 %% Solvers called directly check the equilibrium
-% net.solver_ODE.solve / net.solver_LIN.solve も simulate / linearize と同じ確認をする
+% net.solver_ODE.solve も simulate と同じ確認をする (線形化の net.solver_LIN.solve は
+% ブロックをつなぐだけの接続器で、確認は get_sys がする)
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
 assert_stale_error(@() net.solver_ODE.solve(net, [0,1], {}, DebugScript.helper.ode_options("Progress", "none")), "GUILDA:SolverODE:Stale")
-assert_stale_error(@() net.solver_LIN.solve(net), "GUILDA:SolverLIN:Stale")
 
 DebugScript.helper.quiet(@() net.initialize);
 comp.tab_parameter.dynamics.D = 5;
 assert_stale_error(@() net.solver_ODE.solve(net, [0,1], {}, DebugScript.helper.ode_options("Progress", "none")), "GUILDA:SolverODE:Stale")
-assert_stale_error(@() net.solver_LIN.solve(net), "GUILDA:SolverLIN:Stale")
 
 DebugScript.helper.quiet(@() net.initialize);
 sol = DebugScript.helper.quiet(@() net.solver_ODE.solve(net, [0,1], {}, DebugScript.helper.ode_options("Progress", "none")));
 assert(sol.odeResults.t(end) == 1)
-res = DebugScript.helper.quiet(@() net.solver_LIN.solve(net));
-assert(isa(res, "ResultLIN"))
 
 
 %% Dynamics edit makes handles and equilibrium stale
@@ -112,7 +109,7 @@ net.tab_parameter.base.baseMVA = 200;
 assert(isequal(net.sct_stale.powerflow, "base/" + net.s_tag + ": edit baseMVA: 100 -> 200"))
 assert(isequal(comp.f_dx, f_dx))
 assert_stale_error(@() net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]), "GUILDA:SolverODE:Stale")
-assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
 assert(res.s_solver ~= "equilibrium" && ~DebugScript.helper.is_stale(net))
 
@@ -124,7 +121,7 @@ DebugScript.helper.quiet(@() net.initialize);
 comp.tab_parameter.powerflow.P = -1.1;
 assert(numel(net.sct_stale.powerflow) == 1 && contains(net.sct_stale.powerflow, "powerflow/" + comp.s_tag))
 assert(isempty(comp.sct_stale.equilibrium))
-assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 
 % 潮流設定の母線パラメータも同じ
 DebugScript.helper.quiet(@() net.initialize);
@@ -151,7 +148,7 @@ assert(contains(net.sct_stale.powerflow, "edit Bshunt: "))
 DebugScript.helper.quiet(@() net.initialize);
 net.a_Bus{3}.add_component("load-impedance", "P", -0.1, "Q", 0);
 assert(any(contains(net.sct_stale.powerflow, "<<-connect---")))
-assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 
 % 機器の削除
 DebugScript.helper.quiet(@() net.initialize);
@@ -186,7 +183,7 @@ DebugScript.helper.quiet(@() net.initialize);
 avr1 = comp.add_local_controller("avr-ST1");
 assert(any(contains(comp.sct_stale.equilibrium, avr1.s_tag)) && isempty(net.sct_stale.powerflow))
 assert(avr1.sct_stale.odefcn(1) == avr1.s_notInitialized)   % 新しい制御器は未初期化
-assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 assert_stale_error(@() net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]), "GUILDA:SolverODE:Stale")
 res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
 assert(res.s_solver == "equilibrium" && ~DebugScript.helper.is_stale(net))   % 潮流計算はしない
@@ -222,7 +219,7 @@ K1 = lqr.K;
 lqr.Q = 10*ones(1, numel(comp.sv_x));
 assert(numel(lqr.sct_stale.equilibrium) == 1 && contains(lqr.sct_stale.equilibrium, "edit Q: "))
 assert(isequal(lqr.sct_stale.odefcn, lqr.sct_stale.equilibrium) && isempty(comp.sct_stale.equilibrium))
-assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 
 % initialize でゲインが計算し直される (潮流計算はしない)
 res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
@@ -235,7 +232,7 @@ assert(~DebugScript.helper.is_stale(net) && norm(lqr.K - K1) > 1e-6)
 DebugScript.helper.quiet(@() net.initialize);
 evalc("net.a_Bus{2}.l_isSlack = true;");     % 表示 (INFO) は抑制
 assert(any(contains(net.sct_stale.powerflow, "slack bus")))
-assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 
 
 %% Operation OPF and graph edits keep the equilibrium
@@ -278,7 +275,7 @@ assert(para(c1.sv_para == "D") == 50 && isequal(handle_para(c1), para))
 DebugScript.helper.quiet(@() net.initialize);
 assert(isequal(h2, c2.f_dx))
 h1 = c1.f_dx;
-net.get_sys();  net.linearize();
+net.get_sys();  net.get_sys();
 assert(isequal(h1, c1.f_dx))           % 解析は作り直さない
 
 
@@ -293,7 +290,7 @@ h_dx = avr.f_dx;
 avr.tab_parameter.dynamics.kap = 2 * avr.tab_parameter.dynamics.kap;
 assert(isequal(h_dx, avr.f_dx) && DebugScript.helper.is_stale(net))
 assert(contains(avr.sct_stale.odefcn, "edit kap: ") && isempty(comp.sct_stale.equilibrium))
-assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 
 DebugScript.helper.quiet(@() net.initialize);
 assert(~isequal(h_dx, avr.f_dx))
@@ -359,7 +356,7 @@ net.tab_parameter.base.Hz = 50;
 assert(DebugScript.helper.is_stale(net) && isempty(net.sct_stale.powerflow))
 assert(all(cellfun(@(m) m.get_Hz(), a_model) == 50))
 assert(all(cellfun(@DebugScript.helper.handle_Hz, a_model) == Hz0), "編集しただけでは作り直さない")
-assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 assert(all(cellfun(@DebugScript.helper.handle_Hz, a_model) == Hz0), "解析は作り直さない")
 
 % initialize でハンドルは新しい Hz になる
@@ -379,7 +376,7 @@ DebugScript.helper.quiet(@() net.initialize);
 K60 = lqr.K;
 net.tab_parameter.base.Hz = 50;
 assert(isequal(lqr.K, K60) && DebugScript.helper.handle_Hz(lqr) == 60, "編集の時点では作り直さない")
-assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 assert(isequal(lqr.K, K60), "解析では作り直さない")
 res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
 K50 = lqr.K;
@@ -402,7 +399,7 @@ K60 = lqr.K;
 gen.tab_parameter.dynamics.D = 5;
 net.tab_parameter.base.Hz = 50;
 assert(isequal(lqr.K, K60))
-assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 assert(isequal(lqr.K, K60))
 DebugScript.helper.quiet(@() net.initialize);
 assert(norm(lqr.K - K60) > 1e-3 && DebugScript.helper.handle_Hz(lqr) == 50)
@@ -411,7 +408,7 @@ assert(norm(lqr.K - K60) > 1e-3 && DebugScript.helper.handle_Hz(lqr) == 50)
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 lqr = gen.add_local_controller("local-LQR");
 net.tab_parameter.base.Hz = 50;
-assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 assert(isempty(lqr.K))
 
 % 同じ Hz に戻しても系統の odefcn は古いまま。initialize は K を設計し直さない
@@ -440,7 +437,7 @@ assert(contains(s_out, "K was not redesigned"), s_out)
 assert(isequal(lqr.K, K60) && DebugScript.helper.handle_Hz(last) == 0)
 assert(any(contains(lqr.sct_stale.equilibrium, "redesign failed")))
 ME = error_of(@() net.get_sys());
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:Stale" && contains(ME.message, "redesign failed"))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerSystemModel:Stale" && contains(ME.message, "redesign failed"))
 
 
 %% Network Hz edit redesigns the LQR gain through the layers
@@ -456,9 +453,9 @@ for s_layer = ["component", "bus", "network"]
     DebugScript.helper.quiet(@() net.initialize);
     net.tab_parameter.base.Hz = 50;
     switch s_layer
-        case "component", assert_stale_error(@() gen.get_sys(), "GUILDA:Component:Stale")
-        case "bus",       assert_stale_error(@() gen.a_Bus.get_sys(), "GUILDA:Bus:Stale")
-        case "network",   assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+        case "component", assert_stale_error(@() gen.get_sys(), "GUILDA:PowerSystemModel:Stale")
+        case "bus",       assert_stale_error(@() gen.a_Bus.get_sys(), "GUILDA:PowerSystemModel:Stale")
+        case "network",   assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
     end
     DebugScript.helper.quiet(@() net.initialize);
     assert(norm(lqr.K - lqr_ref.K) < 1e-6 * norm(lqr_ref.K), s_layer + ": K")
@@ -466,7 +463,7 @@ for s_layer = ["component", "bus", "network"]
     s = gen.get_sys();  sys_ref = gen_ref.get_sys();
     assert(norm(s.A - sys_ref.A, 1) < 1e-6 * norm(sys_ref.A, 1) && norm(s.B - sys_ref.B, 1) < 1e-6 * norm(sys_ref.B, 1), s_layer + ": 機器のモデル")
     assert(isequal(s.StateName, sys_ref.StateName) && isequal(s.InputName, sys_ref.InputName), s_layer + ": 名前")
-    for alg = ["Kron", "Feedback", "DAE"]
+    for alg = ["Kron", "DAE"]
         s = net.get_sys("Method", alg);  sys_ref = ref.get_sys("Method", alg);
         assert(isequal(size(s.A), size(sys_ref.A)) && norm(s.A - sys_ref.A, 1) < 1e-6 * norm(sys_ref.A, 1), s_layer + " " + alg)
     end
@@ -483,7 +480,7 @@ gen = net.a_Bus{1}.add_component("gen-1axis");
 assert(gen.get_Hz() == 50 && isempty(gen.f_dx))
 avr = gen.add_local_controller("avr-ST1");
 assert(avr.get_Hz() == 50 && isempty(avr.f_dx))
-assert_stale_error(@() gen.get_sys(), "GUILDA:Component:Stale")    % 解析はハンドルを作らない
+assert_stale_error(@() gen.get_sys(), "GUILDA:PowerSystemModel:Stale")    % 解析はハンドルを作らない
 assert(isempty(gen.f_dx) && isempty(avr.f_dx))
 DebugScript.helper.quiet(@() net.initialize);
 assert(~isempty(gen.f_dx) && ~isempty(avr.f_dx))

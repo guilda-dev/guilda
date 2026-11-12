@@ -30,8 +30,9 @@
 >   y of its controllers]`; states are never outputs. The option `full`
 >   (states as outputs) is accepted and **ignored**, so code that took the
 >   states from the outputs of a `full=true` model reads other rows. An
->   output named like a state is labelled `Y_<name>`. `net.get_sys` and
->   `net.linearize` are unchanged (1.12).
+>   output named like a state is labelled `Y_<name>`. Since Issue #121 every
+>   layer has the same `get_sys` and the names are the Labels of the variable
+>   map (1.12).
 > - **`get_sys`'s second output is no longer `lin`.** `[sys, flag, output]`:
 >   `flag` is a logical (all Jacobian entries finite and `Avv` invertible) and
 >   `output.result` is the `ResultLIN`. `[sys, lin] = net.get_sys()`
@@ -131,7 +132,7 @@
 | 最適潮流計算 | OptimalPowerFlow | `solver_OPF`: 条件 `Cost`、`Constraint`、`DefaultCost`、`ReferenceBus`(public。実行をまたいで保持し、Name-Value で上書き可)、AC OPF のウォームスタートの解、問題のキャッシュ |
 | 連続潮流計算 | ContinuationPowerFlow | `solver_CPF`: 条件 `LoadBus` |
 | 時間応答シミュレーション | TimeSimulation | `solver_ODE`: なし |
-| 近似線形化 | Linearization(新設) | `solver_LIN`: なし(v3 互換の Hidden `NonUnit` だけ) |
+| 近似線形化 | Linearization(新設) | `solver_LIN`: なし(ブロックをつなぐ接続器) |
 
 - **削除したプロパティへの代入はエラーです(互換なし)。** 例: `net.solver_ODE.RelativeTolerance = 1e-6`、`net.solver_ODE.Progress = "none"`、`net.solver_ODE.TimeLimit = 60`、`net.solver_OPF.Method = "ELD"`、`net.solver_CPF.MaxIterations = 100`、`net.solver_LIN.Method`、`.Point`、`.Coordinate`。いずれも存在しないプロパティへの代入として止まります。既定を変えるときは `GUILDA.setting` で該当するセクションを編集し、1 回だけ変えるときは Name-Value を渡してください(例 `net.simulate(t, sc, Tolerance=1e-6, Progress="none")`)。
 - **v3 互換の `net.solver_ODE.Reporter` も削除しました。** `v3_ode_reporter.m` と警告 `GUILDA:Deprecated:SimulatorReporter` はなくなり、代入はエラーです。Name-Value の `simulate(..., Reporter=..., RelativeTolerance=...)` の読み替え(`v3_simulate_args`、`GUILDA:Deprecated:SimulateOptionName`)も削除しました。`Progress=` / `Tolerance=` を使ってください。旧名は未知の名前のエラー(`GUILDA:resolve_options:UnknownName`)になります。
@@ -145,7 +146,7 @@
   | ContinuationPowerFlow | `LoadBus` | なし(`net.solver_CPF.LoadBus` の条件か Name-Value `LoadBus`) |
   | TimeSimulation | `RelativeTolerance` | `Tolerance` |
   | TimeSimulation | なし | `Solver`(既定 `"ode15s"`。`"ode15s"` / `"ode23t"`)、`Verbose`(既定 false) |
-  | Linearization(新設) | なし | `Method`(既定 `"Feedback"`。`"Kron"` / `"Feedback"` / `"DAE"`)、`Coordinate`(既定 `"theta&rho"`) |
+  | Linearization(新設) | なし | `Method`(既定 `"Kron"`。`"Kron"` / `"DAE"`)、`Coordinate`(既定 `"theta&rho"`) |
   | 各解析のセクション | なし | `PlotFcn`(既定 `"none"`) |
   | PowerFlowCalculation | なし | `Verbose`(logical、既定 false) |
   | PowerFlowCalculation | `MaxIteration`・`GradientStepSize` の 0 = 自動 | NaN = 自動(0 は 0 回・刻み幅 0。保存した 0 は直してください) |
@@ -159,7 +160,7 @@
 
   結果の `res.options` のフィールドも新しい名前です(`res.options.Tolerance`、`res.options.MaxIteration` など)。
 - **`SolverOptions` と `Point` は呼び出しだけ。** 時間応答シミュレーションの `SolverOptions`(`matlab.ode.Options`)は呼び出しかシナリオの `Options` でだけ与えます。与えなければ `ode` オブジェクトは `Solver` のオプションを使います。優先順位は `GUILDA.setting` < `sc.Options` < 呼び出しの Name-Value です。線形化の `Point` も呼び出しだけで(既定 `[]` = 平衡点)、保存しません。
-- **`Plot` オプションを `PlotFcn` に置き換えました。** `calculate_powerflow`、`calculate_optimal_powerflow`、`calculate_continuation_powerflow`、`simulate`、`linearize`、`get_sys` の `Plot`(解析後に `result.Plot()` を呼ぶ)は廃止し、渡すと `GUILDA:resolve_options:UnknownName` で止まります。解析後の図は `result.Plot()` で描いてください。`PlotFcn`(MATLAB の `optimoptions` / `odeset` と同じ名前)は解析中のライブ表示で、値は `"none"`、表示キーの string 配列、または関数ハンドルです。既定は各セクションのキー `PlotFcn`(select、選択肢は `"none"` と各解析のキー)です。
+- **`Plot` オプションを `PlotFcn` に置き換えました。** `calculate_powerflow`、`calculate_optimal_powerflow`、`calculate_continuation_powerflow`、`simulate`、`get_sys` の `Plot`(解析後に `result.Plot()` を呼ぶ)は廃止し、渡すと `GUILDA:resolve_options:UnknownName` で止まります。解析後の図は `result.Plot()` で描いてください。`PlotFcn`(MATLAB の `optimoptions` / `odeset` と同じ名前)は解析中のライブ表示で、値は `"none"`、表示キーの string 配列、または関数ハンドルです。既定は各セクションのキー `PlotFcn`(select、選択肢は `"none"` と各解析のキー)です。
   - 潮流計算 `"residual"`(方程式ごとの残差の棒グラフ。全 Solver)、OPF は fmincon のプロット関数(`"fval"` → `optimplotfval` など。linprog・quadprog では `GUILDA:SolverOPF:PlotFcnUnsupported`)、連続潮流計算 `"pvcurve"`(全母線の PV 曲線を伸ばす)。
   - 関数ハンドルは `stop = f(x, optimValues, state)`(optimoptions と同じ形。OPF は fmincon にそのまま渡す)。
   - 時間応答シミュレーションと線形化は `"none"` のみ(ほかの値は `GUILDA:check_plotfcn:InDevelopment`)。未知のキーは `GUILDA:check_plotfcn:UnknownKey`、別の型の値は `GUILDA:check_plotfcn:InvalidValue` で止まります(`tools.check_plotfcn`)。
@@ -241,12 +242,9 @@ v3 の編集ログ(`tab_editLog`)はありません。各層は、古くなっ�
   | 解析 | 読むタグ | エラー |
   |---|---|---|
   | `simulate`(`solver_ODE.solve`、`initialize_index` のループ内) | 系統の `powerflow`・`odefcn`、機器・ローカル制御器・グローバル制御器の `equilibrium`・`odefcn` | `GUILDA:SolverODE:Stale` |
-  | `linearize`、`net.get_sys`(`solver_LIN.solve`) | 同上 | `GUILDA:SolverLIN:Stale` |
+  | `get_sys`(すべての層、`PowerSystemModel.get_sys`) | 系統と、集めるモデルオブジェクト(機器・ローカル制御器・グローバル制御器)。`odefcn` と入力の編集はいつも、`powerflow`・`equilibrium` は `Point` が平衡点のときだけ | `GUILDA:PowerSystemModel:Stale`、`GUILDA:PowerSystemModel:InputEdited` |
   | `calculate_continuation_powerflow`(`solver_CPF.solve`) | 系統の `powerflow`・`odefcn`、機器の `equilibrium`・`odefcn`(制御器は読まない) | `GUILDA:SolverCPF:Stale` |
-  | `comp.get_sys`(`Point` なし) | 系統、機器とその制御器 | `GUILDA:Component:Stale` |
-  | `bus.get_sys`(`Point` なし) | 系統、母線の機器(制御器は `comp.get_sys` が読む) | `GUILDA:Bus:Stale` |
-  | `con.get_sys`、`con.validate` | 系統、その制御器 | `GUILDA:LocalController:Stale` |
-  | `gc.get_sys` | 系統、そのグローバル制御器 | `GUILDA:GlobalController:Stale` |
+  | `con.validate` | 系統、その制御器 | `GUILDA:LocalController:Stale` |
 
   検査はソルバーの中にあるので、ソルバーを直接呼んでも検査されます。
 - **改名は何も古くしません。** 母線を改名しても、その機器のタグは変わりません(タグは永続的な ID として扱います)。
@@ -318,7 +316,7 @@ net.a_Bus{3}.l_isSlack = true;   % bus 1 is no longer slack
 ### 1.6 Global and local controllers
 
 Any number of global controllers is supported: `initialize`, `simulate` and
-all `get_sys` algorithms (Kron, DAE, Feedback) handle every controller.
+all `get_sys` methods (Kron, DAE) handle every controller.
 Outputs of several controllers on the same input add up. Scalar `alpha` /
 `beta` of the AGC are expanded to every controlled unit.
 
@@ -817,79 +815,54 @@ Option names:
 
 ### 1.12 Linearization
 
+`get_sys` は 1 つのメソッド(`PowerSystemModel.get_sys`)で、`PowerNetwork`、`Bus`、`Component`(ローカル制御器を含む)、`LocalController`、`GlobalController` のすべてで同じ引数を取ります(Issue #121)。各モデルオブジェクトは自分の線形ブロックだけを返し(`get_linear_block`)、`SolverLIN.solve` が変数表と接続表に沿ってつなぎます。`net.linearize` は削除しました。
+
 | v3 | v4 |
 |----|----|
-| `[sys, lin] = net.get_sys(NonUnit=n, Algorithm=a)` | `sys = net.get_sys(Method=a)` (`Algorithm=a` still works with `GUILDA:Deprecated:LinearizeAlgorithm`); `[sys, flag, output] = ...`, `output.result` is the `ResultLIN` |
-| `lin = odeLinearizer(net, n, Algorithm=a); sys = lin.get_sys` | `res = net.linearize(); sys = res.get_ss(a)` |
-| `lin.Kxx`, `lin.Kxv`, `lin.Kvx`, `lin.Kvv`, `lin.get_DAE` | `res.rm_Axx`, `rm_Axv`, `rm_Bx`, `rm_Avx`, `rm_Avv`, `rm_Bv`, `rm_E` (unreduced DAE in the order of `res.tab_variable`) |
-| – | `net.linearize(Point=x)` or `Point={sim, t}`: linearize away from the equilibrium |
-| – | `net.get_variable_map()`, `bus.get_variable_map()`, `comp.get_variable_map()` (also the signals and the connection map, see below) |
+| `[sys, lin] = net.get_sys(NonUnit=n, Algorithm=a)` | `[res, flag, output] = net.get_sys(Method=a)`(`a` は `"Kron"` か `"DAE"`)。`res` は `ResultLIN` |
+| `lin = odeLinearizer(net, n, Algorithm=a); sys = lin.get_sys` | `res = net.get_sys(); sys = res.get_ss(a)` |
+| `lin.Kxx`, `lin.Kxv`, `lin.Kvx`, `lin.Kvv`, `lin.get_DAE` | `res.rm_Axx`, `rm_Axv`, `rm_Bx`, `rm_Avx`, `rm_Avv`, `rm_Bv`, `rm_E`(縮約前の DAE。並びは `res.tab_variable`) |
+| `comp.get_sys(x, V, u)` | `comp.get_sys(Point=p)`(`p` は `comp.get_variable_map()` の x, Vre, Vim, u の順)。位置引数は `GUILDA:Deprecated:GetSysPositionalPoint` で 1 回警告して `Point` にする |
+| `comp.get_sys(false)` / `Controllers=false` | `comp.get_linear_block(x, V, u)`(機器単体のブロック) |
+| – | `net.get_sys(Point=x)` または `Point={sim, t}`: 平衡点以外での線形化 |
+| – | `net.get_variable_map()`、`bus.get_variable_map()`、`comp.get_variable_map()`(信号と接続表も) |
 
-- Options: `Method` (`"Kron"` | `"Feedback"` | `"DAE"`, default
-  `"Feedback"` as in v3), `Point` (call only), `Coordinate`, `PlotFcn`; the
-  eigenvalue map is `res.plot_eigenvalue()`. Defaults in the Linearization section of
-  `GUILDA.setting`; `net.solver_LIN` holds no settings.
-- `res.get_ss(Method)` gives the same A, E, C, D and names as v3
-  `get_sys` for every algorithm (checked against a copy of the v3 code in
-  F7); `get_ss("DAE", Coordinate=...)` chooses `"theta&rho"` (default),
-  `"theta&V"` or `"Vre&Vim"` for the bus variables.
-- **DAE `B` sign** (silent change): the rows of the algebraic equations
-  have the opposite sign; the input-to-state transfer function of the DAE
-  model now equals that of Kron.
-- `flag` is true when all Jacobian entries are finite and `Avv` is
-  invertible; `output` has `message`, `s_issue`, `l_equilibrium`, `n_x`,
-  `n_v`, `n_u`, `rcond_Avv`, `sv_faultBus`. A `Point` or a model
-  that is not finite stops with `GUILDA:SolverLIN:PointNotFinite` or
-  `JacobianNotFinite`.
-- Default outputs of `get_ss` (as v3): `"Kron"` the states, without output
-  names; `"DAE"` the dynamic states; `"Feedback"` the states without those of
-  the global controllers, with rows for states its connection removes (IEEE68:
-  128 states and 144 outputs, 144 states in `"Kron"`). `Input` and `Output`
-  select other channels.
-- State order of `get_ss` (as v3): `"Kron"` and `"DAE"` put the global
-  controllers' states first, then the components; `"Feedback"` puts the
-  components first, then the global controllers in the order they were
-  added. Find a state by `StateName`, not by position.
-- A bus without components (e.g. a pure junction bus) can be linearized: it
-  has no states and takes no current.
-- **チャネル名で添字できます。** `sys(出力名, 入力名)` は `sys(行, 列)` と同じ結果です。`comp.get_sys`、`bus.get_sys`、制御器の `get_sys` が返すモデルで使えることをテストで確認しています。以前はチャネルと同じ名前のグループが曖昧さのエラーを起こしていました。そのため、`comp.get_sys` と `con.get_sys` が返すモデルの `InputGroup` と `OutputGroup` は空になりました(`con.get_sys` は `tag=false` のときだけ持ちます)。`sys.InputGroup.<名前>` を読むスクリプトは `sys(:, "<名前>")` に直してください。
-- **各層の `get_sys` も検査します。** `comp.get_sys`、`bus.get_sys`、`con.get_sys`、`gc.get_sys` は、平衡点を使うとき系統と自分(と使う下の層)のタグを読み、古ければ層ごとのエラー(`GUILDA:Component:Stale` など、1.3 の表)で止まります。`comp` と `bus` で `Point` を渡したときは検査しません(`initialize` までは以前のハンドルのまま)。系統に属さない機器・制御器は、古いハンドルをその場で作ります。
-- **`net.rv_Xequilibrium`** は `get_variable_map` の状態の行の順で値を返します(以前は読むと常に失敗しました)。`comp.rv_Xequilibrium_all` は AVR の下の PSS も含みます。
+- **`Feedback` は廃止しました。** `Method` は `"Kron"` と `"DAE"` だけを受け付け、`GUILDA.setting` の既定値は `"Kron"` です。`Method="Feedback"` は arguments ブロックの検証のエラーです。`Feedback` が消していた状態(入力から届かない状態)は `"Kron"` では残ります。必要なら `get_ss` の結果を `minreal` などで縮約してください。ユーザーの設定ファイルに `"Feedback"` が保存されていると、`GUILDA.config` は既定値の `"Kron"` に変えて読みます(`Auto-change @Method (Feedback >> Kron)`)。
+- **`net.linearize` は削除しました。** `net.get_sys()`(`Format="GUILDAorigin"`、既定)が同じ `ResultLIN` を返します。`flag` が false でも結果を返し、`"struct"` と `"ss"` だけが `get_ss` のエラーで止まります(`"DAE"` で `Avv` が特異なときを除く)。
+- **オプション** は arguments ブロックです: `Point`、`Port`(`Component` と `Bus` だけ。ほかの層は `GUILDA:PowerSystemModel:PortNotApplicable`)、`Method`、`Coordinate`、`PlotFcn`、`Input`、`Output`、`Format`。`Method`、`Coordinate`、`PlotFcn` を省くと GUILDA.setting の Linearization の値を使います。名前は大文字小文字を区別せず部分一致なので、`"port"` は `Port` です。v3 の `Algorithm=`、`NonUnit=`、`solver_LIN.NonUnit`、`tag`、`Controllers`、`full`、`con` は削除しました(検証のエラー)。2 番目以降の出力は全層で `[sys, flag, output]` で、cellstr の名前の出力はありません。
+- `res.get_ss(Method)` の行列と名前は v3 の `get_sys` と同じです(F7 で v3 のコードの写しと比べています)。`get_ss("DAE", Coordinate=...)` は母線変数を `"theta&rho"`(既定)、`"theta&V"`、`"Vre&Vim"` から選びます。
+- **DAE の `B` の符号**(黙った変更): 代数方程式の行の符号が逆になり、DAE の入力から状態までの伝達関数が Kron と同じになりました。
+- `flag` は、すべての要素が有限で `Avv` が正則なとき true です。`output` は `message`、`s_issue`、`l_equilibrium`、`n_x`、`n_v`、`n_u`、`rcond_Avv`、`sv_faultBus`、`s_layer`、`result` を持ちます。有限でない `Point` やモデルは `GUILDA:SolverLIN:PointNotFinite`、`JacobianNotFinite` で止まります。
+- `get_ss` の既定の出力(v3 と同じ): `"Kron"` は状態(出力名なし)、`"DAE"` は動的な状態です。`Input` と `Output` でほかのチャネルを選びます。`Output` の種類 `"y"` は変数表の `y` と `yc`(グローバル制御器の出力も含む)です。
+- `get_ss` の状態の並び(v3 と同じ): `"Kron"` と `"DAE"` はグローバル制御器の状態が先、次に機器です。状態は位置でなく `StateName` で探してください。
+- 機器のない母線(つなぎの母線など)も線形化できます。状態はなく、電流も流れません。
+- **チャネル名で添字できます。** `sys(出力名, 入力名)` は `sys(行, 列)` と同じ結果です。`InputGroup` と `OutputGroup` は空です。
+- **点での制御器の入力。** 点(`Point` でも位置引数でも)では、制御器の入力 `uc` を接続表の源の和(`"global"` を除き、`"equilibrium"` は平衡値)で求めるので、制御器も与えた点で線形化します。
+- **古さの検査(1.3)。** すべての層で `GUILDA:PowerSystemModel:Stale` と `InputEdited` です。動特性(ハンドル、周波数)の古さと入力の編集はどの点でも、潮流と平衡点の古さは `Point` が平衡点のときだけ検査します。
+- **`net.rv_Xequilibrium`** は `get_variable_map` の状態の行の順で値を返します。`comp.rv_Xequilibrium_all` は AVR の下の PSS も含みます。
 - **解けないモデルのエラー。**
 
   | ID | 条件 | 対応 |
   |----|------|------|
-  | `GUILDA:Bus:NoI2V`, `GUILDA:Component:NoI2V` | `port="I2V"` で `D` が正則でない(機器のない母線、`P = Q = 0` の負荷など。以前は NaN を返した) | `port="V2I"` を使う |
-  | `GUILDA:ResultLIN:SingularAvv` | Kron / Feedback で `Avv` が正則でない(`rcond < 1e-14`)。`net.linearize` は止まらず `flag = false`、`output.s_issue = "SingularAvv"` | `output.message` が示す母線電圧を確認する。`DAE` は計算できる |
-  | `GUILDA:ResultLIN:NoUnitBus` | Feedback で状態を持つ機器がない | Kron か DAE を使う |
-  | `GUILDA:GlobalController:GlobalControllerPort` | `gc.get_sys` で機器に制御器の入出力がない | 対象の機器を直す |
-- `NonUnit` は廃止しました (Issue #118)。機器のない母線と、状態がなく I2V 形式を
-  持たない母線は自動で判定します。`Bus.l_isNonUnit` も削除しています。互換の扱いは
-  4 章の表のとおりです。`Point={sim, t}` reads
-  `sim.get_point(t)` and works with local and global controllers;
-  `Point={sim, t, "before"}` takes the value before the event at a phase
-  boundary (the default is after).
-- **`comp.get_sys` / `bus.get_sys` layout** (silent change, see the box at
-  the top), the same on each layer:
+  | `GUILDA:PowerSystemModel:NoI2V` | `Port="I2V"` で電流が電圧を決めない(機器のない母線、`P = Q = 0` の負荷など) | `Port="V2I"` を使う |
+  | `GUILDA:ResultLIN:SingularAvv` | Kron で `Avv` が正則でない(`rcond < 1e-14`)。`get_sys` は止まらず `flag = false`、`output.s_issue = "SingularAvv"` | `output.message` が示す母線電圧を確認する。`DAE` は計算できる |
+  | `GUILDA:GlobalController:GlobalControllerPort` | 機器にグローバル制御器の入出力がない | 対象の機器を直す |
+  | `GUILDA:SolverLIN:AlgebraicLoop` | ブロックの出力が接続を通して自分に戻る(`I - D K` が特異) | モデルの直達を見直す |
+  | `GUILDA:PowerSystemModel:NoLinearModel` | `Branch` の `get_sys` | 網か母線の `get_sys` を使う |
+- `Point={sim, t}` は `sim.get_point(t)` を読み、ローカル制御器とグローバル制御器を含めて使えます。`Point={sim, t, "before"}` は相の境界でイベントの前の値です(既定は後)。制御器の層は `{sim, t}` を受け付けません(`GUILDA:SolverLIN:PointLayer`)。
+- **層ごとの入出力**(名前は変数表の Label、並びは変数表の順):
 
-  | Layer | Inputs | States | Outputs |
-  |-------|--------|--------|---------|
-  | controller (`con.get_sys`, now public) | `[V; u_con]` | `x_con` | `y_con` |
-  | component | `[port; u_mac; u_con]` | `[x_mac; x_con]` | `[port; y_mac; y_con]` |
-  | bus | `[port; u_mac, u_con of each component]` | `[x_mac; x_con]` | `[port; y_mac, y_con of each component]` |
+  | 層 | 入力 | 状態 | 出力 |
+  |----|------|------|------|
+  | `con.get_sys` | `[母線の V; uc]` | `x` | `yc` |
+  | `gc.get_sys` | `[全母線の V; uc]` | `x` | `yc` |
+  | `comp.get_sys`(`Port="V2I"`) | `[母線の V; u; uc]` | `[x; 制御器の x]` | `[I(機器のタグ); y; yc]` |
+  | `bus.get_sys`(`Port="V2I"`) | `[V; 全機器の u; 全制御器の uc]` | 機器と制御器の `x` | `[I(母線のタグ); 全 y; 全 yc]` |
 
-  `port` is `[Vre; Vim]` in and `[Ire; Iim]` out for `port="V2I"`, the
-  inverse for `"I2V"`. Controllers are listed depth first. States are
-  never outputs and every name is unique; an output named like a state of
-  its owner is `Y_<name>` (e.g. `Y_omega_B001SG1`). A controller input
-  adds to the internal signal it drives (as `u_mac` does). `full` is
-  ignored. The `I2V` outputs `y` now account for V being an output, and
-  the outputs of a component with controllers keep their tags.
-- Removed: `SolverLIN(net, NonUnit, Name, Value)` stops with
-  `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` (error); `SolverLIN()`
-  takes no arguments.
+  `Port="I2V"` は電流と電圧を入れ替えます。状態は出力にならず、すべての名前は一意です。所有者の状態と同じ名前の出力は `Y_<name>` です。外部入力は、その入力の源の和に足されます。グローバル制御器の入出力は自分の `uc`・`yc` で、どこを観測しどこへ返すかは接続表にあります。
+- 削除: `SolverLIN(net, NonUnit, Name, Value)` は `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor`(エラー)で止まります。`SolverLIN()` は引数を取りません。`SolverLIN.OptionMap` と `get_options` はありません。
 
-- **行列で線形化し、`Format` で形を選びます。** `net.get_sys`、`bus.get_sys`、`comp.get_sys`、`con.get_sys`、`gc.get_sys` は Control System Toolbox なしで線形化し、`Format` で返す形を選びます。
+- **行列で線形化し、`Format` で形を選びます。** どの層の `get_sys` も Control System Toolbox なしで線形化し、`Format` で返す形を選びます。
 
   | `Format` | `sys` | Toolbox |
   |----------|-------|---------|
@@ -897,9 +870,8 @@ Option names:
   | `"struct"` | 同じ 8 フィールドの構造体(名前は string の列) | 不要 |
   | `"ss"` | 記述子形式の状態空間モデル(`dss`、v3 と同じ) | Control System Toolbox |
 
-  - `net.get_sys` の `ResultLIN` は `net.linearize` の結果で、`A` … `OutputName` は `Method` と `Input`/`Output` で選んだモデル(`result.options` に保持)。`[sys, flag, output]` の `flag`、`output` は以前と同じ。
-  - `res.get_ss(Method, Format=...)` は既定 `"ss"`、`"struct"` なら Toolbox 不要。`net.linearize` の結果の `A` … `OutputName` は `get_ss(options.Method)`(全入力、既定の出力)。
-  - 行列は以前の実装と一致(1030 モデル、最大相対誤差 2e-14)。
+  - `res.get_ss(Method, Format=...)` は既定 `"ss"`、`"struct"` なら Toolbox 不要。
+  - 行列は接続器に置き換える前の実装と一致します(同梱の全系統と GC 付きの 2 系統、平衡点とずらした点、298 項目、最大相対差 1.1e-14。F7 の基準値のテスト)。
   - 書き換え例: `sys = net.get_sys(); eig(sys)` → `res = net.get_sys(); eig(res.A, res.E)`、または `sys = net.get_sys(Format="ss")`。
   - LQR 制御器(`controller.local_LQR`、`local_LQR_retrofit`、`+controller/+modeling/get_environment`)は引き続き Control System Toolbox が必要(1.14)。
 
@@ -1154,7 +1126,7 @@ there.
 | `obj.str_tag`(すべての層、`Parameter`、`Scenario`) | `obj.s_tag` |
 | `bus.str_bustype` | `bus.s_bustype` |
 | `res.str_solver`、`res.str_network` | `res.s_solver`、`res.s_network` |
-| `linearize`/`get_sys` の `output.str_issue` | `output.s_issue` |
+| `get_sys` の `output.str_issue` | `output.s_issue` |
 | `comp.sct_edit.str_odefcn`(モデル作者向け) | `comp.sct_stale.odefcn`(古い理由のメッセージ。空なら最新。1.3 と 2.「`set_odefcn` は廃止」を参照) |
 
 - `net.info` と `struct(obj)` の表や構造体の列名、フィールド名も `s_tag`、`s_bustype` になります。
@@ -1242,7 +1214,7 @@ then the class header, then the number. Buses (`B001`) and branches
   component tag in front after the constructor.
 
 **Labels** made by `attach_tag` (the names of states, inputs and outputs in
-`get_sys`, `linearize` and `ResultLIN`, the `Label` column and the
+`get_sys` and `ResultLIN`, the `Label` column and the
 `Source` / `Target` columns of `get_variable_map`, the INFO line of
 `add_global_controller`, the controller columns of `ResultODE.export`) are
 the name, `"_"` and the tag of the owner layer. Before, the tags of all the
@@ -1453,15 +1425,13 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | `Continuation_Power_Flow(net, opt)` | `GUILDA:Deprecated:ContinuationPowerFlowFunction` | warning; returns a `ContinuationPowerFlowV3` (v3 properties, `solve`, `CPF_Result`) |
 | `SolverCPF(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | error |
 | `SolverLIN(net, NonUnit, Name, Value)` | `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` | error |
-| `net.linearize` / `net.get_sys` の `Algorithm=a` | `GUILDA:Deprecated:LinearizeAlgorithm` | 警告。`Method=a` として扱う |
-| `net.linearize` / `net.get_sys` の `NonUnit=n` | `GUILDA:Deprecated:LinearizeNonUnit` | 警告。状態のない母線は無視。状態のある母線は `Feedback` で `GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus`、存在しない母線は `GUILDA:v3_nonunit_range:NonUnit` のエラー |
-| `net.solver_LIN.NonUnit` への空でない値の代入 | `GUILDA:Deprecated:SolverLinNonUnit` | 警告(`.mat` の読み込みでも代入されるので、空の値では出さない)。値は Hidden のプロパティに残り、以後の実行で `NonUnit=n` と同じ扱い(呼び出しの指定が優先)。読み出しは保存した値を返し、警告なし |
+| `comp.get_sys(x, V, u)`、`con.get_sys(x, V, u)`、`gc.get_sys(x, V, u)` | `GUILDA:Deprecated:GetSysPositionalPoint` | 警告。`v3_get_sys_point` が `Point` にする。`bus`・`net` の位置引数は `GUILDA:v3_get_sys_point:Positional` のエラー |
 | `initialize("methods", m)` | `GUILDA:Deprecated:InitializeMethods` | warning; becomes `Method=m` |
 | `initialize` values `"powerflow calculation"` / `"optimal powerflow"` / `"calculate from Xequilibrium"` | `GUILDA:Deprecated:InitializeMethodValue` | warning; become `"powerflow"` / `"OPF"` / `"equilibrium"` |
 | `CsvNetHandler.import(path, net, Initialize=tf)` | `GUILDA:Deprecated:CsvNetHandlerImport` | warning; calls `PowerNetwork.import_csv` |
 | `CsvNetHandler.export(net, ModelName, savepath=d)` | `GUILDA:Deprecated:CsvNetHandlerExport` | warning; calls `net.export_csv(fullfile(d, "@"+ModelName))` |
 
-Not kept: the v3 second output `lin` of `get_sys`, the v3 meaning of the
+Not kept: the v3 options `Algorithm` and `NonUnit` of `get_sys` and `solver_LIN.NonUnit` (validation errors; Issue #121), the v3 second output `lin` of `get_sys`, the v3 meaning of the
 second output of `simulate`, the v3 output order of `initialize` (see the
 box at the top), and the v3 positional mode and `export` / `filename` options of
 `calculate_powerflow` (2026-11-12).
@@ -1479,18 +1449,14 @@ lists all of them:
 | `@PowerNetwork/initialize.m` | `v3_initialize_args(varargin)` | `methods` option and old values |
 | `_auxiliary/@SolverCPF/SolverCPF.m` | `v3_cpf_constructor(varargin)` | rejects v3 constructor arguments |
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `v3_linearizer_constructor(varargin)` | rejects v3 constructor arguments |
-| `_auxiliary/@SolverLIN/SolverLIN.m` | `NonUnit` property (Hidden) | 廃止した設定の保存先 |
-| `_auxiliary/@SolverLIN/SolverLIN.m` | `set.NonUnit` | `v3_solver_nonunit`: 警告して保存 |
-| `_auxiliary/@SolverLIN/get_options.m` | `v3_linearize_args(nv, obj.NonUnit)` | `NonUnit` を警告して取り除く |
-| `_auxiliary/@SolverLIN/get_options.m` | `sct_options.NonUnit = rv_nonUnit` | 指定があるときだけ結果の `options` に残す |
-| `_auxiliary/@SolverLIN/solve.m` | `v3_nonunit_range(sct_options, n_bus)` | 存在しない母線のエラー |
-| `_auxiliary/@ResultLIN/get_ss.m` | `v3_nonunit_dynamic(obj.options, s.c_sysBus)` | 状態のある母線のエラー |
+| `_auxiliary/@PowerSystemModel/get_sys.m` | `x`, `V`, `u` arguments (3 lines) | 位置引数の点を受け付ける |
+| `_auxiliary/@PowerSystemModel/get_sys.m` | `v3_get_sys_point(obj, x, V, u)` | 警告して `Point` にする |
 
 `DebugScript.test_F10_api_foundation` checks this list and that core code
 does not call `Deprecated` outside a hook line. Update both when a hook is
 added.
 
-フックは `fe9aa3a` の時点で 25 行で、上の表の行数と一致します(`grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA` で数えました。ファイルごとの行数は F10 のテストが検査します)。
+フックは Issue #121 の時点で 9 行で、上の表の行数と一致します(`grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA` で数えました。ファイルごとの行数は F10 のテストが検査します)。
 `Continuation_Power_Flow` and `CsvNetHandler` are old names; they live
 entirely in `_VersionSupport/` and need no hook. CSV import ignores a bus
 `baseMVA` column simply by not reading it (no compat code).
@@ -1509,10 +1475,7 @@ settings (an untagged line, needed by the `get_config` hook).
 | `@CsvNetHandler/` | old CSV import / export, wrappers of `import_csv` / `export_csv` |
 | `v3_cpf_constructor.m` | error for `SolverCPF(net, ...)` |
 | `v3_linearizer_constructor.m` | error for `SolverLIN(net, ...)` |
-| `v3_linearize_args.m` | `linearize` / `get_sys` の `NonUnit` |
-| `v3_solver_nonunit.m` | `solver_LIN.NonUnit` の setter |
-| `v3_nonunit_range.m` | `NonUnit` の存在しない母線のエラー |
-| `v3_nonunit_dynamic.m` | `NonUnit` の状態のある母線のエラー |
+| `v3_get_sys_point.m` | `get_sys(x, V, u)` の位置引数の点を `Point` にする |
 | `v3_initialize_args.m` | `initialize` option `methods` and old method values |
 
 ### Adding a compat form (stages 2 and 3)
@@ -1560,10 +1523,8 @@ returned. No analysis uses `legacy_output` now (the OPF tuple was removed on
    - F5 "COMPAT v3 Continuation_Power_Flow and SolverCPF constructor"
    - F6 "Deprecated option names still work"
    - F7 "SolverLIN constructor of v3 names the remedy",
-     "Deprecated NonUnit option warns and ignores buses without states",
-     "Deprecated NonUnit naming a bus with states is rejected",
-     "Deprecated NonUnit naming a missing bus is rejected",
-     "Deprecated solver_LIN.NonUnit warns and acts as the option"
+     "Removed options of v3 stop with the validation error",
+     "Linear block of the component alone" (the positional point)
    - F8 "Deprecated CsvNetHandler wrappers"
    - F10 "Legacy output …", "COMPAT hook helper for add_bus baseMVA",
      "COMPAT hooks are single tagged lines …"

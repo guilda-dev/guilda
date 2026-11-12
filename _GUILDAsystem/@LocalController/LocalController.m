@@ -201,9 +201,12 @@ classdef LocalController < PowerSystemModel
 
 
 %% Analysis
-    methods
-        % get sys (public: the linear model of the controller alone)
-        [sys, varargout] = get_sys(obj,x,V,u,opt)
+    methods (Hidden)
+        % Linearization (get_sys connects the blocks)
+        sct_block = get_linear_block(obj, x, V, u)
+    end
+    methods (Access=protected)
+        sct_port = get_linear_port(obj, s_port)
     end
 
 %% Get Methods    

@@ -14,7 +14,7 @@ function [tab, c_idx, tab_connection] = get_variable_map(obj, s_form)
 % this map. get_variable_map("rows") is the form used inside the map: see
 % PowerNetwork.get_variable_map.
 %
-% See also PowerNetwork.get_variable_map, Bus.get_sys
+% See also PowerNetwork.get_variable_map, PowerSystemModel.get_sys
 %
 % <@Group> Called by analyses
     arguments (Input)

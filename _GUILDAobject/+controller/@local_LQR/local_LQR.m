@@ -10,7 +10,7 @@ classdef local_LQR < LocalController
 %
 % where `x*` and `u*` are the equilibrium of the component. It has no state of
 % its own. `net.initialize` computes the gain `K = lqr(A, B, Q, R)` from the
-% linear model of the component (`comp.get_sys` without its controllers)
+% linear model of the component alone (`comp.get_linear_block`)
 % connected to an infinite bus of voltage `V0` [pu] through the admittance that
 % gives the equilibrium current (as in GUILDA v2). A network Hz edit keeps the
 % equilibrium, so `net.initialize` only redesigns `K` at that equilibrium.

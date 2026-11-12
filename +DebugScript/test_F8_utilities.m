@@ -284,7 +284,7 @@ h_dx = comp.f_dx;
 comp.tab_parameter.dynamics.D = comp.tab_parameter.dynamics.D * 2;
 assert(numel(DebugScript.helper.stale(n1)) == 1)                     % リスナーは 1 組だけ
 assert(isequal(h_dx, comp.f_dx) && DebugScript.helper.is_stale(n1))
-assert(error_id(@() n1.get_sys) == "GUILDA:SolverLIN:Stale")
+assert(error_id(@() n1.get_sys) == "GUILDA:PowerSystemModel:Stale")
 assert(isempty(DebugScript.helper.stale(net)) && ~DebugScript.helper.is_stale(net))  % 元の系統は変わらない
 DebugScript.helper.quiet(@() n1.initialize);
 assert(~isequal(h_dx, comp.f_dx) && ~DebugScript.helper.is_stale(n1))
@@ -380,7 +380,7 @@ net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
 net.a_Bus{2}.a_Component{1}.add_local_controller("local-LQR");
 net.add_global_controller("agc-PI", "B003SG1");
 DebugScript.helper.quiet(@() net.initialize);
-res = net.linearize();
+res = net.get_sys();
 sim = net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,1], Progress="none");
 s_mat = tempname + ".mat";
 c = onCleanup(@() delete(s_mat));
@@ -388,7 +388,7 @@ save(s_mat, "net", "res", "sim");
 s = load(s_mat);
 same_ss = @(a, b) isequal(a.A, b.A) && isequal(a.B, b.B) && isequal(a.C, b.C) && isequal(a.D, b.D) && isequal(a.E, b.E) && ...
                   isequal(a.StateName, b.StateName) && isequal(a.InputName, b.InputName) && isequal(a.OutputName, b.OutputName);
-for alg = ["Kron", "Feedback", "DAE"]
+for alg = ["Kron", "DAE"]
     assert(same_ss(s.net.get_sys("Method", alg), net.get_sys("Method", alg)), alg + ": 読み込んだ系統")
     assert(same_ss(s.res.get_ss(alg), res.get_ss(alg)), alg + ": 読み込んだ結果")
 end
@@ -399,7 +399,7 @@ c_layer = {gen, @(n) n.a_Bus{1}, @(n) gen(n).a_LocalController{1}, lqr, @(n) n.a
 for k = 1:numel(c_layer)
     assert(same_ss(c_layer{k}(s.net).get_sys(), c_layer{k}(net).get_sys()), "layer %d", k)
 end
-assert(isequal(s.net.linearize("Point", {s.sim, 0.5}).rm_Axx, net.linearize("Point", {sim, 0.5}).rm_Axx))
+assert(isequal(s.net.get_sys("Point", {s.sim, 0.5}).rm_Axx, net.get_sys("Point", {sim, 0.5}).rm_Axx))
 
 % 読み込んだ系統でも、Hz の編集は K を作り直し、動特性の編集は各層で initialize を促す
 K = lqr(s.net).K;
@@ -409,8 +409,8 @@ assert(norm(lqr(s.net).K - K) > 1e-3, "K が古い Hz のまま")
 assert(isequal(lqr(net).K, K), "元の系統の K が変わった")
 g3 = s.net.a_Bus{3}.a_Component{1};
 g3.tab_parameter.dynamics.D = 2 * g3.tab_parameter.dynamics.D;
-assert(error_id(@() g3.get_sys()) == "GUILDA:Component:Stale")
-assert(error_id(@() s.net.a_Bus{3}.get_sys()) == "GUILDA:Bus:Stale")
+assert(error_id(@() g3.get_sys()) == "GUILDA:PowerSystemModel:Stale")
+assert(error_id(@() s.net.a_Bus{3}.get_sys()) == "GUILDA:PowerSystemModel:Stale")
 s.net.a_GlobalController{1}.get_sys();   % グローバル制御器の get_sys は系統と自分のタグだけを見る
 
 

@@ -23,8 +23,8 @@ classdef PowerNetwork < PowerSystemModel
 %   every model; the edit does not reach them). The components and controllers mark
 %   their own stale tags.
 % - `initialize` brings every layer up to date; the analyses only read the stale tags
-%   they need and stop with their own error (GUILDA:SolverODE:Stale, SolverLIN:Stale,
-%   SolverCPF:Stale, and the Stale errors of the get_sys of each layer), naming the
+%   they need and stop with their own error (GUILDA:SolverODE:Stale,
+%   SolverCPF:Stale, and PowerSystemModel:Stale of get_sys), naming the
 %   reasons, until it has run.
 %
 % A network is built by adding buses (`add_bus`) and branches (`add_branch`); the
@@ -35,7 +35,7 @@ classdef PowerNetwork < PowerSystemModel
 % - continuation power flow (`calculate_continuation_powerflow`)
 % - equilibrium (`initialize`), time simulation (`simulate`) of the scenarios it holds
 %   (`add_scenario`, `remove_scenario`, `a_Scenario`)
-% - linearization and eigenvalue analysis (`linearize`, `get_sys`)
+% - linearization and eigenvalue analysis (`get_sys`)
 % - network diagrams (`draw_diagram`), the signal connections of the controllers
 %   (`disp_connection`) and CSV / MATPOWER import and export
 %
@@ -104,7 +104,7 @@ classdef PowerNetwork < PowerSystemModel
         solver_OPF SolverOPF {mustBeScalarOrEmpty}  % Solver of calculate_optimal_powerflow (returns a ResultOPF); keeps the warm start (bus voltages of the last solved AC OPF), no settings (GUILDA.setting). <@Type> SolverOPF <@Stale> nothing
         solver_CPF SolverCPF {mustBeScalarOrEmpty}  % Solver of calculate_continuation_powerflow (returns a ResultCPF); keeps the condition LoadBus; settings in GUILDA.setting. <@Type> SolverCPF <@Stale> nothing
         solver_ODE SolverODE {mustBeScalarOrEmpty}  % Solver of simulate (returns a ResultODE); no settings (GUILDA.setting). <@Type> SolverODE <@Stale> nothing
-        solver_LIN SolverLIN {mustBeScalarOrEmpty}  % Solver of linearize and get_sys (returns a ResultLIN); no settings (GUILDA.setting). <@Type> SolverLIN <@Stale> nothing
+        solver_LIN SolverLIN {mustBeScalarOrEmpty}  % Connector of get_sys (SolverLIN.solve; get_sys returns a ResultLIN); no settings (GUILDA.setting). <@Type> SolverLIN <@Stale> nothing
     end
     properties(Dependent) % Steady State
         cv_Vequilibrium                             % [pu] Bus voltage phasors at the equilibrium, one per bus.
@@ -171,8 +171,6 @@ classdef PowerNetwork < PowerSystemModel
         [result, flag, output] = calculate_continuation_powerflow(obj, varargin)
 
         % Static Analysis
-        [result, flag, output] = linearize(obj, varargin)
-        [sys, flag, output] = get_sys(obj, varargin)
         [tab, c_idxBus, c_idxGC, tab_connection] = get_variable_map(obj, s_form)
         tab_Ybus2bus = get_admittance_matrix(obj)
         
@@ -195,6 +193,7 @@ classdef PowerNetwork < PowerSystemModel
     methods(Access=protected)
         % Edit handling: the one-slack-bus rule and the stale tag powerflow
         handle_edit(obj, a_layer, tag, log)
+        sct_port = get_linear_port(obj, s_port)
         sct_page = gui_content(obj)
     end
 

@@ -28,7 +28,7 @@ assert(isequal(h_dx, comp.f_dx) && ~DebugScript.helper.is_stale(net))
 sol = net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]);
 assert(sol.odeResults.t(end) == 1)
 net.get_sys();
-net.linearize();
+net.get_sys();
 assert(isequal(h_dx, comp.f_dx))      % 解析は何も作り直さない
 
 

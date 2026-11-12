@@ -5,11 +5,11 @@ function fig = plot_eigenvalue(obj, opt)
 % (A, E) of get_ss(Method) in the complex plane, with the imaginary axis (the port
 % model for an object-level result, see ResultLIN). It needs no toolbox.
 % Eigenvalues with a positive real part (larger than Tolerance) are drawn in red.
-% The only figure of the analysis: net.linearize and net.get_sys draw none (their
-% PlotFcn is a live display during the linearization).
+% The only figure of the analysis: get_sys draws none (its PlotFcn is a live display
+% during the linearization).
     arguments (Input)
         obj
-        opt.Method (1,1) string {mustBeMember(opt.Method, ["Kron","Feedback","DAE"])} = default_algorithm(obj) % Model whose eigenvalues are drawn. Default: the Method of the linearization.
+        opt.Method (1,1) string {mustBeMember(opt.Method, ["Kron","DAE"])} = default_algorithm(obj) % Model whose eigenvalues are drawn. Default: the Method of the linearization.
         opt.Tolerance (1,1) double {mustBeNonnegative} = 1e-6 % Real part above which an eigenvalue is drawn as unstable.
         opt.Parent = [] % Container to draw in. A new figure when empty.
     end
@@ -34,7 +34,7 @@ function fig = plot_eigenvalue(obj, opt)
     grid(fig, "on");
     xlabel(fig, "Real");
     ylabel(fig, "Imag");
-    if isfield(obj.sct_model, "sct_sys")
+    if ~(isfield(obj.output, "s_layer") && obj.output.s_layer == "PowerNetwork")
         s_title = "Eigenvalues (" + obj.output.s_layer + ")";
     else
         s_title = "Eigenvalues (" + opt.Method + ")";
@@ -47,8 +47,8 @@ end
 
 
 function str = default_algorithm(obj)
-% Method of the linearization ("Feedback" when the result has none)
-    str = "Feedback";
+% Method of the linearization ("Kron" when the result has none)
+    str = "Kron";
     if isfield(obj.options, "Method")
         str = obj.options.Method;
     end

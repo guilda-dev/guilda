@@ -1,358 +1,223 @@
-function [result, flag, output] = solve(obj, net, sct_options)
-% Linearize the network with the given settings.
+function [sct_sys, output] = solve(obj, c_block, tab, tab_connection, sct_port) %#ok<INUSL>
+% Connect linear blocks along the variable map.
 %
-% Linearizes the network net at the point sct_options.Point and returns the unreduced DAE
-% (the Jacobian blocks in the order of net.get_variable_map()) as a ResultLIN.
-% The solver and the network are only read: nothing is written back into them.
-% Called by net.linearize; calling it
-% directly is for advanced use. Like net.linearize, it stops with the error
-% GUILDA:SolverLIN:Stale when net.initialize() is needed. A Point with NaN or Inf stops
-% with GUILDA:SolverLIN:PointNotFinite, and a
-% model that is not finite at the point with GUILDA:SolverLIN:JacobianNotFinite.
+% The numerical connector of the linearization: get_sys of every layer
+% (PowerSystemModel.get_sys) collects the linear blocks of its model objects
+% (Component.get_linear_block, LocalController.get_linear_block,
+% GlobalController.get_linear_block) and its port (get_linear_port), and this method
+% connects them. It reads only its arguments: no network and no model object.
 %
-% Point sets the variables only: the network is the one of the model, so a point inside a
-% fault is combined with the admittance matrix without the fault. The call reports such a
-% point (zero bus voltage) with an INFO message and in output.message; flag does not
-% depend on it.
+% - Each input of a block is the sum of its sources in tab_connection (the rows whose
+%   TargetIndex is the row of tab with the Label of the input): an output of a block
+%   (Kind "y" or "yc") or a state (Kind "x"). The rows "equilibrium" add nothing (the
+%   values are deviations from the point). An input in sct_port.sv_input also adds the
+%   external input of that name. A bus voltage input is the algebraic variable of the bus
+%   when it is in sct_port.sv_algebraic, otherwise an external input.
+% - The inputs and outputs of the blocks are eliminated: u_b = K y_b + Sx x + Sv v + P w
+%   and y_b = C x + D u_b give (I - D K) y_b = ... An I - D K that is singular stops with
+%   GUILDA:SolverLIN:AlgebraicLoop.
+% - Each bus of sct_port.sv_algebraic adds the current balance 0 = Y v - sum(I) (+ the
+%   external current of the bus, for the port "I2V"), where sum(I) are the outputs
+%   [Ire; Iim] of the blocks at that bus (sct_port.tab_current) and Y = sct_port.cm_Y.
+% - The outputs are sct_port.sv_output: outputs or states of the blocks, bus voltages,
+%   or bus currents (Y v for an algebraic bus, otherwise the sum of the currents of its
+%   blocks).
+%
+% sct_sys is the descriptor model E [dx; dv]/dt = A [x; v] + B w, y = C [x; v] + D w,
+% with the states x of the blocks in their order and the algebraic variables v
+% (E = 0 on their rows). A block that is not finite stops with
+% GUILDA:SolverLIN:JacobianNotFinite (naming its owner), and a name of a block that is
+% not in tab with GUILDA:SolverLIN:VariableMap.
     arguments (Input)
-        obj % Solver (net.solver_LIN).
-        net % Initialized network.
-        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+        obj                          % Solver (net.solver_LIN, or a SolverLIN for the other layers).
+        c_block (:,1) cell           % Blocks in the order of the variable map: struct A, B, C, D, E, StateName, InputName, OutputName (and Owner, the text of the error messages).
+        tab table                    % Variable map of the layer (all rows).
+        tab_connection table         % Connection map of the layer.
+        sct_port (1,1) struct        % Port of the layer: sv_input, sv_output, sv_algebraic, cm_Y, tab_bus, tab_current.
     end
     arguments (Output)
-        result % Jacobian blocks, variable map, point and settings.
-        flag % True when the result is usable: all Jacobian entries are finite and Avv is invertible.
-        output % message, s_issue ("", "NotFinite" or "SingularAvv"), l_equilibrium, n_x, n_v, n_u, rcond_Avv, sv_faultBus, s_layer ("PowerNetwork").
+        sct_sys struct               % Fields A, B, C, D, E, StateName, InputName, OutputName, n_v.
+        output struct                % s_issue ("", "NotFinite", "SingularAvv"), rcond_Avv, n_x, n_v, n_u.
     end
-    t0 = tic;
-    a_bus = net.a_Bus;
-    a_gc  = net.a_GlobalController;
-
-    % Stale tags of the network, the components, their local controllers (depth first, as
-    % a list) and the global controllers: net.initialize() is needed when any is not empty
-    if ~isempty(net.sct_stale.input)   % edited inputs: initialize(Method="FixedInput")
-        sv_in = unique(net.sct_stale.input, "stable");
-        error(msg("GUILDA:SolverLIN:InputEdited", char(net.s_tag), char(join(sv_in(1:min(end,3)), "; "))))
-    end
-    sv    = [net.sct_stale.powerflow; net.sct_stale.odefcn];
-    c_obj = tools.cellfun(@(b) b.a_Component, a_bus);
-    c_obj = [vertcat(cell(0,1), c_obj{:}); a_gc];
-    k = 1;
-    while k <= numel(c_obj)
-        sv = [sv; c_obj{k}.sct_stale.equilibrium; c_obj{k}.sct_stale.odefcn]; %#ok<AGROW>
-        if ~isa(c_obj{k}, "GlobalController")
-            c_obj = [c_obj; c_obj{k}.a_LocalController(:)]; %#ok<AGROW>
+    for k = 1:numel(c_block)
+        S = c_block{k};
+        for s = ["A","B","C","D","E"]
+            if ~all(isfinite(S.(s)(:)))
+                s_owner = join(string(S.StateName), ", ");
+                if isfield(S, "Owner")
+                    s_owner = S.Owner;
+                end
+                error(msg("GUILDA:SolverLIN:JacobianNotFinite", char(s_owner)))
+            end
         end
-        k = k + 1;
     end
-    if ~isempty(sv)
-        sv = unique(sv, "stable");
-        s_reason = join(sv(1:min(end,3)), "; ");
-        if numel(sv) > 3
-            s_reason = s_reason + "; ...";
+
+    % The blocks side by side
+    c_A = tools.cellfun(@(S) S.A, c_block);  c_B = tools.cellfun(@(S) S.B, c_block);
+    c_C = tools.cellfun(@(S) S.C, c_block);  c_D = tools.cellfun(@(S) S.D, c_block);
+    c_E = tools.cellfun(@(S) S.E, c_block);
+    A = blkdiag(zeros(0), c_A{:});  B = blkdiag(zeros(0), c_B{:});  C = blkdiag(zeros(0), c_C{:});
+    D = blkdiag(zeros(0), c_D{:});  E = blkdiag(zeros(0), c_E{:});
+    sv_x   = names(c_block, "StateName");
+    sv_in  = names(c_block, "InputName");
+    sv_out = names(c_block, "OutputName");
+    n_x = numel(sv_x);
+    n_l = numel(sv_in);
+    n_y = numel(sv_out);
+    A = reshape(A, n_x, n_x);   B = reshape(B, n_x, n_l);
+    C = reshape(C, n_y, n_x);   D = reshape(D, n_y, n_l);   E = reshape(E, n_x, n_x);
+
+    sv_v = reshape(string(sct_port.sv_algebraic), [], 1);
+    sv_w = reshape(string(sct_port.sv_input), [], 1);
+    n_v = numel(sv_v);
+    n_w = numel(sv_w);
+    lv_V = tab.Kind == "Vre" | tab.Kind == "Vim";
+    sv_Vall = tab.Label(lv_V);
+
+    % Sources of each input of the blocks: u_b = K y_b + Sx x + Sv v + P w
+    K  = zeros(n_l, n_y);
+    Sx = zeros(n_l, n_x);
+    Sv = zeros(n_l, n_v);
+    P  = zeros(n_l, n_w);
+    tab_c = tab_connection(tab_connection.SourceIndex > 0, :);
+    sv_src  = tab.Label(tab_c.SourceIndex);
+    sv_kind = tab.Kind(tab_c.SourceIndex);
+    sv_tgt  = tab.Label(tab_c.TargetIndex);
+    for l = 1:n_l
+        s_in = sv_in(l);
+        for m = reshape(find(sv_tgt == s_in), 1, [])
+            if sv_kind(m) == "x"
+                j = find(sv_x == sv_src(m), 1);
+                if isempty(j), error(msg("GUILDA:SolverLIN:VariableMap", char(sv_src(m)))); end
+                Sx(l,j) = Sx(l,j) + 1;
+            else
+                j = find(sv_out == sv_src(m), 1);
+                if isempty(j), error(msg("GUILDA:SolverLIN:VariableMap", char(sv_src(m)))); end
+                K(l,j) = K(l,j) + 1;
+            end
         end
-        error(msg("GUILDA:SolverLIN:Stale", char(net.s_tag), char(s_reason)))
-    end
-    n_bus = numel(a_bus);
-    v3_nonunit_range(sct_options, n_bus);        % COMPAT(v3)
-
-    % The variables of the linearization: the leading rows x, Vre, Vim, u of the map (the
-    % controller inputs uc are eliminated by the models of the layers)
-    [tab_map, c_idxBus, c_idxGC] = net.get_variable_map();
-    n_lin    = sum(ismember(tab_map.Kind, ["x","Vre","Vim","u"]));
-    tab_map  = tab_map(1:n_lin,:);
-    c_idxBus = cellfun(@(iv) iv(iv <= n_lin), c_idxBus, 'UniformOutput', false);
-    c_idxGC  = cellfun(@(iv) iv(iv <= n_lin), c_idxGC, 'UniformOutput', false);
-    [rv_point, l_eq] = SolverLIN.point_vector(net, sct_options.Point);
-    lv_bad = ~isfinite(rv_point);
-    if any(lv_bad)
-        error(msg("GUILDA:SolverLIN:PointNotFinite", list_labels(tab_map.Label(lv_bad))))
-    end
-
-    % Global controller models at the point: their inputs are the bus voltages and outputs
-    % or states of the components, and their outputs are named by the inputs they drive
-    % (inputs of components, or of local controllers: sv_l)
-    c_sysGC = cell(numel(a_gc),1);
-    for k = 1:numel(a_gc)
-        if l_eq
-            f_sys = @() a_gc{k}.get_sys("Format","struct");
-        else
-            f_sys = @() a_gc{k}.get_sys(rv_point(c_idxGC{k}), rv_point(tab_map.Kind == "Vre" | tab_map.Kind == "Vim"), ...
-                                        gc_input(a_gc{k}, tab_map, rv_point), "Format","struct");
+        if any(sv_Vall == s_in)
+            j = find(sv_v == s_in, 1);
+            if ~isempty(j)
+                Sv(l,j) = 1;
+                continue
+            end
         end
-        c_sysGC{k} = model_at_point(f_sys, "global controller " + a_gc{k}.s_tag);
-    end
-    sv_l = tools.vcellfun(@(S) reshape(string(S.OutputName), [], 1), c_sysGC);
-    sv_l = unique(string(sv_l(~ismember(string(sv_l), tab_map.Label(tab_map.Kind == "u")))), "stable");
-
-    % Bus models (V -> I) at the point. The network model has the bus voltages and the
-    % component inputs (Kind "u" of the variable map) as inputs, and the currents as
-    % outputs: the other inputs and outputs of the controllers in the bus models are left
-    % out, except the inputs of local controllers that a global controller drives (c_sysL).
-    c_sysBus = cell(n_bus,1);
-    c_sysY   = cell(n_bus,1);
-    c_sysL   = cell(n_bus,1);
-    for i = 1:n_bus
-        if l_eq
-            f_sys = @() a_bus{i}.get_sys("port","V2I","Format","struct");
-        else
-            f_sys = @() a_bus{i}.get_sys("port","V2I","Point",rv_point(c_idxBus{i}),"Format","struct");
+        j = find(sv_w == s_in, 1);
+        if ~isempty(j)
+            P(l,j) = 1;
         end
-        sys_i = model_at_point(f_sys, "bus " + a_bus{i}.s_tag);
-        sv_u = tab_map.Label(tab_map.Kind == "u" & tab_map.Bus == string(a_bus{i}.s_tag));
-        [~, iv_u] = ismember(sv_u, sys_i.InputName);
-        c_sysBus{i} = channels(sys_i, 1:2, [1, 2, reshape(iv_u, 1, [])]);
-        c_sysY{i}   = channels(sys_i, 3:numel(sys_i.OutputName), [1, 2, reshape(iv_u, 1, [])]);
-        c_sysL{i}   = channels(sys_i, 1:numel(sys_i.OutputName), reshape(find(ismember(sys_i.InputName, sv_l)), 1, []));
     end
 
-    cm_Y = net.get_admittance_matrix.Variables;
-    cv_V = tools.vec2complex(rv_point(tab_map.Kind == "Vre" | tab_map.Kind == "Vim"));
+    % y_b = C x + D u_b  =>  (I - D K) y_b = (C + D Sx) x + D Sv v + D P w
+    M = eye(n_y) - D*K;
+    if n_y > 0 && ~(rcond(M) > 1e-14)
+        error(msg("GUILDA:SolverLIN:AlgebraicLoop"))
+    end
+    Cy = M \ (C + D*Sx);
+    Dv = M \ (D*Sv);
+    Dw = M \ (D*P);
+    Axx = A + B*(K*Cy + Sx);
+    Axv = B*(K*Dv + Sv);
+    Bxw = B*(K*Dw + P);
 
-    % Unreduced DAE in the order of the variable map:
-    %   E dx/dt = Axx x + Axv v + Bx u,   0 = Avx x + Avv v + Bv u,
-    %   v = [Vre1; Vim1; Vre2; ...], 0 = (Y v - I of the components) of each bus
-    Axx = tools.dcellfun(@(S) S.A         , c_sysBus);
-    Axv = tools.dcellfun(@(S) S.B(:,1:2)  , c_sysBus);
-    Cix = tools.dcellfun(@(S) S.C         , c_sysBus);
-    Div = tools.dcellfun(@(S) S.D(:,1:2)  , c_sysBus);
-    Bxu = tools.dcellfun(@(S) S.B(:,3:end), c_sysBus);
-    Diu = tools.dcellfun(@(S) S.D(:,3:end), c_sysBus);
-    Ex  = tools.dcellfun(@(S) S.E         , c_sysBus);
-
-    sv_x  = tools.cellfun(@(S) string(S.StateName), c_sysBus);
-    sv_x  = vertcat(strings(0,1), sv_x{:});
-    sv_u  = tab_map.Label(tab_map.Kind == "u");
-    % The outputs of the bus models depend on the global controllers as the currents do
-    Cyx = tools.dcellfun(@(S) S.C         , c_sysY);
-    Dyv = tools.dcellfun(@(S) S.D(:,1:2)  , c_sysY);
-    Dyu = tools.dcellfun(@(S) S.D(:,3:end), c_sysY);
-    sv_v = tab_map.Label(tab_map.Kind == "Vre" | tab_map.Kind == "Vim");
-    sv_yBus = tools.vcellfun(@(S) reshape(string(S.OutputName), [], 1), c_sysY);
-    % Inputs of local controllers driven by global controllers: their columns in the states,
-    % the currents and the outputs of the bus models (rows I of each bus, then its outputs)
-    c_B  = tools.cellfun(@(S) S.B, c_sysL);
-    c_Di = tools.cellfun(@(S) S.D(1:2,:), c_sysL);
-    c_Dy = tools.cellfun(@(S) S.D(3:end,:), c_sysL);
-    Bxl = blkdiag(zeros(0,0), c_B{:});
-    Dl  = [blkdiag(zeros(0,0), c_Di{:}); blkdiag(zeros(0,0), c_Dy{:})];
-    sv_lBus = tools.vcellfun(@(S) reshape(string(S.InputName), [], 1), c_sysL);
-    n_i = size(Cix,1);
-    sct_net = struct("Axx", Axx, "Axv", Axv, "Bxu", Bxu, "Bxl", Bxl, "C", [Cix; Cyx], "Dv", [Div; Dyv], ...
-                     "Du", [Diu; Dyu], "Dl", Dl, "E", Ex, "sv_x", sv_x, "sv_v", sv_v, "sv_u", sv_u, ...
-                     "sv_l", string(sv_lBus), "sv_y", string(sv_yBus), "Cy", Cyx, "Dyv", Dyv);
-    [sct_net, sv_z] = add_global_controllers(c_sysGC, a_gc, sct_net);
-    [Axx, Axv, Bxu, Ex] = deal(sct_net.Axx, sct_net.Axv, sct_net.Bxu, sct_net.E);
-    Cyx = sct_net.C(n_i+1:end,:);
-    Cix = sct_net.C(1:n_i,:);
-    Dyv = sct_net.Dv(n_i+1:end,:);
-    Div = sct_net.Dv(1:n_i,:);
-
-    if ~isequal([sv_x; sv_z], tab_map.Label(tab_map.Kind == "x"))
-        error(msg("GUILDA:SolverLIN:VariableMap"))
+    % Current balance of the algebraic buses: 0 = Y v - sum(I) + I_ext
+    tab_bus = sct_port.tab_bus;
+    tab_I   = sct_port.tab_current;
+    Avx = zeros(n_v, n_x);
+    Avv = zeros(n_v, n_v);
+    Bvw = zeros(n_v, n_w);
+    if n_v > 0
+        Avv = tools.complex2matrix(sct_port.cm_Y .* ones(n_v/2));
+        for i = 1:n_v/2
+            iv_r = 2*i - [1, 0];
+            s_bus = tab_bus.Bus(tab_bus.Vre == sv_v(iv_r(1)));
+            for s_part = ["Ire","Iim"]
+                r = iv_r(1 + (s_part == "Iim"));
+                [~, iv_y] = ismember(tab_I.Label(tab_I.Bus == s_bus & tab_I.Name == s_part), sv_out);
+                Avx(r,:) = Avx(r,:) - sum(Cy(iv_y,:), 1);
+                Avv(r,:) = Avv(r,:) - sum(Dv(iv_y,:), 1);
+                Bvw(r,:) = Bvw(r,:) - sum(Dw(iv_y,:), 1);
+                j = find(sv_w == tab_bus.(s_part)(tab_bus.Bus == s_bus), 1);
+                if ~isempty(j)
+                    Bvw(r,j) = Bvw(r,j) + 1;
+                end
+            end
+        end
     end
 
-    Ymat = tools.complex2matrix(cm_Y);
-    sct_block = struct( ...
-        "Axx", Axx, "Axv", Axv, "Bx", Bxu, ...
-        "Avx", -Cix, "Avv", Ymat - Div, "Bv", -Diu, ...
-        "E", Ex);
-    sv_I = tools.cellfun(@(S) string(S.OutputName), c_sysBus);
-    sv_y = tools.cellfun(@(S) string(S.OutputName), c_sysY);
-    sct_output = struct( ...
-        "Cx", Cyx, "Cv", Dyv, "Du", Dyu, ...
-        "sv_name", vertcat(strings(0,1), sv_y{:}));
-    sct_model = struct( ...
-        "sct_output", sct_output, "sv_I", vertcat(sv_I{:}), ...
-        "c_sysBus", {c_sysBus}, "c_sysY", {c_sysY}, "c_sysL", {c_sysL}, "c_sysGC", {c_sysGC}, "cm_Y", cm_Y, ...
-        "lv_nonUnit", tools.vcellfun(@(b) isempty(b.a_Component), a_bus), ...
-        "cv_V", cv_V);
+    % Outputs
+    sv_o = reshape(string(sct_port.sv_output), [], 1);
+    n_o  = numel(sv_o);
+    Co = zeros(n_o, n_x + n_v);
+    Do = zeros(n_o, n_w);
+    Yr = zeros(n_v, n_v);
+    if n_v > 0
+        Yr = tools.complex2matrix(sct_port.cm_Y .* ones(n_v/2));
+    end
+    for k = 1:n_o
+        s = sv_o(k);
+        j = find(sv_out == s, 1);
+        if ~isempty(j)
+            Co(k,:) = [Cy(j,:), Dv(j,:)];
+            Do(k,:) = Dw(j,:);
+            continue
+        end
+        j = find(sv_x == s, 1);
+        if ~isempty(j)
+            Co(k,j) = 1;
+            continue
+        end
+        j = find(sv_v == s, 1);
+        if ~isempty(j)
+            Co(k,n_x+j) = 1;
+            continue
+        end
+        j = find(sv_w == s, 1);
+        if ~isempty(j) && any(sv_Vall == s)
+            Do(k,j) = 1;
+            continue
+        end
+        [lv_re, i_re] = ismember(s, tab_bus.Ire);
+        [lv_im, i_im] = ismember(s, tab_bus.Iim);
+        if lv_re || lv_im
+            i_b = max(i_re, i_im);
+            s_part = "Ire";
+            if lv_im, s_part = "Iim"; end
+            j = find(sv_v == tab_bus.Vre(i_b), 1);
+            if ~isempty(j)
+                % the current into the network: Y v
+                Co(k,n_x+1:end) = Yr(j + (s_part == "Iim"), :);
+            else
+                [~, iv_y] = ismember(tab_I.Label(tab_I.Bus == tab_bus.Bus(i_b) & tab_I.Name == s_part), sv_out);
+                Co(k,:) = sum([Cy(iv_y,:), Dv(iv_y,:)], 1);
+                Do(k,:) = sum(Dw(iv_y,:), 1);
+            end
+            continue
+        end
+        error(msg("GUILDA:SolverLIN:VariableMap", char(s)))
+    end
+
+    sct_sys = struct("A", [Axx, Axv; Avx, Avv], "B", [Bxw; Bvw], "C", Co, "D", Do, ...
+                     "E", blkdiag(E, zeros(n_v)), "StateName", [sv_x; sv_v], ...
+                     "InputName", sv_w, "OutputName", sv_o, "n_v", n_v);
 
     % An Avv below this reciprocal condition number has no usable inverse (the shipped
     % networks are at 1e-4 or above)
     r_rcondMin = 1e-14;
-    output = struct();
-    if l_eq
-        output.message = "Linearized at the equilibrium.";
-    else
-        output.message = "Linearized at the given point.";
+    output = struct("s_issue", "", "rcond_Avv", Inf, "n_x", n_x, "n_v", n_v, "n_u", n_w);
+    if n_v > 0
+        output.rcond_Avv = rcond(Avv);
     end
-    output.s_issue   = "";
-    output.rcond_Avv = rcond(sct_block.Avv);
-    if ~all(cellfun(@(M) all(isfinite(M(:))), struct2cell(sct_block)))
+    if ~all(isfinite(sct_sys.A(:))) || ~all(isfinite(sct_sys.B(:))) || ~all(isfinite(sct_sys.C(:))) || ~all(isfinite(sct_sys.D(:)))
         output.s_issue = "NotFinite";
-        output.message = output.message + " Some Jacobian entries are not finite.";
-    elseif output.rcond_Avv < r_rcondMin
+    elseif n_v > 0 && output.rcond_Avv < r_rcondMin
         output.s_issue = "SingularAvv";
-        output.message = output.message + sprintf(" Avv is singular (rcond = %g): the current balance does not determine %s.", ...
-            output.rcond_Avv, list_labels(singular_voltages(sct_block.Avv, tab_map)));
-    end
-    flag = output.s_issue == "";
-
-    % A voltage below this is zero (a ground fault sets it to exactly 0)
-    r_voltageMin  = 1e-8;
-    output.sv_faultBus = reshape(string(tools.vcellfun(@(b) string(b.s_tag), a_bus)), [], 1);
-    output.sv_faultBus = output.sv_faultBus(abs(cv_V) < r_voltageMin);
-    if ~isempty(output.sv_faultBus)
-        s_list  = char(list_labels(output.sv_faultBus));
-        output.message = output.message + " " + msg("GUILDA:SolverLIN:GroundFault", s_list);
-        show_msg("info", "GUILDA:SolverLIN:GroundFault", s_list)
-    end
-    output.l_equilibrium = l_eq;
-    output.s_layer = "PowerNetwork";
-    output.n_x = size(sct_block.Axx,1);
-    output.n_v = size(sct_block.Avv,1);
-    output.n_u = size(sct_block.Bx,2);
-
-    result = ResultLIN(net, obj, sct_options, flag, output, t0, ...
-                                 tab_map, rv_point, sct_block, sct_model);
-end
-
-
-function sys = model_at_point(f_sys, s_owner)
-% Model of a bus or global controller (struct); a non-finite matrix stops, saying whose it is
-    sys = f_sys();
-    for str = ["A","B","C","D","E"]
-        if ~all(isfinite(sys.(str)(:)))
-            error(msg("GUILDA:SolverLIN:JacobianNotFinite", s_owner))
-        end
     end
 end
 
 
-function S = channels(S, iv_out, iv_in)
-% Model with the outputs iv_out and the inputs iv_in of the model S (struct)
-    S.B = S.B(:, iv_in);
-    S.C = S.C(iv_out, :);
-    S.D = S.D(iv_out, iv_in);
-    S.InputName  = S.InputName(iv_in);
-    S.OutputName = S.OutputName(iv_out);
-end
-
-
-function sv = singular_voltages(Avv, tab_map)
-% Bus voltages in the null space of Avv
-    [~, S, V] = svd(Avv);
-    rv_s = diag(S);
-    rv_w = vecnorm(V(:, rv_s <= max(rv_s(end), 1e-12*rv_s(1))), 2, 2);
-    sv_v = tab_map.Label(tab_map.Kind == "Vre" | tab_map.Kind == "Vim");
-    sv = sv_v(rv_w > 0.1*max(rv_w));
-end
-
-
-function str = list_labels(sv)
-% Labels for a message, at most 8
-    n = numel(sv);
-    str = join(sv(1:min(n,8)), ", ");
-    if n > 8
-        str = str + sprintf(" and %d more", n-8);
-    end
-end
-
-
-function u = gc_input(gc, tab_map, rv_point)
-% Inputs of a global controller at the point: the outputs (fcn_Y at the states and the bus
-% voltage of the point) or the states of its controlled units
-    a_unit = gc.controlledUnits;
-    n_u = numel(gc.sv_u);
-    u = zeros(numel(a_unit)*n_u, 1);
-    for idx = 1:numel(a_unit)
-        unit = a_unit{idx};
-        x_unit = rv_point(tab_map.Kind == "x" & tab_map.Owner == string(unit.s_tag));
-        iv_k = (idx-1)*n_u + (1:n_u)';
-        lv_Y = gc.iv_obsY(iv_k) > 0;
-        lv_X = gc.iv_obsX(iv_k) > 0;
-        if any(lv_Y)
-            s_bus = string(unit.a_Bus.s_tag);
-            V_unit = rv_point((tab_map.Kind == "Vre" | tab_map.Kind == "Vim") & tab_map.Bus == s_bus);
-            y_unit = unit.f_Y(0, x_unit, V_unit);
-            u(iv_k(lv_Y)) = y_unit(gc.iv_obsY(iv_k(lv_Y)));
-        end
-        u(iv_k(lv_X)) = x_unit(gc.iv_obsX(iv_k(lv_X)));
-    end
-end
-
-
-function [s, sv_z] = add_global_controllers(c_sysGC, a_GC, s)
-% Adds the global controllers to the linear model of the components
-%
-%   E dx/dt = Axx x + Axv v + Bxu u + Bxl l,   w = C x + Dv v + Du u + Dl l
-%   x: component states (sv_x), v: bus voltages (sv_v), u: component inputs (sv_u),
-%   l: inputs of local controllers (sv_l, not inputs of the network model), w: the
-%   currents and then the outputs (sv_y) of the bus models (Cy, Dyv: those outputs)
-%
-% Global controller k:  E_k dz_k/dt = A_k z_k + B_k [v; r_k],  y_k = C_k z_k + D_k [v; r_k]
-%   its inputs r_k are component outputs (sv_y, no feedthrough: r = Cy x + Dyv v) or
-%   component states (sv_x); its outputs y_k add to component inputs (sv_u) or drive
-%   inputs of local controllers (sv_l): u <- u + T_k y_k, l = L_k y_k
-%
-% The states z of all controllers are put after x, in the order of a_GlobalController
-% (the order of the variable map). The returned matrices are for [x; z]; Bxu keeps the
-% external input u. sv_z: names of z.
-    sv_z = string.empty(0,1);
-    if isempty(c_sysGC)
-        return
-    end
-    nx = size(s.Axx,1);
-    nv = numel(s.sv_v);
-    nu = numel(s.sv_u);
-    nl = numel(s.sv_l);
-
-    Az   = cell(numel(c_sysGC),1);
-    Bzx  = cell(numel(c_sysGC),1);
-    Bzv  = cell(numel(c_sysGC),1);
-    Cuz  = cell(1,numel(c_sysGC));
-    Clz  = cell(1,numel(c_sysGC));
-    Ez   = cell(numel(c_sysGC),1);
-    sv_z = cell(numel(c_sysGC),1);  % cell while collecting
-    Dux  = zeros(nu,nx);  Duv = zeros(nu,nv);
-    Dlx  = zeros(nl,nx);  Dlv = zeros(nl,nv);
-    for k = 1:numel(c_sysGC)
-        sysGC = c_sysGC{k};
-        sv_in = string(sysGC.InputName);
-        sv_out = string(sysGC.OutputName);
-        % r_k = Wx x + Wv v: voltages, component outputs and states by label
-        [lv_v, iv_v] = ismember(sv_in, s.sv_v);
-        [lv_y, iv_y] = ismember(sv_in, s.sv_y);
-        [lv_x, iv_x] = ismember(sv_in, s.sv_x);
-        lv_x = lv_x & ~lv_v & ~lv_y;
-        [lv_u, iu] = ismember(sv_out, s.sv_u);
-        [lv_l, il] = ismember(sv_out, s.sv_l);
-        if ~all(lv_v | lv_y | lv_x) || ~all(lv_u | lv_l)
-            error(msg("GUILDA:SolverLIN:GlobalControllerPort", a_GC{k}.s_tag))
-        end
-        Wx = zeros(numel(sv_in), nx);  Wv = zeros(numel(sv_in), nv);
-        Wv(sub2ind(size(Wv), find(lv_v), iv_v(lv_v))) = 1;
-        Wx(lv_y,:) = s.Cy(iv_y(lv_y),:);
-        Wv(lv_y,:) = s.Dyv(iv_y(lv_y),:);
-        Wx(sub2ind(size(Wx), find(lv_x), iv_x(lv_x))) = 1;
-        T = zeros(nu, numel(sv_out));  T(sub2ind(size(T), iu(lv_u), find(lv_u))) = 1;
-        L = zeros(nl, numel(sv_out));  L(sub2ind(size(L), il(lv_l), find(lv_l))) = 1;
-        Az{k}   = sysGC.A;
-        Bzx{k}  = sysGC.B * Wx;
-        Bzv{k}  = sysGC.B * Wv;
-        Cuz{k}  = T * sysGC.C;
-        Clz{k}  = L * sysGC.C;
-        Dux = Dux + T * sysGC.D * Wx;   Duv = Duv + T * sysGC.D * Wv;
-        Dlx = Dlx + L * sysGC.D * Wx;   Dlv = Dlv + L * sysGC.D * Wv;
-        Ez{k}   = sysGC.E;
-        sv_z{k} = string(sysGC.StateName);
-    end
-    Az   = blkdiag(Az{:});
-    Bzx  = vertcat(Bzx{:});
-    Bzv  = vertcat(Bzv{:});
-    Cuz  = horzcat(Cuz{:});
-    Clz  = horzcat(Clz{:});
-    sv_z = [string.empty(0,1); vertcat(sv_z{:})];
-    nz   = size(Az,1);
-
-    % x' and w with u <- u + Dux x + Duv v + Cuz z and l = Dlx x + Dlv v + Clz z
-    Kx = s.Bxu*Dux + s.Bxl*Dlx;  Kv = s.Bxu*Duv + s.Bxl*Dlv;  Kz = s.Bxu*Cuz + s.Bxl*Clz;
-    Mx = s.Du*Dux  + s.Dl*Dlx;   Mv = s.Du*Duv  + s.Dl*Dlv;   Mz = s.Du*Cuz  + s.Dl*Clz;
-    s.Axx = [s.Axx + Kx, Kz; Bzx, Az];
-    s.Axv = [s.Axv + Kv; Bzv];
-    s.Bxu = [s.Bxu; zeros(nz,nu)];
-    s.C   = [s.C + Mx, Mz];
-    s.Dv  = s.Dv + Mv;
-    s.E   = blkdiag(s.E, Ez{:});
+function sv = names(c_block, s_field)
+    c = tools.cellfun(@(S) reshape(string(S.(s_field)), [], 1), c_block);
+    sv = vertcat(strings(0,1), c{:});
 end

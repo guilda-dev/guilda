@@ -8,8 +8,6 @@
         <entry key="ContinuationPowerFlowFunction">Continuation_Power_Flow(net, opt) is deprecated: use [result, flag] = net.calculate_continuation_powerflow(LoadBus=opt.CPFBus). The v3 options map to LoadBus, InitialLambda, MaxIteration, StepSize, ArcLength and UseInternalState; result.rm_x is the old CPF_Result.x_sol.</entry>
         <entry key="CsvNetHandlerImport">CsvNetHandler.import(path, net) is deprecated: use net = PowerNetwork.import_csv(path) for a new network, or PowerNetwork.import_csv(path, Network=obj) to load into an existing one (e.g. in the constructor of a network class).</entry>
         <entry key="CsvNetHandlerExport">CsvNetHandler.export(net, ModelName, savepath=folder) is deprecated: use net.export_csv(fullfile(folder, "@"+ModelName)). The folder now also holds network/parameter.csv with Hz and baseMVA.</entry>
-        <entry key="LinearizeAlgorithm">The option Algorithm of net.linearize and net.get_sys is renamed: use Method="{0}".</entry>
-        <entry key="LinearizeNonUnit">The option NonUnit of net.linearize and net.get_sys is deprecated: buses without states are handled automatically, so remove the option. A listed bus without states is ignored; a listed bus with states stops "Feedback" with an error.</entry>
-        <entry key="SolverLinNonUnit">net.solver_LIN.NonUnit is deprecated: buses without states are handled automatically, so remove the setting. A listed bus without states is ignored; a listed bus with states stops "Feedback" with an error.</entry>
+        <entry key="GetSysPositionalPoint">The positional point get_sys(x, V, u) of a {0} is deprecated: use get_sys(Point=p), with p in the order of the variables of the layer (states, voltage, inputs; for a component, comp.get_variable_map()).</entry>
     </message>
 </rsccat>

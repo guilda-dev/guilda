@@ -18,13 +18,11 @@ sct = net.get_sys("Method", "Kron", "Format", "struct");
 assert(isequal(sct.A, sys_kron.A))
 
 % 3. 結果を残して、方式ごとにモデルを取り出す (線形化は 1 回で済む)
-res = net.linearize();
-sys_feedback = res.get_ss("Feedback", Format="struct");
+res = net.get_sys();
 sys_dae    = res.get_ss("DAE", Format="struct");
 tab = net.get_variable_map();             % 変数の順 (res.rm_Axx などの行と列)
 disp(head(tab))
 e_kron = DebugScript.helper.finite_eigs(sys_kron);
-assert(DebugScript.helper.same_eigs(e_kron, DebugScript.helper.finite_eigs(sys_feedback), 1e-6))
 assert(DebugScript.helper.same_eigs(e_kron, DebugScript.helper.finite_eigs(sys_dae), 1e-6))
 
 % 4. 入出力を選ぶ。種類 ("x", "V", "I", "y") と名前を指定できる。Input は tab の Label から選ぶ
@@ -35,7 +33,7 @@ assert(numel(sys_io.InputName) == 2 && numel(sys_io.OutputName) == 4*numel(net.a
 % 5. シミュレーションの途中の点で線形化する
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
 sim = net.simulate(ev.s_tag, Time=[0,1.5], Progress="none");
-[res_t, flag, output] = net.linearize("Point", {sim, 1});
+[res_t, flag, output] = net.get_sys("Point", {sim, 1});
 disp(output.message)
 assert(flag && ~output.l_equilibrium)
 
@@ -46,7 +44,7 @@ try
     net.get_sys();
     error("DebugScript:NoError", "編集後の get_sys がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:Stale", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerSystemModel:Stale", DebugScript.helper.msg_id(ME))
     disp(ME.message)
 end
 net.initialize();

@@ -16,7 +16,7 @@ classdef ResultODE < ResultBase
 % (rm_variable, columns = rows of tab_variable): the states of the components with their
 % local controllers, the states of the global controllers, the bus voltages and the inputs
 % of the components. odeResults is a view of it per bus and component, and get_point gives
-% the values at a time, for example for net.linearize(Point={sim, t}). plot_trajectory draws a
+% the values at a time, for example for net.get_sys(Point={sim, t}). plot_trajectory draws a
 % trajectory of the buses or components. export writes all trajectories as a table (CSV,
 % Excel) or as a MAT-file. judge_out_of_step judges the rotor angles (stable, out of step).
 %

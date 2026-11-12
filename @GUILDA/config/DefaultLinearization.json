@@ -1,14 +1,13 @@
 {
     "version": 1,
     "Method":{
-        "Value": "Feedback",
+        "Value": "Kron",
         "Type": "select",
         "options":[
             "Kron",
-            "Feedback",
             "DAE"
         ],
-        "Description": "Reduction of result.get_ss() and net.get_sys: 'Kron' (eliminate the bus voltages), 'Feedback' (bus models connected through the admittance matrix) or 'DAE' (descriptor form)"
+        "Description": "Reduction of net.get_sys and result.get_ss(): 'Kron' (eliminate the bus voltages) or 'DAE' (descriptor form)"
     },
     "Coordinate":{
         "Value": "theta&rho",

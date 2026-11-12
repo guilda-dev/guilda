@@ -16,8 +16,8 @@ function design_gain(obj, V, u)
         error(msg("GUILDA:local_LQR:DesignModel", obj.s_tag, sprintf("%g", obj.V0)))
     end
     y_inf = tools.complex2matrix(I0 / (V - obj.V0));
-    sys   = comp.get_sys(x0, [real(V); imag(V)], u, Controllers=false, Format="struct", tag=false);
-    [A, B, C, D, E] = deal(sys.A, sys.B, sys.C, sys.D, sys.E);   % struct of the component alone
+    sys   = comp.get_linear_block(x0, [real(V); imag(V)], u);      % the component alone
+    [A, B, C, D, E] = deal(sys.A, sys.B, sys.C(1:2,:), sys.D(1:2,:), sys.E);   % the current rows
     Bv = B(:,1:2);   Bu = B(:,2+iv_u);
     Dv = D(:,1:2);   Du = D(:,2+iv_u);
     M  = y_inf - Dv;            % (y - Dv) dV = C dx + Du du

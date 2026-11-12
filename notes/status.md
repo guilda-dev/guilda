@@ -190,6 +190,16 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - 読むものがなくなった版番号 `PowerNetwork.n_revY`・`n_revPF`・`n_revTopology` と、`handle_edit` のその増分を削除しました。`net.solver_PF` / `net.solver_OPF` のウォームスタートは母線タグで照合します。
 - **未対応:** F8 の large のテスト 2 件(`MATFileRoundTripKeepsControllersAndLowerLayers`、`MATPOWERImportReproducesCase14`)は、この作業の前のコミットでも失敗します。
 
+## 線形化の接続器と共通の get_sys(Issue #121、2026-11-13)
+
+ブランチは `refactor/121-linearization-connector`(未 push)です。仕様と記録は [linearization-connector.md](linearization-connector.md) にあります。
+
+- `get_sys` は `PowerSystemModel` に 1 つだけで、各モデルオブジェクトは自分のブロック(`get_linear_block`)を、各層はポート(`get_linear_port`)を返し、`SolverLIN.solve` が変数表に沿ってつなぎます。
+- Feedback と `net.linearize` を削除し、`Method` の既定は `"Kron"` です。v3 の `Algorithm`・`NonUnit` は削除、位置引数の点は非推奨の警告で `Point` にします。
+- 線形モデルは置き換える前の基準値(`+DebugScript/+helper/linearization_reference.mat`)と 1.1e-14 で一致します。
+- **テスト(MATLAB R2026a):** small 520 件、PASS 518 / KNOWN 1 / FAIL 0 / SKIP 1。medium 689 件、PASS 687 / KNOWN 1 / FAIL 0 / SKIP 1、694 s。large は未実行(F7・F8 の 3 件は基準でも失敗)。
+- **未対応:** チュートリアル(`.mlx`)は書き換えていません。テストのデータファイルの置き場所は配置の規則にありません。
+
 ## 未決事項
 
 状態は `a9afe24` のコードと履歴で確認しました(`301b5d0` までの統合はコードを変えていません)(下で日付や基準を別に示した項目を除く)。

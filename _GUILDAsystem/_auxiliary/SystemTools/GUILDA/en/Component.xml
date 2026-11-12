@@ -13,11 +13,8 @@
         <entry key="MissingParameter">Parameter ''{0}'' of ''{1}'' is missing from {2}. Pass a table with these columns as the parameter argument.</entry>
         <entry key="UnknownParameter">Parameter name ''{0}'' of ''{1}'' is unknown. Use one of {2}, or pass a table.</entry>
         <entry key="GeneratorQIgnored">Generator ''{0}'' ignores Q = {1}: a generator is a PV source, so the power flow decides its Q. Leave Q out or set it to NaN.</entry>
-        <entry key="NoI2V">Component {0} has no I2V form: D of its V2I model (dI/dV) is singular. Use the port "V2I".</entry>
         <entry key="HessianNotSupported">{0} does not support Hessian computation: the class does not define the static method {1} (see Component.get_hessian for the contract).</entry>
         <entry key="HessianSize">{0}.{1} returned {2} values; expected {3} x {4} x {5} (equations x [x; V; I; u] x [x; V; I; u]).</entry>
-        <entry key="Stale">get_sys of component ''{0}'' stopped: the model is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
         <entry key="InputSize">comp.set_input of ''{0}'' needs {2} inputs ({3}), but {1} were given.</entry>
-        <entry key="InputEdited">get_sys of a component of ''{0}'' stopped: inputs of components were edited ({1}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
     </message>
 </rsccat>

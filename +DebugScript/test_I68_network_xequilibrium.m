@@ -13,7 +13,7 @@ tab = tab(tab.Kind == "x", :);
 x   = net.rv_Xequilibrium;
 
 assert(iscolumn(x) && numel(x) == height(tab))
-assert(isequal(x, net.linearize().rv_point(1:height(tab))))
+assert(isequal(x, net.get_sys().rv_point(1:height(tab))))
 
 % 変数表の持ち主ごとに、その行の値が持ち主の平衡点と一致する
 for owner = all_owners(net)'

@@ -5,7 +5,5 @@
         <entry key="GlobalControllerPort">The global controller ''{0}'' reads the outputs or states [{1}] of its units and drives their inputs (or those of their local controllers) [{2}], but ''{3}'' ({4}) has the outputs and states [{5}] and the inputs [{6}].</entry>
         <entry key="HessianNotSupported">{0} does not support Hessian computation: the class does not define the static method {1} (see GlobalController.get_hessian for the contract).</entry>
         <entry key="HessianSize">{0}.{1} returned {2} values; expected {3} x {4} x {5} (equations x [x; V; I; u] x [x; V; I; u]).</entry>
-        <entry key="Stale">get_sys of global controller ''{0}'' stopped: the model is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
-        <entry key="InputEdited">get_sys of a global controller of ''{0}'' stopped: inputs of components were edited ({1}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
     </message>
 </rsccat>
