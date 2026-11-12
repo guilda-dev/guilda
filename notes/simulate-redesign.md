@@ -64,7 +64,8 @@
 | R5 | 推奨どおり。[事実] 潮流計算の作業(`514cde71` に統合)が `ResultBase` とすべての結果クラス(`ResultODE` を含む)の `Export` を `export` に改名済み | §1.6, §5.4, §7 |
 | R6 | 推奨どおり: 判定は `ResultODE.judge_out_of_step` | §2.9 |
 | R7 | 入力の時系列の補間は、外乱を加えるときに `Method` で選ぶ: `"zoh"`(0 次ホールド)、`"foh"`(1 次、線形)、`"spline"`。最後の点の後は値を保ち、時刻は外乱の開始から | §2.10, §2.8, §3.4, §4.1, §8 |
-| R8, R9 | 未決(利用者に再確認中) | §9.2 |
+| R8 | 推奨どおり: 静的メソッド `import` を使えないときの代わりの名前は `import_network` / `export_network` | §2.11, §9.2 |
+| R9 | 推奨どおり: `ResultODE` はコンストラクタで出力 y をいつも計算する。IEEE68 で遅ければ、初めて読んだときに計算する形に変える | §5.2, §9.2 |
 
 ## 1. 現状の構造: `SolverODE` が系統を読む箇所
 
@@ -541,7 +542,7 @@ verdict = result.judge_out_of_step(Reference="slack", Threshold=360)
 3. ほかの GUILDA の関数の中(`import` 文を使う関数を含む)と、同梱の系統クラスのコンストラクタの中の `PowerNetwork.import(path, Network=obj)` が静的メソッドを呼び、パッケージの `import` 文と衝突しない。
 4. `functionSignatures.json`、`doc`、ヘルプの生成が `PowerNetwork.import` を扱える。
 
-どれかが成り立たないときの代わりの名前は **`import_network` / `export_network`** を推奨します(対で揃えるため、`export` だけ短くはしません)。`load_network` / `save_network` は MATLAB の `load` / `save`(MAT ファイル)と紛らわしいので勧めません。`export` は組み込み関数ではありませんが、`ResultODE.export` などの結果の `export`(Q14)とは別のクラスのメソッドなので衝突しません。
+どれかが成り立たないときの代わりの名前は **`import_network` / `export_network`** です [決定 R8](対で揃えるため、`export` だけ短くはしません)。`load_network` / `save_network` は MATLAB の `load` / `save`(MAT ファイル)と紛らわしいので勧めません。`export` は組み込み関数ではありませんが、`ResultODE.export` などの結果の `export`(Q14)とは別のクラスのメソッドなので衝突しません。
 
 **改名で変える箇所 [事実: grep、`c3dc7b05`]**
 
@@ -778,7 +779,7 @@ function obj = ResultODE(sct_sol, sct_dae, sct_network, sct_solver)
   - `odeResults.Bus(i).Component(j)` に `Y`(列は `sv_y`)を加えます。制御器の出力は `rm_output` だけです(状態と同じ扱い)。
   - `export` の表は、変数の列の後に出力の列(`Label` の名前)を加えます。MAT ファイルには `rm_output`, `tab_output` を加えます。
   - `get_point` は変数だけを返します(出力は線形化の点ではないため。現行どおり)。
-  - [未確認] 費用は時刻 × ブロックの数だけの `f_Y` の評価です。S3 で IEEE68 の時間を計ります。
+  - [決定 R9] コンストラクタでいつも計算します。[未確認] 費用は時刻 × ブロックの数だけの `f_Y` の評価で、S3 で IEEE68 の時間を計ります。遅ければ、`odeResults` と同じく初めて読んだときに計算する形(`rm_output` を Dependent にし、計算に要るデータを Hidden で持つ)に変えます。
 - `tab_variable` は `sct_dae.tab_variable` の x, Vre, Vim, u の行から作ります。`sv_bus`, `c_component` は `sct_network`(`a_Bus{i}.s_tag`、`a_Bus{i}.a_Component{j}.s_tag`)から、`c_index` は `tab_variable` の `Kind`, `Owner`, `Bus` から作ります(`get_variable_map` の `c_idxBus` を使わない)。`simulator_columns.m` の検査 `GUILDA:ResultODE:VariableMap` は不要になります。
 - `ResultBase` には `[]` を渡し、`s_network` は `ResultODE` が設定します(`ResultPF` と同じ)。`a_PowerNetwork` は空です。
 - 新しいプロパティ: `sct_network`(SetAccess=private)。
@@ -1067,8 +1068,8 @@ S0 で、基準コミットのコードで次の実行の `rv_t`, `rm_variable`,
 | R5 | ~~`Export` → `export` の改名をだれが行うか~~ | **決定(§0.4)、済み:** 潮流計算の作業が全結果クラスを改名(`514cde71`) |
 | R6 | ~~判定のメソッドの名前と置き場所~~ | **決定(§0.4):** `ResultODE.judge_out_of_step(Reference=, Threshold=)` |
 | R7 | ~~入力の時系列の補間と時刻の基準~~ | **決定(§0.4):** `Method` で `"zoh"` / `"foh"`(既定) / `"spline"`、最後の点の後は値を保つ、時刻は外乱の開始から |
-| R8 | `import` を使えないときの代わりの名前(§2.11)【利用者に再確認中】 | `import_network` / `export_network` |
-| R9 | `ResultODE` が出力をいつも計算すること(§5.2)【利用者に再確認中】 | いつも計算する。IEEE68 で時間が問題になれば、初めて読んだときに計算する(`odeResults` と同じ遅延)に変える |
+| R8 | ~~`import` を使えないときの代わりの名前~~ | **決定(§0.4):** `import_network` / `export_network` |
+| R9 | ~~`ResultODE` が出力をいつも計算すること~~ | **決定(§0.4):** いつも計算する。IEEE68 で遅ければ、初めて読んだときに計算する形(`odeResults` と同じ遅延)に変える |
 | R10 | 停止条件の基準(§2.12) | スラック母線の発電機だけ(判定の既定と同じ)。COI や任意の機器を基準にする `StopReference` は、要望が出たら加える |
 | R11 | `StopOnOutOfStep` で止めたときの `flag`(§2.12) | 新しい値 `2`。`SimulationIncomplete` の警告は出さない |
 | R12 | `"zoh"` の各点を区間の境界にすること(§2.10) | する。点の多い `"zoh"` は遅くなるとヘルプに書く。代わりに区間の中で飛ぶ値をソルバーに渡すと、刻みの縮小や失敗が起きやすい |
