@@ -1018,7 +1018,7 @@ assert(GUILDA.config("Linearization", "Method") == "Feedback" && ~isprop(net.sol
 c_cfg = DebugScript.helper.user_config("Linearization", struct("Method", "DAE"));
 assert(size(net.get_sys().A,1) > n_x)
 clear c_cfg
-% Plot オプションは廃止 (図は result.Plot)、PlotFcn は "none" のみ
+% Plot オプションは廃止 (図は result.plot_eigenvalue)、PlotFcn は "none" のみ
 assert(error_id(@() net.linearize(Plot=true)) == "GUILDA:resolve_options:UnknownName")
 assert(error_id(@() net.get_sys(Plot=true)) == "GUILDA:resolve_options:UnknownName")
 assert(error_id(@() net.linearize(PlotFcn="eig")) == "GUILDA:check_plotfcn:InDevelopment")
@@ -1214,10 +1214,10 @@ end
 
 %% Linearization result Plot
 res = net.linearize();
-ax = res.Plot();
+ax = res.plot_eigenvalue();
 assert(isa(ax, "matlab.graphics.axis.Axes"))
 close(ancestor(ax, "figure"))
-ax = res.Plot("Method", "Feedback");
+ax = res.plot_eigenvalue("Method", "Feedback");
 close(ancestor(ax, "figure"))
 
 
@@ -1225,18 +1225,18 @@ close(ancestor(ax, "figure"))
 % 既定は options.Method。Method を渡せばそちらを描く
 for alg = ["Feedback", "Kron", "DAE"]
     res = DebugScript.helper.quiet(@() net.linearize("Method", alg));
-    ax = res.Plot();
+    ax = res.plot_eigenvalue();
     assert(ax.Title.String == "Eigenvalues (" + alg + ")", ax.Title.String)
     close(ancestor(ax, "figure"))
 end
 res = net.linearize("Method", "Kron");
-ax = res.Plot("Method", "DAE");
+ax = res.plot_eigenvalue("Method", "DAE");
 assert(ax.Title.String == "Eigenvalues (DAE)", ax.Title.String)
 close(ancestor(ax, "figure"))
 % Feedback で描けない NonUnit は get_ss と同じエラー
 try
     res = DebugScript.helper.quiet(@() net.linearize("Method", "Feedback", "NonUnit", [7 2]));
-    res.Plot();
+    res.plot_eigenvalue();
     error("DebugScript:NoError", "状態のある母線の NonUnit がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus", DebugScript.helper.msg_id(ME))
