@@ -4,7 +4,7 @@ classdef ResultCPF < ResultBase
 % Holds the load parameter lambda and the bus voltages at each point of the traced path,
 % and the nose point (maximum loading). The loads of options.LoadBus are scaled by
 % (1 + lambda). It holds computed values only; the settings of the buses and components
-% stay with the network. Plot draws the PV curves. export writes the path as a table (CSV,
+% stay with the network. plot_pvcurve draws the PV curves. export writes the path as a table (CSV,
 % Excel): tab_path.
 %
 % With the option Limits (see SolverCPF), `tab_switch` lists the PV buses switched to PQ
@@ -29,7 +29,7 @@ classdef ResultCPF < ResultBase
 % result.tab_switch        % PV buses switched to PQ at their Q limits
 % result.tab_stop          % voltage or branch limit that ended the path
 % result.tab_nose          % bus voltages at the nose
-% result.Plot(Bus="all");  % PV curves of every bus
+% result.plot_pvcurve(Bus="all");  % PV curves of every bus
 % result.export("cpf.csv");
 % ```
 %
@@ -105,7 +105,7 @@ classdef ResultCPF < ResultBase
                    array2table(rm_V, 'VariableNames', sr_name)];
         end
 
-        fig = Plot(obj, opt)
+        fig = plot_pvcurve(obj, opt)
         s_file = export(obj, filename)
     end
 end

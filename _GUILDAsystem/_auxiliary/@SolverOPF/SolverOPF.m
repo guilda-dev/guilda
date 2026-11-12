@@ -23,7 +23,7 @@ classdef SolverOPF < auxiliary
 %   "firstorderopt", "stepsize", "funccount", "x"), or a function handle
 %   stop = f(x, optimValues, state) passed to fmincon as it is. linprog and quadprog
 %   ("ELD", "DC OPF") have no PlotFcn: a value other than "none" stops with
-%   GUILDA:SolverOPF:PlotFcnUnsupported. result.Plot() draws the result.
+%   GUILDA:SolverOPF:PlotFcnUnsupported. result.plot_dispatch() draws the result.
 % - `Cost` and `Constraint` are function handles @(v, p) applied to the whole network.
 %   v holds the variables by tag: v.Component.(tag).P, .Q ("AC OPF");
 %   v.Bus.(tag).Varg, .V ("AC OPF"); v.Branch.(tag).Pfrom, .Pto, .Vargfrom, .Vargto

@@ -463,7 +463,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   conditions) to change the defaults for later calls. An unknown name
   stops with `GUILDA:resolve_options:UnknownName`, which lists the accepted
   names.
-- Plotting and writing files are methods of the result: `result.Plot()`,
+- Plotting and writing files are methods of the result: the `plot_*` method of each result (2026-11-12: `Plot` became `plot_voltage`, `plot_dispatch`, `plot_pvcurve`, `plot_trajectory`, `plot_eigenvalue`),
   `result.export(filename)`, or the option `Export=true|filename` of the
   analysis call (`calculate_powerflow` has no such option: use `result.export`). The option `Plot` is removed; `PlotFcn` is the live display
   during the analysis (keys `"residual"` for the power flow, the fmincon plot
@@ -651,7 +651,7 @@ Option names:
 
 - `flag` is a logical: true when the path passed the nose. `output` has
   `message`, `iterations`, `correctorIterations`.
-- `ResultCPF.Plot` draws the PV curves of the load buses; `Export` writes
+- `ResultCPF.plot_pvcurve` draws the PV curves of the load buses; `Export` writes
   the path table.
 - Behavior: the network must be initialized (an error names the remedy);
   an empty or unknown `LoadBus` is an error (v3 warned for an empty bus
@@ -708,7 +708,7 @@ Option names:
 - `odeResults` is a view with the old layout
   (`res.odeResults.Bus(i).Component(j).X.omega`, `.t`); controller states
   are only in `rm_variable`. New `sv_bus`,
-  `c_component`, `Plot(Quantity=...)`, `Export` (`.csv`, `.txt`, `.xlsx`,
+  `c_component`, `plot_trajectory(Quantity=...)`, `export` (`.csv`, `.txt`, `.xlsx`,
   `.xls` table, or `.mat` with `odeResults`, `rm_variable`, `tab_variable`,
   `options`, `flag`, `output`); `odeNetwork` is removed. The table also has
   one column per state of a local or global controller, named by `Label` of
@@ -831,7 +831,7 @@ Option names:
 
 - Options: `Method` (`"Kron"` | `"Feedback"` | `"DAE"`, default
   `"Feedback"` as in v3), `Point` (call only), `Coordinate`, `PlotFcn`; the
-  eigenvalue map is `res.Plot()`. Defaults in the Linearization section of
+  eigenvalue map is `res.plot_eigenvalue()`. Defaults in the Linearization section of
   `GUILDA.setting`; `net.solver_LIN` holds no settings.
 - `res.get_ss(Method)` gives the same A, E, C, D and names as v3
   `get_sys` for every algorithm (checked against a copy of the v3 code in
@@ -1612,7 +1612,7 @@ classdef ResultPF < ResultBase
             obj@ResultBase(net, solver, options, flag, output, t0);
             obj.tab_bus = tab_bus;
         end
-        function h = Plot(obj, opt)     % override only what the class supports
+        function h = plot_voltage(obj, opt)   % plot_* methods of the class
             ...
         end
     end

@@ -1,4 +1,4 @@
-function ax = Plot(obj, opt)
+function ax = plot_pvcurve(obj, opt)
 % Plot the PV curves.
 %
 % Draws the PV curves: the voltage magnitude [pu] of each bus against the load parameter

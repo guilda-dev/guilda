@@ -13,7 +13,7 @@ classdef ResultLIN < ResultBase
 % of the analysis). The algebraic equations are the current balance of each bus,
 % 0 = (Y v - I of the components), in the order of v. The values are deviations from the
 % point rv_point. Y is the admittance matrix of the model, also at a point inside a fault.
-% get_ss returns a reduced model (Kron / Feedback / DAE); Plot draws the eigenvalue map.
+% get_ss returns a reduced model (Kron / Feedback / DAE); plot_eigenvalue draws the eigenvalue map.
 %
 % The properties A, B, C, D, E, StateName, InputName and OutputName hold one linear model
 % (E dx/dt = A x + B u, y = C x + D u) with the names of the states, inputs and outputs, as
@@ -48,7 +48,7 @@ classdef ResultLIN < ResultBase
 % eig(result.A, result.E)           % model of options.Method
 % sct = result.get_ss("Kron", Format="struct");   % reduced model as a struct
 % sys = result.get_ss("Kron");      % ss object (Control System Toolbox)
-% result.Plot();                    % eigenvalue map
+% result.plot_eigenvalue();                    % eigenvalue map
 % ```
 %
 % See also SolverLIN, ResultBase
@@ -134,7 +134,7 @@ classdef ResultLIN < ResultBase
         end
 
         sys = get_ss(obj, Method, opt)
-        fig = Plot(obj, opt)
+        fig = plot_eigenvalue(obj, opt)
     end
 end
 

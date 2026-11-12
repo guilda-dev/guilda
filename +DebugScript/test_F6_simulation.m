@@ -181,7 +181,7 @@ assert(max(diff(sol.odeResults.t)) <= 0.01 + 1e-12)
 % 設定はプロパティではない (v3 の名前も互換なし)
 assert(error_id(@() set_property(net.solver_ODE, "RelativeTolerance", 1e-5)) ~= "")
 assert(error_id(@() set_property(net.solver_ODE, "Reporter", "none")) ~= "")
-% Plot オプションは廃止 (図は result.Plot)、PlotFcn は "none" のみ
+% Plot オプションは廃止 (図は result.plot_trajectory)、PlotFcn は "none" のみ
 assert(error_id(@() net.simulate([0,1], ev, Plot=true)) == "GUILDA:resolve_options:UnknownName")
 assert(error_id(@() net.simulate([0,1], ev, PlotFcn="omega")) == "GUILDA:check_plotfcn:InDevelopment")
 % SeparateComplexParts は他の on/off の設定と同じ logical (ode には "on" / "off" で渡す)
@@ -259,20 +259,20 @@ end
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 sol = net.simulate([0,2], ev);
 c_fig = onCleanup(@() close(findall(0, "Type", "figure")));
-ax = sol.Plot();
+ax = sol.plot_trajectory();
 assert(isa(ax, "matlab.graphics.axis.Axes") && numel(ax.Children) == numel(net.a_Bus))
-ax = sol.Plot(Quantity="omega", Bus=["B001","B002"]);
+ax = sol.plot_trajectory(Quantity="omega", Bus=["B001","B002"]);
 assert(numel(ax.Children) == 2)
-ax = sol.Plot(Quantity="P", Bus="B008");
+ax = sol.plot_trajectory(Quantity="P", Bus="B008");
 assert(numel(ax.Children) == 1)
 try
-    sol.Plot(Quantity="nosuchstate");
+    sol.plot_trajectory(Quantity="nosuchstate");
     error("DebugScript:noError", "未知の量でエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:UnknownQuantity", DebugScript.helper.msg_id(ME))
 end
 try
-    sol.Plot(Bus="B999");
+    sol.plot_trajectory(Bus="B999");
     error("DebugScript:noError", "未知の母線でエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:UnknownBus", DebugScript.helper.msg_id(ME))
@@ -295,7 +295,7 @@ try
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:ExportFormat", DebugScript.helper.msg_id(ME))
 end
-% simulate(..., Export=file) は result.export を呼ぶ。図は描かない (図は result.Plot)
+% simulate(..., Export=file) は result.export を呼ぶ。図は描かない (図は result.plot_trajectory)
 n_fig = numel(findall(0, "Type", "figure"));
 net.simulate([0,1], ev, Export=fullfile(s_dir, "sim2.csv"));
 assert(numel(findall(0, "Type", "figure")) == n_fig)

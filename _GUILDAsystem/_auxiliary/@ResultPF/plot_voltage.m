@@ -1,4 +1,4 @@
-function fig = Plot(obj, opt)
+function fig = plot_voltage(obj, opt)
 % Plot the bus voltage profile.
 %
 % Draws the voltage profile of the solution: the voltage magnitude [pu] and the phase

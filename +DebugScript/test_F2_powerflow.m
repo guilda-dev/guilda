@@ -672,10 +672,10 @@ net = DebugScript.helper.build_9bus();
 res = DebugScript.helper.quiet(@() net.calculate_powerflow());
 
 % Plot: 電圧の大きさと位相の棒グラフ
-t = res.Plot(Parent=figure("Visible","off"));
+t = res.plot_voltage(Parent=figure("Visible","off"));
 c_fig = onCleanup(@() close(ancestor(t, "figure")));
 assert(isa(t, "matlab.graphics.layout.TiledChartLayout") && numel(t.Children) == 2)
-% 計算後の図は result.Plot だけ。Plot オプションは廃止、PlotFcn (計算中の表示) は "none" では図を作らない
+% 計算後の図は result.plot_voltage だけ。Plot オプションは廃止、PlotFcn (計算中の表示) は "none" では図を作らない
 a_before = findall(groot, "Type", "figure");
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(PlotFcn="none"));
 assert(res.options.PlotFcn == "none" && isempty(setdiff(findall(groot, "Type", "figure"), a_before)))

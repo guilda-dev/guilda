@@ -6,7 +6,7 @@ classdef ResultPF < ResultBase
 % "dynamic" method). It is built from data only: the solution table, the bus admittance
 % matrix, a struct snapshot of the network (struct(net, false), no handles) and the
 % solver information. It keeps no reference to the network, so a later edit of the
-% network does not change it. Plot draws the voltage profile. export writes the bus or
+% network does not change it. plot_voltage draws the voltage profile; the disp_* methods print tables. export writes the bus or
 % branch table (CSV, Excel) or the iteration history (JSON for the GridSpring viewer).
 %
 % - `tab_bus` has the bus tags as row names.
@@ -36,7 +36,7 @@ classdef ResultPF < ResultBase
 % result.tab_bus           % Varg, V, P, Q, Vphasor, Iphasor of each bus
 % result.tab_branch        % flows and losses of each branch
 % result.tab_violation     % violated operating limits (0 rows when none)
-% result.Plot();           % voltage profile
+% result.plot_voltage();           % voltage profile
 % result.export("pf.csv", Table="branch");
 % ```
 %
@@ -95,7 +95,7 @@ classdef ResultPF < ResultBase
             end
         end
 
-        fig = Plot(obj, opt)
+        fig = plot_voltage(obj, opt)
         s_file = export(obj, filename, opt)
     end
 end

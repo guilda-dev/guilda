@@ -122,8 +122,10 @@ assert(error_id(@() ResultBase()) ~= "")
 
 %% Analysis result Plot and Export contract
 res = DebugScript.helper.DummyResult([], "x", struct(), true, struct(), 0, [1 3 2]);
-% Plot を実装した結果クラス
-h = res.Plot();
+% 基底クラスに Plot はない (図は各結果クラスの plot_* メソッド)
+assert(~ismethod(res, "Plot"))
+% 結果クラスが自分の plot_* を持てる
+h = res.plot_value();
 assert(isa(h, "matlab.graphics.chart.primitive.Line") && isequal(h.YData, [1 3 2]))
 close(ancestorfig(h))
 % 実装していない export は明確なエラー
