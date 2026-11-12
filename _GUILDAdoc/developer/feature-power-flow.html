@@ -47,15 +47,15 @@
   <main>
     <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Power Flow Feature Design</span><span lang="ja">潮流計算機能の設計</span></h1>
-    <p class="page-lead" lang="en"><code>net.calculate_powerflow()</code>: bus voltages from the power-flow settings of the buses and components. <code>SolverPF</code> builds the equations and runs <code>fsolve</code> or <code>ode15s</code>; values returned in a <code>ResultPF</code>, not written to the model.</p>
-    <p class="page-lead" lang="ja"><code>net.calculate_powerflow()</code> は、母線と機器の潮流設定から母線電圧を求めます。<code>SolverPF</code> が方程式を組み立て、<code>fsolve</code> または <code>ode15s</code> を実行します。結果は <code>ResultPF</code> として返し、モデルには書き込みません。</p>
+    <p class="page-lead" lang="en"><code>net.calculate_powerflow()</code>: bus voltages from the power-flow settings of the buses and components. The network assembles the admittance matrix and the bus conditions; <code>SolverPF</code> only solves them. The first output takes the form of <code>Format</code> (complex voltages by default, a <code>ResultPF</code> for <code>"GUILDAorigin"</code>); nothing is written to the model.</p>
+    <p class="page-lead" lang="ja"><code>net.calculate_powerflow()</code> は、母線と機器の潮流設定から母線電圧を求めます。アドミタンス行列と母線の潮流条件はネットワークが組み立て、<code>SolverPF</code> は数値計算だけを行います。最初の出力の形は <code>Format</code> で決まり、既定では複素電圧、<code>"GUILDAorigin"</code> では <code>ResultPF</code> です。モデルには書き込みません。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#entry"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></a>
       <a href="#sequence"><span lang="en">Call sequence between classes</span><span lang="ja">クラス間の呼び出し順</span></a>
       <a href="#steps"><span lang="en">Processing steps in detail</span><span lang="ja">処理ステップの詳細</span></a>
       <a href="#data"><span lang="en">Data the feature produces</span><span lang="ja">この機能が生成するデータ</span></a>
-      <a href="#side-effects"><span lang="en">Side effects on the model and caches</span><span lang="ja">モデルへの副作用とキャッシュ</span></a>
+      <a href="#side-effects"><span lang="en">Side effects on the model and the solver</span><span lang="ja">モデルとソルバーへの副作用</span></a>
       <a href="#failures"><span lang="en">Failure behavior and result flags</span><span lang="ja">失敗時の動作と結果フラグ</span></a>
       <a href="#extension"><span lang="en">Where to extend the feature</span><span lang="ja">機能を拡張する箇所</span></a>
       <a href="#related"><span lang="en">Related pages</span><span lang="ja">関連ページ</span></a>
@@ -116,39 +116,54 @@
           <li><code>NaN</code> なら計算方法ごとの既定値を使います（newton は 50、gradient は 1e6、levenberg-marquardt は 100、fsolve は 400）。</li>
           <li><code>"dynamic"</code> では使いません。</li>
         </ul></td></tr>
-        <tr><td><code>Verbose</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Print each iteration and the final message; <code>get_options</code> sets <code>Display</code> of the Method class: <code>"iter"</code> (true) or <code>"none"</code> (false)</span><span lang="ja">反復ごとの表示と、終了時のメッセージを出すかどうかです。<code>get_options</code> が、true なら <code>"iter"</code>、false なら <code>"none"</code> を Method クラスの <code>Display</code> に設定します。</span></td></tr>
+        <tr><td><code>Verbose</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Print each iteration and the final message; the local function <code>solver_options</code> sets <code>Display</code> of the Method class: <code>"iter"</code> (true) or <code>"none"</code> (false)</span><span lang="ja">反復ごとの表示と、終了時のメッセージを出すかどうかです。内部関数 <code>solver_options</code> が、true なら <code>"iter"</code>、false なら <code>"none"</code> を Method クラスの <code>Display</code> に設定します。</span></td></tr>
         <tr><td><code>WarmStart</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>true</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
-          <li><code>true</code>: starts from the last converged solution of this network, kept by <code>net.solver_PF</code></li>
-          <li><code>false</code>, or no kept solution: flat start (angle 0, magnitude 1; set <code>V</code> at PV and slack buses, set <code>Varg</code> at the slack bus)</li>
+          <li><code>true</code>: starts from the last converged solution kept by <code>net.solver_PF</code>, when it was solved for the same bus tags in the same order</li>
+          <li><code>false</code>, other bus tags, or no kept solution: flat start (angle 0, magnitude 1; set <code>V</code> at PV and slack buses, set <code>Varg</code> at the slack bus)</li>
           <li>gradient, dynamic: the fixed values (slack angle and voltage, PV voltages) always start at their set values</li>
         </ul><ul lang="ja">
-          <li><code>true</code> なら、このネットワークで最後に収束した解から始めます。この解は <code>net.solver_PF</code> が持っています。</li>
-          <li><code>false</code> のときや保持した解がないときは、フラットスタート（角度 0、大きさ 1）で始めます。ただし PV 母線と slack 母線は指定の <code>V</code>、slack 母線は指定の <code>Varg</code> を使います。</li>
+          <li><code>true</code> なら、<code>net.solver_PF</code> が持つ最後に収束した解から始めます。ただし、その解を求めたときと母線のタグ（並び順を含む）が同じときに限ります。</li>
+          <li><code>false</code> のとき、母線のタグが違うとき、保持した解がないときは、フラットスタート（角度 0、大きさ 1）で始めます。ただし PV 母線と slack 母線は指定の <code>V</code>、slack 母線は指定の <code>Varg</code> を使います。</li>
           <li>gradient と dynamic では、固定する値（slack の角度と電圧、PV の電圧）は常に指定値から始めます。</li>
         </ul></td></tr>
         <tr><td><code>PlotFcn</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>"none"</code><small>config</small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
           <li>Live display during the calculation, every Solver</li>
           <li><code>"residual"</code>: one bar per power equation (two per bus: P or the slack angle; Q or |V| at PV and slack buses), height |residual| at the iterate, log scale, Tolerance as a line; one reused figure (Tag <code>GUILDA:PlotFcn:residual</code>), redrawn at most every 0.2 s and at the end (dynamic: along the virtual time)</li>
           <li>Function handle: <code>stop = f(x, optimValues, state)</code> at every iterate; <code>x</code> complex bus voltages, <code>optimValues.iteration</code>, <code>.fval</code> (residuals), <code>.residual</code> (largest), <code>.time</code> (dynamic); a true <code>stop</code> ends with flag -1</li>
-          <li>The figure after the calculation: <code>result.Plot()</code></li>
+          <li>The figure after the calculation: <code>result.Plot()</code> of <code>Format="GUILDAorigin"</code></li>
         </ul><ul lang="ja">
           <li>計算中の経過をライブで表示します。どの Solver でも使えます。</li>
           <li><code>"residual"</code> は、電力方程式 1 本につき 1 本の棒を描きます。母線ごとに 2 本で、P または slack の角度と、Q または PV・slack の |V| です。棒の高さはその反復の |残差| で、対数軸に Tolerance を破線で示します。図は 1 枚を使い回し（Tag <code>GUILDA:PlotFcn:residual</code>）、描き直すのは 0.2 秒以上の間隔と終了時です。dynamic では仮想時間に沿って更新します。</li>
           <li>関数ハンドルを渡すと、反復ごとに <code>stop = f(x, optimValues, state)</code> を呼び出します。<code>x</code> は母線の複素電圧です。<code>optimValues</code> には <code>optimValues.iteration</code>、<code>.fval</code>（残差）、<code>.residual</code>（最大値）、<code>.time</code>（dynamic のみ）が入ります。<code>stop</code> に true を返すと、flag -1 で終わります。</li>
-          <li>計算後の図は <code>result.Plot()</code> で描きます。</li>
+          <li>計算後の図は、<code>Format="GUILDAorigin"</code> の結果の <code>result.Plot()</code> で描きます。</li>
         </ul></td></tr>
         <tr><td><code>Export</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>false</code><small><span lang="en">call option</span><span lang="ja">呼び出しオプション</span></small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
-          <li><code>true</code>: calls <code>result.Export()</code> with the default file name</li>
-          <li>String: the file name</li>
+          <li><code>true</code>: calls <code>ResultPF.Export()</code> with the default file name</li>
+          <li>String: the file name; its extension selects the file format</li>
+          <li>With a <code>Format</code> other than <code>"GUILDAorigin"</code>: a <code>ResultPF</code> is built for the export only; the first output keeps its <code>Format</code></li>
         </ul><ul lang="ja">
-          <li><code>true</code> なら、既定のファイル名で <code>result.Export()</code> を呼び出します。</li>
-          <li>文字列ならファイル名として使います。</li>
+          <li><code>true</code> なら、既定のファイル名で <code>ResultPF.Export()</code> を呼び出します。</li>
+          <li>文字列ならファイル名として使い、拡張子でファイル形式が決まります。</li>
+          <li><code>Format</code> が <code>"GUILDAorigin"</code> 以外のときは、書き出しのためだけに <code>ResultPF</code> を作ります。最初の出力は指定した <code>Format</code> のままです。</li>
+        </ul></td></tr>
+        <tr><td><code>Format</code></td><td data-label="Default (source)" data-label-ja="既定値（出所）"><code>"V"</code><small><span lang="en">call option</span><span lang="ja">呼び出しオプション</span></small></td><td data-label="Meaning" data-label-ja="意味"><ul lang="en">
+          <li>Form of the first output; <code>flag</code> and <code>output</code> stay the 2nd and 3rd outputs</li>
+          <li><code>"V"</code>: complex bus voltages [pu], a column in <code>net.a_Bus</code> order</li>
+          <li><code>"powerflow(mat)"</code>: n_bus×4 complex matrix, columns V, I (phasors), P, Q (injections into the network) [pu]</li>
+          <li><code>"powerflow(tab)"</code>: the same as a table with the variables <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code>; row names = bus tags</li>
+          <li><code>"GUILDAorigin"</code>: a <code>ResultPF</code> (see <a href="#data">Data produced</a>)</li>
+        </ul><ul lang="ja">
+          <li>最初の出力の形です。<code>flag</code> と <code>output</code> は、どの値でも 2 番目と 3 番目の出力です。</li>
+          <li><code>"V"</code>: 母線の複素電圧 [pu] を、<code>net.a_Bus</code> の順に並べた列ベクトルです。</li>
+          <li><code>"powerflow(mat)"</code>: n_bus×4 の複素行列です。列は V、I（フェーザ）、P、Q（ネットワークへの注入）[pu] です。</li>
+          <li><code>"powerflow(tab)"</code>: 同じ内容の table です。変数は <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code> で、行名は母線のタグです。</li>
+          <li><code>"GUILDAorigin"</code>: <code>ResultPF</code> を返します（<a href="#data">生成されるデータ</a>を参照）。</li>
         </ul></td></tr>
       </tbody>
     </table>
     <ul lang="en">
-      <li>Name-Value names: those of <code>SolverPF.OptionMap</code>, plus <code>Export</code></li>
-      <li>config: the PowerFlowCalculation section of <code>GUILDA.setting</code> (<code>GUILDA.config("PowerFlowCalculation")</code>; defaults in <code>@GUILDA/config/DefaultPowerFlowCalculation.json</code>), read at every call</li>
+      <li>Name-Value names: the eight options above, checked by the <code>arguments</code> block of <code>calculate_powerflow</code></li>
+      <li>config: the PowerFlowCalculation section of <code>GUILDA.setting</code> (<code>GUILDA.config("PowerFlowCalculation", ...)</code>; defaults in <code>@GUILDA/config/DefaultPowerFlowCalculation.json</code>), read at every call</li>
       <li>Name-Value options override it for that call only; the settings file is not written</li>
       <li>Other settings: no Name-Value option; set in <code>GUILDA.setting</code>
         <ul>
@@ -160,11 +175,11 @@
         </ul>
       </li>
       <li>dynamic: the class defaults of <code>MethodDynamic</code> (<code>Mass = 0</code>, <code>Damper = 1</code>, <code>foh_PQ = 0</code>); no setting</li>
-      <li><code>net.solver_PF</code>: no settings; keeps the warm start solution and the cache (see <a href="#side-effects">Side effects</a>)</li>
+      <li><code>net.solver_PF</code>: no settings; keeps only the warm start solution (see <a href="#side-effects">Side effects</a>)</li>
     </ul>
     <ul lang="ja">
-      <li>Name-Value で指定できる名前は、<code>SolverPF.OptionMap</code> にあるものと <code>Export</code> です。</li>
-      <li>既定値は <code>GUILDA.setting</code> の PowerFlowCalculation セクション（<code>GUILDA.config("PowerFlowCalculation")</code>）から、呼び出しのたびに読み込みます。元の値は <code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> にあります。</li>
+      <li>Name-Value で指定できる名前は上の 8 つで、<code>calculate_powerflow</code> の <code>arguments</code> ブロックが検査します。</li>
+      <li>既定値は <code>GUILDA.setting</code> の PowerFlowCalculation セクション（<code>GUILDA.config("PowerFlowCalculation", ...)</code>）から、呼び出しのたびに読み込みます。元の値は <code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> にあります。</li>
       <li>Name-Value オプションは、その呼び出しの間だけ設定を上書きします。設定ファイルには書き込みません。</li>
       <li>次の設定は Name-Value では指定できず、<code>GUILDA.setting</code> で変更します。
         <ul>
@@ -176,7 +191,7 @@
         </ul>
       </li>
       <li>dynamic には設定項目がなく、<code>MethodDynamic</code> のクラスの既定値（<code>Mass = 0</code>、<code>Damper = 1</code>、<code>foh_PQ = 0</code>）を使います。</li>
-      <li><code>net.solver_PF</code> は設定を持たず、ウォームスタート用の解とキャッシュだけを持ちます（<a href="#side-effects">副作用</a>を参照）。</li>
+      <li><code>net.solver_PF</code> は設定を持たず、ウォームスタート用の解だけを持ちます（<a href="#side-effects">副作用</a>を参照）。</li>
     </ul>
     <p lang="en">Preconditions and notes:</p>
     <p lang="ja">前提条件と注意点は次のとおりです。</p>
@@ -185,142 +200,132 @@
       <li><code>net.initialize()</code> not needed</li>
       <li>MATLAB alone: every method except <code>"fsolve"</code></li>
       <li><code>"fsolve"</code> needs Optimization Toolbox; without it the call stops with <code>GUILDA:require_toolbox:Unavailable</code></li>
-      <li><code>calculate_powerflow("dynamic")</code> and the options <code>"export"</code> / <code>"filename"</code> are deprecated: <code>v3_powerflow_args</code> converts them with a warning</li>
     </ul>
     <ul lang="ja">
       <li>母線が 1 つ以上必要です。さらに、slack 母線があるか、機器を持つ母線が 1 つ以上なければなりません。</li>
       <li><code>net.initialize()</code> を先に実行する必要はありません。</li>
       <li><code>"fsolve"</code> 以外の計算方法は、MATLAB 本体だけで動きます。</li>
       <li><code>"fsolve"</code> には Optimization Toolbox が必要です。ないときは <code>GUILDA:require_toolbox:Unavailable</code> で止まります。</li>
-      <li><code>calculate_powerflow("dynamic")</code> という書き方と、オプション <code>"export"</code> / <code>"filename"</code> は非推奨です。<code>v3_powerflow_args</code> が警告を出して新しい形に直します。</li>
     </ul>
     <!-- ============================== 2. SEQUENCE ============================== -->
     <h2 id="sequence"><span lang="en">2. Call sequence between classes</span><span lang="ja">2. クラス間の呼び出し順</span></h2>
     <figure class="dg-figure">
       <div class="dg-only-wide">
-        <svg class="dg-svg dg-sv fpf-seq" viewBox="0 0 780 642" role="img" aria-labelledby="fpf-seq-title">
-          <title id="fpf-seq-title">Call sequence of net.calculate_powerflow: the network resolves the options with SolverPF, selects a slack bus if none is set, and SolverPF.solve reads the admittance matrix and the bus settings, runs fsolve or ode15s, and returns a ResultPF.</title>
+        <svg class="dg-svg dg-sv fpf-seq" viewBox="0 0 780 576" role="img" aria-labelledby="fpf-seq-title">
+          <title id="fpf-seq-title">Call sequence of net.calculate_powerflow: the network checks the options in its arguments block and builds the solver settings, selects a slack bus if none is set, collects the power flow conditions of the buses and the admittance matrix, and calls SolverPF.solve, which runs a Method class (fsolve or ode15s for two of them). The network then reports a failure, returns the solution in the form of Format, and builds a ResultPF only for Format "GUILDAorigin" or Export.</title>
           <defs>
             <marker id="fpf-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
             <marker id="fpf-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head is-muted" d="M0 0L10 5L0 10z"/></marker>
           </defs>
-          <path class="dg-sv-line is-muted" d="M86 62V638"/>
+          <path class="dg-sv-line is-muted" d="M86 62V570"/>
           <rect class="dg-sv-box is-soft" x="36" y="16" width="100" height="46" rx="6"/>
           <text class="is-sm is-muted" lang="en" x="86" y="44" text-anchor="middle">Caller</text>
           <text class="is-sm is-muted" lang="ja" x="86" y="44" text-anchor="middle">呼び出し側</text>
-          <path class="dg-sv-line is-muted" d="M194 62V638"/>
+          <path class="dg-sv-line is-muted" d="M194 62V570"/>
           <rect class="dg-sv-box" x="144" y="16" width="100" height="46" rx="6"/>
           <text class="dg-mono is-b" x="194" y="36" text-anchor="middle" style="font-size:12px">PowerNetwork</text>
           <text class="is-sm is-muted" x="194" y="52" text-anchor="middle">net</text>
-          <path class="dg-sv-line is-muted" d="M302 62V638"/>
+          <path class="dg-sv-line is-muted" d="M302 62V570"/>
           <rect class="dg-sv-box" x="252" y="16" width="100" height="46" rx="6"/>
           <text class="dg-mono is-b" x="302" y="36" text-anchor="middle" style="font-size:12px">SolverPF</text>
           <text class="is-sm is-muted" x="302" y="52" text-anchor="middle">net.solver_PF</text>
-          <path class="dg-sv-line is-muted" d="M410 62V638"/>
+          <path class="dg-sv-line is-muted" d="M410 62V570"/>
           <rect class="dg-sv-box" x="360" y="16" width="100" height="46" rx="6"/>
-          <text class="dg-mono is-b" x="410" y="36" text-anchor="middle" style="font-size:12px">Bus</text>
-          <text class="is-sm is-muted" x="410" y="52" text-anchor="middle">net.a_Bus{i}</text>
-          <path class="dg-sv-line is-muted" d="M518 62V638"/>
+          <text class="dg-mono is-b" x="410" y="36" text-anchor="middle" style="font-size:12px">Method*</text>
+          <text class="is-sm is-muted" x="410" y="52" text-anchor="middle">ode15s | fsolve</text>
+          <path class="dg-sv-line is-muted" d="M518 62V570"/>
           <rect class="dg-sv-box" x="468" y="16" width="100" height="46" rx="6"/>
-          <text class="dg-mono is-b" x="518" y="36" text-anchor="middle" style="font-size:12px">Branch</text>
-          <text class="is-sm is-muted" x="518" y="52" text-anchor="middle">net.a_Branch{k}</text>
-          <path class="dg-sv-line is-muted" d="M626 62V638"/>
+          <text class="dg-mono is-b" x="518" y="36" text-anchor="middle" style="font-size:12px">Bus</text>
+          <text class="is-sm is-muted" x="518" y="52" text-anchor="middle">net.a_Bus{i}</text>
+          <path class="dg-sv-line is-muted" d="M626 62V570"/>
           <rect class="dg-sv-box" x="576" y="16" width="100" height="46" rx="6"/>
-          <text class="dg-mono is-b" x="626" y="36" text-anchor="middle" style="font-size:12px">MATLAB</text>
-          <text class="is-sm is-muted" x="626" y="52" text-anchor="middle">fsolve | ode15s</text>
-          <path class="dg-sv-line is-muted" d="M734 62V638"/>
+          <text class="dg-mono is-b" x="626" y="36" text-anchor="middle" style="font-size:12px">Branch</text>
+          <text class="is-sm is-muted" x="626" y="52" text-anchor="middle">net.a_Branch{k}</text>
+          <path class="dg-sv-line is-muted" d="M734 62V570"/>
           <rect class="dg-sv-box" x="684" y="16" width="100" height="46" rx="6"/>
           <text class="dg-mono is-b" x="734" y="36" text-anchor="middle" style="font-size:12px">ResultPF</text>
           <text class="is-sm is-muted" x="734" y="52" text-anchor="middle">result</text>
           <path class="dg-sv-line" d="M90 84H191" marker-end="url(#fpf-ah)"/>
-          <path class="dg-sv-line is-muted" d="M34 84H80" style="stroke-dasharray:1 5"/>
+          <path class="dg-sv-line is-muted" d="M34 84H76" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="76" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="88" text-anchor="middle" style="font-size:10px">01</text>
           <text class="dg-mono is-sm fpf-l" x="94" y="78" text-anchor="start">calculate_powerflow(...)</text>
-          <path class="dg-sv-line" d="M198 116H299" marker-end="url(#fpf-ah)"/>
-          <path class="dg-sv-line is-muted" d="M34 116H188" style="stroke-dasharray:1 5"/>
-          <rect class="dg-sv-box is-solid" x="3" y="108" width="30" height="16" rx="8"/>
-          <text class="is-inv is-b" x="18" y="120" text-anchor="middle" style="font-size:10px">02</text>
-          <text class="dg-mono is-sm fpf-l" x="202" y="110" text-anchor="start">get_options(c_nv)</text>
-          <path class="dg-sv-line is-muted" d="M298 148H197" marker-end="url(#fpf-ah-m)"/>
-          <text class="dg-mono is-sm fpf-l" x="294" y="142" text-anchor="end">sct_options</text>
-          <path class="dg-sv-line" d="M198 180H407" marker-end="url(#fpf-ah)"/>
-          <path class="dg-sv-line is-muted" d="M34 180H188" style="stroke-dasharray:1 5"/>
-          <rect class="dg-sv-box is-solid" x="3" y="172" width="30" height="16" rx="8"/>
-          <text class="is-inv is-b" x="18" y="184" text-anchor="middle" style="font-size:10px">03</text>
-          <text class="dg-mono is-sm fpf-l" lang="en" x="202" y="174" text-anchor="start">l_isSlack = true (no slack)</text>
-          <text class="dg-mono is-sm fpf-l" lang="ja" x="202" y="174" text-anchor="start">l_isSlack = true（slack なし）</text>
-          <path class="dg-sv-line" d="M198 212H299" marker-end="url(#fpf-ah)"/>
-          <path class="dg-sv-line is-muted" d="M34 212H188" style="stroke-dasharray:1 5"/>
-          <rect class="dg-sv-box is-solid" x="3" y="204" width="30" height="16" rx="8"/>
-          <text class="is-inv is-b" x="18" y="216" text-anchor="middle" style="font-size:10px">04</text>
-          <text class="dg-mono is-sm fpf-l" x="202" y="206" text-anchor="start">solve(net, sct_options)</text>
-          <path class="dg-sv-line" d="M298 244H197" marker-end="url(#fpf-ah)"/>
-          <path class="dg-sv-line is-muted" d="M34 244H188" style="stroke-dasharray:1 5"/>
-          <rect class="dg-sv-box is-solid" x="3" y="236" width="30" height="16" rx="8"/>
-          <text class="is-inv is-b" x="18" y="248" text-anchor="middle" style="font-size:10px">05</text>
-          <text class="dg-mono is-sm fpf-l" x="294" y="238" text-anchor="end">get_admittance_matrix()</text>
-          <path class="dg-sv-line" d="M198 276H515" marker-end="url(#fpf-ah)"/>
-          <text class="dg-mono is-sm fpf-l" x="202" y="270" text-anchor="start">get_admittance_matrix()</text>
-          <path class="dg-sv-line" d="M306 308H407" marker-end="url(#fpf-ah)"/>
-          <path class="dg-sv-line is-muted" d="M34 308H296" style="stroke-dasharray:1 5"/>
-          <rect class="dg-sv-box is-solid" x="3" y="300" width="30" height="16" rx="8"/>
-          <text class="is-inv is-b" x="18" y="312" text-anchor="middle" style="font-size:10px">06</text>
-          <text class="dg-mono is-sm fpf-l" x="310" y="302" text-anchor="start">get_pf_condition()</text>
-          <path class="dg-sv-line" d="M306 340H623" marker-end="url(#fpf-ah)"/>
-          <path class="dg-sv-line is-muted" d="M34 340H296" style="stroke-dasharray:1 5"/>
-          <rect class="dg-sv-box is-solid" x="3" y="332" width="30" height="16" rx="8"/>
-          <text class="is-inv is-b" x="18" y="344" text-anchor="middle" style="font-size:10px">07</text>
-          <text class="dg-mono is-sm fpf-l" x="310" y="334" text-anchor="start">MethodNewtonRaphson | Gradient | LM | Fsolve</text>
-          <path class="dg-sv-line" d="M306 372H623" marker-end="url(#fpf-ah)"/>
-          <path class="dg-sv-line is-muted" d="M34 372H296" style="stroke-dasharray:1 5"/>
-          <rect class="dg-sv-box is-solid" x="3" y="364" width="30" height="16" rx="8"/>
-          <text class="is-inv is-b" x="18" y="376" text-anchor="middle" style="font-size:10px">08</text>
-          <text class="dg-mono is-sm fpf-l" x="310" y="366" text-anchor="start">MethodDynamic → ode15s</text>
-          <path class="dg-sv-line is-muted" d="M622 404H305" marker-end="url(#fpf-ah-m)"/>
-          <text class="dg-mono is-sm fpf-l" x="618" y="398" text-anchor="end">cv_Vbus, flag, output</text>
-          <path class="dg-sv-line" d="M306 436H515" marker-end="url(#fpf-ah)"/>
-          <path class="dg-sv-line is-muted" d="M34 436H296" style="stroke-dasharray:1 5"/>
-          <rect class="dg-sv-box is-solid" x="3" y="428" width="30" height="16" rx="8"/>
-          <text class="is-inv is-b" x="18" y="440" text-anchor="middle" style="font-size:10px">09</text>
-          <text class="dg-mono is-sm fpf-l" x="310" y="430" text-anchor="start">branch_flow → get_admittance_matrix()</text>
-          <path class="dg-sv-line" d="M306 468H731" marker-end="url(#fpf-ah)"/>
-          <path class="dg-sv-line is-muted" d="M34 468H296" style="stroke-dasharray:1 5"/>
-          <rect class="dg-sv-box is-solid" x="3" y="460" width="30" height="16" rx="8"/>
-          <text class="is-inv is-b" x="18" y="472" text-anchor="middle" style="font-size:10px">10</text>
-          <text class="dg-mono is-sm fpf-l" x="310" y="462" text-anchor="start">ResultPF(net, obj, sct_options, ...)</text>
-          <path class="dg-sv-line" d="M302 494h26v14h-24" marker-end="url(#fpf-ah)"/>
-          <path class="dg-sv-line is-muted" d="M34 500H296" style="stroke-dasharray:1 5"/>
-          <rect class="dg-sv-box is-solid" x="3" y="492" width="30" height="16" rx="8"/>
-          <text class="is-inv is-b" x="18" y="504" text-anchor="middle" style="font-size:10px">11</text>
-          <text class="dg-mono is-sm fpf-l" x="334" y="505" text-anchor="start">WhenFailed</text>
-          <path class="dg-sv-line is-muted" d="M298 540H197" marker-end="url(#fpf-ah-m)"/>
-          <text class="dg-mono is-sm fpf-l" x="294" y="534" text-anchor="end">[result, flag, output]</text>
-          <path class="dg-sv-line" d="M198 572H731" marker-end="url(#fpf-ah)"/>
-          <path class="dg-sv-line is-muted" d="M34 572H188" style="stroke-dasharray:1 5"/>
-          <rect class="dg-sv-box is-solid" x="3" y="564" width="30" height="16" rx="8"/>
-          <text class="is-inv is-b" x="18" y="576" text-anchor="middle" style="font-size:10px">12</text>
-          <text class="dg-mono is-sm fpf-l" x="202" y="566" text-anchor="start">Export(file)</text>
-          <path class="dg-sv-line is-muted" d="M190 604H89" marker-end="url(#fpf-ah-m)"/>
-          <text class="dg-mono is-sm fpf-l" x="186" y="598" text-anchor="end">[result, flag, output]</text>
+          <path class="dg-sv-line" d="M194 110h26v14h-24" marker-end="url(#fpf-ah)"/>
+          <text class="dg-mono is-sm fpf-l" x="226" y="121" text-anchor="start">arguments → solver_options</text>
+          <path class="dg-sv-line" d="M198 156H515" marker-end="url(#fpf-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 156H184" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="148" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="160" text-anchor="middle" style="font-size:10px">02</text>
+          <text class="dg-mono is-sm fpf-l" lang="en" x="202" y="150" text-anchor="start">l_isSlack = true (no slack)</text>
+          <text class="dg-mono is-sm fpf-l" lang="ja" x="202" y="150" text-anchor="start">l_isSlack = true（slack なし）</text>
+          <path class="dg-sv-line" d="M198 188H515" marker-end="url(#fpf-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 188H184" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="180" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="192" text-anchor="middle" style="font-size:10px">03</text>
+          <text class="dg-mono is-sm fpf-l" x="202" y="182" text-anchor="start">get_pf_condition()</text>
+          <path class="dg-sv-line" d="M198 220H623" marker-end="url(#fpf-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 220H184" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="212" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="224" text-anchor="middle" style="font-size:10px">04</text>
+          <text class="dg-mono is-sm fpf-l" x="202" y="214" text-anchor="start">get_admittance_matrix()</text>
+          <path class="dg-sv-line" d="M198 252H299" marker-end="url(#fpf-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 252H184" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="244" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="256" text-anchor="middle" style="font-size:10px">05</text>
+          <text class="dg-mono is-sm fpf-l" x="202" y="246" text-anchor="start">solve(cm_Y, tab_PFcondition, sct_options)</text>
+          <path class="dg-sv-line" d="M306 284H407" marker-end="url(#fpf-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 284H292" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="276" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="288" text-anchor="middle" style="font-size:10px">06</text>
+          <text class="dg-mono is-sm fpf-l" x="310" y="278" text-anchor="start">MethodNewtonRaphson | Gradient | LM | Fsolve</text>
+          <path class="dg-sv-line" d="M306 316H407" marker-end="url(#fpf-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 316H292" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="308" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="320" text-anchor="middle" style="font-size:10px">07</text>
+          <text class="dg-mono is-sm fpf-l" x="310" y="310" text-anchor="start">MethodDynamic → ode15s</text>
+          <path class="dg-sv-line is-muted" d="M406 348H305" marker-end="url(#fpf-ah-m)"/>
+          <text class="dg-mono is-sm fpf-l" x="402" y="342" text-anchor="end">x, flag, output</text>
+          <path class="dg-sv-line is-muted" d="M298 380H197" marker-end="url(#fpf-ah-m)"/>
+          <text class="dg-mono is-sm fpf-l" x="294" y="374" text-anchor="end">cv_V, flag, output, ...</text>
+          <path class="dg-sv-line" d="M194 406h26v14h-24" marker-end="url(#fpf-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 412H184" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="404" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="416" text-anchor="middle" style="font-size:10px">08</text>
+          <text class="dg-mono is-sm fpf-l" x="226" y="417" text-anchor="start">notify_failure (WhenFailed)</text>
+          <path class="dg-sv-line" d="M194 444h26v14h-24" marker-end="url(#fpf-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 450H184" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="442" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="454" text-anchor="middle" style="font-size:10px">09</text>
+          <text class="dg-mono is-sm fpf-l" x="226" y="455" text-anchor="start">powerflow_table → format_powerflow(Format)</text>
+          <path class="dg-sv-line" d="M198 490H731" marker-end="url(#fpf-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 490H184" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="482" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="494" text-anchor="middle" style="font-size:10px">10</text>
+          <text class="dg-mono is-sm fpf-l" x="202" y="484" text-anchor="start">ResultPF(tab_pf, cm_Y, struct(net, false), sct_solver)</text>
+          <path class="dg-sv-line" d="M198 522H731" marker-end="url(#fpf-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 522H184" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="514" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="526" text-anchor="middle" style="font-size:10px">11</text>
+          <text class="dg-mono is-sm fpf-l" x="202" y="516" text-anchor="start">Export(file)</text>
+          <path class="dg-sv-line is-muted" d="M190 554H89" marker-end="url(#fpf-ah-m)"/>
+          <text class="dg-mono is-sm fpf-l" x="186" y="548" text-anchor="end">[result, flag, output]</text>
         </svg>
       </div>
       <ol class="dg-only-narrow fpf-narrow">
-        <li><b>PF-01</b> <span lang="en">Caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.calculate_powerflow</code></li>
-        <li><b>PF-02</b> <code>PowerNetwork</code> → <code>SolverPF.get_options</code></li>
-        <li><b>PF-03</b> <code>PowerNetwork</code> → <code>Bus.l_isSlack = true</code></li>
-        <li><b>PF-04</b> <code>PowerNetwork</code> → <code>SolverPF.solve</code></li>
-        <li><b>PF-05</b> <code>SolverPF</code> → <code>PowerNetwork.get_admittance_matrix</code> → <code>Branch.get_admittance_matrix</code></li>
-        <li><b>PF-06</b> <code>SolverPF</code> → <code>Bus.get_pf_condition</code></li>
-        <li><b>PF-07</b> <code>SolverPF</code> → <code>MethodNewtonRaphson</code> / <code>MethodGradient</code> / <code>MethodLevenbergMarquardt</code> / <code>MethodFsolve</code></li>
-        <li><b>PF-08</b> <code>SolverPF</code> → <code>MethodDynamic</code> → <code>ode15s</code></li>
-        <li><b>PF-09</b> <code>SolverPF</code> → <code>branch_flow</code> → <code>Branch.get_admittance_matrix</code></li>
-        <li><b>PF-10</b> <code>SolverPF</code> → <code>ResultPF</code></li>
-        <li><b>PF-11</b> <code>SolverPF</code>: <code>WhenFailed</code></li>
-        <li><b>PF-12</b> <code>PowerNetwork</code> → <code>ResultPF.Export</code></li>
+        <li><b>PF-01</b> <span lang="en">Caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.calculate_powerflow</code> (<code>arguments</code>, <code>solver_options</code>)</li>
+        <li><b>PF-02</b> <code>PowerNetwork</code> → <code>Bus.l_isSlack = true</code></li>
+        <li><b>PF-03</b> <code>PowerNetwork</code> → <code>Bus.get_pf_condition</code></li>
+        <li><b>PF-04</b> <code>PowerNetwork.get_admittance_matrix</code> → <code>Branch.get_admittance_matrix</code></li>
+        <li><b>PF-05</b> <code>PowerNetwork</code> → <code>SolverPF.solve</code></li>
+        <li><b>PF-06</b> <code>SolverPF</code> → <code>MethodNewtonRaphson</code> / <code>MethodGradient</code> / <code>MethodLevenbergMarquardt</code> / <code>MethodFsolve</code></li>
+        <li><b>PF-07</b> <code>SolverPF</code> → <code>MethodDynamic</code> → <code>ode15s</code></li>
+        <li><b>PF-08</b> <code>PowerNetwork</code>: <code>notify_failure</code> (<code>WhenFailed</code>)</li>
+        <li><b>PF-09</b> <code>PowerNetwork</code>: <code>powerflow_table</code> → <code>format_powerflow</code></li>
+        <li><b>PF-10</b> <code>PowerNetwork</code> → <code>ResultPF</code></li>
+        <li><b>PF-11</b> <code>PowerNetwork</code> → <code>ResultPF.Export</code></li>
       </ol>
-      <figcaption lang="en">Numbers: step IDs of the list below. Solid arrows: calls; dashed arrows: returns. PF-03 runs only when no bus has <code>l_isSlack = true</code>. PF-07 and PF-08: alternatives selected by <code>Solver</code>.</figcaption>
-      <figcaption lang="ja">番号は下のリストのステップ ID です。実線は呼び出し、破線は戻り値を表します。PF-03 は <code>l_isSlack = true</code> の母線がないときだけ実行します。PF-07 と PF-08 は、<code>Solver</code> に応じてどちらか一方だけを実行します。</figcaption>
+      <figcaption lang="en">Numbers: step IDs of the list below. Solid arrows: calls; dashed arrows: returns. PF-02 runs only when no bus has <code>l_isSlack = true</code>. PF-06 and PF-07: alternatives selected by <code>Solver</code>. PF-10 runs only for <code>Format="GUILDAorigin"</code> or with <code>Export</code>; PF-11 only with <code>Export</code>.</figcaption>
+      <figcaption lang="ja">番号は下のリストのステップ ID です。実線は呼び出し、破線は戻り値を表します。PF-02 は <code>l_isSlack = true</code> の母線がないときだけ実行します。PF-06 と PF-07 は、<code>Solver</code> に応じてどちらか一方だけを実行します。PF-10 は <code>Format="GUILDAorigin"</code> のときか <code>Export</code> を指定したときだけ、PF-11 は <code>Export</code> を指定したときだけ実行します。</figcaption>
     </figure>
 
     <!-- ============================== 3. STEPS ============================== -->
@@ -331,39 +336,24 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Converts deprecated arguments (<code>v3_powerflow_args</code>)</li>
-            <li>Separates <code>Export</code> from the solver options (<code>take_call_options</code>)</li>
+            <li>The <code>arguments</code> block checks the eight options; defaults from <code>GUILDA.config("PowerFlowCalculation", ...)</code>, <code>Export = false</code>, <code>Format = "V"</code></li>
+            <li>Unknown name or invalid value: the MATLAB error of the <code>arguments</code> block</li>
+            <li>Local <code>solver_options</code>: struct of the <code>Value</code> of every setting of the section, overwritten by the call options <code>Solver</code>, <code>Tolerance</code>, <code>MaxIteration</code>, <code>Verbose</code>, <code>WarmStart</code></li>
+            <li>Adds <code>PlotFcn</code> checked by <code>tools.check_plotfcn</code> and <code>Display</code> (<code>"iter"</code> for Verbose true, <code>"none"</code> for false)</li>
           </ul><ul lang="ja">
-            <li>非推奨の引数を新しい形に直します（<code>v3_powerflow_args</code>）。</li>
-            <li><code>Export</code> は、ソルバーのオプションとは分けて取り出します（<code>take_call_options</code>）。</li>
+            <li><code>arguments</code> ブロックが 8 つのオプションを検査します。既定値は <code>GUILDA.config("PowerFlowCalculation", ...)</code> から読み、<code>Export</code> は <code>false</code>、<code>Format</code> は <code>"V"</code> です。</li>
+            <li>未知の名前や不正な値は、<code>arguments</code> ブロックによる MATLAB のエラーになります。</li>
+            <li>内部関数 <code>solver_options</code> は、セクションの各設定の <code>Value</code> で構造体を作り、呼び出しのオプション <code>Solver</code>、<code>Tolerance</code>、<code>MaxIteration</code>、<code>Verbose</code>、<code>WarmStart</code> で上書きします。</li>
+            <li>さらに、<code>tools.check_plotfcn</code> で検査した <code>PlotFcn</code> と、<code>Display</code>（Verbose が true なら <code>"iter"</code>、false なら <code>"none"</code>）を加えます。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>varargin</code></dd>
+          <dd><span lang="en">Name-Value options</span><span lang="ja">Name-Value オプション</span>, <code>GUILDA.config("PowerFlowCalculation")</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>c_nv</code> <span lang="en">(solver Name-Value cell)</span><span lang="ja">（ソルバーに渡す Name-Value の cell）</span>, <code>opt.Export</code></dd>
+          <dd><code>opt</code>, <code>sct_options</code> <span lang="en">(1×1 struct: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunctionEvaluations, WhenFailed, Verbose, WarmStart, PlotFcn, Display); settings file unchanged</span><span lang="ja">（1×1 の構造体。フィールドは Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunctionEvaluations, WhenFailed, Verbose, WarmStart, PlotFcn, Display）。設定ファイルはそのままです。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-02">
-        <p class="fs-head"><b class="fs-id">PF-02</b> <span class="fs-call"><code>PowerNetwork</code> → <code>SolverPF.get_options</code></span></p>
-        <dl class="fs-body">
-          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><ul lang="en">
-            <li>Builds a struct of the <code>Value</code> of every setting of the section, plus <code>Display = "none"</code></li>
-            <li>Applies the overrides to it: <code>tools.resolve_options(sct_options, SolverPF.OptionMap, nv)</code></li>
-            <li>Checks the values (<code>validate_options</code>; <code>PlotFcn</code>: <code>tools.check_plotfcn</code>)</li>
-          </ul><ul lang="ja">
-            <li>セクションの各設定の <code>Value</code> に <code>Display = "none"</code> を加えて、構造体を作ります。</li>
-            <li><code>tools.resolve_options(sct_options, SolverPF.OptionMap, nv)</code> で、指定された値を上書きします。</li>
-            <li>値を検査します（<code>validate_options</code>。<code>PlotFcn</code> は <code>tools.check_plotfcn</code> で検査）。</li>
-          </ul></dd>
-          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>GUILDA.config("PowerFlowCalculation")</code>, <code>c_nv</code></dd>
-          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>sct_options</code> <span lang="en">(1×1 struct: Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunctionEvaluations, WhenFailed, Verbose, WarmStart, PlotFcn, Display); solver and settings file unchanged</span><span lang="ja">（1×1 の構造体。フィールドは Solver, Tolerance, MaxIteration, NewtonStepSize, GradientStepSize, FsolveUseParallel, FsolveMaxFunctionEvaluations, WhenFailed, Verbose, WarmStart, PlotFcn, Display）。ソルバーと設定ファイルはそのままです。</span></dd>
-        </dl>
-      </li>
-      <li class="fs-step" id="PF-03">
-        <p class="fs-head"><b class="fs-id">PF-03</b> <span class="fs-call"><code>PowerNetwork</code> → <code>Bus.l_isSlack = true</code></span></p>
+        <p class="fs-head"><b class="fs-id">PF-02</b> <span class="fs-call"><code>PowerNetwork</code> → <code>Bus.l_isSlack = true</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -381,48 +371,8 @@
           <dd><code>Bus.l_isSlack = true</code>; <span lang="en"><code>set.l_isSlack</code> reports a <code>"Slack"</code> edit (<code>LayerPackage.log_edit</code>), which makes <code>net.sct_stale.powerflow</code> stale</span><span lang="ja"><code>set.l_isSlack</code> が <code>"Slack"</code> の編集として記録します（<code>LayerPackage.log_edit</code>）。これで <code>net.sct_stale.powerflow</code> が古くなります。</span></dd>
         </dl>
       </li>
-      <li class="fs-step" id="PF-04">
-        <p class="fs-head"><b class="fs-id">PF-04</b> <span class="fs-call"><code>PowerNetwork</code> → <code>SolverPF.solve</code></span></p>
-        <dl class="fs-body">
-          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><ul lang="en">
-            <li>Starts the timer (<code>tic</code>)</li>
-            <li>Compares the cache with the network (local <code>equations</code>): other buses (by object identity) or another <code>n_revTopology</code> → discards the warm start solution and the cache</li>
-            <li>PF-05 only when <code>n_revY</code> differs from the cache, PF-06 only when <code>n_revPF</code> differs; otherwise the cached <code>cm_Y</code> and equations</li>
-            <li>Initial voltages (local <code>initial_voltage</code>): the kept solution with <code>WarmStart = true</code>, otherwise the flat start</li>
-            <li>Runs PF-07 to PF-11; keeps <code>cv_Vbus</code> as the warm start solution when <code>flag == 1</code></li>
-          </ul><ul lang="ja">
-            <li>タイマーを動かします（<code>tic</code>）。</li>
-            <li>内部関数 <code>equations</code> がキャッシュとネットワークを比べます。母線（オブジェクトが同じかで判定）か <code>n_revTopology</code> が違えば、ウォームスタート用の解とキャッシュを捨てます。</li>
-            <li>PF-05 は <code>n_revY</code> がキャッシュと違うときだけ、PF-06 は <code>n_revPF</code> が違うときだけ実行します。それ以外はキャッシュにある <code>cm_Y</code> と方程式を使います。</li>
-            <li>初期電圧は内部関数 <code>initial_voltage</code> で決めます。<code>WarmStart = true</code> なら保持している解を使い、そうでなければフラットスタートにします。</li>
-            <li>PF-07 から PF-11 を実行します。<code>flag == 1</code> で収束したら、<code>cv_Vbus</code> を次のウォームスタート用に保持します。</li>
-          </ul></dd>
-          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>net</code> (<code>a_Bus</code>, <code>n_revY</code>, <code>n_revPF</code>, <code>n_revTopology</code>), <code>sct_options</code></dd>
-          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>[result, flag, output]</code>; <span lang="en">private properties of <code>net.solver_PF</code> (warm start solution, cache)</span><span lang="ja"><code>net.solver_PF</code> の private プロパティ（ウォームスタート用の解とキャッシュ）</span></dd>
-        </dl>
-      </li>
-      <li class="fs-step" id="PF-05">
-        <p class="fs-head"><b class="fs-id">PF-05</b> <span class="fs-call"><code>SolverPF</code> → <code>PowerNetwork.get_admittance_matrix</code> → <code>Branch.get_admittance_matrix</code></span></p>
-        <dl class="fs-body">
-          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><ul lang="en">
-            <li>Adds the 2×2 matrix of every branch at its two end buses</li>
-            <li>Adds the bus shunt <code>Gshunt + 1j*Bshunt</code> on the diagonal</li>
-          </ul><ul lang="ja">
-            <li>各ブランチの 2×2 行列を、両端の母線に当たる位置に足し込みます。</li>
-            <li>母線のシャント <code>Gshunt + 1j*Bshunt</code> を対角に足します。</li>
-          </ul></dd>
-          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en">branch</span><span lang="ja">ブランチの</span> <code>tab_parameter.dynamics</code> (R, X, C, tap, phase), <code>Branch.a_Bus</code>; <span lang="en">bus</span><span lang="ja">母線の</span> <code>tab_parameter.dynamics</code> (Gshunt, Bshunt)</dd>
-          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>cm_Y</code> <span lang="en">(n_bus×n_bus complex [pu], rows and columns in the order of <code>a_Bus</code>)</span><span lang="ja">（n_bus×n_bus の複素数 [pu]。行と列は <code>a_Bus</code> の順に並びます）</span></dd>
-        </dl>
-      </li>
-      <li class="fs-step" id="PF-06">
-        <p class="fs-head"><b class="fs-id">PF-06</b> <span class="fs-call"><code>SolverPF</code> → <code>Bus.get_pf_condition</code></span></p>
+      <li class="fs-step" id="PF-03">
+        <p class="fs-head"><b class="fs-id">PF-03</b> <span class="fs-call"><code>PowerNetwork</code> → <code>Bus.get_pf_condition</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -439,23 +389,64 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>l_isSlack</code>, <span lang="en">bus</span><span lang="ja">母線の</span> <code>tab_parameter.powerflow</code> (V, Varg), <span lang="en">component</span><span lang="ja">機器の</span> <code>tab_parameter.powerflow</code> (P, Q)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>tab_PFcondition</code> <span lang="en">(n_bus×5 table: Type, Varg, V, P, Q; NaN where the type does not set a value; row names = bus tags); with it <code>private/power_equation</code> builds the equations of PF-07, both cached</span><span lang="ja">（n_bus×5 の table。列は Type, Varg, V, P, Q で、種類で決まらない値は NaN にします。行名は母線のタグです）。<code>private/power_equation</code> はこの表から PF-07 の方程式を作ります。表も方程式もキャッシュに入れます。</span></dd>
+          <dd><code>tab_PFcondition</code> <span lang="en">(n_bus×5 table: Type, Varg, V, P, Q; NaN where the type does not set a value; row names = bus tags, set by <code>calculate_powerflow</code>)</span><span lang="ja">（n_bus×5 の table。列は Type, Varg, V, P, Q で、種類で決まらない値は NaN にします。行名は母線のタグで、<code>calculate_powerflow</code> が付けます）。</span></dd>
         </dl>
       </li>
-      <li class="fs-step" id="PF-07">
-        <p class="fs-head"><b class="fs-id">PF-07</b> <span class="fs-call"><code>SolverPF</code> → <code>MethodNewtonRaphson</code> / <code>MethodGradient</code> / <code>MethodLevenbergMarquardt</code> / <code>MethodFsolve</code></span></p>
+      <li class="fs-step" id="PF-04">
+        <p class="fs-head"><b class="fs-id">PF-04</b> <span class="fs-call"><code>PowerNetwork.get_admittance_matrix</code> → <code>Branch.get_admittance_matrix</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Adds the 2×2 matrix of every branch at its two end buses</li>
+            <li>Adds the bus shunt <code>Gshunt + 1j*Bshunt</code> on the diagonal</li>
+            <li><code>calculate_powerflow</code> takes the matrix out of the table in the order of the bus tags</li>
+          </ul><ul lang="ja">
+            <li>各ブランチの 2×2 行列を、両端の母線に当たる位置に足し込みます。</li>
+            <li>母線のシャント <code>Gshunt + 1j*Bshunt</code> を対角に足します。</li>
+            <li><code>calculate_powerflow</code> は、返された table から母線のタグの順に行列を取り出します。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><span lang="en">branch</span><span lang="ja">ブランチの</span> <code>tab_parameter.dynamics</code> (R, X, C, tap, phase), <code>Branch.a_Bus</code>; <span lang="en">bus</span><span lang="ja">母線の</span> <code>tab_parameter.dynamics</code> (Gshunt, Bshunt)</dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>cm_Y</code> <span lang="en">(n_bus×n_bus complex [pu], rows and columns in the order of <code>a_Bus</code>)</span><span lang="ja">（n_bus×n_bus の複素数 [pu]。行と列は <code>a_Bus</code> の順に並びます）</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="PF-05">
+        <p class="fs-head"><b class="fs-id">PF-05</b> <span class="fs-call"><code>PowerNetwork</code> → <code>SolverPF.solve</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li><code>calculate_powerflow</code> measures the time of this call (<code>tic</code>, <code>toc</code>): <code>r_elapsed</code> of the result, the solver alone</li>
+            <li><code>private/power_equation</code> builds the residual, the Jacobian and the gradient direction from <code>cm_Y</code> and <code>tab_PFcondition</code> at every call</li>
+            <li>Initial voltages (local <code>initial_voltage</code>): the kept solution when <code>WarmStart = true</code> and its bus tags equal the row names of <code>tab_PFcondition</code> (same order); otherwise the flat start</li>
+            <li>Local <code>run_method</code>: a non-slack bus without branches (a zero row of <code>cm_Y</code>) gives flag −2 before any method (dynamic included) runs, as its voltage is not determined; otherwise PF-06 or PF-07</li>
+            <li>Keeps <code>cv_V</code> and its bus tags as the warm start solution when <code>flag == 1</code></li>
+          </ul><ul lang="ja">
+            <li><code>calculate_powerflow</code> はこの呼び出しの時間を測ります（<code>tic</code>、<code>toc</code>）。結果の <code>r_elapsed</code> は、ソルバーだけの時間です。</li>
+            <li><code>private/power_equation</code> が、<code>cm_Y</code> と <code>tab_PFcondition</code> から残差、ヤコビ行列、勾配の方向を呼び出しのたびに作ります。</li>
+            <li>初期電圧は内部関数 <code>initial_voltage</code> で決めます。<code>WarmStart = true</code> で、保持している解の母線タグが <code>tab_PFcondition</code> の行名と（並び順も含めて）同じなら、その解を使います。そうでなければフラットスタートにします。</li>
+            <li>内部関数 <code>run_method</code> は、ブランチが 1 本もつながっていない slack 以外の母線（<code>cm_Y</code> の行がすべて 0）があると、電圧が決まらないので、計算方法（dynamic も含む）を実行せずに flag −2 を返します。それ以外は PF-06 か PF-07 を実行します。</li>
+            <li><code>flag == 1</code> で収束したら、<code>cv_V</code> とその母線タグを次のウォームスタート用に保持します。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options</code>; <span lang="en">no network, bus, branch or component object</span><span lang="ja">ネットワーク、母線、ブランチ、機器のオブジェクトは読みません</span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>[cv_V, flag, output, cm_Vhistory, rv_step]</code>; <span lang="en">private properties <code>cv_Vwarm</code>, <code>sv_warmBus</code> of <code>net.solver_PF</code></span><span lang="ja"><code>net.solver_PF</code> の private プロパティ <code>cv_Vwarm</code> と <code>sv_warmBus</code></span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="PF-06">
+        <p class="fs-head"><b class="fs-id">PF-06</b> <span class="fs-call"><code>SolverPF</code> → <code>MethodNewtonRaphson</code> / <code>MethodGradient</code> / <code>MethodLevenbergMarquardt</code> / <code>MethodFsolve</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li><code>private/power_equation</code>: residual F(x) and sparse Jacobian of the power equations; x = real and imaginary parts of the bus voltages</li>
             <li>Two residuals per bus: slack (angle, |V|), PV (P, |V|), PQ (P, Q)</li>
             <li>Jacobian: <code>J_V + J_I*Y</code></li>
-            <li>Starts from the initial voltages of PF-04 (warm or flat start)</li>
-            <li><code>SolverPF.solve</code> creates the Method object from the settings (0 → the method default) and maps its results to <code>cv_Vbus</code>, <code>flag</code>, <code>output</code>, <code>cm_Vhistory</code>, <code>rv_step</code></li>
+            <li>Starts from the initial voltages of PF-05 (warm or flat start)</li>
+            <li><code>run_method</code> of <code>SolverPF.solve</code> creates the Method object from the settings (<code>NaN</code> → the method default) and maps its results to <code>cv_Vbus</code>, <code>flag</code>, <code>output</code>, <code>cm_Vhistory</code>, <code>rv_step</code></li>
             <li>Every Method class inherits <code>MethodBase</code> and returns flag and output itself; converged when the largest |F| is at most <code>Tolerance</code></li>
             <li>newton: <code>MethodNewtonRaphson</code> with <code>Fcn</code> = F, <code>Jac</code> = Jacobian; a singular Jacobian (island without a slack bus) gives minimum norm steps (<code>lsqminnorm</code>); a step at the rounding level of x while |F| &gt; <code>Tolerance</code> gives flag −2</li>
-            <li>A non-slack bus without branches: flag −2 before any method (dynamic included) runs, as its voltage is not determined</li>
-            <li>gradient: <code>MethodGradient</code> with the direction <code>[ΔP; ΔQ/V]</code> of <code>power_equation</code>; polar coordinates; slack angle and voltage and PV voltages fixed at their set values; <code>θ += α·ΔP</code> (non-slack), <code>V += α·ΔQ/V</code> (PQ); stops when the largest |ΔP|, |ΔQ| is at most <code>Tolerance</code></li>
+                        <li>gradient: <code>MethodGradient</code> with the direction <code>[ΔP; ΔQ/V]</code> of <code>power_equation</code>; polar coordinates; slack angle and voltage and PV voltages fixed at their set values; <code>θ += α·ΔP</code> (non-slack), <code>V += α·ΔQ/V</code> (PQ); stops when the largest |ΔP|, |ΔQ| is at most <code>Tolerance</code></li>
             <li>levenberg-marquardt: <code>MethodLevenbergMarquardt</code>; <code>(JᵀJ + μI) dx = −JᵀF</code>; μ ÷ 3 after a step that reduces |F|, μ × 4 and a retry otherwise; stops when the largest |F| is at most <code>Tolerance</code></li>
             <li>fsolve: <code>tools.require_toolbox("optim", ...)</code>, then <code>fsolve</code> with <code>SpecifyObjectiveGradient</code> (<code>MethodFsolve</code>); flag 1 when exitflag &gt; 0 and the largest |F| is at most <code>Tolerance</code>, 0 for exitflag 0, −2 otherwise</li>
             <li>Every iterate is recorded (gradient: every iterate up to 1000, then every 1000th and the last)</li>
@@ -463,12 +454,11 @@
             <li><code>private/power_equation</code> は、電力方程式の残差 F(x) と疎なヤコビ行列を返します。x は母線電圧の実部と虚部を並べたものです。</li>
             <li>残差は母線ごとに 2 つです。slack では角度と |V|、PV では P と |V|、PQ では P と Q を使います。</li>
             <li>ヤコビ行列は <code>J_V + J_I*Y</code> で求めます。</li>
-            <li>初期値には PF-04 の初期電圧（ウォームスタートかフラットスタート）を使います。</li>
-            <li><code>SolverPF.solve</code> は設定から Method オブジェクトを作り（0 は計算方法の既定値の意味）、その結果を <code>cv_Vbus</code>、<code>flag</code>、<code>output</code>、<code>cm_Vhistory</code>、<code>rv_step</code> に直します。</li>
+            <li>初期値には PF-05 の初期電圧（ウォームスタートかフラットスタート）を使います。</li>
+            <li><code>SolverPF.solve</code> の内部関数 <code>run_method</code> が、設定から Method オブジェクトを作り（<code>NaN</code> は計算方法の既定値の意味）、その結果を <code>cv_Vbus</code>、<code>flag</code>、<code>output</code>、<code>cm_Vhistory</code>、<code>rv_step</code> に直します。</li>
             <li>Method クラスはどれも <code>MethodBase</code> を継承し、flag と output を自分で作ります。|F| の最大値が <code>Tolerance</code> 以下になれば収束です。</li>
             <li>newton は、<code>Fcn</code> に F、<code>Jac</code> にヤコビ行列を渡した <code>MethodNewtonRaphson</code> です。slack 母線のない島があってヤコビ行列が特異になるときは、最小ノルムのステップ（<code>lsqminnorm</code>）を使います。|F| が <code>Tolerance</code> を上回ったままステップが x の丸め誤差ほどに小さくなると、flag −2 で終わります。</li>
-            <li>ブランチが 1 本もつながっていない slack 以外の母線があると、電圧が決まりません。この場合は計算方法（dynamic も含む）を実行せずに flag −2 を返します。</li>
-            <li>gradient は、<code>power_equation</code> から得た方向 <code>[ΔP; ΔQ/V]</code> を使う <code>MethodGradient</code> です。極座標で計算し、slack の角度と電圧、PV の電圧は指定値のままにします。更新は <code>θ += α·ΔP</code>（slack 以外）と <code>V += α·ΔQ/V</code>（PQ）です。|ΔP| と |ΔQ| の最大値が <code>Tolerance</code> 以下になると止まります。</li>
+                        <li>gradient は、<code>power_equation</code> から得た方向 <code>[ΔP; ΔQ/V]</code> を使う <code>MethodGradient</code> です。極座標で計算し、slack の角度と電圧、PV の電圧は指定値のままにします。更新は <code>θ += α·ΔP</code>（slack 以外）と <code>V += α·ΔQ/V</code>（PQ）です。|ΔP| と |ΔQ| の最大値が <code>Tolerance</code> 以下になると止まります。</li>
             <li>levenberg-marquardt は <code>MethodLevenbergMarquardt</code> で、<code>(JᵀJ + μI) dx = −JᵀF</code> を解いて進みます。|F| が減ったら μ を 3 で割り、減らなければ μ を 4 倍してやり直します。|F| の最大値が <code>Tolerance</code> 以下になると止まります。</li>
             <li>fsolve は、<code>tools.require_toolbox("optim", ...)</code> で確認したあと、<code>SpecifyObjectiveGradient</code> を指定した <code>fsolve</code> を実行します（<code>MethodFsolve</code>）。exitflag &gt; 0 で |F| の最大値が <code>Tolerance</code> 以下なら flag 1、exitflag が 0 なら flag 0、それ以外は flag −2 です。</li>
             <li>各反復の値を記録します。gradient では 1000 回目までは毎回、その後は 1000 回ごとと最後の値を記録します。</li>
@@ -476,18 +466,18 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options</code> (<code>Tolerance</code>, <code>MaxIteration</code>, <code>Display</code>, <code>NewtonStepSize</code>, <code>GradientStepSize</code>, <code>FsolveMaxFunctionEvaluations</code>, <code>FsolveUseParallel</code>)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>cv_Vbus</code> <span lang="en">(n_bus×1 complex [pu])</span><span lang="ja">（n_bus×1 の複素数 [pu]）</span>, <code>flag</code> <span lang="en">(1 converged, 0 MaxIteration reached, −2 diverged or no solution)</span><span lang="ja">（1 収束、0 反復回数の上限、−2 発散または解なし）</span>, <code>output</code> <span lang="en">(iterations, algorithm, residual, message; fsolve: also exitflag)</span><span lang="ja">（iterations, algorithm, residual, message。fsolve: exitflag も）</span>, <code>cm_Vhistory</code> (n_bus×n_step), <code>rv_step</code></dd>
+          <dd><code>cv_Vbus</code> <span lang="en">(n_bus×1 complex [pu])</span><span lang="ja">（n_bus×1 の複素数 [pu]）</span>, <code>flag</code> <span lang="en">(1 converged, 0 MaxIteration reached, −1 stopped by <code>PlotFcn</code>, −2 diverged or no solution)</span><span lang="ja">（1 収束、0 反復回数の上限、−1 <code>PlotFcn</code> による停止、−2 発散または解なし）</span>, <code>output</code> <span lang="en">(iterations, algorithm, residual, message; fsolve: also exitflag)</span><span lang="ja">（iterations, algorithm, residual, message。fsolve: exitflag も）</span>, <code>cm_Vhistory</code> (n_bus×n_step), <code>rv_step</code></dd>
         </dl>
       </li>
-      <li class="fs-step" id="PF-08">
-        <p class="fs-head"><b class="fs-id">PF-08</b> <span class="fs-call"><code>SolverPF</code> → <code>MethodDynamic</code> → <code>ode15s</code></span></p>
+      <li class="fs-step" id="PF-07">
+        <p class="fs-head"><b class="fs-id">PF-07</b> <span class="fs-call"><code>SolverPF</code> → <code>MethodDynamic</code> → <code>ode15s</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Integrates angle, its rate, |V| and its rate of every bus (4·n_bus states), driven by the P and Q mismatch</li>
             <li>Mass matrix and Jacobian pattern specified</li>
             <li>Slack bus fixed; PV bus keeps |V| = <code>V</code></li>
-            <li>Initial voltages: those of PF-04 (columns <code>Varg0</code>, <code>V0</code> added to the <code>PFcondition</code> table it receives), slack and PV values at their settings</li>
+            <li>Initial voltages: those of PF-05 (columns <code>Varg0</code>, <code>V0</code> added to the <code>PFcondition</code> table it receives), slack and PV values at their settings</li>
             <li>ODE tolerances: <code>AbsTol = min(Tolerance, 1e-5)</code>, <code>RelTol = min(100·Tolerance, 1e-4)</code></li>
             <li>Already converged at the start (e.g. a warm start): returns at once with flag 1</li>
             <li>Stops (event functions or the end of the interval <code>[0, 1e4]</code>): convergence (largest |ΔP| non-slack, |ΔQ| PQ at most <code>Tolerance</code>) → flag 1; voltage collapse (a PQ bus below 0.01 pu), angle instability (|angle| ≥ 10π) or integration failure → flag −2; virtual time 1e4 (safety limit) → flag 0</li>
@@ -496,7 +486,7 @@
             <li>各母線の角度と |V|、およびそれぞれの変化率（合わせて 4·n_bus 個の状態）を積分します。動きを生むのは P と Q の不平衡量です。</li>
             <li>質量行列と、ヤコビ行列の非ゼロパターンを指定します。</li>
             <li>slack 母線は動かしません。PV 母線は |V| を <code>V</code> に保ちます。</li>
-            <li>初期電圧には PF-04 の初期電圧を使います。受け取った <code>PFcondition</code> の table に、列 <code>Varg0</code> と <code>V0</code> として加えます。slack と PV で固定する値は指定値です。</li>
+            <li>初期電圧には PF-05 の初期電圧を使います。受け取った <code>PFcondition</code> の table に、列 <code>Varg0</code> と <code>V0</code> として加えます。slack と PV で固定する値は指定値です。</li>
             <li>ODE の許容誤差は <code>AbsTol = min(Tolerance, 1e-5)</code>、<code>RelTol = min(100·Tolerance, 1e-4)</code> です。</li>
             <li>ウォームスタートなどで最初から収束しているときは、すぐに flag 1 で終わります。</li>
             <li>積分はイベント関数で止まるか、区間 <code>[0, 1e4]</code> の終わりで止まります。slack 以外の |ΔP| と PQ の |ΔQ| の最大値が <code>Tolerance</code> 以下になれば収束で、flag 1 です。電圧崩壊（PQ 母線が 0.01 pu 未満）、角度の不安定（|角度| ≥ 10π）、積分の失敗では flag −2 です。安全のための上限である仮想時間 1e4 に達したときは flag 0 です。</li>
@@ -508,44 +498,8 @@
           <dd><code>cv_Vbus</code> (n_bus×1), <code>flag</code> <span lang="en">(1 / 0 / −2)</span><span lang="ja">（1 / 0 / −2）</span>, <code>output</code> <span lang="en">(iterations = number of ODE steps, algorithm, residual, message)</span><span lang="ja">（iterations = ODE のステップ数、algorithm、residual、message）</span>, <code>cm_Vhistory</code> (n_bus×n_t), <code>rv_step</code> = <span lang="en">virtual times</span><span lang="ja">仮想時刻</span></dd>
         </dl>
       </li>
-      <li class="fs-step" id="PF-09">
-        <p class="fs-head"><b class="fs-id">PF-09</b> <span class="fs-call"><code>SolverPF</code> → <code>branch_flow</code> → <code>Branch.get_admittance_matrix</code></span></p>
-        <dl class="fs-body">
-          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><ul lang="en">
-            <li>Computes <code>I = Y*V</code> and <code>S = V.*conj(I)</code> of the buses</li>
-            <li>Current and power into each branch at both ends, from its own 2×2 matrix (from = <code>a_Bus{1}</code>, to = <code>a_Bus{2}</code>)</li>
-          </ul><ul lang="ja">
-            <li>母線ごとに <code>I = Y*V</code> と <code>S = V.*conj(I)</code> を求めます。</li>
-            <li>各ブランチ自身の 2×2 行列を使い、両端でブランチに流れ込む電流と電力を求めます（from は <code>a_Bus{1}</code>、to は <code>a_Bus{2}</code>）。</li>
-          </ul></dd>
-          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>cv_Vbus</code>, <code>cm_Y</code>, <code>net.a_Branch</code></dd>
-          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>tab_bus</code> (n_bus×6), <code>tab_branch</code> (n_branch×8)</dd>
-        </dl>
-      </li>
-      <li class="fs-step" id="PF-10">
-        <p class="fs-head"><b class="fs-id">PF-10</b> <span class="fs-call"><code>SolverPF</code> → <code>ResultPF</code> → <code>ResultBase</code></span></p>
-        <dl class="fs-body">
-          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><ul lang="en">
-            <li>Creates the result</li>
-            <li><code>ResultBase</code> keeps a reference to the network, its tag, the solver class name, the options, flag and output</li>
-            <li>Converts the <code>tic</code> value to the elapsed time</li>
-          </ul><ul lang="ja">
-            <li>結果を作ります。</li>
-            <li><code>ResultBase</code> が、ネットワークへの参照とそのタグ、ソルバーのクラス名、オプション、flag と output を持ちます。</li>
-            <li><code>tic</code> の値から経過時間を求めます。</li>
-          </ul></dd>
-          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>net</code>, <code>sct_options</code>, <code>flag</code>, <code>output</code>, <code>t0</code>, <span lang="en">tables, history</span><span lang="ja">各 table、履歴</span></dd>
-          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>ResultPF</code> <span lang="en">(see <a href="#data">Data produced</a>)</span><span lang="ja">（<a href="#data">生成されるデータ</a>を参照）</span></dd>
-        </dl>
-      </li>
-      <li class="fs-step" id="PF-11">
-        <p class="fs-head"><b class="fs-id">PF-11</b> <span class="fs-call"><code>SolverPF.solve</code> <span lang="en">(local)</span><span lang="ja">（内部）</span></span></p>
+      <li class="fs-step" id="PF-08">
+        <p class="fs-head"><b class="fs-id">PF-08</b> <span class="fs-call"><code>PowerNetwork</code>: <code>notify_failure</code> <span lang="en">(local)</span><span lang="ja">（内部）</span></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -564,24 +518,70 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>flag</code>, <code>sct_options.WhenFailed</code>, <code>output.message</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en">warning or error <code>GUILDA:SolverPF:NotConverged</code> (text = <code>output.message</code>)</span><span lang="ja">警告またはエラー <code>GUILDA:SolverPF:NotConverged</code>。本文は <code>output.message</code> です。</span></dd>
+          <dd><span lang="en">warning or error <code>GUILDA:PowerNetwork:PowerflowNotConverged</code> (text = <code>output.message</code>)</span><span lang="ja">警告またはエラー <code>GUILDA:PowerNetwork:PowerflowNotConverged</code>。本文は <code>output.message</code> です。</span></dd>
         </dl>
       </li>
-      <li class="fs-step" id="PF-12">
-        <p class="fs-head"><b class="fs-id">PF-12</b> <span class="fs-call"><code>PowerNetwork</code> → <code>ResultPF.Export</code></span></p>
+      <li class="fs-step" id="PF-09">
+        <p class="fs-head"><b class="fs-id">PF-09</b> <span class="fs-call"><code>PowerNetwork</code>: <code>private/powerflow_table</code> → <code>private/format_powerflow</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Only with <code>Export</code>; the figure (|V| and the angle per bus) is drawn by the caller with <code>result.Plot()</code></li>
-            <li><code>Export</code>: writes <code>tab_bus</code> or <code>tab_branch</code> (.csv, .txt, .xlsx, .xls), or the iteration history (.json)</li>
-            <li>.json also reads the bus types and Y from the network</li>
+            <li><code>powerflow_table</code>: <code>I = Y*V</code>, <code>S = V.*conj(I)</code>; table of V, I, P = real(S), Q = imag(S), row names = bus tags</li>
+            <li><code>format_powerflow</code>: the first output by <code>Format</code> (see the <a href="#entry">options table</a>)</li>
+            <li>It calls the <code>ResultPF</code> constructor (PF-10) only for <code>"GUILDAorigin"</code>; the other forms build no result and no network snapshot</li>
           </ul><ul lang="ja">
-            <li><code>Export</code> を指定したときだけ実行します。図（母線ごとの |V| と角度）は、呼び出し側が <code>result.Plot()</code> で描きます。</li>
-            <li><code>Export</code> は、<code>tab_bus</code> か <code>tab_branch</code> を .csv、.txt、.xlsx、.xls で、または反復履歴を .json で書き出します。</li>
-            <li>.json のときは、母線の種類と Y もネットワークから読み取ります。</li>
+            <li><code>powerflow_table</code> は <code>I = Y*V</code> と <code>S = V.*conj(I)</code> を求め、V、I、P = real(S)、Q = imag(S) の table を作ります。行名は母線のタグです。</li>
+            <li><code>format_powerflow</code> が、<code>Format</code> に応じて最初の出力を作ります（<a href="#entry">オプションの表</a>を参照）。</li>
+            <li><code>ResultPF</code> のコンストラクタ（PF-10）を呼ぶのは <code>"GUILDAorigin"</code> のときだけです。ほかの形では、結果のオブジェクトもネットワークのスナップショットも作りません。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>result</code>; <span lang="en">for .json also <code>result.a_PowerNetwork</code></span><span lang="ja">.json のときは <code>result.a_PowerNetwork</code> も</span></dd>
+          <dd><code>cv_V</code>, <code>cm_Y</code>, <span lang="en">bus tags</span><span lang="ja">母線のタグ</span>, <code>opt.Format</code></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>tab_pf</code> <span lang="en">(n_bus×4 table)</span><span lang="ja">（n_bus×4 の table）</span>, <code>result</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="PF-10">
+        <p class="fs-head"><b class="fs-id">PF-10</b> <span class="fs-call"><code>PowerNetwork</code> → <code>ResultPF</code> → <code>ResultBase</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Only for <code>Format="GUILDAorigin"</code>, or for the export of PF-11</li>
+            <li>Inputs: <code>tab_pf</code>, <code>cm_Y</code>, the snapshot <code>struct(net, false)</code> (a nested struct without handles), and <code>sct_solver</code> (solver class name, <code>sct_options</code>, flag, output, elapsed time, <code>cm_Vhistory</code>, <code>rv_step</code>, <code>tab_PFcondition</code>)</li>
+            <li><code>ResultBase</code> receives <code>[]</code> as the network; <code>ResultPF</code> sets <code>s_network</code> from the tag of the snapshot</li>
+            <li><code>tab_bus</code> from <code>tab_pf</code> (<code>private/bus_table</code>)</li>
+            <li><code>tab_branch</code> (<code>private/branch_flow</code>): current and power into each branch at both ends (from = <code>a_Bus{1}</code>, to = <code>a_Bus{2}</code>), with the 2×2 matrix of <code>private/branch_admittance</code> from the class name and the <code>dynamics</code> parameters of the branch in the snapshot; a class without a formula there gives NaN flows</li>
+            <li><code>tab_violation</code> (<code>private/violation_table</code>) from the <code>operation</code> parameters of the snapshot, only when the calculation converged</li>
+          </ul><ul lang="ja">
+            <li><code>Format="GUILDAorigin"</code> のときか、PF-11 の書き出しのときだけ実行します。</li>
+            <li>入力は <code>tab_pf</code>、<code>cm_Y</code>、スナップショット <code>struct(net, false)</code>（ハンドルを含まない入れ子の構造体）、<code>sct_solver</code>（ソルバーのクラス名、<code>sct_options</code>、flag、output、経過時間、<code>cm_Vhistory</code>、<code>rv_step</code>、<code>tab_PFcondition</code>）です。</li>
+            <li><code>ResultBase</code> にはネットワークとして <code>[]</code> を渡します。<code>s_network</code> は、<code>ResultPF</code> がスナップショットのタグから設定します。</li>
+            <li><code>tab_bus</code> は <code>tab_pf</code> から作ります（<code>private/bus_table</code>）。</li>
+            <li><code>tab_branch</code>（<code>private/branch_flow</code>）は、各ブランチの両端でブランチに流れ込む電流と電力です（from は <code>a_Bus{1}</code>、to は <code>a_Bus{2}</code>）。2×2 行列は、<code>private/branch_admittance</code> がスナップショットにあるブランチのクラス名と <code>dynamics</code> パラメータから求めます。そこに式がないクラスでは、潮流は NaN になります。</li>
+            <li><code>tab_violation</code>（<code>private/violation_table</code>）は、スナップショットの <code>operation</code> パラメータから作ります。計算が収束したときだけです。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><span lang="en">its inputs only; no network object</span><span lang="ja">入力だけです。ネットワークのオブジェクトは読みません。</span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>ResultPF</code> <span lang="en">(see <a href="#data">Data produced</a>)</span><span lang="ja">（<a href="#data">生成されるデータ</a>を参照）</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="PF-11">
+        <p class="fs-head"><b class="fs-id">PF-11</b> <span class="fs-call"><code>PowerNetwork</code> → <code>ResultPF.Export</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Only with <code>Export</code>; with another <code>Format</code>, on the <code>ResultPF</code> built for the export only</li>
+            <li>Writes <code>tab_bus</code> or <code>tab_branch</code> (.csv, .txt, .xlsx, .xls), or the iteration history (.json)</li>
+            <li>.json: the bus types and Y from the stored <code>tab_PFcondition</code> and <code>cm_Y</code></li>
+            <li>The figure (|V| and the angle per bus) is drawn by the caller with <code>result.Plot()</code></li>
+          </ul><ul lang="ja">
+            <li><code>Export</code> を指定したときだけ実行します。<code>Format</code> がほかの値なら、書き出しのためだけに作った <code>ResultPF</code> で実行します。</li>
+            <li><code>tab_bus</code> か <code>tab_branch</code> を .csv、.txt、.xlsx、.xls で、または反復履歴を .json で書き出します。</li>
+            <li>.json のときは、母線の種類と Y を、結果が持つ <code>tab_PFcondition</code> と <code>cm_Y</code> から読みます。</li>
+            <li>図（母線ごとの |V| と角度）は、呼び出し側が <code>result.Plot()</code> で描きます。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><code>result</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en">file</span><span lang="ja">ファイル</span></dd>
         </dl>
@@ -591,12 +591,14 @@
     <!-- ============================== 4. DATA ============================== -->
     <h2 id="data"><span lang="en">4. Data the feature produces</span><span lang="ja">4. この機能が生成するデータ</span></h2>
     <ul lang="en">
-      <li><code>result</code>: a <code>ResultPF</code> (subclass of <code>ResultBase</code>)</li>
+      <li><code>result</code>: the form of <code>Format</code>; <code>"V"</code>, <code>"powerflow(mat)"</code> and <code>"powerflow(tab)"</code> are listed in the <a href="#entry">options table</a></li>
+      <li><code>Format="GUILDAorigin"</code>: a <code>ResultPF</code> (subclass of <code>ResultBase</code>) with the properties below</li>
       <li>Rows follow the order of <code>net.a_Bus</code> and <code>net.a_Branch</code>; row names are the tags</li>
       <li>Sizes for <code>network.IEEE9bus</code>: <code>tab_bus</code> 9×6, <code>tab_branch</code> 9×8, <code>cm_Vhistory</code> 9×n_iter (one column per iteration) or 9×n_time (dynamic)</li>
     </ul>
     <ul lang="ja">
-      <li><code>result</code> は <code>ResultPF</code> で、<code>ResultBase</code> のサブクラスです。</li>
+      <li><code>result</code> の形は <code>Format</code> で決まります。<code>"V"</code>、<code>"powerflow(mat)"</code>、<code>"powerflow(tab)"</code> は<a href="#entry">オプションの表</a>にあります。</li>
+      <li><code>Format="GUILDAorigin"</code> では、<code>result</code> は <code>ResultBase</code> のサブクラスである <code>ResultPF</code> で、次のプロパティを持ちます。</li>
       <li>行は <code>net.a_Bus</code> と <code>net.a_Branch</code> の順に並び、行名はタグです。</li>
       <li><code>network.IEEE9bus</code> では、<code>tab_bus</code> が 9×6、<code>tab_branch</code> が 9×8、<code>cm_Vhistory</code> が 9×n_iter（反復ごとに 1 列）、dynamic では 9×n_time になります。</li>
     </ul>
@@ -604,18 +606,18 @@
       <thead><tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Size, unit</span><span lang="ja">サイズ・単位</span></th><th><span lang="en">Content</span><span lang="ja">内容</span></th></tr></thead>
       <tbody>
         <tr><td><code>tab_bus</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">n_bus×6 table</td><td data-label="Content" data-label-ja="内容"><code>Varg</code> [rad], <code>V</code> [pu], <code>P</code>, <code>Q</code> [pu] <span lang="en">(injection into the network)</span><span lang="ja">（ネットワークへの注入）</span>, <code>Vphasor</code>, <code>Iphasor</code> <span lang="en">(complex [pu])</span><span lang="ja">（複素数 [pu]）</span></td></tr>
-        <tr><td><code>tab_branch</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">n_branch×8 table</td><td data-label="Content" data-label-ja="内容"><code>Pfrom</code>, <code>Qfrom</code>, <code>Pto</code>, <code>Qto</code> [pu] <span lang="en">(into the branch)</span><span lang="ja">（ブランチへ流れ込む向き）</span>, <code>Ifrom</code>, <code>Ito</code> <span lang="en">(complex [pu])</span><span lang="ja">（複素数 [pu]）</span>, <code>Ploss</code>, <code>Qloss</code> [pu]</td></tr>
+        <tr><td><code>tab_branch</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">n_branch×8 table</td><td data-label="Content" data-label-ja="内容"><code>Pfrom</code>, <code>Qfrom</code>, <code>Pto</code>, <code>Qto</code> [pu] <span lang="en">(into the branch)</span><span lang="ja">（ブランチへ流れ込む向き）</span>, <code>Ifrom</code>, <code>Ito</code> <span lang="en">(complex [pu])</span><span lang="ja">（複素数 [pu]）</span>, <code>Ploss</code>, <code>Qloss</code> [pu]; <span lang="en">NaN for a branch class without a formula in <code>private/branch_admittance</code></span><span lang="ja"><code>private/branch_admittance</code> に式がないクラスのブランチは NaN</span></td></tr>
         <tr><td><code>cm_Vhistory</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">n_bus×n_step, <span lang="en">complex</span><span lang="ja">複素数</span> [pu]</td><td data-label="Content" data-label-ja="内容"><span lang="en">Bus voltages at each iteration or ODE step</span><span lang="ja">各反復または各 ODE ステップの母線電圧</span></td></tr>
         <tr><td><code>rv_step</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">1×n_step</td><td data-label="Content" data-label-ja="内容"><span lang="en">Iteration numbers, or virtual times (dynamic)</span><span lang="ja">反復番号、または仮想時刻（dynamic）</span></td></tr>
         <tr><td><code>tab_violation</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">n_violation×6 table</td><td data-label="Content" data-label-ja="内容"><ul lang="en">
-          <li>Operating limits (<code>tab_parameter.operation</code>) the solution violates by more than <code>Tolerance</code>, one row per limit (<code>private/violation_table</code>; component P, Q from <code>tools.distribute_power</code>, as <code>initialize</code> gives them)</li>
+          <li>Operating limits (<code>tab_parameter.operation</code> of the snapshot) the solution violates by more than <code>Tolerance</code>, one row per limit (<code>private/violation_table</code>; component P, Q from <code>tools.distribute_power</code> on the bus of the snapshot, as <code>initialize</code> gives them)</li>
           <li>Columns: <code>Class</code> ("Bus", "Component", "Branch"), <code>Object</code> (tag), <code>Limit</code>, <code>Value</code>, <code>Bound</code>, <code>Excess</code> (= |Value − Bound|)</li>
           <li>Bus: <code>Vmin</code>, <code>Vmax</code> on <code>V</code></li>
           <li>Component: <code>Pmin</code>, <code>Pmax</code>, <code>Qmin</code>, <code>Qmax</code> on the P and Q that <code>initialize</code> would give it</li>
           <li>Branch: <code>Pmax</code>, <code>Qmax</code>, <code>Smax</code>, <code>Imax</code> on the larger of |P|, |Q|, |S|, |I| at its two ends; <code>Vargmax</code> on |Varg_from − Varg_to|</li>
           <li>0 rows when none, or when <code>flag ≠ 1</code>; no warning or error; the power flow never applies the limits</li>
         </ul><ul lang="ja">
-          <li>解が <code>Tolerance</code> を超えて破っている運転制約（<code>tab_parameter.operation</code>）を、1 行に 1 つずつ並べます（<code>private/violation_table</code>）。機器の P と Q には、<code>initialize</code> と同じく <code>tools.distribute_power</code> で配分した値を使います。</li>
+          <li>解が <code>Tolerance</code> を超えて破っている運転制約（スナップショットの <code>tab_parameter.operation</code>）を、1 行に 1 つずつ並べます（<code>private/violation_table</code>）。機器の P と Q には、<code>initialize</code> と同じく <code>tools.distribute_power</code> でスナップショットの母線について配分した値を使います。</li>
           <li>列は <code>Class</code>（"Bus"、"Component"、"Branch"）、<code>Object</code>（タグ）、<code>Limit</code>、<code>Value</code>、<code>Bound</code>、<code>Excess</code>（= |Value − Bound|）です。</li>
           <li>母線では、<code>V</code> を <code>Vmin</code> と <code>Vmax</code> と比べます。</li>
           <li>機器では、<code>initialize</code> が与える P と Q を <code>Pmin</code>、<code>Pmax</code>、<code>Qmin</code>、<code>Qmax</code> と比べます。</li>
@@ -631,72 +633,63 @@
         </ul></td></tr>
         <tr><td><code>l_success</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">logical</td><td data-label="Content" data-label-ja="内容"><span lang="en">Dependent: true for a logical true or a numeric flag &gt; 0</span><span lang="ja">Dependent プロパティです。flag が logical の true か、数値で flag &gt; 0 のとき true になります。</span></td></tr>
         <tr><td><code>options</code>, <code>s_solver</code>, <code>r_elapsed</code>, <code>s_network</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">struct, string, [s], string</td><td data-label="Content" data-label-ja="内容"><ul lang="en">
-          <li><code>sct_options</code> of the run, <code>"SolverPF"</code>, elapsed time, network tag</li>
-          <li>Hidden <code>a_PowerNetwork</code>: refers to the analysed network (a handle, not a copy)</li>
+          <li><code>sct_options</code> of the run, <code>"SolverPF"</code>, elapsed time of <code>SolverPF.solve</code>, network tag (from the snapshot)</li>
+          <li>Hidden <code>a_PowerNetwork</code> of <code>ResultBase</code>: empty; the result holds no network handle</li>
         </ul><ul lang="ja">
-          <li>実行時の <code>sct_options</code>、<code>"SolverPF"</code>、経過時間、ネットワークのタグが入ります。</li>
-          <li>非表示の <code>a_PowerNetwork</code> は、解析したネットワークをコピーではなくハンドルで参照します。</li>
+          <li>実行時の <code>sct_options</code>、<code>"SolverPF"</code>、<code>SolverPF.solve</code> の経過時間、ネットワークのタグ（スナップショットから）が入ります。</li>
+          <li><code>ResultBase</code> の非表示プロパティ <code>a_PowerNetwork</code> は空です。結果はネットワークのハンドルを持ちません。</li>
         </ul></td></tr>
+        <tr><td><code>tab_PFcondition</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">n_bus×5 table</td><td data-label="Content" data-label-ja="内容"><span lang="en">Power flow conditions given to the solver (PF-03): Type, Varg, V, P, Q</span><span lang="ja">ソルバーに渡した潮流条件（PF-03）。列は Type, Varg, V, P, Q です。</span></td></tr>
+        <tr><td><code>cm_Y</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">n_bus×n_bus, <span lang="en">complex</span><span lang="ja">複素数</span> [pu]</td><td data-label="Content" data-label-ja="内容"><span lang="en">Bus admittance matrix of the calculation (PF-04), in <code>tab_bus</code> order</span><span lang="ja">計算に使った母線アドミタンス行列（PF-04）。<code>tab_bus</code> の順です。</span></td></tr>
+        <tr><td><code>sct_network</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">struct</td><td data-label="Content" data-label-ja="内容"><span lang="en">Snapshot of the network at the calculation: <code>struct(net, false)</code>, a nested struct without handles</span><span lang="ja">計算したときのネットワークのスナップショットです。<code>struct(net, false)</code> で作る、ハンドルを含まない入れ子の構造体です。</span></td></tr>
       </tbody>
     </table>
     <ul lang="en">
       <li>Nothing stored back on the model objects</li>
-      <li><code>net.initialize()</code> (Method <code>"powerflow"</code>) calls <code>calculate_powerflow</code> and writes <code>result.tab_bus</code> to the buses with <code>Bus.set_equilibrium</code></li>
+      <li><code>net.initialize()</code> (Method <code>"powerflow"</code>) calls <code>calculate_powerflow</code> with <code>Format="powerflow(tab)"</code> (<code>"GUILDAorigin"</code> when its own <code>Format</code> is <code>"GUILDAorigin"</code>) and writes V, I, P, Q of each bus with <code>Bus.set_equilibrium</code></li>
       <li><code>Bus.set_equilibrium</code> sets <code>Bus.c_Vequilibrium</code> and distributes P and Q to <code>Component.set_equilibrium</code> (see <a href="feature-initialize.html">Initialization</a>)</li>
     </ul>
     <ul lang="ja">
       <li>モデルのオブジェクトには何も書き戻しません。</li>
-      <li><code>net.initialize()</code>（Method <code>"powerflow"</code>）は <code>calculate_powerflow</code> を呼び出し、<code>result.tab_bus</code> を <code>Bus.set_equilibrium</code> で各母線に書き込みます。</li>
+      <li><code>net.initialize()</code>（Method <code>"powerflow"</code>）は <code>calculate_powerflow</code> を <code>Format="powerflow(tab)"</code> で呼び出し（自分の <code>Format</code> が <code>"GUILDAorigin"</code> のときは <code>"GUILDAorigin"</code>）、各母線の V、I、P、Q を <code>Bus.set_equilibrium</code> で書き込みます。</li>
       <li><code>Bus.set_equilibrium</code> は <code>Bus.c_Vequilibrium</code> を設定し、P と Q を <code>Component.set_equilibrium</code> で機器に配分します（<a href="feature-initialize.html">初期化</a>を参照）。</li>
     </ul>
 
     <!-- ============================== 5. SIDE EFFECTS ============================== -->
     <h2 id="side-effects"><span lang="en">5. Side effects on the model and caches</span><span lang="ja">5. モデルへの副作用とキャッシュ</span></h2>
     <ul lang="en">
-      <li>Only write to the network: PF-03</li>
+      <li>Only write to the network: PF-02</li>
       <li>The slack bus it sets stays set after the call; <code>net.initialize()</code> releases it again only when its own power flow fails</li>
       <li><code>net.solver_PF</code>: no settings; <code>sct_options</code> is built for each call</li>
-      <li><code>net.solver_PF</code> keeps (private properties):
+      <li><code>net.solver_PF</code> keeps only the last converged solution and its bus tags (private <code>cv_Vwarm</code>, <code>sv_warmBus</code>):
         <ul>
-          <li>the last converged solution, for <code>WarmStart = true</code>; matched to the buses by object identity, not by tag</li>
-          <li>a cache of the bus admittance matrix (keyed on <code>net.n_revY</code>) and of the power flow conditions and equations (keyed on <code>net.n_revPF</code>)</li>
-          <li>both discarded when the buses differ or <code>net.n_revTopology</code> changed (buses or branches added, removed or replaced); <code>net.reset_solver()</code> replaces the solver and discards them</li>
+          <li>used only with <code>WarmStart = true</code> and the same bus tags in the same order</li>
+          <li>a renamed, added, removed or reordered bus → flat start; a branch or parameter edit keeps it (it changes only the start point)</li>
+          <li><code>net.reset_solver()</code> replaces the solver and discards it</li>
         </ul>
       </li>
-      <li>Revision counters of <code>PowerNetwork</code> (private), increased by <code>handle_edit</code>:
-        <ul>
-          <li><code>n_revY</code>: network <code>base</code> and <code>Topology</code>, bus <code>dynamics</code>, branch <code>dynamics</code></li>
-          <li><code>n_revPF</code>: every <code>n_revY</code> edit, bus <code>powerflow</code>, <code>Slack</code>, <code>Topology</code>, component <code>powerflow</code></li>
-          <li><code>n_revTopology</code>: network <code>Topology</code></li>
-        </ul>
-      </li>
+      <li>No cache: the conditions (PF-03), the admittance matrix (PF-04) and the power equations (PF-05) are built at every call, so the next call reflects every edit; no revision counter is read</li>
       <li>No stale check; no use or build of the <code>f_*</code> handles; no read or change of <code>sct_stale</code></li>
       <li>Unused: the equilibrium, the dynamics parameters of components, the OPF parameters; the operation parameters only for <code>tab_violation</code></li>
-      <li>An edit that changes the power flow increases the counters, so the next call rebuilds the cached parts and reflects it</li>
-      <li>An existing <code>ResultPF</code> keeps its values, but its <code>a_PowerNetwork</code> is the live network: a JSON export after an edit reads the edited bus types and admittance matrix</li>
+      <li>A <code>ResultPF</code> holds the snapshot <code>struct(net, false)</code>, <code>tab_PFcondition</code> and <code>cm_Y</code>, no network handle: a later edit of the network changes neither its values nor its exports</li>
+      <li>Without <code>Format="GUILDAorigin"</code> or <code>Export</code>, neither a <code>ResultPF</code> nor a snapshot is built</li>
     </ul>
     <ul lang="ja">
-      <li>ネットワークに書き込むのは PF-03 だけです。</li>
-      <li>PF-03 で設定した slack 母線は、呼び出しの後も残ります。<code>net.initialize()</code> は、自分が実行した潮流計算が失敗したときだけ、この設定を元に戻します。</li>
+      <li>ネットワークに書き込むのは PF-02 だけです。</li>
+      <li>PF-02 で設定した slack 母線は、呼び出しの後も残ります。<code>net.initialize()</code> は、自分が実行した潮流計算が失敗したときだけ、この設定を元に戻します。</li>
       <li><code>net.solver_PF</code> は設定を持ちません。<code>sct_options</code> は呼び出しのたびに作ります。</li>
-      <li><code>net.solver_PF</code> は、次のものを private プロパティに持ちます。
+      <li><code>net.solver_PF</code> が持つのは、最後に収束した解とその母線タグだけです（private の <code>cv_Vwarm</code> と <code>sv_warmBus</code>）。
         <ul>
-          <li>最後に収束した解。<code>WarmStart = true</code> のときに使います。母線との対応は、タグではなくオブジェクトが同じかどうかで決めます。</li>
-          <li>母線アドミタンス行列のキャッシュ（キーは <code>net.n_revY</code>）と、潮流条件と方程式のキャッシュ（キーは <code>net.n_revPF</code>）。</li>
-          <li>母線が変わったときや <code>net.n_revTopology</code> が変わったとき（母線やブランチの追加、削除、置き換え）は、この両方を捨てます。<code>net.reset_solver()</code> はソルバーを新しくするので、やはり両方とも消えます。</li>
+          <li>使うのは、<code>WarmStart = true</code> で、母線のタグが並び順も含めて同じときだけです。</li>
+          <li>母線のタグの変更、母線の追加・削除・並べ替えがあるとフラットスタートになります。ブランチやパラメータの編集では解を保持します。変わるのは初期値だけです。</li>
+          <li><code>net.reset_solver()</code> はソルバーを新しくするので、この解も消えます。</li>
         </ul>
       </li>
-      <li><code>PowerNetwork</code> は private の版番号を持ち、次の編集があると <code>handle_edit</code> がそれぞれを 1 つ増やします。
-        <ul>
-          <li><code>n_revY</code> は、ネットワークの <code>base</code> と <code>Topology</code>、母線の <code>dynamics</code>、ブランチの <code>dynamics</code> の編集で増えます。</li>
-          <li><code>n_revPF</code> は、<code>n_revY</code> が増える編集すべてと、母線の <code>powerflow</code>、<code>Slack</code>、<code>Topology</code>、機器の <code>powerflow</code> の編集で増えます。</li>
-          <li><code>n_revTopology</code> は、ネットワークの <code>Topology</code> の編集で増えます。</li>
-        </ul>
-      </li>
+      <li>キャッシュは持ちません。潮流条件（PF-03）、アドミタンス行列（PF-04）、電力方程式（PF-05）は呼び出しのたびに作るので、次の呼び出しにはすべての編集が反映されます。版番号は読みません。</li>
       <li>stale は確かめません。<code>f_*</code> ハンドルは使わず、作りもしません。<code>sct_stale</code> は読みも書きもしません。</li>
       <li>平衡点、機器の dynamics パラメータ、OPF パラメータは使いません。operation パラメータを使うのは <code>tab_violation</code> だけです。</li>
-      <li>潮流計算に影響する編集は版番号を増やします。そのため次の呼び出しでは、キャッシュのうち影響を受けた部分だけを作り直します。</li>
-      <li>以前に作った <code>ResultPF</code> の値は変わりません。ただし <code>a_PowerNetwork</code> は今のネットワークを指すので、編集後に JSON へ書き出すと、編集後の母線の種類とアドミタンス行列が使われます。</li>
+      <li><code>ResultPF</code> は、スナップショット <code>struct(net, false)</code>、<code>tab_PFcondition</code>、<code>cm_Y</code> を持ち、ネットワークのハンドルは持ちません。そのため、あとでネットワークを編集しても、結果の値も書き出す内容も変わりません。</li>
+      <li><code>Format="GUILDAorigin"</code> でも <code>Export</code> の指定もないときは、<code>ResultPF</code> もスナップショットも作りません。</li>
     </ul>
 
     <!-- ============================== 6. FAILURES ============================== -->
@@ -706,22 +699,16 @@
       <tbody>
         <tr><td><span lang="en">Not converged</span><span lang="ja">収束しない</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><ul lang="en">
           <li><code>flag &lt;= 0</code></li>
-          <li><code>result</code> still returned, with the last iterate and <code>l_success = false</code></li>
-          <li>PF-11 adds a warning (default <code>"WARN"</code>), an error, a printed message or nothing</li>
+          <li><code>result</code> still returned in its <code>Format</code>, with the last iterate; a <code>ResultPF</code> has <code>l_success = false</code></li>
+          <li>PF-08 adds the warning <code>GUILDA:PowerNetwork:PowerflowNotConverged</code> (default <code>"WARN"</code>), an error, a printed message or nothing</li>
         </ul><ul lang="ja">
           <li><code>flag &lt;= 0</code></li>
-          <li><code>result</code> は最後の反復の値で返り、<code>l_success = false</code> になります。</li>
-          <li>PF-11 で、警告（既定値 <code>"WARN"</code>）、エラー、メッセージの表示、何もしない、のどれかになります。</li>
+          <li><code>result</code> は最後の反復の値で、<code>Format</code> の形のまま返ります。<code>ResultPF</code> では <code>l_success = false</code> になります。</li>
+          <li>PF-08 で、警告 <code>GUILDA:PowerNetwork:PowerflowNotConverged</code>（既定値 <code>"WARN"</code>）、エラー、メッセージの表示、何もしない、のどれかになります。</li>
         </ul></td></tr>
         <tr><td><span lang="en">dynamic stop reasons</span><span lang="ja">dynamic の停止理由</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en"><code>output.message</code>: converged (flag 1); voltage collapse, phase angle instability or integration failure (flag −2); virtual time 1e4 reached without convergence (flag 0)</span><span lang="ja"><code>output.message</code> に理由が入ります。収束なら flag 1、電圧崩壊、位相角の不安定、積分の失敗なら flag −2、収束しないまま仮想時間 1e4 に達したら flag 0 です。</span></td></tr>
         <tr><td><span lang="en"><code>Solver="fsolve"</code> without Optimization Toolbox</span><span lang="ja">Optimization Toolbox なしの <code>Solver="fsolve"</code></span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:require_toolbox:Unavailable</code></td></tr>
-        <tr><td><span lang="en">Unknown option name / odd argument list</span><span lang="ja">未知のオプション名・引数が対にならない</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><ul lang="en">
-          <li><code>GUILDA:resolve_options:UnknownName</code> (lists the accepted names) / <code>GUILDA:resolve_options:InvalidPairs</code></li>
-          <li>Invalid value: stops with the MATLAB validation error of <code>validate_options</code></li>
-        </ul><ul lang="ja">
-          <li><code>GUILDA:resolve_options:UnknownName</code>（受け付ける名前を一覧で示します）または <code>GUILDA:resolve_options:InvalidPairs</code></li>
-          <li>値が不正なときは、<code>validate_options</code> による MATLAB の検証エラーで止まります。</li>
-        </ul></td></tr>
+        <tr><td><span lang="en">Unknown option name / invalid value</span><span lang="ja">未知のオプション名・不正な値</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en">The MATLAB error of the <code>arguments</code> block of <code>calculate_powerflow</code></span><span lang="ja"><code>calculate_powerflow</code> の <code>arguments</code> ブロックによる MATLAB のエラー</span></td></tr>
         <tr><td><span lang="en">No bus / no component</span><span lang="ja">母線がない・機器がない</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:PowerNetwork:NoBus</code> / <code>GUILDA:PowerNetwork:NoSlackCandidate</code></td></tr>
         <tr><td><span lang="en">Slack bus without a component with Q = NaN</span><span lang="ja">Q = NaN の機器がない slack 母線</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><ul lang="en">
           <li>Warning <code>GUILDA:Bus:SlackWithoutQnan</code> from <code>set.l_isSlack</code></li>
@@ -731,6 +718,7 @@
           <li>潮流計算は実行します。slack 母線では機器の P と Q を使いません。</li>
         </ul></td></tr>
         <tr><td><span lang="en">Unknown export extension</span><span lang="ja">未知の書き出し拡張子</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:ResultPF:ExportFormat</code></td></tr>
+        <tr><td><span lang="en">.json export of a <code>ResultPF</code> without <code>tab_PFcondition</code> or <code>cm_Y</code> (e.g. <code>ResultPF()</code>)</span><span lang="ja"><code>tab_PFcondition</code> か <code>cm_Y</code> を持たない <code>ResultPF</code>（<code>ResultPF()</code> など）の .json 書き出し</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:ResultPF:NoNetwork</code></td></tr>
         <tr><td><span lang="en">Called from <code>initialize</code></span><span lang="ja"><code>initialize</code> からの呼び出し</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en">Non-converged result → error <code>GUILDA:PowerNetwork:InitializePowerflowFailed</code>, or <code>InitializePowerflowIsland</code> for a split network</span><span lang="ja">収束しなかった場合はエラー <code>GUILDA:PowerNetwork:InitializePowerflowFailed</code> になります。ネットワークが分断されているときは <code>InitializePowerflowIsland</code> になります。</span></td></tr>
       </tbody>
     </table>
@@ -755,7 +743,8 @@
       <li><b>Branch</b>
         <ul>
           <li>Implement <code>get_admittance_matrix</code> (2×2 complex [pu], <code>[V_from; V_to]</code> to the currents into the branch)</li>
-          <li>Used for the bus admittance matrix (PF-05) and the branch flows (PF-09)</li>
+          <li>Used for the bus admittance matrix (PF-04)</li>
+          <li>The branch flows of <code>ResultPF</code> (PF-10) use the same formula, written again per class name in <code>@ResultPF/private/branch_admittance.m</code>: add a case there for a new class, otherwise its flows are NaN</li>
         </ul>
       </li>
       <li><b>Bus type</b>: a new type needs
@@ -767,13 +756,13 @@
       </li>
       <li><b>Method</b>: add
         <ul>
-          <li>the name to the <code>options</code> of <code>Solver</code> in <code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> and to <code>validate_options</code></li>
+          <li>the name to the <code>options</code> of <code>Solver</code> in <code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> and to the <code>mustBeMember</code> list of <code>Solver</code> in the <code>arguments</code> block of <code>calculate_powerflow</code></li>
           <li>a <code>Method*</code> class in <code>_auxiliary/</code> (settings as public properties set by Name-Value in the constructor, then <code>solve</code>)</li>
           <li>a case in <code>run_method</code> of <code>SolverPF.solve</code> that creates it and maps its results to <code>[cv_Vbus, flag, output, cm_Vhistory, rv_step]</code></li>
           <li>for <code>PlotFcn</code>: calls of <code>f_iter(x, k, state)</code> (<code>"init"</code>, each iterate <code>"iter"</code>, <code>"done"</code>; a true return ends with flag -1) and the map of its iterate <code>x</code> to the bus voltages in <code>voltage</code> of <code>@SolverPF/private/live_residual.m</code></li>
         </ul>
       </li>
-      <li><b>Live display</b>: a new key in the <code>options</code> of <code>PlotFcn</code> (<code>DefaultPowerFlowCalculation.json</code>), in the key list given to <code>tools.check_plotfcn</code> by <code>SolverPF.get_options</code>, and its drawing in <code>live_residual</code></li>
+      <li><b>Live display</b>: a new key in the <code>options</code> of <code>PlotFcn</code> (<code>DefaultPowerFlowCalculation.json</code>), in the key list given to <code>tools.check_plotfcn</code> by <code>calculate_powerflow</code> (<code>mustBePlotFcn</code> and <code>solver_options</code>), and its drawing in <code>live_residual</code></li>
       <li><b>Controllers</b>: no part in the power flow</li>
     </ul>
     <ul lang="ja">
@@ -788,7 +777,8 @@
       <li><b>ブランチ</b>
         <ul>
           <li><code>get_admittance_matrix</code> を実装します。返すのは 2×2 の複素数行列 [pu] で、<code>[V_from; V_to]</code> からブランチへ流れ込む電流を求めるものです。</li>
-          <li>この行列は、母線アドミタンス行列（PF-05）とブランチ潮流（PF-09）の計算に使います。</li>
+          <li>この行列は、母線アドミタンス行列（PF-04）の計算に使います。</li>
+          <li><code>ResultPF</code> のブランチ潮流（PF-10）は、同じ式をクラス名ごとに書いた <code>@ResultPF/private/branch_admittance.m</code> を使います。新しいクラスはそこにも分岐を加えます。加えないと、そのブランチの潮流は NaN になります。</li>
         </ul>
       </li>
       <li><b>母線の種類</b>: 新しい種類を加えるには、次の箇所に手を入れます。
@@ -800,13 +790,13 @@
       </li>
       <li><b>計算方法</b>: 新しい方法を加えるには、次のものを用意します。
         <ul>
-          <li><code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> の <code>Solver</code> の <code>options</code> と、<code>validate_options</code> に加える名前</li>
+          <li><code>@GUILDA/config/DefaultPowerFlowCalculation.json</code> の <code>Solver</code> の <code>options</code> と、<code>calculate_powerflow</code> の <code>arguments</code> ブロックにある <code>Solver</code> の <code>mustBeMember</code> の一覧に加える名前</li>
           <li><code>_auxiliary/</code> に置く <code>Method*</code> クラス。設定はコンストラクタの Name-Value で public プロパティに渡し、そのあと <code>solve</code> を呼びます。</li>
           <li><code>SolverPF.solve</code> の <code>run_method</code> に加える分岐。そのクラスを作り、結果を <code>[cv_Vbus, flag, output, cm_Vhistory, rv_step]</code> に直します。</li>
           <li><code>PlotFcn</code> への対応。<code>f_iter(x, k, state)</code> を <code>"init"</code>、反復ごとの <code>"iter"</code>、<code>"done"</code> で呼び、true が返れば flag -1 で終えます。また、<code>@SolverPF/private/live_residual.m</code> の <code>voltage</code> に、反復値 <code>x</code> を母線電圧に直す処理を加えます。</li>
         </ul>
       </li>
-      <li><b>ライブ表示</b>: 新しいキーを加えるには、<code>PlotFcn</code> の <code>options</code>（<code>DefaultPowerFlowCalculation.json</code>）、<code>SolverPF.get_options</code> が <code>tools.check_plotfcn</code> に渡すキーの一覧、<code>live_residual</code> の描画の 3 か所を変えます。</li>
+      <li><b>ライブ表示</b>: 新しいキーを加えるには、<code>PlotFcn</code> の <code>options</code>（<code>DefaultPowerFlowCalculation.json</code>）、<code>calculate_powerflow</code> が <code>tools.check_plotfcn</code> に渡すキーの一覧（<code>mustBePlotFcn</code> と <code>solver_options</code>）、<code>live_residual</code> の描画の 3 か所を変えます。</li>
       <li><b>制御器</b>: 潮流計算には関わりません。</li>
     </ul>
     <p lang="en">Model contracts: <a href="model-implementation.html#contracts">Model Implementation</a>.</p>

@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Choose the output of the power flow",
+    "date": "2026-11-12",
+    "type": "feature",
+    "content": "net.calculate_powerflow and net.initialize take the option Format for their first output: \"V\" (the default) gives the complex bus voltages, \"powerflow(mat)\" and \"powerflow(tab)\" give V, I, P and Q of each bus as a matrix or a table, and \"GUILDAorigin\" gives the result object (ResultPF; ResultOPF for initialize with Method=\"OPF\"). Scripts that read res.tab_bus need Format=\"GUILDAorigin\". The old forms calculate_powerflow(\"dynamic\") and the options export and filename are removed: use Solver=\"dynamic\" and Export=filename."
+  },
+  {
     "title": "Show the signal connections",
     "date": "2026-11-12",
     "type": "feature",
