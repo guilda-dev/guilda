@@ -48,11 +48,11 @@ assert(contains(s, "delta ━━ state delta of B003SG1  [observe]"), s)
 assert(contains(s, "omega (B004SG1) ━━ output omega of B004SG1  [observe]"), s)
 % 入力のない持ち主 (空の母線 B006、入力が平衡値だけの B005) は出ない
 assert(~contains(s, "B006") && ~contains(s, "B005"), s)
-% 枝は disp_tree と同じ太線で、先端が入力ポートは ←、持つ物は ●。入力と持つ物が混ざっても ┃ が続く
-assert(contains(s, "┣━━← Pmech") && contains(s, "┃            ┗ output Pmech of PowerNetworkAGC1"), s)
-assert(contains(s, "┣━━● B001SG1CA1") && contains(s, "┃     ┣━━← Vpss") && contains(s, "┃     ┗━━● B001SG1CP2"), s)
-assert(contains(s, "┃           ┗━━← omega") && contains(s, "┗━━● B001SG1CG3"), s)
-assert(~contains(s, "━━● Pmech") && ~contains(s, "━━← B001SG1CA1"), s)
+% 枝は disp_tree と同じ太線で、先端が入力ポートは <、持つ物は o (ASCII)。入力と持つ物が混ざっても ┃ が続く
+assert(contains(s, "┣━━< Pmech") && contains(s, "┃            ┗ output Pmech of PowerNetworkAGC1"), s)
+assert(contains(s, "┣━━o B001SG1CA1") && contains(s, "┃     ┣━━< Vpss") && contains(s, "┃     ┗━━o B001SG1CP2"), s)
+assert(contains(s, "┃           ┗━━< omega") && contains(s, "┗━━o B001SG1CG3"), s)
+assert(~contains(s, "━━o Pmech") && ~contains(s, "━━< B001SG1CA1"), s)
 % タグの後に matlab:doc のリンク
 assert(contains(s, "B001SG1CA1 <a href=""matlab:doc('controller.avr.AVR_DC1');"">@controller.avr.AVR_DC1</a>"), s)
 
@@ -91,30 +91,33 @@ function check_targets(net, s, tab, tc)
     sv_line = regexprep(sv_line, "<a href=[^>]*>|</a>", "");
     iv_target = unique(tc.TargetIndex);
     check_chars(s);
-    n_input = sum(contains(sv_line, "━━← "));   % 入力ポートの行 (見出しの凡例 "←: input port" は数えない)
-    assert(n_input == numel(iv_target), "入力の数 %d、━━← の行の数 %d", numel(iv_target), n_input)
+    n_input = sum(contains(sv_line, "━━< "));   % 入力ポートの行 (見出しの凡例 "<: input port" は数えない)
+    assert(n_input == numel(iv_target), "入力の数 %d、━━< の行の数 %d", numel(iv_target), n_input)
+    % 入力ポートの行には < が先端の 1 つだけ (入力元の文に < はない)、持つ物の行はリンクの外に < がない
+    sv_plain = regexprep(sv_line, "<a href=[^>]*>|</a>", "");
+    assert(all(count(sv_plain(contains(sv_line, "━━< ")), "<") == 1) && ~any(contains(sv_plain(~contains(sv_line, "━━< ")), "━━<")), "< の使い方")
     assert(sum(endsWith(sv_line, "]") & contains(sv_line, "  [")) == height(tc), "入力元の行の数")
     for i = reshape(iv_target, 1, [])
         s_owner = tab.Owner(i);
         i_owner = find(endsWith(sv_line, " " + s_owner + " @" + owner_class(net, s_owner)), 1);
         assert(~isempty(i_owner), "持ち主 %s がない", s_owner)
         % 持ち主の行より後で、同じかより浅い字下げの持ち主の行より前にある入力の行
-        iv_col = strlength(sv_line) - strlength(regexprep(sv_line, "^[ ┃┣┗━●←]*", ""));
+        iv_col = strlength(sv_line) - strlength(regexprep(sv_line, "^[ ┃┣┗━]*(o )?", ""));
         lv_ownerline = contains(sv_line, " @");
         i_end = i_owner + find(lv_ownerline(i_owner+1:end) & iv_col(i_owner+1:end) <= iv_col(i_owner), 1);
         if isempty(i_end); i_end = numel(sv_line) + 1; end
         sv_block = sv_line(i_owner+1:i_end-1);
         s_name = tab.Name(i);
-        assert(any(~cellfun(@isempty, regexp(cellstr(sv_block), "[┣┗]━━← " + s_name + "( \(\w+\))? +━[━┳] ", "once"))), ...
+        assert(any(~cellfun(@isempty, regexp(cellstr(sv_block), "[┣┗]━━< " + s_name + "( \(\w+\))? +━[━┳] ", "once"))), ...
                "入力 %s (%s) がない", tab.Label(i), s_owner)
     end
 end
 
 function check_chars(s)
-    % リンクの記述を除き、ASCII と JIS X 0208 の記号 ━┃┣┗┳●← だけを使う (環境で化ける文字を使わない)
+    % リンクの記述を除き、ASCII と罫線 ━┃┣┗┳ だけを使う (環境で化ける記号を使わない)
     s = regexprep(s, "<a href=[^>]*>|</a>", "");
     c = char(s);
-    lv_ok = (c >= ' ' & c <= '~') | c == newline | ismember(c, '━┃┣┗┳●←');
+    lv_ok = (c >= ' ' & c <= '~') | c == newline | ismember(c, '━┃┣┗┳');
     assert(all(lv_ok), "使えない文字: %s", unique(c(~lv_ok)))
 end
 

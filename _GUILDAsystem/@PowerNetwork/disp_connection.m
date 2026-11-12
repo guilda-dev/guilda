@@ -7,7 +7,7 @@ function varargout = disp_connection(obj, opt)
 % controllers. Under each owner, every input (Kind "u" or "uc" of the variable map) is
 % listed first with its sources, then the components or controllers it holds. The tips
 % of the tree lines (the heavy lines of `LayerPackage.disp_tree`) tell them apart:
-% `┣━━←` / `┗━━←` for an input port, `┣━━●` / `┗━━●` for a held object. Each source is
+% `┣━━<` / `┗━━<` for an input port, `┣━━o` / `┗━━o` for a held object. Each source is
 % marked by the kind of the connection:
 %
 % - `local`: an output of a local controller into its parent
@@ -90,7 +90,7 @@ function varargout = disp_connection(obj, opt)
     end
 
     s_head = " Signal connections of " + obj.s_tag + " " + link(obj) + newline ...
-           + " ←: input port, ●: held object; several sources are summed (━┳); Kind: " + join(opt.Kind, ", ") + newline ...
+           + " <: input port, o: held object; several sources are summed (━┳); Kind: " + join(opt.Kind, ", ") + newline ...
            + " Bus voltages that controllers read directly are not connections and are not listed." + newline;
     s_foot = "";
     sv_hidden = setdiff(["local","global","observe","equilibrium"], opt.Kind, "stable");
@@ -136,11 +136,11 @@ function sv_lines = block(owner, ctx)
     n_item = numel(c_item);
     for k = 1:n_item
         l_last = k == n_item;
-        % heavy lines as in disp_tree; the tip is ● for a held object, ← for an input port
+        % heavy lines as in disp_tree; the tip is o for a held object, < for an input port (ASCII)
         if c_item{k}.l_owner
-            sv_tip = ["   ┣━━● ", "   ┗━━● "];  sv_next = ["   ┃  ", "      "];
+            sv_tip = ["   ┣━━o ", "   ┗━━o "];  sv_next = ["   ┃  ", "      "];
         else
-            sv_tip = ["   ┣━━← ", "   ┗━━← "];  sv_next = ["   ┃    ", "        "];
+            sv_tip = ["   ┣━━< ", "   ┗━━< "];  sv_next = ["   ┃    ", "        "];
         end
         s_branch = sv_tip(1 + l_last);
         s_next   = sv_next(1 + l_last);
