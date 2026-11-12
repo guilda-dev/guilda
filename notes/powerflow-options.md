@@ -236,7 +236,7 @@
 | `_GUILDAsystem/_auxiliary/@SolverPF/private/power_equation.m` | 初期点 `rv_x0`、`rv_xp0` |
 | `_GUILDAsystem/_auxiliary/@SolverOPF/private/build_bus.m` | `x0` |
 | `_GUILDAsystem/_auxiliary/@SolverOPF/build_problem.m` | ヘルプ |
-| `_GUILDAsystem/@PowerNetwork/optimize_powerflow.m` | ヘルプ |
+| `_GUILDAsystem/@PowerNetwork/calculate_optimal_powerflow.m` | ヘルプ |
 | `_GUILDAsystem/_auxiliary/@MethodDynamic/solve.m` | 初期状態 `Tinit`、`Vinit` |
 | `_GUILDAsystem/@PowerNetwork/import_csv.m` | 任意列。旧列は INFO メッセージを出して無視 |
 | `_GUILDAsystem/@PowerNetwork/import_matpower.m` | `V0`/`Varg0` = VM/VA を読まない(下の注) |
@@ -314,7 +314,7 @@
 - `MethodDynamic`: 初期値は `PFcondition` の列 `Varg0`、`V0`(SolverPF が初期電圧を渡すための列。なければフラットスタート)。
   初期値で収束済みなら積分せずに flag 1(ウォームスタートでイベントが交差しないため)。
 - ウォームスタートの既定は PowerFlowCalculation が true、OptimalPowerFlow が false(Q3 の決定。下の「Q3〜Q6 の実装」)。`initialize` は自身の既定を持たず、`WarmStart` を潮流計算 / OPF に渡す。
-  `optimize_powerflow` の `WarmStart` は呼び出しのオプション(`SolverOPF` に設定のプロパティを足さないため)。
+  `calculate_optimal_powerflow` の `WarmStart` は呼び出しのオプション(`SolverOPF` に設定のプロパティを足さないため)。
 - フラットスタートのスラック母線の位相は設定値 `Varg`(2 節の「位相 0」は PQ・PV 母線。旧コードもスラックは `Varg` から開始)。
 - キャッシュ: `SolverPF` はアドミタンス行列(n_revY)と潮流条件・方程式(n_revPF)を保持。母線の並びがオブジェクトとして同じで n_revTopology が同じときだけ使う。
   結果の行名は毎回の母線のタグ(タグの編集はカウンタを増やさない)。収束した解(flag 1)だけをウォームスタートに保存。

@@ -5,7 +5,6 @@ function s_file = export(obj, filename, opt)
 % the row names in the first column and phasors as complex numbers: the bus table
 % (tab_bus), or with Table="cub" the connection table (tab_cub), or with Table="branch"
 % the branch table (tab_branch). A relative filename is relative to the current folder.
-% optimize_powerflow(..., Export=filename) calls it.
     arguments (Input)
         obj
         filename  (1,1) string = string(datetime("now","Format","uuMMdd_HHmmss")) + "_OPF.csv" % Output file; its extension selects the format.

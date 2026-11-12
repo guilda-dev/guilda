@@ -170,7 +170,7 @@
 
 ### 1.6 `Export` の置き場所 [事実]
 
-`Export` は `ResultBase` の約束です。`@ResultBase/ResultBase.m:85` が `varargout = Export(obj, varargin)` を宣言し、既定の `@ResultBase/Export.m` は `error_unsupported("Export")`(`GUILDA:ResultBase:Unsupported`)で止まります。`ResultPF`, `ResultOPF`, `ResultCPF`, `ResultODE` がそれぞれ `Export.m` で上書きし、`calculate_powerflow`, `optimize_powerflow`, `calculate_continuation_powerflow`, `simulate` が `Export` オプションから呼びます。共有の補助関数はありません。**したがって `ResultODE.Export` だけを `export` に改名すると、継承した `Export`(エラー)と `export` の両方が残ります。** 改名は `ResultBase` と全結果クラスで揃える必要がありました。
+`Export` は `ResultBase` の約束です。`@ResultBase/ResultBase.m:85` が `varargout = Export(obj, varargin)` を宣言し、既定の `@ResultBase/Export.m` は `error_unsupported("Export")`(`GUILDA:ResultBase:Unsupported`)で止まります。`ResultPF`, `ResultOPF`, `ResultCPF`, `ResultODE` がそれぞれ `Export.m` で上書きし、`calculate_powerflow`, `calculate_optimal_powerflow`, `calculate_continuation_powerflow`, `simulate` が `Export` オプションから呼びます。共有の補助関数はありません。**したがって `ResultODE.Export` だけを `export` に改名すると、継承した `Export`(エラー)と `export` の両方が残ります。** 改名は `ResultBase` と全結果クラスで揃える必要がありました。
 
 **`514cde71` での状態 [事実]:** 潮流計算の作業が、`ResultBase`(`@ResultBase/export.m`)と `ResultPF`, `ResultOPF`, `ResultCPF`, `ResultODE` の `Export` をすべて `export` に改名し、`calculate_powerflow` の `Export` オプションを削除しました。`simulate` には `Export` オプションが残り、`result.export(...)` を呼んでいます(`simulate.m:86, 95-98`)。この再設計で残るのは、`simulate` の `Export` オプションの削除だけです(§5.4)。
 

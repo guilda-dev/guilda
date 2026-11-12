@@ -1,14 +1,13 @@
-function [prob, x0, const, var] = build_component(com, prob, x0, const, s_method, l_defaultCost)
+function [prob, x0, const, var] = build_component(row, prob, x0, const, s_method, l_defaultCost)
 % Add the power variable, bounds and cost of one component to the OPF problem.
 %
-% Variable <component> = [P; Q] ("AC OPF") or P, bounded by Pmin/Pmax, Qmin/Qmax of
-% tab_parameter.operation (±Inf removes a bound) and added to the balance of its bus.
-% A load is not dispatched: its P (Q) is fixed to tab_parameter.powerflow while both
-% bounds are infinite; with a finite bound it is dispatched within the bounds.
-% With l_defaultCost the cost HP*P^2 + fP*P (+ HQ*Q^2 + fQ*Q in "AC OPF") of
-% tab_parameter.OPF is added to the objective.
+% Variable <component> = [P; Q] ("AC OPF") or P, bounded by Pmin/Pmax, Qmin/Qmax (±Inf
+% removes a bound) and added to the balance of its bus. The fixed P (Q) of a load is
+% already in its bounds and start (see PowerNetwork.calculate_optimal_powerflow).
+% With l_defaultCost the cost HP*P^2 + fP*P (+ HQ*Q^2 + fQ*Q in "AC OPF") is added to
+% the objective.
     arguments (Input)
-        com                          % Component to add.
+        row           table          % Row of the component table (Bus, HP, fP, HQ, fQ, P0, Q0, Pmin, ...); row name = tag.
         prob                         % Problem being built.
         x0            (1,1) struct   % Initial values, extended.
         const         (1,1) struct   % Power-balance expressions, extended.
@@ -21,27 +20,18 @@ function [prob, x0, const, var] = build_component(com, prob, x0, const, s_method
         const                        % Extended power-balance expressions.
         var                          % Variable of the component.
     end
-    opf   = group(com, "OPF");
-    ope   = group(com, "operation");
-    s_com = string(com);
-
-    lb  = [ope.Pmin; ope.Qmin];
-    ub  = [ope.Pmax; ope.Qmax];
-    PQ0 = [opf.P0; opf.Q0];
-    if isa(com, "component.load.abstract")
-        pf = group(com, "powerflow");
-        PQ = [pf.P; pf.Q];
-        lv_fix = ~isnan(PQ) & isinf(lb) & isinf(ub);
-        lb(lv_fix)  = PQ(lv_fix);
-        ub(lv_fix)  = PQ(lv_fix);
-        PQ0(lv_fix) = PQ(lv_fix);
-    end
+    opf   = row;
+    s_com = string(row.Properties.RowNames{1});
+    s_at  = row.Bus;
+    lb    = [row.Pmin; row.Qmin];
+    ub    = [row.Pmax; row.Qmax];
+    PQ0   = [row.P0; row.Q0];
 
     switch s_method
         case "AC OPF"
             var = optimvar(s_com, {'P','Q'}, 1, "Type","continuous", ...
                            "LowerBound",lb, "UpperBound",ub);
-            sv_con = ["P","Q"] + "_" + string(com.a_Bus);
+            sv_con = ["P","Q"] + "_" + s_at;
             const.(sv_con(1)) = const.(sv_con(1)) + var("P");
             const.(sv_con(2)) = const.(sv_con(2)) + var("Q");
             x0.(s_com) = PQ0;
@@ -57,7 +47,7 @@ function [prob, x0, const, var] = build_component(com, prob, x0, const, s_method
             if s_method == "ELD"
                 s_con = "P";
             else
-                s_con = "P_" + string(com.a_Bus);
+                s_con = "P_" + s_at;
             end
             const.(s_con) = const.(s_con) + var;
             x0.(s_com) = PQ0(1);
@@ -80,7 +70,3 @@ function expr = cost_term(H, f, var)
     end
 end
 
-
-function tab = group(obj, s_group)
-    tab = obj.a_Parameter{cellfun(@(p) p.s_tag==s_group, obj.a_Parameter)}.tab_parameter;
-end

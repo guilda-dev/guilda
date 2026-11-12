@@ -9,7 +9,7 @@ function c_out = legacy_output(c_new, n_out, iv_old, f_legacy, s_key)
 % Use it as the one-line compatibility hook at the end of a method declared with
 % varargout, after the line that sets the v4 outputs:
 %     varargout = {result, flag, output};
-%     varargout = legacy_output(varargout, nargout, 4:6, @v3_optimize_powerflow, "OptimizePowerflowTuple"); % COMPAT(vN)
+%     varargout = legacy_output(varargout, nargout, 4:6, @v3_analysis_tuple, "AnalysisTuple"); % COMPAT(vN)
 % Only output counts that the v4 signature cannot have (more than numel(c_new))
 % can select the old form unambiguously.
 %

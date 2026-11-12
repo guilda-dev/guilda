@@ -174,7 +174,21 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **テスト(MATLAB R2026a):** small はコードの手順ごと(`6ecc6903`、`847e5b76`、`335c9162`)に FAIL 0(`335c9162` は I69 の修正後に該当テストを再実行)。最後の small 513 件、PASS 511 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1。medium 688 件、PASS 686 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、545 s。追加の 3 手順(`96f131f9` Export の削除、`737c287d` 既定 Format、`254a2602` `Branch.struct`)も small を手順ごとに実行して 513 件中 FAIL 0、最後に medium 688 件、PASS 686 / KNOWN 1 / FAIL 0 / SKIP 1、525 s。その後の 2 手順(`eefdce1b` `export` への改名、n×4 の配列を使う `initialize`)も small を手順ごとに FAIL 0、最後に medium 688 件、PASS 686 / KNOWN 1 / FAIL 0 / SKIP 1、512 s。改名した `export` を使う large のテスト 5 件(F2・F4・F5・F6 の Plot/Export)は個別に実行して PASS。large は未実行。
 - 枝潮流は `Branch.struct` がスナップショットに加える `cm_Y` から求めます(案 C)。
 - `ResultPF` に `disp_summary`・`disp_bus`・`disp_branch`・`disp_violation` と `plot_voltage`(Vmin・Vmax の線)を追加し、すべての結果クラスの `Plot` を `plot_*` に改名しました(2026-11-12)。`plot_branch`・`plot_convergence`・`plot_network` は後で実装します。テストは `refactor/design-alignment`(`7bc4cd45`)を取り込んだ後、手順ごとの small(`1fad7f64` 512 件、`ec432a62` 514 件)で FAIL 0、最後の medium 689 件、PASS 687 / KNOWN 1 / FAIL 0 / SKIP 1、649 s。改名した plot_* を使う large のテスト 6 件は個別に実行して PASS。
-- **未対応:** `_GUILDAtutorial/*.mlx`(保留中のチュートリアルの作業)。`PowerNetwork.n_revY`・`n_revPF` はどのソルバーも読まなくなったので、削除を検討します。
+- **未対応:** `_GUILDAtutorial/*.mlx`(保留中のチュートリアルの作業)。`PowerNetwork.n_revY`・`n_revPF` は `refactor/opf-structure` で削除しました(下の節)。
+
+## 最適潮流計算の構造の見直し(2026-11-12)
+
+ブランチは `refactor/opf-structure`(未 push)です。潮流計算と同じ構造にしました。
+
+- `optimize_powerflow` を `calculate_optimal_powerflow` に改名しました(別名なし)。`build_opf_problem` と GUILDA.setting の `OptimalPowerFlow` はそのままです。
+- OPF の v3 互換(`v3_opf_args`、`v3_optimize_powerflow`、6 出力、`"methods"`)を削除しました。`legacy_output.m` は F10 のテストが使うので残しています。
+- オプションは `calculate_optimal_powerflow` と `build_opf_problem` の `arguments` ブロックで検証します(未知の名前は `MATLAB:TooManyInputs`)。`Cost`・`Constraint`・`DefaultCost`・`ReferenceBus` は呼び出しだけのオプション(既定 `[]`、`[]`、true、`"auto"`)で、`SolverOPF` のプロパティ、`OptionMap`、`get_options`、`Export` は削除しました。関数ハンドルでない値は `GUILDA:PowerNetwork:InvalidOpfHandle` です。
+- `@PowerNetwork/private/opf_data.m` が母線・機器・ブランチの 3 つの表、`base`、解決済みの `ReferenceBus` を集めます。`SolverOPF.build_problem` / `solve` は系統を読みません。問題のキャッシュと `PowerNetwork.n_revOPF` は削除し、ウォームスタートは母線タグで照合します。`ResultOPF` は `struct(net, false)` と解から作ります。
+- **テスト(MATLAB R2026a):** small を手順ごとに実行して FAIL 0(手順 3 で 512 件、PASS 510 / KNOWN 1 / SKIP 1)。medium 686 件、PASS 684 / KNOWN 1 / FAIL 0 / SKIP 1、856 s。F4 は全段階(37 件 + SKIP 1)を個別に実行して PASS。
+- **`refactor/design-alignment`(d41057ba)のマージ(`e21f629c`):** 衝突は両方を残して解決しました(`optimize_powerflow.m` は削除し、`plot_dispatch` のヘルプの変更を `calculate_optimal_powerflow.m` に移しました。F10 のフックは 11 行)。マージ後の small 513 件、PASS 511 / KNOWN 1 / FAIL 0 / SKIP 1。medium 686 件、PASS 683 / KNOWN 1 / FAIL 1 / SKIP 1、1082 s。FAIL は I55 の時間制限のテスト `PhasesThatEachFitInTheLimitStopWhenTheirSumDoesNot` で、単独で 2 回実行してどちらも PASS(実行が遅かったための失敗と判断)。
+- **版番号の削除(`7f574d7c`):** small 513 件、PASS 511 / KNOWN 1 / FAIL 0 / SKIP 1、575 s。medium 686 件、PASS 684 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、865 s。large は未実行。
+- 読むものがなくなった版番号 `PowerNetwork.n_revY`・`n_revPF`・`n_revTopology` と、`handle_edit` のその増分を削除しました。`net.solver_PF` / `net.solver_OPF` のウォームスタートは母線タグで照合します。
+- **未対応:** F8 の large のテスト 2 件(`MATFileRoundTripKeepsControllersAndLowerLayers`、`MATPOWERImportReproducesCase14`)は、この作業の前のコミットでも失敗します。
 
 ## 未決事項
 

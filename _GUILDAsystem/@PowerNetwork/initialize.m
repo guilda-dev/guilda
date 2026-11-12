@@ -32,7 +32,7 @@ function [result, flag, output] = initialize(obj, varargin)
 % - `Method` — How the operating point is obtained when it is solved. Default:
 %   "powerflow".
 %   - "powerflow": net.calculate_powerflow (settings of GUILDA.setting).
-%   - "OPF": net.optimize_powerflow with Method="AC OPF" (OptimalPowerFlow section of GUILDA.setting and conditions of net.solver_OPF;
+%   - "OPF": net.calculate_optimal_powerflow with Method="AC OPF" (OptimalPowerFlow section of GUILDA.setting;
 %     the AC formulation gives a complete AC operating point).
 %   - "FixedInput": the equilibrium with the inputs of the components held
 %     (rv_Uequilibrium, edited with Component.set_input): the states, the bus voltages,
@@ -67,9 +67,9 @@ function [result, flag, output] = initialize(obj, varargin)
 % - `WarmStart` — true starts the power flow or the "AC OPF" from the last solution of the
 %   network (kept by net.solver_PF or net.solver_OPF); false from the flat start. Default:
 %   the WarmStart of the PowerFlowCalculation or OptimalPowerFlow section of GUILDA.setting.
-%   Passed to calculate_powerflow or optimize_powerflow like the other options.
+%   Passed to calculate_powerflow or calculate_optimal_powerflow like the other options.
 % - Other options go unchanged to calculate_powerflow ("powerflow") or
-%   optimize_powerflow ("OPF") and are validated there (an unknown name stops with the
+%   calculate_optimal_powerflow ("OPF") and are validated there (an unknown name stops with the
 %   error of that analysis); "equilibrium" takes no other option. `Solver`
 %   chooses the algorithm of that analysis, e.g. Solver="levenberg-marquardt" for the
 %   power flow (default: the Solver of the PowerFlowCalculation section of GUILDA.setting)
@@ -107,7 +107,7 @@ function [result, flag, output] = initialize(obj, varargin)
 % res.r_cost                                       % cost of the OPF operating point
 % ```
 %
-% See also PowerNetwork.calculate_powerflow, PowerNetwork.optimize_powerflow, PowerNetwork.simulate
+% See also PowerNetwork.calculate_powerflow, PowerNetwork.calculate_optimal_powerflow, PowerNetwork.simulate
 %
 % <@Group> Initialize
     arguments (Input)
@@ -253,11 +253,13 @@ end
 function [result, flag, output] = solve_opf(obj, c_nv)
 % The AC OPF
     try
-        [result, flag, output] = obj.optimize_powerflow(c_nv{:}, "Method", "AC OPF");
+        [result, flag, output] = obj.calculate_optimal_powerflow(c_nv{:}, "Method", "AC OPF");
     catch ME
         % building the OPF problem of a split network can stop with an internal error:
-        % those have an identifier, while error(msg(...)) of GUILDA has none
-        if ~isempty(ME.identifier) && ~startsWith(ME.identifier, "GUILDA:") && network_islands(obj) > 1
+        % those have an identifier, while error(msg(...)) of GUILDA has none; the errors of
+        % the arguments block (options) are passed on unchanged
+        if ~isempty(ME.identifier) && ~startsWith(ME.identifier, ["GUILDA:","MATLAB:TooManyInputs","MATLAB:validators:","MATLAB:validation:"]) ...
+                && network_islands(obj) > 1
             stop_opf(obj, struct("message", ME.message))
         end
         rethrow(ME)

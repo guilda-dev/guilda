@@ -104,7 +104,7 @@ try
     DebugScript.helper.quiet(@() net.initialize(Method="OPF", NoSuchOption=1));
 catch ME
 end
-assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
+assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "MATLAB:TooManyInputs", DebugScript.helper.msg_id(ME))
 
 net = PowerNetwork("Empty");
 ME = [];

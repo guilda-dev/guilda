@@ -115,5 +115,5 @@
   <text class="c" x="388" y="944">net.calculate_continuation_powerflow();</text>
   <rect x="376" y="962" width="320" height="44" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5"/>
   <text class="t" x="388" y="980">Optimal power flow</text>
-  <text class="c" x="388" y="998">net.optimize_powerflow();</text>
+  <text class="c" x="388" y="998">net.calculate_optimal_powerflow();</text>
 </svg>

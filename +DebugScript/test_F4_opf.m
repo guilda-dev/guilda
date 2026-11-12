@@ -1,9 +1,8 @@
-% F4 最適潮流計算 (optimize_powerflow)
+% F4 最適潮流計算 (calculate_optimal_powerflow)
 %
 % 3 つの方式 "ELD" / "DC OPF" / "AC OPF" で最適潮流を計算し、物理的な妥当性を確認する。
 %   - v4 の呼び出し形式 [result, flag, output] と結果クラス ResultOPF
-%   - Name-Value による一時的な設定の上書き (net.solver_OPF は変わらない)
-%   - v3 の呼び出し形式 (6 出力、"methods" オプション) の互換
+%   - Name-Value による一時的な設定の上書き (arguments ブロック。未知の名前・不正な値は MATLAB のエラー)
 %   - 解が得られる (flag > 0)
 %   - 需給バランス (発電の合計 = 負荷 (+ 損失))、母線ごとの電力・電流のつり合い
 %   - 負荷は潮流設定の値のまま、発電機出力・電圧は上下限の範囲内
@@ -17,22 +16,22 @@
 %   - DC OPF の送電線は MATPOWER と同じ b = 1/(X*tap) (case14 で MATPOWER の DC 定式化と一致)
 %   - 負荷の既定の費用は 0。上下限を与えた負荷は価格応答する負荷として配分される
 %   - 利用者の費用・制約 (Cost, Constraint): 系統全体の変数をタグで参照、名前付き制約とその乗数、
-%     DefaultCost=false、ReferenceBus ("auto" / タグ / "none")、net.solver_OPF に保存した既定値、
+%     DefaultCost=false、ReferenceBus ("auto" / タグ / "none")、呼び出しだけのオプション、
 %     平衡点を古くしないこと
 %   - 上下限を ±Inf (送電線は NaN も) にすると既定の制約が外れる
 %   - build_opf_problem の問題を変更して Problem / InitialPoint で解く
 %   - IEEJ_WEST10 (送電線のタグが制約名になる系統) の AC OPF が解ける
 % 費用関数は機器の tab_parameter.OPF、制約は各クラスの tab_parameter.operation で設定する。
-% 利用者の費用・制約は optimize_powerflow / build_opf_problem の Cost, Constraint で追加する。
+% 利用者の費用・制約は calculate_optimal_powerflow / build_opf_problem の Cost, Constraint で追加する。
 %
 % 実行: runtests("DebugScript.test_F4_opf")  または  DebugScript.run_all("Features","F4")
 %
-% [result, flag, output] = net.optimize_powerflow(Method=..., Name, Value)
+% [result, flag, output] = net.calculate_optimal_powerflow(Method=..., Name, Value)
 %   result.tab_bus    : 母線ごとの解
 %   result.tab_cub    : 母線への接続 (機器 "<機器名>"、送電線の端 "<送電線名>_<母線名>") ごとの、母線への注入
 %   result.tab_branch : 送電線ごとの両端の潮流 (送電線へ流れ込む向き)
-% 設定の既定値は net.solver_OPF (SolverOPF)。Name-Value はその呼び出しだけ上書きする。
-% v3 の形式 (6 出力、"methods" オプション) は警告付きで使える。
+% 設定の既定値は GUILDA.setting の OptimalPowerFlow。Name-Value はその呼び出しだけ上書きする。
+% Cost, Constraint, DefaultCost, ReferenceBus は呼び出しだけのオプション (既定 [], [], true, "auto")。
 
 % 共通設定 (各テストの前に毎回実行される)
 tol = 1e-5;
@@ -44,7 +43,7 @@ is_load = @(c) isa(c,"component.load.abstract");
 net = DebugScript.helper.build_9bus();
 P_load = -(-1.0 - 0.8 - 1.2);
 
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
 assert(flag > 0)
 assert(istable(tab_bus) && height(tab_bus) == numel(net.a_Bus))
 
@@ -71,7 +70,7 @@ net = DebugScript.helper.build_9bus();
 net.a_Bus{1}.a_Component{1}.tab_parameter.operation.Pmax = 0.5;
 net.a_Bus{3}.a_Component{1}.tab_parameter.OPF.HP = 2;
 
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD")); tab_bus = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD")); tab_bus = res.tab_bus;
 assert(flag > 0)
 assert(abs(sum(tab_bus.P)) < tol)
 P = tab_bus{["B001","B002","B003"],"P"};
@@ -84,7 +83,7 @@ assert(abs(P(2) - 5/3) < 1e-4 && abs(P(3) - 5/6) < 1e-4)
 %% DC optimal power flow
 % DC 近似 (|V| = 1、損失なし) の最適潮流
 net = DebugScript.helper.build_9bus();
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
 assert(flag > 0)
 assert(all(ismember(["Varg","V","P"], tab_bus.Properties.VariableNames)))
 assert(abs(sum(tab_bus.P)) < tol)
@@ -111,7 +110,7 @@ for i = 1:numel(net.a_Bus)
 end
 
 % 送電制約が無いので、配分は ELD と同じ
-tab_ELD = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD")).tab_bus;
+tab_ELD = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD")).tab_bus;
 assert(max(abs(tab_bus.P - tab_ELD.P)) < 1e-4)
 
 
@@ -121,7 +120,7 @@ net = DebugScript.helper.build_9bus();
 for i = 1:numel(net.a_Bus)
     net.a_Bus{i}.tab_parameter.operation{1,["Vmin","Vmax"]} = [0.95, 1.05];
 end
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
 assert(flag > 0)
 assert(all(ismember(["Varg","V","P","Q","Vphasor","Iphasor"], tab_bus.Properties.VariableNames)))
 
@@ -147,7 +146,7 @@ end
 
 % 費用: ELD (損失なしの緩和問題) 以上、潮流計算の解 (実行可能解) 以下
 J_AC = DebugScript.helper.opf_cost(net, tab_cub);
-tab_cub_ELD = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD")).tab_cub;
+tab_cub_ELD = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD")).tab_cub;
 assert(J_AC >= DebugScript.helper.opf_cost(net, tab_cub_ELD) - 1e-6)
 tab_PF = DebugScript.helper.quiet(@() net.calculate_powerflow().tab_bus);
 assert(all(tab_PF.V >= 0.95 & tab_PF.V <= 1.05))   % 潮流解が OPF の制約を満たすことの確認
@@ -157,8 +156,8 @@ assert(J_AC <= DebugScript.helper.opf_cost(net, DebugScript.helper.pf_component_
 %% AC OPF warm start starts from the last solution
 % WarmStart=true は前回の AC OPF の解から、false (既定) はフラットスタート。同じ解に収束する
 net = DebugScript.helper.build_ieee14();
-[res0, flag0, out0] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", WarmStart=false));
-[res1, flag1, out1] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", WarmStart=true));
+[res0, flag0, out0] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", WarmStart=false));
+[res1, flag1, out1] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", WarmStart=true));
 assert(flag0 > 0 && flag1 > 0 && res1.options.WarmStart && ~res0.options.WarmStart)
 assert(out1.iterations ~= out0.iterations)     % 初期値が違う (内点法なので反復回数は減るとは限らない)
 assert(abs(res1.r_cost - res0.r_cost) < 1e-9*res0.r_cost && max(abs(res1.tab_bus.Vphasor - res0.tab_bus.Vphasor)) < 1e-4)
@@ -166,61 +165,42 @@ assert(abs(res1.r_cost - res0.r_cost) < 1e-9*res0.r_cost && max(abs(res1.tab_bus
 [~, x0] = DebugScript.helper.quiet(@() net.build_opf_problem(Method="AC OPF"));
 s_bus = string(net.a_Bus{14});
 assert(isequal(x0.(s_bus), [0; 1]))
-assert(error_id(@() net.optimize_powerflow(WarmStart="on")) ~= "")
+assert(error_id(@() net.calculate_optimal_powerflow(WarmStart="on")) ~= "")
 % 配布する既定値は false (ユーザー設定ファイルが既定を上書きしうるので JSON を直接読む)
 sct_def = jsondecode(fileread(fullfile(GUILDA.pwd, "@GUILDA", "config", "DefaultOptimalPowerFlow.json")));
 assert(sct_def.WarmStart.Value == false)
 
 
-%% The OPF problem is kept until the network or the settings change
-% net.solver_OPF は作った問題を保持し、ネットワーク・設定・初期点が同じなら再利用する。
-% 再利用の判定: 問題の変数はハンドルなので、同じ問題なら一方の上下限の変更が他方に見える
+%% Every call builds the OPF problem from the current network
+% 問題のキャッシュはない。呼び出しごとに tab_parameter から集めた表で問題を作るので、
+% operation / OPF / powerflow / タグの編集はすぐ結果に反映される。
+% 同じ問題かどうか: 問題の変数はハンドルなので、同じ問題なら一方の上下限の変更が他方に見える
 net = DebugScript.helper.build_9bus();
 s_var = "B001SG1";
 shared = @(r1, r2) shares_variable(r1.OPFprob, r2.OPFprob, s_var);
-res1 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-res2 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(shared(res1, res2))                                  % 再利用
-res3 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
-assert(~shared(res2, res3))
-res4 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(~shared(res2, res4))                                 % 設定が変われば作り直す (保持は 1 つ)
-res5 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", Cost=@(v, p) 0*v.Component.B001SG1.P));
-assert(~shared(res4, res5))                                 % Cost (関数ハンドル) が違う
-res6 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(~shared(res5, res6))
-% operation / OPF / powerflow / タグの編集で作り直し、結果は編集を反映する
+res1 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
+res2 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
+assert(~shared(res1, res2) && abs(res2.r_cost - res1.r_cost) < 1e-9*max(1, abs(res1.r_cost)))
 g1 = net.a_Bus{1}.a_Component{1};
 g1.tab_parameter.operation.Pmax = 0.5;
-res7 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(~shared(res6, res7) && res7.tab_cub{"B001SG1","P"} <= 0.5 + 1e-6)
+res3 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
+assert(res3.tab_cub{"B001SG1","P"} <= 0.5 + 1e-6 && res3.OPFprob.Variables.B001SG1.UpperBound == 0.5)
 g1.tab_parameter.OPF.fP = g1.tab_parameter.OPF.fP + 1;
-res8 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(~shared(res7, res8))
+res4 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
+assert(res4.r_cost > res3.r_cost)
 net.a_Bus{5}.a_Component{1}.tab_parameter.powerflow.P = -1.1;
-res9 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(~shared(res8, res9))
+res5 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
+assert(abs(sum(res5.tab_cub{["B001SG1","B002SG1","B003SG1"],"P"}) - 3.1) < 1e-6)
 g1.s_tag = "G1";
-res10 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(isfield(res10.OPFprob.Variables, "G1") && ~isfield(res10.OPFprob.Variables, "B001SG1"))
-s_var = "G1";
-shared = @(r1, r2) shares_variable(r1.OPFprob, r2.OPFprob, s_var);
-% 結果の問題の上下限を変えると、次の計算は作り直す (変更は既定の問題に残らない)
-res11 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(shared(res10, res11))
-var = res11.OPFprob.Variables.G1;     % ハンドル (結果のプロパティ自体は読み取り専用)
+res6 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
+assert(isfield(res6.OPFprob.Variables, "G1") && ~isfield(res6.OPFprob.Variables, "B001SG1"))
+% 結果の問題の上下限を変えても、次の計算には残らない
+var = res6.OPFprob.Variables.G1;     % ハンドル (結果のプロパティ自体は読み取り専用)
 var.UpperBound = 0.2;
-res12 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(res12.OPFprob.Variables.G1.UpperBound == 0.5 && abs(res12.r_cost - res10.r_cost) < 1e-9*max(1, abs(res10.r_cost)))
-% build_opf_problem は毎回新しい問題 (保持した問題を返さない)
-prob = DebugScript.helper.quiet(@() net.build_opf_problem(Method="DC OPF"));
-prob.Variables.G1.UpperBound = 0.3;
-res13 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(shared(res12, res13) && res13.OPFprob.Variables.G1.UpperBound == 0.5)
-% net.reset_solver() で捨てる
-net.reset_solver();
-res14 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(~shared(res13, res14))
+res7 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
+assert(res7.OPFprob.Variables.G1.UpperBound == 0.5 && abs(res7.r_cost - res6.r_cost) < 1e-9*max(1, abs(res6.r_cost)))
+% 結果は系統への参照を持たず、スナップショットのタグだけを持つ
+assert(isempty(res7.a_PowerNetwork) && res7.s_network == string(net.s_tag))
 
 
 %% AC OPF respects generator limits
@@ -228,7 +208,7 @@ assert(~shared(res13, res14))
 net = DebugScript.helper.build_9bus();
 gen = net.a_Bus{1}.a_Component{1};
 gen.tab_parameter.operation{1,["Pmax","Qmin","Qmax"]} = [0.6, -0.3, 0.3];
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
 assert(flag > 0)
 P1 = tab_cub{string(gen),"P"};
 Q1 = tab_cub{string(gen),"Q"};
@@ -246,7 +226,7 @@ l_load = cellfun(is_load, a_Com);
 sv_load = string(a_Com(l_load));
 P_load = cellfun(@(c) c.tab_parameter.powerflow.P, a_Com(l_load));
 
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
 assert(flag > 0)
 assert(abs(sum(tab_bus.P)) < tol)
 assert(max(abs(tab_cub{sv_load,"P"} - P_load)) < tol)
@@ -258,7 +238,7 @@ r_HP1 = 2*430.292599;
 P1 = -sum(P_load)*5000/(r_HP1+5000);
 assert(max(abs(tab_cub{sv_gen,"P"} - [P1; -sum(P_load)-P1; 0; 0; 0])) < 1e-4)
 
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF")); tab_DC = res.tab_bus; tab_cub_DC = res.tab_cub;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF")); tab_DC = res.tab_bus; tab_cub_DC = res.tab_cub;
 assert(flag > 0)
 assert(abs(sum(tab_DC.P)) < tol)
 assert(max(abs(tab_cub_DC{string(a_Com),"P"} - tab_cub{string(a_Com),"P"})) < 1e-4)
@@ -272,7 +252,7 @@ l_load = cellfun(is_load, a_Com);
 sv_load = string(a_Com(l_load));
 PQ_load = cell2mat(cellfun(@(c) c.tab_parameter.powerflow{1,["P","Q"]}, a_Com(l_load), "UniformOutput", false));
 
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
 assert(flag > 0)
 Y = net.get_admittance_matrix.Variables;
 assert(norm(tab_bus.Vphasor .* conj(Y*tab_bus.Vphasor) - (tab_bus.P + 1j*tab_bus.Q)) < 1e-4)
@@ -284,7 +264,7 @@ Vmax = cellfun(@(b) b.tab_parameter.operation.Vmax, net.a_Bus);
 assert(all(tab_bus.V >= Vmin - tol & tab_bus.V <= Vmax + tol))
 
 J_AC  = DebugScript.helper.opf_cost(net, tab_cub);
-tab_cub_ELD = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD")).tab_cub;
+tab_cub_ELD = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD")).tab_cub;
 assert(J_AC >= DebugScript.helper.opf_cost(net, tab_cub_ELD) - 1e-6)
 tab_PF = DebugScript.helper.quiet(@() net.calculate_powerflow().tab_bus);
 assert(J_AC <= DebugScript.helper.opf_cost(net, DebugScript.helper.pf_component_power(net, tab_PF)) + 1e-6)
@@ -303,7 +283,7 @@ sv_bus  = string(net.a_Bus);
 sv_gen  = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(1:2), "UniformOutput", false));
 price = @(r) -cellfun(@(s) r.lambda.Constraints.("balancedP_"+s), cellstr(sv_bus));
 
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
 assert(flag > 0)
 assert(max(abs(res.tab_cub{sv_gen,"P"} - [0.75; 0.25])) < 1e-6)
 assert(max(abs(price(res) - 2.5)) < 1e-6)
@@ -311,7 +291,7 @@ assert(max(abs(price(res) - 2.5)) < 1e-6)
 br13 = net.a_Branch{3};
 assert(isequal(string(br13.a_Bus(:)).', ["B001","B003"]))
 br13.tab_parameter.operation.Pmax = 0.5;
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
 assert(flag > 0)
 assert(max(abs(res.tab_cub{sv_gen,"P"} - [0.5; 0.5])) < 1e-6)
 assert(abs(res.tab_branch{string(br13),"Pfrom"} - 0.5) < 1e-6)
@@ -340,7 +320,7 @@ ld  = net.a_Bus{2}.add_component("load-power", "P",-PL, "Q",-QL);
 gen.tab_parameter.OPF{1,["HP","fP","HQ","fQ"]} = [0, 1, 0, 0];
 ld.tab_parameter.OPF{1,["HP","fP","HQ","fQ"]}  = [0, 0, 0, 0];
 
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", Tolerance=1e-10));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", Tolerance=1e-10));
 assert(flag > 0)
 V2  = @(V1) sqrt(((V1^2-2*(R*PL+X*QL)) + sqrt((V1^2-2*(R*PL+X*QL))^2 - 4*(R^2+X^2)*(PL^2+QL^2)))/2);
 P1  = @(V1) PL + R*(PL^2+QL^2)/V2(V1)^2;
@@ -361,14 +341,14 @@ assert(dJ < 0 && abs(mu(2) + dJ) < 1e-5 && abs(mu(1)) < 1e-8)
 % 9 母線系統で最大電流の送電線の Imax (または Smax) を制約なしの解の 80% にする。
 % 二乗の形 (|I|^2 <= Imax^2, P^2+Q^2 <= Smax^2) なので、電流 0 の初期点でも解ける。
 net = DebugScript.helper.build_9bus();
-res0 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+res0 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
 [~, k] = max(abs(res0.tab_branch.Ifrom));
 br = net.a_Branch{k};
 sv_end = string(br) + "_" + string(br.a_Bus);
 
 r_Imax = 0.8*max(abs(res0.tab_branch{k,["Ifrom","Ito"]}));
 br.tab_parameter.operation.Imax = r_Imax;
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
 assert(flag > 0)
 r_I = max(abs(res.tab_branch{k,["Ifrom","Ito"]}));
 assert(r_I <= r_Imax + 1e-6 && r_I >= r_Imax - 1e-4)
@@ -379,7 +359,7 @@ br.tab_parameter.operation.Imax = inf;
 S0 = abs(res0.tab_branch{k,["Pfrom","Pto"]} + 1j*res0.tab_branch{k,["Qfrom","Qto"]});
 r_Smax = 0.8*max(S0);
 br.tab_parameter.operation.Smax = r_Smax;
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
 assert(flag > 0)
 r_S = max(abs(res.tab_branch{k,["Pfrom","Pto"]} + 1j*res.tab_branch{k,["Qfrom","Qto"]}));
 assert(r_S <= r_Smax + 1e-6 && r_S >= r_Smax - 1e-4)
@@ -392,7 +372,7 @@ assert(res.r_cost > res0.r_cost)
 % DC: 送電制約が効いた 3 母線ループ、全母線に負荷を置いて中心差分で確認
 net = build_loop3();
 net.a_Branch{3}.tab_parameter.operation.Pmax = 0.5;
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
 h = 1e-3;
 for i = 1:numel(net.a_Bus)
     bus = net.a_Bus{i};
@@ -408,7 +388,7 @@ for k = 1:numel(a_Load)
     a_Load{k}.tab_parameter.OPF{1,["HP","fP","HQ","fQ"]} = [0, 0, 0, 0];
 end
 c_opt = {"Tolerance", 1e-10};
-res = DebugScript.helper.quiet(@() net.optimize_powerflow("Method", "AC OPF", c_opt{:}));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow("Method", "AC OPF", c_opt{:}));
 assert(res.l_success)
 for k = 1:numel(a_Load)
     s_bus = string(a_Load{k}.a_Bus);
@@ -468,13 +448,13 @@ net = DebugScript.helper.build_ieee14();
 mpc = DebugScript.helper.case14_data();
 assert(norm(net.get_admittance_matrix.Variables - mpc_ybus(mpc)) < 1e-12)
 sv_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(mpc.gen(:,1)), "UniformOutput", false));
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", Tolerance=1e-10));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", Tolerance=1e-10));
 assert(flag > 0)
 assert(abs(res.r_cost - 8081.53) < 0.01, sprintf("AC cost %.4f", res.r_cost))
 assert(max(abs(100*res.tab_cub{sv_gen,"P"} - [194.33; 36.72; 28.74; 0; 8.50])) < 0.01)
 assert(all(res.tab_bus.V >= 0.94 - 1e-6 & res.tab_bus.V <= 1.06 + 1e-6))
 
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
 assert(flag > 0)
 assert(abs(res.r_cost - 7642.59) < 0.01, sprintf("DC cost %.4f", res.r_cost))
 assert(max(abs(100*res.tab_cub{sv_gen,"P"} - [220.97; 38.03; 0; 0; 0])) < 0.01)
@@ -498,7 +478,7 @@ r14 = runopf(mpc14, mpopt);
 rmp = runopf(mpc, mpopt);
 assert(r14.success && rmp.success)
 assert(abs(rmp.f - r14.f) < 1e-6*r14.f)
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", Tolerance=1e-10));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", Tolerance=1e-10));
 assert(flag > 0)
 assert(abs(res.r_cost - rmp.f) < 1e-5*rmp.f, sprintf("AC cost: GUILDA %.6f, MATPOWER %.6f", res.r_cost, rmp.f))
 assert(max(abs(res.tab_bus.V - rmp.bus(:,8))) < 1e-4)
@@ -508,7 +488,7 @@ assert(max(abs(res.tab_cub{sv_gen,"P"} - rmp.gen(:,2)/100)) < 1e-4)
 mpc = rmfield(tools.network_to_mpc(net), ["bus_name","gen_name","branch_name"]);
 rdc = rundcopf(mpc, mpopt);
 assert(rdc.success)
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
 assert(flag > 0)
 assert(abs(res.r_cost - rdc.f) < 1e-6*rdc.f, sprintf("DC cost: GUILDA %.6f, MATPOWER %.6f", res.r_cost, rdc.f))
 assert(max(abs(res.tab_bus.Varg - rdc.bus(:,9)*pi/180)) < 1e-5)
@@ -520,7 +500,7 @@ assert(max(abs(res.tab_cub{sv_gen,"P"} - rdc.gen(:,2)/100)) < 1e-5)
 net = DebugScript.helper.build_9bus();
 sct_col = struct("ELD", ["P"], "DC_OPF", ["Varg","V","P"], "AC_OPF", ["Varg","V","P","Q","Vphasor","Iphasor"]);
 for s_m = ["ELD","DC OPF","AC OPF"]
-    [res, flag, output] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=s_m));
+    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method=s_m));
     assert(isa(res, "ResultOPF") && isa(res, "ResultBase"))
     assert(isequal(res.flag, flag) && isequal(res.output, output) && res.l_success)
     assert(isstruct(output) && isfield(output, "message"))
@@ -533,12 +513,12 @@ for s_m = ["ELD","DC OPF","AC OPF"]
     assert(isstruct(res.lambda) && isa(res.OPFprob, "optim.problemdef.OptimizationProblem"))
 end
 % ELD は母線ごとの電力収支の制約 (balancedP) が 1 つ、乗数 = 等増分費用 2*HP*P + fP = 3
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD"));
 assert(abs(abs(res.lambda.Constraints.balancedP) - 3) < 1e-4)
 assert(all(isnan(res.tab_branch.Pfrom)))
 
 % 送電線の潮流 = 母線への注入 (tab_cub の送電線の端) の符号を反転したもの
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
 for k = 1:numel(net.a_Branch)
     br  = net.a_Branch{k};
     str = string(br) + "_" + string(br.a_Bus);
@@ -550,37 +530,36 @@ assert(abs(sum(res.tab_branch.Ploss) - sum(res.tab_bus.P)) < 1e-4)
 
 % 既定の方式は GUILDA.setting の OptimalPowerFlow の Method ("AC OPF")。net.solver_OPF は設定を持たない
 assert(GUILDA.config("OptimalPowerFlow", "Method") == "AC OPF" && isa(net.solver_OPF, "SolverOPF") && ~isprop(net.solver_OPF, "Method"))
-res = DebugScript.helper.quiet(@() net.optimize_powerflow());
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow());
 assert(res.options.Method == "AC OPF")
 
 
 %% Name-Value options override solver defaults for one call only
 net = DebugScript.helper.build_9bus();
 solver   = net.solver_OPF;
-sct_before = solver.get_options();
 
 % MaxIteration=2 では AC OPF は解けない
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", MaxIteration=2));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", MaxIteration=2));
 assert(double(flag) <= 0 && ~res.l_success)
 assert(res.options.MaxIteration == 2)
 % Solver と Tolerance は solve へ渡される
-[res, flag, output] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD", Solver="fmincon", Tolerance=1e-10));
+[res, flag, output] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD", Solver="fmincon", Tolerance=1e-10));
 assert(double(flag) > 0 && output.solver == "fmincon" && res.options.Tolerance == 1e-10)
 assert(all(abs(res.tab_bus{["B001","B002","B003"],"P"} - 1) < 1e-4))
 % Verbose=true はソルバーの表示 ("iter")、false は表示なし
-s_on    = evalc("res = net.optimize_powerflow(Method=""DC OPF"", Verbose=true);");
+s_on    = evalc("res = net.calculate_optimal_powerflow(Method=""DC OPF"", Verbose=true);");
 assert(res.options.Verbose == true && ~isfield(res.options, "Display"))
-s_off = evalc("res = net.optimize_powerflow(method=""DC OPF"", verbose=false);");   % 名前の大文字小文字は区別しない
+s_off = evalc("res = net.calculate_optimal_powerflow(method=""DC OPF"", verbose=false);");   % 名前の大文字小文字は区別しない
 assert(res.options.Verbose == false && strlength(s_on) > strlength(s_off) && s_off == "")
 % 既定 (GUILDA.setting の Verbose = false) は何も表示しない
-assert(evalc("net.optimize_powerflow(Method=""AC OPF"");") == "")
+assert(evalc("net.calculate_optimal_powerflow(Method=""AC OPF"");") == "")
 
-% 既定値 (GUILDA.setting と net.solver_OPF の条件) は変わらない
-assert(isequaln(sct_before, solver.get_options()) && net.solver_OPF == solver)   % NaN = ソルバーの既定値
+% ソルバーは置き換わらず、設定を持たない (Cost などは呼び出しだけのオプション)
+assert(net.solver_OPF == solver && ~any(isprop(solver, ["Cost","Constraint","DefaultCost","ReferenceBus"])))
 
 % 既定値は GUILDA.setting の OptimalPowerFlow。変えると以後の呼び出しすべてに効く
 c_cfg = DebugScript.helper.user_config("OptimalPowerFlow", struct("Method", "ELD", "Tolerance", 1e-9));
-res = DebugScript.helper.quiet(@() net.optimize_powerflow());
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow());
 assert(res.options.Method == "ELD" && width(res.tab_bus) == 1 && res.options.Tolerance == 1e-9)
 clear c_cfg
 % 設定はプロパティではない (v4 の名前なので互換なし)
@@ -588,41 +567,45 @@ assert(error_id(@() set_property(net.solver_OPF, "Method", "ELD")) ~= "")
 
 
 %% Unknown or invalid options stop with an error
+% オプションは arguments ブロック: 未知の名前・組でない引数・不正な値は MATLAB のエラー
 net = DebugScript.helper.build_9bus();
 try
-    DebugScript.helper.quiet(@() net.optimize_powerflow(Methd="ELD"));
+    DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Methd="ELD"));
     error("DebugScript:noError", "未知のオプションでエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "Methd") && contains(ME.message, "Method, Solver, Tolerance, MaxIteration, Verbose"))
+    assert(string(ME.identifier) == "MATLAB:TooManyInputs", ME.identifier)
+    assert(contains(ME.message, "Methd") && contains(ME.message, "'Method'"))
 end
 % 共通名以外 (ソルバー固有の名前) も受け付けない
-assert(error_id(@() net.optimize_powerflow("Display", "iter")) == "GUILDA:resolve_options:UnknownName")
+assert(error_id(@() net.calculate_optimal_powerflow("Display", "iter")) == "MATLAB:TooManyInputs")
 % 値の検証
-assert(error_id(@() net.optimize_powerflow(Method="OPF")) == "MATLAB:validators:mustBeMember")
-assert(error_id(@() net.optimize_powerflow(Solver="fminunc")) == "MATLAB:validators:mustBeMember")
-assert(error_id(@() net.optimize_powerflow(MaxIteration=0)) ~= "")
+assert(error_id(@() net.calculate_optimal_powerflow(Method="OPF")) == "MATLAB:validators:mustBeMember")
+assert(error_id(@() net.calculate_optimal_powerflow(Solver="fminunc")) == "MATLAB:validators:mustBeMember")
+assert(error_id(@() net.calculate_optimal_powerflow(MaxIteration=0)) ~= "")
 % Name-Value の組になっていない
-assert(error_id(@() net.optimize_powerflow("Method")) == "GUILDA:resolve_options:InvalidPairs")
+assert(error_id(@() net.calculate_optimal_powerflow("Method")) == "MATLAB:TooManyInputs")
+% 旧名 optimize_powerflow は残さない (別名なし)
+assert(error_id(@() net.optimize_powerflow(Method="ELD")) == "MATLAB:noSuchMethodOrField")
 
 
 %% Plot and Export of the result
 net = DebugScript.helper.build_9bus();
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
 
 % Plot: 機器の P, Q と母線電圧の大きさ・位相 (AC OPF は 3 段、ELD は 1 段)
 t = res.plot_dispatch(Parent=figure("Visible","off"));
 c_fig = onCleanup(@() close(ancestor(t, "figure")));
 assert(isa(t, "matlab.graphics.layout.TiledChartLayout") && numel(findobj(t.Children, "Type", "axes")) == 3)
-res_ELD = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
+res_ELD = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD"));
 t2 = res_ELD.plot_dispatch(Parent=figure("Visible","off"));
 c_fig2 = onCleanup(@() close(ancestor(t2, "figure")));
 ax = findobj(t2.Children, "Type", "axes");
 assert(numel(ax) == 1 && numel(ax.Children.XData) == numel(tools.vcellfun(@(b) b.a_Component, net.a_Bus)))
 % 計算後の図は result.plot_dispatch だけ。Plot オプションは廃止。PlotFcn は fmincon の表示 (別のテスト)
-assert(error_id(@() net.optimize_powerflow(Method="ELD", Plot=true)) == "GUILDA:resolve_options:UnknownName")
-assert(error_id(@() net.optimize_powerflow(Method="ELD", PlotFcn="cost")) == "GUILDA:check_plotfcn:UnknownKey")
-res_none = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD", PlotFcn="none"));
+% Plot は PlotFcn の省略形として読まれ、その値として不正
+assert(error_id(@() net.calculate_optimal_powerflow(Method="ELD", Plot=true)) == "GUILDA:check_plotfcn:InvalidValue")
+assert(error_id(@() net.calculate_optimal_powerflow(Method="ELD", PlotFcn="cost")) == "GUILDA:check_plotfcn:UnknownKey")
+res_none = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD", PlotFcn="none"));
 assert(res_none.options.PlotFcn == "none")
 
 % Export: 母線・接続・送電線の表を CSV に書く
@@ -636,62 +619,20 @@ assert(isequal(string(tab.Properties.RowNames), string(res.tab_cub.Properties.Ro
 res.export(fullfile(s_dir, "branch.csv"), Table="branch");
 tab = readtable(fullfile(s_dir, "branch.csv"), "ReadRowNames", true);
 assert(max(abs(tab.Ploss - res.tab_branch.Ploss)) < 1e-12)
-% Export=filename は計算後に result.export を呼ぶ
-f_opt = fullfile(s_dir, "opt.csv");
-DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", Export=f_opt));
-assert(isfile(f_opt))
+% Export オプションはない (結果は result.export で書く)
+assert(error_id(@() net.calculate_optimal_powerflow(Method="DC OPF", Export=fullfile(s_dir, "opt.csv"))) == "MATLAB:TooManyInputs")
 assert(error_id(@() res.export(fullfile(s_dir, "x.json"))) == "GUILDA:ResultOPF:ExportFormat")
 
 
-%% Legacy six-output form
-% v3 の [powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob] は 6 出力のときだけ返る (警告付き)
-net = DebugScript.helper.build_9bus();
-clear Deprecated
-lastwarn("");
-w = warning("off", "GUILDA:Deprecated:OptimizePowerflowTuple"); c = onCleanup(@() warning(w));
-[tab_bus, tab_cub, flag, output, lambda, OPFprob] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-id = DebugScript.helper.msg_id();
-assert(string(id) == "GUILDA:Deprecated:OptimizePowerflowTuple")
-[res, flag4, output4] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(isequal(tab_bus, res.tab_bus) && isequal(tab_cub, res.tab_cub) && isequal(flag, flag4))
-assert(isstruct(output) && isfield(output, "message") && isequal(output.solver, output4.solver))
-assert(isstruct(lambda) && isa(OPFprob, "optim.problemdef.OptimizationProblem"))
-% 1-3 出力は v4 の形式
-assert(isa(DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD")), "ResultOPF"))
-
-
-%% Build OPF problem with Method and deprecated methods option
-% net.build_opf_problem も optimize_powerflow と同じオプション名 Method を使う。v3 の methods は警告付きで同じ
+%% Build OPF problem with Method
+% net.build_opf_problem も calculate_optimal_powerflow と同じオプション名 Method を使う。
+% v3 の methods オプションは残さない
 net = DebugScript.helper.build_9bus();
 [prob, x0] = net.build_opf_problem(Method="DC OPF");
 assert(isa(prob, "optim.problemdef.OptimizationProblem") && isstruct(x0))
 assert(contains(prob.Description, "DC OPF"))
-clear Deprecated
-lastwarn("");
-w = warning("off", "GUILDA:Deprecated:BuildOpfProblemMethods"); c = onCleanup(@() warning(w));
-prob = net.build_opf_problem("methods", "ELD");
-id = DebugScript.helper.msg_id();
-assert(string(id) == "GUILDA:Deprecated:BuildOpfProblemMethods")
-assert(contains(prob.Description, "ELD"))
-
-
-%% Deprecated methods option
-% v3 のオプション名 "methods" は Method と同じ (警告付き)
-net = DebugScript.helper.build_9bus();
-clear Deprecated
-lastwarn("");
-w = warning("off", "GUILDA:Deprecated:OptimizePowerflowMethods"); c = onCleanup(@() warning(w));
-res = DebugScript.helper.quiet(@() net.optimize_powerflow("methods", "ELD"));
-id = DebugScript.helper.msg_id();
-assert(string(id) == "GUILDA:Deprecated:OptimizePowerflowMethods")
-assert(res.options.Method == "ELD" && width(res.tab_bus) == 1)
-% v3 の呼び出しをそのまま実行できる
-w2 = warning("off", "GUILDA:Deprecated:OptimizePowerflowTuple"); c2 = onCleanup(@() warning(w2));
-[tab_bus, ~, ~, ~, ~, ~] = DebugScript.helper.quiet(@() net.optimize_powerflow("methods", "AC OPF"));
-assert(istable(tab_bus) && width(tab_bus) == 6)
-[out1, ~, out3] = DebugScript.helper.quiet(@() net.optimize_powerflow("methods", "AC OPF"));
-assert(isa(out1, "ResultOPF") && isstruct(out3))          % 3 出力は v4 の形式 [result, flag, output]
-assert(GUILDA.config("OptimalPowerFlow", "Method") == "AC OPF")
+assert(error_id(@() net.build_opf_problem("methods", "ELD")) == "MATLAB:TooManyInputs")
+assert(error_id(@() net.calculate_optimal_powerflow("methods", "ELD")) == "MATLAB:TooManyInputs")
 
 %% DC OPF uses the MATPOWER susceptance 1/X
 % DC OPF の送電線は MATPOWER (makeBdc) と同じ b = 1/(X*tap) (タップ比・移相は from 端)。
@@ -700,7 +641,7 @@ assert(GUILDA.config("OptimalPowerFlow", "Method") == "AC OPF")
 % 抵抗のある送電線では Im(Y_ij) = X/(R^2+X^2) と 1/X が違うので、旧定義とは位相が変わる。
 net = DebugScript.helper.build_ieee14();
 mpc = DebugScript.helper.case14_data();
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
 assert(flag > 0)
 sv_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(mpc.gen(:,1)), "UniformOutput", false));
 assert(abs(res.r_cost - 7642.59) < 0.01, sprintf("DC cost %.4f", res.r_cost))
@@ -755,7 +696,7 @@ assert(isequal(gen.tab_parameter.OPF{1,["HP","fP","HQ","fQ"]}, [1 1 0 0]))
 assert(isequal(ld2.tab_parameter.OPF{1,["HP","fP"]}, [2 5]))
 % 9 母線系統: 最適費用は発電機の費用だけ (3 台とも P = 1 で 3*(1+1) = 6)
 net = DebugScript.helper.build_9bus();
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD"));
 assert(abs(res.r_cost - 6) < 1e-6)
 
 
@@ -767,7 +708,7 @@ net = DebugScript.helper.build_9bus();
 ld8 = net.a_Bus{8}.a_Component{1};
 ld8.tab_parameter.operation{1,["Pmin","Pmax"]} = [-3, 0];
 s_ld8 = string(ld8);
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD", Cost=@(v, p) 4*v.Component.(s_ld8).P));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD", Cost=@(v, p) 4*v.Component.(s_ld8).P));
 assert(abs(res.tab_cub{s_ld8,"P"} + 2.7) < 1e-5)
 assert(max(abs(res.tab_bus{["B001","B002","B003"],"P"} - 1.5)) < 1e-5)
 assert(abs(abs(res.lambda.Constraints.balancedP) - 4) < 1e-5)
@@ -782,25 +723,25 @@ g1 = net.a_Bus{1}.a_Component{1};
 s_g1 = string(g1);
 f_cost = @(v, p) v.Component.(s_g1).P^2;
 for s_m = ["ELD","DC OPF"]
-    [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=s_m, Cost=f_cost));
+    [res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method=s_m, Cost=f_cost));
     assert(flag > 0)
     assert(max(abs(res.tab_bus{["B001","B002","B003"],"P"} - [0.6; 1.2; 1.2])) < 1e-5)
     assert(abs(res.r_cost - 6.6) < 1e-6)
     assert(isequal(res.options.Cost, f_cost))
 end
 % AC OPF では v.Component.(tag).Q も使える
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", ...
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", ...
                   Cost=@(v, p) v.Component.(s_g1).P^2 + 0.1*v.Component.(s_g1).Q^2));
 assert(flag > 0)
 P1 = res.tab_cub{s_g1,"P"};  Q1 = res.tab_cub{s_g1,"Q"};
 assert(P1 < res.tab_cub{string(net.a_Bus{2}.a_Component{1}),"P"})
 assert(abs(res.r_cost - (P1^2 + 0.1*Q1^2 + DebugScript.helper.opf_cost(net, res.tab_cub))) < 1e-6)
 % p には Method と base (系統の baseMVA, Hz) が入る
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD", ...
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD", ...
           Cost=@(v, p) (p.Method == "ELD")*p.base.baseMVA/100*v.Component.(s_g1).P^2));
 assert(abs(res.r_cost - 6.6) < 1e-6)
 % 保存されない (この呼び出しだけ)
-assert(isempty(net.solver_OPF.Cost))
+assert(isempty(DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD")).options.Cost))
 
 
 %% DefaultCost=false leaves out the costs of tab_parameter.OPF
@@ -813,7 +754,7 @@ f_cost = @(v, p) 2*v.Component.(sv_g(1)).P^2 + v.Component.(sv_g(1)).P ...
                  + v.Component.(sv_g(2)).P^2 + v.Component.(sv_g(2)).P ...
                  + v.Component.(sv_g(3)).P^2 + v.Component.(sv_g(3)).P;
 for s_m = ["ELD","DC OPF"]
-    [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=s_m, DefaultCost=false, Cost=f_cost));
+    [res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method=s_m, DefaultCost=false, Cost=f_cost));
     assert(flag > 0)
     assert(max(abs(res.tab_cub{sv_g,"P"} - [0.6; 1.2; 1.2])) < 1e-5)
     assert(abs(res.r_cost - 6.6) < 1e-6)
@@ -836,7 +777,7 @@ assert(abs(evaluate(prob.Objective.GenCost, x0) - 6) < 1e-12)
 %   母線 : AC OPF で B005 の電圧に V <= 1.0 (制約なしの解は 1.0 を超える) → 効いて乗数 > 0
 net = DebugScript.helper.build_9bus();
 for s_m = ["ELD","DC OPF"]
-    [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=s_m, ...
+    [res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method=s_m, ...
                       Constraint=@(v, p) struct("Cap", v.Component.B001SG1.P <= 0.4)));
     assert(flag > 0)
     assert(isfield(res.OPFprob.Constraints, "Cap"))
@@ -846,16 +787,16 @@ end
 
 br1 = net.a_Branch{1};
 assert(string(br1) == "ET001" && isequal(string(br1.a_Bus(:)).', ["B001","B004"]))
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", ...
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF", ...
                   Constraint=@(v, p) struct("Pfwd", v.Branch.ET001.Pfrom <= 0.1)));
 assert(flag > 0)
 assert(abs(res.tab_branch{"ET001","Pfrom"} - 0.1) < 1e-6)
 assert(max(abs(res.tab_bus{["B001","B002","B003"],"P"} - [0.1; 1.45; 1.45])) < 1e-5)
 assert(abs(res.lambda.Constraints.Pfwd - 2.7) < 1e-5)
 
-res0 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+res0 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
 assert(res0.tab_bus{"B005","V"} > 1.0 + 1e-3)
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", ...
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", ...
                   Constraint=@(v, p) struct("Vhigh", v.Bus.B005.V <= 1.0, "Vlow", v.Bus.B005.V >= 0.98)));
 assert(flag > 0)
 assert(abs(res.tab_bus{"B005","V"} - 1.0) < 1e-5)
@@ -874,10 +815,10 @@ assert(isfield(prob.Constraints, "Cap") && isfield(prob.Constraints, "balancedP_
 net = DebugScript.helper.build_9bus();
 g1 = net.a_Bus{1}.a_Component{1};
 g1.tab_parameter.operation.Pmax = 0.5;
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD"));
 assert(abs(res.tab_bus{"B001","P"} - 0.5) < 1e-5)
 g1.tab_parameter.operation{1,["Pmin","Pmax"]} = [-Inf, Inf];
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD"));
 assert(max(abs(res.tab_bus{["B001","B002","B003"],"P"} - 1)) < 1e-5)
 assert(isfield(res.OPFprob.Constraints, "balancedP"))
 % 負荷の規則は変わらない: 上下限が無限の負荷は潮流設定の P に固定
@@ -896,11 +837,11 @@ net = build_loop3();
 br13 = net.a_Branch{3};
 br13.tab_parameter.operation.Pmax = 0.5;
 sv_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(1:2), "UniformOutput", false));
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
 assert(max(abs(res.tab_cub{sv_gen,"P"} - [0.5; 0.5])) < 1e-6)
 for r_none = [Inf, NaN]
     br13.tab_parameter.operation.Pmax = r_none;
-    res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+    res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
     assert(max(abs(res.tab_cub{sv_gen,"P"} - [0.75; 0.25])) < 1e-6)
     assert(isfield(res.OPFprob.Constraints, "defP_EL003_B001"))
 end
@@ -911,24 +852,21 @@ end
 %   タグ : その母線の位相を固定。DC OPF の配分と位相差は変わらない
 %   "none": 位相を固定しない (VargRef なし)
 net = DebugScript.helper.build_9bus();
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
 assert(abs(res.tab_bus{"B001","Varg"}) < 1e-9 && isfield(res.OPFprob.Constraints, "VargRef"))
-res4 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", ReferenceBus="B004"));
+res4 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF", ReferenceBus="B004"));
 assert(abs(res4.tab_bus{"B004","Varg"}) < 1e-9)
 assert(max(abs(res4.tab_bus.P - res.tab_bus.P)) < 1e-6)
 dth = res.tab_bus.Varg - res.tab_bus{"B004","Varg"};
 assert(max(abs(res4.tab_bus.Varg - dth)) < 1e-6)
 % 固定する値は潮流設定の Varg
 net.a_Bus{4}.tab_parameter.powerflow.Varg = 0.1;
-res4 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", ReferenceBus="B004"));
+res4 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF", ReferenceBus="B004"));
 assert(abs(res4.tab_bus{"B004","Varg"} - 0.1) < 1e-9)
 prob = net.build_opf_problem(Method="AC OPF", ReferenceBus="none");
 assert(~isfield(prob.Constraints, "VargRef") && isfield(prob.Constraints, "balancedP_B001"))
-% 保存された既定値として使える
-net.solver_OPF.ReferenceBus = "none";
+% 呼び出しだけのオプション: 既定は "auto"
 prob = net.build_opf_problem(Method="DC OPF");
-assert(~isfield(prob.Constraints, "VargRef"))
-prob = net.build_opf_problem(Method="DC OPF", ReferenceBus="auto");
 assert(isfield(prob.Constraints, "VargRef"))
 % ELD には位相がないので無視
 prob = net.build_opf_problem(Method="ELD", ReferenceBus="B004");
@@ -936,23 +874,18 @@ assert(~isfield(prob.Constraints, "VargRef"))
 assert(error_id(@() net.build_opf_problem(Method="DC OPF", ReferenceBus="B099")) == "GUILDA:SolverOPF:UnknownReferenceBus")
 
 
-%% Stored Cost and Constraint in net.solver_OPF
-% net.solver_OPF の Cost / Constraint / DefaultCost は以後の呼び出しすべてに効く。
-% Name-Value で一時的に上書きでき、reset_solver で既定値に戻る
+%% Cost and Constraint are options of the call only
+% Cost / Constraint / DefaultCost / ReferenceBus は呼び出しだけのオプション。net.solver_OPF に
+% 保存する場所はなく、次の呼び出しは既定値 ([], [], true, "auto") に戻る
 net = DebugScript.helper.build_9bus();
-res0 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-net.solver_OPF.Constraint = @(v, p) struct("Cap", v.Component.B001SG1.P <= 0.4);
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+res0 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF", Constraint=@(v, p) struct("Cap", v.Component.B001SG1.P <= 0.4)));
 assert(abs(res.tab_bus{"B001","P"} - 0.4) < 1e-5 && isfield(res.lambda.Constraints, "Cap"))
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", Constraint=[]));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF"));
 assert(~isfield(res.OPFprob.Constraints, "Cap") && abs(res.r_cost - res0.r_cost) < 1e-9)
-assert(~isempty(net.solver_OPF.Constraint))
-net.reset_solver();
-assert(isempty(net.solver_OPF.Cost) && isempty(net.solver_OPF.Constraint) ...
-       && net.solver_OPF.DefaultCost && net.solver_OPF.ReferenceBus == "auto")
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(abs(res.r_cost - res0.r_cost) < 1e-9)
-assert(max(abs(res.tab_bus.P - res0.tab_bus.P)) < 1e-9)
+assert(isempty(res.options.Cost) && isempty(res.options.Constraint) && res.options.DefaultCost)
+assert(~any(isprop(net.solver_OPF, ["Cost","Constraint","DefaultCost","ReferenceBus"])))
+assert(error_id(@() set_property(net.solver_OPF, "Cost", @(v, p) 0)) ~= "")
 
 
 %% Network-level reserve constraint and cost
@@ -964,7 +897,7 @@ net = DebugScript.helper.build_9bus();
 sv_g = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(1:3), "UniformOutput", false));
 f_con = @(v, p) struct("Reserve", (2 - v.Component.(sv_g(1)).P) + (2 - v.Component.(sv_g(2)).P) >= 2.5);
 for s_m = ["ELD","DC OPF","AC OPF"]
-    [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=s_m, Constraint=f_con));
+    [res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method=s_m, Constraint=f_con));
     assert(flag > 0)
     P = res.tab_cub{sv_g,"P"};
     assert(P(1) + P(2) <= 1.5 + 1e-6)
@@ -974,32 +907,32 @@ for s_m = ["ELD","DC OPF","AC OPF"]
         assert(abs(res.lambda.Constraints.Reserve - 1.5) < 1e-5)
     end
 end
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD", Cost=@(v, p) v.Component.(sv_g(3)).P));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD", Cost=@(v, p) v.Component.(sv_g(3)).P));
 assert(max(abs(res.tab_cub{sv_g,"P"} - [7/6; 7/6; 2/3])) < 1e-5)
 assert(abs(res.r_cost - (DebugScript.helper.opf_cost(net, res.tab_cub) + 2/3)) < 1e-6)
 % 母線・送電線の変数も参照できる: B004 と B007 の位相差を 0 にする (DC OPF)
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", ...
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF", ...
           Constraint=@(v, p) struct("SameAngle", v.Bus.B004.Varg == v.Bus.B007.Varg, ...
                                     "Flow", v.Branch.ET001.Pfrom >= 0)));
 assert(abs(res.tab_bus{"B004","Varg"} - res.tab_bus{"B007","Varg"}) < 1e-6)
 
 
 %% Problem and InitialPoint solve a user-modified problem
-% build_opf_problem の問題に制約を加えて optimize_powerflow(Problem=...) で解く。
+% build_opf_problem の問題に制約を加えて calculate_optimal_powerflow(Problem=...) で解く。
 % 結果の表・乗数のラベルは通常どおり (B001SG1 の P <= 0.4 → 乗数 1.8)
 net = DebugScript.helper.build_9bus();
 [prob, x0] = net.build_opf_problem(Method="DC OPF");
 prob.Constraints.Cap = prob.Variables.B001SG1 <= 0.4;
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", Problem=prob, InitialPoint=x0));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF", Problem=prob, InitialPoint=x0));
 assert(flag > 0)
 assert(max(abs(res.tab_bus{["B001","B002","B003"],"P"} - [0.4; 1.3; 1.3])) < 1e-5)
 assert(abs(res.lambda.Constraints.Cap - 1.8) < 1e-5 && isfield(res.OPFprob.Constraints, "Cap"))
 % InitialPoint を省くと build_opf_problem の x0 から解く (AC OPF)
 [prob, x0] = net.build_opf_problem(Method="AC OPF");
 prob.Constraints.Vhigh = prob.Variables.B005("V") <= 1.0;
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", Problem=prob));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", Problem=prob));
 assert(flag > 0 && abs(res.tab_bus{"B005","V"} - 1.0) < 1e-5 && res.lambda.Constraints.Vhigh > 1e-4)
-[res2, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", Problem=prob, InitialPoint=x0));
+[res2, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", Problem=prob, InitialPoint=x0));
 assert(flag > 0 && abs(res2.r_cost - res.r_cost) < 1e-9)
 % 変数を加えた問題: 上限 0.4 の超過 s >= 0 に費用 1*s (InitialPoint に s の初期値を加える)。
 % 目的関数は GenCost の 1 つだけ (フィールドを増やすと多目的問題になる)
@@ -1009,26 +942,23 @@ s = optimvar("Over", 1, "LowerBound", 0);
 prob.Constraints.Cap = prob.Variables.B001SG1 <= 0.4 + s;
 prob.Objective.GenCost = prob.Objective.GenCost + s;
 x0.Over = 0;
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", Problem=prob, InitialPoint=x0));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF", Problem=prob, InitialPoint=x0));
 assert(flag > 0 && max(abs(res.tab_bus{["B001","B002","B003"],"P"} - [2/3; 7/6; 7/6])) < 1e-5)
 assert(abs(res.r_cost - (DebugScript.helper.opf_cost(net, res.tab_cub) + 2/3 - 0.4)) < 1e-6)
-% 別の Method の問題や問題でないものは止まる。設定 (net.solver_OPF) は変わらない
+% 別の Method の問題や問題でないものは止まる
 prob_ELD = net.build_opf_problem(Method="ELD");
-assert(error_id(@() net.optimize_powerflow(Method="DC OPF", Problem=prob_ELD)) == "GUILDA:SolverOPF:ProblemMismatch")
-assert(error_id(@() net.optimize_powerflow(Method="DC OPF", Problem=1)) ~= "")
-assert(isequaln(net.solver_OPF.get_options(), SolverOPF().get_options()))
+assert(error_id(@() net.calculate_optimal_powerflow(Method="DC OPF", Problem=prob_ELD)) == "GUILDA:SolverOPF:ProblemMismatch")
+assert(error_id(@() net.calculate_optimal_powerflow(Method="DC OPF", Problem=1)) ~= "")
 
 
 %% OPF options do not make the equilibrium stale
-% OPF の設定は net.solver_OPF にあり、平衡点に影響しない
+% OPF のオプションは呼び出しだけのもので、平衡点に影響しない
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize());
 assert(~DebugScript.helper.is_stale(net))
-net.solver_OPF.Cost         = @(v, p) v.Component.B001SG1.P^2;
-net.solver_OPF.Constraint   = @(v, p) struct("Reserve", v.Component.B001SG1.P <= 3);
-net.solver_OPF.DefaultCost  = false;
-net.solver_OPF.ReferenceBus = "B004";
-DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF", ...
+    Cost=@(v, p) v.Component.B001SG1.P^2, Constraint=@(v, p) struct("Reserve", v.Component.B001SG1.P <= 3), ...
+    DefaultCost=false, ReferenceBus="B004"));
 assert(~DebugScript.helper.is_stale(net) && isempty(DebugScript.helper.stale(net)))
 % 比較: 潮流設定の編集は平衡点を古くする
 net.a_Bus{5}.a_Component{1}.tab_parameter.powerflow.P = -1.1;
@@ -1037,23 +967,22 @@ assert(DebugScript.helper.is_stale(net))
 
 %% Invalid Cost and Constraint stop with an error
 net = DebugScript.helper.build_9bus();
-assert(error_id(@() net.optimize_powerflow(Method="ELD", Cost=3)) == "GUILDA:SolverOPF:InvalidHandle")
-assert(error_id(@() net.build_opf_problem(Method="ELD", Constraint="x")) == "GUILDA:SolverOPF:InvalidHandle")
-assert(error_id(@() set_property(net.solver_OPF, "Cost", 3)) == "GUILDA:SolverOPF:InvalidHandle")
-assert(error_id(@() net.optimize_powerflow(Method="ELD", Cost=@(v, p) [v.Component.B001SG1.P, v.Component.B001SG1.P])) == "GUILDA:SolverOPF:InvalidCost")
+assert(error_id(@() net.calculate_optimal_powerflow(Method="ELD", Cost=3)) == "GUILDA:PowerNetwork:InvalidOpfHandle")
+assert(error_id(@() net.build_opf_problem(Method="ELD", Constraint="x")) == "GUILDA:PowerNetwork:InvalidOpfHandle")
+assert(error_id(@() net.calculate_optimal_powerflow(Method="ELD", Cost=@(v, p) [v.Component.B001SG1.P, v.Component.B001SG1.P])) == "GUILDA:SolverOPF:InvalidCost")
 % v.Component.(タグ).Q は AC OPF だけ
-assert(error_id(@() net.optimize_powerflow(Method="DC OPF", Cost=@(v, p) v.Component.B001SG1.Q)) == "GUILDA:SolverOPF:HandleError")
-assert(error_id(@() net.optimize_powerflow(Method="ELD", Constraint=@(v, p) v.Component.B001SG1.P <= 1)) == "GUILDA:SolverOPF:InvalidConstraint")
-assert(error_id(@() net.optimize_powerflow(Method="ELD", Constraint=@(v, p) struct("Cap", v.Component.B001SG1.P))) == "GUILDA:SolverOPF:InvalidConstraintField")
-assert(error_id(@() net.optimize_powerflow(Method="DC OPF", Constraint=@(v, p) struct("balancedP_B001", v.Component.B001SG1.P <= 1))) == "GUILDA:SolverOPF:DuplicateName")
+assert(error_id(@() net.calculate_optimal_powerflow(Method="DC OPF", Cost=@(v, p) v.Component.B001SG1.Q)) == "GUILDA:SolverOPF:HandleError")
+assert(error_id(@() net.calculate_optimal_powerflow(Method="ELD", Constraint=@(v, p) v.Component.B001SG1.P <= 1)) == "GUILDA:SolverOPF:InvalidConstraint")
+assert(error_id(@() net.calculate_optimal_powerflow(Method="ELD", Constraint=@(v, p) struct("Cap", v.Component.B001SG1.P))) == "GUILDA:SolverOPF:InvalidConstraintField")
+assert(error_id(@() net.calculate_optimal_powerflow(Method="DC OPF", Constraint=@(v, p) struct("balancedP_B001", v.Component.B001SG1.P <= 1))) == "GUILDA:SolverOPF:DuplicateName")
 % build_opf_problem は問題の設定だけを受け付ける (Tolerance などソルバーの設定は不可)
-assert(error_id(@() net.build_opf_problem(Tolerance=1e-6)) == "GUILDA:resolve_options:UnknownName")
+assert(error_id(@() net.build_opf_problem(Tolerance=1e-6)) == "MATLAB:TooManyInputs")
 % 問題を表せない Solver は使える Solver 名を示して止まる (2 次の費用に linprog)
-assert(error_id(@() net.optimize_powerflow(Method="DC OPF", Solver="linprog")) == "GUILDA:SolverOPF:UnsupportedSolver")
+assert(error_id(@() net.calculate_optimal_powerflow(Method="DC OPF", Solver="linprog")) == "GUILDA:SolverOPF:UnsupportedSolver")
 
 
 %% OPF stops without Optimization Toolbox
-% Toolbox が無い環境を license の代わりで再現する。optimize_powerflow と initialize(Method="OPF") は
+% Toolbox が無い環境を license の代わりで再現する。calculate_optimal_powerflow と initialize(Method="OPF") は
 % 解析の開始時に GUILDA のメッセージで止まり、潮流計算 (既定の newton) はそのまま動く
 net = DebugScript.helper.build_9bus();
 s_tmp = tempname;  mkdir(s_tmp);
@@ -1068,7 +997,7 @@ c_tmp = onCleanup(@() cellfun(@feval, {@() rmpath(s_tmp), @() rmdir(s_tmp, "s"),
     @() clear("license"), @() warning(w)}));
 assert(~license("test", "Optimization_Toolbox"))
 try
-    net.optimize_powerflow(Method="DC OPF");
+    net.calculate_optimal_powerflow(Method="DC OPF");
     error("DebugScript:NoError", "エラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:require_toolbox:Unavailable", ME.message)
@@ -1085,7 +1014,7 @@ assert(flag == 1)
 net = DebugScript.helper.quiet(@() network.IEEJ_WEST10());
 sv_bra = string(net.a_Branch);
 assert(all(arrayfun(@(s) isvarname(char(s)), sv_bra)) && ismember("LINE20_1", sv_bra) && ismember("G1_TR", sv_bra))
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
 assert(flag > 0)
 assert(abs(sum(res.tab_bus.P) - real(DebugScript.helper.branch_losses(net, res.tab_bus.Vphasor))) < 1e-4)
 
@@ -1101,21 +1030,23 @@ assert(~any(ismember(["Algorithm_linprog","StepTolerance","MaxFunctionEvaluation
 c_cfg = DebugScript.helper.user_config("OptimalPowerFlow", struct("FminconStepTolerance", 1e-12, ...
     "FminconMaxFunctionEvaluations", 30, "QuadprogStepTolerance", 1e-13, "FminconAlgorithm", "sqp"));
 % fmincon の設定は linprog・quadprog (ELD、DC OPF) には渡らない (渡ると optimoptions のエラー)
-[s_solver, c_nv] = net.solver_OPF.optimoption(net.build_opf_problem(Method="ELD"), net.solver_OPF.get_options({"Method","ELD"}));
+sct_opt = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD")).options;   % 実効設定
+[s_solver, c_nv] = net.solver_OPF.optimoption(net.build_opf_problem(Method="ELD"), sct_opt);
 o_opt = c_nv{find(cellfun(@(c) isequal(c, "Options"), c_nv)) + 1};
 assert(s_solver ~= "fmincon" && class(o_opt) == "optim.options." + upper(extractBefore(s_solver, 2)) + extractAfter(s_solver, 1))
 assert(~isprop(o_opt, "StepTolerance") || o_opt.StepTolerance == 1e-13)    % quadprog: its own QuadprogStepTolerance
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", Solver="quadprog"));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="DC OPF", Solver="quadprog"));
 assert(res.l_success && res.output.solver == "quadprog")
 % AC OPF の fmincon には渡る: 関数評価 30 回で止まる
-[s_solver, c_nv] = net.solver_OPF.optimoption(net.build_opf_problem(Method="AC OPF"), net.solver_OPF.get_options());
+sct_opt.Method = "AC OPF";
+[s_solver, c_nv] = net.solver_OPF.optimoption(net.build_opf_problem(Method="AC OPF"), sct_opt);
 o_opt = c_nv{find(cellfun(@(c) isequal(c, "Options"), c_nv)) + 1};
 assert(s_solver == "fmincon" && o_opt.MaxFunctionEvaluations == 30 && o_opt.StepTolerance == 1e-12 && o_opt.Algorithm == "sqp")
-[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
 assert(double(flag) == 0 && ~res.l_success)      % exitflag 0: MaxFunctionEvaluations reached
 clear c_cfg
 % Name-Value の MaxIteration・Tolerance の NaN はソルバーの既定
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD", MaxIteration=NaN, Tolerance=NaN));
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD", MaxIteration=NaN, Tolerance=NaN));
 assert(res.l_success && isnan(res.options.MaxIteration))
 
 
@@ -1124,39 +1055,39 @@ assert(res.l_success && isnan(res.options.MaxIteration))
 net = DebugScript.helper.build_9bus();
 a_before = findall(groot, "Type", "figure");
 c_fig = onCleanup(@() close(setdiff(findall(groot, "Type", "figure"), a_before)));
-res0 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+res0 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
 sv_key = ["fval","constrviolation","fvalconstr","firstorderopt","stepsize","funccount","x"];
-res1 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", PlotFcn=sv_key));
+res1 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", PlotFcn=sv_key));
 assert(res1.l_success && res1.r_cost == res0.r_cost && isequal(res1.tab_bus, res0.tab_bus))
 assert(isequal(res1.options.PlotFcn, sv_key))
 a_new = setdiff(findall(groot, "Type", "figure"), a_before);
 assert(isscalar(a_new) && numel(findobj(a_new, "Type", "axes")) == numel(sv_key))
 % 図は使い回す (fmincon の動作): 2 回目も図は 1 枚、キーごとの軸に反復の点
-DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", PlotFcn="fval"));
+DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", PlotFcn="fval"));
 a_new = setdiff(findall(groot, "Type", "figure"), a_before);
 ax = findobj(a_new, "Type", "axes");
 assert(isscalar(a_new) && isscalar(ax) && numel(ax.Children(1).XData) >= 2)     % optimplotfval: a scatter of the iterates
 % 関数ハンドルは fmincon にそのまま渡す (stop = f(x, optimValues, state))
 m_log = containers.Map({'state'}, {strings(1,0)});
-res2 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", PlotFcn=@(x, o, s) opf_log(m_log, o, s)));
+res2 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", PlotFcn=@(x, o, s) opf_log(m_log, o, s)));
 sv_state = m_log("state");
 assert(res2.l_success && sv_state(1) == "init" && sv_state(end) == "done" && any(sv_state == "iter"))
 % stop = true で fmincon が止まる (exitflag -1)
-[res3, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", PlotFcn=@(x, o, s) o.iteration >= 1));
+[res3, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", PlotFcn=@(x, o, s) o.iteration >= 1));
 assert(~res3.l_success && double(flag) == -1)
 % linprog・quadprog (ELD、DC OPF) は PlotFcn を持たない: Solver 名を挙げたエラー
 for s_method = ["ELD","DC OPF"]
     try
-        DebugScript.helper.quiet(@() net.optimize_powerflow(Method=s_method, PlotFcn="fval"));
+        DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method=s_method, PlotFcn="fval"));
         error("DebugScript:noError", "linprog / quadprog の PlotFcn でエラーにならない")
     catch ME
         assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverOPF:PlotFcnUnsupported", DebugScript.helper.msg_id(ME))
         assert(contains(ME.message, ["linprog","quadprog"]) && contains(ME.message, s_method))
     end
-    assert(error_id(@() net.optimize_powerflow(Method=s_method, PlotFcn=@(x, o, s) false)) == "GUILDA:SolverOPF:PlotFcnUnsupported")
+    assert(error_id(@() net.calculate_optimal_powerflow(Method=s_method, PlotFcn=@(x, o, s) false)) == "GUILDA:SolverOPF:PlotFcnUnsupported")
 end
 % fmincon を選べば ELD でも表示できる
-res4 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD", Solver="fmincon", PlotFcn="fval"));
+res4 = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="ELD", Solver="fmincon", PlotFcn="fval"));
 assert(res4.l_success)
 % GUILDA.setting の PlotFcn (select) にキーがある
 assert(isequal(string(GUILDA.config("OptimalPowerFlow").PlotFcn.options(:)).', ["none", sv_key]))
@@ -1189,9 +1120,9 @@ function fd = fd_load(net, s_method, ld, s_pq, h, c_opt)
     v0 = ld.tab_parameter.powerflow.(s_pq);
     c_restore = onCleanup(@() set_pf(ld, s_pq, v0));
     set_pf(ld, s_pq, v0 - h);
-    J_more = DebugScript.helper.quiet(@() net.optimize_powerflow("Method", s_method, c_opt{:})).r_cost;
+    J_more = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow("Method", s_method, c_opt{:})).r_cost;
     set_pf(ld, s_pq, v0 + h);
-    J_less = DebugScript.helper.quiet(@() net.optimize_powerflow("Method", s_method, c_opt{:})).r_cost;
+    J_less = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow("Method", s_method, c_opt{:})).r_cost;
     fd = (J_more - J_less)/(2*h);
 end
 

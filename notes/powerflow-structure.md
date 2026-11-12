@@ -25,7 +25,7 @@
 - ウォームスタートは、`WarmStart` が true で、母線タグ(順序も)が一致するときだけ使います。**動作の変化:** 以前は枝の追加・削除で解を捨て、タグの変更では保持していました。いまは逆に、枝の編集では保持し(初期値が変わるだけで解は同じです)、タグの変更では使いません。
 - `calculate_powerflow` がスラック母線の選択、`tab_PFcondition`(各 `Bus.get_pf_condition`)と `cm_Y`(`get_admittance_matrix`)の組み立て、`WhenFailed` の通知を行います。
 - **メッセージ ID の変更:** 収束しないときの警告・エラーは `GUILDA:SolverPF:NotConverged` から `GUILDA:PowerNetwork:PowerflowNotConverged` に変わりました。`msg` は呼び出し元のクラスの ID しか受け付けないためです。`SolverPF.xml` は空になったので削除しました。
-- `PowerNetwork.n_revY` と `n_revPF` を読むソルバーはなくなりました(`handle_edit` が増やすだけです)。削除は別の作業にします。
+- `PowerNetwork.n_revY` と `n_revPF` を読むソルバーはなくなりました。`n_revTopology` とともに `refactor/opf-structure` で削除しました(2026-11-12、`handle_edit` の増分も削除)。
 
 ### 3. `Format` オプション
 
