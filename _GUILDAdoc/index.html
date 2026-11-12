@@ -526,8 +526,8 @@ bus2.add_component("load-power");</code></pre>
       <p lang="en">Set the power-flow parameters on buses and components, check the power-flow solution if needed, then initialize the model. Initialization gives each object its equilibrium voltage, current, active power and reactive power.</p>
       <p lang="ja">まず母線と機器に潮流計算のパラメーターを設定します。必要なら潮流計算の解を確かめてから、モデルを初期化します。初期化すると、各オブジェクトに平衡点の電圧、電流、有効電力、無効電力が設定されます。</p>
 <pre><code>% Example power-flow settings
-net.a_Bus{1}.tab_parameter.powerflow{:, ["V", "Varg"]} = [1.05, 0.00];
-net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow{:, ["P", "Q"]} = [nan, nan];
+bus1.tab_parameter.powerflow{:, ["V", "Varg"]} = [1.05, 0.00];
+bus1.a_Component{1}.tab_parameter.powerflow{:, ["P", "Q"]} = [nan, nan];
 
 powerflow = net.calculate_powerflow();
 net.initialize();</code></pre>
