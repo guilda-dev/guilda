@@ -5,13 +5,14 @@
 % 出力 0 個なら表示、1 個なら文字列を返す。オプション Kind は表示する接続の種類 (既定は "equilibrium" 以外)、
 % Owner は表示する持ち主 (その持ち主が持つもの、またはその持ち主が入力元の入力を表示)。
 % 未知の Owner は GUILDA:PowerNetwork:DispConnectionOwner、未知の Kind は arguments の検証で止まる。
+% disp_connection はネットワークを変えないので、ネットワークはファイル内で 1 つずつ作って共有する (shared_net)。
 %
 % 実行: runtests("DebugScript.test_F37_disp_connection")  または  DebugScript.run_all("Features","F37")
 
 
 %% It runs on Tutorial10bus and IEEE14bus with 0 and 1 outputs
-for c_net = {@network.Tutorial10bus, @network.IEEE14bus}
-    net = DebugScript.helper.quiet(c_net{1});
+for s_net = ["Tutorial10bus", "IEEE14bus"]
+    net = shared_net(s_net);
     s = net.disp_connection();
     assert(isstring(s) && isscalar(s) && contains(s, "Signal connections of " + net.s_tag), s)
     s_shown = evalc("net.disp_connection()");
@@ -22,8 +23,8 @@ end
 
 
 %% Every target of the connection map is in the text
-for c_net = {@network.Tutorial10bus, @network.IEEE14bus}
-    net = DebugScript.helper.quiet(c_net{1});
+for s_net = ["Tutorial10bus", "IEEE14bus"]
+    net = shared_net(s_net);
     [tab, ~, ~, tc] = net.get_variable_map();
     for c_kind = {["local","global","observe"], "global", ["local","global","observe","equilibrium"]}
         sv_kind = c_kind{1};
@@ -34,7 +35,7 @@ end
 
 
 %% The default lists local, global and observe and counts the hidden equilibrium connections
-net = DebugScript.helper.quiet(@network.Tutorial10bus);
+net = shared_net("Tutorial10bus");
 [~, ~, ~, tc] = net.get_variable_map();
 s = net.disp_connection();
 assert(~contains(s, "[equilibrium]"), s)
@@ -51,7 +52,7 @@ assert(contains(s, "B001SG1CA1 <a href=""matlab:doc('controller.avr.AVR_DC1');""
 
 
 %% Owner restricts the view
-net = DebugScript.helper.quiet(@network.Tutorial10bus);
+net = shared_net("Tutorial10bus");
 % 機器: その局所制御器を含み、その機器を観測する大域制御器の入力も出る
 s = net.disp_connection(Owner="B003SG1");
 assert(contains(s, "B003SG1CL1") && contains(s, "B003SG1CG2") && contains(s, "omega (B003SG1)"), s)
@@ -70,7 +71,7 @@ assert(contains(s, "Vpss ◀━ output Vpss of B001SG1CP2") && contains(s, "B001
 
 
 %% An unknown Owner or Kind stops with a clear error
-net = DebugScript.helper.quiet(@network.Tutorial10bus);
+net = shared_net("Tutorial10bus");
 ME = caught(@() net.disp_connection(Owner=["B001SG1","B999"]));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:DispConnectionOwner", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "B999") && ~contains(ME.message, "B001SG1,"), ME.message)
@@ -119,6 +120,18 @@ function s = owner_class(net, s_tag)
         end
     end
     error("no owner %s", s_tag)
+end
+
+function net = shared_net(s_name)
+    % network.<s_name> を一度だけ作り、このファイルのテストで共有する (disp_connection は読むだけ)
+    persistent sct_net
+    if isempty(sct_net)
+        sct_net = struct();
+    end
+    if ~isfield(sct_net, s_name) || ~isvalid(sct_net.(s_name))
+        sct_net.(s_name) = DebugScript.helper.quiet(@() feval("network." + s_name));
+    end
+    net = sct_net.(s_name);
 end
 
 function ME = caught(fcn)
