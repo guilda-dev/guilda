@@ -54,7 +54,7 @@ new = bus.replace_component(gen.s_tag, "gen-1axis", Controllers="keep");
 assert(DebugScript.helper.is_stale(net))
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(new.rv_Xequilibrium_all) == numel(new.sv_x) + n_x)
-sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]);
 assert(sol.flag == 1)
 
 

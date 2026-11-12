@@ -19,9 +19,9 @@ function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
     arguments (Input)
         obj % Solver (net.solver_ODE).
         net % Network initialized by net.initialize.
-        time      (:,1) double = [] % [s] Simulation time [t0, tend] (or [] for the time span of the events).
-        c_events  cell = {} % Scenarios of the run (each attached to net; see Scenario).
-        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+        time      (:,1) double % [s] Simulation time [t0, tend].
+        c_events  cell % Scenarios of the run (each attached to net; see Scenario).
+        sct_options (1,1) struct % Effective settings (net.simulate: GUILDA.setting and the options of the call).
     end
     arguments (Output)
         result % Trajectories of the buses and components.
@@ -212,7 +212,7 @@ function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
         otherwise
             if ~isempty(me_stop)
                 output.message = sprintf("The simulation stopped at t = %g s of %g s. %s\n" + ...
-                                         "Try a smaller Tolerance, other SolverOptions, or check the model and the events.", ...
+                                         "Try a smaller Tolerance or MaxStep, the other Solver, or check the model and the events.", ...
                                          output.tEnd, te, me_stop.message);
             elseif isempty(s_warn)
                 s_warn = "(no message from the solver)";
@@ -220,7 +220,7 @@ function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
             if isempty(me_stop)
                 output.message = sprintf("The solver stopped at t = %g s of %g s in phase %d (t = [%g, %g] s). " + ...
                                          "Solver (time from the start of the phase): %s\n" + ...
-                                         "Try a smaller Tolerance, other SolverOptions, or check the model.", ...
+                                         "Try a smaller Tolerance or MaxStep, the other Solver, or check the model.", ...
                                          output.tEnd, te, tp, tab_phase{tp,"t1"}, tab_phase{tp,"t2"}, strtrim(s_warn));
             end
     end

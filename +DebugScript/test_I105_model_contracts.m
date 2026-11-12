@@ -17,7 +17,7 @@ net.a_Bus{3}.add_component("needpq-i105-stub");
 DebugScript.helper.quiet(@() net.initialize);
 s_tag = net.a_Bus{3}.a_Component{end}.s_tag;
 ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.2,0.4], "TripUnit", s_tag);
-sol = DebugScript.helper.quiet(@() net.simulate([0,1], ev));
+sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,1]));
 assert(sol.flag == 1, sol.output.message)
 
 % fcn_Mass of a component that uses x stops with the tag
@@ -82,7 +82,7 @@ end
 function check_mass_error(net, s_tag)
     ME = [];
     try
-        DebugScript.helper.quiet(@() net.simulate([0,1]));
+        DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,1]));
     catch ME
     end
     assert(~isempty(ME), "simulate did not stop")

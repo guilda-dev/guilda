@@ -130,7 +130,7 @@ function result = run_case(net, sc, opt, varargin)
     end
     sct_warn = warning("off", "all");
     c_clean = onCleanup(@() warning(sct_warn));
-    result = net.simulate(sc, "Progress", "none", "TimeLimit", opt.TimeLimit, varargin{:});
+    result = net.simulate(sc.s_tag, "Progress", "none", "TimeLimit", opt.TimeLimit, varargin{:});
 end
 
 

@@ -275,7 +275,7 @@ assert(norm(sort(abs(eig(n1.get_sys.A))) - sort(abs(eig(net.get_sys.A)))) < 1e-1
 f = functions(comp.f_dx);
 assert(f.workspace{1}.obj == comp)                      % f_* も読み込んだ機器を指す
 ev  = DebugScript.helper.scenario("fault", n1, "TimeSpan", [1,1.05], "FaultBus", "B003");
-sol = DebugScript.helper.quiet(@() n1.simulate([0,2], ev));
+sol = DebugScript.helper.quiet(@() n1.simulate(ev.s_tag, Time=[0,2]));
 assert(sol.odeResults.t(end) == 2)
 
 % 読み込んだ系統でも編集が古さとして記録される
@@ -381,7 +381,7 @@ net.a_Bus{2}.a_Component{1}.add_local_controller("local-LQR");
 net.add_global_controller("agc-PI", "B003SG1");
 DebugScript.helper.quiet(@() net.initialize);
 res = net.linearize();
-sim = net.simulate([0,1], Progress="none");
+sim = net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,1], Progress="none");
 s_mat = tempname + ".mat";
 c = onCleanup(@() delete(s_mat));
 save(s_mat, "net", "res", "sim");
@@ -611,7 +611,7 @@ e = eig(net.get_sys.A);
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.594552)) < 1e-5)
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-sol = DebugScript.helper.quiet(@() net.simulate([0,3], ev));
+sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,3]));
 assert(sol.odeResults.t(end) == 3)
 
 
@@ -669,7 +669,7 @@ e = DebugScript.helper.finite_eigs(net.get_sys("Method","Kron"));
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.0069046)) < 1e-6)     % AVR・PSS 付きで安定
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-sol = DebugScript.helper.quiet(@() net.simulate([0,3], ev));
+sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,3]));
 assert(sol.odeResults.t(end) == 3)
 Vfd = sol.odeResults.Bus(1).Component(1).U.Vfield;     % AVR が動作する
 assert(max(Vfd) - min(Vfd) > 1e-3)
@@ -699,7 +699,7 @@ e = DebugScript.helper.finite_eigs(net.get_sys("Method","Kron"));
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.0051275)) < 1e-6)     % AVR・PSS 付きで安定
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.2,0.25], "FaultBus", "B030");
-sol = DebugScript.helper.quiet(@() net.simulate([0,1], ev, TimeLimit=Inf));
+sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,1], TimeLimit=Inf));
 assert(sol.odeResults.t(end) == 1)
 
 

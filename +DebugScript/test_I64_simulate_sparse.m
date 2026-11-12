@@ -12,7 +12,7 @@ c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "n
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 box = containers.Map("KeyType", "double", "ValueType", "logical");
-sct_options = net.solver_ODE.get_options({"Progress", "none"});
+sct_options = DebugScript.helper.ode_options("Progress", "none");
 sct_options.PhaseProbe = @(o) store(box, issparse(o.MassMatrix.MassMatrix) && ...
                                        issparse(o.Jacobian.Jacobian(0, o.InitialValue)));
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.6], "FaultBus", "B008");
@@ -25,21 +25,21 @@ assert(all(cell2mat(box.values)))
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-sol = net.simulate([0,3], ev);
-ref = net.simulate([0,3], ev, Tolerance=1e-10, AbsoluteTolerance=1e-10);
+sol = net.simulate(ev.s_tag, Time=[0,3]);
+ref = net.simulate(ev.s_tag, Time=[0,3], Tolerance=1e-10, AbsoluteTolerance=1e-10);
 assert(max(abs(sol.rm_variable(end,:) - ref.rm_variable(end,:))) < 1e-2)
 
 
 %% False index error falls back to dense matrices
 net = ring(136);
-[~, flag, output] = net.simulate([0,0.1], Progress="none");
+[~, flag, output] = net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,0.1], Progress="none");
 assert(flag == 1 && ~output.isSparse)
 
 
 %% Phases after the fallback stay dense and the fault is solved
 net = ring(136);
 box = containers.Map("KeyType", "double", "ValueType", "logical");
-sct_options = net.solver_ODE.get_options({"Progress", "none"});
+sct_options = DebugScript.helper.ode_options("Progress", "none");
 sct_options.PhaseProbe = @(o) store(box, issparse(o.MassMatrix.MassMatrix));
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.05,0.06], "FaultBus", string(net.a_Bus{1}));
 [res, flag, output] = net.solver_ODE.solve(net, [0,0.1], {ev}, sct_options);
@@ -50,7 +50,7 @@ assert(all(isfinite(res.rm_variable(end,:))))
 
 %% TimeLimit includes the time of the fallback
 net = ring(136);
-[sol, flag, output] = DebugScript.helper.quiet(@() net.simulate([0,1], Progress="none", TimeLimit=1e-3));
+[sol, flag, output] = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,1], Progress="none", TimeLimit=1e-3));
 assert(flag == 0, "flag " + flag)
 assert(~output.isSparse)
 assert(sol.rv_t(end) < 1)
@@ -61,8 +61,8 @@ assert(sol.rv_t(end) < 1)
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("input", net, "TimeSpan", [0.5,1], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.05);
-sol = net.simulate([0,1.5], ev, Progress="none");
-ref = net.simulate([0,1.5], Progress="none");
+sol = net.simulate(ev.s_tag, Time=[0,1.5], Progress="none");
+ref = net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,1.5], Progress="none");
 assert(max(abs(sol.rm_variable(end,:) - ref.rm_variable(end,:))) > 1e-4)
 
 

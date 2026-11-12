@@ -34,7 +34,7 @@ assert(numel(sys_io.InputName) == 2 && numel(sys_io.OutputName) == 4*numel(net.a
 
 % 5. シミュレーションの途中の点で線形化する
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
-sim = net.simulate([0,1.5], ev, Progress="none");
+sim = net.simulate(ev.s_tag, Time=[0,1.5], Progress="none");
 [res_t, flag, output] = net.linearize("Point", {sim, 1});
 disp(output.message)
 assert(flag && ~output.l_equilibrium)

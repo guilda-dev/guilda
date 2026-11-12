@@ -1,8 +1,9 @@
 function o = makeODE(sct_options)
 % MATLAB ode object with the settings of sct_options: every public property of ode that is
-% a field of sct_options is set, in the property order of ode (Solver before SolverOptions).
+% a field of sct_options is set, in the property order of ode; then MaxStep and InitialStep
+% go into the SolverOptions of the Solver when they are not NaN (NaN: the solver default).
     arguments (Input)
-        sct_options  (1,1) struct  % Effective settings (output of SolverODE.get_options).
+        sct_options  (1,1) struct  % Effective settings (net.simulate).
     end
     arguments (Output)
         o                          % MATLAB ode object with the settings.
@@ -20,12 +21,14 @@ function o = makeODE(sct_options)
     if isfield(sct_ode, "SeparateComplexParts")
         sct_ode.SeparateComplexParts = matlab.lang.OnOffSwitchState(sct_ode.SeparateComplexParts);   % logical setting -> "on" / "off"
     end
-    if isempty(sct_ode.SolverOptions)
-        sct_ode = rmfield(sct_ode, "SolverOptions");      % the options of the Solver
-    end
     for ip = 1:numel(props)
         if isfield(sct_ode, props{ip})
             o.(props{ip}) = sct_ode.(props{ip});
+        end
+    end
+    for s_name = ["MaxStep", "InitialStep"]
+        if isfield(sct_options, s_name) && ~isnan(sct_options.(s_name))
+            o.SolverOptions.(s_name) = sct_options.(s_name);
         end
     end
 end

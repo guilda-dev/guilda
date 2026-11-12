@@ -62,7 +62,7 @@ function [tab, summary] = compare_table4_5(opt)
             % often stops the solver once the angles have passed 360 degrees
             sct_warn = warning("off", "all");
             o_restore = onCleanup(@() warning(sct_warn));
-            [result, rv_flag(k)] = net.simulate(sc, c_sim{:});
+            [result, rv_flag(k)] = net.simulate(sc.s_tag, c_sim{:});
             clear o_restore
 
             v = judge_table4_5(result);

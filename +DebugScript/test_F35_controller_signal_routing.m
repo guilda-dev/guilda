@@ -40,7 +40,7 @@ F = probe(net, @(o) shifted_rhs(o, zpos(net, gen, "x", "omega"), d_w));
 assert(abs(F(zpos(net, gc_obs, "uc", "omega")) + d_w) < 1e-12, "u の残差 %g", F(zpos(net, gc_obs, "uc", "omega")))
 F = probe(net, @(o) shifted_rhs(o, zpos(net, gc_obs, "uc", "omega"), d_w));
 assert(abs(F(zpos(net, gc_obs, "x")) - 2*d_w) < 1e-12, "dz/dt = %g", F(zpos(net, gc_obs, "x")))
-[sol, flag] = net.simulate([0,2], DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003"));
+[sol, flag] = net.simulate(DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003").s_tag, Time=[0,2]);
 assert(flag == 1 && isa(sol, "ResultODE"))
 
 
@@ -80,7 +80,7 @@ c_omega = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_rou
 s_info = evalc("gc = net.add_global_controller(""test-routing-gc-omega"", {gen}, parameter=struct(alpha=3));");
 assert(contains(s_info, ysrc(gc, gen, "omega") + " -> " + pss.attach_tag("omega")) && ...
        contains(s_info, ysrc(gc, gen, "omega") + " -> " + gov.attach_tag("omega")), s_info)
-s_run = evalc("net.initialize(); net.simulate([0,0.1], DebugScript.helper.noop_event(net,[0,0.1]));");
+s_run = evalc("net.initialize(); net.simulate(DebugScript.helper.noop_event(net,[0,0.1]).s_tag, Time=[0,0.1]);");
 assert(~contains(s_run, "elsewhere"), "simulate が振り分けを表示した: " + s_run)
 DebugScript.helper.quiet(@() net.initialize);
 d_z = 1e-2;  d_w = 4e-3;
@@ -120,14 +120,14 @@ c_stub = DebugScript.helper.register_stub("RoutingGCStub", "controller.test_rout
 s_info = evalc("gc = net.add_global_controller(""test-routing-gc"", {gen});");
 assert(contains(s_info, ysrc(gc, gen, "Pmech") + " -> " + lc.attach_tag("Pmech")), s_info)
 DebugScript.helper.quiet(@() net.initialize);
-s_run = evalc("net.simulate([0,0.1], DebugScript.helper.noop_event(net,[0,0.1]));");
+s_run = evalc("net.simulate(DebugScript.helper.noop_event(net,[0,0.1]).s_tag, Time=[0,0.1]);");
 assert(~contains(s_run, "elsewhere"), s_run)
 s_rm = evalc("gen.remove_local_controller(lc.s_tag);");
 assert(contains(s_rm, "INFO: ") && contains(s_rm, "elsewhere now") && ...
        contains(s_rm, ysrc(gc, gen, "Pmech") + " -> " + gen.attach_tag("Pmech")), s_rm)
 assert(isequal(gc_targets(net, gc), string(gen.attach_tag("Pmech"))), join(gc_targets(net, gc), ", "))
 DebugScript.helper.quiet(@() net.initialize);
-s_run = evalc("net.simulate([0,0.1], DebugScript.helper.noop_event(net,[0,0.1]));");
+s_run = evalc("net.simulate(DebugScript.helper.noop_event(net,[0,0.1]).s_tag, Time=[0,0.1]);");
 assert(~contains(s_run, "elsewhere"), "simulate が振り分けを表示した: " + s_run)
 % 振り分けの変わらない編集は何も示さない (調速機は Pmech を入力に持たない)
 s_add = evalc("gov = gen.add_local_controller(""gov-LPT1"", parameter=struct(PLM=5));");
@@ -140,7 +140,7 @@ gc = DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-pre
 s_rm = evalc("gen.remove_local_controller(gov.s_tag);");
 assert(contains(s_rm, ysrc(gc, gen, "Pref") + " -> (no input)"), s_rm)
 DebugScript.helper.quiet(@() net.initialize);
-ME = caught(@() net.simulate([0,0.1], DebugScript.helper.noop_event(net,[0,0.1])));
+ME = caught(@() net.simulate(DebugScript.helper.noop_event(net,[0,0.1]).s_tag, Time=[0,0.1]));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:GconNoTarget", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "Pref") && contains(ME.message, gen.s_tag), ME.message)
 
@@ -295,7 +295,7 @@ end
 function c_val = probe_all(net, tspan, c_events, f)
 % 各区間の ode に f を適用した値 (区間の順)
     box = containers.Map("KeyType", "double", "ValueType", "any");
-    sct_options = net.solver_ODE.get_options({"Progress", "none"});
+    sct_options = DebugScript.helper.ode_options("Progress", "none");
     sct_options.PhaseProbe = @(o) store(box, f(o));
     DebugScript.helper.quiet(@() net.solver_ODE.solve(net, tspan, c_events, sct_options));
     c_val = box.values;

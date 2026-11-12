@@ -49,8 +49,8 @@ assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 %% Trip does not depend on the tolerance
 ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "B003SG1");
-r1 = net.simulate([0,2], ev).odeResults;
-r2 = net.simulate([0,2], ev, Tolerance=1e-8, AbsoluteTolerance=1e-8).odeResults;
+r1 = net.simulate(ev.s_tag, Time=[0,2]).odeResults;
+r2 = net.simulate(ev.s_tag, Time=[0,2], Tolerance=1e-8, AbsoluteTolerance=1e-8).odeResults;
 X1 = r1.Bus(3).Component(1).X;
 X2 = r2.Bus(3).Component(1).X;
 assert(max(abs(X1{end,:} - X2{end,:})) < 1e-3)
@@ -61,49 +61,43 @@ assert(abs(d1 - d2) < 1e-3, "復帰時の delta: " + d1 + ", " + d2)
 
 %% MaxStep applies in the trip phase
 ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "B003SG1");
-opt = matlab.ode.options.ODE15s;
-opt.MaxStep = 1e-3;
-r = net.simulate([0,2], ev, SolverOptions=opt).odeResults;
+r = net.simulate(ev.s_tag, Time=[0,2], MaxStep=1e-3).odeResults;
 assert(max(diff(r.t(inwin(r.t,1,1.2)))) < 1.1e-3)
 
 
 %% Phase with a recomputed initial condition honors MaxStep
-opt = matlab.ode.options.ODE15s;
-opt.MaxStep = 1e-3;
-r = net.simulate([0,0.1], offset(net,1), SolverOptions=opt).odeResults;
+r = net.simulate(offset(net,1).s_tag, Time=[0,0.1], MaxStep=1e-3).odeResults;
 assert(max(diff(r.t)) < 1.1e-3, "最大刻み " + max(diff(r.t)))
 
 
 %% Phase with a recomputed initial condition honors Solver
-r15 = net.simulate([0,0.1], offset(net,1)).odeResults;
-r23 = net.simulate([0,0.1], offset(net,1), Solver="ode23t", SolverOptions=matlab.ode.options.ODE23t).odeResults;
+r15 = net.simulate(offset(net,1).s_tag, Time=[0,0.1]).odeResults;
+r23 = net.simulate(offset(net,1).s_tag, Time=[0,0.1], Solver="ode23t").odeResults;
 assert(numel(r15.t) ~= numel(r23.t) || any(r15.t ~= r23.t))
 
 
 %% Phase with a recomputed initial condition honors TimeLimit
-opt = matlab.ode.options.ODE15s;
-opt.MaxStep = 1e-4;
-[~, flag, output] = net.simulate([0,10], offset(net,1), SolverOptions=opt, TimeLimit=0.2);
+[~, flag, output] = net.simulate(offset(net,1).s_tag, Time=[0,10], MaxStep=1e-4, TimeLimit=0.2);
 assert(flag == 0)
 assert(output.tEnd < 10)
 
 
 %% Phase with a recomputed initial condition honors Progress
-str = evalc('net.simulate([0,0.1], offset(net,1), Progress="disp");');
+str = evalc('net.simulate(offset(net,1).s_tag, Time=[0,0.1], Progress="disp");');
 assert(strlength(str) > 0)
 
 
 %% Phases after an offset start without its initial slope
 % 次の区間で状態の数が変わっても、前の区間の InitialSlope を持ち越さない
 tr = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.5,0.6], "TripUnit", "B003SG1");
-[~, flag] = net.simulate([0,1], offset(net,1), tr);
+[~, flag] = net.simulate(DebugScript.helper.combine(net, offset(net,1), tr).s_tag, Time=[0,1]);
 assert(flag == 1)
 
 
 %% Offset keeps the differential states and solves the algebraic ones
 % ずらした delta はそのまま始まり (以前は decic が微分状態ごと動かし、警告だけだった)、
 % 母線電圧は新しい delta で解き直される
-[sol, flag] = net.simulate([0,0.1], offset(net,1));
+[sol, flag] = net.simulate(offset(net,1).s_tag, Time=[0,0.1]);
 assert(flag == 1)
 r = sol.odeResults;
 X = r.Bus(2).Component(1).X;
@@ -115,7 +109,7 @@ assert(abs(r.Bus(2).V.Vreal(1) - real(net.a_Bus{2}.c_Vequilibrium)) > 1e-2)
 % delta を 3 ずらすと、微分状態を固定した代数方程式に解が無い (定電力負荷)
 w = warning("off", "GUILDA:PowerNetwork:SimulationIncomplete");
 c_w = onCleanup(@() warning(w));
-[~, flag, output] = net.simulate([0,0.1], offset(net,3));
+[~, flag, output] = net.simulate(offset(net,3).s_tag, Time=[0,0.1]);
 assert(flag == -1)
 ME = output.exception;
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
@@ -124,7 +118,7 @@ assert(contains(ME.message, "phase 1") && contains(ME.message, "differential sta
 
 %% Trip does not warn about the initial condition
 lastwarn("");
-net.simulate([0,2], DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "B003SG1"));
+net.simulate(DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "B003SG1").s_tag, Time=[0,2]);
 assert(isempty(lastwarn()), lastwarn())
 
 
@@ -132,7 +126,7 @@ assert(isempty(lastwarn()), lastwarn())
 ev = DebugScript.helper.scenario("nan", net, "TimeSpan", [1,1.2], "InputUnit", "B005LPQ1", "InputName", "Pload", "InputValue", NaN);
 w = warning("off", "GUILDA:PowerNetwork:SimulationIncomplete");
 c_warn = onCleanup(@() warning(w));
-[~, flag, output] = net.simulate([0,2], ev);
+[~, flag, output] = net.simulate(ev.s_tag, Time=[0,2]);
 assert(flag == -1)
 ME = output.exception;
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
@@ -143,7 +137,7 @@ assert(DebugScript.helper.msg_id(ME.cause{1}) == "GUILDA:SolverODE:AlgebraicNotS
 function err = jacobian_errors(net, tspan, c_events)
 % 全区間で、解析的なヤコビアンと右辺の中心差分の最大誤差
     box = containers.Map("KeyType", "double", "ValueType", "double");
-    sct_options = net.solver_ODE.get_options({"Progress", "none"});
+    sct_options = DebugScript.helper.ode_options("Progress", "none");
     sct_options.PhaseProbe = @(o) store(box, jacobian_error_ode(o));
     net.solver_ODE.solve(net, tspan, c_events, sct_options);
     err = cell2mat(box.values);

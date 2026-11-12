@@ -61,7 +61,7 @@ assert(numel(comp.a_LocalController) == 1 && comp.a_LocalController{1}.s_role ==
 [net, comp, ~, ~, gov] = build_full("after");
 net.a_Bus{1}.a_Component{1}.add_local_controller("gov-LPT4", parameter=struct(Prate=2, PLM=10));
 DebugScript.helper.quiet(@() net.initialize);
-sol = DebugScript.helper.quiet(@() net.simulate([0,10]));
+sol = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,10]));
 assert(sol.flag == 1)
 assert(DebugScript.helper.max_state_drift(sol) < 1e-9, "drift %g", DebugScript.helper.max_state_drift(sol))
 rv_pm = trajectory(sol, comp.s_tag, "Pmech");
@@ -234,7 +234,7 @@ comp.remove_local_controller(avr.s_tag, RemoveNested=true);
 assert(same_list(comp.a_LocalController, {gov}) && gov.a_Component == comp)
 assert(~isvalid(avr) && ~isvalid(pss))
 DebugScript.helper.quiet(@() net.initialize);
-sol = DebugScript.helper.quiet(@() net.simulate([0,2]));
+sol = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,2]));
 assert(sol.flag == 1 && DebugScript.helper.max_state_drift(sol) < 1e-9)
 % PSS は調速機の下には付かない
 ME = caught(@() comp.add_local_controller("pss-PSS1"));
@@ -277,7 +277,7 @@ comp.add_local_controller("gov-LPT1");
 lqr = comp.add_local_controller("local-LQR", parameter=struct(Input="Vfield"));
 assert(numel(comp.a_LocalController) == 2 && comp.a_LocalController{1} == lqr && comp.a_LocalController{2}.s_role == "governor")
 DebugScript.helper.quiet(@() net.initialize);
-sol = DebugScript.helper.quiet(@() net.simulate([0,2]));
+sol = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,2]));
 assert(sol.flag == 1 && DebugScript.helper.max_state_drift(sol) < 1e-9)
 
 
@@ -294,7 +294,7 @@ new = bus.replace_component(comp.s_tag, "gen-1axis", Controllers="keep");
 assert(same_list(new.a_LocalController, {avr; gov}) && avr.a_LocalController{1} == pss)
 assert(avr.a_Component == new && gov.a_Component == new && ~isvalid(comp))
 DebugScript.helper.quiet(@() net.initialize);
-sol = DebugScript.helper.quiet(@() net.simulate([0,2]));
+sol = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,2]));
 assert(sol.flag == 1 && DebugScript.helper.max_state_drift(sol) < 1e-9)
 
 
@@ -318,7 +318,7 @@ gov = gen.add_local_controller("gov-LPT1", parameter=struct(Prate=2, PLM=5));
 DebugScript.helper.quiet(@() net.initialize);
 rv_eq = net.rv_Xequilibrium;
 ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", gen.s_tag);
-sol = net.simulate([0,2], ev, Progress="none", TimeLimit=120);
+sol = net.simulate(ev.s_tag, Time=[0,2], Progress="none", TimeLimit=120);
 assert(sol.flag == 1, sol.output.message)
 assert(isequal(net.rv_Xequilibrium, rv_eq))
 tab = gen.get_variable_map();
@@ -339,7 +339,7 @@ DebugScript.helper.quiet(@() net.initialize);
 flag = comp.validate(false);
 s_src = flag.inputs{"Pmech","source"};
 assert(contains(s_src, gov.s_tag) && contains(s_src, agc.s_tag), s_src)
-sol = DebugScript.helper.quiet(@() net.simulate([0,2]));
+sol = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,2]));
 assert(sol.flag == 1 && DebugScript.helper.max_state_drift(sol) < 1e-9)
 [r_err, r_max] = error_to_linear(net, "B001SG1", comp, 1e-3);
 assert(r_max > 1e-6 && r_err < 0.01, "relative error %g", r_err)
@@ -375,7 +375,7 @@ function [sol, comp, gov] = simulate_step(s_key, sct_para, r_step, rv_span, t_en
 % 調速機 (モデルキー s_key、パラメータ sct_para) を付けた B002SG1 の系統で、B001SG1 の Pmech に r_step を加える
     [net, comp, gov] = build_gov(s_key, sct_para);
     ev  = DebugScript.helper.scenario("step", net, "TimeSpan", rv_span, "InputUnit", "B001SG1", "InputName", "Pmech", "InputValue", r_step);
-    sol = DebugScript.helper.quiet(@() net.simulate([0,t_end], ev));
+    sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,t_end]));
 end
 
 function rv = trajectory(sol, s_owner, s_name)
@@ -452,7 +452,7 @@ function [r_err, r_max] = error_to_linear(net, s_unit, comp, r_step)
 % s_unit の Pmech の小さなステップへの comp の omega の応答と Kron モデルの応答の相対誤差
     rv_time = [0,10];
     ev  = DebugScript.helper.scenario("step", net, "TimeSpan", rv_time, "InputUnit", s_unit, "InputName", "Pmech", "InputValue", r_step);
-    sol = DebugScript.helper.quiet(@() net.simulate(rv_time, ev, Tolerance=1e-8, AbsoluteTolerance=1e-10));
+    sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=rv_time, Tolerance=1e-8, AbsoluteTolerance=1e-10));
 
     unit = [];
     for i = 1:numel(net.a_Bus)

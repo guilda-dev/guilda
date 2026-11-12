@@ -1,6 +1,6 @@
 % F38 シミュレーションの結果 (ResultODE): 判定、出力 y、系統を読まないこと
 %
-%   result  = net.simulate(sc);
+%   result  = net.simulate(sc.s_tag);
 %   verdict = result.judge_out_of_step();                 % "stable" / "out-of-step" / "incomplete"
 %   verdict = result.judge_out_of_step(Reference="COI", Threshold=180);
 %   result.tab_output, result.rm_output                   % 機器と制御器の出力 (y, yc) の軌道
@@ -23,13 +23,13 @@ short = n9.add_scenario("short", Time=[0,5]);
 short.add_fault("B007", [1,1.05]);
 long  = n9.add_scenario("long", Time=[0,5]);
 long.add_fault("B007", [1,1.5]);
-[r_short, f_short] = DebugScript.helper.quiet(@() n9.simulate(short));
+[r_short, f_short] = DebugScript.helper.quiet(@() n9.simulate(short.s_tag));
 v = r_short.judge_out_of_step();
 assert(f_short == 1 && v.Verdict == "stable" && isnan(v.Time) && isempty(v.Units), v.Verdict)
 assert(v.Reference == "B001SG1" && v.Threshold == 360 && v.MaxAngle < 360)
 
 ws = warning("off", "all");  c_ws = onCleanup(@() warning(ws));
-r_long = DebugScript.helper.quiet(@() n9.simulate(long));
+r_long = DebugScript.helper.quiet(@() n9.simulate(long.s_tag));
 clear c_ws
 v = r_long.judge_out_of_step();
 assert(v.Verdict == "out-of-step" && v.Time > 1 && ~isempty(v.Units) && v.MaxAngle > 360, v.Verdict)
@@ -51,7 +51,7 @@ DebugScript.helper.quiet(@() n9.initialize);
 sc = n9.add_scenario("limit", Time=[0,5]);
 sc.add_fault("B007", [1,1.05]);
 ws = warning("off", "all");  c_ws = onCleanup(@() warning(ws));
-[res, flag] = DebugScript.helper.quiet(@() n9.simulate(sc, TimeLimit=1e-3));
+[res, flag] = DebugScript.helper.quiet(@() n9.simulate(sc.s_tag, TimeLimit=1e-3));
 clear c_ws
 assert(flag == 0)
 v = res.judge_out_of_step();
@@ -69,7 +69,7 @@ DebugScript.helper.quiet(@() n9.initialize);
 sc = n9.add_scenario("long", Time=[0,5]);
 sc.add_fault("B007", [1,1.5]);
 ws = warning("off", "all");  c_ws = onCleanup(@() warning(ws));
-r = DebugScript.helper.quiet(@() n9.simulate(sc));
+r = DebugScript.helper.quiet(@() n9.simulate(sc.s_tag));
 clear c_ws
 v_full = r.judge_out_of_step();
 assert(v_full.Verdict == "out-of-step")
@@ -92,7 +92,7 @@ end
 DebugScript.helper.quiet(@() net.initialize);
 sc = net.add_scenario("fault", Time=[0,2]);
 sc.add_fault("B008", [1,1.05]);
-r = net.simulate(sc);
+r = net.simulate(sc.s_tag);
 v0 = r.judge_out_of_step();
 v0c = r.judge_out_of_step(Reference="COI");
 x0 = r.get_point(1.5);
@@ -117,7 +117,7 @@ DebugScript.helper.quiet(@() net.initialize);
 sc = net.add_scenario("trip", Time=[0,4]);
 sc.add_trip(net.a_GlobalController{1}.s_tag, [1, 2]);
 sc.add_trip(net.a_Bus{2}.a_Component{1}.s_tag, [2.5, 3]);
-r = net.simulate(sc);
+r = net.simulate(sc.s_tag);
 [tab, ~] = net.get_variable_map();
 assert(isequal(r.tab_output, tab(ismember(tab.Kind, ["y","yc"]), :)))
 assert(isequal(size(r.rm_output), [numel(r.rv_t), height(r.tab_output)]))
@@ -156,7 +156,7 @@ assert(isequaln(s.rm_output, r.rm_output) && isequal(s.tab_output, r.tab_output)
 %% Errors of the judge
 n9 = network.IEEE9bus;
 DebugScript.helper.quiet(@() n9.initialize);
-r = DebugScript.helper.quiet(@() n9.simulate([0,0.1]));
+r = DebugScript.helper.quiet(@() n9.simulate(DebugScript.helper.no_disturbance(n9), Time=[0,0.1]));
 % 回転子角 delta のない結果
 lv_keep = r.tab_variable.Name ~= "delta";
 sct_sol = struct("rv_t", r.rv_t, "rm_variable", r.rm_variable(:, lv_keep), "rm_I", r.rm_I, ...

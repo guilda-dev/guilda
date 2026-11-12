@@ -23,7 +23,7 @@ function verdict = judge_out_of_step(obj, opt)
 %
 % <@Examples>
 % ```matlab
-% result  = net.simulate(sc);
+% result  = net.simulate("fault");
 % verdict = result.judge_out_of_step();
 % verdict = result.judge_out_of_step(Reference="COI", Threshold=180);
 % verdict = result.judge_out_of_step(Reference="B003SG1");

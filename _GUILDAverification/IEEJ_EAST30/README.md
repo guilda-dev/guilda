@@ -48,7 +48,7 @@ nodes 3001 to 3022; G18 (bus `B3010`, `B3010SG1`) is the slack.
 
 For each section, `compare_table4_9` builds `network.IEEJ_EAST30(Section=..., Governor=...)`,
 imports the scenarios into it with `Scenario.import_csv(..., Network=net)`, and for each
-case runs `net.simulate(sc, Progress="none", TimeLimit=300)` over [0, 21] s and judges the
+case runs `net.simulate(sc.s_tag, Progress="none", TimeLimit=300)` over [0, 21] s and judges the
 result with `result.judge_out_of_step(Reference="B3010SG1", Threshold=360)`:
 
 - `out-of-step` when the absolute rotor angle of a generator relative to G18 exceeds

@@ -25,7 +25,7 @@ h_dx = comp.f_dx;
 net.a_Bus{2}.s_tag = "BX";
 
 assert(isequal(h_dx, comp.f_dx) && ~DebugScript.helper.is_stale(net))
-sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+sol = net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]);
 assert(sol.odeResults.t(end) == 1)
 net.get_sys();
 net.linearize();

@@ -61,7 +61,7 @@ assert_unchanged(net, eq)
 %% A run after a trip stays at the equilibrium
 net = ieee9();
 run_trip(net, [0,2], trip(net, [1,1.2]));
-r = net.simulate([0,2], Progress="none").odeResults;
+r = net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,2], Progress="none").odeResults;
 for i = 1:3
     X = r.Bus(i).Component(1).X.Variables;
     assert(max(abs(X - X(1,:)), [], "all") < 1e-9, "母線 " + i + " の状態が動いた")
@@ -90,7 +90,7 @@ end
 
 function [sol, eq] = run_trip(net, tspan, ev)
     eq  = net.rv_Xequilibrium;
-    sol = net.simulate(tspan, ev, Progress="none", TimeLimit=120);
+    sol = net.simulate(ev.s_tag, Time=tspan, Progress="none", TimeLimit=120);
 end
 
 

@@ -30,7 +30,7 @@ expect_event_error(net, "UnknownTripUnit", avr.s_tag, "TimeSpan", [1,1.2], "Trip
 %% TripUnit accepts components and global controllers
 agc = net.add_global_controller("agc-PI", ["B001SG1","B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
-[~, flag] = net.simulate([0,2], DebugScript.helper.scenario("ev", net, "TimeSpan", [1,1.2], "TripUnit", ["B003LPQ2";agc.s_tag]));
+[~, flag] = net.simulate(DebugScript.helper.scenario("ev", net, "TimeSpan", [1,1.2], "TripUnit", ["B003LPQ2";agc.s_tag]).s_tag, Time=[0,2]);
 assert(flag == 1)
 
 
@@ -78,7 +78,7 @@ o = { ...
     DebugScript.helper.scenario("fl", net, "TimeSpan", [2,2.02], "FaultBus", "B008"); ...
     DebugScript.helper.scenario("tr", net, "TimeSpan", [2.5,2.6], "TripUnit", "B003LPQ2"); ...
     DebugScript.helper.scenario("no", net, "TimeSpan", 1)};
-[sol, flag] = net.simulate([0,3], o{:});
+[sol, flag] = net.simulate(DebugScript.helper.combine(net, o{:}).s_tag, Time=[0,3]);
 assert(flag == 1 && sol.odeResults.t(end) == 3)
 
 
@@ -88,7 +88,7 @@ function expect_event_error(net, s_key, s_text, varargin)
     s_id = "GUILDA:Scenario:" + s_key;
     try
         ev = DebugScript.helper.scenario("ev", net, varargin{:});
-        net.simulate([0,3], ev);
+        net.simulate(ev.s_tag, Time=[0,3]);
     catch ME
         assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME) + ": " + ME.message)
         assert(all(contains(ME.message, s_text)), "原因が示されない: " + ME.message)

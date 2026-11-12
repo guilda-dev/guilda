@@ -67,10 +67,9 @@ classdef Tutorial10bus < PowerNetwork
 % net.initialize;
 % sys = net.linearize().get_ss("Kron");
 % e   = eig(sys.A);
-% sc  = Scenario("fault", Time=[0,10]);
-% net.add_scenario(sc);
+% sc  = net.add_scenario("fault", Time=[0,10]);
 % sc.add_fault("B008", [1,1.05]);
-% sol = net.simulate(sc);
+% sol = net.simulate("fault");
 % ```
 %
 % See also network.Tutorial3bus, network.IEEE9bus, GUILDA.keymap, PowerNetwork.get_variable_map

@@ -1,95 +1,90 @@
-% Issue 54: simulate の time は有限で昇順の [t0,tend] か [] のみ受理する
+% Issue 54: simulate の Time は有限で昇順の [t0,tend] のみ受理する
+%
+% 時間はシナリオの Time (既定 [0, 10])。呼び出しの Time=[t0,tend] がその呼び出しだけ上書きする。
+% Time は arguments ブロックの (1,2) double と mustBeSimulationTime で検査する。
 %
 % 実行: runtests("DebugScript.test_I54_simulate_time")  または  DebugScript.run_all("Features","I54")
 
 % 共通設定 (各テストの前に毎回実行される)
 net = DebugScript.helper.build_ieee14();       % 進捗表示なし (Progress = "none")
 DebugScript.helper.quiet(@() net.initialize);
-s_id = "GUILDA:PowerNetwork:SimulateTime";
+s_free = DebugScript.helper.no_disturbance(net);
+s_id = "GUILDA:mustBeSimulationTime:InvalidTime";
 
 
 c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
 
 %% Invalid time stops with an error naming the cause
-% {time, メッセージに含まれるべき原因}
+% {Time, 期待するエラー: mustBeSimulationTime の ID か、arguments ブロックのエラー ("")}
 c_case = { ...
-    5,                "size 1x1"; ...
-    [0,1,2],          "size 1x3"; ...
-    [0,0.5,1,2,3],    "size 1x5"; ...
-    [0,1;2,3],        "size 2x2"; ...
-    [0,NaN],          "not finite"; ...
-    [NaN,1],          "not finite"; ...
-    [0,Inf],          "not finite"; ...
-    [-Inf,1],         "not finite"; ...
-    [1,1],            "not smaller"; ...
-    [2,1],            "not smaller"; ...
-    [0,1i],           "class double"; ...
-    "abc",            "class string"; ...
-    'ab',             "class char"; ...
-    [false,true],     "class logical"; ...
-    {0,1},            "class cell"};
+    5,                s_id; ...          % [5 5] に拡張される
+    [0,NaN],          s_id; ...
+    [NaN,1],          s_id; ...
+    [0,Inf],          s_id; ...
+    [-Inf,1],         s_id; ...
+    [1,1],            s_id; ...
+    [2,1],            s_id; ...
+    [0,1i],           s_id; ...
+    "abc",            s_id; ...          % double に変換すると NaN
+    [0,1,2],          ""; ...
+    [0,0.5,1,2,3],    ""; ...
+    [0,1;2,3],        ""; ...
+    'abc',            ""; ...
+    {0,1},            ""; ...
+    [],               ""};
 for k = 1:height(c_case)
     s_case = string(evalc("disp(c_case{k,1})"));
     try
-        net.simulate(c_case{k,1});
+        net.simulate(s_free, Time=c_case{k,1});
         error("DebugScript:noError", "エラーにならない: %s", s_case)
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == s_id, "%s: %s", s_case, DebugScript.helper.msg_id(ME))
-        assert(contains(ME.message, c_case{k,2}), "%s: %s", s_case, ME.message)
+        s_got = string(DebugScript.helper.msg_id(ME));
+        assert(s_got ~= "DebugScript:noError", s_case)
+        if c_case{k,2} ~= ""
+            assert(s_got == c_case{k,2}, "%s: %s", s_case, s_got)
+        end
+        assert(contains(ME.message, "Time"), "%s: %s", s_case, ME.message)   % 引数の名前を示す
     end
 end
 
 
-%% A scenario as the first argument runs without time
-% net.simulate(sc) は sc.Time (既定 [0, 10]) を使う。外乱の時間区間は時間を変えない
+%% The time of the scenario is used without Time
+% net.simulate(tag) は sc.Time (既定 [0, 10]) を使う。外乱の時間区間は時間を変えない
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-[sol, flag] = net.simulate(ev);
+[sol, flag] = net.simulate(ev.s_tag);
 assert(flag == 1 && sol.odeResults.t(1) == 0 && sol.odeResults.t(end) == 10)
 ev.Time = [0,2];
-[sol, flag] = net.simulate(ev);
+[sol, flag] = net.simulate(ev.s_tag);
 assert(flag == 1 && sol.odeResults.t(end) == 2)
-% time 以外の値は従来どおり time のエラー
-try
-    net.simulate("fault");
-    error("DebugScript:noError", "文字列を time に渡してもエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "class string"), ME.message)
-end
-
-
-%% Several time points no longer drop a later event silently
-ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-try
-    net.simulate([0,0.5,1,2,3], ev);
-    error("DebugScript:noError", "3 要素以上の time でエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME))
-end
+% Time はその呼び出しだけ。sc.Time は変わらない
+[sol, flag] = net.simulate(ev.s_tag, Time=[0,1.5]);
+assert(flag == 1 && sol.odeResults.t(end) == 1.5 && isequal(ev.Time, [0,2]))
+% 旧形式 (時間を先に渡す) は受けない
+assert(error_of(@() net.simulate([0,2], ev.s_tag)) ~= "")
 
 
 %% Valid time is accepted
-[sol, flag] = net.simulate([0,1]);
+[sol, flag] = net.simulate(s_free, Time=[0,1]);
 assert(flag == 1 && sol.odeResults.t(1) == 0 && sol.odeResults.t(end) == 1)
 
-[sol, flag] = net.simulate([-1,1]);
+[sol, flag] = net.simulate(s_free, Time=[-1,1]);
 assert(flag == 1 && sol.odeResults.t(1) == -1 && sol.odeResults.t(end) == 1)
 
-[sol, flag] = net.simulate([0;1]);
+[sol, flag] = net.simulate(s_free, Time=[0;1]);
 assert(flag == 1 && sol.odeResults.t(end) == 1)
 
-[sol, flag] = net.simulate(single([0,1]));
+[sol, flag] = net.simulate(s_free, Time=single([0,1]));
 assert(flag == 1 && sol.odeResults.t(end) == 1)
 
 
-%% Empty time takes the Time of the scenario
-ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-ev.Time = [0,2];
-[sol, flag] = net.simulate([], ev);
-assert(flag == 1 && sol.odeResults.t(end) == 2)
-% シナリオも時間もなければシナリオの既定の [0, 10]
-[sol, flag] = net.simulate();
-assert(flag == 1 && sol.odeResults.t(end) == 10)
-
-[sol, flag] = net.simulate([]);
-assert(flag == 1 && sol.odeResults.t(end) == 10)
+function id = error_of(f)
+    id = "";
+    try
+        DebugScript.helper.quiet(f);
+    catch me
+        id = string(DebugScript.helper.msg_id(me));
+        if id == ""
+            id = "(no id)";
+        end
+    end
+end

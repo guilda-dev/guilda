@@ -61,15 +61,13 @@ function tab = compare_table4_3(opt)
     tab.MaxAngle      = zeros(n_case,1);    % [deg] largest relative angle
     tab.Flag          = zeros(n_case,1);    % flag of net.simulate
 
-    sct_tolerance = struct("Tolerance", opt.Tolerance, "AbsoluteTolerance", opt.Tolerance);
     for s = intersect(opt.Sections, tab.Section.', "stable")
         net  = network.IEEJ_EAST10(Section=s, Governor=opt.Governor);
         c_sc = Scenario.import_csv(s_scenario, Network=net);
         sv_tag = cellfun(@(sc) sc.s_tag, c_sc);
         for k = find(tab.Section == s).'
             sc = c_sc{sv_tag == tab.Scenario(k)};
-            sc.Options = sct_tolerance;
-            [result, flag] = net.simulate(sc, Progress="none");
+            [result, flag] = net.simulate(sc.s_tag, Progress="none", Tolerance=opt.Tolerance, AbsoluteTolerance=opt.Tolerance);
             verdict = result.judge_out_of_step();
 
             tab.Verdict(k)       = verdict.Verdict;

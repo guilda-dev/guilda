@@ -17,8 +17,8 @@ function rv = get_point(obj, t, tab_map, opt)
 %
 % <@Examples>
 % ```matlab
-% sc = Scenario("fault");  sc.add_fault("B008", [1,1.05]);  net.add_scenario(sc);
-% sim = net.simulate([0,5], sc);
+% sc = net.add_scenario("fault");  sc.add_fault("B008", [1,1.05]);
+% sim = net.simulate("fault", Time=[0,5]);
 % x  = sim.get_point(2);                    % rows x, Vre, Vim, u of net.get_variable_map()
 % x0 = sim.get_point(1.05, Side="before");  % end of the fault
 % res = net.linearize(Point={sim, 2});      % same point as Point=x
