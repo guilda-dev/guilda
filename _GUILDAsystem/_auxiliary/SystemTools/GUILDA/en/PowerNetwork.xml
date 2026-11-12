@@ -18,6 +18,7 @@
         <entry key="GconPorts">The global controller ''{0}'' cannot control ''{1}'': the class {2} has no {3}.&#xA;Choose a component that has them.</entry>
         <entry key="GconRoute">The global controller ''{0}'' is connected: {1}.</entry>
         <entry key="GconNotFound">No global controller with the tag ''{0}'' was found in ''{1}''.</entry> 
+        <entry key="DispConnectionOwner">Unknown Owner {0} for net.disp_connection: ''{1}'' has no bus, component or controller with these tags.&#xA;List the tags with net.disp_tree().</entry>
         <entry key="InitializeMethod">The Method of net.initialize must be one of {0}.</entry>
         <entry key="InitializePairs">Options for net.initialize must be given as Name-Value pairs, e.g. net.initialize(Method="OPF").</entry>
         <entry key="InitializeEquilibriumOption">Unknown option ''{0}'' for net.initialize(Method="equilibrium"). Valid options: Method.</entry>
