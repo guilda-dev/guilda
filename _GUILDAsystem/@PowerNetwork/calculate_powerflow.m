@@ -1,33 +1,46 @@
 function [result, flag, output] = calculate_powerflow(obj, opt)
-% Calculate the power flow of the network and return a ResultPF.
+% Calculate the power flow of the network.
 %
-% Calculates the power flow of the network. The settings are the PowerFlowCalculation
-% section of GUILDA.setting; Name-Value options override them for this call only (the
-% settings file is not changed). net.solver_PF keeps the solution for the next warm start
-% and the cache of the equations. The network is not changed, except that a slack
-% bus is selected when none is set (with an INFO message): the first bus that has a
+% Calculates the power flow of the network and returns the solution in the form that
+% Format chooses (default: the complex bus voltages). The settings are the
+% PowerFlowCalculation section of GUILDA.setting; Name-Value options override them for
+% this call only (the settings file is not changed). The network assembles the data of
+% the calculation (the power flow conditions of the buses, Bus.get_pf_condition, and the
+% admittance matrix) and net.solver_PF solves it; the solver keeps the last converged
+% solution for the next warm start. The network is not changed, except that a slack bus
+% is selected when none is set (with an INFO message): the first bus that has a
 % component with Q = NaN, otherwise the first bus that has a component
 % (GUILDA:Bus:SlackWithoutQnan). A network without buses stops with
 % GUILDA:PowerNetwork:NoBus, and a network whose buses have no components with
-% GUILDA:PowerNetwork:NoSlackCandidate.
-% Options not listed below stop with the MATLAB error of an unknown name.
+% GUILDA:PowerNetwork:NoSlackCandidate. A calculation that does not converge gives the
+% warning GUILDA:PowerNetwork:PowerflowNotConverged (WhenFailed of GUILDA.setting:
+% "WARN", "ERROR", "DISP" or "NONE"). Options not listed below stop with the MATLAB
+% error of an unknown name.
 %
 % Name-Value options:
 %
+% - `Format` — Form of the first output (flag and output stay the 2nd and 3rd outputs). Default: "V".
+%   - "V": complex bus voltages [pu], a column in net.a_Bus order.
+%   - "powerflow(mat)": n-by-4 complex double, one row per bus (net.a_Bus order); columns V, I (complex phasors of the voltage and the current injection), P, Q (real injections into the network) [pu].
+%   - "powerflow(tab)": the same as a table with the variables V, I, P, Q; row names = bus tags.
+%   - "GUILDAorigin": a ResultPF (bus table, branch flows, violated operating limits, iteration history, Plot and Export).
 % - `Solver` — Algorithm: "newton", "gradient", "levenberg-marquardt", "fsolve" or "dynamic" (see SolverPF). Default: GUILDA.setting.
 % - `Tolerance` — [pu] Largest P/Q mismatch of a converged solution, for every method. Default: GUILDA.setting (1e-8).
 % - `MaxIteration` — Maximum number of iterations; NaN for the automatic value of the method (see SolverPF). Default: GUILDA.setting (NaN).
 % - `Verbose` — Print the progress of each iteration. Default: GUILDA.setting (false).
-% - `WarmStart` — true starts from the last converged solution of this network (kept by net.solver_PF); false from the flat start (see SolverPF). Default: GUILDA.setting (true).
-% - `PlotFcn` — Live display during the calculation (every Solver): "residual" draws one bar per power equation (two per bus) with its |residual|, updated during the iterations; a function handle is called at every iterate as stop = f(x, optimValues, state) (x the complex bus voltages; optimValues.iteration, .fval = residuals, .residual = the largest, .time = virtual time for "dynamic"; state "init", "iter", "done"), and a true stop ends the calculation with flag -1; "none" draws nothing. The figure after the calculation: result.Plot(). Default: GUILDA.setting ("none").
-% - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
+% - `WarmStart` — true starts from the last converged solution kept by net.solver_PF when it was solved for the same bus tags; false from the flat start (see SolverPF). Default: GUILDA.setting (true).
+% - `PlotFcn` — Live display during the calculation (every Solver): "residual" draws one bar per power equation (two per bus) with its |residual|, updated during the iterations; a function handle is called at every iterate as stop = f(x, optimValues, state) (x the complex bus voltages; optimValues.iteration, .fval = residuals, .residual = the largest, .time = virtual time for "dynamic"; state "init", "iter", "done"), and a true stop ends the calculation with flag -1; "none" draws nothing. The figure after the calculation: result.Plot() of Format="GUILDAorigin". Default: GUILDA.setting ("none").
+% - `Export` — Write the solution with ResultPF.Export after the calculation: true for the default file name, or the file name (its extension selects the format). With a Format other than "GUILDAorigin", the ResultPF is built for the export only and the first output keeps its Format. Default: false.
 %
 % <@Examples>
 % ```matlab
-% [res, flag] = net.calculate_powerflow();
-% res.tab_bus            % Varg, V, P, Q, Vphasor, Iphasor of each bus
-% res = net.calculate_powerflow(Solver="dynamic", Tolerance=1e-10);
+% net = network.IEEE9bus();
+% [V, flag] = net.calculate_powerflow();                      % complex bus voltages
+% tab = net.calculate_powerflow(Format="powerflow(tab)");     % V, I, P, Q of each bus
+% res = net.calculate_powerflow(Format="GUILDAorigin", Solver="dynamic");
+% res.tab_branch         % flows and losses of each branch
 % res.Plot();            % voltage profile
+% net.calculate_powerflow(Export="pf.csv");                   % bus table to a file
 % ```
 %
 % See also ResultPF, SolverPF, PowerNetwork.initialize
@@ -42,9 +55,10 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
         opt.WarmStart (1,1) logical = GUILDA.config("PowerFlowCalculation", "WarmStart") % Start from the last converged solution of this network.
         opt.PlotFcn {mustBePlotFcn} = GUILDA.config("PowerFlowCalculation", "PlotFcn") % Live display during the calculation: "residual", a function handle or "none".
         opt.Export {mustBeExport} = false % true for the default file name of result.Export, or the file name.
+        opt.Format (1,1) string {mustBeMember(opt.Format, ["V","powerflow(mat)","powerflow(tab)","GUILDAorigin"])} = "V" % Form of the first output.
     end
     arguments (Output)
-        result   % Bus voltages, injections and branch flows of the solution.
+        result   % Solution in the form of Format: bus voltages, an n-by-4 matrix or table of V, I, P, Q, or a ResultPF.
         flag     % 1 converged, 0 MaxIteration reached, -1 stopped by PlotFcn, -2 diverged or no solution (see SolverPF).
         output   % Solver details; output.message describes the outcome.
     end
@@ -73,12 +87,20 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
     sct_solver = struct("solver", string(class(obj.solver_PF)), "options", sct_options, ...
         "flag", flag, "output", output, "elapsed", r_elapsed, "cm_Vhistory", cm_Vhistory, ...
         "rv_step", rv_step, "tab_PFcondition", tab_PFcondition);
-    result = ResultPF(tab_pf, cm_Y, struct(obj, false), sct_solver);
+    f_result = @() ResultPF(tab_pf, cm_Y, struct(obj, false), sct_solver);
+    result   = format_powerflow(opt.Format, tab_pf, f_result);
 
-    if isstring(opt.Export) || ischar(opt.Export)
-        result.Export(string(opt.Export));
-    elseif opt.Export
-        result.Export();
+    if ~isequal(opt.Export, false)
+        if opt.Format ~= "GUILDAorigin"
+            res_export = f_result();         % built for the export only
+        else
+            res_export = result;
+        end
+        if isstring(opt.Export) || ischar(opt.Export)
+            res_export.Export(string(opt.Export));
+        else
+            res_export.Export();
+        end
     end
 end
 

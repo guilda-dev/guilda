@@ -338,7 +338,7 @@ assert(numel(DebugScript.helper.stale(s.net)) == 2)
 % 結果オブジェクトが参照する系統も同じ
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
-res = DebugScript.helper.quiet(@() net.calculate_powerflow);
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
 save(s_mat, "res");
 lastwarn("");
 s = load(s_mat);
@@ -433,8 +433,8 @@ assert(sum(sv_type == "pi_transformer") == 3 && sum(sv_type == "pi") == 17)
 
 % 潮流計算は network.IEEE14bus と一致
 ref = DebugScript.helper.quiet(@() network.IEEE14bus);
-r1  = DebugScript.helper.quiet(@() ref.calculate_powerflow);
-[r2, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+r1  = DebugScript.helper.quiet(@() ref.calculate_powerflow(Format="GUILDAorigin"));
+[r2, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
 assert(flag > 0)
 assert(max(abs(r2.tab_bus.V - r1.tab_bus.V)) < 1e-8 && max(abs(r2.tab_bus.Varg - r1.tab_bus.Varg)) < 1e-8)
 % OPF は MATPOWER の case14 の最適値 (8081.53 $/hr)
@@ -546,7 +546,7 @@ end
 
 % 参照値 (このブランチで計算した値)
 
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
 assert(flag > 0)
 V_ref = [1.06 1.045 1.01 1.0294893 1.0348827 1.07 1.0558758 1.09 1.0496724 1.045822 1.0542952 1.0546926 1.0494854 1.0315436]';
 assert(max(abs(res.tab_bus.V - V_ref)) < 1e-6)
@@ -584,7 +584,7 @@ end
 Y = net.get_admittance_matrix.Variables;
 assert(all(real(Y(:)) == 0))
 
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin")); tab = res.tab_bus;
 assert(flag > 0)
 assert(abs(sum(tab.P)) < 1e-8)
 
@@ -641,7 +641,7 @@ check_v2_network(net, fullfile(fileparts(which("network.IEEE9bus")), "..", "arch
 
 % 潮流計算は Anderson & Fouad (Fig. 2.18, 丸めた値) の WSCC 9 母線の潮流解と一致
 
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);  tab = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));  tab = res.tab_bus;
 assert(flag > 0)
 V_lit   = [1.04 1.025 1.025 1.026 0.996 1.013 1.026 1.016 1.032]';
 deg_lit = [0 9.3 4.7 -2.2 -4.0 -3.7 3.7 0.7 2.0]';
@@ -674,7 +674,7 @@ check_v2_network(net, fullfile(fileparts(which("network.IEEE68bus")), "..", "arc
 
 % v2 の CSV には潮流解が無いので、参照値はこのブランチで計算した値
 
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);  tab = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));  tab = res.tab_bus;
 assert(flag > 0)
 assert(abs(tab.P(16) - 33.7953168) < 1e-6 && abs(sum(tab.P) - 1.6683168) < 1e-6)
 assert(abs(min(tab.V) - 0.8366601) < 1e-6 && abs(rad2deg(tab.Varg(39)) - (-39.290156)) < 1e-5)

@@ -17,7 +17,7 @@ classdef (Abstract) ResultBase < auxiliary
 % ```matlab
 % net = network.IEEE14bus();
 % net.initialize();
-% [result, flag, output] = net.calculate_powerflow();
+% [result, flag, output] = net.calculate_powerflow(Format="GUILDAorigin");
 % result.l_success     % true when the analysis succeeded
 % result.options       % settings used for this run
 % result.r_elapsed     % elapsed time [s]

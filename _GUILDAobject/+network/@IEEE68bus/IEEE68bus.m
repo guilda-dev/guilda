@@ -45,7 +45,7 @@ classdef IEEE68bus < PowerNetwork
 %
 % ```matlab
 % net = network.IEEE68bus();
-% res = net.calculate_powerflow();
+% V   = net.calculate_powerflow();
 % sc  = Scenario("fault");
 % sc.add_fault("B001", [1,1.05]);
 % net.add_scenario(sc);

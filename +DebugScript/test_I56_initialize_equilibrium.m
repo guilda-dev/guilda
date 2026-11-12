@@ -13,7 +13,7 @@ tol_kcl   = 1e-8;
 tol_drift = 1e-6;
 for c_net = {DebugScript.helper.build_9bus(), DebugScript.helper.build_ieee14()}
     net = c_net{1};
-    res = DebugScript.helper.quiet(@() net.initialize(Method="OPF", Verbose=false));
+    res = DebugScript.helper.quiet(@() net.initialize(Method="OPF", Verbose=false, Format="GUILDAorigin"));
     assert(kcl_residual(net) < tol_kcl)
     assert(~DebugScript.helper.is_stale(net))
     assert(drift(net) < tol_drift)
@@ -30,7 +30,7 @@ end
 
 %% OPF initialize with several components on one bus
 net = build_shared_bus();
-res = DebugScript.helper.quiet(@() net.initialize(Method="OPF", Verbose=false));
+res = DebugScript.helper.quiet(@() net.initialize(Method="OPF", Verbose=false, Format="GUILDAorigin"));
 assert(numel(net.a_Bus{2}.a_Component) == 3)
 assert(kcl_residual(net) < 1e-8)
 assert_component_power(net, res)
@@ -149,7 +149,7 @@ assert(contains(ME.message, "stopped before it finished"), ME.message)
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);
 V = net.cv_Vequilibrium;
-ME = error_of(@() net.initialize(Method="OPF", MaxIteration=2));
+ME = error_of(@() net.initialize(Method="OPF", MaxIteration=2, Format="GUILDAorigin"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", DebugScript.helper.msg_id(ME))
 assert(~DebugScript.helper.is_stale(net) && isequal(net.cv_Vequilibrium, V))
 
@@ -158,7 +158,7 @@ assert(~DebugScript.helper.is_stale(net) && isequal(net.cv_Vequilibrium, V))
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);    % B001 がスラックになる
 net.a_Bus{1}.remove_component(string(net.a_Bus{1}.a_Component{1}));
-ME = error_of(@() net.initialize());
+ME = error_of(@() net.initialize(Format="GUILDAorigin"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))
 assert(DebugScript.helper.is_stale(net))
 
@@ -166,7 +166,7 @@ assert(DebugScript.helper.is_stale(net))
 %% A point that violates KCL stops initialize and marks the equilibrium stale
 % 許容値を極端に緩めると潮流計算は反復せずに成功を返し、平衡でない点を渡す
 net = DebugScript.helper.build_9bus();
-ME  = error_of(@() net.initialize(Tolerance=1e3));
+ME  = error_of(@() net.initialize(Tolerance=1e3, Format="GUILDAorigin"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))
 assert(DebugScript.helper.is_stale(net))
 assert(DebugScript.helper.msg_id(error_of(@() net.simulate([0 1]))) == "GUILDA:SolverODE:Stale")
@@ -228,7 +228,7 @@ function assert_edit_stops(net, s_id, s_log)
 % エラーで止まり、平衡点も古さも変わらない
     V   = net.cv_Vequilibrium;
     sv  = DebugScript.helper.stale(net);
-    ME  = error_of(@() net.initialize(Method="equilibrium"));
+    ME  = error_of(@() net.initialize(Method="equilibrium", Format="GUILDAorigin"));
     assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, s_log))
     assert(isequal(net.cv_Vequilibrium, V) && DebugScript.helper.is_stale(net) && isequal(DebugScript.helper.stale(net), sv))

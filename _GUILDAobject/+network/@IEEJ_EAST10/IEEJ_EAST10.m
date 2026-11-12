@@ -83,7 +83,7 @@ classdef IEEJ_EAST10 < PowerNetwork
 %
 % ```matlab
 % net = network.IEEJ_EAST10(Section="night");
-% res = net.calculate_powerflow();
+% V   = net.calculate_powerflow();
 % net = network.IEEJ_EAST10();
 % sc  = Scenario("fault");
 % sc.add_fault("B036", [1,1.07]);

@@ -81,7 +81,7 @@ classdef IEEE14bus_lossless < PowerNetwork
 %
 % ```matlab
 % net = network.IEEE14bus_lossless();
-% res = net.calculate_powerflow();
+% V   = net.calculate_powerflow();
 % sc  = Scenario("fault");
 % sc.add_fault("B008", [1,1.05]);
 % net.add_scenario(sc);

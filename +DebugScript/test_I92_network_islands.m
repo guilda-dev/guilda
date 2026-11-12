@@ -8,7 +8,7 @@
 
 %% A balanced island succeeds with a warning that lists the islands
 net = balanced_island();
-[s_id, s_msg] = warning_of(@() net.initialize);
+[s_id, s_msg] = warning_of(@() net.initialize(Format="GUILDAorigin"));
 assert(s_id == "GUILDA:PowerNetwork:NetworkIsland", s_id)
 assert(contains(s_msg, "[B001, B002, B003], [B004, B005]"), s_msg)
 assert(~DebugScript.helper.is_stale(net) && kcl_residual(net) < 1e-6)
@@ -19,7 +19,7 @@ assert(~DebugScript.helper.is_stale(net) && kcl_residual(net) < 1e-6)
 net = balanced_island();
 sct_warn = warning("off", "all");
 c_warn = onCleanup(@() warning(sct_warn));
-s_out = evalc("net.initialize;");   % 無効な警告も lastwarn には残るので表示で確かめる
+s_out = evalc("net.initialize();");   % 無効な警告も lastwarn には残るので表示で確かめる
 assert(~contains(s_out, "split into"), s_out)
 clear c_warn
 
@@ -135,12 +135,12 @@ check_failure_text(net, ["12 islands", "[B010], ..."]);
 
 %% calculate_powerflow alone reports nothing about islands
 net = balanced_island();
-[s_id, ~, res] = warning_of(@() net.calculate_powerflow);
+[s_id, ~, res] = warning_of(@() net.calculate_powerflow(Format="GUILDAorigin"));
 assert(s_id == "" && res.l_success)
 
 net = connected_network();
 net.add_bus();
-[s_id, ~, res] = warning_of(@() net.calculate_powerflow);
+[s_id, ~, res] = warning_of(@() net.calculate_powerflow(Format="GUILDAorigin"));
 % 収束しない警告 (PowerNetwork:PowerflowNotConverged) だけで、島の警告はない
 assert(s_id == "GUILDA:PowerNetwork:PowerflowNotConverged" && ~res.l_success, s_id)
 
@@ -150,7 +150,7 @@ for s_net = ["IEEE9bus","IEEE14bus","IEEE14bus_lossless","IEEE14bus_NoTap","IEEE
                "Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus", ...
                "IEEJ_EAST10","IEEJ_EAST30","IEEJ_WEST10","IEEJ_WEST30"]
     net = network.(s_net)();
-    s_id = warning_of(@() net.initialize);
+    s_id = warning_of(@() net.initialize(Format="GUILDAorigin"));
     assert(s_id ~= "GUILDA:PowerNetwork:NetworkIsland", s_net)
 end
 

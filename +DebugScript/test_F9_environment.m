@@ -66,7 +66,7 @@ GUILDA.setting("TimeSimulation", Progress='none');
 assert(GUILDA.config("TimeSimulation", "Progress") == "none")
 % 直後の解析が新しい値を使う
 GUILDA.setting("PowerFlowCalculation", MaxIteration=7, WhenFailed="NONE");
-res = DebugScript.helper.quiet(@() DebugScript.helper.build_9bus().calculate_powerflow());
+res = DebugScript.helper.quiet(@() DebugScript.helper.build_9bus().calculate_powerflow(Format="GUILDAorigin"));
 assert(res.options.Tolerance == 1e-10 && res.options.MaxIteration == 7)
 
 
@@ -176,7 +176,7 @@ writelines(jsonencode(struct("Solver", "newton", "Tolerance", 1e-8, "MaxIteratio
 s_out = string(evalc("GUILDA.config([], [], ""reset"", true);"));
 assert(contains(s_out, "INFO: ") && contains(s_out, "PowerFlowCalculation"), s_out)
 assert(isnan(GUILDA.config("PowerFlowCalculation", "MaxIteration")))
-[res, flag] = DebugScript.helper.quiet(@() DebugScript.helper.build_9bus().calculate_powerflow());
+[res, flag] = DebugScript.helper.quiet(@() DebugScript.helper.build_9bus().calculate_powerflow(Format="GUILDAorigin"));
 assert(flag == 1 && res.l_success, "flag = " + flag)
 % 同じ version なら利用者の値を残す (helper.user_config は既定ファイルの version を付ける)
 c_set = DebugScript.helper.user_config("Model", struct("Hz", 50)); %#ok<NASGU>

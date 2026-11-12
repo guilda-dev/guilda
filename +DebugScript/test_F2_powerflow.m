@@ -20,7 +20,7 @@ tol = 1e-6;
 net = DebugScript.helper.build_9bus();
 
 % 潮流計算 (既定は "newton" = ニュートン・ラフソン法による電力方程式の求解)
-[res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+[res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
 tab = res.tab_bus;
 
 % 収束フラグは正、出力は fsolve の output 構造体
@@ -61,7 +61,7 @@ assert(net.a_Bus{2}.s_bustype == "slack")
 % B001 は PV 母線になるので発電機出力 P を与える (Task2 では NaN)
 net.a_Bus{2}.tab_parameter.powerflow.Varg = 0;
 net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow.P = 0.7;
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin")); tab = res.tab_bus;
 assert(flag > 0)
 assert(abs(tab{"B002","Varg"}) < tol)
 assert(abs(tab{"B002","V"} - 1.00) < tol)
@@ -123,7 +123,7 @@ assert(tab_set.Type == "PV" && tab_set.P == 1.0 && tab_set.V == 1.00)
 
 %% Specified V P Q are honored by the solution
 net = DebugScript.helper.build_9bus();
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin")); tab = res.tab_bus;
 assert(flag > 0)
 
 % slack: V, Varg
@@ -142,7 +142,7 @@ assert(norm(tab{["B004","B007","B009"],["P","Q"]}) < tol)
 
 %% Bus power balance equals branch losses
 net = DebugScript.helper.build_9bus();
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin")); tab = res.tab_bus;
 assert(flag > 0)
 
 % 全母線の注入電力の合計 = 送電線 (とシャント) の損失
@@ -161,7 +161,7 @@ assert(norm(tab.Vphasor.*conj(tab.Iphasor) - (tab.P + 1j*tab.Q)) < 1e-8)
 
 %% Power flow on IEEE14 honors generator settings
 net = DebugScript.helper.build_ieee14();
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin")); tab = res.tab_bus;
 assert(flag > 0)
 
 % 各母線の指定値が守られている
@@ -183,7 +183,7 @@ assert(abs(sum(tab.P)+1j*sum(tab.Q) - DebugScript.helper.branch_losses(net, tab.
 % とは 0.002 pu, 0.02 度以内で一致する。
 net = DebugScript.helper.build_ieee14();
 mpc = DebugScript.helper.case14_data();
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin")); tab = res.tab_bus;
 assert(flag > 0)
 assert(max(abs(tab.V - mpc.bus(:,8))) < 2e-3)
 assert(max(abs(tab.Varg*180/pi - mpc.bus(:,9))) < 2e-2)
@@ -207,7 +207,7 @@ assert(isfield(output,"message"))
 %% Dynamic method converges
 % "dynamic" は母線電圧を仮想的なダイナミクスで動かして潮流解へ収束させる方式
 net = DebugScript.helper.build_ieee14();
-[res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="dynamic"));
+[res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="dynamic", Format="GUILDAorigin"));
 assert(logical(flag), "dynamic が収束していない: " + output.message)
 assert(istable(res.tab_bus) && height(res.tab_bus) == numel(net.a_Bus))
 % 経過は時刻ごとの母線電圧として結果に残る (ソルバーには書き戻さない)
@@ -220,8 +220,8 @@ assert(~isprop(net.solver_PF, "rm_response"))
 %% Dynamic method reaches the algebraic solution
 % dynamic でも代数方程式の解 (指定電圧を含む) と同じ解になるべき
 net = DebugScript.helper.build_ieee14();
-tab_alg = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="newton")).tab_bus;
-tab_dyn = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="dynamic")).tab_bus;
+tab_alg = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="newton", Format="GUILDAorigin")).tab_bus;
+tab_dyn = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="dynamic", Format="GUILDAorigin")).tab_bus;
 
 % PV 母線の電圧は指定値
 lv_PV = string(cellfun(@(b) b.s_bustype, net.a_Bus, "UniformOutput", false)) == "PV";
@@ -230,13 +230,13 @@ assert(max(abs(tab_dyn.V(lv_PV) - V_set(lv_PV))) < 1e-4, "dynamic で PV 母線�
 assert(max(abs(tab_dyn.Vphasor - tab_alg.Vphasor)) < 1e-3)
 
 % Tolerance を小さくすると代数解に近づく
-tab_dyn = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="dynamic", Tolerance=1e-9)).tab_bus;
+tab_dyn = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="dynamic", Tolerance=1e-9, Format="GUILDAorigin")).tab_bus;
 assert(max(abs(tab_dyn.Vphasor - tab_alg.Vphasor)) < 1e-6)
 
 
 %% Result holds bus and branch values and the settings used
 net = DebugScript.helper.build_9bus();
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
 assert(flag > 0)
 assert(res.s_solver == "SolverPF" && isempty(res.a_PowerNetwork) && res.r_elapsed >= 0)
 % 系統のハンドルは持たず、struct のスナップショット・アドミタンス行列・潮流条件を持つ
@@ -269,6 +269,38 @@ for s_bus = string(net.a_Bus)'
          + sum(tab_br.Pto(sv_to == s_bus)     + 1j*tab_br.Qto(sv_to == s_bus));
     assert(abs(S_br - res.tab_bus{s_bus,"P"} - 1j*res.tab_bus{s_bus,"Q"}) < 1e-8)
 end
+
+
+%% Format chooses the first output
+% 既定 "V" は母線電圧の列、"powerflow(mat)" は n×4 の複素行列、"powerflow(tab)" は V, I, P, Q の表、"GUILDAorigin" は ResultPF
+net = DebugScript.helper.build_9bus();
+[res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin", WarmStart=false));
+[V, flag_v, out_v] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+assert(isequal(size(V), [numel(net.a_Bus), 1]) && ~isreal(V) && flag_v == flag && isfield(out_v, "message"))
+assert(max(abs(V - res.tab_bus.Vphasor)) < 1e-12)
+mat = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="powerflow(mat)", WarmStart=false));
+assert(isequal(size(mat), [numel(net.a_Bus), 4]) && isa(mat, "double"))
+assert(max(abs(mat - [res.tab_bus.Vphasor, res.tab_bus.Iphasor, res.tab_bus.P, res.tab_bus.Q]), [], "all") < 1e-12)
+tab = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="powerflow(tab)", WarmStart=false));
+assert(isequal(string(tab.Properties.VariableNames), ["V","I","P","Q"]))
+assert(isequal(string(tab.Properties.RowNames), string(net.a_Bus)) && isreal(tab.P) && isreal(tab.Q))
+assert(max(abs(tab{:,:} - mat), [], "all") < 1e-12)
+assert(error_id(@() net.calculate_powerflow(Format="table")) == "MATLAB:validators:mustBeMember")
+% initialize も同じ Format (既定 "V")
+V0 = DebugScript.helper.quiet(@() net.initialize(Method="powerflow"));
+assert(max(abs(V0 - V)) < 1e-8)
+tab0 = DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Format="powerflow(tab)"));
+assert(max(abs(tab0.V - tab.V)) < 1e-8 && isequal(string(tab0.Properties.VariableNames), ["V","I","P","Q"]))
+assert(isa(DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Format="GUILDAorigin")), "ResultPF"))
+mat_eq = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium", Format="powerflow(mat)"));
+assert(max(abs(mat_eq - mat), [], "all") < 1e-6)
+assert(error_id(@() net.initialize(Format="table")) == "MATLAB:validators:mustBeMember")
+% Export は Format が "GUILDAorigin" でなくても ResultPF を作って書き出す (最初の出力は Format のまま)
+s_file = fullfile(tempdir, "DebugScript_test_F2_format_" + string(feature("getpid")) + ".csv");
+c = onCleanup(@() delete(s_file));
+V_e = DebugScript.helper.quiet(@() net.calculate_powerflow(Export=s_file));
+assert(isfile(s_file) && isa(V_e, "double"))
+clear c
 
 
 %% Branch flows of the result use the admittance of each branch class
@@ -305,17 +337,17 @@ sct_before = GUILDA.config("PowerFlowCalculation");
 
 % MaxIteration=1 では収束しない (flag = 0)
 w = warning("off"); c = onCleanup(@() warning(w));
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(MaxIteration=1, Tolerance=1e-10, WarmStart=false));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(MaxIteration=1, Tolerance=1e-10, WarmStart=false, Format="GUILDAorigin"));
 assert(flag == 0 && ~res.l_success)
 assert(res.options.MaxIteration == 1 && res.options.Tolerance == 1e-10)
 % Verbose=true は反復ごとの表示 ("iter")
-s_log = evalc("res = net.calculate_powerflow(Verbose=true, WarmStart=false);");
+s_log = evalc("res = net.calculate_powerflow(Verbose=true, WarmStart=false, Format=""GUILDAorigin"");");
 assert(res.options.Display == "iter" && strlength(s_log) > strlength(evalc("net.calculate_powerflow(WarmStart=false);")))
-res = DebugScript.helper.quiet(@() net.calculate_powerflow(verbose=false, solver="dynamic"));   % 名前の大文字小文字は区別しない
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(verbose=false, solver="dynamic", Format="GUILDAorigin"));   % 名前の大文字小文字は区別しない
 assert(res.options.Display == "none" && res.options.Solver == "dynamic")
 % Verbose は GUILDA.setting のキーでもある (他の解析と同じ)。MaxIteration の自動は NaN
 c_cfg = DebugScript.helper.user_config("PowerFlowCalculation", struct("Verbose", true));
-s_log = evalc("res = net.calculate_powerflow(WarmStart=false, MaxIteration=NaN);");
+s_log = evalc("res = net.calculate_powerflow(WarmStart=false, MaxIteration=NaN, Format=""GUILDAorigin"");");
 assert(res.options.Verbose && res.options.Display == "iter" && contains(s_log, "iter") && res.flag == 1)
 clear c_cfg
 assert(error_id(@() net.calculate_powerflow(MaxIteration=-1)) ~= "")
@@ -326,7 +358,7 @@ assert(~isprop(net.solver_PF, "Method") && ~isprop(net.solver_PF, "Tolerance") &
 
 % GUILDA.setting を変えると以後の呼び出しすべてに効く
 c_cfg = DebugScript.helper.user_config("PowerFlowCalculation", struct("Solver", "dynamic", "Tolerance", 1e-6));
-res = DebugScript.helper.quiet(@() net.calculate_powerflow);
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
 assert(res.options.Solver == "dynamic" && res.options.Tolerance == 1e-6 && res.l_success)
 clear c_cfg
 assert(GUILDA.config("PowerFlowCalculation", "Solver") == "newton")
@@ -335,14 +367,14 @@ assert(GUILDA.config("PowerFlowCalculation", "Solver") == "newton")
 %% Warm start starts from the last converged solution
 % WarmStart=true は前回の収束解から (反復 0 回)、false はフラットスタート
 net = DebugScript.helper.build_ieee14();
-[res0, ~, out0] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
-[res1, ~, out1] = DebugScript.helper.quiet(@() net.calculate_powerflow());          % 既定 WarmStart=true
+[res0, ~, out0] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false, Format="GUILDAorigin"));
+[res1, ~, out1] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));          % 既定 WarmStart=true
 assert(out0.iterations > 0 && out1.iterations == 0 && res1.options.WarmStart)
 assert(max(abs(res1.tab_bus.Vphasor - res0.tab_bus.Vphasor)) < 1e-8)
 [~, ~, out2] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
 assert(out2.iterations == out0.iterations)
 % フラットスタート: 位相 0、大きさ 1 (PV・スラックは設定値 V、スラックの位相は設定値)
-res = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false, MaxIteration=1, Solver="newton"));
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false, MaxIteration=1, Solver="newton", Format="GUILDAorigin"));
 cv_V0 = res.cm_Vhistory(:,1);
 tab_set = tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus);
 lv_PQ = tab_set.Type == "PQ";
@@ -351,27 +383,27 @@ assert(all(abs(cv_V0(lv_PQ) - 1) < 1e-15) && max(abs(abs(cv_V0(~lv_PQ)) - tab_se
 net.a_Bus{14}.a_Component{1}.tab_parameter.powerflow.P = -0.2;
 net.a_Branch{3}.tab_parameter.dynamics.X = 0.21;
 net.a_Bus{9}.tab_parameter.dynamics.Bshunt = 0.25;
-[res_w, flag, out_w] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+[res_w, flag, out_w] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
 assert(flag == 1 && out_w.iterations > 0 && out_w.iterations <= out0.iterations)
 net2 = DebugScript.helper.build_ieee14();
 net2.a_Bus{14}.a_Component{1}.tab_parameter.powerflow.P = -0.2;
 net2.a_Branch{3}.tab_parameter.dynamics.X = 0.21;
 net2.a_Bus{9}.tab_parameter.dynamics.Bshunt = 0.25;
-res_ref = DebugScript.helper.quiet(@() net2.calculate_powerflow(WarmStart=false));
+res_ref = DebugScript.helper.quiet(@() net2.calculate_powerflow(WarmStart=false, Format="GUILDAorigin"));
 assert(max(abs(res_w.tab_bus.Vphasor - res_ref.tab_bus.Vphasor)) < 1e-8)
 % ウォームスタートは同じ母線タグの解だけを使う。タグを変えるとフラットスタートで、結果の行名は新しいタグ
 net.a_Bus{14}.s_tag = "Bnew";
-[res_t, ~, out_t] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+[res_t, ~, out_t] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
 assert(out_t.iterations > 0 && string(res_t.tab_bus.Properties.RowNames(14)) == string(net.a_Bus{14}))
 % スラック母線の変更でも方程式は作り直す
 evalc("net.a_Bus{2}.l_isSlack = true;");
 net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow.P = 2.3;
-[res_s, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+[res_s, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
 assert(flag == 1 && abs(res_s.tab_bus.Varg(2) - net.a_Bus{2}.tab_parameter.powerflow.Varg) < 1e-12)
 % 枝の削除では母線タグが同じなのでウォームスタートを使う (初期値だけの違いで、解は同じ)
 net.remove_branch(string(net.a_Branch{1}));
-[res_f, ~, out_f] = DebugScript.helper.quiet(@() net.calculate_powerflow());
-[res_g, ~, out_g] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+[res_f, ~, out_f] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
+[res_g, ~, out_g] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false, Format="GUILDAorigin"));
 assert(out_f.iterations > 0 && out_g.iterations > 0 && res_f.l_success)
 assert(max(abs(res_f.tab_bus.Vphasor - res_g.tab_bus.Vphasor)) < 1e-8)
 % 収束しなかった解は保存しない。reset_solver で捨てる
@@ -397,7 +429,7 @@ assert(out3.iterations == out0.iterations)
 %% Violated operating limits are recorded and not applied
 % 潮流計算は operation の制約を課さず、違反を tab_violation に記録するだけ (警告もエラーもなし)
 net = DebugScript.helper.build_ieee14();
-res = DebugScript.helper.quiet(@() net.calculate_powerflow());
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
 % IEEE14 のデータ自体が違反を含む: B006, B007, B008 の V > Vmax = 1.06、スラックの発電機の Q < Qmin = 0
 tab0 = res.tab_violation;
 assert(isequal(sort(tab0.Object + ":" + tab0.Limit), sort(["B006:Vmax";"B007:Vmax";"B008:Vmax";"B001SG1:Qmin"])))
@@ -409,7 +441,7 @@ net.a_Branch{1}.tab_parameter.operation.Smax = 1;             % 枝 1 の |S| �
 net.a_Branch{1}.tab_parameter.operation.Vargmax = 0.01;
 com.tab_parameter.operation.Qmax = 0.1;                       % 発電機 B002 の Q は約 0.42
 lastwarn("");
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
 assert(flag == 1 && isempty(lastwarn()) && max(abs(res.tab_bus.Vphasor - tab_ref.Vphasor)) < 1e-10)
 tab = res.tab_violation;
 assert(height(tab) == height(tab0) + 4, string(height(tab)))
@@ -428,7 +460,7 @@ c_S = com.a_Bus.c_Vequilibrium * conj(com.c_Iequilibrium);
 assert(abs(imag(c_S) - r.Value) < 1e-8)
 % 収束しなければ 0 行
 w = warning("off"); c = onCleanup(@() warning(w));
-res = DebugScript.helper.quiet(@() net.calculate_powerflow(MaxIteration=1, WarmStart=false, Tolerance=1e-14));
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(MaxIteration=1, WarmStart=false, Tolerance=1e-14, Format="GUILDAorigin"));
 assert(~res.l_success && height(res.tab_violation) == 0)
 
 
@@ -451,14 +483,14 @@ g2.tab_parameter.operation.Qmax = Inf;                                  % 無限
 assert(isequal(tools.distribute_power(bus, r_P, r_Q, "Qmax"), tools.distribute_power(bus, r_P, r_Q)))
 assert(isequal(size(tools.distribute_power(PowerNetwork().add_bus(), 1, 1)), [0 2]))
 % initialize の機器の P、Q と tab_violation の値は同じ配分
-res = DebugScript.helper.quiet(@() net.initialize());
+res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
 c_V = bus.c_Vequilibrium;
 rm_init = cell2mat(cellfun(@(c) [real(c_V*conj(c.c_Iequilibrium)), imag(c_V*conj(c.c_Iequilibrium))], ...
                            bus.a_Component(:), "UniformOutput", false));
 rm_dist = tools.distribute_power(bus, res.tab_bus.P(2), res.tab_bus.Q(2));
 assert(max(abs(rm_init - rm_dist), [], "all") < 1e-12)
 g2.tab_parameter.operation.Qmax = rm_dist(2,2) - 0.01;                  % 違反させる
-res = DebugScript.helper.quiet(@() net.calculate_powerflow());
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
 row = res.tab_violation(res.tab_violation.Object == string(g2) & res.tab_violation.Limit == "Qmax", :);
 assert(height(row) == 1)
 assert(abs(row.Value - rm_dist(2,2)) < 1e-8)
@@ -491,9 +523,9 @@ assert(error_id(@() net.calculate_powerflow("Solver")) ~= "")
 % OptimalityTolerance が既定 (1e-6) のままだと、これらの系統は不平衡 1e-10〜1e-9 で止まり flag -2 だった
 for c = {{"EAST30", "peak"}, {"WEST30", "night"}}
     net = DebugScript.helper.quiet(@() network.("IEEJ_" + c{1}{1})(Section=c{1}{2}));
-    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="fsolve", Tolerance=1e-10, WarmStart=false));
+    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="fsolve", Tolerance=1e-10, WarmStart=false, Format="GUILDAorigin"));
     assert(flag == 1 && output.residual <= 1e-10, c{1}{1} + " " + c{1}{2} + ": " + output.message)
-    tab_NR = DebugScript.helper.quiet(@() net.calculate_powerflow(Tolerance=1e-12, WarmStart=false)).tab_bus;
+    tab_NR = DebugScript.helper.quiet(@() net.calculate_powerflow(Tolerance=1e-12, WarmStart=false, Format="GUILDAorigin")).tab_bus;
     assert(max(abs(res.tab_bus.Vphasor - tab_NR.Vphasor)) < 1e-10)
 end
 
@@ -501,9 +533,9 @@ end
 %% Every method reaches the same solution
 % newton / gradient / levenberg-marquardt は fsolve と同じ解に収束し、同じ形の出力を返す
 net = DebugScript.helper.build_ieee14();
-tab_ref = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="fsolve")).tab_bus;
+tab_ref = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="fsolve", Format="GUILDAorigin")).tab_bus;
 for s_method = ["newton", "gradient", "levenberg-marquardt"]
-    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_method, WarmStart=false));
+    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_method, WarmStart=false, Format="GUILDAorigin"));
     assert(flag == 1 && res.l_success, s_method + ": " + output.message)
     assert(max(abs(res.tab_bus.Vphasor - tab_ref.Vphasor)) < 1e-6, s_method)
     assert(output.algorithm == s_method && output.residual <= 1e-8 && contains(output.message, "converged"))
@@ -512,7 +544,7 @@ for s_method = ["newton", "gradient", "levenberg-marquardt"]
     assert(norm(res.cm_Vhistory(:,end) - res.tab_bus.Vphasor) < 1e-12)
     % 反復回数の上限に達すると flag = 0
     w = warning("off"); c = onCleanup(@() warning(w));
-    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_method, MaxIteration=1, WarmStart=false));
+    [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_method, MaxIteration=1, WarmStart=false, Format="GUILDAorigin"));
     assert(flag == 0 && ~res.l_success && output.iterations == 1 && contains(output.message, "MaxIterations"), s_method)
     clear c
     % Verbose=true は反復ごとに 1 行
@@ -610,7 +642,7 @@ assert(error_id(@() tools.require_toolbox("optimization", "X")) == "MATLAB:valid
 
 %% Plot and Export of the result
 net = DebugScript.helper.build_9bus();
-res = DebugScript.helper.quiet(@() net.calculate_powerflow);
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="GUILDAorigin"));
 
 % Plot: 電圧の大きさと位相の棒グラフ
 t = res.Plot(Parent=figure("Visible","off"));
@@ -618,7 +650,7 @@ c_fig = onCleanup(@() close(ancestor(t, "figure")));
 assert(isa(t, "matlab.graphics.layout.TiledChartLayout") && numel(t.Children) == 2)
 % 計算後の図は result.Plot だけ。Plot オプションは廃止、PlotFcn (計算中の表示) は "none" では図を作らない
 a_before = findall(groot, "Type", "figure");
-res = DebugScript.helper.quiet(@() net.calculate_powerflow(PlotFcn="none"));
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(PlotFcn="none", Format="GUILDAorigin"));
 assert(res.options.PlotFcn == "none" && isempty(setdiff(findall(groot, "Type", "figure"), a_before)))
 assert(error_id(@() net.calculate_powerflow(Plot=true)) == "GUILDA:resolve_options:UnknownName")
 assert(error_id(@() net.calculate_powerflow(PlotFcn="voltage")) == "GUILDA:check_plotfcn:UnknownKey")
@@ -643,7 +675,7 @@ assert(error_id(@() res.Export(fullfile(s_dir, "bus.mat"))) == "GUILDA:ResultPF:
 %% Dynamic method exports convergence history as JSON
 % .json は計算過程 (GridSpring で可視化できる形式)
 net = DebugScript.helper.build_ieee14();
-res = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="dynamic"));
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="dynamic", Format="GUILDAorigin"));
 filepath = fullfile(tempdir, "DebugScript_test_F2_" + string(feature("getpid")) + ".json");
 c = onCleanup(@() delete(filepath));
 DebugScript.helper.quiet(@() res.Export(filepath));
@@ -666,8 +698,8 @@ s_tag = "GUILDA:PlotFcn:residual";
 fig = figure("Visible", "off", "Tag", s_tag);      % 同じ Tag の図があればそれを使う
 c_fig = onCleanup(@() close(findall(groot, "Type", "figure", "Tag", s_tag)));
 for s_solver = ["newton","levenberg-marquardt","gradient","fsolve","dynamic"]
-    res0 = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_solver, WarmStart=false));
-    res1 = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_solver, WarmStart=false, PlotFcn="residual"));
+    res0 = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_solver, WarmStart=false, Format="GUILDAorigin"));
+    res1 = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_solver, WarmStart=false, PlotFcn="residual", Format="GUILDAorigin"));
     % 結果は "none" と同じ
     assert(res1.flag == 1 && isequal(res1.tab_bus{:, 1:4}, res0.tab_bus{:, 1:4}) ...
            && isequal(res1.output.iterations, res0.output.iterations), s_solver)
@@ -691,7 +723,7 @@ a_bar = findobj(fig, "Type", "bar");
 assert(max([a_bar.YData]) > 1e-6 && contains(string(findobj(fig, "Type", "axes").Title.String), "iteration 1"))
 % 図を閉じても計算は続く (表示だけ止まる): 図を閉じる関数ハンドルで "init" の後に閉じる
 close(fig)
-res = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="gradient", WarmStart=false, PlotFcn="residual", MaxIteration=50));
+res = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="gradient", WarmStart=false, PlotFcn="residual", MaxIteration=50, Format="GUILDAorigin"));
 assert(isscalar(findall(groot, "Type", "figure", "Tag", s_tag)))
 
 
@@ -702,7 +734,7 @@ n_bus = numel(net.a_Bus);
 for s_solver = ["newton","levenberg-marquardt","gradient","fsolve","dynamic"]
     m_log = containers.Map(["state","iteration","residual"], {strings(1,0), [], []});
     res = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_solver, WarmStart=false, ...
-                                       PlotFcn=@(x, o, s) log_call(m_log, n_bus, x, o, s)));
+                                       PlotFcn=@(x, o, s) log_call(m_log, n_bus, x, o, s), Format="GUILDAorigin"));
     assert(res.flag == 1, s_solver)
     sv_state = m_log("state");
     assert(sv_state(1) == "init" && sv_state(end) == "done" && all(sv_state(2:end-1) == "iter") && numel(sv_state) >= 3, s_solver)
@@ -716,7 +748,7 @@ end
 % stop = true で止める: flag -1 とメッセージ
 c_w = DebugScript.helper.user_config("PowerFlowCalculation", struct("WhenFailed", "NONE"));
 for s_solver = ["newton","levenberg-marquardt","gradient","fsolve","dynamic"]
-    [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_solver, WarmStart=false, PlotFcn=@(x, o, s) o.iteration >= 1));
+    [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver=s_solver, WarmStart=false, PlotFcn=@(x, o, s) o.iteration >= 1, Format="GUILDAorigin"));
     assert(flag == -1 && contains(res.output.message, "stopped by PlotFcn") && ~res.l_success, s_solver)
 end
 clear c_w
