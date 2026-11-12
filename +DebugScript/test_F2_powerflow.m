@@ -3,7 +3,6 @@
 % 9母線系統 (旧 Task1/Task2) と IEEE14 母線系統で潮流計算を行い、
 %   - v4 の呼び出し形式 [result, flag, output] と結果クラス ResultPF
 %   - Name-Value による一時的な設定の上書き (GUILDA.setting は変わらない)
-%   - v3 の呼び出し形式 (位置引数 mode, export/filename) の互換
 %   - 収束フラグ / 出力の形式
 %   - スラック母線の自動選択と母線種別 (slack / PV / PQ)
 %   - 指定値 (V, P, Q) が解で守られていること
@@ -352,7 +351,7 @@ net.reset_solver();
 assert(out_r.iterations == out_g.iterations)
 % 別の系統で同じソルバーを使っても母線はオブジェクトで対応付ける (他の系統の解を使わない)
 net3 = DebugScript.helper.build_ieee14();
-[~, ~, out3] = DebugScript.helper.quiet(@() net.solver_PF.solve(net3, net.solver_PF.get_options()));
+[~, ~, out3] = DebugScript.helper.quiet(@() net.solver_PF.solve(net3, pf_options()));
 assert(out3.iterations == out0.iterations)
 
 
@@ -428,23 +427,24 @@ assert(abs(row.Value - rm_dist(2,2)) < 1e-8)
 
 %% Unknown or invalid options stop with an error
 net = DebugScript.helper.build_9bus();
-try
-    DebugScript.helper.quiet(@() net.calculate_powerflow(Tolerence=1e-8));
-    error("DebugScript:noError", "未知のオプションでエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "Tolerence") && contains(ME.message, "Solver, Tolerance, MaxIteration, Verbose, WarmStart"))
-end
+% 未知の名前は arguments ブロックのエラー
+assert(error_id(@() net.calculate_powerflow(Tolerence=1e-8)) ~= "")
 % 共通名以外 (ソルバー固有の名前) も受け付けない
-assert(error_id(@() net.calculate_powerflow("MaxIterations", 5)) == "GUILDA:resolve_options:UnknownName")
+assert(error_id(@() net.calculate_powerflow("MaxIterations", 5)) ~= "")
 % 値の検証
 assert(error_id(@() net.calculate_powerflow(Solver="algebraic")) == "MATLAB:validators:mustBeMember")
 assert(error_id(@() net.calculate_powerflow(MaxIteration=-1)) ~= "")
+assert(error_id(@() net.calculate_powerflow(MaxIteration=1.5)) ~= "")
 assert(error_id(@() net.calculate_powerflow(Plot="yes")) ~= "")
 assert(error_id(@() net.calculate_powerflow(WarmStart="yes")) ~= "")
+assert(error_id(@() net.calculate_powerflow(PlotFcn="bars")) == "GUILDA:check_plotfcn:UnknownKey")
 assert(error_id(@() net.calculate_powerflow(Tolerance=0)) == "MATLAB:validators:mustBePositive")
+% v3 の位置引数 mode と export/filename は受け付けない
+assert(error_id(@() net.calculate_powerflow("dynamic")) ~= "")
+assert(error_id(@() net.calculate_powerflow("dynamic", "export", false)) ~= "")
+assert(error_id(@() net.calculate_powerflow(filename="a.json")) ~= "")
 % Name-Value の組になっていない
-assert(error_id(@() net.calculate_powerflow("Solver")) == "GUILDA:resolve_options:InvalidPairs")
+assert(error_id(@() net.calculate_powerflow("Solver")) ~= "")
 
 
 %% fsolve reaches a small Tolerance
@@ -618,44 +618,6 @@ res_empty = ResultPF();
 assert(error_id(@() res_empty.Export(filepath)) == "GUILDA:ResultPF:NoNetwork")
 
 
-%% COMPAT v3 positional mode and export options
-% 旧形式 calculate_powerflow(mode, "export", l, "filename", f) は警告して v4 に読み替える
-net = DebugScript.helper.build_ieee14();
-clear Deprecated
-lastwarn("");
-w = warning("off", "GUILDA:Deprecated:CalculatePowerflowMode"); c = onCleanup(@() warning(w));
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow("dynamic", "export", false));
-assert(isa(res, "ResultPF") && logical(flag) && res.options.Solver == "dynamic")
-id = DebugScript.helper.msg_id();
-assert(string(id) == "GUILDA:Deprecated:CalculatePowerflowExport")
-assert(GUILDA.config("PowerFlowCalculation", "Solver") == "newton")          % 既定値は変わらない
-warning(w);
-
-% 位置引数の mode だけ (v3 の "algebraic" は fsolve)
-clear Deprecated
-lastwarn("");
-res = DebugScript.helper.quiet(@() net.calculate_powerflow("algebraic"));
-[s_msg, id] = lastwarn(); id = DebugScript.helper.msg_id(s_msg, id);
-assert(string(id) == "GUILDA:Deprecated:CalculatePowerflowMode" && res.options.Solver == "fsolve")
-assert(contains(s_msg, 'Solver="fsolve"'), s_msg)
-
-% export=true の JSON は v3 と同じく GUILDA.pwd に書く
-filename = "DebugScript_test_F2_" + string(feature("getpid")) + ".json";
-filepath = fullfile(GUILDA.pwd, filename);
-c = onCleanup(@() delete(filepath));
-w = warning("off", "GUILDA:Deprecated:CalculatePowerflowMode");
-warning("off", "GUILDA:Deprecated:CalculatePowerflowExport");
-DebugScript.helper.quiet(@() net.calculate_powerflow("dynamic", "export", true, "filename", filename));
-warning(w);
-assert(isfile(filepath))
-data = jsondecode(fileread(filepath));
-assert(numel(data.nodes) == numel(net.a_Bus))
-
-% v4 の呼び出しは互換フックを素通りする
-assert(isequal(v3_powerflow_args({"Solver", "dynamic", "Export", true}), {"Solver", "dynamic", "Export", true}))
-assert(isequal(v3_powerflow_args({}), {}))
-
-
 % ---- local functions ----
 %% PlotFcn residual shows the residual of each equation for every Solver
 % "residual": 方程式ごとの |残差| の棒 (母線あたり 2 本)。図 (Tag) を使い回し、反復ごとに更新
@@ -742,4 +704,15 @@ function stop = log_call(m_log, n_bus, x, sct, s_state)
     m_log("iteration") = [m_log("iteration"), sct.iteration];
     m_log("residual")  = [m_log("residual"), sct.residual];
     stop = false;
+end
+
+
+function sct = pf_options()
+% calculate_powerflow がソルバーに渡す設定 (PowerFlowCalculation の値と Display)
+    sct_cfg = GUILDA.config("PowerFlowCalculation");
+    sct = struct();
+    for s_name = string(fieldnames(sct_cfg)).'
+        sct.(s_name) = sct_cfg.(s_name).Value;
+    end
+    sct.Display = "none";
 end

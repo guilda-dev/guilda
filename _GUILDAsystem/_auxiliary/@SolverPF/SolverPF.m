@@ -3,8 +3,8 @@ classdef SolverPF < auxiliary
 %
 % net.solver_PF holds one. It stores no numerical settings: the settings of each run are
 % the PowerFlowCalculation section of GUILDA.setting (GUILDA.config("PowerFlowCalculation")),
-% with the Name-Value options of the call applied to that call only (see OptionMap and
-% get_options). Results are returned as a ResultPF.
+% with the Name-Value options of the call applied to that call only (the arguments block
+% of PowerNetwork.calculate_powerflow).
 %
 % - `Solver`: the algorithm that solves the power equations (see the table). Every
 %   solver except "fsolve" runs on MATLAB alone; "fsolve" needs Optimization Toolbox.
@@ -54,8 +54,8 @@ classdef SolverPF < auxiliary
 %   bus voltages, optimValues.iteration, .fval (residuals), .residual (largest |residual|)
 %   and, for "dynamic", .time (virtual time); state "init", "iter" or "done". A true stop
 %   ends the calculation with flag -1. "none" leaves the calculation as it is.
-% - `OptionMap` is the input of tools.resolve_options; each name is also the key of the
-%   setting. get_options adds Display ("iter" for Verbose true, "none" for false).
+% - The settings struct of a run has one field per setting of the section and Display
+%   ("iter" for Verbose true, "none" for false); calculate_powerflow builds it.
 %
 % <@Examples>
 % ```matlab
@@ -67,16 +67,6 @@ classdef SolverPF < auxiliary
 %
 % See also ResultPF, PowerNetwork.calculate_powerflow, MethodNewtonRaphson, MethodGradient,
 % MethodLevenbergMarquardt, MethodFsolve, MethodDynamic, MethodBase
-
-    properties(Constant) % Settings
-        OptionMap = struct( ...
-            "Solver",       "Solver", ...
-            "Tolerance",    "Tolerance", ...
-            "MaxIteration", "MaxIteration", ...
-            "Verbose",      "Verbose", ...
-            "WarmStart",    "WarmStart", ...
-            "PlotFcn",      "PlotFcn")      % Name-Value options of net.calculate_powerflow and the setting each one sets (see the class help). <@Type> struct
-    end
 
     properties(Access=private) % Warm start and cache
         a_Bus (:,1) cell = cell(0,1)        % Buses of the network the data below belongs to, in its bus order.
@@ -99,7 +89,6 @@ classdef SolverPF < auxiliary
             end
         end
 
-        sct_options = get_options(obj, nv)
         [result,flag,output] = solve(obj, net, sct_options)
     end
 end

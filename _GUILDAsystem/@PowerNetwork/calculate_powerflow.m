@@ -1,4 +1,4 @@
-function [result, flag, output] = calculate_powerflow(obj, varargin)
+function [result, flag, output] = calculate_powerflow(obj, opt)
 % Calculate the power flow of the network and return a ResultPF.
 %
 % Calculates the power flow of the network. The settings are the PowerFlowCalculation
@@ -10,8 +10,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 % (GUILDA:Bus:SlackWithoutQnan). A network without buses stops with
 % GUILDA:PowerNetwork:NoBus, and a network whose buses have no components with
 % GUILDA:PowerNetwork:NoSlackCandidate.
-% Accepted options are the names in SolverPF.OptionMap plus Export;
-% any other name stops with GUILDA:resolve_options:UnknownName.
+% Options not listed below stop with the MATLAB error of an unknown name.
 %
 % Name-Value options:
 %
@@ -36,9 +35,13 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 % <@Group> Power flow
     arguments (Input)
         obj
-    end
-    arguments (Input, Repeating)
-        varargin   % Name-Value options.
+        opt.Solver (1,1) string {mustBeMember(opt.Solver, ["newton","gradient","levenberg-marquardt","fsolve","dynamic"])} = GUILDA.config("PowerFlowCalculation", "Solver") % Algorithm (see SolverPF).
+        opt.Tolerance (1,1) double {mustBePositive} = GUILDA.config("PowerFlowCalculation", "Tolerance") % [pu] Largest P/Q mismatch of a converged solution.
+        opt.MaxIteration (1,1) double {mustBeIntegerOrNaN} = GUILDA.config("PowerFlowCalculation", "MaxIteration") % Maximum number of iterations; NaN for the automatic value.
+        opt.Verbose (1,1) logical = GUILDA.config("PowerFlowCalculation", "Verbose") % Print the progress of each iteration.
+        opt.WarmStart (1,1) logical = GUILDA.config("PowerFlowCalculation", "WarmStart") % Start from the last converged solution of this network.
+        opt.PlotFcn {mustBePlotFcn} = GUILDA.config("PowerFlowCalculation", "PlotFcn") % Live display during the calculation: "residual", a function handle or "none".
+        opt.Export {mustBeExport} = false % true for the default file name of result.Export, or the file name.
     end
     arguments (Output)
         result   % Bus voltages, injections and branch flows of the solution.
@@ -46,9 +49,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
         output   % Solver details; output.message describes the outcome.
     end
 
-    varargin = v3_powerflow_args(varargin);                   % COMPAT(v3)
-    [c_nv, opt] = take_call_options(varargin);
-    sct_options = obj.solver_PF.get_options(c_nv);
+    sct_options = solver_options(opt);
 
     lv_isSlack = tools.vcellfun(@(b) b.l_isSlack, obj.a_Bus);
     if ~any(lv_isSlack)
@@ -59,8 +60,8 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 
     [result, flag, output] = obj.solver_PF.solve(obj, sct_options);
 
-    if isstring(opt.Export)
-        result.Export(opt.Export);
+    if isstring(opt.Export) || ischar(opt.Export)
+        result.Export(string(opt.Export));
     elseif opt.Export
         result.Export();
     end
@@ -80,28 +81,43 @@ function bus = select_slack_bus(obj)
 end
 
 
-function [c_nv, opt] = take_call_options(c_in)
-% Separates the option of this call (Export) from the solver options
-    c_nv = c_in;
-    opt  = call_options();
-    if mod(numel(c_in), 2) ~= 0
-        return              % not Name-Value pairs: tools.resolve_options reports it
+function sct = solver_options(opt)
+% Settings handed to the solver: the PowerFlowCalculation section of GUILDA.setting with
+% the options of the call, and Display ("iter" for Verbose true, "none" for false)
+    sct_cfg = GUILDA.config("PowerFlowCalculation");
+    sct = struct();
+    for s_name = string(fieldnames(sct_cfg)).'
+        sct.(s_name) = sct_cfg.(s_name).Value;
     end
-    lv_call = false(size(c_in));
-    for k = 1:2:numel(c_in)
-        lv_call(k:k+1) = (ischar(c_in{k}) || isstring(c_in{k})) && strcmpi(c_in{k}, "Export");
+    for s_name = ["Solver","Tolerance","MaxIteration","Verbose","WarmStart"]
+        sct.(s_name) = opt.(s_name);
     end
-    c_call = c_in(lv_call);
-    c_nv   = c_in(~lv_call);
-    opt    = call_options(c_call{:});
+    sct.PlotFcn    = tools.check_plotfcn(opt.PlotFcn, "calculate_powerflow", "residual");
+    sct.WhenFailed = string(sct.WhenFailed);
+    sct.Display    = replace(string(sct.Verbose), ["true","false"], ["iter","none"]);
 end
 
-function opt = call_options(opt)
-    arguments (Input)
-        opt.Export {mustBeA(opt.Export, ["logical","string","char"])} = false
+
+function mustBeIntegerOrNaN(r)
+% NaN (the automatic value) or a nonnegative integer
+    if ~isnan(r)
+        mustBeNonnegative(r)
+        mustBeInteger(r)
     end
-    if ischar(opt.Export)
-        opt.Export = string(opt.Export);
+end
+
+
+function mustBePlotFcn(x)
+% "none", "residual" or a function handle (tools.check_plotfcn)
+    tools.check_plotfcn(x, "calculate_powerflow", "residual");
+end
+
+
+function mustBeExport(x)
+% A logical scalar or one file name
+    mustBeA(x, ["logical","string","char"])
+    if ischar(x)
+        x = string(x);
     end
-    mustBeScalarOrEmpty(opt.Export);
+    mustBeScalarOrEmpty(x)
 end

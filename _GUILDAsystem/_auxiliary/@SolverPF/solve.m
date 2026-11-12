@@ -9,7 +9,7 @@ function [result,flag,output] = solve(obj, net, sct_options)
     arguments (Input)
         obj % Solver (net.solver_PF).
         net % Network with a slack bus.
-        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+        sct_options (1,1) struct % Effective settings (built by PowerNetwork.calculate_powerflow).
     end
     arguments (Output)
         result % Bus and branch values of the solution.

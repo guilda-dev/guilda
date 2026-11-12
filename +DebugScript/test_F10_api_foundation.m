@@ -202,7 +202,7 @@ assert(isempty(sv_bad), "フック以外で Deprecated を使用: " + join(sv_ba
 % 現在のフック (追加・削除したらこの一覧と notes/v4-migration.md の4章を更新する)
 sv_file = extractBefore(sv_hook, ":");
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "add_bus.m")) == 2, join(sv_hook, ", "))
-assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "calculate_powerflow.m")) == 1, join(sv_hook, ", "))
+assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "calculate_powerflow.m")) == 0, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "optimize_powerflow.m")) == 2, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "build_opf_problem.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "initialize.m")) == 1, join(sv_hook, ", "))
@@ -212,7 +212,7 @@ assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "Sol
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "get_options.m")) == 2, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "solve.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@ResultLIN", "get_ss.m")) == 1, join(sv_hook, ", "))
-assert(numel(sv_hook) == 16, join(sv_hook, ", "))
+assert(numel(sv_hook) == 15, join(sv_hook, ", "))
 
 
 % ---- local functions ----
