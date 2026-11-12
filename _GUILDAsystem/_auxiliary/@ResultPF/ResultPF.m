@@ -6,7 +6,8 @@ classdef ResultPF < ResultBase
 % "dynamic" method). It is built from data only: the solution table, the bus admittance
 % matrix, a struct snapshot of the network (struct(net, false), no handles) and the
 % solver information. It keeps no reference to the network, so a later edit of the
-% network does not change it. plot_voltage draws the voltage profile; the disp_* methods print tables. export writes the bus or
+% network does not change it. The plot_* methods draw the voltage profile, the branch
+% flows, the convergence and the network; the disp_* methods print tables. export writes the bus or
 % branch table (CSV, Excel) or the iteration history (JSON for the GridSpring viewer).
 %
 % - `tab_bus` has the bus tags as row names.
@@ -41,6 +42,9 @@ classdef ResultPF < ResultBase
 % result.disp_branch(Sort="loss"); % branch flows, largest loss first
 % result.disp_violation();         % violated operating limits by kind
 % result.plot_voltage();           % voltage profile with Vmin / Vmax
+% result.plot_branch(Quantity="loading");   % |S| / Smax of each branch
+% result.plot_convergence(Bus="B014");       % largest residual and |V| per iteration
+% result.plot_network(Color="V", Arrow="P");  % |V| colors and P flow arrows on the network
 % result.export("pf.csv", Table="branch");
 % ```
 %
@@ -100,6 +104,9 @@ classdef ResultPF < ResultBase
         end
 
         fig = plot_voltage(obj, opt)
+        ax = plot_branch(obj, opt)
+        fig = plot_convergence(obj, opt)
+        h = plot_network(obj, opt)
         varargout = disp_summary(obj)
         varargout = disp_bus(obj, opt)
         varargout = disp_branch(obj, opt)

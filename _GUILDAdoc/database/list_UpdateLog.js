@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "More figures of the power flow result",
+    "date": "2026-11-12",
+    "type": "feature",
+    "content": "The power flow result draws three more figures: res.plot_branch (one bar per branch; Quantity \"P\", \"Q\", \"S\", \"loading\" with the Smax line, or \"loss\"), res.plot_convergence (the largest residual at each iteration on a log scale; Bus adds the |V| of those buses) and res.plot_network (the network with |V| or the angle as node colors and the P or Q flows as arrows; it uses the bus coordinates of the graph parameters, or an automatic layout when a bus has none). Use WarmStart=false to see the iterations of a new calculation."
+  },
+  {
     "title": "Read the power flow result, and plot_* figures",
     "date": "2026-11-12",
     "type": "feature",
