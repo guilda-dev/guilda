@@ -13,6 +13,7 @@
   <script src="./database/list_Classes.js"></script>
   <script src="./doc-loader.js"></script>
   <script src="./doc-render.js"></script>
+  <script src="./doc-colresize.js"></script>
   <script src="./doc-tree.js"></script>
 </head>
 <body class="doc-layout">
@@ -185,7 +186,7 @@
         required: tr('Required', '必須'), default: tr('Default', '既定値'), validators: tr('Validators', '検証関数')
       };
       return `
-        <div class="ref-table-scroll"><table class="compact-table ref-member-table">
+        <div class="ref-table-scroll"><table class="compact-table ref-member-table" data-colresize="method-input">
           <thead><tr>
             <th class="col-name is-name">${tr('Name', '名前')}</th><th class="col-kind is-fit">${labels.kind}</th><th class="col-type is-wrap">${labels.type}</th>${withUnit ? `<th class="col-unit is-fit">${labels.unit}</th>` : ''}
             <th class="col-description is-flex">${tr('Description', '説明')}</th><th class="col-required is-fit">${labels.required}</th><th class="col-default is-wrap">${labels.default}</th><th class="col-validators is-wrap">${labels.validators}</th>
@@ -211,7 +212,7 @@
       const withType = rows.some((r) => r.type);
       const labels = { type: tr('Size / Class', 'サイズ / クラス'), unit: tr('Unit', '単位') };
       return `
-        <div class="ref-table-scroll"><table class="compact-table ref-member-table">
+        <div class="ref-table-scroll"><table class="compact-table ref-member-table" data-colresize="method-output">
           <thead><tr>
             <th class="col-name is-name">${tr('Name', '名前')}</th>${withType ? `<th class="col-type is-wrap">${labels.type}</th>` : ''}${withUnit ? `<th class="col-unit is-fit">${labels.unit}</th>` : ''}<th class="col-description is-flex">${tr('Description', '説明')}</th>
           </tr></thead>
@@ -332,6 +333,8 @@
         </div>`);
 
       container.innerHTML = html;
+      // Column widths set by dragging the header edges (doc-colresize.js).
+      window.GuildaColResize?.attachAll(container);
       document.getElementById('page-toc').innerHTML = sections.map(([id, title]) =>
         `<li><a href="#${id}" onclick="document.getElementById('${id}')?.scrollIntoView(); return false;">${title}</a></li>`).join('');
       mountCallGraph(ownerName, m);
