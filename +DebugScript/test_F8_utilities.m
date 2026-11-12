@@ -416,7 +416,7 @@ s.net.a_GlobalController{1}.get_sys();   % グローバル制御器の get_sys �
 
 %% MATPOWER import reproduces case14
 % import_matpower は tools.network_to_mpc の逆変換 (MATPOWER 不要)。
-% case14 を読み込んで mpc に戻すと元のデータになり、潮流計算・OPF は network.IEEE14bus と一致する。
+% case14 を読み込んで mpc に戻すと母線電圧 VM/VA 以外は元のデータになり、潮流計算・OPF は network.IEEE14bus と一致する。
 mpc14 = DebugScript.helper.case14_data();
 net   = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc14));
 assert(numel(net.a_Bus) == 14 && numel(net.a_Branch) == 20)
@@ -424,11 +424,15 @@ assert(net.tab_parameter.base.baseMVA == 100 && net.tab_parameter.base.Hz == GUI
 assert(net.a_Bus{1}.l_isSlack && sum(cellfun(@(b) b.l_isSlack, net.a_Bus)) == 1)
 assert(all(isfinite(net.cv_Vequilibrium)))                  % Initialize=true が既定
 
+% bus の VM/VA (8, 9 列) は case14 の値ではなく系統の平衡点の電圧を書き出すので、case14 とは比べない
 mpc = tools.network_to_mpc(net);
 for s_f = ["bus","gen","branch","gencost"]
     assert(isequal(size(mpc.(s_f)), size(mpc14.(s_f))), s_f)
-    assert(max(abs(mpc.(s_f) - mpc14.(s_f)), [], "all") < 1e-12, s_f)
+    i_col = setdiff(1:size(mpc14.(s_f),2), (s_f=="bus")*[8 9]);
+    assert(max(abs(mpc.(s_f)(:,i_col) - mpc14.(s_f)(:,i_col)), [], "all") < 1e-12, s_f)
 end
+assert(max(abs(mpc.bus(:,8) - abs(net.cv_Vequilibrium))) < 1e-12)
+assert(max(abs(mpc.bus(:,9) - angle(net.cv_Vequilibrium)*180/pi)) < 1e-12)
 
 % 機器: 発電機は gen-park (既定)、負荷は load-power で P, Q は消費が負
 gen = net.a_Bus{2}.a_Component{1};
@@ -472,7 +476,8 @@ assert(numel(net.a_Branch) == 19)
 s_path = net.export_csv(fullfile(s_dir, "Csv14"));
 net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
 mpc2 = tools.network_to_mpc(net2);
-assert(max(abs(mpc2.bus - mpc14.bus), [], "all") < 1e-12 && max(abs(mpc2.gen - mpc14.gen), [], "all") < 1e-12)
+i_col = setdiff(1:size(mpc14.bus,2), [8 9]);              % VM/VA は平衡点の電圧なので比べない
+assert(max(abs(mpc2.bus(:,i_col) - mpc14.bus(:,i_col)), [], "all") < 1e-12 && max(abs(mpc2.gen - mpc14.gen), [], "all") < 1e-12)
 
 
 %% MATPOWER import rejects unsupported gencost
