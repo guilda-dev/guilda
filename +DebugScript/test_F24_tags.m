@@ -147,6 +147,17 @@ for s_net = ["IEEE9bus", "IEEE14bus", "Ishizaki6Bus", "IEEJ_WEST10"]
 end
 
 
+%% Labels end with the tags up to the layer below the network
+% タグは兄弟の中でしか一意でないので親のタグまでたどる。ネットワークのタグは付けない
+evalc("net = network.Tutorial10bus();");
+tab = net.get_variable_map();
+sv_expected = ["delta_SG1B001_B001"; "omega_CP2SG1B001_CA1SG1B001_SG1B001_B001"; "Vre_B001"; ...
+               "Y_omega_SG1B001_B001"; "xi_AGC1PowerNetwork"; "Pmech_SG1B001_AGC1PowerNetwork"];
+assert(all(ismember(sv_expected, tab.Label)), strjoin(sv_expected(~ismember(sv_expected, tab.Label)), ", "))
+assert(~any(endsWith(tab.Label, "_" + net.s_tag)), "label with the network tag")
+assert(net.a_Bus{1}.attach_tag("Vre") == "Vre_B001")
+
+
 % ---- local functions ----
 
 function ME = caught(fcn)
