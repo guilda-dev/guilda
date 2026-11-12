@@ -19,7 +19,7 @@ function [result, flag, output, sct_point] = solve_fixed_input(net, c_nv)
         c_nv   % Name-Value options of initialize without Method.
     end
     arguments (Output)
-        result     % ResultPF of the solution (s_solver "FixedInput", no branch flows).
+        result     % ResultPF of the solution (s_solver "FixedInput").
         flag       % 1 converged, 0 MaxIteration reached, -2 diverged or no solution (the Method class).
         output     % Details of the Method class; output.message describes the outcome.
         sct_point  % Solution: cv_V (bus voltages), c_X, c_U, cv_I (per component, in sct_eq order), c_comp, iv_bus.
@@ -56,12 +56,11 @@ function [result, flag, output, sct_point] = solve_fixed_input(net, c_nv)
     for k = 1:eq.n_comp
         cv_Ibus(eq.iv_bus(k)) = cv_Ibus(eq.iv_bus(k)) + sct_point.cv_I(k);
     end
-    cv_S = cv_V .* conj(cv_Ibus);
-    tab_bus = array2table([angle(cv_V), abs(cv_V), real(cv_S), imag(cv_S), cv_V, cv_Ibus], ...
-        "VariableNames", ["Varg","V","P","Q","Vphasor","Iphasor"], "RowNames", eq.sv_bus);
-    result = ResultPF(net, "FixedInput", struct("Method", "FixedInput", "Solver", sct.Solver, ...
+    tab_pf = powerflow_table(eq.sv_bus(:), cv_V, cv_Ibus);
+    sct_solver = struct("solver", "FixedInput", "options", struct("Method", "FixedInput", "Solver", sct.Solver, ...
         "Tolerance", sct.Tolerance, "MaxIteration", sct.MaxIteration, "WarmStart", sct.WarmStart), ...
-        flag, output, t0, tab_bus);
+        "flag", flag, "output", output, "elapsed", toc(t0));
+    result = ResultPF(tab_pf, eq.cm_Y, struct(net, false), sct_solver);
 end
 
 
@@ -157,7 +156,7 @@ function eq = equation_data(net)
     eq = struct("c_comp", {c_comp}, "iv_bus", iv_bus, "n_comp", n_comp, "n_bus", n_bus, ...
                 "sv_bus", sv_bus, "nv_x", nv_x, "c_ix", {c_ix}, "c_iI", {c_iI}, "iv_V", iv_V, ...
                 "i_zPm", i_zPm, "n_z", i_zPm, "k_slack", k_slack, "i_Pm", i_Pm, ...
-                "i_slack", i_slack, "rm_Y", rm_Y, "c_U", {c_U});
+                "i_slack", i_slack, "cm_Y", cm_Y, "rm_Y", rm_Y, "c_U", {c_U});
 end
 
 

@@ -58,7 +58,22 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
         bus.l_isSlack = true;
     end
 
-    [result, flag, output] = obj.solver_PF.solve(obj, sct_options);
+    sv_bus = reshape(string(obj.a_Bus), [], 1);
+    tab_PFcondition = tools.vcellfun(@(b) b.get_pf_condition, obj.a_Bus);
+    tab_PFcondition.Properties.RowNames = sv_bus;
+    tab_Y = obj.get_admittance_matrix;
+    cm_Y  = tab_Y{sv_bus, sv_bus};
+
+    t0 = tic;
+    [cv_V, flag, output, cm_Vhistory, rv_step] = obj.solver_PF.solve(cm_Y, tab_PFcondition, sct_options);
+    r_elapsed = toc(t0);
+    notify_failure(flag, output, sct_options.WhenFailed);
+
+    tab_pf = powerflow_table(sv_bus, cv_V, cm_Y*cv_V);
+    sct_solver = struct("solver", string(class(obj.solver_PF)), "options", sct_options, ...
+        "flag", flag, "output", output, "elapsed", r_elapsed, "cm_Vhistory", cm_Vhistory, ...
+        "rv_step", rv_step, "tab_PFcondition", tab_PFcondition);
+    result = ResultPF(tab_pf, cm_Y, struct(obj, false), sct_solver);
 
     if isstring(opt.Export) || ischar(opt.Export)
         result.Export(string(opt.Export));
@@ -78,6 +93,19 @@ function bus = select_slack_bus(obj)
         error(msg("GUILDA:PowerNetwork:NoSlackCandidate", string(obj)))
     end
     bus = obj.a_Bus{i_bus};
+end
+
+
+function notify_failure(flag, output, s_when)
+% The WhenFailed setting: a warning, an error or the message when the calculation failed
+    if flag > 0
+        return
+    end
+    switch s_when
+        case "WARN" ; show_msg("warning", "GUILDA:PowerNetwork:PowerflowNotConverged", output.message)
+        case "ERROR"; error(msg("GUILDA:PowerNetwork:PowerflowNotConverged", output.message))
+        case "DISP" ; disp(output.message)
+    end
 end
 
 

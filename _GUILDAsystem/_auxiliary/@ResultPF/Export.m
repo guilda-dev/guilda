@@ -5,8 +5,9 @@ function s_file = Export(obj, filename, opt)
 %   .csv / .txt / .xlsx / .xls : the bus table (tab_bus) or, with Table="branch", the
 %                                branch table (tab_branch); phasors as complex numbers.
 %   .json                      : the iteration history for the GridSpring viewer
-%                                (https://ta-nish18.github.io/GridSpring/). It reads the
-%                                bus types and the admittance matrix from the network.
+%                                (https://ta-nish18.github.io/GridSpring/). It uses the
+%                                stored power flow conditions (tab_PFcondition) and
+%                                admittance matrix (cm_Y).
 % A relative filename is relative to the current folder.
 % calculate_powerflow(..., Export=filename) calls it.
     arguments (Input)
@@ -42,14 +43,11 @@ function export_json(obj, s_file)
         obj
         s_file  % Path of the JSON file to write.
     end
-    net = obj.a_PowerNetwork;
-    if isempty(net)
+    tab_PFcondition = obj.tab_PFcondition;
+    cm_Y            = obj.cm_Y;
+    if height(tab_PFcondition) == 0 || isempty(cm_Y)
         error(msg("GUILDA:ResultPF:NoNetwork"));
     end
-    tab_PFcondition = tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus);
-    sv_bus    = string(tab_PFcondition.Properties.RowNames);
-    tab_Ymat  = net.get_admittance_matrix;
-    cm_Y      = tab_Ymat{sv_bus,sv_bus};
     n_Bus     = size(tab_PFcondition,1);
 
     out = struct();

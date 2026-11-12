@@ -1,10 +1,15 @@
 classdef SolverPF < auxiliary
 % Solver of the power flow calculation (net.calculate_powerflow).
 %
-% net.solver_PF holds one. It stores no numerical settings: the settings of each run are
-% the PowerFlowCalculation section of GUILDA.setting (GUILDA.config("PowerFlowCalculation")),
-% with the Name-Value options of the call applied to that call only (the arguments block
-% of PowerNetwork.calculate_powerflow).
+% net.solver_PF holds one. It does only the numerics: solve takes the bus admittance
+% matrix, the power flow conditions of the buses and the settings of the run, builds the
+% power equations and runs the Method class. It never reads the network:
+% net.calculate_powerflow selects the slack bus, assembles the inputs, notifies a failure
+% (WhenFailed) and builds the output in the requested Format. It stores no numerical
+% settings: the settings of each run are the PowerFlowCalculation section of
+% GUILDA.setting (GUILDA.config("PowerFlowCalculation")), with the Name-Value options of
+% the call applied to that call only (the arguments block of
+% PowerNetwork.calculate_powerflow).
 %
 % - `Solver`: the algorithm that solves the power equations (see the table). Every
 %   solver except "fsolve" runs on MATLAB alone; "fsolve" needs Optimization Toolbox.
@@ -21,16 +26,15 @@ classdef SolverPF < auxiliary
 %   Tolerance ("newton", "levenberg-marquardt" and "fsolve" also count the set |V| and
 %   slack angle residuals). "fsolve" also passes Tolerance^2 as FunctionTolerance and OptimalityTolerance of fsolve and
 %   checks the mismatch after fsolve stops. "dynamic" tightens its ODE tolerances with it.
-% - `WarmStart`: true starts from the last converged solution of this network, kept by the
-%   solver; false, or no kept solution, is the flat start: angle 0 and magnitude 1, with
+% - `WarmStart`: true starts from the last converged solution, kept by the solver, when
+%   it was solved for the same bus tags (in the same order); false, a different bus list
+%   or no kept solution is the flat start: angle 0 and magnitude 1, with
 %   the set V at PV and slack buses and the set angle at the slack bus. "gradient" and
 %   "dynamic" always start the fixed values (slack angle and voltage, PV voltages) at
 %   their set values.
-% - The solver keeps, between runs on the same network: the last converged solution
-%   (discarded only when buses or branches are added, removed or replaced; buses are
-%   matched by object, not by tag), the bus admittance matrix and the power equations
-%   (rebuilt after the edits that change them, see PowerNetwork.handle_edit).
-%   net.reset_solver() discards them.
+% - The solver keeps only the last converged solution and its bus tags (the warm start).
+%   The power equations are built at every call. net.reset_solver() discards the kept
+%   solution.
 % - Settings of one method, named <Solver><option>: NewtonStepSize (StepSize of
 %   MethodNewtonRaphson), GradientStepSize (alpha of MethodGradient; NaN uses
 %   0.5/(max|Y_ii|*Vmax^2), Vmax the largest set bus voltage or 1), FsolveUseParallel and
@@ -43,6 +47,8 @@ classdef SolverPF < auxiliary
 %   PV voltages, and updates the angle only at PV buses.
 % - `Verbose` (setting; Display "iter" or "none" of the Method class): true prints one line per iteration for "newton", "gradient"
 %   and "levenberg-marquardt" (the fsolve display for "fsolve"), and the final message.
+% - Outputs of solve: the complex bus voltages, flag, output, the voltages at each
+%   iteration (cm_Vhistory) and the iteration numbers or virtual times (rv_step).
 % - flag: 1 converged, 0 MaxIteration reached (for "dynamic", its virtual time limit),
 %   -1 stopped by PlotFcn, -2 diverged or no solution found; the Method classes set flag
 %   and output (see MethodBase).
@@ -60,22 +66,23 @@ classdef SolverPF < auxiliary
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
-% result = net.calculate_powerflow();                                  % GUILDA.setting
-% result = net.calculate_powerflow(Solver="dynamic", Verbose=true);    % this call only
-% result = net.calculate_powerflow(WarmStart=false);                   % flat start
+% V = net.calculate_powerflow();                                       % GUILDA.setting
+% V = net.calculate_powerflow(Solver="dynamic", Verbose=true);         % this call only
+% V = net.calculate_powerflow(WarmStart=false);                        % flat start
+% % the solver alone: admittance matrix, conditions and settings assembled by the caller
+% tab = tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus);
+% tab_Y = net.get_admittance_matrix;
+% sct = struct("Solver","newton","Tolerance",1e-8,"MaxIteration",NaN,"WarmStart",false, ...
+%     "PlotFcn","none","Display","none","NewtonStepSize",1);
+% cv_V = net.solver_PF.solve(tab_Y{:,:}, tab, sct);
 % ```
 %
 % See also ResultPF, PowerNetwork.calculate_powerflow, MethodNewtonRaphson, MethodGradient,
 % MethodLevenbergMarquardt, MethodFsolve, MethodDynamic, MethodBase
 
-    properties(Access=private) % Warm start and cache
-        a_Bus (:,1) cell = cell(0,1)        % Buses of the network the data below belongs to, in its bus order.
-        n_revTopology (1,1) double = NaN    % Topology revision of the network when a_Bus was taken.
-        cv_Vwarm (:,1) double = zeros(0,1)  % [pu] Last converged bus voltages (a_Bus order); empty when none.
-        n_revY (1,1) double = NaN           % Admittance revision of the network when cm_Y was built.
-        cm_Y (:,:) double = zeros(0,0)      % [pu] Cached bus admittance matrix (a_Bus order).
-        n_revPF (1,1) double = NaN          % Power flow revision of the network when sct_equation was built.
-        sct_equation struct = struct([])    % Cached power flow conditions and equations (tab, f_res, f_jac, f_grad).
+    properties(Access=private) % Warm start
+        cv_Vwarm (:,1) double = zeros(0,1)      % [pu] Last converged bus voltages; empty when none.
+        sv_warmBus (:,1) string = strings(0,1)  % Bus tags of cv_Vwarm (row names of the tab_PFcondition it was solved for).
     end
 
     methods
@@ -83,12 +90,12 @@ classdef SolverPF < auxiliary
         % Create a power flow solver.
         %
         % A network creates its own (net.solver_PF); net.reset_solver() replaces it with a
-        % new one, which discards the warm start solution and the cache.
+        % new one, which discards the warm start solution.
             arguments (Output)
                 obj                        % Power flow solver.
             end
         end
 
-        [result,flag,output] = solve(obj, net, sct_options)
+        [cv_V, flag, output, cm_Vhistory, rv_step] = solve(obj, cm_Y, tab_PFcondition, sct_options)
     end
 end

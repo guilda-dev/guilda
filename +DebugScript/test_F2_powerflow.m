@@ -238,7 +238,12 @@ assert(max(abs(tab_dyn.Vphasor - tab_alg.Vphasor)) < 1e-6)
 net = DebugScript.helper.build_9bus();
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
 assert(flag > 0)
-assert(res.s_solver == "SolverPF" && res.a_PowerNetwork == net && res.r_elapsed >= 0)
+assert(res.s_solver == "SolverPF" && isempty(res.a_PowerNetwork) && res.r_elapsed >= 0)
+% 系統のハンドルは持たず、struct のスナップショット・アドミタンス行列・潮流条件を持つ
+assert(res.s_network == string(net.s_tag) && isstruct(res.sct_network) && numel(res.sct_network.a_Bus) == numel(net.a_Bus))
+tab_Y = net.get_admittance_matrix;
+assert(isequal(res.cm_Y, tab_Y{string(net.a_Bus), string(net.a_Bus)}))
+assert(isequal(res.tab_PFcondition.Type, tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus).Type))
 assert(res.options.Solver == "newton" && res.options.Tolerance == 1e-8 && isnan(res.options.MaxIteration) && res.options.Verbose == false)
 % 反復ごとの母線電圧 (最後が解)
 assert(size(res.cm_Vhistory,1) == numel(net.a_Bus) && isequal(res.rv_step, 0:size(res.cm_Vhistory,2)-1))
@@ -264,6 +269,34 @@ for s_bus = string(net.a_Bus)'
          + sum(tab_br.Pto(sv_to == s_bus)     + 1j*tab_br.Qto(sv_to == s_bus));
     assert(abs(S_br - res.tab_bus{s_bus,"P"} - 1j*res.tab_bus{s_bus,"Q"}) < 1e-8)
 end
+
+
+%% Branch flows of the result use the admittance of each branch class
+% ResultPF は枝のアドミタンスを struct のクラス名と dynamics パラメータから求める。各クラスの get_admittance_matrix と一致すること
+net = PowerNetwork();
+for i = 1:4
+    net.add_bus();
+end
+net.add_branch("pi",             [1,2], "R",0.01, "X",0.1, "C",0.02);
+net.add_branch("pi_transformer", [2,3], "R",0.002, "X",0.05, "C",0.01, "Tap",1.02, "Phase",0.1);
+net.add_branch("T",              [3,4], "R",0.01, "X",0.08, "C",0.03);
+net.add_branch("two_winding_transformer", [1,4], "R",0.003, "X",0.06, "C",0.01, "Tap",0.97, "Phase",-0.05);
+sv_bus = string(net.a_Bus);
+cv_V = [1.02; 0.99*exp(-0.1j); 1.01*exp(0.05j); 0.98*exp(-0.2j)];
+tab_Y = net.get_admittance_matrix;
+cm_Y = tab_Y{sv_bus, sv_bus};
+cv_I = cm_Y*cv_V;
+tab_pf = table(cv_V, cv_I, real(cv_V.*conj(cv_I)), imag(cv_V.*conj(cv_I)), 'VariableNames', ["V","I","P","Q"], 'RowNames', sv_bus);
+res = ResultPF(tab_pf, cm_Y, struct(net, false), struct("flag", 1));
+for k = 1:numel(net.a_Branch)
+    br = net.a_Branch{k};
+    [~, iv] = ismember(string(br.a_Bus), sv_bus);
+    I_ft = br.get_admittance_matrix() * cv_V(iv);
+    assert(norm([res.tab_branch{k,"Ifrom"}; res.tab_branch{k,"Ito"}] - I_ft) < 1e-12, string(class(br)))
+end
+% 結果は系統の後の編集で変わらない
+net.a_Branch{1}.tab_parameter.dynamics.X = 0.5;
+assert(res.sct_network.a_Branch{1}.tab_parameter.dynamics.X == 0.1)
 
 
 %% Name-Value options override the settings for one call only
@@ -326,20 +359,21 @@ net2.a_Branch{3}.tab_parameter.dynamics.X = 0.21;
 net2.a_Bus{9}.tab_parameter.dynamics.Bshunt = 0.25;
 res_ref = DebugScript.helper.quiet(@() net2.calculate_powerflow(WarmStart=false));
 assert(max(abs(res_w.tab_bus.Vphasor - res_ref.tab_bus.Vphasor)) < 1e-8)
-% タグの変更ではキャッシュもウォームスタートも保持し、結果の行名は新しいタグ
+% ウォームスタートは同じ母線タグの解だけを使う。タグを変えるとフラットスタートで、結果の行名は新しいタグ
 net.a_Bus{14}.s_tag = "Bnew";
 [res_t, ~, out_t] = DebugScript.helper.quiet(@() net.calculate_powerflow());
-assert(out_t.iterations == 0 && string(res_t.tab_bus.Properties.RowNames(14)) == string(net.a_Bus{14}))
+assert(out_t.iterations > 0 && string(res_t.tab_bus.Properties.RowNames(14)) == string(net.a_Bus{14}))
 % スラック母線の変更でも方程式は作り直す
 evalc("net.a_Bus{2}.l_isSlack = true;");
 net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow.P = 2.3;
 [res_s, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());
 assert(flag == 1 && abs(res_s.tab_bus.Varg(2) - net.a_Bus{2}.tab_parameter.powerflow.Varg) < 1e-12)
-% トポロジーの編集でウォームスタートを捨てる (フラットスタートと同じ反復回数)
+% 枝の削除では母線タグが同じなのでウォームスタートを使う (初期値だけの違いで、解は同じ)
 net.remove_branch(string(net.a_Branch{1}));
 [res_f, ~, out_f] = DebugScript.helper.quiet(@() net.calculate_powerflow());
-[~, ~, out_g] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
-assert(out_f.iterations == out_g.iterations && out_f.iterations > 0 && res_f.l_success)
+[res_g, ~, out_g] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+assert(out_f.iterations > 0 && out_g.iterations > 0 && res_f.l_success)
+assert(max(abs(res_f.tab_bus.Vphasor - res_g.tab_bus.Vphasor)) < 1e-8)
 % 収束しなかった解は保存しない。reset_solver で捨てる
 w = warning("off"); c = onCleanup(@() warning(w));
 DebugScript.helper.quiet(@() net.calculate_powerflow(MaxIteration=1, WarmStart=false));
@@ -349,9 +383,14 @@ clear c
 net.reset_solver();
 [~, ~, out_r] = DebugScript.helper.quiet(@() net.calculate_powerflow());
 assert(out_r.iterations == out_g.iterations)
-% 別の系統で同じソルバーを使っても母線はオブジェクトで対応付ける (他の系統の解を使わない)
+% ソルバーは系統を読まない: Y と潮流条件の表だけで解く。母線タグが違えば保存した解を使わない
 net3 = DebugScript.helper.build_ieee14();
-[~, ~, out3] = DebugScript.helper.quiet(@() net.solver_PF.solve(net3, pf_options()));
+evalc("net3.a_Bus{1}.l_isSlack = true;");
+tab3 = tools.vcellfun(@(b) b.get_pf_condition, net3.a_Bus);
+tab3.Properties.RowNames = string(net3.a_Bus);
+tab_Y3 = net3.get_admittance_matrix;
+[cv_V3, flag3, out3] = DebugScript.helper.quiet(@() net.solver_PF.solve(tab_Y3{:,:}, tab3, pf_options()));
+assert(flag3 == 1 && isequal(size(cv_V3), [14 1]))
 assert(out3.iterations == out0.iterations)
 
 

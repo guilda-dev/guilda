@@ -105,7 +105,7 @@ classdef PowerNetwork < PowerSystemModel
         solver_ODE SolverODE {mustBeScalarOrEmpty}  % Solver of simulate (returns a ResultODE); no settings (GUILDA.setting). <@Type> SolverODE <@Stale> nothing
         solver_LIN SolverLIN {mustBeScalarOrEmpty}  % Solver of linearize and get_sys (returns a ResultLIN); no settings (GUILDA.setting). <@Type> SolverLIN <@Stale> nothing
     end
-    properties(SetAccess=private, GetAccess={?PowerNetwork,?SolverPF,?SolverOPF}) % Revisions
+    properties(SetAccess=private, GetAccess={?PowerNetwork,?SolverOPF}) % Revisions
         n_revY (1,1) double = 0                     % Revision of the bus admittance matrix, increased by handle_edit (see there); compared by the caches of the solvers.
         n_revPF (1,1) double = 0                    % Revision of the power flow equations (every n_revY edit and the power flow settings), increased by handle_edit.
         n_revTopology (1,1) double = 0              % Revision of the topology (buses and branches added, removed or replaced), increased by handle_edit; discards the warm start.

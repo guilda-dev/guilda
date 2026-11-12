@@ -53,5 +53,6 @@
         <entry key="ScenarioTimeConflict">The scenarios {0} have different Time ({1}). Give the time to the call, net.simulate([t0, tend], ...), or set the same Time.</entry>
         <entry key="ScenarioOptionConflict">The scenarios {1} store different values of the option {0} in Options. Give the option in the call to net.simulate.</entry>
         <entry key="SlackSelected">Slack bus not found. Setting the bus ''{0}'' as the slack bus.</entry>
+        <entry key="PowerflowNotConverged">{0}</entry>
     </message>
 </rsccat>
