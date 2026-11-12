@@ -99,8 +99,8 @@
   - `struct(net, false)` はモデルの `f_*` のクロージャを含みます(「ハンドルなし」ではない)。
   - §5.4 の `ExportExtension` と既存の `GUILDA:ResultODE:ExportFormat` が重なります(S3 では変えていない)。
   - `Scenario.m` の静的メソッド `out_of_step` の宣言は S2 の統合の後に削除しました。`@Scenario/export_csv.m` は削除済みの `sc.Judge` を読みます(S6 でファイルごと削除)。
-- **S3 の時間(R9、§5.2):** IEEE68 の地絡 `[0,10]`(648 時刻、出力 48 列)で、コンストラクタは 0.033-0.04 s(S2 前のコンストラクタ約 0.05 s)、暫定の `result_data` は 0.03-0.06 s で、出力 y の計算は安いので遅延計算には変えません。**`struct(net, false)` は約 0.6 s で、`simulate` 全体が約 0.7 s から約 1.3 s になります。** スナップショットの作り方(または持ち方)は別に判断が要ります。
-- **S3 の確認:** S2 の統合(`22565858`)の後、`simulate_baseline(Mode="compare")` は 6 例すべて `isequaln`。small は 514 件(PASS 512 / KNOWN 1 / SKIP 1、FAIL 0)。
+- **S3 の時間(R9、§5.2):** IEEE68 の地絡 `[0,10]`(648 時刻、出力 48 列)で、コンストラクタは 0.033-0.04 s(変更前のコンストラクタは約 0.05 s)、暫定の `result_data` は 0.03-0.06 s で、出力 y の計算は安いので遅延計算には変えません。**`struct(net, false)` は約 0.6 s で、`simulate` 全体が約 0.7 s から約 1.3 s になります。** スナップショットの作り方(または持ち方)は別に判断が要ります。
+- **S3 の確認:** S2 の統合(`22565858`)の後、`simulate_baseline(Mode="compare")` は 6 例すべて `isequaln`。small は 514 件(PASS 512 / KNOWN 1 / SKIP 1、FAIL 0)、medium は 1 回、691 件(PASS 689 / KNOWN 1 / SKIP 1、FAIL 0)。
 
 ## 1. 現状の構造: `SolverODE` が系統を読む箇所
 
