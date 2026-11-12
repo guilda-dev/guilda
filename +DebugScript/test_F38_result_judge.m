@@ -1,6 +1,6 @@
 % F38 シミュレーションの結果 (ResultODE): 判定、出力 y、系統を読まないこと
 %
-%   result  = net.simulate([0,5], sc);
+%   result  = net.simulate(sc);
 %   verdict = result.judge_out_of_step();                 % "stable" / "out-of-step" / "incomplete"
 %   verdict = result.judge_out_of_step(Reference="COI", Threshold=180);
 %   result.tab_output, result.rm_output                   % 機器と制御器の出力 (y, yc) の軌道
@@ -19,11 +19,10 @@ c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "n
 %% Default judge: stable and out-of-step on IEEE9bus
 n9 = network.IEEE9bus;
 DebugScript.helper.quiet(@() n9.initialize);
-short = Scenario("short", Time=[0,5]);
+short = n9.add_scenario("short", Time=[0,5]);
 short.add_fault("B007", [1,1.05]);
-long  = Scenario("long", Time=[0,5]);
+long  = n9.add_scenario("long", Time=[0,5]);
 long.add_fault("B007", [1,1.5]);
-n9.add_scenario({short, long});
 [r_short, f_short] = DebugScript.helper.quiet(@() n9.simulate(short));
 v = r_short.judge_out_of_step();
 assert(f_short == 1 && v.Verdict == "stable" && isnan(v.Time) && isempty(v.Units), v.Verdict)
@@ -49,9 +48,8 @@ assert(v.Verdict == "out-of-step")
 %% Incomplete verdict and a judge function of the user
 n9 = network.IEEE9bus;
 DebugScript.helper.quiet(@() n9.initialize);
-sc = Scenario("limit", Time=[0,5]);
+sc = n9.add_scenario("limit", Time=[0,5]);
 sc.add_fault("B007", [1,1.05]);
-n9.add_scenario(sc);
 ws = warning("off", "all");  c_ws = onCleanup(@() warning(ws));
 [res, flag] = DebugScript.helper.quiet(@() n9.simulate(sc, TimeLimit=1e-3));
 clear c_ws
@@ -68,9 +66,8 @@ assert(v.Verdict == "custom" && v.tEnd == res.output.tEnd)
 % flag = 2 の結果: 角が Threshold を超えていれば "out-of-step"、超えていなければ "incomplete"
 n9 = network.IEEE9bus;
 DebugScript.helper.quiet(@() n9.initialize);
-sc = Scenario("long", Time=[0,5]);
+sc = n9.add_scenario("long", Time=[0,5]);
 sc.add_fault("B007", [1,1.5]);
-n9.add_scenario(sc);
 ws = warning("off", "all");  c_ws = onCleanup(@() warning(ws));
 r = DebugScript.helper.quiet(@() n9.simulate(sc));
 clear c_ws
@@ -93,9 +90,8 @@ for i = 1:2
     net.a_Bus{i}.a_Component{1}.add_local_controller("pss-PSS1");
 end
 DebugScript.helper.quiet(@() net.initialize);
-sc = Scenario("fault", Time=[0,2]);
+sc = net.add_scenario("fault", Time=[0,2]);
 sc.add_fault("B008", [1,1.05]);
-net.add_scenario(sc);
 r = net.simulate(sc);
 v0 = r.judge_out_of_step();
 v0c = r.judge_out_of_step(Reference="COI");
@@ -118,10 +114,9 @@ net = DebugScript.helper.build_ieee14();
 net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 net.add_global_controller("agc-PI", {net.a_Bus{1}.a_Component{1}, net.a_Bus{2}.a_Component{1}});
 DebugScript.helper.quiet(@() net.initialize);
-sc = Scenario("trip", Time=[0,4]);
+sc = net.add_scenario("trip", Time=[0,4]);
 sc.add_trip(net.a_GlobalController{1}.s_tag, [1, 2]);
 sc.add_trip(net.a_Bus{2}.a_Component{1}.s_tag, [2.5, 3]);
-net.add_scenario(sc);
 r = net.simulate(sc);
 [tab, ~] = net.get_variable_map();
 assert(isequal(r.tab_output, tab(ismember(tab.Kind, ["y","yc"]), :)))
