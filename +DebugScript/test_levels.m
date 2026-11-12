@@ -97,6 +97,9 @@ function tab = test_levels()
     "test_F31_scenario/Compatibility_ODEeventWarnsOnceAndGivesTheSameResults", "medium"
     % ---- F35_controller_signal_routing -----------------------------------------------------------
     "test_F35_controller_signal_routing/AGlobalControllerReadsAnOutputOfItsUnitBeforeAStateOfTheSameName", "medium"
+    % ---- F36_tutorial_all_models -----------------------------------------------------------------
+    "test_F36_tutorial_all_models/TheNetworkHasEveryRegisteredModelKeyAndAnEmptyBus", "medium"
+    "test_F36_tutorial_all_models/AThree_phaseFaultOnBus8Settles", "medium"
     % ---- F3_edit_handling ------------------------------------------------------------------------
     "test_F3_edit_handling/LocalControllerAddAndReplaceMakeTheEquilibriumStale", "large"
     "test_F3_edit_handling/NetworkHzEditRedesignsTheLQRGain", "large"
