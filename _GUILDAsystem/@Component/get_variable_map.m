@@ -36,12 +36,8 @@ function [tab, tab_connection] = get_variable_map(obj, s_form)
         tab              % One row per variable or signal: Index, Kind, Role, Owner, Name, Label, Bus.
         tab_connection   % One row per connection: Index, Kind, Source, Target, SourceIndex, TargetIndex.
     end
-    s_bus   = "";
-    sv_V    = strings(2,1);
-    if ~isempty(obj.a_Bus)
-        s_bus   = string(obj.a_Bus.s_tag);
-        sv_V    = label(obj.a_Bus, ["Vre";"Vim"]);
-    end
+    s_bus   = string(obj.a_Bus.s_tag);
+    sv_V    = label(obj.a_Bus, ["Vre";"Vim"]);
 
     a_LC  = all_controllers(obj);
     a_obj = [{obj}; a_LC];

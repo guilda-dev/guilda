@@ -13,10 +13,10 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
 % empty); "struct" returns a struct with the same eight fields; "ss" returns a
 % descriptor state-space model (dss) and needs the Control System Toolbox.
 %
-% At the default point (x, V, u all omitted), a controller on a network stops with the
-% error GUILDA:LocalController:Stale when net.initialize() is needed (a stale tag of the
+% At the default point (x, V, u all omitted), the controller stops with the error
+% GUILDA:LocalController:Stale when net.initialize() is needed (a stale tag of the
 % network or the controller). A call with x, V, u does not check the stale tags (as
-% in Component.get_sys). A controller without a network builds its stale handles first.
+% in Component.get_sys).
 %
 % See also Component.get_sys
 %
@@ -38,13 +38,9 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
     end
     t0 = tic;
 
-    owner = obj.a_Component;
-    while isa(owner, "LocalController")   % a controller may be attached under another one
-        owner = owner.a_Component;
-    end
-    if nargin <= 1 && ~isempty(owner) && ~isempty(owner.a_Bus) && ~isempty(owner.a_Bus.a_PowerNetwork)
+    net = obj.observed_component().a_Bus.a_PowerNetwork;
+    if nargin <= 1
         % default point (nargin does not count the name-value arguments): check the stale tags
-        net = owner.a_Bus.a_PowerNetwork;
         if ~isempty(net.sct_stale.input)   % edited inputs: initialize(Method="FixedInput")
             sv_in = unique(net.sct_stale.input, "stable");
             error(msg("GUILDA:LocalController:InputEdited", char(net.s_tag), char(join(sv_in(1:min(end,3)), "; "))))
@@ -58,8 +54,6 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
             end
             error(msg("GUILDA:LocalController:Stale", char(obj.s_tag), char(s_reason), "get_sys"))
         end
-    elseif isempty(owner) || isempty(owner.a_Bus) || isempty(owner.a_Bus.a_PowerNetwork)
-        obj.set_odefcn();    % no network to initialize: stale handles are rebuilt here
     end
 
     sys = linearize_alone(obj, x, V, u, opt.full, opt.tag);
@@ -74,20 +68,11 @@ function [sys, varargout] = get_sys(obj, x, V, u, opt)
                && isequal(V, [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]);
         sct_output = struct("message", "Linearized the local controller " + obj.s_tag + ".", ...
                             "s_issue", "", "l_equilibrium", l_eq, "s_layer", "LocalController");
-        sys = ResultLIN(net_of(owner), "", struct(), true, sct_output, t0, ...
+        sys = ResultLIN(net, "", struct(), true, sct_output, t0, ...
                         table(), [x; V; u], sct_block, struct("sct_sys", sys));
         if opt.Format == "ss"
             sys = sys.get_ss(Format="ss");
         end
-    end
-end
-
-
-function net = net_of(owner)
-% Network of the component that the controller belongs to, or []
-    net = [];
-    if ~isempty(owner) && ~isempty(owner.a_Bus)
-        net = owner.a_Bus.a_PowerNetwork;
     end
 end
 

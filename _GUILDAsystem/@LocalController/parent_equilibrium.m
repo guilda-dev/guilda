@@ -9,11 +9,7 @@ function val = parent_equilibrium(obj, s_prop)
         s_prop (1,1) string   % Name of the equilibrium property of the parent.
     end
     arguments (Output)
-        val   % Value of that property, or zeros(0,1) without a parent.
+        val   % Value of that property.
     end
-    if isempty(obj.a_Component)
-        val = zeros(0,1);
-    else
-        val = obj.a_Component.(s_prop);
-    end
+    val = obj.a_Component.(s_prop);
 end

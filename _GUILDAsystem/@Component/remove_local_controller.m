@@ -5,7 +5,7 @@ function remove_local_controller(obj, s_tag, opt)
 % governor) or the PSS under the AVR; the other top-level controller stays attached.
 % An AVR that still has a PSS feeding it cannot be removed unless `RemoveNested` is true,
 % which removes the PSS too. Remove the PSS alone by its own tag. The removed controllers
-% no longer refer to this component or to each other.
+% are deleted, so a handle to them becomes invalid.
 % The removal is a "Topology" edit, so the equilibrium of the component becomes stale.
 % When a global controller controls the component and the edit changes where one of its
 % outputs goes (the "global" rows of net.get_variable_map), an INFO message
@@ -50,11 +50,7 @@ function remove_local_controller(obj, s_tag, opt)
         obj.a_LocalController(k_top) = [];
         obj.l_hasController = ~isempty(obj.a_LocalController);
         obj.log_edit(obj.s_tag+" ---remove->> "+s_removed, "Topology");
-        top.remove_local_controller();
-        top.a_Component = [];
-        for m = 1:numel(a_nested)
-            a_nested{m}.a_Component = [];
-        end
+        tools.delete_layers({top});    % with the nested controller
         gc_routes(obj, sm_route);   % INFO when an output of a global controller goes elsewhere now
         return
     end
@@ -65,7 +61,7 @@ function remove_local_controller(obj, s_tag, opt)
         if ~isempty(a_nested) && a_nested{1}.s_tag == s_tag
             obj.log_edit(obj.s_tag+" ---remove->> "+s_tag, "Topology");
             top.remove_local_controller();
-            a_nested{1}.a_Component = [];
+            tools.delete_layers(a_nested);
             gc_routes(obj, sm_route);
             return
         end

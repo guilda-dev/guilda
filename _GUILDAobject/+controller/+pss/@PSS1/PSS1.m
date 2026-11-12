@@ -45,7 +45,7 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
         key = "pss-PSS1"  % Model key that selects this class in `Component.add_local_controller`.
     end
 
-    methods
+    methods (Access={?Component})
         function obj = PSS1(tag, param)
         % Create a PSS1 stabilizer with the tag "CP" + tag.
             arguments (Input)

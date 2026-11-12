@@ -21,9 +21,11 @@ classdef LocalController < PowerSystemModel
 % - Gives no current to the network (no `fcn_I`). It receives the parent voltage V in its
 %   functions, but does not own the voltage or the frequency, and is not a child of the
 %   bus.
-% - Built and attached by `Component.add_local_controller` from its model key `key`, which
+% - Built and attached by `Component.add_local_controller` from its model key `key` (the
+%   constructors of the concrete classes are accessible only from `Component`), which
 %   sets `a_Component` (`SetAccess`), resolves the observed inputs and logs a "Topology"
-%   edit. A controller attaches to one parent at a time.
+%   edit, so a controller is always on a component of a network. A controller attaches
+%   to one parent at a time. A removed or replaced controller is deleted.
 % - Differs from `Component` on purpose: no `fcn_I`, the output function is `fcn_y`, and
 %   the Jacobians are required. Inputs named X or Y are not allowed.
 % - `resolve_observe` (called by `Component.add_local_controller` on attachment) expands
@@ -71,7 +73,7 @@ classdef LocalController < PowerSystemModel
     
 %% Parameter    
     properties(SetAccess={?Component, ?LocalController}) % Layer Structure
-        a_Component = []                           % Parent: the component, or the AVR for a PSS ([] when detached). <@Type> Component or LocalController
+        a_Component = []                           % Parent: the component, or the AVR for a PSS (set by Component.add_local_controller). <@Type> Component or LocalController
     end
     properties(SetAccess=protected) % Layer Structure
         a_LocalController = cell(0,1)              % Nested controller (the PSS under an AVR), 0x1 or 1x1. <@Stale> equilibrium
@@ -105,8 +107,8 @@ classdef LocalController < PowerSystemModel
     end
 
     properties(Dependent) % Steady State
-        c_Vequilibrium                             % [pu] Voltage equilibrium of the parent (zeros(0,1) without a parent).
-        c_Iequilibrium                             % [pu] Current equilibrium of the parent (zeros(0,1) without a parent).
+        c_Vequilibrium                             % [pu] Voltage equilibrium of the parent.
+        c_Iequilibrium                             % [pu] Current equilibrium of the parent.
     end
 
     properties(Dependent, Access=protected) % Layer Structure

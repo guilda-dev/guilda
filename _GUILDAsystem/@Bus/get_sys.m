@@ -24,7 +24,7 @@ function [sys, varargout] = get_sys(obj, opt)
 % returns a struct with the same eight fields; "ss" returns a descriptor state-space model
 % (dss) and needs the Control System Toolbox.
 %
-% Without Point, a bus on a network stops with the error GUILDA:Bus:Stale when
+% Without Point, the bus stops with the error GUILDA:Bus:Stale when
 % net.initialize() is needed (a stale tag of the network or of its components).
 %
 % See also Component.get_sys, Bus.get_variable_map, PowerNetwork.get_sys
@@ -47,7 +47,7 @@ function [sys, varargout] = get_sys(obj, opt)
     t0 = tic;
 
     l_equilibrium = isempty(opt.Point) && ~iscell(opt.Point);
-    if l_equilibrium && ~isempty(obj.a_PowerNetwork)
+    if l_equilibrium
         % stale tags of the network and the components (Component.get_sys checks their controllers)
         net = obj.a_PowerNetwork;
         if ~isempty(net.sct_stale.input)   % edited inputs: initialize(Method="FixedInput")

@@ -62,7 +62,7 @@ classdef (Sealed = true) IEEJ_LPT4 < controller.governor.abstract
         key = "gov-LPT4"  % Model key that selects this class in `Component.add_local_controller`.
     end
 
-    methods
+    methods (Access={?Component})
         function obj = IEEJ_LPT4(tag, param)
         % Create an IEEJ_LPT4 governor with the tag "CG" + tag.
             arguments (Input)

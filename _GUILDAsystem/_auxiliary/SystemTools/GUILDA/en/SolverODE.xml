@@ -5,7 +5,6 @@
         <entry key="InitialConditionFailed">No consistent initial condition was found for phase {0} (t = [{1}, {2}] s): {3}</entry>
         <entry key="PhaseFailed">The simulation failed in phase {0} (t = [{1}, {2}] s): {3}</entry>
         <entry key="GconNoTarget">The global controller ''{0}'' drives the input ''{1}'' of ''{2}'', but neither the component nor its local controllers have this input now.&#xA;Attach a local controller with this input, or remove the global controller with net.remove_global_controller(TAG).</entry>
-        <entry key="ForeignControlledUnit">The global controller ''{0}'' controls ''{1}'', which is not a component of the network ''{2}''.&#xA;Remove it with net.remove_global_controller(TAG) and build it again for the current components.</entry>
         <entry key="OpenBranchIsland">Phase {0} (t = [{1}, {2}] s): the open branches {3} leave the buses {4} connected to no component, so their voltages are undetermined. Open branches so that every bus stays connected to a component, or remove those buses from the network.</entry>
         <entry key="NoPropName">This property does not exist.</entry>        
         <entry key="Stale">net.simulate stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>

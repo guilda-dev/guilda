@@ -9,7 +9,7 @@ function set_input(obj, rv_u)
 % the continuation power flow) and net.initialize() stop until
 % net.initialize(Method="FixedInput") is run. net.initialize(Method="powerflow") or
 % Method="OPF" replaces the edited inputs with the values of their solution.
-% A value equal to the held one changes nothing. The component must be on a bus.
+% A value equal to the held one changes nothing.
 %
 % <@Examples>
 % ```matlab
@@ -34,9 +34,6 @@ function set_input(obj, rv_u)
     if numel(rv_u) ~= numel(obj.sv_u)
         error(msg("GUILDA:Component:InputSize", char(obj.s_tag), char(string(numel(rv_u))), ...
                   char(string(numel(obj.sv_u))), char(join(string(obj.sv_u), ", "))))
-    end
-    if isempty(obj.a_Bus)
-        error(msg("GUILDA:Component:InputNotConnected", char(obj.s_tag)))
     end
     rv_old = obj.rv_Uequilibrium;
     if isequal(rv_old, rv_u)

@@ -60,6 +60,23 @@ classdef classical < component.generator.abstract
         sv_para = ["M","D","Xd","Xq"]  % Dynamic parameter names.
     end
 
+    methods (Access={?Bus})
+        function obj = classical(index, parameter, varargin)
+            % Create the generator; called through `Bus.add_component` and `Bus.replace_component`.
+            arguments (Input)
+                index      % Number of the tag: the tag is the bus tag + "SG" + index.
+                parameter  % Dynamic parameters: a table, a name in parameter.csv ("NGT2", "NGT6", "NGT8"), or NaN for its first row.
+            end
+            arguments (Input, Repeating)
+                varargin   % Options of Bus.add_component, passed on to Component.
+            end
+            arguments (Output)
+                obj        % Generator object.
+            end
+            obj@component.generator.abstract(index, parameter, varargin{:})
+        end
+    end
+
     methods                
         [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj, c_V, c_I, r_P, r_Q)
     end        

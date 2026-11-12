@@ -7,8 +7,9 @@ function comp = replace_component(obj, s_tag, Key, parameter, opt)
 % A tag that is not found is an error. A component controlled by a global controller
 % cannot be replaced.
 %
-% The local controllers are not carried over by default: they stay on the replaced
-% component and the warning GUILDA:Bus:ControllersDropped names them. With
+% The replaced component is deleted, so a handle to it becomes invalid. The local
+% controllers are not carried over by default: they are deleted with it and the warning
+% GUILDA:Bus:ControllersDropped names them. With
 % `Controllers="keep"` they move to the new component (a handle to one of them then refers
 % to the new component), and `net.initialize()` designs them again. If the new component
 % lacks an input they drive or a signal they observe, the error
@@ -95,7 +96,7 @@ function comp = replace_component(obj, s_tag, Key, parameter, opt)
             show_msg("warning", "GUILDA:Bus:ControllersDropped", tag_list(a_con), char(comp_pre.s_tag), char(comp.s_tag))
         end
     end
-    comp_pre.a_Bus = [];    % the replaced component no longer reads this bus
+    tools.delete_layers({comp_pre});    % with the dropped controllers ("keep" has moved them)
 end
 
 function a_con = controllers_of(comp)

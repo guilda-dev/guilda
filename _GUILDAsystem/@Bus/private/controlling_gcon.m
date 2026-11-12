@@ -11,9 +11,6 @@ function s_gcon = controlling_gcon(obj, comp)
     end
     s_gcon = "";
     net = obj.a_PowerNetwork;
-    if isempty(net)
-        return
-    end
     for i = 1:numel(net.a_GlobalController)
         gcon = net.a_GlobalController{i};
         if any(cellfun(@(unit) unit == comp, gcon.controlledUnits))

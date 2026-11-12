@@ -50,7 +50,7 @@ classdef broadcast_PI_AGC < GlobalController
         sv_para = ["alpha","beta","kP","kI"]  % Names of the dynamic parameters passed to the model functions.
     end           
     
-    methods
+    methods (Access={?PowerNetwork})
         function obj = broadcast_PI_AGC(net, tag, varargin, opt)
         % Create the AGC with the tag net tag + "AGC" + tag for the generators given after the tag.
             arguments (Input)

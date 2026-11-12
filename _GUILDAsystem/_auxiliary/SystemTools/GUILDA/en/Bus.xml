@@ -5,7 +5,7 @@
         <entry key="NonUnitBus">Error: Non-unit bus '' {0} ''  cannot be assigned as the slack bus.</entry>         
         <entry key="ComponentNotFound">No component with the tag ''{0}'' was found on ''{1}''.&#xA;List the tags of the bus with string(bus.a_Component).</entry>
         <entry key="ComponentControlled">The component ''{0}'' is controlled by the global controller ''{1}''.&#xA;Remove the global controller first with net.remove_global_controller(TAG).</entry>
-        <entry key="ControllersDropped">The controllers {0} of ''{1}'' were not carried over to ''{2}''.&#xA;Pass Controllers="keep" to replace_component to carry them over, or attach them again with add_local_controller.</entry>
+        <entry key="ControllersDropped">The controllers {0} were deleted with ''{1}'' and not carried over to ''{2}''.&#xA;Pass Controllers="keep" to replace_component to carry them over, or add new ones with add_local_controller.</entry>
         <entry key="ControllersNotKept">The controllers of ''{0}'' cannot be carried over to ''{1}'': the new component lacks a signal they use ({2}).&#xA;Nothing was changed.</entry>
         <entry key="SlackWithoutQnan">No component of slack bus ''{0}'' has Q = NaN, so ''{1}'' takes the remaining power in net.initialize, even if it is a load.&#xA;Add a generator to this bus, set l_isSlack = true on a bus that has one, or set Q = NaN on the component that should supply the power.</entry>
         <entry key="SetSlack">'' {0} ''  set as slack bus.&#xA;      P and Q specifications for '' {1} '' ignored in powerflow calculation.</entry>         

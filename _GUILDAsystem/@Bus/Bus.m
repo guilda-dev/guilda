@@ -21,9 +21,10 @@ classdef Bus < PowerSystemModel
 %   to `add_bus` or in a CSV bus table is accepted and ignored), the branches that end at
 %   it (a branch only refers to it; a bus does not know its branches), or any dynamics
 %   (components carry the equations).
-% - Created only by `PowerNetwork.add_bus`. Only the parent sets and clears a parent
-%   reference: the network sets `a_PowerNetwork`, and the bus sets `Component.a_Bus` of
-%   its components.
+% - Created only by `PowerNetwork.add_bus`, so a bus is always on a network. Only the
+%   parent sets a parent reference: the network sets `a_PowerNetwork`, and the bus sets
+%   `Component.a_Bus` of its components. `PowerNetwork.remove_bus` deletes the bus with its
+%   components.
 %
 % What differs from bus to bus (slack, PV, PQ, shunt) is data, not a type, so Bus has
 % no subclasses.
@@ -51,7 +52,7 @@ classdef Bus < PowerSystemModel
     end
 
     properties (SetAccess={?PowerNetwork}) % Layer Structure
-        a_PowerNetwork = []               % PowerNetwork the bus belongs to ([] when removed). <@Type> PowerNetwork
+        a_PowerNetwork = []               % PowerNetwork the bus belongs to (set by add_bus). <@Type> PowerNetwork
     end
     properties (SetAccess=protected) % Layer Structure
         a_Component (:,1) = cell(0,1)     % Components connected to the bus. <@Stale> powerflow

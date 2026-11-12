@@ -53,6 +53,23 @@ classdef droop < component.generator.abstract
         sv_y = string.empty(0,1)    % Output names read by local controllers.
         sv_para = ["D","Xd","Xq"]   % Dynamic parameter names.
     end
+
+    methods (Access={?Bus})
+        function obj = droop(index, parameter, varargin)
+            % Create the generator; called through `Bus.add_component` and `Bus.replace_component`.
+            arguments (Input)
+                index      % Number of the tag: the tag is the bus tag + "SG" + index.
+                parameter  % Dynamic parameters: a table, a name in parameter.csv ("NGT2", "NGT6", "NGT8"), or NaN for its first row.
+            end
+            arguments (Input, Repeating)
+                varargin   % Options of Bus.add_component, passed on to Component.
+            end
+            arguments (Output)
+                obj        % Generator object.
+            end
+            obj@component.generator.abstract(index, parameter, varargin{:})
+        end
+    end
     methods        
         dx = fcn_dx(obj, t, x, V, u, param, omega0)
         I  = fcn_I(obj, t, x, V, u, param, omega0)        

@@ -1,7 +1,6 @@
 <!--This is an XML file containing error messages related to the class "local_LQR".-->
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
-        <entry key="NotOnComponent">{0} must be attached directly to a component.</entry>
         <entry key="DesignModel">{0}: the bus voltage equals V0 = {1}; choose another V0 for the design model.</entry>
         <entry key="WeightSize">{0}: Q must be {1}x{2} (states {3}) and R {4}x{5} (inputs {6}).</entry>
         <entry key="WeightShape">{0} must be a vector or a square matrix.</entry>
