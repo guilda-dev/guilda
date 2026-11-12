@@ -36,7 +36,7 @@
 | Q6 | `SolverOptions` は**残す**(将来、Y 法を手本にした固定刻みの自作ソルバーを加える可能性がある)。`MaxStep` と `InitialStep` も設定に加え、呼び出しで上書きできるようにする | §2.1, §2.7, §3.1 |
 | Q7 | `Progress` の true/false は残す | §2.1 |
 | Q8 | `ResultODE` は `sct_network` のスナップショットを持つ | §5.2 |
-| Q9 | `Format="struct"` はクラスごとに分けた struct で、各物体の応答は変数名を列名とする table。形は §5.3 の案で、**利用者の確認待ち** | §5.3, §9.2 |
+| Q9 | `Format="struct"` はモデルの階層を写した struct(`sol.a_Bus{i}.a_Component{j}.x` など)で、各物体の応答は変数名を列名とする table。形は追加の回答(2026-11-12)で確定。出力 `.y` を加えるかは確認待ち | §5.1, §5.3, §8.2, §9.2 |
 | Q10 | `simulate` 側が `f_reconnect` を作って渡す | §3.2 |
 | Q11 | Hidden の `PowerNetwork.build_simulation_data` を加える | §2.1, §7, §8 |
 | Q12 | `gui` を `LayerPackage` に移す | §2.5 |
@@ -155,7 +155,7 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
         opt.Format (1,1) string {mustBeMember(opt.Format, ["GUILDAorigin","struct"])} = "GUILDAorigin"   % Form of the first output.
     end
     arguments (Output)
-        result   % ResultODE (Format "GUILDAorigin") or a struct of tables per bus, component and controller (Format "struct").
+        result   % ResultODE (Format "GUILDAorigin") or a struct that mirrors the model hierarchy, with tables (Format "struct").
         flag     % 1 completed, 0 stopped by TimeLimit, -1 stopped by the solver.
         output   % Details: message, tEnd, phases, nPhases, nPhasesDone, isSparse, exception.
     end
@@ -573,7 +573,9 @@ rv_x0(u の行)  += 第 1 区間の入力関数の t = 0 の値(現行 initial_c
 | `rv_t` | double, n_t × 1 | 時刻。区間の境界は 2 回(現行と同じ) |
 | `rm_variable` | double, n_t × n_var | 変数 x, Vre, Vim, u, uc の値(`tab_variable` の変数の行の順)。解列中の状態は NaN |
 | `rm_I` | double, n_t × 2 n_bus | 母線電流 Ire, Iim |
-| `rv_phase` | double, n_t × 1 | 各時刻の区間の番号(`Format="struct"` の出力の評価で、区間の開始からの時刻を作るため) |
+| `rv_phase` | double, n_t × 1 | 各時刻の区間の番号(`Format="struct"` で機器の電流 `f_I` と出力 `f_Y` を評価するとき、区間の開始からの時刻と、その区間の解列を知るため) |
+
+`sct_sol` は内部のデータで、利用者には返しません。`Format="struct"` の第 1 出力は §5.3 の階層の struct で、`sct_sol` と `sct_dae`(ブロックのハンドル、タグ、表)から作ります。機器の電流と出力は `sct_sol` に記録しないので、そのときだけ評価します(積分の速さに影響しないため)。
 
 `flag` と `output` は 2 番目、3 番目の出力です(どの `Format` でも同じ)。
 
@@ -597,33 +599,48 @@ function obj = ResultODE(sct_sol, tab_variable, sct_network, sct_solver)
 - 新しいプロパティ: `sct_network`(SetAccess=private)。
 - **系統の情報が要る理由:** 結果のメソッド(`Plot`, `get_point`, `export`, `odeResults`)は系統を読みません。読むのは `Scenario.out_of_step` の基準(スラック母線、慣性 `M`)だけで、`out_of_step` はスナップショットから `l_isSlack` と `tab_parameter.dynamics.M` を読みます。[未確認] `struct(net, false)` の時間(IEEE68 など)は計っていません。S3 で計り、§8.2 のとおり記録します。
 
-### 5.3 `Format="struct"` の形 [決定 Q9、**形は要確認**]
+### 5.3 `Format="struct"` の形 [決定 Q9、2026-11-12 に形を確定]
 
-`Format="struct"` の第 1 出力は、クラスごとに分けた struct です。各物体の応答は MATLAB の table で、列名は変数名です。`build_simulation_data` のデータと `sct_sol` から `simulate` が作ります(`@PowerNetwork/private/struct_result.m`)。
+`Format="struct"` の第 1 出力は、**モデルの階層をそのまま写した struct** です。各物体の応答は MATLAB の table で、列名は変数名です。`build_simulation_data` のデータと `sct_sol` から `simulate` が作ります(`@PowerNetwork/private/struct_result.m`)。
 
 ```matlab
 sol = net.simulate("case1", Format="struct");
-sol.Bus.B001              % table: Time, Vre, Vim, Ire, Iim
-sol.Component.B001SG1     % table: Time, <states>, <inputs>, <outputs>
-sol.Controller.B001SG1AVR1  % table: Time, <states>, <inputs>, <outputs>   (local)
-sol.Controller.AGC1       % table: Time, <states>, <inputs>, <outputs>   (global)
-sol.Variable              % table: the variable rows of get_variable_map (x, Vre, Vim, u, uc)
-sol.Phase                 % table: output.phases (t1, t2, one column per disturbance)
-sol.Disturbance           % table: tab_disturbance of the scenario
-sol.Scenario              % string: tag of the scenario
+sol.t                                   % [s] n_t x 1, shared by every table
+sol.s_tag                               % "case1" (tag of the scenario)
+sol.phase                               % table: output.phases (t1, t2, one column per disturbance)
+sol.tab_variable                        % table: variable rows of get_variable_map (x, Vre, Vim, u, uc)
+sol.a_Bus{i}.s_tag                      % "B001"
+sol.a_Bus{i}.V                          % table: Vre, Vim
+sol.a_Bus{i}.I                          % table: Ire, Iim   (current injected into the network at the bus)
+sol.a_Bus{i}.P,  sol.a_Bus{i}.Q         % table: P / Q      (one column each)
+sol.a_Bus{i}.a_Component{j}.s_tag       % "B001SG1"
+sol.a_Bus{i}.a_Component{j}.x           % table: delta, omega, ...
+sol.a_Bus{i}.a_Component{j}.u           % table: the inputs of the component (sv_u)
+sol.a_Bus{i}.a_Component{j}.I           % table: Ire, Iim   (current injected by this component)
+sol.a_Bus{i}.a_Component{j}.a_LocalController{k}.s_tag, .x, .u
+sol.a_Bus{i}.a_Component{j}.a_LocalController{k}.a_LocalController{m}.x, .u   % e.g. a PSS under an AVR
+sol.a_GlobalController{k}.s_tag, .x, .u
 ```
 
 | 部分 | 列 | 値の出どころ |
 |---|---|---|
-| `Bus.<母線タグ>` | `Time`, `Vre`, `Vim`, `Ire`, `Iim` | `rv_t`, `rm_variable` の Vre・Vim の列, `rm_I` |
-| `Component.<機器タグ>` | `Time`, 状態(`sv_x`), 入力(`sv_u`), 出力(`sv_y`) | 状態と入力は `rm_variable`。出力は記録しないので、`f_Y(t, x, V)` を各時刻で評価します(t は区間の開始からの時刻、ソルバーと同じ規約。`rv_phase` から作る)。解列中は状態と出力が NaN |
-| `Controller.<LC タグ>` | `Time`, 状態, 入力(uc), 出力(yc) | uc は `rm_variable`。出力は `f_Y(t, x, V, u)` を評価(V は親の機器の母線) |
-| `Controller.<GC タグ>` | `Time`, 状態, 入力 `<名前>_<機器タグ>`, 出力 `<名前>_<機器タグ>` | GC の uc・yc は制御対象ごとにあるので、列名に機器のタグを付けます(`get_variable_map` の `Label` から GC のタグを除いた形)。出力は `f_Y(t, x, V_all, u)`。解列中の GC は状態と出力が NaN |
+| `t` | (列ベクトル) | `sct_sol.rv_t`。区間の境界の時刻は 2 回現れます(`ResultODE.rv_t` と同じ) |
+| `a_Bus{i}.V` | `Vre`, `Vim` | `rm_variable` のその母線の Vre・Vim の列 |
+| `a_Bus{i}.I` | `Ire`, `Iim` | `rm_I`(母線から網へ注入する電流 `Y*V`。機器の電流の和) |
+| `a_Bus{i}.P`, `.Q` | `P` / `Q` | `P + jQ = V · conj(I)`(母線の `V` と `I` から計算) |
+| `a_Component{j}.x` | 状態の名前(`sv_x`) | `rm_variable`。解列中は NaN |
+| `a_Component{j}.u` | 入力の名前(`sv_u`) | `rm_variable`。解列中は NaN |
+| `a_Component{j}.I` | `Ire`, `Iim` | **その機器が注入する電流**(母線の合計ではない)。記録しないので、`f_I(t, x, V, u)` を各時刻で評価します(t は区間の開始からの時刻、ソルバーと同じ規約。`sct_sol.rv_phase` から作る)。解列中は 0(網へ電流を注入しないため) |
+| `a_LocalController{k}.x`, `.u` | 状態の名前、入力(uc)の名前 | `rm_variable`(§4.3 で uc も記録する) |
+| `a_GlobalController{k}.x` | 状態の名前 | `rm_variable`。解列中は NaN |
+| `a_GlobalController{k}.u` | `<入力名>_<機器タグ>` | GC の uc は制御対象ごとにあるので、列名に制御対象のタグを付けます(`get_variable_map` の `Label` から GC のタグを除いた形)。解列中は NaN |
 
-- **列名の重なり [要確認]:** 状態・入力・出力に同じ名前があると table を作れません(例: 出力 `omega` と状態 `omega` を持つ機器)。案: 出力の列に限り、重なるときだけ `y_<名前>` にします。全部の出力の列に `y_` を付けると規則は単純になりますが、名前が長くなります。
-- **タグの名前空間:** LC のタグは親を先頭に付けた自動のタグ(`B001SG1AVR1` など)、GC のタグは系統の子のタグです。[未確認] 利用者が付けたタグで LC と GC が重なりうるかは S5 で確かめ、重なりうるなら `Controller.Local` と `Controller.Global` に分けます。
-- **区間の境界:** 時刻が 2 回現れる行は、どの表でもそのまま 2 行です(`ResultODE.rv_t` と同じ)。
-- **計算量:** 出力の評価は時刻 × ブロックの数だけ `f_Y` を呼ぶので、`Format="struct"` のときだけ行います。
+- **時間はトップの `sol.t` だけ [提案]。** 各 table に `Time` の列は重ねません。どの table の行も `sol.t` の同じ行に対応します。理由: (1) 時刻を 1 か所だけに持つので、table ごとに時刻がずれる余地がありません。(2) `x` や `u` の列が変数だけになり、`sol.a_Bus{1}.a_Component{1}.x.omega` や `x{:,:}` で数値の行列としてそのまま使えます(`Time` の列があると、行列にするときに除く手間がかかります)。(3) 母線・機器・制御器の数だけ同じ列を複製しない分、大きな系統でメモリが少なくて済みます。描くときは `plot(sol.t, x.omega)` です。timetable にしない理由も同じで、区間の境界の重複した時刻を行の時刻として持つより、`sol.t` 1 つに揃えるほうが単純です。
+- **入れ子のローカル制御器:** モデルと同じ入れ子です。AVR の下の PSS は `a_Component{j}.a_LocalController{k}.a_LocalController{m}` です。制御器のない層の `a_LocalController` は空のセル(0×1)です。機器のない母線の `a_Component` も空のセルです。
+- **タグ:** 各要素に `s_tag` の項目(string)を持たせます(モデルの物体のプロパティと同じ名前)。セルの番号は `net.a_Bus`, `a_Component`, `a_LocalController`, `a_GlobalController` の順と同じなので、`net` の同じ位置の物体と対応します。タグで探す例: `i = find(cellfun(@(b) b.s_tag, sol.a_Bus) == "B001")`。
+- **出力 y [要確認、R1]:** 利用者の指定には出力がありません。推奨は、機器と制御器に `.y`(列は出力の名前。GC は `<出力名>_<機器タグ>`)を**加える**ことです。理由: GC が観測する機器の出力や、制御器の出力(例: AVR の `Vfield`、ガバナの `Pmech`)は、解析でよく見る量なのに `rm_variable` にないので、ほかの方法では得られません。出力は記録しないので `f_Y` を各時刻で評価します(機器 `f_Y(t, x, V)`、LC `f_Y(t, x, V, u)`、GC `f_Y(t, x, V_all, u)`。解列中は NaN)。費用は時刻 × ブロックの数だけの関数の評価で、`Format="struct"` のときだけです。加えない場合は、`I` の評価(`f_I`)だけになります。
+- **列名の重なり:** 状態・入力・出力・電流は別の table なので、名前が重なっても問題ありません(以前の案の `y_<名前>` は不要です)。
+- **計算量:** `a_Component{j}.I`(と `.y`)の評価は、`Format="struct"` のときだけ行います。
 
 ### 5.4 `export` への改名 [決定 Q14]
 
@@ -787,7 +804,7 @@ sol.Scenario              % string: tag of the scenario
 - `Time`: `simulate("f", Time=[0 2])` が `[0, 2]` で計算し、`sc.Time` は変わらない。`Time` を与えなければ `sc.Time`。`add_scenario("f")` の `Time` は `[0, 10]`。外乱の時間幅は時間を変えない。
 - 呼び出しの `Tolerance` が `result.options` に入り、`GUILDA.config("TimeSimulation","Tolerance")` は変わらない。与えない名前は設定の値。
 - `MaxStep=1e-3` で出力の時間間隔が 1e-3 以下。設定の `MaxStep` も効く(`GUILDA.setting` を一時的に変え、`onCleanup` で戻す)。呼び出しの `SolverOptions` があるとき設定の `MaxStep` は当たらず、呼び出しの `MaxStep` は当たる。`MaxStep` も `SolverOptions` も与えない実行は基準と `isequaln`。
-- `Format="struct"`: `sol.Bus.<tag>.Vre` が `ResultODE` の同じ列と `isequaln`。`sol.Component.<tag>` の出力の列が `f_Y` の値と一致。GC の列名が `<名前>_<機器タグ>`。解列中の行が NaN。
+- `Format="struct"`: `sol.a_Bus{i}.V.Vre` が `ResultODE` の同じ列と `isequaln`。どの table も `height` が `numel(sol.t)`。各要素の `s_tag` が `net` の同じ位置の物体のタグ。AVR+PSS の系統で PSS が `a_LocalController{1}.a_LocalController{1}` にある。機器の `I` の和が母線の `I` と一致(数値の誤差の範囲)。`P + jQ = V·conj(I)`。GC の `u` の列名が `<名前>_<機器タグ>`。解列中の機器の `x` が NaN、`I` が 0。機器のない母線の `a_Component` が空。`.y` を加える場合は、その列が `f_Y` の値と一致。
 - `simulate(..., Export=...)` が MATLAB の未知の名前のエラーになる。`result.export("x.foo")` が `ExportExtension` で止まる。
 - `Scenario` の改名・外乱の追加が `net.sct_stale` と `n_revOPF` を変えない。
 - `disp_tree` の出力にシナリオの行がある。GUI のシナリオのカードとページ(F32/F33 の形で、表示を開いて閉じる)。
@@ -820,14 +837,14 @@ S0 で、基準コミットのコードで次の実行の `rv_t`, `rm_variable`,
 
 ### 9.1 回答済み(2026-11-12)
 
-§0.2 の表のとおりです。回答の前の推奨と違う決定は Q1(時間の上書きを許す)、Q2(既定 `[0, 10]`)、Q3(改名と INFO)、Q6(`SolverOptions` を残す)、Q9(クラスごとの table)、Q13(系統のフォルダの JSON)、Q14(`Export` オプションの削除と `export` への改名)です。
+§0.2 の表のとおりです。回答の前の推奨と違う決定は Q1(時間の上書きを許す)、Q2(既定 `[0, 10]`)、Q3(改名と INFO)、Q6(`SolverOptions` を残す)、Q9(モデルの階層を写した struct と table)、Q13(系統のフォルダの JSON)、Q14(`Export` オプションの削除と `export` への改名)です。
 
 ### 9.2 利用者の確認を待つ事項
 
 | # | 事項 | 推奨 |
 |---|---|---|
-| R1 | `Format="struct"` の形(§5.3): `Bus`, `Component`, `Controller`, `Variable`, `Phase`, `Disturbance`, `Scenario` | §5.3 の案。LC と GC を `Controller` にまとめる(LC と GC のタグが重なりうるなら `Controller.Local` / `Controller.Global` に分ける) |
-| R2 | `Format="struct"` で状態と出力の名前が重なるとき | 重なる出力の列だけ `y_<名前>` |
+| R1 | `Format="struct"` の機器と制御器に出力 `.y` を加えるか(§5.3) | 加える。制御器の出力や GC が観測する出力は、ほかの方法では得られないため |
+| R2 | `Format="struct"` の各 table に `Time` の列を重ねるか(§5.3) | 重ねない。時間はトップの `sol.t` だけにする |
 | R3 | シナリオの JSON(§2.8): タグはファイル名だけ、`Judge` は名前だけ(無名関数は警告して保存しない)、関数の `InputValue` はエラー | 案のとおり |
 | R4 | `_GUILDAverification` の IEEJ のシナリオ(§2.8 末) | 検証スクリプトのローカル関数で CSV を読み、`add_scenario` と `add_disturbance` を呼ぶ |
 | R5 | `Export` → `export` の改名をだれが行うか(§7 の注意) | 潮流計算の作業が `ResultBase` と PF・OPF・CPF をまとめて先に行い、S3 は `ResultODE` だけ |
