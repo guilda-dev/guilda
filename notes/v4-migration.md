@@ -77,6 +77,13 @@
 > - **潮流計算の解の数値。** `Tolerance` の既定は全手法で最大 P/Q 不平衡 1e-8 [pu] です(以前は手法ごとに意味と既定値が異なり、`"dynamic"` は 1e-5、`"fsolve"` は fsolve の既定)。また既定の `WarmStart=true` では、2 回目以降の計算は同じ系統の前回の収束解から始まります。解は `Tolerance` の範囲で変わり、`"dynamic"` では以前より代数解に近くなります。初期値を固定したい計算は `WarmStart=false`(フラットスタート)を渡してください(1.8)。
 > - **`@GUILDA/user/` の改名した設定キーは無視されます。** OptimalPowerFlow の `OptimalityTolerance`、ContinuationPowerFlow の `MaxIterations`、TimeSimulation の `RelativeTolerance` は読まれず(表示だけで警告なし)、新しいキー `Tolerance` / `MaxIteration` の既定値で計算します。新しいキー名で書き直してください(「解析の設定は GUILDA.setting」の節)。
 > - **`local_LQR` のゲインは系統の Hz の編集に追従します。** Hz の編集後の `get_sys` や `simulate` で、保持している平衡点から `K` を設計し直します。以前は古い Hz の `K` のままだったので、Hz を編集するスクリプトでは数値が変わります(1.6)。
+> - **Variable labels no longer end with the network tag.** Every label
+>   (`StateName`, `InputName`, `OutputName`, the `Label` column of
+>   `get_variable_map`, the controller columns of `Export`) drops the last
+>   `_<network tag>`: `delta_SG1B001_B001_IEEE9bus` is now
+>   `delta_SG1B001_B001`. A script that looks a label up by a hard-coded
+>   string finds nothing; `ismember` and `==` return false without an error
+>   (1.23).
 
 ---
 
@@ -345,7 +352,7 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
     `[~, ~, ~, tab_connection] = net.get_variable_map()` (rows of `Kind`
     `"global"`, see 1.12). `add_global_controller` prints these connections
     as an INFO line (`Source -> Target` by Label, e.g.
-    `Pmech_SG1B001_AGC1IEEE9bus -> Pmech_SG1B001_B001_IEEE9bus`). Nothing is
+    `Pmech_SG1B001_AGC1IEEE9bus -> Pmech_SG1B001_B001`). Nothing is
     stored on the controller (`gc.sv_route` is removed). When
     `comp.add_local_controller` or `comp.remove_local_controller` changes
     where an output of a global controller of that component goes, the edit
@@ -874,7 +881,7 @@ Option names:
   `port` is `[Vre; Vim]` in and `[Ire; Iim]` out for `port="V2I"`, the
   inverse for `"I2V"`. Controllers are listed depth first. States are
   never outputs and every name is unique; an output named like a state of
-  its owner is `Y_<name>` (e.g. `Y_omega_SG1B001_B001_PowerNetwork`). A controller input
+  its owner is `Y_<name>` (e.g. `Y_omega_SG1B001_B001`). A controller input
   adds to the internal signal it drives (as `u_mac` does). `full` is
   ignored. The `I2V` outputs `y` now account for V being an output, and
   the outputs of a component with controllers keep their tags.
@@ -1206,6 +1213,35 @@ there.
 - **コード補完。** `_GUILDAsystem/resources/functionSignatures.json`(追跡対象)が、キーで作るメソッドと `remove_component`・`remove_branch`・`remove_bus`・`remove_global_controller`・`remove_local_controller` の補完候補を与えます。`Key` にはそのカテゴリのキー、タグの引数にはそのオブジェクトの今のタグ(例: `bus.replace_component(` で、その母線の機器のタグ)が出ます。JSON の項目は `arguments` ブロックの候補を置き換えるため、全引数を含みます。
 - **開発者向け。** これらのメソッドの `arguments` ブロックを変えたら `GUILDA.update_keymap(Signature=true)` で JSON を作り直します(内容が変わったときだけ書きます)。名前・種類・クラス・既定値は `?Class` のメタデータから、説明は各引数の行末のコメントから取ります。テスト `test_F34_signatures` が JSON と `arguments` ブロックの一致を確かめます。
 - タグの候補は、変数がワークスペースにあるときだけ出ます(エディターでコードを実行する前は出ません)。キーの候補は常に出ます。
+
+### 1.23 Variable labels without the network tag
+
+Labels made by `attach_tag` (the names of states, inputs and outputs in
+`get_sys`, `linearize` and `ResultLIN`, the `Label` column and the
+`Source` / `Target` columns of `get_variable_map`, the INFO line of
+`add_global_controller`, the controller columns of `ResultODE.Export`) are
+the name followed by the tags of the layer and its parents up to the layer
+below the network. The network tag is no longer appended (2026-11-12).
+Tags are unique only among siblings, so the parent tags still keep every
+label unique within a network.
+
+| | v4 before | now |
+| --- | --- | --- |
+| component state | `delta_SG1B001_B001_PowerNetwork` | `delta_SG1B001_B001` |
+| local controller state | `omega_CP2SG1B001_CA1SG1B001_SG1B001_B001_PowerNetwork` | `omega_CP2SG1B001_CA1SG1B001_SG1B001_B001` |
+| bus voltage | `Vre_B001_PowerNetwork` | `Vre_B001` |
+| output named like a state | `Y_omega_SG1B001_B001_PowerNetwork` | `Y_omega_SG1B001_B001` |
+| global controller state | `xi_AGC1PowerNetwork_PowerNetwork` | `xi_AGC1PowerNetwork` |
+| global controller signal of a unit | `Pmech_SG1B001_AGC1PowerNetwork_PowerNetwork` | `Pmech_SG1B001_AGC1PowerNetwork` |
+
+- The global controller tag itself still contains the network tag
+  (`AGC1PowerNetwork`); only the suffix is removed.
+- No compatibility: a label with the old suffix is not recognized (e.g. in
+  `get_ss(Output=...)` or `sys(name, name)`). Build labels with
+  `obj.attach_tag(name)` or read them from `get_variable_map` instead of
+  writing them out.
+- Log messages (`log_edit`, `sct_stale`) still name the full path with the
+  network (`powerflow/B001/IEEE14bus: ...`).
 
 ---
 

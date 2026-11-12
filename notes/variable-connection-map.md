@@ -39,6 +39,10 @@
 - `Label`: x、u、V は今と同じ。`uc` は LC の `attach_tag(名前)`。`y`、`yc`(LC)は `get_sys` の出力名と同じ(所有者の状態と同名なら `"Y_" + 名前`)。
   GC の `uc` と `yc` は制御対象ごとにあるので `gc.attach_tag(名前 + "_" + 制御対象のタグ)`(例 `omega_SG1B001_AGC1IEEE68bus`)。
   `Label` は Kind の中で一意。接続表は `Index` で行を指す。
+- `Label` の末尾は、名前のあとに自分のタグと親のタグを `_` でつないだもので、ネットワークの 1 つ下の層で止まる。ネットワークのタグは付けない(2026-11-12)。
+  タグは兄弟の中でしか一意でないので、親のタグまでたどることで網の中で一意になる。
+  例(`network.Tutorial10bus`): `delta_SG1B001_B001`、`omega_CP2SG1B001_CA1SG1B001_SG1B001_B001`、`Vre_B001`、`Y_omega_SG1B001_B001`、`xi_AGC1PowerNetwork`、`Pmech_SG1B001_AGC1PowerNetwork`(GC のタグ自体はネットワークのタグを含む)。
+  以前は末尾に `_PowerNetwork` が付いていた(例 `delta_SG1B001_B001_PowerNetwork`)。ログ(`log_edit` の `get_tag("/")`)は今もネットワークまで含む。
 - GC の行の `Owner` は GC のタグ、`Bus` は `""`(今の x の行と同じ)。
 - `c_idxBus{i}`: 母線 i の行(すべての Kind)。`c_idxGC{k}`: GC k の行(x、uc、yc)。どちらも表の行番号で、変数表の順。
   線形化の部分だけが要るときは `iv(iv <= n_lin)`(先頭の部分なので、そのまま位置になる)。
@@ -170,7 +174,7 @@ z = [ x(表の順) ; V(母線ごとに Vre, Vim) ; I(母線ごとに Ire, Iim) ;
 - 削除したメンバー: 5.2 節の一覧のプロパティ、`SolverODE.initialize_index`、`get_units`、`set_offsets`、`set_gc_connect`、`restore_working_data`、
   private の `getXM`、`getTM`、`getStateTags`、`controllers_depth_first`、`Component.get_dx_algebraic`、`LocalController.get_dx_algebraic`。メッセージ `GUILDA:SolverODE:GconRouteChanged`(`GUILDA:Component:GconRouteChanged` へ移した)。
 - 変えたシグネチャ: `SolverODE.initial_condition(ctx, ph, x0, M0)`、`phase_result(ctx, ph, sct_sol)`。`bus.get_variable_map` は `[tab, c_idx, tab_connection]`、`comp.get_variable_map` は `[tab, tab_connection]`。
-- `add_global_controller` は GC を一覧に加え、`a_PowerNetwork` を設定してから網の表を作る(GC の Label は網のタグを含むため)。検査に失敗すると両方を元に戻す。
+- `add_global_controller` は GC を一覧に加え、`a_PowerNetwork` を設定してから網の表を作る(追加に成功した後と同じ状態で表を作るため。Label にはネットワークのタグを含まない)。検査に失敗すると両方を元に戻す。
 - `ResultODE.get_point` に表の uc、y、yc の行を渡すと `GUILDA:ResultODE:UnknownVariable`。テストは先頭の x、V、u の行に切ってから渡す。
 - `LocalController.validate` の `flag.inputs` にも同じ規則の写しがあったので、接続表を読むようにした(4 か所の一覧の外)。
 - `Scenario.compile` は変えていない(相ごとの `c_Xoffset`、`c_Uoffset` を `set_phase` と `initial_condition` が ctx へ読む)。
