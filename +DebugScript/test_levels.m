@@ -68,7 +68,7 @@ function tab = test_levels()
     "test_F2_powerflow/PowerFlowOnIEEE14HonorsGeneratorSettings", "medium"
     "test_F2_powerflow/PowerFlowOnIEEE14MatchesMATPOWERCase14", "medium"
     "test_F2_powerflow/DynamicMethodConverges", "medium"
-    "test_F2_powerflow/Name_ValueOptionsOverrideSolverDefaultsForOneCallOnly", "medium"
+    "test_F2_powerflow/Name_ValueOptionsOverrideTheSettingsForOneCallOnly", "medium"
     "test_F2_powerflow/DynamicMethodExportsConvergenceHistoryAsJSON", "medium"
     % ---- F30_governor ----------------------------------------------------------------------------
     "test_F30_governor/TheSlotsKeepAFixedOrderWhateverTheOrderOfAttachment", "large"
@@ -248,7 +248,7 @@ function tab = test_levels()
     "test_F8_utilities/TemplateTxt3Bus", "medium"
     % ---- F9_environment --------------------------------------------------------------------------
     "test_F9_environment/GUILDAStartsInBatchMode", "medium"
-    "test_F9_environment/ComponentKeyMapIsGeneratedAtStartup", "medium"
+    "test_F9_environment/ModelKeyMapListsTheKeysOfTheClasses", "medium"
     % ---- I105_model_contracts --------------------------------------------------------------------
     "test_I105_model_contracts/TripOfAGeneratorThatRequiresPAndQCompletes", "medium"
     % ---- I111_unfeasible_dae_message -------------------------------------------------------------
