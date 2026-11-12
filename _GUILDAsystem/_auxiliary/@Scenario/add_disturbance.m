@@ -3,11 +3,10 @@ function s_tag = add_disturbance(obj, tag, opt)
 %
 % The general form: one disturbance may
 % combine a fault, a trip, a branch opening, an offset and an input with one time
-% span. When the scenario is attached to a network, the tags are checked against it
-% now; otherwise when the scenario is added to a network. The checks are those of the
-% simulation: unknown tags, states and inputs, a TimeSpan without duration for a
-% lasting disturbance, value counts and the number of arguments of input functions.
-% Nothing is added when a check fails.
+% span. The tags are checked against the network of the scenario now, and again at the
+% start of each simulation. The checks are those of the simulation: unknown tags, states
+% and inputs, a TimeSpan without duration for a lasting disturbance, value counts and the
+% input time series (see add_input). Nothing is added when a check fails.
 %
 % <@Examples>
 % ```matlab
@@ -25,12 +24,15 @@ function s_tag = add_disturbance(obj, tag, opt)
         opt.OffsetValue (:,1) double = zeros(0,1)   % Offsets of OffsetState, one per name or one for all.
         opt.InputUnit   (1,1) string = ""           % Tag of the component to which an input is added.
         opt.InputName   (:,1) string = strings(0,1) % Names of the inputs of InputUnit (e.g. "Pmech").
-        opt.InputValue  (:,1) {mustBeA(opt.InputValue, {'double','cell','function_handle'})} = zeros(0,1) % Values added to InputName: numbers, or a cell of numbers and functions f(t) of the time since t_start.
+        opt.InputValue  {mustBeA(opt.InputValue, ["double","table"])} = zeros(0,1) % Values added to InputName: constants, or a time series [t, v_1, ..., v_n] or table (see add_input).
+        opt.InputMethod (1,1) string {mustBeMember(opt.InputMethod, ["zoh","foh","spline"])} % Interpolation of a time series InputValue: "zoh", "foh" or "spline". Default: "foh".
     end
     arguments (Output)
         s_tag (1,1) string % Tag of the added disturbance.
     end
-    d = opt;
-    d.Tag = tag;
+    d = blank_record(tag, opt.TimeSpan);
+    for s_name = string(fieldnames(opt)).'
+        d.(s_name) = opt.(s_name);
+    end
     s_tag = obj.add_record(d, "");
 end

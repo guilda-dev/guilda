@@ -1,4 +1,4 @@
-% F32 モデルの GUI (PowerSystemModel.gui, DrawerModelGUI)
+% F32 モデルの GUI (LayerPackage.gui, DrawerModelGUI)
 %
 %   h = bus.gui();              % 新しい uifigure
 %   h = net.gui(h_panel);       % uifigure 系のコンテナの中
@@ -120,19 +120,20 @@ h = net.a_Bus{1}.gui();
 [h_card, sv_group] = cards(h);
 assert(isscalar(h_card) && h_card.UserData == comp && sv_group == "Component (1)")
 assert(isequal(h_card.BackgroundColor, rgb("#F1F5D2")) && contains(strjoin(h_card.Text), class(comp)))
-% The network: buses, branches, then global controllers, each in its own color
+% The network: buses, branches, global controllers, then scenarios, each in its own color
 agc = net.add_global_controller("agc-PI", {"B001SG1","B002SG1"});
+sc  = net.add_scenario("case1");
 h.render(net);
 [h_card, sv_group] = cards(h);
 n_bus = numel(net.a_Bus);
 n_br  = numel(net.a_Branch);
-assert(numel(h_card) == n_bus + n_br + 1)
-assert(isequal(sv_group, ["Bus (" + n_bus + ")", "Branch (" + n_br + ")", "GlobalController (1)"]))
+assert(numel(h_card) == n_bus + n_br + 2)
+assert(isequal(sv_group, ["Bus (" + n_bus + ")", "Branch (" + n_br + ")", "GlobalController (1)", "Scenario (1)"]))
 c_model = arrayfun(@(b) b.UserData, h_card, "UniformOutput", false);
-assert(isequal(c_model(1:n_bus), net.a_Bus(:)) && c_model{end} == agc)
+assert(isequal(c_model(1:n_bus), net.a_Bus(:)) && c_model{end-1} == agc && c_model{end} == sc)
 assert(~any(cellfun(@(c) isa(c, "Parameter"), c_model)))
 assert(isequal(h_card(1).BackgroundColor, rgb("#E3EEF8")) && isequal(h_card(n_bus+1).BackgroundColor, rgb("#ECEFF3")))
-assert(isequal(h_card(end).BackgroundColor, rgb("#ECE6F5")))
+assert(isequal(h_card(end-1).BackgroundColor, rgb("#ECE6F5")) && isequal(h_card(end).BackgroundColor, rgb("#E0F2EE")))
 assert(startsWith(h_card(1).Text(1), "Bus  B001"))
 h_nav = ancestor(h_card(1), "uigridlayout");
 assert(h_nav.Scrollable == "on")
@@ -163,6 +164,37 @@ assert(h_item.Text == "Open in new window")
 h_item.MenuSelectedFcn(h_item, struct("ContextObject", h_card(1)));
 a_fig = findall(groot, "Type", "figure");
 assert(numel(a_fig) == n_fig + 1 && any(string({a_fig.Name}) == "Bus B001"))
+
+
+%% A scenario shows its disturbances and settings, without a Parameter tab
+sc = net.add_scenario("case1", Description="fault and ramp");
+sc.add_fault("B008", [1,1.05]);
+sc.add_input("B002SG1", "Pmech", [0, 0; 1, 0.1], [1,3]);
+h = sc.gui();
+assert(h.a_target == sc && contains(header_text(h), "case1") && contains(header_text(h), "Scenario"))
+assert(isequal(tab_titles(h), ["Disturbances","Settings"]) && isempty(parameter_tables(h)))
+assert(isempty(cards(h)) && contains(stale_text(h), "none"))
+[h_crumb, l_link] = breadcrumb(h);
+assert(numel(h_crumb) == 2 && isequal(l_link, [true false]) && h_crumb(1).UserData == net)
+tab = page_data(h, "Disturbances");
+assert(height(tab) == 2 && isequal(tab.Tag, ["fault1";"input1"]) && tab.FaultBus(1) == "B008")
+assert(tab.TimeSpan(1) == "[1 1.05]" && tab.InputValue(2) == "[0 0;1 0.1]" && tab.InputMethod(2) == "foh")
+tab = page_data(h, "Settings");
+assert(isequal(tab.Value, ["[0 10]"; "fault and ramp"]))
+% The card of the network opens the scenario in a new window
+h = net.gui();
+h_card = cards(h);
+assert(h_card(end).UserData == sc)
+n_fig = numel(findall(groot, "Type", "figure"));
+h_item = h_card(end).ContextMenu.Children(1);
+h_item.MenuSelectedFcn(h_item, struct("ContextObject", h_card(end)));
+a_fig = findall(groot, "Type", "figure");
+assert(numel(a_fig) == n_fig + 1 && any(string({a_fig.Name}) == "Scenario case1"))
+% A removed scenario is deleted, and its view says so
+h_card(end).ButtonPushedFcn(h_card(end), []);
+net.remove_scenario("case1");
+h.render();
+assert(contains(strjoin(string(findobj(h.h_container, "Type", "uilabel").Text)), "deleted"))
 
 
 %% A parameter tab per container; an edit writes tab_parameter and updates the stale state
@@ -332,6 +364,11 @@ end
 
 function tab = equilibrium_table(h)
     tab = findobj(findobj(h.h_container, "Type", "uitab", "Title", "Equilibrium"), "Type", "uitable").Data;
+end
+
+function tab = page_data(h, s_title)
+    h_tab = findobj(h.h_container, "Type", "uitab", "Title", s_title);
+    tab = findobj(h_tab, "Type", "uitable").Data;
 end
 
 function sv = tab_titles(h)

@@ -7,7 +7,7 @@ function sct_page = gui_content(obj)
 %   numbered x1, x2, ... and u1, u2, .... Value is text.
 %   No rows before the equilibrium is computed; the header shows whether it is stale.
 %
-% See also PowerSystemModel.gui_content
+% See also LayerPackage.gui_content
     arguments (Input)
         obj
     end

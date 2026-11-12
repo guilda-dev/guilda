@@ -117,5 +117,23 @@
       {"name":"obj","kind":"required","type":"PowerNetwork"},
       {"name":"sr_GconTag","kind":"required","type":[["string","choices=cellstr(string(obj.a_GlobalController))"],["string"]],"purpose":"Tags of the global controllers to remove."}
     ]
+  },
+  "PowerNetwork.add_scenario": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"PowerNetwork"},
+      {"name":"s_tag","kind":"required","type":["string"],"purpose":"Tag of the new scenario; a number is added when a child of the network has it."},
+      {"name":"Time","kind":"namevalue","type":["double"],"purpose":"[s] Simulation time [t0, tend]. Default: From.Time, else [0, 10]."},
+      {"name":"Description","kind":"namevalue","type":["string"],"purpose":"Free text. Default: From.Description, else \"\"."},
+      {"name":"From","kind":"namevalue","type":["Scenario"],"purpose":"Scenario to copy the disturbances and settings from (of this or another network)."}
+    ],
+    "outputs": [
+      {"name":"sc","purpose":"The new scenario, a child of the network."}
+    ]
+  },
+  "PowerNetwork.remove_scenario": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"PowerNetwork"},
+      {"name":"sr_tag","kind":"required","type":[["string","choices=cellstr(string(obj.a_Scenario))"],["string"]],"purpose":"Tags of the scenarios to remove."}
+    ]
   }
 }

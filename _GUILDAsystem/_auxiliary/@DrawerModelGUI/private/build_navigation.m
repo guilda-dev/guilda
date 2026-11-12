@@ -1,8 +1,8 @@
 function h_nav = build_navigation(h_parent, drawer, a_children)
 % Child cards: the children of the model grouped by kind, without Parameter containers.
 %
-% The kinds come in the order Bus, Branch, Component, LocalController, GlobalController
-% (then any other model), each under a label with its count (Tag "group"). A card (button,
+% The kinds come in the order Bus, Branch, Component, LocalController, GlobalController,
+% Scenario (then any other model), each under a label with its count (Tag "group"). A card (button,
 % Tag "child") shows the kind, tag and class of a child in the color of its kind; a click
 % renders it, and its context menu "Open in new window" opens it in a new uifigure. The
 % area scrolls when the cards do not fit.
@@ -15,7 +15,7 @@ function h_nav = build_navigation(h_parent, drawer, a_children)
         h_nav  % Scrollable grid layout of the cards.
     end
     sct_color = gui_palette();
-    sv_kind = ["Bus","Branch","Component","LocalController","GlobalController"];
+    sv_kind = ["Bus","Branch","Component","LocalController","GlobalController","Scenario"];
     a_children = a_children(~cellfun(@(c) isa(c, "Parameter"), a_children));
     sv_child = repmat("Other", 1, numel(a_children));
     for s_kind = sv_kind

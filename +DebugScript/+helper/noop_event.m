@@ -1,5 +1,5 @@
 function ev = noop_event(net, tspan)
-% 何もしない外乱 (時間区間だけを持つ Scenario) を作成し、系統に追加する
+% 何もしない外乱 (時間区間だけを持つ外乱) のシナリオを系統に作り、Time を時間区間にする
 %
 %   ev  = DebugScript.helper.noop_event(net, [0,5]);
 %   sol = net.simulate([0,5], ev);
@@ -14,4 +14,7 @@ function ev = noop_event(net, tspan)
         ev  % 追加したシナリオ
     end
     ev = DebugScript.helper.scenario("noop", net, "TimeSpan", tspan);
+    if numel(tspan) == 2
+        ev.Time = tspan;
+    end
 end

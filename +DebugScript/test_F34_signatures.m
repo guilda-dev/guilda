@@ -36,7 +36,8 @@ sv_name = string(fieldnames(sct));
 sv_expect = ["Bus_add_component", "Bus_replace_component", "Bus_remove_component", ...
              "Component_add_local_controller", "Component_remove_local_controller", ...
              "PowerNetwork_add_branch", "PowerNetwork_add_global_controller", "PowerNetwork_remove_branch", ...
-             "PowerNetwork_remove_bus", "PowerNetwork_remove_global_controller"];
+             "PowerNetwork_remove_bus", "PowerNetwork_remove_global_controller", ...
+             "PowerNetwork_add_scenario", "PowerNetwork_remove_scenario"];
 assert(all(ismember(sv_expect, sv_name)), join(setdiff(sv_expect, sv_name), ", "))
 
 
@@ -62,6 +63,9 @@ assert(ismember("B001SG1", choices('sys__F34.a_Bus{1}.replace_component(')))
 assert(~ismember("B001SG1", choices('sys__F34.a_Bus{5}.replace_component(')))
 assert(ismember("B005LRX1", choices('sys__F34.a_Bus{5}.remove_component(')))
 assert(ismember("B004", choices('sys__F34.remove_bus(')))
+evalin("base", "sys__F34.add_scenario(""case1"");");
+sv = choices('sys__F34.remove_scenario(');
+assert(ismember("case1", sv) && ~any(ismember(evalin("base", "string(sys__F34.a_Bus)"), sv)), join(sv, ", "))
 assert(ismember("B001SG1", choices('replace_component(sys__F34.a_Bus{1}, ')))
 % ローカル制御器のタグは入れ子 (AVR の下の PSS) も含む
 assignin("base", "gen__F34", evalin("base", "sys__F34.a_Bus{1}.a_Component{1}"));

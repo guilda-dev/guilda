@@ -169,10 +169,9 @@ end
 
 
 %% API に触れる箇所 (S2-S6 はここだけを書き換える)
-function sc = new_scenario(net, s_tag, time) %#ok<INUSD>
-% 時間だけを持つシナリオを作り、系統に追加する
-    sc = Scenario(s_tag);
-    net.add_scenario(sc);
+function sc = new_scenario(net, s_tag, time)
+% 時間だけを持つシナリオを系統に作る
+    sc = net.add_scenario(s_tag, Time=time);
 end
 
 function [result, flag, output] = run_case(net, sc, time)
