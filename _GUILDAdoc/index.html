@@ -538,13 +538,10 @@ sol = net.simulate([0, 50], sc);</code></pre>
 
       <hr style="margin: 50px 0; border: 0; border-top: 1px solid var(--line);">
       
-      <h1 id="hands-on-tutorial"><span lang="en">Hands-on Tutorial for GUILDA</span><span lang="ja">GUILDA ハンズオンチュートリアル</span></h1>
-      <p lang="en">Live Script tutorials on implementing various analyses, in the <code>_GUILDAtutorial</code> folder of the source.</p>
-      <p lang="ja">さまざまな解析の実装方法を解説したライブスクリプト形式のチュートリアル。ソースの <code>_GUILDAtutorial</code> フォルダに収録。</p>
-      
-      <div id="tutorial-toc-container"></div>
-      <h2><span lang="en">Overview of each tutorial</span><span lang="ja">各チュートリアルの概要</span></h2>
-      <div id="tutorial-abstract-container"></div>
+      <h1 id="hands-on-tutorial"><span lang="en">Hands-on Tutorial</span><span lang="ja">ハンズオンチュートリアル</span></h1>
+      <p lang="en">Live Script tutorials in the <code>_GUILDAtutorial</code> folder, in reading order. <code>GUILDA.tutorial()</code> opens the first one; open the others from the MATLAB Current Folder or with the command in each row.</p>
+      <p lang="ja"><code>_GUILDAtutorial</code> フォルダにある Live Script 形式のチュートリアルを、読む順に並べました。最初の一つは <code>GUILDA.tutorial()</code> で開けます。残りは MATLAB の「現在のフォルダー」から開くか、各行のコマンドを実行して開いてください。</p>
+      <ol id="tutorial-list" class="tutorial-list"></ol>
     </div>
 
     <div id="tab-reference" class="tab-content">
@@ -658,7 +655,7 @@ sol = net.simulate([0, 50], sc);</code></pre>
       else window.scrollTo(0, 0);
     }
 
-    // Same id rule as the hands-on tutorial headings in renderTutorials()
+    // Same id rule as the hands-on tutorial rows in renderTutorials()
     function tutorialAnchorId(filename) {
       return (filename || 'unknown').replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
     }
@@ -679,34 +676,27 @@ sol = net.simulate([0, 50], sc);</code></pre>
       window.GuildaUpdateLog?.render(document.getElementById('update-log-container'), { limit: 4 });
     }
 
+    // One row per hands-on tutorial (database/list_Tutorials.js): step, title, summary, how to open it.
     function renderTutorials() {
-      const toc = document.getElementById('tutorial-toc-container');
-      const abs = document.getElementById('tutorial-abstract-container');
-      if (!toc || !abs) return;
-
-      const data = typeof tutorialData !== 'undefined' ? tutorialData : (typeof tutorial !== 'undefined' ? tutorial : null);
-      
-      if (data && Array.isArray(data) && data.length > 0) {
-        toc.innerHTML = `<table><tr><th>${bilingual('File Name', 'ファイル名')}</th><th>${bilingual('Analysis Type', '解析の種類')}</th></tr>` + 
-          data.map(t => {
-            const safeId = tutorialAnchorId(t.filename);
-            return `<tr><td><a href="#${safeId}"><code>${t.filename || ''}</code></a></td><td>${t.analysis || ''}</td></tr>`;
-          }).join('') + '</table>';
-          
-        abs.innerHTML = data.map(t => {
-          const safeId = tutorialAnchorId(t.filename);
-          return `
-            <h3 id="${safeId}"><code>${t.filename || ''}</code></h3>
-            <table><tr><th style="width:25%">${bilingual('Item', '項目')}</th><th>${bilingual('Description', '説明')}</th></tr>
-            <tr><td>${bilingual('Power System', '系統モデル')}</td><td>${t.system || ''}</td></tr>
-            <tr><td>${bilingual('Analysis Type', '解析の種類')}</td><td>${t.analysis || ''}</td></tr>
-            <tr><td>${bilingual('Description', '説明')}</td><td>${t.description || ''}</td></tr></table>
-          `;
-        }).join('');
-      } else {
-        toc.innerHTML = `<p style="color: var(--muted);">${bilingual('No tutorial data found.', 'チュートリアルのデータなし。')}</p>`;
-        abs.innerHTML = '';
+      const list = document.getElementById('tutorial-list');
+      if (!list) return;
+      const data = typeof tutorialData !== 'undefined' && Array.isArray(tutorialData) ? tutorialData : [];
+      if (!data.length) {
+        list.outerHTML = `<p style="color: var(--muted);">${bilingual('No tutorial data found.', 'チュートリアルのデータがありません。')}</p>`;
+        return;
       }
+      list.innerHTML = data.map(t => {
+        const open = t.open || `open _GUILDAtutorial/${t.file}`;
+        return `
+          <li class="tutorial-row" id="${tutorialAnchorId(t.file)}">
+            <span class="tutorial-step${t.step === '+' ? ' is-extra' : ''}" aria-hidden="true">${escapeHtml(t.step)}</span>
+            <div class="tutorial-body">
+              <h3 class="tutorial-title">${bilingual(escapeHtml(t.title), escapeHtml(t.title_ja || t.title))}</h3>
+              <p class="tutorial-summary">${bilingual(escapeHtml(t.summary), escapeHtml(t.summary_ja || t.summary))}</p>
+            </div>
+            <code class="tutorial-open">${escapeHtml(open)}</code>
+          </li>`;
+      }).join('');
     }
 
     function renderDeveloperLinks() {

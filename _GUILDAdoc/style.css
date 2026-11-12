@@ -1558,3 +1558,17 @@ body.doc-layout .meta-box table th {
 /* Tutorial: Basic Workflow flowchart */
 .tutorial-flow { margin: 16px 0 8px; }
 .tutorial-flow img { display: block; width: 100%; max-width: 720px; height: auto; }
+
+/* Hands-on Tutorial: one row per Live Script (step, title and summary, how to open it) */
+.tutorial-list { list-style: none; margin: 16px 0 8px; padding: 0; border-top: 1px solid var(--line); }
+.tutorial-row { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 12px 4px; border-bottom: 1px solid var(--line); scroll-margin-top: 72px; }
+.tutorial-step { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--brand-tint); color: var(--brand); font-size: 0.85rem; font-weight: 700; }
+.tutorial-step.is-extra { background: transparent; border: 1px solid var(--line-strong); color: var(--muted); }
+.tutorial-title { margin: 0 0 2px; font-size: 1rem; color: var(--ink); }
+.tutorial-summary { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+.home-layout .tutorial-open { justify-self: end; font-size: 0.82rem; overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .tutorial-row { grid-template-columns: 28px minmax(0, 1fr); gap: 4px 12px; align-items: start; }
+  .tutorial-step { width: 24px; height: 24px; font-size: 0.78rem; grid-row: span 2; }
+  .home-layout .tutorial-open { grid-column: 2; justify-self: start; }
+}
