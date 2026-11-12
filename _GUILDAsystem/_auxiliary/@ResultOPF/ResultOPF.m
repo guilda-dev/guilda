@@ -7,7 +7,7 @@ classdef ResultOPF < ResultBase
 % has voltages, P, Q and currents, "DC OPF" has Varg, V (= 1) and P, "ELD" has P only
 % (branches are ignored and their values are NaN). It holds computed values only; the OPF settings
 % (tab_parameter.OPF / .operation) stay with the network. Plot draws the component outputs
-% and, for "DC OPF" and "AC OPF", the bus voltages. Export writes the bus, connection or
+% and, for "DC OPF" and "AC OPF", the bus voltages. export writes the bus, connection or
 % branch table (CSV, Excel).
 %
 % - `tab_bus`: row names = bus tags. "AC OPF": Varg [rad], V [pu], P, Q (injections into
@@ -38,7 +38,7 @@ classdef ResultOPF < ResultBase
 % result.tab_cub           % P, Q of each component and branch end
 % price = -result.lambda.Constraints.balancedP_B001;   % nodal price at bus B001
 % result.Plot();
-% result.Export("opf.csv", Table="cub");
+% result.export("opf.csv", Table="cub");
 % ```
 %
 % See also SolverOPF, ResultBase
@@ -84,7 +84,7 @@ classdef ResultOPF < ResultBase
         end
 
         fig = Plot(obj, opt)
-        s_file = Export(obj, filename, opt)
+        s_file = export(obj, filename, opt)
     end
 
     methods (Access=protected)

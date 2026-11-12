@@ -128,7 +128,7 @@ verdict = sc.judge(result)</code></pre>
         <tr><td><code>Progress</code></td><td><span lang="en"><code>"dialog"</code>, <code>"disp"</code> or <code>"none"</code>; <code>true</code> / <code>false</code> mean <code>"dialog"</code> / <code>"none"</code>.</span><span lang="ja"><code>"dialog"</code>、<code>"disp"</code>、<code>"none"</code> から選びます。<code>true</code> は <code>"dialog"</code>、<code>false</code> は <code>"none"</code> と同じです。</span></td><td><code>"dialog"</code><small>config</small></td></tr>
         <tr><td><code>Verbose</code></td><td><span lang="en">Print the phase table before and <code>output.message</code> after the integration.</span><span lang="ja">積分の前にフェーズ表を、終わった後に <code>output.message</code> を表示します。</span></td><td><code>false</code><small>config</small></td></tr>
         <tr><td><code>PlotFcn</code></td><td><span lang="en">Live display during the run; only <code>"none"</code> is available (other values: <code>GUILDA:check_plotfcn:InDevelopment</code>). The figure after the run: <code>result.Plot()</code>.</span><span lang="ja">実行中の経過をライブで表示する設定です。今のところ使えるのは <code>"none"</code> だけで、ほかの値は <code>GUILDA:check_plotfcn:InDevelopment</code> になります。実行後の図は <code>result.Plot()</code> で描きます。</span></td><td><code>"none"</code><small>config</small></td></tr>
-        <tr><td><code>Export</code></td><td><span lang="en">Calls <code>result.Export</code>: <code>true</code> for a time-stamped CSV name, or a file name (.csv, .txt, .xlsx, .xls, .mat, checked before the integration). Call option only, not a setting.</span><span lang="ja"><code>result.Export</code> を呼び出します。<code>true</code> なら日時付きの CSV 名で、文字列ならそのファイル名で書き出します（.csv、.txt、.xlsx、.xls、.mat。積分の前に拡張子を検査します）。呼び出しのときだけ使うオプションで、設定には含みません。</span></td><td><code>false</code></td></tr>
+        <tr><td><code>Export</code></td><td><span lang="en">Calls <code>result.export</code>: <code>true</code> for a time-stamped CSV name, or a file name (.csv, .txt, .xlsx, .xls, .mat, checked before the integration). Call option only, not a setting.</span><span lang="ja"><code>result.export</code> を呼び出します。<code>true</code> なら日時付きの CSV 名で、文字列ならそのファイル名で書き出します（.csv、.txt、.xlsx、.xls、.mat。積分の前に拡張子を検査します）。呼び出しのときだけ使うオプションで、設定には含みません。</span></td><td><code>false</code></td></tr>
       </tbody>
     </table>
 
@@ -320,7 +320,7 @@ verdict = sc.judge(result)</code></pre>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>time</code>, <code>varargin</code>, <code>sc.Time</code>, <code>sc.Options</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>c_events</code> (<span lang="en">cell of <code>Scenario</code></span><span lang="ja"><code>Scenario</code> のセル</span>), <code>time</code>, <code>c_nv</code>, <code>opt.Export</code></dd>
+          <dd><code>c_events</code> (<span lang="en">cell of <code>Scenario</code></span><span lang="ja"><code>Scenario</code> のセル</span>), <code>time</code>, <code>c_nv</code>, <code>opt.export</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="SIM-02">
@@ -631,9 +631,9 @@ verdict = sc.judge(result)</code></pre>
         <p class="fs-head"><b class="fs-id">SIM-21</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <span lang="en">caller</span><span lang="ja">呼び出し側</span></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Warns when <code>flag ≠ 1</code>; calls <code>result.Export</code> when asked.</span><span lang="ja"><code>flag ≠ 1</code> なら警告を出します。指定があれば <code>result.Export</code> を呼び出します。</span></dd>
+          <dd><span lang="en">Warns when <code>flag ≠ 1</code>; calls <code>result.export</code> when asked.</span><span lang="ja"><code>flag ≠ 1</code> なら警告を出します。指定があれば <code>result.export</code> を呼び出します。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>flag</code>, <code>output.message</code>, <code>opt.Export</code></dd>
+          <dd><code>flag</code>, <code>output.message</code>, <code>opt.export</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>[result, flag, output]</code>; <span lang="en">file when asked</span><span lang="ja">指定したときはファイル</span></dd>
         </dl>
@@ -687,11 +687,11 @@ verdict = sc.judge(result)</code></pre>
     </table>
     <ul lang="en">
       <li><code>get_point(t, tab_map, Side=…)</code>: the variables at a time (linear interpolation; <code>"after"</code> or <code>"before"</code> at a phase boundary); input of <code>net.linearize(Point={sim, t})</code>.</li>
-      <li><code>Plot(Quantity=…, Bus=…)</code>, <code>Export(filename)</code>.</li>
+      <li><code>Plot(Quantity=…, Bus=…)</code>, <code>export(filename)</code>.</li>
     </ul>
     <ul lang="ja">
       <li><code>get_point(t, tab_map, Side=…)</code> は、ある時刻の変数の値を線形補間で返します。フェーズの境目では <code>"after"</code> か <code>"before"</code> を選びます。返した値は <code>net.linearize(Point={sim, t})</code> にそのまま渡せます。</li>
-      <li><code>Plot(Quantity=…, Bus=…)</code>、<code>Export(filename)</code></li>
+      <li><code>Plot(Quantity=…, Bus=…)</code>、<code>export(filename)</code></li>
     </ul>
     <p lang="en"><code>output</code>: <code>message</code>, <code>tEnd</code> [s], <code>nPhases</code>, <code>nPhasesDone</code> (a phase cut short is not counted), <code>phases</code> (the phase table), <code>isSparse</code> (false after a fallback to dense matrices), <code>exception</code>.</p>
     <p lang="ja"><code>output</code> には、<code>message</code>、<code>tEnd</code> [s]、<code>nPhases</code>、<code>nPhasesDone</code>（途中で止まったフェーズは数えません）、<code>phases</code>（フェーズ表）、<code>isSparse</code>（密行列に切り替えたら false）、<code>exception</code> が入ります。</p>

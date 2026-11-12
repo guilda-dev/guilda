@@ -3,7 +3,6 @@
 % 9母線系統 (旧 Task1/Task2) と IEEE14 母線系統で潮流計算を行い、
 %   - v4 の呼び出し形式 [result, flag, output] と結果クラス ResultPF
 %   - Name-Value による一時的な設定の上書き (GUILDA.setting は変わらない)
-%   - v3 の呼び出し形式 (位置引数 mode, export/filename) の互換
 %   - 収束フラグ / 出力の形式
 %   - スラック母線の自動選択と母線種別 (slack / PV / PQ)
 %   - 指定値 (V, P, Q) が解で守られていること
@@ -21,7 +20,7 @@ tol = 1e-6;
 net = DebugScript.helper.build_9bus();
 
 % 潮流計算 (既定は "newton" = ニュートン・ラフソン法による電力方程式の求解)
-[res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+[res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow());
 tab = res.tab_bus;
 
 % 収束フラグは正、出力は fsolve の output 構造体
@@ -62,7 +61,7 @@ assert(net.a_Bus{2}.s_bustype == "slack")
 % B001 は PV 母線になるので発電機出力 P を与える (Task2 では NaN)
 net.a_Bus{2}.tab_parameter.powerflow.Varg = 0;
 net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow.P = 0.7;
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow()); tab = res.tab_bus;
 assert(flag > 0)
 assert(abs(tab{"B002","Varg"}) < tol)
 assert(abs(tab{"B002","V"} - 1.00) < tol)
@@ -124,7 +123,7 @@ assert(tab_set.Type == "PV" && tab_set.P == 1.0 && tab_set.V == 1.00)
 
 %% Specified V P Q are honored by the solution
 net = DebugScript.helper.build_9bus();
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow()); tab = res.tab_bus;
 assert(flag > 0)
 
 % slack: V, Varg
@@ -143,7 +142,7 @@ assert(norm(tab{["B004","B007","B009"],["P","Q"]}) < tol)
 
 %% Bus power balance equals branch losses
 net = DebugScript.helper.build_9bus();
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow()); tab = res.tab_bus;
 assert(flag > 0)
 
 % 全母線の注入電力の合計 = 送電線 (とシャント) の損失
@@ -162,7 +161,7 @@ assert(norm(tab.Vphasor.*conj(tab.Iphasor) - (tab.P + 1j*tab.Q)) < 1e-8)
 
 %% Power flow on IEEE14 honors generator settings
 net = DebugScript.helper.build_ieee14();
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow()); tab = res.tab_bus;
 assert(flag > 0)
 
 % 各母線の指定値が守られている
@@ -184,7 +183,7 @@ assert(abs(sum(tab.P)+1j*sum(tab.Q) - DebugScript.helper.branch_losses(net, tab.
 % とは 0.002 pu, 0.02 度以内で一致する。
 net = DebugScript.helper.build_ieee14();
 mpc = DebugScript.helper.case14_data();
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow()); tab = res.tab_bus;
 assert(flag > 0)
 assert(max(abs(tab.V - mpc.bus(:,8))) < 2e-3)
 assert(max(abs(tab.Varg*180/pi - mpc.bus(:,9))) < 2e-2)
@@ -237,9 +236,14 @@ assert(max(abs(tab_dyn.Vphasor - tab_alg.Vphasor)) < 1e-6)
 
 %% Result holds bus and branch values and the settings used
 net = DebugScript.helper.build_9bus();
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());
 assert(flag > 0)
-assert(res.s_solver == "SolverPF" && res.a_PowerNetwork == net && res.r_elapsed >= 0)
+assert(res.s_solver == "SolverPF" && isempty(res.a_PowerNetwork) && res.r_elapsed >= 0)
+% 系統のハンドルは持たず、struct のスナップショット・アドミタンス行列・潮流条件を持つ
+assert(res.s_network == string(net.s_tag) && isstruct(res.sct_network) && numel(res.sct_network.a_Bus) == numel(net.a_Bus))
+tab_Y = net.get_admittance_matrix;
+assert(isequal(res.cm_Y, tab_Y{string(net.a_Bus), string(net.a_Bus)}))
+assert(isequal(res.tab_PFcondition.Type, tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus).Type))
 assert(res.options.Solver == "newton" && res.options.Tolerance == 1e-8 && isnan(res.options.MaxIteration) && res.options.Verbose == false)
 % 反復ごとの母線電圧 (最後が解)
 assert(size(res.cm_Vhistory,1) == numel(net.a_Bus) && isequal(res.rv_step, 0:size(res.cm_Vhistory,2)-1))
@@ -265,6 +269,93 @@ for s_bus = string(net.a_Bus)'
          + sum(tab_br.Pto(sv_to == s_bus)     + 1j*tab_br.Qto(sv_to == s_bus));
     assert(abs(S_br - res.tab_bus{s_bus,"P"} - 1j*res.tab_bus{s_bus,"Q"}) < 1e-8)
 end
+
+
+%% Format chooses the first output
+% 既定 "GUILDAorigin" は ResultPF、"V" は母線電圧の列、"powerflow(mat)" は n×4 の複素行列、"powerflow(tab)" は V, I, P, Q の表
+net = DebugScript.helper.build_9bus();
+[res, flag, output] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+assert(isa(res, "ResultPF"))
+[V, flag_v, out_v] = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="V", WarmStart=false));
+assert(isequal(size(V), [numel(net.a_Bus), 1]) && ~isreal(V) && flag_v == flag && isfield(out_v, "message"))
+assert(max(abs(V - res.tab_bus.Vphasor)) < 1e-12)
+mat = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="powerflow(mat)", WarmStart=false));
+assert(isequal(size(mat), [numel(net.a_Bus), 4]) && isa(mat, "double"))
+assert(max(abs(mat - [res.tab_bus.Vphasor, res.tab_bus.Iphasor, res.tab_bus.P, res.tab_bus.Q]), [], "all") < 1e-12)
+tab = DebugScript.helper.quiet(@() net.calculate_powerflow(Format="powerflow(tab)", WarmStart=false));
+assert(isequal(string(tab.Properties.VariableNames), ["V","I","P","Q"]))
+assert(isequal(string(tab.Properties.RowNames), string(net.a_Bus)) && isreal(tab.P) && isreal(tab.Q))
+assert(max(abs(tab{:,:} - mat), [], "all") < 1e-12)
+assert(error_id(@() net.calculate_powerflow(Format="table")) == "MATLAB:validators:mustBeMember")
+% initialize も同じ Format の値を取る。既定は set_equilibrium に書く n×4 の配列 "powerflow(mat)"
+mat0 = DebugScript.helper.quiet(@() net.initialize(Method="powerflow"));
+assert(isequal(size(mat0), [numel(net.a_Bus), 4]) && max(abs(mat0 - mat), [], "all") < 1e-8)
+assert(max(abs(mat0(:,1) - net.cv_Vequilibrium)) < 1e-12 && max(abs(mat0(:,2) - net.cv_Iequilibrium)) < 1e-12)
+V0 = DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Format="V"));
+assert(max(abs(V0 - V)) < 1e-8)
+tab0 = DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Format="powerflow(tab)"));
+assert(max(abs(tab0.V - tab.V)) < 1e-8 && isequal(string(tab0.Properties.VariableNames), ["V","I","P","Q"]))
+assert(isa(DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Format="GUILDAorigin")), "ResultPF"))
+mat_eq = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium"));
+assert(max(abs(mat_eq - mat), [], "all") < 1e-6)
+V_eq = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium", Format="V"));
+assert(max(abs(V_eq - mat(:,1))) < 1e-6)
+mat_fi = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput"));
+assert(isequal(size(mat_fi), [numel(net.a_Bus), 4]) && max(abs(abs(mat_fi(:,1)) - abs(mat(:,1)))) < 1e-6)
+tab_fi = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput", Format="powerflow(tab)"));
+assert(istable(tab_fi) && max(abs(tab_fi.V - mat_fi(:,1))) < 1e-8)
+assert(error_id(@() net.initialize(Format="table")) == "MATLAB:validators:mustBeMember")
+% 書き出しは結果のメソッド (res.export) だけ。calculate_powerflow と initialize に Export オプションはない
+assert(error_id(@() net.calculate_powerflow(Export="pf.csv")) ~= "")
+assert(error_id(@() net.initialize(Method="powerflow", Export="pf.csv")) ~= "")
+
+
+%% Branch flows of the result use the admittance matrix in the snapshot
+% Branch.struct はスナップショットに枝のアドミタンス行列 cm_Y を加え、ResultPF はそれで枝潮流を求める
+net = PowerNetwork();
+for i = 1:4
+    net.add_bus();
+end
+net.add_branch("pi",             [1,2], "R",0.01, "X",0.1, "C",0.02);
+net.add_branch("pi_transformer", [2,3], "R",0.002, "X",0.05, "C",0.01, "Tap",1.02, "Phase",0.1);
+net.add_branch("T",              [3,4], "R",0.01, "X",0.08, "C",0.03);
+net.add_branch("two_winding_transformer", [1,4], "R",0.003, "X",0.06, "C",0.01, "Tap",0.97, "Phase",-0.05);
+sv_bus = string(net.a_Bus);
+cv_V = [1.02; 0.99*exp(-0.1j); 1.01*exp(0.05j); 0.98*exp(-0.2j)];
+tab_Y = net.get_admittance_matrix;
+cm_Y = tab_Y{sv_bus, sv_bus};
+cv_I = cm_Y*cv_V;
+tab_pf = table(cv_V, cv_I, real(cv_V.*conj(cv_I)), imag(cv_V.*conj(cv_I)), 'VariableNames', ["V","I","P","Q"], 'RowNames', sv_bus);
+res = ResultPF(tab_pf, cm_Y, struct(net, false), struct("flag", 1));
+for k = 1:numel(net.a_Branch)
+    br = net.a_Branch{k};
+    [~, iv] = ismember(string(br.a_Bus), sv_bus);
+    I_ft = br.get_admittance_matrix() * cv_V(iv);
+    assert(norm([res.tab_branch{k,"Ifrom"}; res.tab_branch{k,"Ito"}] - I_ft) < 1e-12, string(class(br)))
+end
+% スナップショットの cm_Y は get_admittance_matrix と同じ (2 度目に出会う枝はパスのまま)
+sct = struct(net, false);
+for k = 1:numel(net.a_Branch)
+    assert(isequal(sct.a_Branch{k}.cm_Y, net.a_Branch{k}.get_admittance_matrix()))
+end
+assert(isequal(struct(net.a_Branch{1}).cm_Y, net.a_Branch{1}.get_admittance_matrix()))
+[s_path, ~] = net.a_Branch{1}.struct(false, "x", struct("a_obj", {{net.a_Branch{1}}}, "sv_path", "net.a_Branch{1}"));
+assert(s_path == "net.a_Branch{1}")
+% 利用者の枝クラス: ResultPF はクラス名ではなく cm_Y を使う (クラス名を変えても同じ潮流、cm_Y を変えれば潮流も変わる)
+sct_user = sct;
+sct_user.a_Branch{1}.class = "user.MyBranch";
+res_user = ResultPF(tab_pf, cm_Y, sct_user, struct("flag", 1));
+assert(isequal(res_user.tab_branch, res.tab_branch))
+sct_user.a_Branch{1}.cm_Y = 2*sct_user.a_Branch{1}.cm_Y;
+res_user = ResultPF(tab_pf, cm_Y, sct_user, struct("flag", 1));
+assert(abs(res_user.tab_branch{1,"Ifrom"} - 2*res.tab_branch{1,"Ifrom"}) < 1e-12)
+% cm_Y のない struct (Branch.struct を通らないもの) では NaN
+sct_user.a_Branch{1} = rmfield(sct_user.a_Branch{1}, "cm_Y");
+res_user = ResultPF(tab_pf, cm_Y, sct_user, struct("flag", 1));
+assert(isnan(res_user.tab_branch{1,"Pfrom"}) && ~any(isnan(res_user.tab_branch{2,"Pfrom"})))
+% 結果は系統の後の編集で変わらない
+net.a_Branch{1}.tab_parameter.dynamics.X = 0.5;
+assert(res.sct_network.a_Branch{1}.tab_parameter.dynamics.X == 0.1)
 
 
 %% Name-Value options override the settings for one call only
@@ -294,7 +385,7 @@ assert(~isprop(net.solver_PF, "Method") && ~isprop(net.solver_PF, "Tolerance") &
 
 % GUILDA.setting を変えると以後の呼び出しすべてに効く
 c_cfg = DebugScript.helper.user_config("PowerFlowCalculation", struct("Solver", "dynamic", "Tolerance", 1e-6));
-res = DebugScript.helper.quiet(@() net.calculate_powerflow);
+res = DebugScript.helper.quiet(@() net.calculate_powerflow());
 assert(res.options.Solver == "dynamic" && res.options.Tolerance == 1e-6 && res.l_success)
 clear c_cfg
 assert(GUILDA.config("PowerFlowCalculation", "Solver") == "newton")
@@ -327,20 +418,21 @@ net2.a_Branch{3}.tab_parameter.dynamics.X = 0.21;
 net2.a_Bus{9}.tab_parameter.dynamics.Bshunt = 0.25;
 res_ref = DebugScript.helper.quiet(@() net2.calculate_powerflow(WarmStart=false));
 assert(max(abs(res_w.tab_bus.Vphasor - res_ref.tab_bus.Vphasor)) < 1e-8)
-% タグの変更ではキャッシュもウォームスタートも保持し、結果の行名は新しいタグ
+% ウォームスタートは同じ母線タグの解だけを使う。タグを変えるとフラットスタートで、結果の行名は新しいタグ
 net.a_Bus{14}.s_tag = "Bnew";
 [res_t, ~, out_t] = DebugScript.helper.quiet(@() net.calculate_powerflow());
-assert(out_t.iterations == 0 && string(res_t.tab_bus.Properties.RowNames(14)) == string(net.a_Bus{14}))
+assert(out_t.iterations > 0 && string(res_t.tab_bus.Properties.RowNames(14)) == string(net.a_Bus{14}))
 % スラック母線の変更でも方程式は作り直す
 evalc("net.a_Bus{2}.l_isSlack = true;");
 net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow.P = 2.3;
 [res_s, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());
 assert(flag == 1 && abs(res_s.tab_bus.Varg(2) - net.a_Bus{2}.tab_parameter.powerflow.Varg) < 1e-12)
-% トポロジーの編集でウォームスタートを捨てる (フラットスタートと同じ反復回数)
+% 枝の削除では母線タグが同じなのでウォームスタートを使う (初期値だけの違いで、解は同じ)
 net.remove_branch(string(net.a_Branch{1}));
 [res_f, ~, out_f] = DebugScript.helper.quiet(@() net.calculate_powerflow());
-[~, ~, out_g] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
-assert(out_f.iterations == out_g.iterations && out_f.iterations > 0 && res_f.l_success)
+[res_g, ~, out_g] = DebugScript.helper.quiet(@() net.calculate_powerflow(WarmStart=false));
+assert(out_f.iterations > 0 && out_g.iterations > 0 && res_f.l_success)
+assert(max(abs(res_f.tab_bus.Vphasor - res_g.tab_bus.Vphasor)) < 1e-8)
 % 収束しなかった解は保存しない。reset_solver で捨てる
 w = warning("off"); c = onCleanup(@() warning(w));
 DebugScript.helper.quiet(@() net.calculate_powerflow(MaxIteration=1, WarmStart=false));
@@ -350,9 +442,14 @@ clear c
 net.reset_solver();
 [~, ~, out_r] = DebugScript.helper.quiet(@() net.calculate_powerflow());
 assert(out_r.iterations == out_g.iterations)
-% 別の系統で同じソルバーを使っても母線はオブジェクトで対応付ける (他の系統の解を使わない)
+% ソルバーは系統を読まない: Y と潮流条件の表だけで解く。母線タグが違えば保存した解を使わない
 net3 = DebugScript.helper.build_ieee14();
-[~, ~, out3] = DebugScript.helper.quiet(@() net.solver_PF.solve(net3, net.solver_PF.get_options()));
+evalc("net3.a_Bus{1}.l_isSlack = true;");
+tab3 = tools.vcellfun(@(b) b.get_pf_condition, net3.a_Bus);
+tab3.Properties.RowNames = string(net3.a_Bus);
+tab_Y3 = net3.get_admittance_matrix;
+[cv_V3, flag3, out3] = DebugScript.helper.quiet(@() net.solver_PF.solve(tab_Y3{:,:}, tab3, pf_options()));
+assert(flag3 == 1 && isequal(size(cv_V3), [14 1]))
 assert(out3.iterations == out0.iterations)
 
 
@@ -413,7 +510,7 @@ g2.tab_parameter.operation.Qmax = Inf;                                  % 無限
 assert(isequal(tools.distribute_power(bus, r_P, r_Q, "Qmax"), tools.distribute_power(bus, r_P, r_Q)))
 assert(isequal(size(tools.distribute_power(PowerNetwork().add_bus(), 1, 1)), [0 2]))
 % initialize の機器の P、Q と tab_violation の値は同じ配分
-res = DebugScript.helper.quiet(@() net.initialize());
+res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
 c_V = bus.c_Vequilibrium;
 rm_init = cell2mat(cellfun(@(c) [real(c_V*conj(c.c_Iequilibrium)), imag(c_V*conj(c.c_Iequilibrium))], ...
                            bus.a_Component(:), "UniformOutput", false));
@@ -428,23 +525,24 @@ assert(abs(row.Value - rm_dist(2,2)) < 1e-8)
 
 %% Unknown or invalid options stop with an error
 net = DebugScript.helper.build_9bus();
-try
-    DebugScript.helper.quiet(@() net.calculate_powerflow(Tolerence=1e-8));
-    error("DebugScript:noError", "未知のオプションでエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "Tolerence") && contains(ME.message, "Solver, Tolerance, MaxIteration, Verbose, WarmStart"))
-end
+% 未知の名前は arguments ブロックのエラー
+assert(error_id(@() net.calculate_powerflow(Tolerence=1e-8)) ~= "")
 % 共通名以外 (ソルバー固有の名前) も受け付けない
-assert(error_id(@() net.calculate_powerflow("MaxIterations", 5)) == "GUILDA:resolve_options:UnknownName")
+assert(error_id(@() net.calculate_powerflow("MaxIterations", 5)) ~= "")
 % 値の検証
 assert(error_id(@() net.calculate_powerflow(Solver="algebraic")) == "MATLAB:validators:mustBeMember")
 assert(error_id(@() net.calculate_powerflow(MaxIteration=-1)) ~= "")
+assert(error_id(@() net.calculate_powerflow(MaxIteration=1.5)) ~= "")
 assert(error_id(@() net.calculate_powerflow(Plot="yes")) ~= "")
 assert(error_id(@() net.calculate_powerflow(WarmStart="yes")) ~= "")
+assert(error_id(@() net.calculate_powerflow(PlotFcn="bars")) == "GUILDA:check_plotfcn:UnknownKey")
 assert(error_id(@() net.calculate_powerflow(Tolerance=0)) == "MATLAB:validators:mustBePositive")
+% v3 の位置引数 mode と export/filename は受け付けない
+assert(error_id(@() net.calculate_powerflow("dynamic")) ~= "")
+assert(error_id(@() net.calculate_powerflow("dynamic", "export", false)) ~= "")
+assert(error_id(@() net.calculate_powerflow(filename="a.json")) ~= "")
 % Name-Value の組になっていない
-assert(error_id(@() net.calculate_powerflow("Solver")) == "GUILDA:resolve_options:InvalidPairs")
+assert(error_id(@() net.calculate_powerflow("Solver")) ~= "")
 
 
 %% fsolve reaches a small Tolerance
@@ -571,7 +669,7 @@ assert(error_id(@() tools.require_toolbox("optimization", "X")) == "MATLAB:valid
 
 %% Plot and Export of the result
 net = DebugScript.helper.build_9bus();
-res = DebugScript.helper.quiet(@() net.calculate_powerflow);
+res = DebugScript.helper.quiet(@() net.calculate_powerflow());
 
 % Plot: 電圧の大きさと位相の棒グラフ
 t = res.Plot(Parent=figure("Visible","off"));
@@ -581,24 +679,21 @@ assert(isa(t, "matlab.graphics.layout.TiledChartLayout") && numel(t.Children) ==
 a_before = findall(groot, "Type", "figure");
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(PlotFcn="none"));
 assert(res.options.PlotFcn == "none" && isempty(setdiff(findall(groot, "Type", "figure"), a_before)))
-assert(error_id(@() net.calculate_powerflow(Plot=true)) == "GUILDA:resolve_options:UnknownName")
+assert(error_id(@() net.calculate_powerflow(Plot=true)) ~= "")     % 未知の名前 (arguments ブロックのエラー)
 assert(error_id(@() net.calculate_powerflow(PlotFcn="voltage")) == "GUILDA:check_plotfcn:UnknownKey")
 assert(error_id(@() net.calculate_powerflow(PlotFcn=["none","residual"])) == "GUILDA:check_plotfcn:InvalidValue")
 assert(error_id(@() net.calculate_powerflow(PlotFcn=1)) == "GUILDA:check_plotfcn:InvalidValue")
 
 % Export: 拡張子で形式が決まる。CSV は母線または枝の表
 s_dir = tempname; mkdir(s_dir); c_dir = onCleanup(@() rmdir(s_dir, "s"));
-f_bus = res.Export(fullfile(s_dir, "bus.csv"));
+f_bus = res.export(fullfile(s_dir, "bus.csv"));
 tab = readtable(f_bus, "ReadRowNames", true);
 assert(isequal(string(tab.Properties.RowNames), string(net.a_Bus)) && max(abs(tab.V - res.tab_bus.V)) < 1e-12)
-res.Export(fullfile(s_dir, "branch.csv"), Table="branch");
+res.export(fullfile(s_dir, "branch.csv"), Table="branch");
 tab = readtable(fullfile(s_dir, "branch.csv"), "ReadRowNames", true);
 assert(height(tab) == numel(net.a_Branch) && max(abs(tab.Ploss - res.tab_branch.Ploss)) < 1e-12)
-% Export=filename は計算後に result.Export を呼ぶ
-DebugScript.helper.quiet(@() net.calculate_powerflow(Export=fullfile(s_dir, "nv.csv")));
-assert(isfile(fullfile(s_dir, "nv.csv")))
 % 未対応の拡張子
-assert(error_id(@() res.Export(fullfile(s_dir, "bus.mat"))) == "GUILDA:ResultPF:ExportFormat")
+assert(error_id(@() res.export(fullfile(s_dir, "bus.mat"))) == "GUILDA:ResultPF:ExportFormat")
 
 
 %% Dynamic method exports convergence history as JSON
@@ -607,7 +702,7 @@ net = DebugScript.helper.build_ieee14();
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(Solver="dynamic"));
 filepath = fullfile(tempdir, "DebugScript_test_F2_" + string(feature("getpid")) + ".json");
 c = onCleanup(@() delete(filepath));
-DebugScript.helper.quiet(@() res.Export(filepath));
+DebugScript.helper.quiet(@() res.export(filepath));
 
 assert(isfile(filepath))
 data = jsondecode(fileread(filepath));
@@ -615,45 +710,7 @@ assert(numel(data.nodes) == numel(net.a_Bus))
 assert(numel(data.nodes(2).Vabs) == numel(res.rv_step))
 % 結果だけ (系統なし) では JSON を書けない
 res_empty = ResultPF();
-assert(error_id(@() res_empty.Export(filepath)) == "GUILDA:ResultPF:NoNetwork")
-
-
-%% COMPAT v3 positional mode and export options
-% 旧形式 calculate_powerflow(mode, "export", l, "filename", f) は警告して v4 に読み替える
-net = DebugScript.helper.build_ieee14();
-clear Deprecated
-lastwarn("");
-w = warning("off", "GUILDA:Deprecated:CalculatePowerflowMode"); c = onCleanup(@() warning(w));
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow("dynamic", "export", false));
-assert(isa(res, "ResultPF") && logical(flag) && res.options.Solver == "dynamic")
-id = DebugScript.helper.msg_id();
-assert(string(id) == "GUILDA:Deprecated:CalculatePowerflowExport")
-assert(GUILDA.config("PowerFlowCalculation", "Solver") == "newton")          % 既定値は変わらない
-warning(w);
-
-% 位置引数の mode だけ (v3 の "algebraic" は fsolve)
-clear Deprecated
-lastwarn("");
-res = DebugScript.helper.quiet(@() net.calculate_powerflow("algebraic"));
-[s_msg, id] = lastwarn(); id = DebugScript.helper.msg_id(s_msg, id);
-assert(string(id) == "GUILDA:Deprecated:CalculatePowerflowMode" && res.options.Solver == "fsolve")
-assert(contains(s_msg, 'Solver="fsolve"'), s_msg)
-
-% export=true の JSON は v3 と同じく GUILDA.pwd に書く
-filename = "DebugScript_test_F2_" + string(feature("getpid")) + ".json";
-filepath = fullfile(GUILDA.pwd, filename);
-c = onCleanup(@() delete(filepath));
-w = warning("off", "GUILDA:Deprecated:CalculatePowerflowMode");
-warning("off", "GUILDA:Deprecated:CalculatePowerflowExport");
-DebugScript.helper.quiet(@() net.calculate_powerflow("dynamic", "export", true, "filename", filename));
-warning(w);
-assert(isfile(filepath))
-data = jsondecode(fileread(filepath));
-assert(numel(data.nodes) == numel(net.a_Bus))
-
-% v4 の呼び出しは互換フックを素通りする
-assert(isequal(v3_powerflow_args({"Solver", "dynamic", "Export", true}), {"Solver", "dynamic", "Export", true}))
-assert(isequal(v3_powerflow_args({}), {}))
+assert(error_id(@() res_empty.export(filepath)) == "GUILDA:ResultPF:NoNetwork")
 
 
 % ---- local functions ----
@@ -742,4 +799,15 @@ function stop = log_call(m_log, n_bus, x, sct, s_state)
     m_log("iteration") = [m_log("iteration"), sct.iteration];
     m_log("residual")  = [m_log("residual"), sct.residual];
     stop = false;
+end
+
+
+function sct = pf_options()
+% calculate_powerflow がソルバーに渡す設定 (PowerFlowCalculation の値と Display)
+    sct_cfg = GUILDA.config("PowerFlowCalculation");
+    sct = struct();
+    for s_name = string(fieldnames(sct_cfg)).'
+        sct.(s_name) = sct_cfg.(s_name).Value;
+    end
+    sct.Display = "none";
 end

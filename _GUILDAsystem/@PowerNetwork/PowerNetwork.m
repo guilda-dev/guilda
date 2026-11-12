@@ -42,10 +42,10 @@ classdef PowerNetwork < PowerSystemModel
 %
 % Each analysis runs a solver object stored in a `solver_*` property; a subclass of the
 % network may replace it with a subclass of the solver. `solver_PF` keeps no settings
-% (they are in GUILDA.setting), only the warm start solution and the cache of the
-% network; the other solvers hold stored defaults, kept between runs. Name-Value options
-% of a call override the settings for that call only. Results are returned as result
-% objects and never stored in the network or the solver.
+% (they are in GUILDA.setting), only the warm start solution; the other solvers hold
+% stored defaults, kept between runs. Name-Value options of a call override the settings
+% for that call only. Results are returned (calculate_powerflow and initialize: in the
+% form of their Format option) and never stored in the network or the solver.
 %
 % The scenarios (`a_Scenario`) are added by `add_scenario` and removed by
 % `remove_scenario`; they are not model data and do not make the equilibrium stale.
@@ -101,13 +101,13 @@ classdef PowerNetwork < PowerSystemModel
         a_Scenario (:,1) cell = cell(0,1);          % Simulation scenarios (Scenario), in the order added by add_scenario; not model data. <@Stale> nothing
     end
     properties(SetAccess=protected) % Solvers
-        solver_PF SolverPF {mustBeScalarOrEmpty}    % Solver of calculate_powerflow (returns a ResultPF); keeps the warm start solution and the cache, no settings (GUILDA.setting). <@Type> SolverPF <@Stale> nothing
+        solver_PF SolverPF {mustBeScalarOrEmpty}    % Solver of calculate_powerflow (solves from the admittance matrix and the bus conditions the network assembles); keeps the warm start solution, no settings (GUILDA.setting). <@Type> SolverPF <@Stale> nothing
         solver_OPF SolverOPF {mustBeScalarOrEmpty}  % Solver of optimize_powerflow (returns a ResultOPF); keeps the conditions Cost, Constraint, DefaultCost, ReferenceBus, the warm start and the problem cache; settings in GUILDA.setting. <@Type> SolverOPF <@Stale> nothing
         solver_CPF SolverCPF {mustBeScalarOrEmpty}  % Solver of calculate_continuation_powerflow (returns a ResultCPF); keeps the condition LoadBus; settings in GUILDA.setting. <@Type> SolverCPF <@Stale> nothing
         solver_ODE SolverODE {mustBeScalarOrEmpty}  % Solver of simulate (returns a ResultODE); no settings (GUILDA.setting). <@Type> SolverODE <@Stale> nothing
         solver_LIN SolverLIN {mustBeScalarOrEmpty}  % Solver of linearize and get_sys (returns a ResultLIN); no settings (GUILDA.setting). <@Type> SolverLIN <@Stale> nothing
     end
-    properties(SetAccess=private, GetAccess={?PowerNetwork,?SolverPF,?SolverOPF}) % Revisions
+    properties(SetAccess=private, GetAccess={?PowerNetwork,?SolverOPF}) % Revisions
         n_revY (1,1) double = 0                     % Revision of the bus admittance matrix, increased by handle_edit (see there); compared by the caches of the solvers.
         n_revPF (1,1) double = 0                    % Revision of the power flow equations (every n_revY edit and the power flow settings), increased by handle_edit.
         n_revTopology (1,1) double = 0              % Revision of the topology (buses and branches added, removed or replaced), increased by handle_edit; discards the warm start.
@@ -172,7 +172,7 @@ classdef PowerNetwork < PowerSystemModel
         varargout = build_opf_problem(obj, varargin)
 
         % PF(powerflow) calculations
-        [result, flag, output] = calculate_powerflow(obj, varargin)
+        [result, flag, output] = calculate_powerflow(obj, opt)
 
         % CPF(continuation power-flow)
         [result, flag, output] = calculate_continuation_powerflow(obj, varargin)

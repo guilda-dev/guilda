@@ -81,11 +81,11 @@ s_dir = tempname;
 mkdir(s_dir);
 c_dir = onCleanup(@() rmdir(s_dir, "s"));
 s_csv = fullfile(s_dir, "empty.csv");
-sol.Export(s_csv);
+sol.export(s_csv);
 tab = readtable(s_csv);
 assert(height(tab) == 0 && any(string(tab.Properties.VariableNames) == "t"))
 s_mat = fullfile(s_dir, "empty.mat");
-sol.Export(s_mat);
+sol.export(s_mat);
 s = load(s_mat);
 assert(s.flag == -1 && DebugScript.helper.msg_id(s.output.exception) == "GUILDA:SolverODE:PhaseFailed")
 

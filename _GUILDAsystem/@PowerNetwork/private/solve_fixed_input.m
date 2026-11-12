@@ -1,4 +1,4 @@
-function [result, flag, output, sct_point] = solve_fixed_input(net, c_nv)
+function [result, flag, output, sct_point] = solve_fixed_input(net, c_nv, s_format)
 % Solve the equilibrium with the inputs of the components held (initialize, Method="FixedInput").
 %
 % Unknowns: the states x and the injected currents I of every component, the bus voltages
@@ -16,10 +16,11 @@ function [result, flag, output, sct_point] = solve_fixed_input(net, c_nv)
 % get_equilibrium of each component.
     arguments (Input)
         net    % Network with a slack bus (initialize selects one when none is set).
-        c_nv   % Name-Value options of initialize without Method.
+        c_nv   % Name-Value options of initialize without Method and Format.
+        s_format (1,1) string = "GUILDAorigin" % Format of result (see PowerNetwork.initialize).
     end
     arguments (Output)
-        result     % ResultPF of the solution (s_solver "FixedInput", no branch flows).
+        result     % Solution in the form of s_format; for "GUILDAorigin" a ResultPF (s_solver "FixedInput").
         flag       % 1 converged, 0 MaxIteration reached, -2 diverged or no solution (the Method class).
         output     % Details of the Method class; output.message describes the outcome.
         sct_point  % Solution: cv_V (bus voltages), c_X, c_U, cv_I (per component, in sct_eq order), c_comp, iv_bus.
@@ -56,12 +57,12 @@ function [result, flag, output, sct_point] = solve_fixed_input(net, c_nv)
     for k = 1:eq.n_comp
         cv_Ibus(eq.iv_bus(k)) = cv_Ibus(eq.iv_bus(k)) + sct_point.cv_I(k);
     end
-    cv_S = cv_V .* conj(cv_Ibus);
-    tab_bus = array2table([angle(cv_V), abs(cv_V), real(cv_S), imag(cv_S), cv_V, cv_Ibus], ...
-        "VariableNames", ["Varg","V","P","Q","Vphasor","Iphasor"], "RowNames", eq.sv_bus);
-    result = ResultPF(net, "FixedInput", struct("Method", "FixedInput", "Solver", sct.Solver, ...
+    rm_pf = powerflow_matrix(cv_V, cv_Ibus);
+    sct_solver = struct("solver", "FixedInput", "options", struct("Method", "FixedInput", "Solver", sct.Solver, ...
         "Tolerance", sct.Tolerance, "MaxIteration", sct.MaxIteration, "WarmStart", sct.WarmStart), ...
-        flag, output, t0, tab_bus);
+        "flag", flag, "output", output, "elapsed", toc(t0));
+    result = format_powerflow(s_format, eq.sv_bus(:), rm_pf, ...
+        @() ResultPF(powerflow_table(eq.sv_bus(:), rm_pf), eq.cm_Y, struct(net, false), sct_solver));
 end
 
 
@@ -157,7 +158,7 @@ function eq = equation_data(net)
     eq = struct("c_comp", {c_comp}, "iv_bus", iv_bus, "n_comp", n_comp, "n_bus", n_bus, ...
                 "sv_bus", sv_bus, "nv_x", nv_x, "c_ix", {c_ix}, "c_iI", {c_iI}, "iv_V", iv_V, ...
                 "i_zPm", i_zPm, "n_z", i_zPm, "k_slack", k_slack, "i_Pm", i_Pm, ...
-                "i_slack", i_slack, "rm_Y", rm_Y, "c_U", {c_U});
+                "i_slack", i_slack, "cm_Y", cm_Y, "rm_Y", rm_Y, "c_U", {c_U});
 end
 
 
@@ -259,13 +260,13 @@ function z0 = initial_point(net, eq, l_warm)
             z0(eq.c_iI{k}) = [real(comp.c_Iequilibrium); imag(comp.c_Iequilibrium)];
         end
     else
-        [res, flag, out] = net.calculate_powerflow(WarmStart=l_warm);
+        [rm_pf, flag, out] = net.calculate_powerflow(WarmStart=l_warm, Format="powerflow(mat)");
         if flag ~= 1
             error(msg("GUILDA:PowerNetwork:InitializeFixedInputFailed", ...
                       char("the power flow for the initial point did not converge: " + string(out.message))))
         end
-        cv_V = res.tab_bus.Vphasor;
-        c_PQ = component_power(net, res.tab_bus);
+        cv_V = rm_pf(:,1);
+        c_PQ = component_power(net, real(rm_pf(:,3:4)));
         for k = 1:eq.n_comp
             comp = eq.c_comp{k};
             c_V  = cv_V(eq.iv_bus(k));
@@ -298,7 +299,7 @@ function z = rotate_point(eq, z, th)
 end
 
 
-function c_PQ = component_power(net, tab_bus)
+function c_PQ = component_power(net, rm_PQbus)
 % [P Q] of each component at the power flow solution (initial point only): the settings,
 % the rest of the bus to the components with Q = NaN (equally) and the rest of P at the
 % slack bus to its first generator
@@ -317,15 +318,15 @@ function c_PQ = component_power(net, tab_bus)
         end
         lv_nan = isnan(rm(:,2));
         if any(lv_nan)
-            rm(lv_nan,2) = (tab_bus.Q(i_bus) - sum(rm(~lv_nan,2))) / sum(lv_nan);
+            rm(lv_nan,2) = (rm_PQbus(i_bus,2) - sum(rm(~lv_nan,2))) / sum(lv_nan);
         end
         if bus.l_isSlack
             i_rest = find(cellfun(@(c) isa(c, "component.generator.abstract"), a_Comp), 1);
             if isempty(i_rest), i_rest = 1; end
             lv_other = (1:n)' ~= i_rest;
-            rm(i_rest,1) = tab_bus.P(i_bus) - sum(rm(lv_other,1));
+            rm(i_rest,1) = rm_PQbus(i_bus,1) - sum(rm(lv_other,1));
             if ~any(lv_nan)
-                rm(i_rest,2) = tab_bus.Q(i_bus) - sum(rm(lv_other,2));
+                rm(i_rest,2) = rm_PQbus(i_bus,2) - sum(rm(lv_other,2));
             end
         end
         c_PQ = [c_PQ; num2cell(rm, 2)]; %#ok<AGROW>

@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Choose the output of the power flow",
+    "date": "2026-11-12",
+    "type": "feature",
+    "content": "net.calculate_powerflow and net.initialize take the option Format for their first output: \"GUILDAorigin\" gives the result object (ResultPF; ResultOPF for initialize with Method=\"OPF\"), \"V\" gives the complex bus voltages, and \"powerflow(mat)\" and \"powerflow(tab)\" give V, I, P and Q of each bus as a matrix or a table. The default is \"GUILDAorigin\" for calculate_powerflow and \"powerflow(mat)\" for initialize, the array it writes to the equilibrium. Files are written only by the result: res = net.calculate_powerflow(); res.export(filename). The file method of every result is now export (was Export), e.g. sol.export(\"sim.csv\") after simulate; the analysis option Export of the other analyses keeps its name. The old form calculate_powerflow(\"dynamic\") and the options export, filename and Export of calculate_powerflow are removed: use Solver=\"dynamic\" and res.export."
+  },
+  {
     "title": "Removed objects are deleted",
     "date": "2026-11-12",
     "type": "feature",

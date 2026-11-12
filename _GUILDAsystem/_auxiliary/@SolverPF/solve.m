@@ -1,121 +1,41 @@
-function [result,flag,output] = solve(obj, net, sct_options)
-% Solve the power flow with the given settings.
+function [cv_V, flag, output, cm_Vhistory, rv_step] = solve(obj, cm_Y, tab_PFcondition, sct_options)
+% Solve the power equations of the given admittance matrix and power flow conditions.
 %
-% Runs the power flow calculation of net with the effective settings sct_options and
-% returns the computed values as a ResultPF. The solver keeps only the warm start
-% solution (a converged one) and the cache of net (see SolverPF). The calculation itself
-% is done by the Method class of sct_options.Solver (see SolverPF), created from the
-% settings. Called by net.calculate_powerflow; calling it directly is for advanced use.
+% Builds the power equations (private power_equation) from cm_Y and tab_PFcondition at
+% every call and runs the Method class of sct_options.Solver (see SolverPF). It reads no
+% network, bus, branch or component: net.calculate_powerflow assembles the inputs and
+% builds the outputs it returns. The solver keeps only the last converged solution and the
+% bus tags it belongs to, as the warm start of the next call with the same bus tags.
     arguments (Input)
         obj % Solver (net.solver_PF).
-        net % Network with a slack bus.
-        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+        cm_Y (:,:) double % [pu] Bus admittance matrix (rows and columns in tab_PFcondition order).
+        tab_PFcondition table % Power flow conditions, one row per bus: Type, Varg, V, P, Q (Bus.get_pf_condition); row names = bus tags.
+        sct_options (1,1) struct % Settings of the run: the PowerFlowCalculation section with the call options, and Display (built by PowerNetwork.calculate_powerflow).
     end
     arguments (Output)
-        result % Bus and branch values of the solution.
+        cv_V (:,1) double % [pu] Complex bus voltages of the solution (tab_PFcondition order).
         flag % 1 converged, 0 MaxIteration reached, -1 stopped by PlotFcn, -2 diverged or no solution (see SolverPF).
         output % Solver details; output.message describes the outcome.
+        cm_Vhistory double % [pu] Bus voltages at each iteration, or ODE step ("dynamic"), one column each.
+        rv_step double % Iteration numbers, or virtual times ("dynamic"), of cm_Vhistory.
     end
-    t0 = tic;
+    sv_bus = reshape(string(tab_PFcondition.Properties.RowNames), [], 1);
+    [f_res, f_jac, f_grad] = power_equation(cm_Y, tab_PFcondition);
+    sct_eq = struct("tab", tab_PFcondition, "f_res", f_res, "f_jac", f_jac, "f_grad", f_grad);
+    cv_V0  = initial_voltage(obj, tab_PFcondition, sv_bus, sct_options.WarmStart);
 
-    sv_bus = reshape(string(net.a_Bus), [], 1);
-    sct_eq = equations(obj, net, sv_bus);
-    cm_Y   = obj.cm_Y;
-    cv_V0  = initial_voltage(obj, sct_eq.tab, sct_options.WarmStart);
-
-    [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, sct_eq, cv_V0, sct_options);
+    [cv_V, flag, output, cm_Vhistory, rv_step] = run_method(cm_Y, sct_eq, cv_V0, sct_options);
     if flag == 1
-        obj.cv_Vwarm = cv_Vbus;
-    end
-
-    % Vbus -> Ibus -> Pbus,Qbus
-    cv_Ibus = cm_Y*cv_Vbus;
-    cv_Sbus = cv_Vbus .* conj(cv_Ibus);
-
-    % convert double->table
-    tab_bus = array2table(...
-        [angle(cv_Vbus),abs(cv_Vbus),real(cv_Sbus),imag(cv_Sbus),cv_Vbus,cv_Ibus], ...
-        "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"],"RowNames",sv_bus);
-    tab_branch = branch_flow(net, sv_bus, cv_Vbus);
-
-    tab_violation = violation_table(net, tab_bus, tab_branch, sct_options.Tolerance);
-    if flag ~= 1
-        tab_violation = tab_violation([], :);     % no solution: nothing to check
-    end
-
-    result = ResultPF(net, obj, sct_options, flag, output, t0, ...
-                             tab_bus, tab_branch, cm_Vhistory, rv_step, tab_violation);
-
-    % Notify
-    if flag<=0
-        switch sct_options.WhenFailed
-        case "WARN" ; show_msg("warning", "GUILDA:SolverPF:NotConverged", output.message)
-        case "ERROR"; error(msg("GUILDA:SolverPF:NotConverged", output.message))
-        case "DISP" ; disp(output.message)
-        end
+        obj.cv_Vwarm  = cv_V;
+        obj.sv_warmBus = sv_bus;
     end
 end
 
 
-function tab = branch_flow(net, sv_bus, cv_Vbus)
-% Power and current at both ends of each branch (from = br.a_Bus{1}, to = br.a_Bus{2})
-    n_br  = numel(net.a_Branch);
-    cm_I  = zeros(n_br,2);
-    cm_S  = zeros(n_br,2);
-    for k = 1:n_br
-        br = net.a_Branch{k};
-        [~, idx] = ismember(string(br.a_Bus), sv_bus);
-        cv_Vb = cv_Vbus(idx(:));
-        cv_Ib = br.get_admittance_matrix() * cv_Vb;
-        cm_I(k,:) = cv_Ib.';
-        cm_S(k,:) = (cv_Vb .* conj(cv_Ib)).';
-    end
-    sv_branch = strings(n_br,1);
-    for k = 1:n_br
-        sv_branch(k) = string(net.a_Branch{k});
-    end
-    tab = table(real(cm_S(:,1)), imag(cm_S(:,1)), real(cm_S(:,2)), imag(cm_S(:,2)), ...
-                cm_I(:,1), cm_I(:,2), real(sum(cm_S,2)), imag(sum(cm_S,2)), ...
-                'VariableNames', ["Pfrom","Qfrom","Pto","Qto","Ifrom","Ito","Ploss","Qloss"], ...
-                'RowNames', sv_branch);
-end
-
-
-function sct_eq = equations(obj, net, sv_bus)
-% Power flow conditions and equations of net, from the cache when the revisions of net
-% match (the cache and the warm start are reset when the buses differ or the topology
-% was edited)
-    a_Bus = net.a_Bus;
-    l_same = obj.n_revTopology == net.n_revTopology && numel(obj.a_Bus) == numel(a_Bus) ...
-             && all(cellfun(@(b1, b2) b1 == b2, obj.a_Bus, a_Bus));
-    if ~l_same
-        obj.a_Bus         = a_Bus;
-        obj.n_revTopology = net.n_revTopology;
-        obj.cv_Vwarm      = zeros(0,1);
-        obj.n_revY        = NaN;
-        obj.n_revPF       = NaN;
-    end
-    if obj.n_revY ~= net.n_revY
-        tab_Ymat   = net.get_admittance_matrix;
-        obj.cm_Y   = tab_Ymat{sv_bus, sv_bus};
-        obj.n_revY = net.n_revY;
-        obj.n_revPF = NaN;
-    end
-    if obj.n_revPF ~= net.n_revPF
-        tab = tools.vcellfun(@(b) b.get_pf_condition, a_Bus);
-        [f_res, f_jac, f_grad] = power_equation(obj.cm_Y, tab);
-        obj.sct_equation = struct("tab", tab, "f_res", f_res, "f_jac", f_jac, "f_grad", f_grad);
-        obj.n_revPF = net.n_revPF;
-    end
-    sct_eq = obj.sct_equation;
-    sct_eq.tab.Properties.RowNames = sv_bus;     % a tag edit does not change the revisions
-end
-
-
-function cv_V0 = initial_voltage(obj, tab, l_warm)
-% The kept solution (WarmStart), or the flat start: angle 0 and magnitude 1, with the set
-% V at PV and slack buses and the set angle at the slack bus
-    if l_warm && numel(obj.cv_Vwarm) == height(tab)
+function cv_V0 = initial_voltage(obj, tab, sv_bus, l_warm)
+% The kept solution (WarmStart, same bus tags), or the flat start: angle 0 and magnitude 1,
+% with the set V at PV and slack buses and the set angle at the slack bus
+    if l_warm && isequal(obj.sv_warmBus, sv_bus)
         cv_V0 = obj.cv_Vwarm;
         return
     end

@@ -7,6 +7,8 @@ function rm_PQ = distribute_power(bus, r_P, r_Q, s_rule)
 % the components whose Q is NaN: all of it to a single one, else split by s_rule:
 % "baseMVA" in proportion to operation.baseMVA, "Qmax" in proportion to the range
 % operation.Qmax - Qmin, starting from Qmin ("baseMVA" when a Qmin or Qmax is infinite).
+% The bus can also be a bus struct of a network snapshot (struct(net, false)), as
+% ResultPF uses it.
 %
 % <@Examples>
 % ```matlab
@@ -14,9 +16,9 @@ function rm_PQ = distribute_power(bus, r_P, r_Q, s_rule)
 % rm_PQ = tools.distribute_power(bus, 0.7, 0.3, "baseMVA");
 % ```
 %
-% See also Bus.set_equilibrium, SolverPF.solve
+% See also Bus.set_equilibrium, ResultPF
     arguments (Input)
-        bus                % Bus whose components get the powers. It is only read.
+        bus                % Bus whose components get the powers (only read), or a bus of a network snapshot (struct(net, false)).
         r_P   (1,1) double % [pu] Active power injection of the bus.
         r_Q   (1,1) double % [pu] Reactive power injection of the bus.
         s_rule (1,1) string {mustBeMember(s_rule,["baseMVA","Qmax"])} = "baseMVA" % Split of the remaining Q among the components with Q = NaN.
@@ -69,6 +71,10 @@ end
 
 
 function tab = group(obj, s_group)
-% tab_parameter of the parameter group s_group of obj
+% tab_parameter of the parameter group s_group of obj (a model or its struct snapshot)
+    if isstruct(obj)
+        tab = obj.tab_parameter.(s_group);
+        return
+    end
     tab = obj.a_Parameter{cellfun(@(p) p.s_tag==s_group, obj.a_Parameter)}.tab_parameter;
 end

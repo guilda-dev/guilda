@@ -163,6 +163,19 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **テスト(MATLAB R2026a):** `DebugScript.run_all('Level','medium')` 655 件、PASS 653 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、549 s。large は未実行。
 - **要判断:** fixed-input.md の「実装」節の要判断 1〜3(AVR の Vfield も固定されるため負荷を少し増やすと平衡点がない系統がある、など)。
 
+## 潮流計算の構造の見直し(2026-11-12)
+
+仕様と実装の記録、表示メソッドの提案は [powerflow-structure.md](powerflow-structure.md) にあります。ブランチは `refactor/powerflow-structure`(未 push)です。
+
+- `calculate_powerflow` の v3 の呼び出し形式を削除し、オプションは 1 つの `arguments` ブロックで検証します。`SolverPF.OptionMap`・`get_options` はありません(ほかの解析のソルバーは変えていません)。
+- `SolverPF.solve(cm_Y, tab_PFcondition, sct_options)` は系統を読みません。方程式のキャッシュはなく、母線タグが一致するときだけウォームスタートを使います。
+- `calculate_powerflow` と `initialize` に `Format` を追加しました(既定は `calculate_powerflow` が `"GUILDAorigin"`、`initialize` が `"powerflow(mat)"`)。結果クラスの書き出しのメソッドは `export` です。`calculate_powerflow` の `Export` オプションは削除し、書き出しは `res.export` だけです。`"GUILDAorigin"` の `ResultPF` は `struct(net, false)` のスナップショットとアドミタンス行列から作り、系統のハンドルを持ちません。
+- 収束しないときの ID は `GUILDA:PowerNetwork:PowerflowNotConverged` です。
+- **テスト(MATLAB R2026a):** small はコードの手順ごと(`6ecc6903`、`847e5b76`、`335c9162`)に FAIL 0(`335c9162` は I69 の修正後に該当テストを再実行)。最後の small 513 件、PASS 511 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1。medium 688 件、PASS 686 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、545 s。追加の 3 手順(`96f131f9` Export の削除、`737c287d` 既定 Format、`254a2602` `Branch.struct`)も small を手順ごとに実行して 513 件中 FAIL 0、最後に medium 688 件、PASS 686 / KNOWN 1 / FAIL 0 / SKIP 1、525 s。その後の 2 手順(`eefdce1b` `export` への改名、n×4 の配列を使う `initialize`)も small を手順ごとに FAIL 0、最後に medium 688 件、PASS 686 / KNOWN 1 / FAIL 0 / SKIP 1、512 s。改名した `export` を使う large のテスト 5 件(F2・F4・F5・F6 の Plot/Export)は個別に実行して PASS。large は未実行。
+- 枝潮流は `Branch.struct` がスナップショットに加える `cm_Y` から求めます(案 C)。
+- **要判断:** powerflow-structure.md の「5.」の表示メソッドの一覧。
+- **未対応:** `_GUILDAtutorial/*.mlx`(保留中のチュートリアルの作業)。`PowerNetwork.n_revY`・`n_revPF` はどのソルバーも読まなくなったので、削除を検討します。
+
 ## 未決事項
 
 状態は `a9afe24` のコードと履歴で確認しました(`301b5d0` までの統合はコードを変えていません)(下で日付や基準を別に示した項目を除く)。

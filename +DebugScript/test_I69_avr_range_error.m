@@ -25,7 +25,7 @@ check_error(ME, "AVR_DC1", avr.s_tag, "(100, Inf)")
 for s_key = ["avr-ST1", "avr-DC1"]
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
     comp.add_local_controller(s_key, parameter=struct(Vap_min=-100, Vap_max=100));
-    res = DebugScript.helper.quiet(@() net.initialize);
+    res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
     assert(res.l_success)
 end
 

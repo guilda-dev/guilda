@@ -107,8 +107,8 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
           <td lang="en" data-label="Setting and default"><code>PlotFcn = "none"</code>: live display during the analysis, fmincon only: keys of the plot functions of fmincon, key <code>k</code> → <code>optimplot&lt;k&gt;</code> (<code>"fval"</code>, <code>"constrviolation"</code>, <code>"fvalconstr"</code>, <code>"firstorderopt"</code>, <code>"stepsize"</code>, <code>"funccount"</code>, <code>"x"</code>), or a function handle passed to fmincon as it is; with linprog / quadprog: <code>GUILDA:SolverOPF:PlotFcnUnsupported</code>; the figure after the analysis: <code>result.Plot()</code></td>
           <td lang="ja" data-label="設定と既定値">既定値は <code>PlotFcn = "none"</code> です。解析中の経過をライブで表示します（fmincon のみ）。fmincon のプロット関数のキーか、fmincon にそのまま渡す関数ハンドルを指定します。キー <code>k</code> は <code>optimplot&lt;k&gt;</code> を表し、<code>"fval"</code>、<code>"constrviolation"</code>、<code>"fvalconstr"</code>、<code>"firstorderopt"</code>、<code>"stepsize"</code>、<code>"funccount"</code>、<code>"x"</code> を使えます。linprog と quadprog では <code>GUILDA:SolverOPF:PlotFcnUnsupported</code> になります。解析後の図は <code>result.Plot()</code> で描きます。</td></tr>
         <tr><td><code>Export</code></td>
-          <td lang="en" data-label="Setting and default">call only; <code>false</code>: call <code>result.Export(...)</code> afterwards</td>
-          <td lang="ja" data-label="設定と既定値">呼び出しのときだけ指定できます。既定値は <code>false</code> で、指定すると実行後に <code>result.Export(...)</code> を呼び出します。</td></tr>
+          <td lang="en" data-label="Setting and default">call only; <code>false</code>: call <code>result.export(...)</code> afterwards</td>
+          <td lang="ja" data-label="設定と既定値">呼び出しのときだけ指定できます。既定値は <code>false</code> で、指定すると実行後に <code>result.export(...)</code> を呼び出します。</td></tr>
         <tr><td><code>Problem</code>, <code>InitialPoint</code></td>
           <td lang="en" data-label="Setting and default">call only, not stored: an <code>optimproblem</code> from <code>net.build_opf_problem</code> (same <code>Method</code>, possibly modified) to solve as it is; the initial point (default: the <code>x0</code> of OPF-04, with <code>WarmStart</code> applied)</td>
           <td lang="ja" data-label="設定と既定値">呼び出しのときだけ指定でき、保存はされません。<code>Problem</code> には <code>net.build_opf_problem</code> が返した <code>optimproblem</code> を渡し、そのまま解かせます。<code>Method</code> は同じにし、中身は変更してかまいません。<code>InitialPoint</code> は初期点で、既定では OPF-04 の <code>x0</code>（<code>WarmStart</code> を反映したもの）を使います。</td></tr>
@@ -442,7 +442,7 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
         </dl>
       </li>
       <li class="fs-step" id="OPF-16">
-        <p class="fs-head"><b class="fs-id">OPF-16</b> <span class="fs-call"><code>optimize_powerflow</code> → user</span><small><code>result.Export</code>, <code>legacy_output</code></small></p>
+        <p class="fs-head"><b class="fs-id">OPF-16</b> <span class="fs-call"><code>optimize_powerflow</code> → user</span><small><code>result.export</code>, <code>legacy_output</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">

@@ -21,7 +21,7 @@ c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "n
 %% Initialize returns result flag output
 % 9 母線系統 (旧 Task3)
 net = DebugScript.helper.build_9bus();
-[res, flag, output] = DebugScript.helper.quiet(@() net.initialize);
+[res, flag, output] = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
 
 % result: 潮流計算の結果 (ResultPF)、flag: 収束フラグ、output: ソルバー出力 (構造体)
 assert(isa(res, "ResultPF") && res.l_success)
@@ -31,7 +31,7 @@ assert(istable(res.tab_bus) && height(res.tab_bus) == numel(net.a_Bus))
 assert(norm(net.cv_Vequilibrium - res.tab_bus.Vphasor) < 1e-8)
 
 % Method="powerflow" が既定。他の Name-Value は calculate_powerflow へそのまま渡る
-res = DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Tolerance=1e-10));
+res = DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Tolerance=1e-10, Format="GUILDAorigin"));
 assert(isa(res, "ResultPF") && res.options.Tolerance == 1e-10)
 assert(DebugScript.helper.edit_flag(net) == "initialized")
 
@@ -197,7 +197,7 @@ assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 % OPF の解を平衡点にする (常に AC OPF。GUILDA.setting の OptimalPowerFlow の Method によらない)
 net = DebugScript.helper.build_ieee14();
 c_cfg = DebugScript.helper.user_config("OptimalPowerFlow", struct("Method", "DC OPF"));
-[res, flag] = DebugScript.helper.quiet(@() net.initialize(Method="OPF", Verbose=false));
+[res, flag] = DebugScript.helper.quiet(@() net.initialize(Method="OPF", Verbose=false, Format="GUILDAorigin"));
 assert(isa(res, "ResultOPF") && res.l_success && double(flag) > 0)
 assert(res.options.Method == "AC OPF" && GUILDA.config("OptimalPowerFlow", "Method") == "DC OPF")
 clear c_cfg
@@ -211,7 +211,7 @@ assert(DebugScript.helper.edit_flag(net) == "initialized")
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 V_before = net.cv_Vequilibrium;
-[res, flag] = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium"));
+[res, flag] = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium", Format="GUILDAorigin"));
 assert(isa(res, "ResultPF") && res.s_solver == "equilibrium" && res.l_success)
 assert(isscalar(flag) && flag > 0)
 assert(istable(res.tab_bus))
@@ -225,7 +225,7 @@ DebugScript.helper.quiet(@() net.initialize);
 V_before = net.cv_Vequilibrium;
 I_before = net.cv_Iequilibrium;
 X_before = cellfun(@(b) b.a_Component{1}.rv_Xequilibrium, net.a_Bus([1,2,3,5,6,8]), "UniformOutput", false);
-[res, flag, output] = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium"));
+[res, flag, output] = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium", Format="GUILDAorigin"));
 assert(isscalar(flag) && flag > 0, output.message)
 tab = res.tab_bus;
 assert(istable(tab) && height(tab) == numel(net.a_Bus))
@@ -259,7 +259,7 @@ net.a_Bus{1}.a_Component{1}.tab_parameter.operation.Pmax = 1;    % 平衡点を�
 [V0, I0, X0, log0, flag0] = snapshot(net);
 
 % MaxIteration=2 では AC OPF は解けない
-ME = error_of(@() net.initialize(Method="OPF", MaxIteration=2));
+ME = error_of(@() net.initialize(Method="OPF", MaxIteration=2, Format="GUILDAorigin"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "Relax the constraints") && contains(ME.message, 'Method="powerflow"'))
 assert_unchanged(net, V0, I0, X0, log0, flag0)
@@ -269,7 +269,7 @@ for i = [1,2,3]
     net.a_Bus{i}.a_Component{1}.tab_parameter.operation.Pmax = 0.01;
 end
 [V0, I0, X0, log0, flag0] = snapshot(net);
-ME = error_of(@() net.initialize(Method="OPF"));
+ME = error_of(@() net.initialize(Method="OPF", Format="GUILDAorigin"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", DebugScript.helper.msg_id(ME))
 assert_unchanged(net, V0, I0, X0, log0, flag0)
 
@@ -278,7 +278,7 @@ assert_unchanged(net, V0, I0, X0, log0, flag0)
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);
 [V0, I0, X0, log0, flag0] = snapshot(net);
-ME = error_of(@() net.initialize(Method="powerflow", MaxIteration=1, Tolerance=1e-14, WarmStart=false));
+ME = error_of(@() net.initialize(Method="powerflow", MaxIteration=1, Tolerance=1e-14, WarmStart=false, Format="GUILDAorigin"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializePowerflowFailed", DebugScript.helper.msg_id(ME))
 assert_unchanged(net, V0, I0, X0, log0, flag0)
 
@@ -286,7 +286,7 @@ assert_unchanged(net, V0, I0, X0, log0, flag0)
 %% Initialize rejects unknown options
 net = DebugScript.helper.build_9bus();
 assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="algebraic"))) == "GUILDA:PowerNetwork:InitializeMethod")
-assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="powerflow", Foo=1))) == "GUILDA:resolve_options:UnknownName")
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="powerflow", Foo=1))) ~= "")     % arguments ブロックのエラー
 assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="OPF", Foo=1))) == "GUILDA:resolve_options:UnknownName")
 assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="equilibrium", Foo=1))) == "GUILDA:PowerNetwork:InitializeEquilibriumOption")
 assert(DebugScript.helper.msg_id(error_of(@() net.initialize("Method"))) == "GUILDA:PowerNetwork:InitializePairs")
@@ -300,7 +300,7 @@ w = warning(); c = onCleanup(@() warning(w));
 clear Deprecated
 lastwarn("");
 warning("off", "GUILDA:Deprecated:InitializeMethodValue");
-res = DebugScript.helper.quiet(@() net.initialize("methods", "powerflow calculation"));
+res = DebugScript.helper.quiet(@() net.initialize("methods", "powerflow calculation", Format="GUILDAorigin"));
 id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:InitializeMethods" && isa(res, "ResultPF"))
 
@@ -308,12 +308,12 @@ clear Deprecated
 lastwarn("");
 warning("on", "GUILDA:Deprecated:InitializeMethodValue");
 warning("off", "GUILDA:Deprecated:InitializeMethods");
-res = DebugScript.helper.quiet(@() net.initialize(Method="calculate from Xequilibrium"));
+res = DebugScript.helper.quiet(@() net.initialize(Method="calculate from Xequilibrium", Format="GUILDAorigin"));
 id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:InitializeMethodValue" && res.s_solver == "equilibrium")
 
 warning("off", "GUILDA:Deprecated:InitializeMethodValue");
-res = DebugScript.helper.quiet(@() net.initialize("methods", "optimal powerflow"));
+res = DebugScript.helper.quiet(@() net.initialize("methods", "optimal powerflow", Format="GUILDAorigin"));
 assert(isa(res, "ResultOPF") && res.options.Method == "AC OPF")
 
 
@@ -373,7 +373,7 @@ net = network.IEEE9bus();
 DebugScript.helper.quiet(@() net.initialize);
 V0 = net.cv_Vequilibrium;
 c_X0 = component_values(net, "rv_Xequilibrium");
-[res, flag, output] = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput"));
+[res, flag, output] = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput", Format="GUILDAorigin"));
 assert(flag == 1 && output.iterations == 0 && isa(res, "ResultPF") && res.s_solver == "FixedInput")
 assert(res.options.Method == "FixedInput" && res.options.Solver == "newton" && res.options.Tolerance == 1e-8)
 assert(abs(angle(V0(1))) < 1e-12 && max(abs(net.cv_Vequilibrium - V0)) < 1e-10)
@@ -417,7 +417,7 @@ for i_bus = [5 6 8]
     ld.set_input(ld.rv_Uequilibrium/0.95);
 end
 c_Uset = component_values(net, "rv_Uequilibrium");
-[res, flag, output] = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput"));
+[res, flag, output] = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput", Format="GUILDAorigin"));
 assert(flag == 1 && output.iterations > 0 && output.iterations <= 10, string(output.iterations))
 c_U = component_values(net, "rv_Uequilibrium");
 gen1 = net.a_Bus{1}.a_Component{1};

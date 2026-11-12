@@ -70,7 +70,6 @@ function tab = test_levels()
     "test_F2_powerflow/DynamicMethodConverges", "medium"
     "test_F2_powerflow/Name_ValueOptionsOverrideSolverDefaultsForOneCallOnly", "medium"
     "test_F2_powerflow/DynamicMethodExportsConvergenceHistoryAsJSON", "medium"
-    "test_F2_powerflow/COMPATV3PositionalModeAndExportOptions", "medium"
     % ---- F30_governor ----------------------------------------------------------------------------
     "test_F30_governor/TheSlotsKeepAFixedOrderWhateverTheOrderOfAttachment", "large"
     "test_F30_governor/EachLPTSettlesWithItsDroopAfterALoadStep", "large"

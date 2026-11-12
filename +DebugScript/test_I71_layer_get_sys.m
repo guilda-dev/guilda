@@ -83,7 +83,7 @@ ua = avr.rv_Uequilibrium;
 assert(isa(avr.get_sys(xa, Va, ua), "ResultLIN"))
 assert(DebugScript.helper.handle_Hz(gen) == Hz0)
 
-res = DebugScript.helper.quiet(@() net.initialize);
+res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
 assert(res.s_solver == "equilibrium")
 A_gen2 = gen.get_sys().A;
 assert(DebugScript.helper.handle_Hz(avr) == net.tab_parameter.base.Hz && DebugScript.helper.handle_Hz(pss) == net.tab_parameter.base.Hz)

@@ -464,8 +464,8 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   stops with `GUILDA:resolve_options:UnknownName`, which lists the accepted
   names.
 - Plotting and writing files are methods of the result: `result.Plot()`,
-  `result.Export(filename)`, or the option `Export=true|filename` of the
-  analysis call. The option `Plot` is removed; `PlotFcn` is the live display
+  `result.export(filename)`, or the option `Export=true|filename` of the
+  analysis call (`calculate_powerflow` has no such option: use `result.export`). The option `Plot` is removed; `PlotFcn` is the live display
   during the analysis (keys `"residual"` for the power flow, the fmincon plot
   functions such as `"fval"` for the OPF, `"pvcurve"` for the continuation power
   flow, or a function handle; see "解析の設定は GUILDA.setting"). A relative file name is
@@ -483,10 +483,13 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 |----|----|
 | `tab = net.calculate_powerflow()` | `res = net.calculate_powerflow(); tab = res.tab_bus` |
 | `[tab, flag, output] = net.calculate_powerflow("dynamic")` | `[res, flag, output] = net.calculate_powerflow(Solver="dynamic")` |
-| `net.calculate_powerflow("dynamic", "export", true, "filename", f)` | `net.calculate_powerflow(Solver="dynamic", Export=f)` or `res.Export(f)` (`.json`) |
+| `net.calculate_powerflow("dynamic", "export", true, "filename", f)` | `res = net.calculate_powerflow(Solver="dynamic"); res.export(f)` (`.json`) |
 | `net.solver_PF.rm_response`, `rr_step`, `i_iteration` | `res.cm_Vhistory`, `res.rv_step` |
 
-- オプション: `Solver`(`"newton"` | `"gradient"` | `"levenberg-marquardt"` | `"fsolve"` | `"dynamic"`。開発版の `Method` から改名)、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`、`PlotFcn`、`Export`。v3 の潮流計算(fsolve)は `Solver="fsolve"` で、Optimization Toolbox が必要です。
+- **最初の出力は `Format` で選びます(2026-11-12)。** 既定の `"GUILDAorigin"` は `ResultPF`、`"V"` は母線の複素電圧の列、`"powerflow(mat)"` は V・I・P・Q の n×4 の複素行列、`"powerflow(tab)"` は同じ内容の table です。`initialize` も同じ値の `Format` を取りますが、既定は `"powerflow(mat)"`(平衡点に書く V・I・P・Q の n×4 の配列)です。`initialize` の結果から `res.tab_bus` などを読むスクリプトには `Format="GUILDAorigin"` が必要です。詳細は [powerflow-structure.md](powerflow-structure.md)。
+- **v3 の呼び出し形式は使えません(2026-11-12)。** 位置引数の mode(`calculate_powerflow("dynamic")`)と `"export"` / `"filename"` は、互換の変換をせずエラーになります。`Solver=` と `res.export(f)` を使ってください。
+- **`Export` オプションはありません(2026-11-12)。** 書き出しは結果のメソッド `res.export(...)` だけです(`initialize` も `Export` を受け付けません)。
+- オプション: `Solver`(`"newton"` | `"gradient"` | `"levenberg-marquardt"` | `"fsolve"` | `"dynamic"`。開発版の `Method` から改名)、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`、`PlotFcn`、`Format`。v3 の潮流計算(fsolve)は `Solver="fsolve"` で、Optimization Toolbox が必要です。
 - **設定は GUILDA.setting に置きます。** 既定値は PowerFlowCalculation セクション(`@GUILDA/config/DefaultPowerFlowCalculation.json`)にあり、Name-Value はその呼び出しだけを上書きします(JSON には書きません)。`net.solver_PF` は数値の設定を持ちません。`net.solver_PF.Method = ...`、`.Tolerance`、`.MaxIterations`、`.Display`、`.WhenFailed`、`.gradient`、`.dynamic` などは存在しないプロパティへの代入としてエラーになります。
 
   | 旧(`net.solver_PF` / JSON キー) | 新(PowerFlowCalculation のキー / Name-Value) |
@@ -536,15 +539,9 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 - **Errors instead of the fixed `BUS001` message.** A network without buses stops
   with `GUILDA:PowerNetwork:NoBus`, and a network whose buses have no components
   with `GUILDA:PowerNetwork:NoSlackCandidate`.
-- Deprecated, still working:
-
-  | Old form | Warning ID |
-  |----------|------------|
-  | positional mode `calculate_powerflow("dynamic", ...)` | `GUILDA:Deprecated:CalculatePowerflowMode` |
-  | options `"export"` / `"filename"` (with the positional mode or `"filename"`) | `GUILDA:Deprecated:CalculatePowerflowExport` |
-
-  The old export keeps the v3 default file name
-  `<yyMMdd_HHmmss>_PFcalculation.json`, now in `GUILDA.pwd` explicitly.
+- Not kept (2026-11-12): the positional mode `calculate_powerflow("dynamic", ...)`
+  and the options `"export"` / `"filename"` stop with the error of the `arguments`
+  block. Use `Solver=` and `res.export(f)` (`calculate_powerflow` has no `Export` option).
   `"export"` alone is read as the v4 option `Export`.
 - Fixed earlier (stage 1): initializing from the stored equilibria works
   (now `net.initialize(Method="equilibrium")`, 1.17), and the dynamic power
@@ -1254,7 +1251,7 @@ then the class header, then the number. Buses (`B001`) and branches
 **Labels** made by `attach_tag` (the names of states, inputs and outputs in
 `get_sys`, `linearize` and `ResultLIN`, the `Label` column and the
 `Source` / `Target` columns of `get_variable_map`, the INFO line of
-`add_global_controller`, the controller columns of `ResultODE.Export`) are
+`add_global_controller`, the controller columns of `ResultODE.export`) are
 the name, `"_"` and the tag of the owner layer. Before, the tags of all the
 parents up to the network were appended. A generated tag starts with the tag
 of its parent, so the labels stay unique within a network.
@@ -1460,8 +1457,6 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 |----------|----|----------|
 | `net.add_bus(..., "baseMVA", x)` with x = system base | `GUILDA:Deprecated:BusBaseMVA` | warning; ignored |
 | `net.add_bus(..., "baseMVA", x)` with x ≠ system base | `GUILDA:Deprecated:BusBaseMVAMismatch` | warning; ignored, system base used |
-| `calculate_powerflow(mode, ...)` (positional `"algebraic"` / `"dynamic"`) | `GUILDA:Deprecated:CalculatePowerflowMode` | warning; becomes `Solver=mode` (`"algebraic"` → `Solver="fsolve"`) |
-| `calculate_powerflow(..., "export", l, "filename", f)` | `GUILDA:Deprecated:CalculatePowerflowExport` | warning; becomes `Export=fullfile(GUILDA.pwd, f)` |
 | `optimize_powerflow("methods", m)` | `GUILDA:Deprecated:OptimizePowerflowMethods` | warning; becomes `Method=m` |
 | `build_opf_problem("methods", m)` | `GUILDA:Deprecated:BuildOpfProblemMethods` | warning; becomes `Method=m` |
 | 6 outputs of `optimize_powerflow` | `GUILDA:Deprecated:OptimizePowerflowTuple` | warning; returns `{tab_bus, tab_cub, flag, output, lambda, OPFprob}` |
@@ -1479,8 +1474,9 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | `ODEevent(tag, net, Name=Value)` | `GUILDA:Deprecated:ODEevent` | 警告。外乱 1 つの `Scenario` を作って `net` に追加して返す(1.18) |
 
 Not kept: the v3 second output `lin` of `get_sys`, the v3 meaning of the
-second output of `simulate`, and the v3 output order of `initialize` (see the
-box at the top).
+second output of `simulate`, the v3 output order of `initialize` (see the
+box at the top), and the v3 positional mode and `export` / `filename` options of
+`calculate_powerflow` (2026-11-12).
 
 ### Hooks
 
@@ -1492,7 +1488,6 @@ lists all of them:
 |------|------|------|
 | `@PowerNetwork/add_bus.m` | `opt.baseMVA` argument | accepts the old option |
 | `@PowerNetwork/add_bus.m` | `v3_bus_baseMVA(obj, opt)` | warns and removes the option |
-| `@PowerNetwork/calculate_powerflow.m` | `v3_powerflow_args(varargin)` | positional mode, `export` / `filename` |
 | `@PowerNetwork/optimize_powerflow.m` | `v3_opf_args(varargin)` | `methods` option |
 | `@PowerNetwork/optimize_powerflow.m` | `legacy_output(..., 6, @v3_optimize_powerflow, ...)` | 6-output tuple |
 | `@PowerNetwork/build_opf_problem.m` | `v3_opf_args(varargin, "BuildOpfProblemMethods")` | `methods` option |
@@ -1528,7 +1523,6 @@ settings (an untagged line, needed by the `get_config` hook).
 | `Continuation_Power_Flow.m` | old CPF entry point (returns `ContinuationPowerFlowV3`) |
 | `ContinuationPowerFlowV3.m` | v3 CPF object: `CPF*` properties, `solve`, `CPF_Result` |
 | `@CsvNetHandler/` | old CSV import / export, wrappers of `import_csv` / `export_csv` |
-| `v3_powerflow_args.m` | `calculate_powerflow` positional mode and `export` / `filename` |
 | `v3_opf_args.m` | `methods` option of `optimize_powerflow` and `build_opf_problem` |
 | `v3_optimize_powerflow.m` | v4 outputs → the v3 6-output tuple |
 | `v3_cpf_constructor.m` | error for `SolverCPF(net, ...)` |

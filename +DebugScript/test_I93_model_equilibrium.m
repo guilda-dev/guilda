@@ -16,7 +16,7 @@ c_stub = register_stub();
 
 % 残差は警告で、タグと値を示し、系統は使える
 net = network_with("equilibrium");
-[s_id, s_msg] = warning_of(@() net.initialize);
+[s_id, s_msg] = warning_of(@() net.initialize(Format="GUILDAorigin"));
 assert(s_id == s_warn, s_id)
 assert(contains(s_msg, "|dx| = 0.1") && contains(s_msg, "'" + string(stub(net)) + "'"), s_msg)
 assert(~DebugScript.helper.is_stale(net))
@@ -30,7 +30,7 @@ assert(warning_of(@() net.initialize) == "")
 net = network_with("equilibrium");
 sct_warn = warning("off", "all");   % ID がないので個別には止められない
 c_warn = onCleanup(@() warning(sct_warn));
-s_out = evalc("net.initialize;");
+s_out = evalc("net.initialize();");
 assert(~contains(s_out, "do not hold"), s_out)
 clear c_warn
 
@@ -62,7 +62,7 @@ net.add_bus();
 net.add_branch("pi",[4,5], "R",0, "X",0.1);
 net.a_Bus{4}.add_component("gen-park", "P",0.5, "Q",nan);
 net.a_Bus{5}.add_component("load-power", "P",-0.5, "Q",-0.1);
-s_out = evalc("net.initialize;");
+s_out = evalc("net.initialize();");
 assert(all(contains(s_out, ["do not hold", "split into"])), s_out)
 clear c_stub
 
@@ -72,7 +72,7 @@ c_stub = register_stub();
 c_case = ["residual","|dx| = 0.1"; "input","|dx| = 0.2"];
 for k = 1:height(c_case)
     [net, comp] = network_with_controller(c_case(k,1));
-    [s_id, s_msg] = warning_of(@() net.initialize);
+    [s_id, s_msg] = warning_of(@() net.initialize(Format="GUILDAorigin"));
     assert(s_id == s_warn, s_id)
     assert(contains(s_msg, "'" + comp.a_LocalController{1}.s_tag + "': " + c_case(k,2)), s_msg)
 end
@@ -81,7 +81,7 @@ end
 %% An output that does not match the input it drives names the component
 c_stub = register_stub();
 [net, comp] = network_with_controller("output");
-[s_id, s_msg] = warning_of(@() net.initialize);
+[s_id, s_msg] = warning_of(@() net.initialize(Format="GUILDAorigin"));
 assert(s_id == s_warn, s_id)
 assert(contains(s_msg, "'" + comp.s_tag + "'") && contains(s_msg, "|u - source| = 0.1"), s_msg)
 
@@ -104,7 +104,7 @@ check_stop(net, "InitializeEquilibriumSize", "'" + pss.s_tag + "'");
 c_stub = register_stub();
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
 agc = net.add_global_controller("test-bad-agc", {comp}, parameter=struct(bad="output"));
-[s_id, s_msg] = warning_of(@() net.initialize);
+[s_id, s_msg] = warning_of(@() net.initialize(Format="GUILDAorigin"));
 assert(s_id == s_warn, s_id)
 assert(contains(s_msg, "'" + agc.s_tag + "'"), s_msg)
 
@@ -118,7 +118,7 @@ for s_net = ["IEEE9bus","IEEE14bus","IEEE14bus_lossless","IEEE14bus_NoTap","IEEE
                "Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus", ...
                "IEEJ_EAST10","IEEJ_EAST30","IEEJ_WEST10","IEEJ_WEST30"]
     net = network.(s_net)();
-    s_out = evalc("net.initialize;");
+    s_out = evalc("net.initialize();");
     assert(~contains(s_out, "do not hold"), s_net)
 end
 
@@ -129,7 +129,7 @@ g1.add_local_controller("avr-ST1");
 g1.add_local_controller("pss-PSS1");
 g2.add_local_controller("local-LQR");
 net.add_global_controller("agc-PI", {g1, g2}, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
-s_out = evalc("net.initialize;");
+s_out = evalc("net.initialize();");
 assert(~contains(s_out, "do not hold"), s_out)
 
 

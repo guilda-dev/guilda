@@ -259,14 +259,14 @@ assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIte
 
 % Export: 経路の表 (lambda, V_<bus>, Varg_<bus>)
 s_dir = tempname; mkdir(s_dir); c_dir = onCleanup(@() rmdir(s_dir, "s"));
-f_csv = res.Export(fullfile(s_dir, "cpf.csv"));
+f_csv = res.export(fullfile(s_dir, "cpf.csv"));
 tab = readtable(f_csv, "VariableNamingRule", "preserve");
 assert(height(tab) == numel(res.rv_lambda) && width(tab) == 1 + 2*n_bus)
 assert(max(abs(tab.lambda - res.rv_lambda(:))) < 1e-12 && max(abs(tab.V_B009 - abs(res.cm_Vbus(9,:)).')) < 1e-12)
-% Export=filename は計算後に result.Export を呼ぶ
+% Export=filename は計算後に result.export を呼ぶ
 DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load, MaxIteration=2, Export=fullfile(s_dir, "nv.csv")));
 assert(isfile(fullfile(s_dir, "nv.csv")))
-assert(error_id(@() res.Export(fullfile(s_dir, "cpf.mat"))) == "GUILDA:ResultCPF:ExportFormat")
+assert(error_id(@() res.export(fullfile(s_dir, "cpf.mat"))) == "GUILDA:ResultCPF:ExportFormat")
 
 
 %% COMPAT v3 Continuation_Power_Flow and SolverCPF constructor

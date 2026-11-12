@@ -53,7 +53,7 @@ assert(isempty(dir("*_simulation.csv")))
 
 %% Table has the controller states, by Label, after the existing columns
 sol = net.simulate([0,0.2], ev);
-s_csv = sol.Export(fullfile(s_dir, "sim.csv"));
+s_csv = sol.export(fullfile(s_dir, "sim.csv"));
 tab = readtable(s_csv, "VariableNamingRule", "preserve");
 sv  = string(tab.Properties.VariableNames);
 assert(height(tab) == numel(sol.rv_t))
@@ -72,7 +72,7 @@ assert(max(abs(tab.B001SG1_omega - sol.odeResults.Bus(1).Component(1).X.omega)) 
 net0 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net0.initialize);
 sol0 = net0.simulate([0,0.1]);
-tab0 = readtable(sol0.Export(fullfile(s_dir, "sim0.csv")), "VariableNamingRule", "preserve");
+tab0 = readtable(sol0.export(fullfile(s_dir, "sim0.csv")), "VariableNamingRule", "preserve");
 n_bus = numel(net0.a_Bus);
 n_comp = 0;
 for i = 1:n_bus
@@ -88,7 +88,7 @@ assert(width(tab0) == 1 + 6*n_bus + n_comp)
 
 %% MAT file has the controller states
 sol = net.simulate([0,0.2], ev);
-s_mat = sol.Export(fullfile(s_dir, "sim.mat"));
+s_mat = sol.export(fullfile(s_dir, "sim.mat"));
 s = load(s_mat);
 assert(isequal(s.rm_variable, sol.rm_variable) && isequal(s.tab_variable, sol.tab_variable))
 assert(isequal(s.odeResults.t, sol.odeResults.t) && s.flag == sol.flag)

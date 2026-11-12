@@ -3,7 +3,7 @@ classdef DummyResult < ResultBase
 %
 %   res = DebugScript.helper.DummyResult(net, solver, options, flag, output, elapsed, value)
 %
-% Plot だけを実装し、Export は基底クラスのまま (未対応エラー) にしている。
+% Plot だけを実装し、export は基底クラスのまま (未対応エラー) にしている。
     properties (SetAccess=private)
         value  % Plot で描く値
     end

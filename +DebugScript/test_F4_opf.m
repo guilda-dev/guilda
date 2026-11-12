@@ -627,20 +627,20 @@ assert(res_none.options.PlotFcn == "none")
 
 % Export: 母線・接続・送電線の表を CSV に書く
 s_dir = tempname; mkdir(s_dir); c_dir = onCleanup(@() rmdir(s_dir, "s"));
-f_bus = res.Export(fullfile(s_dir, "bus.csv"));
+f_bus = res.export(fullfile(s_dir, "bus.csv"));
 tab = readtable(f_bus, "ReadRowNames", true);
 assert(isequal(string(tab.Properties.RowNames), string(net.a_Bus)) && max(abs(tab.V - res.tab_bus.V)) < 1e-12)
-res.Export(fullfile(s_dir, "cub.csv"), Table="cub");
+res.export(fullfile(s_dir, "cub.csv"), Table="cub");
 tab = readtable(fullfile(s_dir, "cub.csv"), "ReadRowNames", true);
 assert(isequal(string(tab.Properties.RowNames), string(res.tab_cub.Properties.RowNames)))
-res.Export(fullfile(s_dir, "branch.csv"), Table="branch");
+res.export(fullfile(s_dir, "branch.csv"), Table="branch");
 tab = readtable(fullfile(s_dir, "branch.csv"), "ReadRowNames", true);
 assert(max(abs(tab.Ploss - res.tab_branch.Ploss)) < 1e-12)
-% Export=filename は計算後に result.Export を呼ぶ
+% Export=filename は計算後に result.export を呼ぶ
 f_opt = fullfile(s_dir, "opt.csv");
 DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", Export=f_opt));
 assert(isfile(f_opt))
-assert(error_id(@() res.Export(fullfile(s_dir, "x.json"))) == "GUILDA:ResultOPF:ExportFormat")
+assert(error_id(@() res.export(fullfile(s_dir, "x.json"))) == "GUILDA:ResultOPF:ExportFormat")
 
 
 %% Legacy six-output form

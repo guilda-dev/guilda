@@ -126,13 +126,13 @@ res = DebugScript.helper.DummyResult([], "x", struct(), true, struct(), 0, [1 3 
 h = res.Plot();
 assert(isa(h, "matlab.graphics.chart.primitive.Line") && isequal(h.YData, [1 3 2]))
 close(ancestorfig(h))
-% 実装していない Export は明確なエラー
+% 実装していない export は明確なエラー
 try
-    res.Export("result.csv");
-    error("DebugScript:noError", "未対応の Export でエラーにならない")
+    res.export("result.csv");
+    error("DebugScript:noError", "未対応の export でエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultBase:Unsupported", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "Export") && contains(ME.message, "DebugScript.helper.DummyResult"))
+    assert(contains(ME.message, "export") && contains(ME.message, "DebugScript.helper.DummyResult"))
 end
 
 
@@ -202,7 +202,7 @@ assert(isempty(sv_bad), "フック以外で Deprecated を使用: " + join(sv_ba
 % 現在のフック (追加・削除したらこの一覧と notes/v4-migration.md の4章を更新する)
 sv_file = extractBefore(sv_hook, ":");
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "add_bus.m")) == 2, join(sv_hook, ", "))
-assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "calculate_powerflow.m")) == 1, join(sv_hook, ", "))
+assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "calculate_powerflow.m")) == 0, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "optimize_powerflow.m")) == 2, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "build_opf_problem.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "initialize.m")) == 1, join(sv_hook, ", "))
@@ -212,7 +212,7 @@ assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "Sol
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "get_options.m")) == 2, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "solve.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@ResultLIN", "get_ss.m")) == 1, join(sv_hook, ", "))
-assert(numel(sv_hook) == 16, join(sv_hook, ", "))
+assert(numel(sv_hook) == 15, join(sv_hook, ", "))
 
 
 % ---- local functions ----

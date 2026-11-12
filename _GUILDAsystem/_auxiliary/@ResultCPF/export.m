@@ -1,4 +1,4 @@
-function s_file = Export(obj, filename)
+function s_file = export(obj, filename)
 % Write the PV-curve path to a table file.
 %
 % Writes the path (tab_path: lambda, then V_<bus> and Varg_<bus> of each bus, one row per

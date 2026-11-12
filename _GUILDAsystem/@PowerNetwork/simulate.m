@@ -35,7 +35,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % - `Progress` — "dialog", "disp" or "none"; true = "dialog", false = "none". Default: GUILDA.setting ("dialog").
 % - `Verbose` — Print the phases and the outcome. Default: GUILDA.setting (false).
 % - `PlotFcn` — Live display during the simulation: "none" (the other displays are under development; draw the result with result.Plot()). Default: GUILDA.setting ("none").
-% - `Export` — Call result.Export after the simulation: true for the default file name, or the file name, whose extension is checked before the integration. Default: false.
+% - `Export` — Call result.export after the simulation: true for the default file name, or the file name, whose extension is checked before the integration. Default: false.
 %
 % <@Examples>
 % ```matlab
@@ -93,15 +93,15 @@ function [result, flag, output] = simulate(obj, time, varargin)
     end
 
     if isstring(opt.Export)
-        result.Export(opt.Export);
+        result.export(opt.Export);
     elseif opt.Export
-        result.Export();
+        result.export();
     end
 end
 
 
 function check_export(export)
-% A file name must have an extension that result.Export writes, known before the integration
+% A file name must have an extension that result.export writes, known before the integration
     if ~isstring(export)
         return
     end
