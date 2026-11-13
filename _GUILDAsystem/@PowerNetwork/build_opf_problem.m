@@ -49,7 +49,16 @@ function varargout = build_opf_problem(obj, opt)
     end
     sct_options = rmfield(opt, "validate");
     sct_OPF = obj.get_opf_condition(Display=false);
-    [sct_options.base, sct_options.ReferenceBus] = opf_setting(obj, opt.ReferenceBus);
+    sct_options.base = table2struct(obj.tab_parameter.base);
+    if opt.ReferenceBus == "auto"
+        i_ref = tools.slack_bus_index(obj);
+        if isempty(i_ref); i_ref = 1; end
+        if isempty(obj.a_Bus)
+            sct_options.ReferenceBus = "none";
+        else
+            sct_options.ReferenceBus = string(obj.a_Bus{i_ref});
+        end
+    end
 
     [prob, x0] = obj.solver_OPF.build_problem(sct_OPF.Bus, sct_OPF.Component, sct_OPF.Branch, sct_options);
 
@@ -62,14 +71,6 @@ function varargout = build_opf_problem(obj, opt)
 
     if opt.validate
         validate(prob,x0)
-    end
-end
-
-
-function mustBeHandleOrEmpty(f)
-% A function handle or [] (none)
-    if ~(isempty(f) || isa(f, "function_handle"))
-        error(msg("GUILDA:PowerNetwork:InvalidOpfHandle"))
     end
 end
 
