@@ -49,7 +49,11 @@ the end as open questions.
   表示では `Y` の列を除く（返す表には残す）。出力なしで呼ぶと表示だけ。内部の呼び出し
   （`calculate_optimal_powerflow`、`build_opf_problem`、ネットワークからの Bus / Branch）は
   常に `Display=false`。基準値と `ReferenceBus` の `"auto"` の解決は
-  `@PowerNetwork/private/opf_setting.m`。`opf_data.m` は削除。
+  `calculate_optimal_powerflow` と `build_opf_problem` の本体に直接書く（数行の重複は許容。
+  2026-11-13 に利用者が「不要な関数定義をしない」と指示）。`opf_data.m`・`opf_setting.m` は削除。
+  `calculate_optimal_powerflow.m` にローカル関数はなく、arguments の検証関数
+  （`mustBeHandleOrEmpty`、`mustBePositiveIntegerOrNaN`、`mustBePositiveOrNaN`）は
+  `@PowerNetwork/private/` に置く。
   Bus / Component / Branch に OPF のメソッドや状態は持たせない。
   - 理由: OPF を使う解析はほかにない。動特性（`f_dx` など）は `simulate` と `get_sys`
     が再利用するため、キャッシュしたハンドルをクラスに保持するのとは事情が異なる。
