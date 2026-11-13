@@ -199,7 +199,7 @@ sct = net.get_opf_condition(Display=false)   % the data the OPF runs with: sct.B
         <path class="dg-sv-line is-muted" d="M750 590H254" marker-end="url(#opf-ah-m)"/>
         <text class="is-muted dg-mono" x="400" y="584">sol, fval, flag, output, lambda</text>
         <path class="dg-sv-line" d="M250 606h26v14h-22" marker-end="url(#opf-ah)"/>
-        <text x="282" y="617"><tspan class="opf-num">14</tspan> <tspan class="dg-mono">format_bus, format_branch</tspan></text>
+        <text x="282" y="617"><tspan class="opf-num">14</tspan> <tspan class="dg-mono">tab_bus, tab_cub, tab_branch</tspan></text>
         <path class="dg-sv-line is-muted" d="M250 640H154" marker-end="url(#opf-ah-m)"/>
         <text x="262" y="644"><tspan class="opf-num">15</tspan> <tspan class="dg-mono">sct_solution, flag, output</tspan></text>
         <path class="dg-sv-line" d="M150 670H846" marker-end="url(#opf-ah)"/>
@@ -213,8 +213,8 @@ sct = net.get_opf_condition(Display=false)   % the data the OPF runs with: sct.B
 
     <!-- ============================== STEPS ============================== -->
     <h2 id="steps"><span lang="en">Processing steps in detail</span><span lang="ja">処理ステップの詳細</span></h2>
-    <p lang="en">Private helpers: the validators <code>mustBeHandleOrEmpty</code>, <code>mustBePositiveOrNaN</code>, <code>mustBePositiveIntegerOrNaN</code> of the <code>arguments</code> blocks in <code>_GUILDAsystem/@PowerNetwork/private/</code>; <code>build_bus</code>, <code>build_component</code>, <code>build_branch</code>, <code>apply</code>, <code>variables</code> in <code>_GUILDAsystem/_auxiliary/@SolverOPF/private/</code>; local functions in the file of the calling method (<code>@SolverOPF/solve.m</code>, <code>@SolverOPF/build_problem.m</code>, ...). Bus and Branch read their own parameters in <code>get_opf_condition</code> (one method file each); Component has no OPF method. <code>SolverOPF</code> takes rows of the three tables of OPF-02 and never a model object.</p>
-    <p lang="ja">非公開の補助関数は、<code>_GUILDAsystem/@PowerNetwork/private/</code> にある <code>arguments</code> ブロックの検証関数 <code>mustBeHandleOrEmpty</code>、<code>mustBePositiveOrNaN</code>、<code>mustBePositiveIntegerOrNaN</code> と、<code>_GUILDAsystem/_auxiliary/@SolverOPF/private/</code> にある <code>build_bus</code>、<code>build_component</code>、<code>build_branch</code>、<code>apply</code>、<code>variables</code> です。それ以外は、呼び出し元のメソッドのファイル（<code>@SolverOPF/solve.m</code>、<code>@SolverOPF/build_problem.m</code> など）にあるローカル関数です。Bus と Branch は <code>get_opf_condition</code>（それぞれ 1 つのメソッドファイル）で自分のパラメータを読みます。Component には OPF 用のメソッドはありません。<code>SolverOPF</code> が受け取るのは OPF-02 の 3 つの表の行で、モデルのオブジェクトは受け取りません。</p>
+    <p lang="en">Private helpers: the validators <code>mustBeHandleOrEmpty</code>, <code>mustBePositiveOrNaN</code>, <code>mustBePositiveIntegerOrNaN</code> of the <code>arguments</code> blocks in <code>_GUILDAsystem/@PowerNetwork/private/</code>; <code>build_bus</code>, <code>build_component</code>, <code>build_branch</code>, <code>apply</code>, <code>variables</code> in <code>_GUILDAsystem/_auxiliary/@SolverOPF/private/</code>; local functions in the private files (<code>call</code> in <code>apply.m</code>, <code>current</code> in <code>build_branch.m</code>, <code>cost_term</code> in <code>build_component.m</code>), each used at several places. The methods themselves (<code>calculate_optimal_powerflow</code>, <code>get_opf_condition</code>, <code>SolverOPF.solve</code>, <code>build_problem</code>, <code>optimoption</code>) read from top to bottom without local functions; <code>build_opf_problem</code> keeps the diagnostic <code>validate</code>. Bus and Branch read their own parameters in <code>get_opf_condition</code> (one method file each); Component has no OPF method. <code>SolverOPF</code> takes rows of the three tables of OPF-02 and never a model object.</p>
+    <p lang="ja">非公開の補助関数は、<code>_GUILDAsystem/@PowerNetwork/private/</code> にある <code>arguments</code> ブロックの検証関数 <code>mustBeHandleOrEmpty</code>、<code>mustBePositiveOrNaN</code>、<code>mustBePositiveIntegerOrNaN</code> と、<code>_GUILDAsystem/_auxiliary/@SolverOPF/private/</code> にある <code>build_bus</code>、<code>build_component</code>、<code>build_branch</code>、<code>apply</code>、<code>variables</code> です。ローカル関数は、複数の箇所から使う非公開ファイル内のもの（<code>apply.m</code> の <code>call</code>、<code>build_branch.m</code> の <code>current</code>、<code>build_component.m</code> の <code>cost_term</code>）だけです。メソッド（<code>calculate_optimal_powerflow</code>、<code>get_opf_condition</code>、<code>SolverOPF.solve</code>、<code>build_problem</code>、<code>optimoption</code>）はローカル関数を持たず、上から順に読めます。<code>build_opf_problem</code> には診断用の <code>validate</code> を残しています。Bus と Branch は <code>get_opf_condition</code>（それぞれ 1 つのメソッドファイル）で自分のパラメータを読みます。Component には OPF 用のメソッドはありません。<code>SolverOPF</code> が受け取るのは OPF-02 の 3 つの表の行で、モデルのオブジェクトは受け取りません。</p>
     <ol class="fs-steps">
       <li class="fs-step" id="OPF-01">
         <p class="fs-head"><b class="fs-id">OPF-01</b> <span class="fs-call">user → <code>PowerNetwork.calculate_optimal_powerflow</code></span><small><code>arguments</code></small></p>
@@ -238,7 +238,7 @@ sct = net.get_opf_condition(Display=false)   % the data the OPF runs with: sct.B
         </dl>
       </li>
       <li class="fs-step" id="OPF-02">
-        <p class="fs-head"><b class="fs-id">OPF-02</b> <span class="fs-call"><code>calculate_optimal_powerflow</code> → <code>net.get_opf_condition(Display=false)</code>, <code>tab_parameter.base</code>, <code>ReferenceBus</code></span><small><code>Bus.get_opf_condition</code>, <code>Branch.get_opf_condition</code> (<code>dc_parameters</code>)</small></p>
+        <p class="fs-head"><b class="fs-id">OPF-02</b> <span class="fs-call"><code>calculate_optimal_powerflow</code> → <code>net.get_opf_condition(Display=false)</code>, <code>tab_parameter.base</code>, <code>ReferenceBus</code></span><small><code>Bus.get_opf_condition</code>, <code>Branch.get_opf_condition</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -283,14 +283,14 @@ sct = net.get_opf_condition(Display=false)   % the data the OPF runs with: sct.B
               <li>Creates <code>optimproblem</code> (minimize, <code>Objective.GenCost = 0</code>).</li>
               <li><code>"ELD"</code>: starts the single balance <code>const.P = 0</code>.</li>
               <li>With <code>Problem</code>: builds without <code>Cost</code> and <code>Constraint</code>, only for <code>x0</code> and the check of OPF-11.</li>
-              <li>Initial bus voltages (local <code>initial_voltage</code>): with <code>sct_options.WarmStart</code> true and kept bus tags equal to the row names of <code>tab_bus</code> (same order), the kept <code>"AC OPF"</code> solution; otherwise the flat start from <code>Type</code>, <code>V</code>, <code>Varg</code> of <code>tab_bus</code>. <code>net.build_opf_problem</code> gives no <code>WarmStart</code>: its <code>x0</code> is the flat start.</li>
+              <li>Initial bus voltages: with <code>sct_options.WarmStart</code> true and kept bus tags equal to the row names of <code>tab_bus</code> (same order), the kept <code>"AC OPF"</code> solution; otherwise the flat start from <code>Type</code>, <code>V</code>, <code>Varg</code> of <code>tab_bus</code>. <code>net.build_opf_problem</code> gives no <code>WarmStart</code>: its <code>x0</code> is the flat start.</li>
             </ul><ul lang="ja">
               <li>問題は呼び出しのたびに組み立てます。呼び出しをまたいで保持する問題はありません。</li>
               <li>3 つの表（ブランチの表は <code>Y</code> を除いたもの）を、問題の <code>Description</code> に書き込みます。</li>
               <li>最小化の <code>optimproblem</code> を作り、<code>Objective.GenCost = 0</code> から始めます。</li>
               <li><code>"ELD"</code> では、需給式を <code>const.P = 0</code> の 1 本だけ用意します。</li>
               <li><code>Problem</code> を指定したときは、<code>Cost</code> と <code>Constraint</code> を入れずに組み立てます。この問題は <code>x0</code> を作ることと、OPF-11 の確認にだけ使います。</li>
-              <li>母線の初期電圧は内部関数 <code>initial_voltage</code> で決めます。<code>sct_options.WarmStart</code> が true で、保持している母線のタグが <code>tab_bus</code> の行名と同じ順序で一致すれば、保持している <code>"AC OPF"</code> の解を使います。そうでなければ、<code>tab_bus</code> の <code>Type</code>、<code>V</code>、<code>Varg</code> によるフラットスタートです。<code>net.build_opf_problem</code> は <code>WarmStart</code> を渡さないので、その <code>x0</code> は常にフラットスタートになります。</li>
+              <li>母線の初期電圧は次のように決めます。<code>sct_options.WarmStart</code> が true で、保持している母線のタグが <code>tab_bus</code> の行名と同じ順序で一致すれば、保持している <code>"AC OPF"</code> の解を使います。そうでなければ、<code>tab_bus</code> の <code>Type</code>、<code>V</code>、<code>Varg</code> によるフラットスタートです。<code>net.build_opf_problem</code> は <code>WarmStart</code> を渡さないので、その <code>x0</code> は常にフラットスタートになります。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">the three tables; <code>sct_options</code>; the kept warm start of <code>net.solver_OPF</code> (<code>rm_Vwarm</code>, <code>sv_warmBus</code>)</span><span lang="ja">3 つの表、<code>sct_options</code>、<code>net.solver_OPF</code> が保持するウォームスタート（<code>rm_Vwarm</code>、<code>sv_warmBus</code>）</span></dd>
@@ -329,7 +329,7 @@ sct = net.get_opf_condition(Display=false)   % the data the OPF runs with: sct.B
         </dl>
       </li>
       <li class="fs-step" id="OPF-07">
-        <p class="fs-head"><b class="fs-id">OPF-07</b> <span class="fs-call"><code>build_problem</code></span><small><code>add_reference</code></small></p>
+        <p class="fs-head"><b class="fs-id">OPF-07</b> <span class="fs-call"><code>build_problem</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Fixes the angle of the bus whose tag is <code>ReferenceBus</code> (<code>"auto"</code> already resolved in OPF-02) to its <code>Varg</code> in <code>tab_bus</code> (0 when NaN); <code>"none"</code> and <code>"ELD"</code>: no fixed angle. <code>l_isSlack</code> is not set.</span><span lang="ja">タグが <code>ReferenceBus</code> である母線の位相角を、<code>tab_bus</code> の <code>Varg</code> に固定します（NaN なら 0）。<code>"auto"</code> は OPF-02 でタグに置き換え済みです。<code>"none"</code> と <code>"ELD"</code> では固定しません。<code>l_isSlack</code> には書き込みません。</span></dd>
@@ -391,7 +391,7 @@ sct = net.get_opf_condition(Display=false)   % the data the OPF runs with: sct.B
         </dl>
       </li>
       <li class="fs-step" id="OPF-11">
-        <p class="fs-head"><b class="fs-id">OPF-11</b> <span class="fs-call"><code>SolverOPF.solve</code></span><small><code>check_problem</code></small></p>
+        <p class="fs-head"><b class="fs-id">OPF-11</b> <span class="fs-call"><code>SolverOPF.solve</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -408,7 +408,7 @@ sct = net.get_opf_condition(Display=false)   % the data the OPF runs with: sct.B
         </dl>
       </li>
       <li class="fs-step" id="OPF-12">
-        <p class="fs-head"><b class="fs-id">OPF-12</b> <span class="fs-call"><code>SolverOPF.solve</code> → <code>SolverOPF.optimoption(prob, sct_options)</code></span><small><code>check_solver</code></small></p>
+        <p class="fs-head"><b class="fs-id">OPF-12</b> <span class="fs-call"><code>SolverOPF.solve</code> → <code>SolverOPF.optimoption(prob, sct_options)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -438,7 +438,7 @@ sct = net.get_opf_condition(Display=false)   % the data the OPF runs with: sct.B
         </dl>
       </li>
       <li class="fs-step" id="OPF-14">
-        <p class="fs-head"><b class="fs-id">OPF-14</b> <span class="fs-call"><code>SolverOPF.solve</code> → <code>format_bus</code>, <code>format_branch</code></span></p>
+        <p class="fs-head"><b class="fs-id">OPF-14</b> <span class="fs-call"><code>SolverOPF.solve</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Builds the result tables from <code>sol</code>:</span><ul lang="en">

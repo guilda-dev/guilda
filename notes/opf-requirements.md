@@ -54,6 +54,16 @@ the end as open questions.
   `calculate_optimal_powerflow.m` にローカル関数はなく、arguments の検証関数
   （`mustBeHandleOrEmpty`、`mustBePositiveIntegerOrNaN`、`mustBePositiveOrNaN`）は
   `@PowerNetwork/private/` に置く。
+- OPF 全体のローカル関数の見直し（2026-11-13、利用者の指示「不要に関数を定義しない」）:
+  1 か所からしか呼ばれないローカル関数は呼び出し位置に展開した（`get_opf_condition` の
+  `empty_tables`・`show`・`group`・`dc_parameters`、`build_problem` の `add_reference`・
+  `describe`・`initial_voltage`、`solve` の `format_bus`・`format_branch`・`check_problem`、
+  `optimoption` の `check_solver`）。Bus / Branch で重複していた `group` は、公開プロパティ
+  `tab_parameter` を直接読むことで不要になった。残したのは、複数箇所から呼ぶもの
+  （`apply.m` の `call`、`build_branch.m` の `current`、`build_component.m` の `cost_term`）、
+  arguments の検証関数（`@PowerNetwork/private/mustBe*`）、独立した長い診断処理の
+  `build_opf_problem` の `validate`。非公開ファイル `build_bus`・`build_component`・
+  `build_branch`・`apply`・`variables` はローカル関数ではないので今回は分けたまま。
   Bus / Component / Branch に OPF のメソッドや状態は持たせない。
   - 理由: OPF を使う解析はほかにない。動特性（`f_dx` など）は `simulate` と `get_sys`
     が再利用するため、キャッシュしたハンドルをクラスに保持するのとは事情が異なる。

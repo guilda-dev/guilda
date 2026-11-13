@@ -20,8 +20,14 @@ function [s_solver, c_nv] = optimoption(obj, prob, sct_options)
     if sct_options.Solver == "auto"
         s_solver = string(solvers(prob));
     else
+        % a Solver that cannot express the problem (e.g. linprog with a quadratic cost or a
+        % nonlinear Cost or Constraint term) stops with the Solver names that can
         s_solver = sct_options.Solver;
-        check_solver(prob, s_solver);
+        [~, c_valid] = solvers(prob);
+        sr_usable = intersect(["linprog","quadprog","fmincon"], string(c_valid), "stable");
+        if ~any(sr_usable == s_solver)
+            error(msg("GUILDA:SolverOPF:UnsupportedSolver", s_solver, join("""" + sr_usable + """", ", ")))
+        end
     end
 
     c_opt = {};
@@ -73,14 +79,3 @@ function [s_solver, c_nv] = optimoption(obj, prob, sct_options)
     end
 end
 
-
-function check_solver(prob, s_solver)
-% Backend check: a Solver that cannot express the problem (e.g. linprog with a quadratic
-% cost or a nonlinear Cost or Constraint term) stops here with the Solver names that can.
-% External backends (stage 3) add their own capability check at this point.
-    [~, c_valid] = solvers(prob);
-    sr_usable = intersect(["linprog","quadprog","fmincon"], string(c_valid), "stable");
-    if ~any(sr_usable == s_solver)
-        error(msg("GUILDA:SolverOPF:UnsupportedSolver", s_solver, join("""" + sr_usable + """", ", ")))
-    end
-end

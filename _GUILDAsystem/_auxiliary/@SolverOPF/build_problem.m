@@ -48,10 +48,18 @@ function [prob, x0] = build_problem(obj, tab_bus, tab_component, tab_branch, sct
         x0   % Initial point: struct of the values of every variable, by variable name.
     end
     s_method = sct_options.Method;
+    sv_bus   = string(tab_bus.Properties.RowNames);
 
+    % Description of the problem: the OPF data of the buses, components and branches
+    s_rule = string(repmat('=',1,100));
+    s_text = newline + "Optimal Power Flow (" + s_method + ")" + newline + s_rule + newline + newline ...
+           + "<<Bus OPF setting>>"       + newline + formattedDisplayText(tab_bus)                    + newline + newline ...
+           + "<<Component OPF setting>>" + newline + formattedDisplayText(tab_component)              + newline + newline ...
+           + "<<Branch OPF setting>>"    + newline + formattedDisplayText(removevars(tab_branch, "Y")) + newline + newline ...
+           + s_rule + newline;
     prob = optimproblem("ObjectiveSense","minimize", ...
                         "Objective"     ,struct("GenCost",0), ...
-                        "Description"   ,describe(tab_bus, tab_component, tab_branch, s_method));
+                        "Description"   ,s_text);
     x0      = struct();
     const   = struct();
     sct_var = struct();   % every optimization variable, by variable name
@@ -59,9 +67,22 @@ function [prob, x0] = build_problem(obj, tab_bus, tab_component, tab_branch, sct
         const.P = 0;
     end
 
-    sv_bus  = string(tab_bus.Properties.RowNames);
-    sv_at   = tab_component.Bus;
-    rm_init = initial_voltage(obj, tab_bus, isfield(sct_options, "WarmStart") && sct_options.WarmStart);
+    % [Varg, V] of each bus at the start: the kept "AC OPF" solution (WarmStart, same bus
+    % tags in the same order), or the flat start (angle 0 and magnitude 1, the set V at PV
+    % and slack buses and the set angle at the slack bus)
+    l_warm = isfield(sct_options, "WarmStart") && sct_options.WarmStart;
+    if l_warm && ~isempty(obj.sv_warmBus) && isequal(obj.sv_warmBus, sv_bus(:))
+        rm_init = obj.rm_Vwarm;
+    else
+        n_bus    = height(tab_bus);
+        rm_init  = [zeros(n_bus,1), ones(n_bus,1)];
+        lv_set   = tab_bus.Type ~= "PQ";
+        lv_slack = tab_bus.Type == "slack";
+        rm_init(lv_set, 2)   = tab_bus.V(lv_set);
+        rm_init(lv_slack, 1) = tab_bus.Varg(lv_slack);
+    end
+
+    sv_at = tab_component.Bus;
     for i_bus = 1:numel(sv_bus)
         [x0, const, var] = build_bus(tab_bus(i_bus,:), x0, const, s_method, rm_init(i_bus,:));
         if ~isempty(var)
@@ -73,8 +94,19 @@ function [prob, x0] = build_problem(obj, tab_bus, tab_component, tab_branch, sct
         end
     end
 
-    if s_method ~= "ELD"
-        prob = add_reference(tab_bus, prob, sct_var, sct_options.ReferenceBus);
+    % Reference angle (not in "ELD"): the angle of ReferenceBus is fixed to its power-flow
+    % Varg (0 if NaN), constraint VargRef; "none" fixes no angle ("auto" is resolved by
+    % the caller)
+    s_ref = sct_options.ReferenceBus;
+    if s_method ~= "ELD" && s_ref ~= "none"
+        i_ref = find(sv_bus == s_ref, 1);
+        if isempty(i_ref)
+            error(msg("GUILDA:SolverOPF:UnknownReferenceBus", s_ref))
+        end
+        Varg_ref = tab_bus.Varg(i_ref);
+        if isnan(Varg_ref); Varg_ref = 0; end
+        Vref = sct_var.(s_ref);
+        prob.Constraints.VargRef = Vref("Varg") == Varg_ref;
     end
 
     for i_br = 1:height(tab_branch)
@@ -88,56 +120,4 @@ function [prob, x0] = build_problem(obj, tab_bus, tab_component, tab_branch, sct
     end
 
     prob = apply(prob, sct_options, tab_bus, tab_component, tab_branch, sct_var);
-end
-
-
-function prob = add_reference(tab_bus, prob, sct_var, s_ref)
-% Fix the angle of the reference bus to its power-flow Varg (0 if NaN): constraint VargRef.
-% "none": no fixed angle; otherwise the bus with that tag ("auto" is resolved by the caller).
-    if s_ref == "none"
-        return
-    end
-    i_ref = find(string(tab_bus.Properties.RowNames) == s_ref, 1);
-    if isempty(i_ref)
-        error(msg("GUILDA:SolverOPF:UnknownReferenceBus", s_ref))
-    end
-    Varg_ref = tab_bus.Varg(i_ref);
-    if isnan(Varg_ref); Varg_ref = 0; end
-    Vref = sct_var.(s_ref);
-    prob.Constraints.VargRef = Vref("Varg") == Varg_ref;
-end
-
-
-function s_text = describe(tab_bus, tab_component, tab_branch, s_method)
-% Description of the problem: the OPF data of the buses, components and branches.
-    tab_OPF.Bus       = tab_bus;
-    tab_OPF.Component = tab_component;
-    tab_OPF.Branch    = removevars(tab_branch, "Y");
-
-    s_text = newline+"Optimal Power Flow ("+s_method+")"+newline ...
-             + string(repmat('=',1,100))+newline+newline;
-    for s_tag = ["Bus","Component","Branch"]
-        s_text = s_text ...
-                 + "<<"+s_tag+" OPF setting>>"+newline ...
-                 + formattedDisplayText(tab_OPF.(s_tag))+newline+newline;
-    end
-    s_text = s_text + string(repmat('=',1,100))+newline;
-end
-
-
-function rm_init = initial_voltage(obj, tab_bus, l_warm)
-% [Varg, V] of each bus: the kept "AC OPF" solution (l_warm, same bus tags in the same
-% order), or the flat start (angle 0 and magnitude 1, the set V at PV and slack buses and
-% the set angle at the slack bus)
-    sv_bus = string(tab_bus.Properties.RowNames);
-    if l_warm && ~isempty(obj.sv_warmBus) && isequal(obj.sv_warmBus, sv_bus(:))
-        rm_init = obj.rm_Vwarm;
-        return
-    end
-    n_bus    = height(tab_bus);
-    rm_init  = [zeros(n_bus,1), ones(n_bus,1)];
-    lv_set   = tab_bus.Type ~= "PQ";
-    lv_slack = tab_bus.Type == "slack";
-    rm_init(lv_set, 2)   = tab_bus.V(lv_set);
-    rm_init(lv_slack, 1) = tab_bus.Varg(lv_slack);
 end

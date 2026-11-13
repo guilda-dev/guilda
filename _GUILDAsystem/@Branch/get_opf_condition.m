@@ -31,10 +31,23 @@ function varargout = get_opf_condition(obj, opt)
     arguments (Output, Repeating)
         varargout   % tab_branch: one-row table of the branch.
     end
-    ope = group(obj, "operation");
+    tp = obj.tab_parameter;
+    % X, tap, phase of "DC OPF" as in MATPOWER: tap 1 and phase 0 for lines (absent, NaN or a zero tap)
+    sv_dyn = string(tp.dynamics.Properties.VariableNames);
+    X = NaN;  tap = 1;  phase = 0;
+    if ismember("X", sv_dyn)
+        X = tp.dynamics.X;
+    end
+    if ismember("tap", sv_dyn) && ~isnan(tp.dynamics.tap) && tp.dynamics.tap ~= 0
+        tap = tp.dynamics.tap;
+    end
+    if ismember("phase", sv_dyn) && ~isnan(tp.dynamics.phase)
+        phase = tp.dynamics.phase;
+    end
+    ope = tp.operation;
     tab_branch = [table(string(obj.a_Bus{1}), string(obj.a_Bus{2}), ...
                         reshape(obj.get_admittance_matrix, 1, 2, 2), 'VariableNames', ["From","To","Y"]), ...
-                  array2table([dc_parameters(group(obj, "dynamics")), ope.Pmax, ope.Qmax, ope.Vargmax, ope.Imax, ope.Smax], ...
+                  array2table([X, tap, phase, ope.Pmax, ope.Qmax, ope.Vargmax, ope.Imax, ope.Smax], ...
                               "VariableNames", ["X","tap","phase","Pmax","Qmax","Vargmax","Imax","Smax"])];
     tab_branch.Properties.RowNames = string(obj);
 
@@ -44,26 +57,4 @@ function varargout = get_opf_condition(obj, opt)
     if ~opt.Display || nargout > 0
         varargout = {tab_branch};
     end
-end
-
-
-function rv = dc_parameters(para)
-% [X, tap, phase] as in MATPOWER: tap = 1 for lines (or NaN, 0), phase = 0 for lines (or NaN)
-    s = table2struct(para);
-    rv = [NaN, 1, 0];
-    if isfield(s, "X")
-        rv(1) = s.X;
-    end
-    if isfield(s, "tap") && ~isnan(s.tap) && s.tap ~= 0
-        rv(2) = s.tap;
-    end
-    if isfield(s, "phase") && ~isnan(s.phase)
-        rv(3) = s.phase;
-    end
-end
-
-
-function tab = group(obj, s_group)
-% tab_parameter of one group (container) of obj
-    tab = obj.a_Parameter{cellfun(@(p) p.s_tag==s_group, obj.a_Parameter)}.tab_parameter;
 end
