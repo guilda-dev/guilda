@@ -23,6 +23,7 @@
 - [structural-checks.md](structural-checks.md): モデルの物体を追加メソッドだけで作り、外すと削除する設計と、それで起きえなくなった親の検査の削除(Issue #119)。
 - [branch-status-events.md](branch-status-events.md): ブランチの状態(地絡・開放と回線数)と `get_admittance_matrix(Status=, Point=)`、シナリオの故障・並列のイベントの表、ローカル制御器の解列、シナリオの JSON version 2 の仕様。
 - [linearization-connector.md](linearization-connector.md): 線形化の接続器 `SolverLIN` と共通の `get_sys`、各層のブロックとポート、Kron と Feedback の比較の仕様(Issue #121)。§13 は `Type`(`"ODE"`/`"DAE"`)、`SolverLIN.reduce`、`ResultLIN.get_contribution`。
+- [graph-spring.md](graph-spring.md): ばね質点モデルの図(`GraphSpring2D` / `GraphSpring3D`)のデータの約束、`Component.get_spring_node`、入口 `plot_spring_model`(系統・`ResultODE`・`ResultPF`)と共通の組み立て関数 `tools.spring_model_data` の仕様。
 
 ## 調査と改善案
 

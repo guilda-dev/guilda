@@ -117,6 +117,11 @@ function tab = test_levels()
     "test_F42_graph_spring/BothPicturesAreBuiltFromTheDataWithTheDefaultsOfTheScripts", "medium"
     "test_F42_graph_spring/set_timeDrawsTheNearestSampleAtTheExpectedCoordinates", "medium"
     "test_F42_graph_spring/animateCallsUpdateFcnAtEveryFrameAndExport_videoWritesAnMPEG_4File", "medium"
+    % ---- F43_spring_model --------------------------------------------------------------------------
+    "test_F43_spring_model/net2DAnd3DPicturesHoldTheBuses_TheOwnNodesAndTheArrows", "medium"
+    "test_F43_spring_model/SimulationResultAnimatesWithEveryOutputTime", "medium"
+    "test_F43_spring_model/OwnNodeOfAClassicalGeneratorEqualsVfieldE_jdelta", "medium"
+    "test_F43_spring_model/TrippedUnitIsNaNAndThePictureStillDraws", "medium"
     % ---- F37_disp_connection ---------------------------------------------------------------------
     % ネットワークはファイル内で共有 (shared_net): 最初に走るテストが Tutorial10bus と IEEE14bus を作る
     "test_F37_disp_connection/ItRunsOnTutorial10busAndIEEE14busWith0And1Outputs", "medium"
@@ -248,9 +253,9 @@ function tab = test_levels()
     "test_F7_linearization/CanonicalLinearizationDemoRuns", "medium"
     "test_F7_linearization/LinearModelsMatchTheReferenceValues", "medium"
     % ---- F8_utilities ----------------------------------------------------------------------------
-    "test_F8_utilities/InfoPrintsSummary", "large"
+    "test_F8_utilities/disp_summaryPrintsSummary", "large"
     "test_F8_utilities/structKeepsEachLayerAndGivesARepeatedOneItsFirstPath", "large"
-    "test_F8_utilities/DrawDiagram", "large"
+    "test_F8_utilities/plot_diagramDrawsTheDiagram", "large"
     "test_F8_utilities/CSVExportImportRoundTrip", "large"
     "test_F8_utilities/CSVRoundTripKeepsTransformerTapAndPhase", "large"
     "test_F8_utilities/MATFileRoundTripKeepsAUsableNetwork", "large"

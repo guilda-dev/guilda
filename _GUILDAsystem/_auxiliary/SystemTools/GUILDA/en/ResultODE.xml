@@ -11,5 +11,6 @@
         <entry key="UnknownReference">Reference "{0}" of judge_out_of_step is not "slack", "COI" or a component of the result with the state delta ({1}).</entry>
         <entry key="NoSlackGenerator">Reference "slack": the slack bus {0} of network "{1}" has no component with the state delta. Give Reference="COI" or the tag of a generator.</entry>
         <entry key="NoInertia">Reference "COI": the component "{0}" has no dynamics parameter M (inertia) to weight its rotor angle. Give Reference="slack" or the tag of a generator.</entry>
+        <entry key="NoSpringData">plot_spring_model needs the time points and the network snapshot of a simulation, but this result has none. Use a result of net.simulate that solved at least its first phase.</entry>
     </message>
 </rsccat>

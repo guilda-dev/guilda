@@ -1283,6 +1283,18 @@ of its parent, so the labels stay unique within a network.
 | `net.draw_diagram(ax)` | `net.plot_diagram(ax)` |
 | `net.draw_spring_model(mode)` | `net.plot_spring_model(mode)` |
 
+### 1.26 ばね質点モデルの図(`plot_spring_model`)
+
+`net.plot_spring_model` の引数 `mode`("CalculatePowerFlow" / "DynamicSimulation")はなくなりました。平衡点を描き、次元は `Dimension`(2: 複素平面、3: 曲面 z = log|V|)で選びます。出力は `GraphSpring2D` / `GraphSpring3D` のオブジェクトです。解析の結果は、結果クラスの同名のメソッドで描きます。
+
+| 旧 | 新 |
+|---|---|
+| `net.plot_spring_model(mode)` | `net.plot_spring_model(Dimension=2)`(平衡点。`initialize` の前や、編集で古くなった系統ではエラー) |
+| なし | `res.plot_spring_model(Dimension=…)`(`ResultODE`: 全時刻。`G.animate()`、`G.export_video(file)`) |
+| なし | `res.plot_spring_model(Dimension=…)`(`ResultPF`: 母線だけ) |
+
+母線と機器の `graph` パラメータに `MarkerSize`(NaN: 既定)と `Color`("": 既定)の列が加わりました。CSV ファイルにもこの 2 列が書き出されます。2 列のない古い CSV は既定値で読み込みます。
+
 ## 2. Changes so far — model authors
 
 新しいモデルの実装手順は `_GUILDAdoc/developer/model-implementation.html` を見てください。

@@ -15,7 +15,7 @@ function [cv_E, rv_P, rv_Iq, cv_I] = get_spring_node(rm_x, rm_V, rm_I, rm_u, rr_
 % node overrides this static method, computes its node phasor E and its injected current
 % from `rm_x`, `rm_V`, `rm_u` and `rr_param` (ignoring `rm_I`) and evaluates the power at E.
 %
-% See also component.generator.one_axis.get_spring_node
+% See also component.generator.one_axis.get_spring_node, PowerNetwork.plot_spring_model, ResultODE.plot_spring_model
     arguments (Input)
         rm_x     double  % States (n_x × n_t) in the order of `sv_x`.
         rm_V     double  % [pu] Bus voltage (2 × n_t) as `[real; imag]`.
