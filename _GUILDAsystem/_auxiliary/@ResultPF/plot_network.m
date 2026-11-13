@@ -18,7 +18,7 @@ function h = plot_network(obj, opt)
 % res.plot_network(Color="angle", Arrow="none");
 % ```
 %
-% See also ResultPF.plot_voltage, ResultPF.plot_branch, PowerNetwork.draw_diagram
+% See also ResultPF.plot_voltage, ResultPF.plot_branch, PowerNetwork.plot_diagram
     arguments (Input)
         obj
         opt.Parent = [] % Container to draw in. A new figure when empty.

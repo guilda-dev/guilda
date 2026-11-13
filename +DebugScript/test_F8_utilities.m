@@ -1,4 +1,4 @@
-% F8 補助機能 (アドミタンス行列 / info / draw_diagram / CSV 入出力 / 系統テンプレート)
+% F8 補助機能 (アドミタンス行列 / disp_summary / plot_diagram / CSV 入出力 / 系統テンプレート)
 %
 % 実行: runtests("DebugScript.test_F8_utilities")  または  DebugScript.run_all("Features","F8")
 
@@ -45,16 +45,16 @@ assert(abs(Y(1,1) - (1/(0.5j) + 0.01 + 0.2j)) < 1e-12)
 assert(abs(sum(Y(2,:))) < 1e-12)          % シャントのない母線は行和 0
 
 
-%% Info prints summary
+%% disp_summary prints summary
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
-txt = evalc("net.info");
+txt = evalc("net.disp_summary");
 assert(contains(txt, "Total Buses: 14"))
 assert(contains(txt, "Total Branches: " + numel(net.a_Branch)))
 assert(contains(txt, "B001SG1"))
 
 % 表示する項目は選べる
-txt = evalc("net.info(""parameter"", false, ""equilibrium"", false)");
+txt = evalc("net.disp_summary(""parameter"", false, ""equilibrium"", false)");
 assert(contains(txt, "Total Buses: 14"))
 
 
@@ -73,8 +73,8 @@ end
 br  = net.a_Branch{1};
 i_from = find(cellfun(@(b) b == br.a_Bus{1}, net.a_Bus));
 assert(s.a_Branch{1}.a_Bus{1} == "net.a_Bus{" + i_from + "}", s.a_Branch{1}.a_Bus{1})
-% info の表はパスではなくタグを表示する
-txt = evalc("net.info(""parameter"", false, ""equilibrium"", false)");
+% disp_summary の表はパスではなくタグを表示する
+txt = evalc("net.disp_summary(""parameter"", false, ""equilibrium"", false)");
 assert(~contains(txt, """net.") && contains(txt, """" + string(br.a_Bus{1}) + """"))
 
 
@@ -88,14 +88,14 @@ txt = net.disp_tree();
 assert(contains(txt, "┗━━") && contains(txt, string(net.a_Bus{end})))
 
 
-%% Draw diagram
+%% plot_diagram draws the diagram
 % 図は非表示で作成して閉じる
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 fig = figure("Visible", "off");
 c   = onCleanup(@() close(fig));
 ax  = axes(fig);
-G   = DebugScript.helper.quiet(@() net.draw_diagram(ax));
+G   = DebugScript.helper.quiet(@() net.plot_diagram(ax));
 assert(isa(G, "DrawerNetDiagram"))
 assert(~isempty(ax.Children))
 
