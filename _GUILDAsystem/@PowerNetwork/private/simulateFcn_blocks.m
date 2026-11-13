@@ -1,4 +1,4 @@
-function sct_dae = simulation_blocks(net)
+function sct_dae = simulateFcn_blocks(net)
 % Blocks, maps, admittance and equilibrium of the network for SolverODE.solve.
 %
 % One block per component (a_Bus order, then a_Component order), per local controller
@@ -10,7 +10,7 @@ function sct_dae = simulation_blocks(net)
 % model). Stops with GUILDA:PowerNetwork:GconNoTarget for an output of a global
 % controller that drives no input.
     arguments (Input)
-        net  % Network of the run (checked by check_simulation).
+        net  % Network of the run (checked by simulateFcn_check).
     end
     arguments (Output)
         sct_dae (1,1) struct  % tab_variable, tab_connection, cm_Y, im_branchBus, c_branchY, rv_equilibrium, rv_Iequilibrium, c_comp, c_lc, c_gc, sv_bus, sv_branch, sv_comp, sv_lc, sv_gc, sct_stop (empty: simulate sets it for StopOnOutOfStep).
@@ -128,7 +128,7 @@ function sct_dae = simulation_blocks(net)
     for s_f = ["sv_comp", "sv_lc", "sv_gc"]
         sct_dae.(s_f) = reshape(sct_dae.(s_f), [], 1);
     end
-    sct_dae.sct_stop = struct([]);            % no stop condition (see stop_condition)
+    sct_dae.sct_stop = struct([]);            % no stop condition (see simulateFcn_stop_condition)
 end
 
 

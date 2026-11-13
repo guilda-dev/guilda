@@ -1,4 +1,4 @@
-function check_simulation(net)
+function simulateFcn_check(net)
 % The checks before a time simulation: edited inputs, and the stale tags of the network
 % and of its components and controllers (net.initialize() is needed).
 %

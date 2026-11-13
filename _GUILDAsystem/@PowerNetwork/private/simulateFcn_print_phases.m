@@ -1,4 +1,4 @@
-function print_phases(tab_phase)
+function simulateFcn_print_phases(tab_phase)
 % Verbose: one line per integration phase with its active events
     arguments (Input)
         tab_phase table  % output.phases.

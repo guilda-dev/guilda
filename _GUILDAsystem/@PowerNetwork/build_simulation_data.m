@@ -24,7 +24,7 @@ function [sct_dae, sct_event, rv_x0, tab_phase] = build_simulation_data(obj, s_s
 % See also PowerNetwork.simulate, SolverODE.solve, Scenario
     arguments (Input)
         obj
-        s_scenario (1,1) string {mustBeScenarioOf(obj, s_scenario)}   % Tag of the scenario.
+        s_scenario (1,1) string {simulateFcn_mustBeScenarioOf(obj, s_scenario)}   % Tag of the scenario.
         time (1,2) double {mustBeSimulationTime}   % [s] Simulation time [t0, tend].
     end
     arguments (Output)
@@ -33,12 +33,12 @@ function [sct_dae, sct_event, rv_x0, tab_phase] = build_simulation_data(obj, s_s
         rv_x0     (:,1) double   % Initial value of the variable rows of sct_dae.tab_variable.
         tab_phase table          % output.phases: t1, t2, one logical column per disturbance.
     end
-    check_simulation(obj);
-    sct_dae = simulation_blocks(obj);
+    simulateFcn_check(obj);
+    sct_dae = simulateFcn_blocks(obj);
 
     sc = obj.a_Scenario{string(cellfun(@(s) s.s_tag, obj.a_Scenario, 'UniformOutput', false)) == s_scenario};
     [tab_phase, sct_event] = sc.compile(sct_dae, time);
-    check_islands(sct_dae, sct_event, tab_phase);
+    simulateFcn_check_islands(sct_dae, sct_event, tab_phase);
 
     % Initial value: the offsets and the inputs at t = 0 of the first phase
     rv_x0 = sct_dae.rv_equilibrium;
