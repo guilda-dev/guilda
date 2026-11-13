@@ -8,9 +8,10 @@ classdef ResultODE < ResultBase
 % information. It keeps no reference to the network: its methods (plot_trajectory,
 % get_point, export, judge_out_of_step, odeResults) work after the network is edited or
 % deleted.
-% flag is 1 when the simulation reached the end time, 0 when it stopped by TimeLimit and
-% -1 when the solver stopped early; then the trajectories end at output.tEnd. When the
-% first phase could not be solved, they have no time points.
+% flag is 1 when the simulation reached the end time, 2 when it stopped by StopOnOutOfStep
+% (output.outOfStep holds the stop), 0 when it stopped by TimeLimit and -1 when the solver
+% stopped early; then the trajectories end at output.tEnd. When the first phase could not
+% be solved, they have no time points.
 %
 % The trajectory is stored once, in the order of the variable map of the network
 % (rm_variable, columns = rows of tab_variable): the states of the components with their
