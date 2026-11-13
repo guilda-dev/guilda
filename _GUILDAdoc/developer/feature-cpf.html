@@ -155,7 +155,7 @@
         <path class="dg-sv-line" d="M50 90H156" marker-end="url(#cpf-ah)"/>
         <text x="56" y="84"><tspan class="cpf-num">01</tspan> <tspan class="dg-mono">calculate_continuation_powerflow</tspan></text>
         <path class="dg-sv-line" d="M160 160H266" marker-end="url(#cpf-ah)"/>
-        <text x="166" y="154"><tspan class="cpf-num">02</tspan> <tspan class="dg-mono">solver_options</tspan></text>
+        <text x="166" y="154"><tspan class="cpf-num">02</tspan> <tspan class="dg-mono">sct_options</tspan></text>
         <path class="dg-sv-line" d="M160 194H266" marker-end="url(#cpf-ah)"/>
         <text x="166" y="188"><tspan class="cpf-num">03</tspan> <tspan class="dg-mono">solve</tspan></text>
         <path class="dg-sv-line" d="M270 214h26v14h-22" marker-end="url(#cpf-ah)"/>
@@ -213,14 +213,14 @@
         </dl>
       </li>
       <li class="fs-step" id="CPF-02">
-        <p class="fs-head"><b class="fs-id">CPF-02</b> <span class="fs-call"><code>calculate_continuation_powerflow</code> → <code>solver_options</code></span><small>→ <code>tools.check_plotfcn</code></small></p>
+        <p class="fs-head"><b class="fs-id">CPF-02</b> <span class="fs-call"><code>calculate_continuation_powerflow</code> → <code>sct_options</code></span><small>→ <code>tools.check_plotfcn</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Local function: starts from the ContinuationPowerFlow section of <code>GUILDA.setting</code> and the condition <code>LoadBus</code> of the solver, and overwrites each field that <code>opt</code> has (<code>Export</code> excepted). Then converts <code>LoadBus</code> and <code>Limits</code> to string rows and checks <code>PlotFcn</code> (<code>tools.check_plotfcn</code>); <code>SolverCPF.solve</code> checks <code>Limits</code>.</span><span lang="ja">内部関数です。<code>GUILDA.setting</code> の ContinuationPowerFlow セクションと、ソルバーに設定された <code>LoadBus</code> から始め、<code>opt</code> にあるフィールド（<code>Export</code> を除く）で上書きします。そのあと <code>LoadBus</code> と <code>Limits</code> を string の行に変換し、<code>PlotFcn</code> を <code>tools.check_plotfcn</code> で検査します。<code>Limits</code> は <code>SolverCPF.solve</code> が検査します。</span></dd>
+          <dd><span lang="en">The <code>arguments</code> block takes the defaults from <code>GUILDA.config("ContinuationPowerFlow", ...)</code> and <code>LoadBus</code> from the solver. <code>sct_options</code> is <code>opt</code> without <code>Export</code>, with <code>LoadBus</code> and <code>Limits</code> as string rows and <code>PlotFcn</code> checked by <code>tools.check_plotfcn</code>; <code>SolverCPF.solve</code> checks <code>Limits</code>. The settings without an option (<code>CorrectorMaxIteration</code>, <code>CorrectorStepSize</code>, <code>Increment</code>) are read by <code>SolverCPF.solve</code> where it uses them.</span><span lang="ja"><code>arguments</code> ブロックが、既定値を <code>GUILDA.config("ContinuationPowerFlow", ...)</code> から、<code>LoadBus</code> をソルバーから受け取ります。<code>sct_options</code> は <code>Export</code> を除いた <code>opt</code> で、<code>LoadBus</code> と <code>Limits</code> を string の行にし、<code>PlotFcn</code> を <code>tools.check_plotfcn</code> で検査したものです。<code>Limits</code> は <code>SolverCPF.solve</code> が検査します。オプションの無い設定（<code>CorrectorMaxIteration</code>、<code>CorrectorStepSize</code>、<code>Increment</code>）は、<code>SolverCPF.solve</code> が使う位置で読みます。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>opt</code>; <code>GUILDA.config("ContinuationPowerFlow")</code>; <code>net.solver_CPF.LoadBus</code></span><span lang="ja"><code>opt</code>、<code>GUILDA.config("ContinuationPowerFlow")</code>、<code>net.solver_CPF.LoadBus</code></span></dd>
+          <dd><span lang="en"><code>opt</code> (defaults: <code>GUILDA.config("ContinuationPowerFlow", ...)</code>, <code>net.solver_CPF.LoadBus</code>)</span><span lang="ja"><code>opt</code>（既定値は <code>GUILDA.config("ContinuationPowerFlow", ...)</code> と <code>net.solver_CPF.LoadBus</code>）</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>sct_options</code>: struct with 13 fields (the 12 keys of the section and <code>LoadBus</code> as a 1 × n string row). Solver and settings file unchanged.</span><span lang="ja"><code>sct_options</code>: 13 フィールドの構造体（セクションの 12 個のキーと、1 × n の string 行の <code>LoadBus</code>）です。ソルバーと設定ファイルは変更しません。</span></dd>
+          <dd><span lang="en"><code>sct_options</code>: struct of the 10 Name-Value options (<code>LoadBus</code> as a 1 × n string row). Solver and settings file unchanged.</span><span lang="ja"><code>sct_options</code>: 10 個の Name-Value オプションの構造体（<code>LoadBus</code> は 1 × n の string 行）です。ソルバーと設定ファイルは変更しません。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="CPF-03">
