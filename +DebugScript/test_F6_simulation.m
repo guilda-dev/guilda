@@ -210,7 +210,7 @@ sol = net.simulate(ev.s_tag, Time=[0,1], SeparateComplexParts=true);
 assert(sol.l_success && sol.options.SeparateComplexParts == true)
 % Verbose: 区間の一覧と結果を表示する
 str = evalc("net.simulate(ev.s_tag, Time=[0,3], Verbose=true);");
-assert(contains(str, "phase  1") && contains(str, "fault") && contains(str, "reached t = 3"))
+assert(contains(str, "phase  1") && contains(str, "Fault001") && contains(str, "reached t = 3"))
 
 
 %% TimeLimit stops the simulation with flag 0

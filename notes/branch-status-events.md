@@ -578,5 +578,5 @@ s_tag = add_trip(obj, unit, time)
 ブランチ `feature/scenario-event-table`(基準 `7f6154c5`)。§3 のシナリオの表と API を実装し、`compile` は新しい表から今と同じ `sct_event` を作ります。
 
 - 決めたこと(仕様にない細部): `add_events` と `add_record` は `add_scenario(From=)` から呼ぶため `Access={?PowerNetwork, ?Scenario}`(公開ではない)。行の形の誤り(対象ごとに 2 行でない、終了の Status が `none`/`close` でない、機器に `3open`/`6open` など)は新しい ID `GUILDA:Scenario:InvalidEventRows`。`SingleCircuit` は `Scenario.xml` に置いただけで、検査は E2(回線数は B1)。オフセットと入力を持たない `add_disturbance` は区間の目印として、1 つの時刻なら `tab_offset`、期間なら `tab_input` に 1 行を入れる(F6 の「何もしないイベント」)。オフセットだけの `add_disturbance` に `[t1 t2]` を与えたときは `t1` だけを残す。JSON の `version` が 2 でないものと、同じタグのオフセットと入力の開始時刻が違うものは `ScenarioJson`。`PowerNetwork.xml` の `ScenarioJson` の本文の「version 1」を「version 2」にした(1 行)。
-- `simulate_baseline(Mode="compare")`: 6 例すべて `isequaln`(`phases` は列名を §3.6 の対応で読み替え)。
+- テスト: small 535 件(PASS 533 / KNOWN 1 / SKIP 1)、medium 723 件(F6 の Verbose の列名を直した後 FAIL 0)。`simulate_baseline(Mode="compare")`: 6 例すべて `isequaln`(`phases` は列名を §3.6 の対応で読み替え)。
 - `_GUILDAverification/IEEJ_EAST10/compare_table4_3(Sections="peak")`(調速機あり): 14 of 21 で README の記録(2026-11-04)と同じ。
