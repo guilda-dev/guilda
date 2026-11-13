@@ -1295,6 +1295,32 @@ of its parent, so the labels stay unique within a network.
 
 母線と機器の `graph` パラメータに `MarkerSize`(NaN: 既定)と `Color`("": 既定)の列が加わりました。CSV ファイルにもこの 2 列が書き出されます。2 列のない古い CSV は既定値で読み込みます。
 
+### 1.27 3D ネットワーク図(`DrawerNetDiagram`、`plot_diagram`)
+
+`net.plot_diagram` はモデルを変えません。図はスナップショット `struct(net, false)` と表示する状態だけから作ります。座標(`graph` の `Xaxis`・`Yaxis`)のない母線があるときの自動配置の座標は図の中だけに持ち、母線の `tab_parameter` へは書き込みません。初期化前の系統や、編集で古くなった系統では `GUILDA:PowerNetwork:DiagramStale`(「Run net.initialize() first」)で止まります。潮流計算の結果は `res.plot_diagram` で描きます。`DrawerNetDiagram` の公開の名前は規約に合わせて変えました。互換の別名はありません。
+
+| 旧 | 新 |
+|---|---|
+| `net.plot_diagram(ax)` | `net.plot_diagram(Parent=ax, <プロパティ>=…)` |
+| なし | `res.plot_diagram(Parent=ax, …)`(`ResultPF`) |
+| `DrawerNetDiagram(net, ax, …)` | `DrawerNetDiagram(struct(net,false), sct_state, Parent=ax, …)`(`sct_state`: `rv_t`、`cm_Vbus`、`cm_Icomp`) |
+| `G.set_network(net)`、`G.set_powerflow(...)` | なし(非公開)。時刻は `G.set_time(t)` |
+| `ColorLim` / `ColorMap` | `ColorLimits` / `Colormap` |
+| `ColorMode` の値 `"I (current)"`、`"P (active power)"`、`"Q (reactive power)"`、`"User defined"` | `"I"`、`"P"`、`"Q"`、`"user"`(`"none"`、`"Loss"` はそのまま) |
+| `EdgeWidthMode`(`"SvdMaxYmat"`) | `BranchWidthMode`(`"Ysvd"`。`"none"`、`"G"`、`"B"`、`"Y"` はそのまま) |
+| `EdgeWidthSclae` / `EdgeWidthOffset` | `BranchWidthScale` / `BranchWidthOffset` |
+| `NodeHeightMode`(`"Vmag"`、`"Varg"`、`"Vsin"`) | `BusHeightMode`(`"V"`、`"angle"`、`"Vimag"`。`"none"`、`"P"`、`"Q"` はそのまま) |
+| `NodeB_ColorVal` / `NodeC_ColorVal` | `BusColorData` / `ComponentColorData` |
+| `EdgeB2B_ColorVal` / `EdgeB2C_ColorVal` | `BranchColorData` / `LinkColorData`(リンク = 機器と母線を結ぶ線) |
+| `EdgeB2B_forward` / `EdgeB2C_forward` | `BranchDirection` / `LinkDirection` |
+| `NodeLabelB` / `NodeLabelC` | `BusLabel` / `ComponentLabel` |
+| `NodeLabelMode`(`"name"`、`"info"`) | `LabelMode`(`"tag"`、`"value"`) |
+| `NodeFontSize` / `NodeFontWeight` | `LabelFontSize` / `LabelFontWeight` |
+| `GridWidth` | `GridSpacing` |
+| `ax`(書き込み可)、`plt`、`flag_new` | `ax`(読み取り専用)。`sct_plt`、`l_redraw` は非公開 |
+
+`ColorMode="user"` では、設定した色の値(`BusColorData` など)が再描画や `set_time` の後も残ります。
+
 ## 2. Changes so far — model authors
 
 新しいモデルの実装手順は `_GUILDAdoc/developer/model-implementation.html` を見てください。

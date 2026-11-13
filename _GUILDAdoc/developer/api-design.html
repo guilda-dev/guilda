@@ -177,7 +177,7 @@
     </table>
     <ul>
       <li><span lang="en">Result classes also hold <code>flag</code>, <code>output</code> and the effective <code>options</code> as properties, so <code>result</code> alone is enough to check the outcome.</span><span lang="ja">結果クラスは <code>flag</code>、<code>output</code>、実際に使われた <code>options</code> もプロパティとして保持します。<code>result</code> だけで結果を確認できます。</span></li>
-      <li><span lang="en">Plotting and writing files are methods of the result: the <code>plot_*</code> methods of each result class (<code>plot_voltage</code>, <code>plot_dispatch</code>, <code>plot_pvcurve</code>, <code>plot_trajectory</code>, <code>plot_eigenvalue</code>, <code>plot_spring_model</code>), <code>result.export(filename)</code>. The call option <code>Export</code> of <code>calculate_continuation_powerflow</code> runs the latter (the other analyses have no such option); the figure after an analysis is drawn only by a <code>plot_*</code> method.</span><span lang="ja">描画とファイル出力は、結果のメソッドで行います。図は結果クラスごとの <code>plot_*</code>（<code>plot_voltage</code>、<code>plot_dispatch</code>、<code>plot_pvcurve</code>、<code>plot_trajectory</code>、<code>plot_eigenvalue</code>、<code>plot_spring_model</code>）、ファイルは <code>result.export(filename)</code> です。<code>calculate_continuation_powerflow</code> の呼び出しのオプション <code>Export</code> を指定すると後者を実行します（ほかの解析にはこのオプションがありません）。解析後の図は <code>plot_*</code> のメソッドだけで描きます。</span></li>
+      <li><span lang="en">Plotting and writing files are methods of the result: the <code>plot_*</code> methods of each result class (<code>plot_voltage</code>, <code>plot_dispatch</code>, <code>plot_pvcurve</code>, <code>plot_trajectory</code>, <code>plot_eigenvalue</code>, <code>plot_spring_model</code>, <code>plot_diagram</code>), <code>result.export(filename)</code>. The call option <code>Export</code> of <code>calculate_continuation_powerflow</code> runs the latter (the other analyses have no such option); the figure after an analysis is drawn only by a <code>plot_*</code> method.</span><span lang="ja">描画とファイル出力は、結果のメソッドで行います。図は結果クラスごとの <code>plot_*</code>（<code>plot_voltage</code>、<code>plot_dispatch</code>、<code>plot_pvcurve</code>、<code>plot_trajectory</code>、<code>plot_eigenvalue</code>、<code>plot_spring_model</code>、<code>plot_diagram</code>）、ファイルは <code>result.export(filename)</code> です。<code>calculate_continuation_powerflow</code> の呼び出しのオプション <code>Export</code> を指定すると後者を実行します（ほかの解析にはこのオプションがありません）。解析後の図は <code>plot_*</code> のメソッドだけで描きます。</span></li>
     </ul>
 
     <h3 id="preconditions"><span lang="en">5 · Preconditions of a call</span><span lang="ja">5 · 呼び出しの前提条件</span></h3>
@@ -337,10 +337,10 @@
       <div class="dg-row">
         <span class="dg-row-head"><span lang="en">Getters and drawing</span><span lang="ja">値の取得と描画</span></span>
         <div>
-          <div class="ad-call"><code>net.get_admittance_matrix()</code><br><code>net.get_variable_map()</code><br><code>net.plot_diagram(ax)</code></div>
+          <div class="ad-call"><code>net.get_admittance_matrix()</code><br><code>net.get_variable_map()</code><br><code>net.plot_diagram(Parent=ax)</code></div>
           <ul class="ad-facts">
             <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <span lang="en">A standard MATLAB type (rule 3)</span><span lang="ja">MATLAB の標準の型（ルール 3）</span></li>
-            <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span></li>
+            <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en"><code>plot_diagram</code> draws from the snapshot <code>struct(net, false)</code>; the positions of its automatic layout stay in the drawing.</span><span lang="ja"><code>plot_diagram</code> はスナップショット <code>struct(net, false)</code> から描きます。自動配置の座標は図の中だけに持ちます。</span></small></li>
           </ul>
         </div>
       </div>
