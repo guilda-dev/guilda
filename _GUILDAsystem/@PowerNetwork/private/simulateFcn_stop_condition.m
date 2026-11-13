@@ -1,4 +1,4 @@
-function sct_stop = stop_condition(net, sct_dae, r_angle)
+function sct_stop = simulateFcn_stop_condition(net, sct_dae, r_angle)
 % Stop condition of StopOnOutOfStep for SolverODE.solve (sct_dae.sct_stop).
 %
 % The units are the components with the state delta; the reference is the generator of
@@ -9,7 +9,7 @@ function sct_stop = stop_condition(net, sct_dae, r_angle)
 % generator on the slack bus or no other component with delta.
     arguments (Input)
         net                       % Network of the run (slack buses).
-        sct_dae (1,1) struct      % Data of the run (simulation_blocks).
+        sct_dae (1,1) struct      % Data of the run (simulateFcn_blocks).
         r_angle (1,1) double      % [deg] StopAngle.
     end
     arguments (Output)

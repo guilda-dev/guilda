@@ -72,7 +72,7 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
 % <@Group> Simulation
     arguments (Input)
         obj
-        s_scenario (1,1) string {mustBeScenarioOf(obj, s_scenario)}   % Tag of the scenario to run (net.add_scenario).
+        s_scenario (1,1) string {simulateFcn_mustBeScenarioOf(obj, s_scenario)}   % Tag of the scenario to run (net.add_scenario).
         opt.Time (1,2) double {mustBeSimulationTime}   % [s] Simulation time [t0, tend] of this call. Default: the Time of the scenario.
         opt.Solver (1,1) string {mustBeMember(opt.Solver, ["ode15s","ode23t"])}   % Solver of the MATLAB ode object. Default: GUILDA.setting.
         opt.Tolerance (1,1) double {mustBeInRange(opt.Tolerance, 1e-15, 1e-3)}   % Relative error tolerance. Default: GUILDA.setting.
@@ -80,11 +80,11 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
         opt.MaxStep (1,1) double {mustBePositiveOrNaN}   % [s] Largest step of the solver; NaN for the solver default. Default: GUILDA.setting.
         opt.InitialStep (1,1) double {mustBePositiveOrNaN}   % [s] First step of each phase; NaN for the solver default. Default: GUILDA.setting.
         opt.SeparateComplexParts (1,1) logical   % SeparateComplexParts of the ode object (true: "on", false: "off"). Default: GUILDA.setting.
-        opt.SampleTime (1,1) double {mustBeNonnegativeOrNaN}   % [s] Interval of the recorded times from the start time (with the start and end of each phase); NaN or 0 for the solver steps. Default: GUILDA.setting.
+        opt.SampleTime (1,1) double {simulateFcn_mustBeNonnegativeOrNaN}   % [s] Interval of the recorded times from the start time (with the start and end of each phase); NaN or 0 for the solver steps. Default: GUILDA.setting.
         opt.StopOnOutOfStep (1,1) logical   % Stop the run when a rotor angle from the generator of the slack bus exceeds StopAngle (flag 2). Default: GUILDA.setting.
         opt.StopAngle (1,1) double {mustBePositive}   % [deg] Threshold of StopOnOutOfStep. Default: GUILDA.setting.
         opt.TimeLimit (1,1) double {mustBePositive}   % [s] Wall-clock limit of the whole run; Inf for none. Default: GUILDA.setting.
-        opt.Progress {mustBeProgress}   % "dialog", "disp" or "none" (true: "dialog", false: "none"). Default: GUILDA.setting.
+        opt.Progress {simulateFcn_mustBeProgress}   % "dialog", "disp" or "none" (true: "dialog", false: "none"). Default: GUILDA.setting.
         opt.Verbose (1,1) logical   % Print the phases and the outcome. Default: GUILDA.setting.
         opt.PlotFcn {tools.check_plotfcn(opt.PlotFcn, "simulate")}   % Live display during the run: "none" (draw the result with result.plot_trajectory()). Default: GUILDA.setting.
         opt.Format (1,1) string {mustBeMember(opt.Format, ["GUILDAorigin","struct"])} = "GUILDAorigin"   % Form of the first output.
@@ -105,17 +105,17 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
 
     [sct_dae, sct_event, rv_x0, tab_phase] = obj.build_simulation_data(s_scenario, time);
     if sct_options.StopOnOutOfStep
-        sct_dae.sct_stop = stop_condition(obj, sct_dae, sct_options.StopAngle);
+        sct_dae.sct_stop = simulateFcn_stop_condition(obj, sct_dae, sct_options.StopAngle);
     end
     if sct_options.Verbose
-        print_phases(tab_phase);
+        simulateFcn_print_phases(tab_phase);
     end
     [sct_sol, flag, output] = obj.solver_ODE.solve(sct_dae, sct_event, rv_x0, sct_options);
     output.phases = tab_phase;
     output = orderfields(output, ["tEnd", "nPhases", "nPhasesDone", "phases", "isSparse", "exception", "outOfStep", "message"]);
 
     if opt.Format == "struct"
-        result = struct_result(sct_sol, sct_dae, sct_event, tab_phase, s_scenario);
+        result = simulateFcn_struct_result(sct_sol, sct_dae, sct_event, tab_phase, s_scenario);
     else
         result = ResultODE(sct_sol, sct_dae, struct(obj, false), struct("solver", obj.solver_ODE, ...
                            "options", sct_options, "flag", flag, "output", output, "elapsed", t0));

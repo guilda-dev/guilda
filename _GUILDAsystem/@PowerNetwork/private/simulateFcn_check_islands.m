@@ -1,4 +1,4 @@
-function check_islands(sct_dae, sct_event, tab_phase)
+function simulateFcn_check_islands(sct_dae, sct_event, tab_phase)
 % Each set of open branches must leave every bus connected to a component: nothing sets
 % the voltages of a part of the network without components (with no shunt either, the
 % DAE is singular). Checked for all phases before the integration starts; stops with

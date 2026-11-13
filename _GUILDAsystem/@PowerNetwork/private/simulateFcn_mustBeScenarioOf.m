@@ -1,4 +1,4 @@
-function mustBeScenarioOf(net, s_scenario)
+function simulateFcn_mustBeScenarioOf(net, s_scenario)
 % Validate a scenario tag of net.simulate: the tag of a scenario of the network.
 %
 % A tag that is not one stops with GUILDA:PowerNetwork:ScenarioNotFound, which lists the

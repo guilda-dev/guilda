@@ -88,7 +88,7 @@ R2026a で、変更前に具体クラスのコンストラクタを直接呼ん�
 | `@GlobalController/get_sys.m` の `GlobalControllerPort` | 制御対象の出力・入力の不足 | 起きえる: 追加の後でローカル制御器を編集すると、出力の行き先がなくなることがある |
 | `@PowerNetwork/add_global_controller.m` の `GconTagInUse` | タグの重複 | 親の検査ではない(対象外) |
 | `@Component/get_variable_map.m:76`、`@LocalController/get_sys.m`・`observed_component.m` の `while isa(..., "LocalController")`、`PowerNetwork/handle_edit.m`、`SolverLIN/point_vector.m`、`SolverLIN/solve.m:43`、`Parameter.m:63` | 層の型での振り分け | 振り分けであり、親の検査ではない |
-| `tools/slack_bus_index.m`、`SolverLIN/solve.m:168`、`SolverODE/private/check_islands.m`、`import_matpower.m:126`、`Bus.m:138` | `isempty(b.a_Component)` | 機器のない母線は起きえる |
+| `tools/slack_bus_index.m`、`SolverLIN/solve.m:168`、`PowerNetwork/private/simulateFcn_check_islands.m`、`import_matpower.m:126`、`Bus.m:138` | `isempty(b.a_Component)` | 機器のない母線は起きえる |
 | `PowerNetwork/calculate_powerflow.m:72`、`initialize.m:251` | `isempty(obj.a_Bus)` | 母線のない系統は起きえる |
 | `Scenario`、`add_scenario`、`ResultBase`、`ResultODE`、`ResultPF/Export` | `a_PowerNetwork` が空 | シナリオと結果はモデルの物体ではなく、系統なしで存在できる |
 

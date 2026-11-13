@@ -1,4 +1,4 @@
-function sol = struct_result(sct_sol, sct_dae, sct_event, tab_phase, s_scenario)
+function sol = simulateFcn_struct_result(sct_sol, sct_dae, sct_event, tab_phase, s_scenario)
 % The first output of simulate with Format="struct": the model hierarchy with tables.
 %
 % sol.t is the time of every row of every table (no Time column in the tables). Each bus
