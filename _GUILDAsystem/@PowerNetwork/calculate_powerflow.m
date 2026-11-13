@@ -149,12 +149,3 @@ function sct = solver_options(opt)
     sct.WhenFailed = string(sct.WhenFailed);
     sct.Display    = replace(string(sct.Verbose), ["true","false"], ["iter","none"]);
 end
-
-
-function mustBeIntegerOrNaN(r)
-% NaN (the automatic value) or a nonnegative integer
-    if ~isnan(r)
-        mustBeNonnegative(r)
-        mustBeInteger(r)
-    end
-end
