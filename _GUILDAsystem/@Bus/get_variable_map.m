@@ -8,8 +8,9 @@ function [tab, c_idx, tab_connection] = get_variable_map(obj, s_form)
 %   3. u: inputs of each component
 %   4. uc: inputs of the local controllers of each component
 %   5. y, 6. yc: outputs of each component and of its local controllers (signals)
-% The rows of the kinds x, Vre, Vim and u come first: they are the order of the Point
-% vector of bus.get_sys(Point=...). Index counts from 1 here. tab_connection lists the
+% The rows of the kinds x, Vre, Vim and u come first: they are the order of the point
+% vector of bus.get_sys(point). Index counts from 1 here. The column Equilibrium is
+% as in the map of the network (NaN in every row before net.initialize). tab_connection lists the
 % connections inside the components (Component.get_variable_map), with the indices of
 % this map. get_variable_map("rows") is the form used inside the map: see
 % PowerNetwork.get_variable_map.
@@ -22,7 +23,7 @@ function [tab, c_idx, tab_connection] = get_variable_map(obj, s_form)
         s_form (1,1) string {mustBeMember(s_form, ["table","rows"])} = "table" % "rows" (internal): return the rows without the tables.
     end
     arguments (Output)
-        tab              % One row per variable or signal: Index, Kind, Role, Owner, Name, Label, Bus.
+        tab              % One row per variable or signal: Index, Kind, Role, Owner, Name, Label, Bus, Equilibrium.
         c_idx            % c_idx{j}: rows of tab that form a_Component{j}.get_variable_map(), in its order.
         tab_connection   % One row per connection: Index, Kind, Source, Target, SourceIndex, TargetIndex.
     end
@@ -75,6 +76,22 @@ function [tab, c_idx, tab_connection] = get_variable_map(obj, s_form)
         return
     end
     [tab, tab_connection] = make_tables(vertcat(c_rows{:}), sm_conn);
+
+    % Equilibrium: the values of the maps of the components and the bus voltage; NaN
+    % everywhere when a part has none (before net.initialize)
+    rv_eq = nan(height(tab),1);
+    net = obj.a_PowerNetwork;
+    if ~isempty(net) && ~any(net.sct_stale.powerflow == net.s_notInitialized)
+        rv_eq(iv_0(2) + (1:2)) = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)];
+        for j = 1:n_comp
+            tab_j = a_comp{j}.get_variable_map();
+            rv_eq(c_idx{j}) = tab_j.Equilibrium;
+        end
+        if any(isnan(rv_eq))
+            rv_eq(:) = NaN;
+        end
+    end
+    tab.Equilibrium = rv_eq;
 end
 
 

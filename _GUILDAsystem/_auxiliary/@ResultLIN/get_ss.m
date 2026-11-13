@@ -32,8 +32,8 @@ function sys = get_ss(obj, Method, opt)
 % stops with GUILDA:ResultLIN:UnknownOutput.
 %
 % For a result of comp.get_sys, bus.get_sys, con.get_sys or gc.get_sys, get_ss returns the
-% port model (the bus voltage of the port "I2V" eliminated as in "Kron"); Input and Output
-% take names of its inputs and outputs, and Method and Coordinate do not apply.
+% port model (voltages in, currents and outputs out); Input and Output take names of its
+% inputs and outputs, and Method and Coordinate do not apply.
 %
 % A result with flag false (output.s_issue) stops with an error that repeats output.message:
 % GUILDA:ResultLIN:NotFinite for every algorithm, and GUILDA:ResultLIN:SingularAvv
@@ -66,7 +66,8 @@ function sys = get_ss(obj, Method, opt)
         if isfield(obj.output, "s_issue") && obj.output.s_issue == "NotFinite"
             error(msg("GUILDA:ResultLIN:NotFinite", obj.output.message))
         end
-        sys = port_model(obj.sct_model.sct_sys);
+        S = obj.sct_model.sct_sys;   % a port model has no algebraic variables
+        sys = model(S.A, S.B, S.C, S.D, S.E, S.StateName, S.InputName, S.OutputName);
         if isfield(opt, "Output")
             sys = output_by_name(sys, opt.Output);
         end
@@ -141,24 +142,6 @@ end
 
 function tf = is_network(obj)
     tf = isfield(obj.output, "s_layer") && obj.output.s_layer == "PowerNetwork";
-end
-
-
-function sys = port_model(S)
-% The connected model of a layer without its algebraic variables (eliminated as in Kron)
-    n_x = size(S.A,1) - S.n_v;
-    ix = 1:n_x;
-    iv = n_x+1:size(S.A,1);
-    if S.n_v == 0
-        sys = model(S.A, S.B, S.C, S.D, S.E, S.StateName, S.InputName, S.OutputName);
-        return
-    end
-    Avv = S.A(iv,iv);
-    Kx  = Avv \ S.A(iv,ix);
-    Ku  = Avv \ S.B(iv,:);
-    sys = model(S.A(ix,ix) - S.A(ix,iv)*Kx, S.B(ix,:) - S.A(ix,iv)*Ku, ...
-                S.C(:,ix) - S.C(:,iv)*Kx, S.D - S.C(:,iv)*Ku, S.E(ix,ix), ...
-                S.StateName(ix), S.InputName, S.OutputName);
 end
 
 

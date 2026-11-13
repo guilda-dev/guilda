@@ -1,6 +1,6 @@
 # 線形化の接続器(`SolverLIN`)と共通の `get_sys`(Issue #121)
 
-ブランチは `refactor/121-linearization-connector`(未 push、分岐元 `d41057ba`)です。この文書は手順 0 の仕様で、ユーザーの決定(2026-11-13、§9.1)を受けて実装しました。実装で仕様と変えた点と結果は §11 にあります。
+ブランチは `refactor/121-linearization-connector`(未 push、分岐元 `d41057ba`)です。この文書は手順 0 の仕様で、ユーザーの決定(2026-11-13、§9.1)を受けて実装しました。実装で仕様と変えた点と結果は §11 にあります。その後のフォローアップ(2026-11-13)で、点を最初の位置引数にし、ポートを V2I に固定し、v3 の互換を削除しました(§12)。§2〜§7 と §11 のうち、`Point` オプション、`Port`、電流を入力とするポート、位置引数の互換の記述は §12 で置き換わった、当時の記録です。
 
 **ラベル**: 無印または [事実] = コードを読んで確認。[計測] = MATLAB R2026a で実行して確認。[提案] = この文書の提案で、未承認。[未確認] = 調べていない。
 
@@ -374,3 +374,47 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 ### 11.4 未確認
 
 - チュートリアル(`_GUILDAtutorial/*.mlx`)は書き換えていません。`Step6_GetLinearSystem.mlx` は v2 の `get_sys(false)` を説明しています(チュートリアルの更新は保留中のブランチで扱う)。
+
+
+## 12. フォローアップ: 点の引数、制御器の変数表、`Equilibrium` 列、V2I の固定(2026-11-13)
+
+同じ話題なので、ブランチ `refactor/121-linearization-connector` を `refactor/design-alignment`(`d77ac229`)まで早送りして続けました。
+
+### 12.1 決定(ユーザー、2026-11-13)
+
+1. 点は `Point` オプションではなく、最初の位置引数にします: `get_sys(obj, point, opt)`、既定 `point = []`。
+2. 点の並びは、どのクラスでも `obj.get_variable_map()` の先頭の変数の行です(x, Vre, Vim、続いて u。制御器は uc)。
+3. どのクラスにも `get_variable_map` を持たせます(制御器に追加)。
+4. 変数表に `Equilibrium` 列を加えます。
+5. ポートは V2I に固定します(`Port` オプションと電流を入力とするポートを削除)。
+6. `get_sys` まわりの v3 の互換をすべて削除します。
+
+### 12.2 実装 [事実]
+
+- **v3 の互換の削除:** `get_sys` の位置引数 `x, V, u`(COMPAT(v3))、`_VersionSupport/v3_get_sys_point.m`、`_VersionSupport/v3_linearizer_constructor.m` とそれぞれの XML、`Deprecated.xml` の `GetSysPositionalPoint`、`PowerSystemModel.xml` の `PointAndPositional` を削除しました。`SolverLIN(arg)` は MATLAB の引数の数のエラー(`MATLAB:TooManyInputs`)です。COMPAT(v3) のフックは 9 行から 4 行になりました(F10 と `notes/v4-migration.md` の 4 章を更新)。
+- **点の引数:** `get_sys(obj, point, opt)` の `point` は `[]`、数値ベクトル、`{sim, t}`、`{sim, t, Side}` で、意味は以前の `Point` と同じです。`ResultLIN.options.Point` には与えた点をそのまま記録します(フィールド名は変えていません)。`SolverLIN.check_point(point)`、`SolverLIN.point_vector(layer, point)` の引数名と、`SolverLIN.xml` の `Point*` のメッセージを「点(get_sys の最初の引数)」の言い方にしました(ID は同じ)。
+- **制御器の変数表:** `@LocalController/get_variable_map.m` と `@GlobalController/get_variable_map.m` を加えました(許可された新しいメソッド。クラス定義に署名を追加)。行は自分の x、Vre/Vim(LC はその機器の母線、GC は全母線)、uc(GC は制御対象ごと)、yc で、列と Label は親(機器またはネットワーク)の表と同じです。`Bus` 列は LC では機器の母線、GC では x・uc・yc が `""`、電圧の行はその母線です。
+- **`SolverLIN.point_vector`** はどの層も `layer.get_variable_map()` を 1 回読み、先頭の変数の行の `Equilibrium`(平衡点)、`Label`(`PointNotFinite` の名前)、`{sim, t}` の `tab_map` に使います。制御器のラベルを自分で組み立てる `controller_point`、平衡点を組み立てる `assemble` などの局所関数は削除しました。`get_sys` の `layer_maps` も制御器では自分の表を使い、親の表から行を選ぶ局所関数 `controller_map` を削除しました。制御器の `get_linear_port` も自分の表を読みます。
+- **`Equilibrium` 列:** `PowerNetwork`、`Bus`、`Component`、2 つの制御器の `get_variable_map` の最初の出力(表の形)の最後の列です。値は x・u・uc が保存された平衡値(`rv_Xequilibrium`、`rv_Uequilibrium`)、Vre・Vim が `c_Vequilibrium`、y・yc が平衡点で出力関数(`f_Y`)を評価した値です。`Component` は自分と LC の値を直接求め、`Bus` は機器の表と母線電圧から、`PowerNetwork` は母線電圧、機器の表(母線の `"rows"` の第 2 出力で位置を求める)、GC の表から組み立てます。次のときは列全体が NaN です。
+  - ネットワークがない、ネットワークの `sct_stale.powerflow` に `s_notInitialized` がある(初期化前)
+  - 層のどれかのオブジェクトの `sct_stale.equilibrium` に `s_notInitialized` がある(加えた後に初期化していない)
+  - 保存された平衡値の長さが `sv_x`、`sv_u` と合わない(`validate` が報告する壊れたモデル。表を作れるように NaN にします)
+- **`"rows"` 形式は変えていません。** `Equilibrium` は表の形だけで計算します。表の先頭の行を持つ `ResultLIN.tab_variable` と `ResultODE.tab_variable`(`simulate` は表の形を読む)にも `Equilibrium` 列が入ります。
+- **V2I の固定:** `get_sys` の `Port` オプション、`PortNotApplicable`、`NoI2V`、`l_port` の処理、6 つの `get_linear_port` の `s_port` 引数、`SolverLIN.solve` の外部電流の項、`ResultLIN` の I2V の分岐、`get_ss` の局所関数 `port_model`(代数変数の消去。V2I の層には代数変数がない)を削除しました。
+- **テスト:** F7 の I2V の節を「Bus models with a zero D」(D が 0 の母線も V2I のモデルを返す)にし、v3 の位置引数の節を削除し、節「Variable maps of the controllers and the Equilibrium column」(medium)を加えました。`test_levels.m` の名前を合わせました。`+helper/linearize_v3.m` は Kron と DAE の比較に使うので残し、`v3_ports` の I2V の分岐と引数だけを削除しました。`+helper/linearization_reference_check.m` から I2V の比較を削除しました。
+- **`linearization_reference.mat` は作り直していません。** I2V の項目は使わずに残します(作り方の `archive/make_linearization_reference.m` は置き換える前のコードでしか動かないため)。
+
+### 12.3 選んだ点 [事実]
+
+- **制御器の `get_variable_map` の出力は表 1 つだけです。** 接続表は返しません。制御器の入力の源(機器の y・x、親の制御器、GC の出力先)は制御器の表の行ではないので、`SourceIndex` が 0 になり意味を持たないためです。接続は親の表(`comp.get_variable_map()`、`net.get_variable_map()`)にあります。`get_sys` は制御器では空の接続表を使います(以前と同じ)。
+- **新しい局所関数:** `@Component/get_variable_map.m` の `equilibrium`(平衡値の列)と `output_value`(LC の出力の評価)、2 つの制御器の `get_variable_map.m` の `tag`(Label を付ける)です。`@SolverLIN/point_vector.m` の `class_name` は以前からあり、制御器の場合を加えました。
+- **表の形の速さ [計測]:** IEEE68bus の `net.get_variable_map()` は 31 ms から 60 ms になりました(`"rows"` は 14〜17 ms で変わらない)。初めの実装(母線の表を経由)では 127 ms だったので、ネットワークが機器の表を直接読むようにしました。`net.get_sys()` は 352 ms から 297 ms です(`point_vector` が平衡点を組み立てなくなったため)。`simulate` は内部で表の形を 1 回読むので(`simulation_blocks`)、その分だけ遅くなります。
+
+### 12.4 結果 [計測]
+
+- small(最終): 526 件、PASS 524 / KNOWN 1 / FAIL 0 / SKIP 1、382 s。
+- medium(1 回): 712 件、PASS 709 / KNOWN 1 / FAIL 1 / SKIP 1、859 s。失敗は F7 `VariableMapIsConsistentWithTheLinearModel` で、表の列名に `Equilibrium` がないことを確かめていたためです。テストを直し、F7 の medium を実行し直して 45 件すべて PASS です。large は実行していません。
+- 基準値との一致: F7 の "Linear models match the reference values"(5 系統、網の `rm_*`・Kron・DAE、機器と母線の V2I、機器単体、LC、GC)は PASS です。
+- `test_levels.m` の `LayerGet_sys_RemovedArguments_OneSignatureAndSingleComputation__83___121_` は実際の名前(`__83__121_`)と違い、この large のテストが small で実行されていました(以前からの警告)。名前を直したので、small の件数が 1 件減りました。
+- `git grep` で `Point=`、`Port=`、`I2V`、`v3_get_sys_point`、`v3_linearizer_constructor` が残るのは、`+DebugScript/archive/`、この文書の §2〜§11、ほかの過去の調査の notes だけです(`InitialPoint=` は OPF の別のオプション)。
+

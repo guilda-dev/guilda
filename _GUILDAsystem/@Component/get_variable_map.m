@@ -10,8 +10,9 @@ function [tab, tab_connection] = get_variable_map(obj, s_form)
 %   4. uc: inputs of its local controllers (depth first)
 %   5. y: outputs of the component (signals)
 %   6. yc: outputs of its local controllers (signals)
-% The rows of the kinds x, Vre, Vim and u come first: they are the order of the Point
-% vector of comp.get_sys(Point=...). Index counts from 1 here.
+% The rows of the kinds x, Vre, Vim and u come first: they are the order of the point
+% vector of comp.get_sys(point). Index counts from 1 here. The column Equilibrium is
+% as in the map of the network (NaN in every row before net.initialize).
 % tab_connection lists the connections inside the component: the outputs of the local
 % controllers into the inputs of the same name of their parent ("local"), the outputs and
 % states of the component into the inputs of the controllers that observe them
@@ -33,7 +34,7 @@ function [tab, tab_connection] = get_variable_map(obj, s_form)
         s_form (1,1) string {mustBeMember(s_form, ["table","rows"])} = "table" % "rows" (internal): return the rows without the tables.
     end
     arguments (Output)
-        tab              % One row per variable or signal: Index, Kind, Role, Owner, Name, Label, Bus.
+        tab              % One row per variable or signal: Index, Kind, Role, Owner, Name, Label, Bus, Equilibrium.
         tab_connection   % One row per connection: Index, Kind, Source, Target, SourceIndex, TargetIndex.
     end
     s_bus   = string(obj.a_Bus.s_tag);
@@ -63,6 +64,40 @@ function [tab, tab_connection] = get_variable_map(obj, s_form)
         return
     end
     [tab, tab_connection] = make_tables(vertcat(c_rows{:}), sm_conn);
+    tab.Equilibrium = equilibrium(obj, a_LC, height(tab));
+end
+
+
+function rv = equilibrium(comp, a_LC, n)
+    % Values of the rows at the equilibrium (x, V, u, uc, y, yc); NaN before net.initialize
+    % or when a stored equilibrium does not have the size of its variables
+    rv  = nan(n,1);
+    net = comp.a_Bus.a_PowerNetwork;
+    a_obj = [{comp}; a_LC];
+    if isempty(net) || any(net.sct_stale.powerflow == net.s_notInitialized) ...
+            || any(cellfun(@(o) any(o.sct_stale.equilibrium == o.s_notInitialized) ...
+                   || numel(o.rv_Xequilibrium) ~= numel(o.sv_x) || numel(o.rv_Uequilibrium) ~= numel(o.sv_u), a_obj))
+        return
+    end
+    V  = [real(comp.c_Vequilibrium); imag(comp.c_Vequilibrium)];
+    xe = @(o) reshape(o.rv_Xequilibrium, [], 1);
+    ue = @(o) reshape(o.rv_Uequilibrium, [], 1);
+    c_x  = tools.cellfun(xe, a_obj);
+    c_uc = tools.cellfun(ue, a_LC);
+    y = zeros(0,1);
+    if ~isempty(comp.sv_y)
+        y = reshape(comp.f_Y(0, xe(comp), V), [], 1);
+    end
+    c_yc = tools.cellfun(@(o) output_value(o, xe(o), V, ue(o)), a_LC);
+    rv = [vertcat(zeros(0,1), c_x{:}); V; ue(comp); vertcat(zeros(0,1), c_uc{:}); y; vertcat(zeros(0,1), c_yc{:})];
+end
+
+function y = output_value(con, x, V, u)
+    % Outputs of a local controller at x, V, u
+    y = zeros(0,1);
+    if ~isempty(con.sv_y)
+        y = reshape(con.f_Y(0, x, V, u), [], 1);
+    end
 end
 
 

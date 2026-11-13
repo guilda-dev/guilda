@@ -128,9 +128,9 @@ k = find(sol.rv_t > 1.2, 1);
 assert(isequal(sol.get_point(sol.rv_t(k), Side="before"), sol.get_point(sol.rv_t(k)), sol.rm_variable(k,:)'))
 tm = (sol.rv_t(k) + sol.rv_t(k+1)) / 2;
 assert(norm(sol.get_point(tm) - (sol.rm_variable(k,:) + sol.rm_variable(k+1,:))'/2) < 1e-12)
-% 線形化の Point={sim, t, Side} も同じ規則
-assert(isequal(net.get_sys("Point", {sol, 1}).rv_point, x_after))
-assert(isequal(net.get_sys("Point", {sol, 1, "before"}).rv_point, x_before))
+% 線形化の点 get_sys({sim, t, Side}) も同じ規則
+assert(isequal(net.get_sys({sol, 1}).rv_point, x_after))
+assert(isequal(net.get_sys({sol, 1, "before"}).rv_point, x_before))
 
 
 %% V4 call returns result flag and output

@@ -356,28 +356,17 @@ function [Axx, Bxv, Bxu, Cix, E, sv_z] = add_global_controllers(net, sv_x, sv_u,
     E   = blkdiag(Ez{:}, E);
 end
 
-function sys = v3_ports(bus, s_port)
-% v4 の bus.get_sys には制御器の入出力と機器の出力があり、状態は出力に無いので、v3 と同じ
-% 入力 [ポート; 機器の入力 u] と出力 (V2I: I、I2V: [状態; V]) だけにする
+function sys = v3_ports(bus)
+% v4 の bus.get_sys には制御器の入出力と機器の出力があるので、v3 と同じ入力
+% [ポート; 機器の入力 u] と出力 (電流 I) だけにする
     arguments (Input)
         bus
-        s_port = "V2I"
     end
     arguments (Output)
         sys  % v3 と同じ入出力の母線モデル
     end
-    sys  = bus.get_sys("port", s_port, "Format", "ss");
+    sys  = bus.get_sys(Format="ss");
     sv_u = tools.cellfun(@(c) string(c.attach_tag(c.sv_u)), bus.a_Component);
     [~, iv_u] = ismember(vertcat(strings(0,1), sv_u{:}), string(sys.InputName));
     sys  = sys(1:2, [1, 2, reshape(iv_u, 1, [])]);
-    if s_port == "I2V"
-        nx = size(sys.A,1);
-        sv_out = [string(sys.StateName); string(sys.OutputName)];
-        sv_in  = string(sys.InputName);
-        sv_x   = sys.StateName;
-        sys = dss(sys.A, sys.B, [eye(nx); sys.C], [zeros(nx, size(sys.B,2)); sys.D], sys.E);
-        sys.StateName  = sv_x;
-        sys.InputName  = cellstr(sv_in);
-        sys.OutputName = cellstr(sv_out);
-    end
 end

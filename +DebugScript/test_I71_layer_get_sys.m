@@ -29,7 +29,6 @@ DebugScript.helper.quiet(@() net.initialize);
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
 assert(DebugScript.helper.is_stale(net))
 assert_stale_error(@() gen.get_sys(), "GUILDA:PowerSystemModel:Stale")
-assert_stale_error(@() gen.get_sys("port", "I2V"), "GUILDA:PowerSystemModel:Stale")
 assert_stale_error(@() bus.get_sys(), "GUILDA:PowerSystemModel:Stale")
 % 制御器の get_sys は系統と自分のタグだけを見るので、機器の編集では止まらない
 avr.get_sys();
@@ -37,7 +36,7 @@ pss.get_sys();
 
 % 動特性が古いと、点を与えても止まる (どの点でもモデルが違う)
 rv_point = SolverLIN.point_vector(gen, []);
-assert_stale_error(@() gen.get_sys(Point=rv_point), "GUILDA:PowerSystemModel:Stale")
+assert_stale_error(@() gen.get_sys(rv_point), "GUILDA:PowerSystemModel:Stale")
 
 % 失敗した net.get_sys の後も下位層の答えは変わらない (エラーのまま)
 assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
@@ -76,7 +75,7 @@ assert_stale_error(@() gen.get_sys(), "GUILDA:PowerSystemModel:Stale")
 assert_stale_error(@() bus.get_sys(), "GUILDA:PowerSystemModel:Stale")
 assert_stale_error(@() avr.get_sys(), "GUILDA:PowerSystemModel:Stale")
 % 周波数は動特性なので、点を与えても止まる
-assert_stale_error(@() avr.get_sys(Point=SolverLIN.point_vector(avr, [])), "GUILDA:PowerSystemModel:Stale")
+assert_stale_error(@() avr.get_sys(SolverLIN.point_vector(avr, [])), "GUILDA:PowerSystemModel:Stale")
 assert(DebugScript.helper.handle_Hz(gen) == Hz0)
 
 [~, ~, out_init] = DebugScript.helper.quiet(@() net.initialize());
@@ -101,24 +100,24 @@ DebugScript.helper.quiet(@() net.initialize);
 [~, c_idx] = bus.get_variable_map();
 rv_point = SolverLIN.point_vector(bus, []);
 c_idx = cellfun(@(iv) iv(iv <= numel(rv_point)), c_idx, 'UniformOutput', false);   % the rows x, Vre, Vim, u
-A0 = gen.get_sys("Point", rv_point(c_idx{1})).A;
-A0_bus = bus.get_sys("Point", rv_point).A;
+A0 = gen.get_sys(rv_point(c_idx{1})).A;
+A0_bus = bus.get_sys(rv_point).A;
 
 % 潮流が古いだけなら、Point を指定した線形化は今のハンドルのまま (平衡点では止まる)
 ld = net.a_Bus{end}.a_Component{1};
 ld.tab_parameter.powerflow.P = 1.1 * ld.tab_parameter.powerflow.P;
 assert(~isempty(net.sct_stale.powerflow))
-assert(isequal(gen.get_sys("Point", rv_point(c_idx{1})).A, A0))
-assert(isequal(bus.get_sys("Point", rv_point).A, A0_bus))
+assert(isequal(gen.get_sys(rv_point(c_idx{1})).A, A0))
+assert(isequal(bus.get_sys(rv_point).A, A0_bus))
 assert_stale_error(@() gen.get_sys(), "GUILDA:PowerSystemModel:Stale")
 % 動特性が古いと、Point を指定しても止まる
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
-assert_stale_error(@() gen.get_sys("Point", rv_point(c_idx{1})), "GUILDA:PowerSystemModel:Stale")
-assert_stale_error(@() bus.get_sys("Point", rv_point), "GUILDA:PowerSystemModel:Stale")
+assert_stale_error(@() gen.get_sys(rv_point(c_idx{1})), "GUILDA:PowerSystemModel:Stale")
+assert_stale_error(@() bus.get_sys(rv_point), "GUILDA:PowerSystemModel:Stale")
 DebugScript.helper.quiet(@() net.initialize);
-A1 = gen.get_sys("Point", rv_point(c_idx{1})).A;
+A1 = gen.get_sys(rv_point(c_idx{1})).A;
 assert(~isequal(A1, A0))
-assert(~isequal(bus.get_sys("Point", rv_point).A, A0_bus))
+assert(~isequal(bus.get_sys(rv_point).A, A0_bus))
 
 
 %% Global controller get_sys checks edits
@@ -131,7 +130,7 @@ h_dx = gc.f_dx;
 gc.tab_parameter.dynamics.kI = 2 * gc.tab_parameter.dynamics.kI;
 assert(isequal(h_dx, gc.f_dx) && DebugScript.helper.is_stale(net))
 assert_stale_error(@() gc.get_sys(), "GUILDA:PowerSystemModel:Stale")
-assert_stale_error(@() gc.get_sys(Point=SolverLIN.point_vector(gc, [])), "GUILDA:PowerSystemModel:Stale")
+assert_stale_error(@() gc.get_sys(SolverLIN.point_vector(gc, [])), "GUILDA:PowerSystemModel:Stale")
 assert(isequal(h_dx, gc.f_dx))       % 確認は作り直さない
 
 % 失敗した net.get_sys の後もエラーのまま

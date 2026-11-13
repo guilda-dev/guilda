@@ -189,12 +189,16 @@ classdef GlobalController < PowerSystemModel
         end
 
     end
+    methods
+        % Variable map (rows x, Vre, Vim, uc, yc and their equilibrium)
+        tab = get_variable_map(obj)
+    end
     methods (Hidden)
         % Linearization (get_sys connects the blocks)
         sct_block = get_linear_block(obj, x, V, u)
     end
     methods (Access=protected)
-        sct_port = get_linear_port(obj, s_port)
+        sct_port = get_linear_port(obj)
         set_odefcn(obj)
         handle_edit(obj, a_layer, tag, log)
         sct_page = gui_content(obj)

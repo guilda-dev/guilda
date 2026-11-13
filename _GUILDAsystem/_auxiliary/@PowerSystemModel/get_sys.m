@@ -1,4 +1,4 @@
-function [sys, flag, output] = get_sys(obj, x, V, u, opt)
+function [sys, flag, output] = get_sys(obj, point, opt)
 % Linearize the layer and return its linear model.
 %
 % One method for every layer with a linear model: PowerNetwork, Bus, Component (with
@@ -11,31 +11,29 @@ function [sys, flag, output] = get_sys(obj, x, V, u, opt)
 % | Layer | Inputs | Outputs | Bus voltages |
 % |---|---|---|---|
 % | PowerNetwork | inputs u of the components | outputs y and yc | algebraic: 0 = Y v - I of the components, reduced by Method |
-% | Bus, Component (Port "V2I") | V, u, uc | I, y, yc | inputs |
-% | Bus, Component (Port "I2V") | I, u, uc | V, y, yc | algebraic, eliminated |
+% | Bus, Component | V, u, uc | I, y, yc | inputs |
 % | LocalController | V of its bus, its inputs | its outputs | inputs |
 % | GlobalController | V of all buses, its inputs | its outputs | inputs |
 %
-% The names are the Labels of the variable map (get_variable_map; for a controller, the
-% map of its component or network); the states follow its order. The current of a
+% The names are the Labels of the variable map of the layer (obj.get_variable_map); the
+% states follow its order. The current of a
 % component is the component tag with Ire, Iim; that of a bus the bus tag. An input is
 % the sum of its sources in the connection map plus the external input of that name.
 %
-% Point gives the point: [] (the equilibrium set by net.initialize, the default), a
-% vector of the variables of the layer in the order of its variable map (rows x, Vre, Vim,
-% u; for a controller its x, the voltages V and its inputs uc), or {sim, t} (or
-% {sim, t, "before"}) for the state of a simulation result at time t (PowerNetwork, Bus
-% and Component). The inputs of the controllers at the point are the sums of their
-% sources (outputs and states of what they observe, outputs of nested controllers; an
-% input without a source keeps its equilibrium). The point sets the variables only: the
+% point, the first argument, gives the point: [] (the equilibrium set by net.initialize,
+% the default), a vector of the variables of the layer in the order of the leading rows of
+% obj.get_variable_map() (x, Vre, Vim, then u; for a controller x, Vre, Vim, then uc),
+% or {sim, t} (or {sim, t, "before"}) for the state of a simulation result at time t
+% (PowerNetwork, Bus and Component). The inputs of the controllers at the point are the
+% sums of their sources (outputs and states of what they observe, outputs of nested
+% controllers; an input without a source keeps its equilibrium). The point sets the variables only: the
 % admittance matrix stays the one of the model, also inside a fault (reported with an
-% INFO message and output.sv_faultBus). The v3 form get_sys(x, V, u) of a component or
-% controller warns once and is converted to Point (v3_get_sys_point).
+% INFO message and output.sv_faultBus).
 %
 % The layer stops with GUILDA:PowerSystemModel:Stale when net.initialize() is needed: an
-% edited dynamics always, an edited network, power flow or equilibrium when Point is the
+% edited dynamics always, an edited network, power flow or equilibrium when the point is the
 % equilibrium; with GUILDA:PowerSystemModel:InputEdited when the inputs were edited.
-% A Point with NaN or Inf stops with GUILDA:SolverLIN:PointNotFinite, and a model that is
+% A point with NaN or Inf stops with GUILDA:SolverLIN:PointNotFinite, and a model that is
 % not finite at the point with GUILDA:SolverLIN:JacobianNotFinite.
 %
 % Format chooses the form of sys: "GUILDAorigin" (default) is the ResultLIN of the
@@ -52,7 +50,8 @@ function [sys, flag, output] = get_sys(obj, x, V, u, opt)
 % sct = net.get_sys(Method="DAE", Format="struct");
 % resV = net.get_sys(Output="V");               % bus voltages as outputs
 % sys = net.a_Bus{1}.a_Component{1}.get_sys(Format="ss");   % component, V to I
-% res2 = net.get_sys(Point={sim, 1.5});         % at a time of a simulation result
+% res2 = net.get_sys({sim, 1.5});               % at a time of a simulation result
+% res3 = net.get_sys(res.rv_point);             % at a vector in the order of net.get_variable_map()
 % ```
 %
 % See also ResultLIN, SolverLIN, PowerNetwork.get_variable_map
@@ -60,11 +59,7 @@ function [sys, flag, output] = get_sys(obj, x, V, u, opt)
 % <@Group> Linearization
     arguments (Input)
         obj
-        x (:,1) {mustBeNumeric, mustBeReal} = zeros(0,1)   % COMPAT(v3) States of a component or controller (use Point).
-        V (:,1) {mustBeNumeric, mustBeReal} = zeros(0,1)   % COMPAT(v3) [pu] Bus voltage (use Point).
-        u (:,1) {mustBeNumeric, mustBeReal} = zeros(0,1)   % COMPAT(v3) Inputs (use Point).
-        opt.Point                     % Point: [], a vector in the order of the variable map, or {sim, t}. Default: [] (the equilibrium).
-        opt.Port (1,1) string {mustBeMember(opt.Port, ["V2I","I2V"])}   % Ports of a Component or Bus: "V2I" (V to I) or "I2V". Default: "V2I".
+        point = []                    % Point: [] (the equilibrium), a vector in the order of get_variable_map(), {sim, t} or {sim, t, Side}.
         opt.Method (1,1) string {mustBeMember(opt.Method, ["Kron","DAE"])}   % Form of the model of the network: "Kron" (eliminate the bus voltages) or "DAE". Default: GUILDA.setting.
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])}   % Bus variables of "DAE". Default: GUILDA.setting.
         opt.PlotFcn                   % Live display: "none" (draw the eigenvalue map with result.plot_eigenvalue()). Default: GUILDA.setting.
@@ -78,23 +73,7 @@ function [sys, flag, output] = get_sys(obj, x, V, u, opt)
         output   % message, s_issue ("", "NotFinite" or "SingularAvv"), l_equilibrium, n_x, n_v, n_u, rcond_Avv, sv_faultBus, s_layer; result (the ResultLIN).
     end
     t0 = tic;
-    if nargin > 1
-        if isfield(opt, "Point")
-            error(msg("GUILDA:PowerSystemModel:PointAndPositional"))
-        end
-        opt.Point = v3_get_sys_point(obj, double(x), double(V), double(u));   % COMPAT(v3)
-    end
-    if ~isfield(opt, "Point")
-        opt.Point = [];
-    end
-    SolverLIN.check_point(opt.Point);
-    l_port = isa(obj, "Component") || isa(obj, "Bus");
-    if isfield(opt, "Port") && ~l_port
-        error(msg("GUILDA:PowerSystemModel:PortNotApplicable", class(obj)))
-    end
-    if ~isfield(opt, "Port")
-        opt.Port = "V2I";
-    end
+    SolverLIN.check_point(point);
     sct_cfg = GUILDA.config("Linearization");
     for s = ["Method","Coordinate","PlotFcn"]
         if ~isfield(opt, s)
@@ -102,17 +81,17 @@ function [sys, flag, output] = get_sys(obj, x, V, u, opt)
         end
     end
     tools.check_plotfcn(opt.PlotFcn, "get_sys");
-    l_eq = isempty(opt.Point) && ~iscell(opt.Point);
+    l_eq = isempty(point) && ~iscell(point);
 
     % The layer: its network, objects (blocks in the order of the variable map) and maps
     [net, a_obj, tab, tab_c] = layer_maps(obj);
     check_stale(obj, net, a_obj, l_eq);
-    rv_point = SolverLIN.point_vector(obj, opt.Point);
+    rv_point = SolverLIN.point_vector(obj, point);
     n_lin = numel(rv_point);
 
     % The blocks at the point, and the currents of the components
     c_block = blocks(obj, a_obj, tab, tab_c, rv_point);
-    sct_port = obj.get_linear_port(opt.Port);
+    sct_port = obj.get_linear_port();
     a_comp = a_obj(cellfun(@(o) isa(o, "Component"), a_obj));
     sct_port.tab_current = current_table(a_comp);
     if isa(obj, "PowerNetwork")
@@ -133,15 +112,10 @@ function [sys, flag, output] = get_sys(obj, x, V, u, opt)
     end
     if output.s_issue == "NotFinite"
         output.message = output.message + " Some Jacobian entries are not finite.";
-    elseif output.s_issue == "SingularAvv"
-        if isa(obj, "PowerNetwork")
-            n_x = output.n_x;
-            output.message = output.message + sprintf(" Avv is singular (rcond = %g): the current balance does not determine %s.", ...
-                output.rcond_Avv, list_labels(singular_voltages(sct_sys.A(n_x+1:end, n_x+1:end), sct_port.sv_algebraic)));
-        else
-            % I2V of a component or bus: the current does not determine the voltage
-            error(msg("GUILDA:PowerSystemModel:NoI2V", char(s_what)))
-        end
+    elseif output.s_issue == "SingularAvv"   % only the network has algebraic voltages
+        n_x = output.n_x;
+        output.message = output.message + sprintf(" Avv is singular (rcond = %g): the current balance does not determine %s.", ...
+            output.rcond_Avv, list_labels(singular_voltages(sct_sys.A(n_x+1:end, n_x+1:end), sct_port.sv_algebraic)));
     end
     flag = output.s_issue == "";
     output.sv_faultBus = strings(0,1);
@@ -162,10 +136,7 @@ function [sys, flag, output] = get_sys(obj, x, V, u, opt)
     output.l_equilibrium = l_eq;
     output.s_layer = s_layer;
 
-    sct_options = struct("Method", opt.Method, "Coordinate", opt.Coordinate, "PlotFcn", opt.PlotFcn, "Point", {opt.Point});
-    if l_port
-        sct_options.Port = opt.Port;
-    end
+    sct_options = struct("Method", opt.Method, "Coordinate", opt.Coordinate, "PlotFcn", opt.PlotFcn, "Point", {point});
     c_channel = cell(1,0);
     for s = ["Input","Output"]
         if isfield(opt, s)
@@ -189,7 +160,8 @@ end
 
 function [net, a_obj, tab, tab_c] = layer_maps(obj)
 % Network of the layer, its model objects in the order of the variable map, the variable
-% map (rows x, Vre, Vim, u or uc first) and the connection map
+% map (rows x, Vre, Vim, u or uc first) and the connection map (none for a controller:
+% the sources of its inputs are not rows of its map)
     if isa(obj, "PowerNetwork")
         net = obj;
         [tab, ~, ~, tab_c] = obj.get_variable_map();
@@ -203,32 +175,18 @@ function [net, a_obj, tab, tab_c] = layer_maps(obj)
         [tab, tab_c] = obj.get_variable_map();
         a_obj = [{obj}; all_controllers(obj)];
     elseif isa(obj, "LocalController")
-        comp = obj.a_Component;
-        while isa(comp, "LocalController")
-            comp = comp.a_Component;
-        end
-        net = comp.a_Bus.a_PowerNetwork;
-        tab = controller_map(comp.get_variable_map(), string(obj.s_tag));
+        net = root_component(obj).a_Bus.a_PowerNetwork;
+        tab = obj.get_variable_map();
         tab_c = empty_connections();
         a_obj = {obj};
     elseif isa(obj, "GlobalController")
         net = obj.a_PowerNetwork;
-        tab = controller_map(net.get_variable_map(), string(obj.s_tag));
+        tab = obj.get_variable_map();
         tab_c = empty_connections();
         a_obj = {obj};
     else
-        obj.get_linear_port("V2I");     % NoLinearModel
+        obj.get_linear_port();     % NoLinearModel
     end
-end
-
-
-function tab = controller_map(tab_parent, s_tag)
-% Rows of a controller: its x, the bus voltages (of the parent map), its uc and yc
-    lv_own = tab_parent.Owner == s_tag;
-    iv = [find(lv_own & tab_parent.Kind == "x"); find(tab_parent.Kind == "Vre" | tab_parent.Kind == "Vim"); ...
-          find(lv_own & tab_parent.Kind == "uc"); find(lv_own & tab_parent.Kind == "yc")];
-    tab = tab_parent(iv,:);
-    tab.Index = (1:height(tab))';
 end
 
 

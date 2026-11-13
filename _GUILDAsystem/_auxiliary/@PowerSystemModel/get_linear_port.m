@@ -1,4 +1,4 @@
-function sct_port = get_linear_port(obj, s_port) %#ok<STOUT>
+function sct_port = get_linear_port(obj) %#ok<STOUT>
 % Get the inputs and outputs of the linear model of the layer (port of get_sys).
 %
 % Each layer with a linear model (PowerNetwork, Bus, Component, LocalController,
@@ -10,8 +10,7 @@ function sct_port = get_linear_port(obj, s_port) %#ok<STOUT>
 %   bus currents (tab_bus).
 % - `sv_algebraic`: Labels of the bus voltages that are algebraic variables of the model
 %   (Vre, Vim of each bus); empty when the voltages are external inputs.
-% - `cm_Y`: admittance matrix (complex) of the buses of sv_algebraic; zeros for a bus or
-%   component whose current is an input (port "I2V").
+% - `cm_Y`: admittance matrix (complex) of the buses of sv_algebraic (empty without them).
 % - `tab_bus`: one row per bus of the layer, columns Bus, Vre, Vim, Ire, Iim (Labels of
 %   the voltage and of the current of the bus).
 %
@@ -23,7 +22,6 @@ function sct_port = get_linear_port(obj, s_port) %#ok<STOUT>
 % <@Group> Called by analyses
     arguments (Input)
         obj
-        s_port (1,1) string   % "V2I" or "I2V" (Component and Bus; "V2I" on the other layers).
     end
     arguments (Output)
         sct_port struct   % Fields sv_input, sv_output, sv_algebraic, cm_Y, tab_bus.

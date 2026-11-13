@@ -125,7 +125,7 @@ classdef Bus < PowerSystemModel
         varargout = get_opf_condition(obj, opt)
     end
     methods(Access=protected)
-        sct_port = get_linear_port(obj, s_port)
+        sct_port = get_linear_port(obj)
         sct_page = gui_content(obj)
     end
 

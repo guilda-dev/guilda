@@ -1,14 +1,14 @@
 % F7 近似線形化 (get_sys / SolverLIN / ResultLIN / get_variable_map / get_hessian)
 %
 % 平衡点 (または指定した点) まわりの線形モデルを求める。
-%   res = net.get_sys("Method", ..., "Point", 点);   % ResultLIN (どの層も同じ get_sys)
+%   res = net.get_sys(点, "Method", ...);   % ResultLIN (どの層も同じ get_sys)
 %   sys = res.get_ss("Kron" | "DAE");               % ss (Format="struct" で構造体)
 %   res = net.get_sys("Output", ["V","I","y"], "Input", 入力名);   % 入出力の選択 (既定は不変)
 %   tab = net.get_variable_map();                 % 変数の順 (res.rm_Axx などの行と列)
 % モデルは記述子形式 (E dx = A x + B u)。ResultLIN の A, B, C, D, E と名前、構造体、ss のどれでも同じ。
 % 2 方式の有限固有値が一致すること、IEEE14 の平衡点が安定であること、v3 の行列と同じであること、
 % 接続器に置き換える前の線形モデル (基準値) と一致すること、
-% Point (平衡点 / ベクトル / {シミュレーション結果, 時刻}) と Hessian の契約を確認する。
+% 点 (平衡点 / ベクトル / {シミュレーション結果, 時刻}) と Hessian の契約を確認する。
 %
 % 実行: runtests("DebugScript.test_F7_linearization")  または  DebugScript.run_all("Features","F7")
 
@@ -103,8 +103,8 @@ assert(max(real(e)) < 1e-6, "不安定な固有値がある: " + max(real(e)))
 assert(sum(abs(e) < 1e-6) <= 1)
 
 
-%% Bus without an I-to-V form keeps its inputs
-% B007 は P=Q=0 の負荷で I2V 形式がない。Kron はネットワークと一緒に電圧を消去し、入力は残す (旧 Task9)
+%% Kron keeps the inputs of a zero-power load bus
+% B007 は P=Q=0 の負荷。Kron はネットワークと一緒に電圧を消去し、入力は残す (旧 Task9)
 res = net.get_sys();
 sys_k = res.get_ss("Kron");
 sv_u = res.tab_variable.Label(res.tab_variable.Kind == "u" & res.tab_variable.Bus == "B007");
@@ -151,45 +151,16 @@ assert(size(n9.get_sys("Method","Kron").A, 1) == n_x9)
 assert(same_eigs(e_kron, eig_finite(n9.get_sys("Method","DAE")), 1e-6))
 
 
-%% I2V port stops when D is singular
-% I2V は V2I の D の逆行列を使うので、D が特異なら NaN を返さずにエラーで止まる
-% 機器の無い母線 (build_9bus の B004)
+%% Bus models with a zero D
+% 機器の無い母線 (build_9bus の B004) と P=Q=0 の負荷 (IEEE14 の B007) も V2I のモデルを返し、網の線形化も動く
 n9 = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() n9.initialize);
-try
-    n9.a_Bus{4}.get_sys("port","I2V");
-    error("DebugScript:NoError", "機器の無い母線の I2V がエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerSystemModel:NoI2V", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, n9.a_Bus{4}.s_tag) && contains(ME.message, "V2I"))
-end
-% P=Q=0 の load-power (IEEE14 の B007): 母線と機器のどちらも止まる
 n14 = new_net();
 DebugScript.helper.quiet(@() n14.initialize);
 bus = n14.a_Bus{7};
 assert(numel(bus.a_Component) == 1 && norm(bus.get_sys().D(1:2,1:2)) == 0)
-try
-    bus.get_sys("port","I2V");
-    error("DebugScript:NoError", "P=Q=0 の負荷の母線の I2V がエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerSystemModel:NoI2V", DebugScript.helper.msg_id(ME))
-end
-try
-    bus.a_Component{1}.get_sys("port","I2V");
-    error("DebugScript:NoError", "P=Q=0 の負荷の I2V がエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerSystemModel:NoI2V", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, bus.a_Component{1}.s_tag))
-end
-% V2I は従来どおり使え、網の線形化もこれらの母線を含む系統で動く
 assert(isa(n9.a_Bus{4}.get_sys(), "ResultLIN") && isa(n9.a_Bus{4}.get_sys(Format="ss"), "ss"))
 assert(same_eigs(eig_finite(n14.get_sys("Method","DAE")), eig_finite(n14.get_sys("Method","Kron")), 1e-6))
-% D が正則なら I2V の D は V2I の D の逆行列
-for obj = {n14.a_Bus{1}, n14.a_Bus{1}.a_Component{1}}
-    D_V = obj{1}.get_sys().D(1:2,1:2);
-    D_I = obj{1}.get_sys("port","I2V").D(1:2,1:2);
-    assert(all(isfinite(D_I(:))) && norm(D_I*D_V - eye(2)) < 1e-10)
-end
 
 
 %% With local controllers
@@ -221,17 +192,58 @@ assert(all(contains(sv_K(1:n_gc), net.a_GlobalController{1}.s_tag)), strjoin(sv_
 assert(isequal(sv_D(1:n_gc), sv_K(1:n_gc)))
 
 
-%% SolverLIN constructor of v3 names the remedy
-% v3 の SolverLIN(net, NonUnit, ...) は削除: 解法は既定値だけを持つ (net.solver_LIN)
-try
-    SolverLIN(net, [], "Method", "Kron");
-    error("DebugScript:NoError", "SolverLIN(net, ...) がエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "net.get_sys"))
-end
+%% SolverLIN takes no arguments
+% v3 の SolverLIN(net, NonUnit, ...) は削除: 引数は MATLAB の引数の数のエラー
+assert(error_id(@() SolverLIN(net)) == "MATLAB:TooManyInputs", error_id(@() SolverLIN(net)))
 assert(isa(SolverLIN(), "SolverLIN"))
 assert(isa(net.solver_LIN, "SolverLIN"))
+
+
+%% Variable maps of the controllers and the Equilibrium column
+% 制御器の変数表は親の表の行 (x, 全 V / 母線の V, uc, yc) と同じ列・ラベル。Equilibrium は線形化の平衡点
+net = network.IEEE9bus();
+gen = net.a_Bus{1}.a_Component{1};
+avr = gen.add_local_controller("avr-ST1");
+pss = gen.add_local_controller("pss-PSS1");
+agc = net.add_global_controller("agc-PI", {gen, net.a_Bus{2}.a_Component{1}}, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
+assert(all(isnan(agc.get_variable_map().Equilibrium)) && all(isnan(avr.get_variable_map().Equilibrium)))
+assert(all(isnan(net.get_variable_map().Equilibrium)))   % 初期化前は列全体が NaN
+DebugScript.helper.quiet(@() net.initialize);
+tab_net = net.get_variable_map();
+assert(all(isfinite(tab_net.Equilibrium)))
+assert(isequal(tab_net.Equilibrium(tab_net.Kind == "x"), net.rv_Xequilibrium))
+assert(isequal(tab_net.Equilibrium(tab_net.Kind == "Vre") + 1j*tab_net.Equilibrium(tab_net.Kind == "Vim"), net.cv_Vequilibrium))
+c_con = {avr, pss, agc};
+c_parent = {gen.get_variable_map(), gen.get_variable_map(), tab_net};
+for k = 1:numel(c_con)
+    con = c_con{k};
+    tab = con.get_variable_map();
+    tp  = c_parent{k};
+    s   = string(con.s_tag);
+    iv  = [find(tp.Owner == s & tp.Kind == "x"); find(tp.Kind == "Vre" | tp.Kind == "Vim"); ...
+           find(tp.Owner == s & tp.Kind == "uc"); find(tp.Owner == s & tp.Kind == "yc")];
+    tq  = tp(iv,:);
+    tq.Index = (1:height(tq))';
+    assert(isequal(tab, tq), "%s: 親の表の行と違う", s)
+    res = con.get_sys();
+    assert(isequal(res.rv_point, tab.Equilibrium(tab.Role == "variable")) && isequal(res.tab_variable, tab(tab.Role == "variable",:)))
+    assert(isequal(con.get_sys(tab.Equilibrium(tab.Role == "variable")).A, res.A))
+end
+% 機器・母線・網の Equilibrium の先頭行は get_sys の平衡点
+for o = {gen, net.a_Bus{1}, net}
+    tab = o{1}.get_variable_map();
+    res = o{1}.get_sys();
+    assert(isequal(res.rv_point, tab.Equilibrium(1:numel(res.rv_point))))
+end
+% 出力の Equilibrium は出力関数の平衡点での値
+tab = gen.get_variable_map();
+V = [real(gen.c_Vequilibrium); imag(gen.c_Vequilibrium)];
+assert(isequal(tab.Equilibrium(tab.Kind == "y"), reshape(gen.f_Y(0, gen.rv_Xequilibrium, V), [], 1)))
+assert(isequal(tab.Equilibrium(tab.Kind == "yc" & tab.Owner == string(avr.s_tag)), ...
+       reshape(avr.f_Y(0, avr.rv_Xequilibrium, V, avr.rv_Uequilibrium), [], 1)))
+% 内部の rows 形式は Equilibrium を持たない (中身は変わらない)
+c_rows = net.get_variable_map("rows");
+assert(iscell(c_rows) && all(cellfun(@(m) size(m,2), c_rows) == 5))
 
 
 %% Analytic jacobians match numerical differentiation
@@ -365,9 +377,6 @@ sb  = bus.get_sys();
 assert(isequal(string(sb.InputName),  sv_in))
 assert(isequal(string(sb.OutputName), [tg(bus, ["Ire";"Iim"]); sv_out(3:end)]))
 assert(isequal(string(sb.StateName), sv_x) && norm(sb.C - sc.C, 1) == 0 && norm(sb.D - sc.D, 1) == 0)
-sbI = bus.get_sys("Port", "I2V");
-assert(isequal(string(sbI.InputName),  [tg(bus, ["Ire";"Iim"]); sv_in(3:end)]))
-assert(isequal(string(sbI.OutputName), [sv_V; sv_out(3:end)]))
 
 % 制御器の無い機器も出力に状態を含めない
 c3 = net.a_Bus{3}.a_Component{1}.get_sys();
@@ -391,7 +400,7 @@ gen = net.a_Bus{1}.a_Component{1};
 avr = gen.add_local_controller("avr-ST1");
 pss = gen.add_local_controller("pss-PSS1");
 DebugScript.helper.quiet(@() net.initialize);
-c_sys = {avr.get_sys(Format="ss"), pss.get_sys(Format="ss"), gen.get_sys(Format="ss"), gen.get_sys("Port","I2V",Format="ss"), ...
+c_sys = {avr.get_sys(Format="ss"), pss.get_sys(Format="ss"), gen.get_sys(Format="ss"), ...
          net.a_Bus{3}.a_Component{1}.get_sys(Format="ss"), net.a_Bus{1}.get_sys(Format="ss")};
 for k = 1:numel(c_sys)
     s = c_sys{k};
@@ -426,17 +435,18 @@ for s_arg = ["tag","Controllers","full","con","rec","controllerPorts"]
     end
 end
 assert(~ismember("get_sys_alone", methods(gen)) && ~ismember("get_sys_alone", methods(avr)))
-% Port は機器と母線だけ。Method は網の縮約で、ほかの層では効かない
-assert(error_id(@() avr.get_sys(Port="V2I")) == "GUILDA:PowerSystemModel:PortNotApplicable")
-assert(error_id(@() net.get_sys(Port="V2I")) == "GUILDA:PowerSystemModel:PortNotApplicable")
+% Port はどの層のオプションでもない (機器と母線は V2I だけ)。Method は網の縮約で、ほかの層では効かない
+for k = 1:numel(c_obj)
+    assert(startsWith(error_id(@() c_obj{k}.get_sys("Port", "V2I")), "MATLAB:"), class(c_obj{k}))
+end
 assert(isequal(gen.get_sys(Method="DAE").A, gen.get_sys().A))
 % 枝には線形モデルがない
 assert(error_id(@() net.a_Branch{1}.get_sys()) == "GUILDA:PowerSystemModel:NoLinearModel")
 
 % どの層も出力は [sys, flag, output] で、output.s_layer は層の種類
-c_call = {@() gen.get_sys(), @() gen.get_sys("Port","I2V"), @() net.a_Bus{1}.get_sys(), ...
-          @() net.a_Bus{1}.get_sys("Port","I2V"), @() avr.get_sys(), @() agc.get_sys(), @() net.get_sys()};
-sv_layer = ["Component","Component","Bus","Bus","LocalController","GlobalController","PowerNetwork"];
+c_call = {@() gen.get_sys(), @() net.a_Bus{1}.get_sys(), ...
+          @() avr.get_sys(), @() agc.get_sys(), @() net.get_sys()};
+sv_layer = ["Component","Bus","LocalController","GlobalController","PowerNetwork"];
 for k = 1:numel(c_call)
     [s, flag, output] = c_call{k}();
     assert(isa(s, "ResultLIN") && flag && output.s_layer == sv_layer(k) && output.result == s, "call %d", k)
@@ -489,15 +499,6 @@ res = gen.get_sys();
 assert(isa(res, "ResultLIN") && res.output.l_equilibrium)
 assert(isequal(res.tab_variable, tab(1:height(res.tab_variable),:)) && isequal(res.rv_point, SolverLIN.point_vector(gen, [])))
 assert(isequal(res.rm_Axx, res.A) && isequal(res.rm_Axv, res.B(:,1:2)) && isequal(res.rm_Bx, res.B(:,2+(1:nu))))
-
-% v3 の位置引数の点は 1 回だけ警告して Point にする (制御器も与えた点で線形化する)
-clear Deprecated
-lastwarn("");
-r1 = gen.get_sys(x, V, u);
-assert(string(DebugScript.helper.msg_id()) == "GUILDA:Deprecated:GetSysPositionalPoint")
-assert(isequal(r1.rv_point, res.rv_point) && norm(r1.A - res.A, 1) < 1e-10 * norm(res.A, 1) && ~r1.output.l_equilibrium)
-assert(error_id(@() gen.get_sys(x, V, u, Point=res.rv_point)) == "GUILDA:PowerSystemModel:PointAndPositional")
-assert(error_id(@() net.a_Bus{1}.get_sys(x)) == "GUILDA:v3_get_sys_point:Positional")
 
 
 %% Linearization matches v3 get_sys matrices for every algorithm
@@ -559,7 +560,7 @@ net.add_global_controller("agc-PI", ["B001SG1", "B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
 [tab_all, c_idxAll, c_idxGCAll, tab_c] = net.get_variable_map();
 % 表は変数 (x, Vre, Vim, u, uc) の後に信号 (y, yc)。線形化の変数は先頭の x, Vre, Vim, u
-assert(isequal(string(tab_all.Properties.VariableNames), ["Index","Kind","Role","Owner","Name","Label","Bus"]))
+assert(isequal(string(tab_all.Properties.VariableNames), ["Index","Kind","Role","Owner","Name","Label","Bus","Equilibrium"]))
 sv_kind = ["x","Vre","Vim","u","uc","y","yc"];
 [~, iv_k] = ismember(tab_all.Kind, sv_kind);
 iv_k(iv_k == 3) = 2;                       % Vre, Vim は母線ごとに交互
@@ -624,7 +625,7 @@ net.a_Bus{2}.a_Component{1}.add_local_controller("avr-DC1", parameter=struct(kap
 net.add_global_controller("agc-PI", ["B001SG1", "B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
 res0 = net.get_sys();
-res1 = net.get_sys("Point", res0.rv_point);
+res1 = net.get_sys(res0.rv_point);
 assert(~res1.output.l_equilibrium && isequal(res1.rv_point, res0.rv_point))
 for str = ["rm_Axx","rm_Axv","rm_Bx","rm_Avx","rm_Avv","rm_Bv","rm_E"]
     assert(norm(res1.(str) - res0.(str), 1) < 1e-8 * max(1, norm(res0.(str), 1)), str)
@@ -638,7 +639,7 @@ n_lin = sum(ismember(tab.Kind, ["x","Vre","Vim","u"]));   % 線形化の変数�
 tab = tab(1:n_lin,:);
 c_idxBus = cellfun(@(iv) iv(iv <= n_lin), c_idxBus, 'UniformOutput', false);
 bus = net.a_Bus{1};
-s0 = bus.get_sys();  s1 = bus.get_sys("Point", res0.rv_point(c_idxBus{1}));
+s0 = bus.get_sys();  s1 = bus.get_sys(res0.rv_point(c_idxBus{1}));
 assert(norm(s0.A - s1.A, 1) < 1e-8 * norm(s0.A, 1) && isequal(s0.StateName, s1.StateName))
 
 
@@ -680,7 +681,7 @@ assert(same_eigs(e1, eig_finite(netL.get_sys("Method", "DAE")), 1e-6))
 
 % 平衡点の値を Point に与えると既定と同じ (LQR の入力は機器の状態から求め直す)
 res0 = netL.get_sys();
-res1 = netL.get_sys("Point", res0.rv_point);
+res1 = netL.get_sys(res0.rv_point);
 for str = ["rm_Axx","rm_Axv","rm_Bx","rm_Avx","rm_Avv","rm_Bv","rm_E"]
     assert(norm(res1.(str) - res0.(str), 1) < 1e-8 * max(1, norm(res0.(str), 1)), str)
 end
@@ -704,7 +705,7 @@ x(iv_x(1)) = x(iv_x(1)) + 0.2;            % delta
 x(iv_V)    = x(iv_V) * 1.03;
 x(iv_u(1)) = x(iv_u(1)) + 0.1;
 xe = gen.rv_Xequilibrium;
-res1 = net.get_sys("Point", x);
+res1 = net.get_sys(x);
 assert(isequal(gen.rv_Xequilibrium, xe), "モデルが変わった")
 assert(norm(res1.rm_Axx(iv_x,iv_x) - res0.rm_Axx(iv_x,iv_x), 1) > 1e-6, "ずらしても行列が変わらない")
 % 期待値: その点での f_JacobiDx / f_JacobiI
@@ -728,22 +729,22 @@ for j = 2:numel(net.a_Bus{2}.a_Component)
 end
 Y = tools.complex2matrix(net.get_admittance_matrix.Variables);
 assert(norm(res1.rm_Avv(iv_v,iv_v) - (Y(iv_v,iv_v) - Div_sum), 1) < 1e-10)
-% 機器の get_sys(Point=...) も同じ点で評価する
+% 機器の get_sys(...) も同じ点で評価する
 [~, c_idxC] = net.a_Bus{2}.get_variable_map();
 xb = x(c_idxBus{2});
 c_idxC = cellfun(@(iv) iv(iv <= numel(xb)), c_idxC, 'UniformOutput', false);
-sc = gen.get_sys("Point", xb(c_idxC{1}));
+sc = gen.get_sys(xb(c_idxC{1}));
 assert(norm(sc.A - Axx, 1) < 1e-10)
 % Point の長さが違うと、変数の表を案内するエラー
 try
-    net.get_sys("Point", x(1:end-1));
+    net.get_sys(x(1:end-1));
     error("DebugScript:NoError", "長さの違う Point がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointSize", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "get_variable_map"))
 end
 try
-    net.get_sys("Point", "equilibrium");
+    net.get_sys("equilibrium");
     error("DebugScript:NoError", "文字列の Point がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointType", DebugScript.helper.msg_id(ME))
@@ -751,7 +752,7 @@ end
 
 
 %% Point from a simulation result and a time
-% Point={sim, t}: 時刻 t の機器の状態・入力と母線電圧 (ResultODE の値) で線形化する
+% get_sys({sim, t}): 時刻 t の機器の状態・入力と母線電圧 (ResultODE の値) で線形化する
 net = new_net();
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
@@ -772,33 +773,33 @@ for i = 1:numel(net.a_Bus)
         x(tab.Owner == c.s_tag & tab.Bus == bus.s_tag & tab.Kind == "u") = r.Bus(i).Component(j).U{k,:};
     end
 end
-res = net.get_sys("Point", {sim, t});
+res = net.get_sys({sim, t});
 assert(norm(res.rv_point - x) < 1e-12)
-res_x = net.get_sys("Point", x);
+res_x = net.get_sys(x);
 assert(isequal(res.rm_Axx, res_x.rm_Axx) && isequal(res.rm_Avv, res_x.rm_Avv))
 assert(norm(res.rv_point - net.get_sys().rv_point) > 1e-4, "t が平衡点のまま")
 % 出力時刻の間は線形補間
 tm = (r.t(k) + r.t(k+1)) / 2;
-res_m = net.get_sys("Point", {sim, tm});
-assert(norm(res_m.rv_point - (net.get_sys("Point",{sim,r.t(k)}).rv_point + net.get_sys("Point",{sim,r.t(k+1)}).rv_point)/2) < 1e-12)
+res_m = net.get_sys({sim, tm});
+assert(norm(res_m.rv_point - (net.get_sys({sim,r.t(k)}).rv_point + net.get_sys({sim,r.t(k+1)}).rv_point)/2) < 1e-12)
 % 機器・母線でも同じ形
 gen = net.a_Bus{1}.a_Component{1};
-sc  = gen.get_sys("Point", {sim, t});
+sc  = gen.get_sys({sim, t});
 iv_x = tab.Owner == gen.s_tag & tab.Kind == "x";
 assert(norm(sc.A - res.rm_Axx(iv_x,iv_x), 1) < 1e-10)
-sb  = net.a_Bus{1}.get_sys("Point", {sim, t});
+sb  = net.a_Bus{1}.get_sys({sim, t});
 assert(norm(sb.A - sc.A, 1) == 0)
 % 範囲外の時刻
 try
-    net.get_sys("Point", {sim, 10});
+    net.get_sys({sim, 10});
     error("DebugScript:NoError", "範囲外の時刻がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:PointTime", DebugScript.helper.msg_id(ME))
 end
-% Point={sim, t, Side}: 第 3 要素は sim.get_point の Side
-assert(isequal(net.get_sys("Point", {sim, t, "before"}).rv_point, res.rv_point))
+% get_sys({sim, t, Side}): 第 3 要素は sim.get_point の Side
+assert(isequal(net.get_sys({sim, t, "before"}).rv_point, res.rv_point))
 try
-    net.get_sys("Point", {sim, t, "middle"});
+    net.get_sys({sim, t, "middle"});
     error("DebugScript:NoError", "知らない Side がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointType", DebugScript.helper.msg_id(ME))
@@ -816,7 +817,7 @@ net.add_global_controller("agc-PI", ["B001SG1", "B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
 sim  = net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,1]);
 res0 = net.get_sys();
-res1 = net.get_sys("Point", {sim, 0.5});
+res1 = net.get_sys({sim, 0.5});
 tab  = res0.tab_variable;
 assert(~res1.output.l_equilibrium && height(res1.tab_variable) == height(tab))
 avr1 = net.a_Bus{1}.a_Component{1}.a_LocalController{1};
@@ -843,7 +844,7 @@ ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBu
 sim = net.simulate(ev.s_tag, Time=[0,1.5]);
 t   = 0.9;
 res0 = net.get_sys();
-res  = net.get_sys("Point", {sim, t});
+res  = net.get_sys({sim, t});
 [tab, c_idxBus, c_idxGC] = net.get_variable_map();
 n_lin = sum(ismember(tab.Kind, ["x","Vre","Vim","u"]));   % 線形化の変数は表の先頭の行
 tab = tab(1:n_lin,:);
@@ -872,17 +873,17 @@ assert(norm(res.rm_Axv(iv_x,iv_v) - Bxv, 1) < 1e-10)
 assert(norm(res.rm_Bx(iv_x,iv_uu) - Bxu, 1) < 1e-10)
 assert(norm(res.rm_Avx(iv_v,iv_x) + Cix, 1) < 1e-10)
 assert(norm(res.rm_Bv(iv_v,iv_uu) + Diu, 1) < 1e-10)
-% AVR + PSS 付きの発電機: 機器の get_sys(Point={sim, t}) と同じブロック (制御器の状態を含む)
+% AVR + PSS 付きの発電機: 機器の get_sys({sim, t}) と同じブロック (制御器の状態を含む)
 gen1 = net.a_Bus{1}.a_Component{1};
 [~, c_idxC] = net.a_Bus{1}.get_variable_map();
 iv_b = c_idxBus{1};
 c_idxC = cellfun(@(iv) iv(iv <= numel(iv_b)), c_idxC, 'UniformOutput', false);
 iv_c = iv_b(c_idxC{1});
 iv_cx = iv_c(tab.Kind(iv_c) == "x");
-sc = gen1.get_sys("Point", {sim, t});
+sc = gen1.get_sys({sim, t});
 assert(norm(sc.A - res.rm_Axx(iv_cx,iv_cx), 1) < 1e-10)
 assert(norm(sc.A - res0.rm_Axx(iv_cx,iv_cx), 1) > 1e-6, "制御器付きの機器の行列が平衡点のまま")
-assert(isequal(gen1.get_sys("Point", x(iv_c)).A, sc.A))
+assert(isequal(gen1.get_sys(x(iv_c)).A, sc.A))
 % グローバル制御器の状態は Point の値のまま
 assert(isequal(res.rv_point(c_idxGC{1}), x(c_idxGC{1})))
 
@@ -974,7 +975,7 @@ x = n14.get_sys().rv_point;
 x(5) = NaN;
 x(7) = Inf;
 try
-    n14.get_sys("Point", x);
+    n14.get_sys(x);
     error("DebugScript:NoError", "NaN の Point がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
@@ -982,7 +983,7 @@ catch ME
     assert(~contains(ME.message, tab.Label(6) + ","), ME.message)
 end
 try
-    n14.get_sys("Point", nan(numel(x),1));
+    n14.get_sys(nan(numel(x),1));
     error("DebugScript:NoError", "NaN の Point がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
@@ -991,13 +992,13 @@ end
 % トリップ中の {sim, t}: 解列した機器の状態が NaN
 sim = n14.simulate(DebugScript.helper.scenario("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "B002SG1").s_tag, Time=[0,2]);
 try
-    n14.get_sys("Point", {sim, 1.2});
+    n14.get_sys({sim, 1.2});
     error("DebugScript:NoError", "トリップ中の Point がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "B002SG1") && contains(ME.message, "trip"), ME.message)
 end
-assert(n14.get_sys("Point", {sim, 0.5}).l_success)
+assert(n14.get_sys({sim, 0.5}).l_success)
 
 
 %% Point around a trip
@@ -1009,7 +1010,7 @@ res0 = n14.get_sys();
 tab  = res0.tab_variable;
 for c_point = {{sim,1}, {sim,1.2}, {sim,1.5,"before"}}
     try
-        n14.get_sys("Point", c_point{1});
+        n14.get_sys(c_point{1});
         error("DebugScript:NoError", "トリップ中の Point がエラーにならない")
     catch ME
         assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
@@ -1017,7 +1018,7 @@ for c_point = {{sim,1}, {sim,1.2}, {sim,1.5,"before"}}
     end
 end
 for c_point = {{sim,1,"before"}, {sim,1.5}, {sim,1.8}}
-    [res, flag, output] = n14.get_sys("Point", c_point{1});
+    [res, flag, output] = n14.get_sys(c_point{1});
     assert(flag && all(isfinite(res.rv_point)))
     assert(isequal(res.tab_variable, tab))
     for alg = ["Kron","DAE"]
@@ -1035,8 +1036,8 @@ n_lin = numel(x);
 c_idxBus = cellfun(@(iv) iv(iv <= n_lin), c_idxBus, 'UniformOutput', false);
 c_idxC = cellfun(@(iv) iv(iv <= numel(c_idxBus{3})), c_idxC, 'UniformOutput', false);
 iv = c_idxBus{3}(c_idxC{1});
-sc = gen3.get_sys("Point", {sim, 1.2});
-assert(all(isfinite(sc.A), "all") && isequal(sc.A, gen3.get_sys("Point", x(iv)).A))
+sc = gen3.get_sys({sim, 1.2});
+assert(all(isfinite(sc.A), "all") && isequal(sc.A, gen3.get_sys(x(iv)).A))
 
 
 %% Point inside a fault is reported and keeps the model network
@@ -1045,7 +1046,7 @@ n9 = network.IEEE9bus();
 DebugScript.helper.quiet(@() n9.initialize);
 ev  = DebugScript.helper.scenario("short", n9, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
 sim = n9.simulate(ev.s_tag, Time=[0,1], Progress="none", TimeLimit=120);
-str = evalc('[res, flag, output] = n9.get_sys("Point", {sim, 0.52});');
+str = evalc('[res, flag, output] = n9.get_sys({sim, 0.52});');
 assert(contains(str, "INFO") && contains(str, "B008"), str)
 assert(flag && output.s_issue == "" && isequal(output.sv_faultBus, "B008"))
 assert(contains(output.message, "B008"), output.message)
@@ -1055,10 +1056,10 @@ e_k = eig_finite(res.get_ss("Kron"));
 assert(max(real(e_k)) > 1, "故障中の点の固有値が変わった")
 assert(same_eigs(e_k, eig_finite(DebugScript.helper.quiet(@() res.get_ss("DAE", "Coordinate", "Vre&Vim"))), 1e-6))
 % 故障の前後は故障として扱わない。境界では Side に従う
-[~, ~, out_b] = n9.get_sys("Point", {sim, 0.5, "before"});
-[~, ~, out_a] = n9.get_sys("Point", {sim, 0.5});
+[~, ~, out_b] = n9.get_sys({sim, 0.5, "before"});
+[~, ~, out_a] = n9.get_sys({sim, 0.5});
 assert(isempty(out_b.sv_faultBus) && isequal(out_a.sv_faultBus, "B008"))
-str = evalc('[~, ~, out_p] = n9.get_sys("Point", {sim, 0.8});');
+str = evalc('[~, ~, out_p] = n9.get_sys({sim, 0.8});');
 assert(isempty(out_p.sv_faultBus) && ~contains(str, "INFO") && ~contains(out_p.message, "ground fault"))
 
 
@@ -1067,7 +1068,7 @@ n14 = new_net();
 DebugScript.helper.quiet(@() n14.initialize);
 res0 = n14.get_sys();
 assert(res0.output.l_equilibrium && endsWith(res0.output.message, "at the equilibrium."), res0.output.message)
-[~, ~, output] = n14.get_sys("Point", res0.rv_point);
+[~, ~, output] = n14.get_sys(res0.rv_point);
 assert(~output.l_equilibrium && endsWith(output.message, "at the given point."), output.message)
 sc = n14.a_Bus{1}.a_Component{1}.get_sys();
 assert(contains(sc.output.message, "B001SG1") && endsWith(sc.output.message, "at the equilibrium."), sc.output.message)
@@ -1081,7 +1082,7 @@ tab = n14.get_variable_map();
 x = n14.get_sys().rv_point;
 x(tab.Kind == "Vre" | tab.Kind == "Vim") = 0;
 try
-    n14.get_sys("Point", x);
+    n14.get_sys(x);
     error("DebugScript:NoError", "V=0 の Point がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:JacobianNotFinite", DebugScript.helper.msg_id(ME))

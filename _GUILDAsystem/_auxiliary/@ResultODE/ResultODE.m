@@ -17,13 +17,14 @@ classdef ResultODE < ResultBase
 % (rm_variable, columns = rows of tab_variable): the states of the components with their
 % local controllers, the states of the global controllers, the bus voltages and the inputs
 % of the components. odeResults is a view of it per bus and component, and get_point gives
-% the values at a time, for example for net.get_sys(Point={sim, t}). plot_trajectory draws a
+% the values at a time, for example for net.get_sys({sim, t}). plot_trajectory draws a
 % trajectory of the buses or components. export writes all trajectories as a table (CSV,
 % Excel) or as a MAT-file. judge_out_of_step judges the rotor angles (stable, out of step).
 %
 % - `tab_variable` has one row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"),
-%   Role, Owner, Name, Label and Bus: the leading rows of net.get_variable_map() (its
-%   rows uc, y and yc, the controller inputs and the signals, are not variables here).
+%   Role, Owner, Name, Label, Bus and Equilibrium: the leading rows of
+%   net.get_variable_map() (its rows uc, y and yc, the controller inputs and the signals,
+%   are not variables here).
 % - In `rm_variable` the states of a tripped unit are NaN while it is tripped. The inputs u
 %   are the inputs applied to the components (steady value, outputs of the controllers and
 %   event inputs).
@@ -61,10 +62,10 @@ classdef ResultODE < ResultBase
 
     properties (SetAccess=private) % Result
         rv_t (:,1) double = zeros(0,1)      % [s] Output times, ascending; a phase boundary appears twice (end of one phase, start of the next).
-        tab_variable table = table()        % Variable map at the time of the simulation: its rows are the columns of rm_variable. <@Type> table ((n_x + n_v + n_u) x 7)
+        tab_variable table = table()        % Variable map at the time of the simulation: its rows are the columns of rm_variable. <@Type> table ((n_x + n_v + n_u) x 8)
         rm_variable double = zeros(0,0)     % Trajectory of all variables: row k at rv_t(k), column m the variable tab_variable(m,:). <@Type> double (n_t x (n_x + n_v + n_u))
         rm_I double = zeros(0,0)            % [pu] Currents injected into the buses: Ireal, Iimag of each bus in the order of sv_bus. <@Type> double (n_t x 2 n_bus)
-        tab_output table = table()          % Outputs y and yc of the variable map: its rows are the columns of rm_output; columns as tab_variable. <@Type> table (n_out x 7)
+        tab_output table = table()          % Outputs y and yc of the variable map: its rows are the columns of rm_output; columns as tab_variable. <@Type> table (n_out x 8)
         rm_output double = zeros(0,0)       % Trajectory of the outputs: row k at rv_t(k), column m the output tab_output(m,:); NaN while the unit is tripped. <@Type> double (n_t x n_out)
         sv_bus (:,1) string = strings(0,1)  % Bus tags, in the order of odeResults.Bus.
         c_component (:,1) cell = cell(0,1)  % Component tags of each bus, in the order of odeResults.Bus(i).Component.
