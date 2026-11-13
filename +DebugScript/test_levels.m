@@ -23,6 +23,7 @@ function tab = test_levels()
     "test_F16_csv_io/BuildingTheBuilt_inNetworksDoesNotWarn", "large"
     "test_F16_csv_io/exportNamesTheLocalControllersItDoesNotWrite", "medium"
     "test_F16_csv_io/BusTagsSurviveARoundTrip", "medium"
+    "test_F16_csv_io/ScenariosSurviveARoundTripAndGiveTheSameSimulation", "medium"
     % ---- F19_model_constructor -------------------------------------------------------------------
     "test_F19_model_constructor/Built_inNetworksAndTheBundledCSVDataDoNotWarnAboutQ", "large"
     % ---- F1_model_building -----------------------------------------------------------------------

@@ -6,6 +6,8 @@
 %   add_bus の FullTag は完全なタグを与え、読み込みは母線の改名を記録しない (Issue #95)
 %   未知の列は警告、行番号や ID の誤りはエラーで、ファイル、行、列を示す (Issue #96)
 %   表の誤りでは Network= の系統を変更しない (Issue #96)
+%   シナリオは scenario/<タグ>.json で往復し、同じシミュレーションの結果になる (simulate の再設計 S6)
+%   壊れたシナリオのファイルは系統を変える前に止まり、未知の項目は警告して無視する
 %
 % 実行: runtests("DebugScript.test_F16_csv_io")  または  DebugScript.run_all("Features","F16")
 
@@ -361,6 +363,105 @@ assert(contains(ME.message, "Branch model key"), ME.message)    % tools.mustBeKe
 assert(numel(net.a_Bus) == 3 && numel(net.a_Branch) == 1)
 
 
+%% Scenarios survive a round trip and give the same simulation
+net = DebugScript.helper.build_ieee14();
+DebugScript.helper.quiet(@() net.initialize);
+sc = net.add_scenario("case1", Time=[0, 1], Description="fault, then two branches opened");
+sc.add_fault("B008", [0.10, 0.17]);
+sc.add_open_branch(["EL003"; "EL004"], [0.17, Inf]);
+sc = net.add_scenario("steps", Time=[0, 1]);
+sc.add_offset("B001SG1", "delta", 0.1, 0);
+sc.add_input("B002SG1", ["Pmech"; "Vfield"], [0.05; 0.01], [0.2, 0.5]);
+sc.add_input("B002SG1", "Pmech", [0, 0; 0.5, 1/3], [0.3, 0.9]);
+sc.add_input("B002SG1", ["Pmech"; "Vfield"], [0, 0.1, 0.2; 0.1, 0, 0], [0.5, 0.8], Method="zoh");
+sc.add_trip("B003SG1", [0.4, 0.6]);
+net.add_scenario("empty");
+[s_dir, c] = temp_folder(); %#ok<ASGLU>
+s_path = DebugScript.helper.quiet(@() net.export(fullfile(s_dir, "Net")));
+assert(isequal(sort(string({dir(fullfile(s_path, "scenario", "*.json")).name})), ["case1.json", "empty.json", "steps.json"]))
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path));
+assert(isequal(string(net2.a_Scenario), ["case1"; "empty"; "steps"]), "ファイル名の順")
+for s_tag = string(net.a_Scenario).'
+    sc1 = net.a_Scenario{string(net.a_Scenario) == s_tag};
+    sc2 = net2.a_Scenario{string(net2.a_Scenario) == s_tag};
+    assert(isequaln(sc1.tab_disturbance, sc2.tab_disturbance), s_tag)
+    assert(isequal(sc1.Time, sc2.Time) && sc1.Description == sc2.Description, s_tag)
+    assert(sc2.a_PowerNetwork == net2)
+end
+for s_tag = ["case1", "steps"]
+    r1 = DebugScript.helper.quiet(@() net.simulate(s_tag, Progress="none"));
+    r2 = DebugScript.helper.quiet(@() net2.simulate(s_tag, Progress="none"));
+    assert(isequaln(r1.rv_t, r2.rv_t) && isequaln(r1.rm_variable, r2.rm_variable), s_tag)
+end
+
+
+%% Without scenarios no scenario folder is written, and a folder without one loads
+[s_path, c] = csv_folder(); %#ok<ASGLU>
+assert(~isfolder(fullfile(s_path, "scenario")))
+net = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
+assert(isempty(net.a_Scenario))
+
+
+%% Overwrite replaces the scenario folder
+net = tag_network();
+net.add_scenario("old");
+[s_dir, c] = temp_folder(); %#ok<ASGLU>
+s_path = DebugScript.helper.quiet(@() net.export(fullfile(s_dir, "Net")));
+assert(isfile(fullfile(s_path, "scenario", "old.json")))
+net.remove_scenario("old");
+net.add_scenario("new");
+DebugScript.helper.quiet(@() net.export(s_path, Overwrite=true));
+assert(isequal(string({dir(fullfile(s_path, "scenario", "*.json")).name}), "new.json"))
+
+
+%% A broken scenario file stops before the network changes
+c_bad = {"{not json", "[1, 2]", '{"Format": "other", "version": 1}', ...
+         '{"Format": "GUILDAscenario", "version": 2}', '{"Format": "GUILDAscenario"}', ...
+         '{"Format": "GUILDAscenario", "version": 1, "Time": [0, 1, 2]}', ...
+         '{"Format": "GUILDAscenario", "version": 1, "Disturbances": [{"TimeSpan": [0, 1]}]}', ...
+         '{"Format": "GUILDAscenario", "version": 1, "Disturbances": [1, 2]}'};
+for k = 1:numel(c_bad)
+    [s_path, c] = csv_folder(); %#ok<ASGLU>
+    mkdir(fullfile(s_path, "scenario"));
+    writelines(c_bad{k}, fullfile(s_path, "scenario", "bad.json"));
+    net = PowerNetwork("Target");
+    ME = import_error(s_path, net);
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:ScenarioJson", c_bad{k})
+    assert(contains(ME.message, "bad.json"), ME.message)
+    assert(isempty(net.a_Bus) && isempty(net.a_Scenario), "系統を変えない: " + c_bad{k})
+end
+
+
+%% Unknown scenario fields warn and are ignored
+[s_path, c] = csv_folder(); %#ok<ASGLU>
+mkdir(fullfile(s_path, "scenario"));
+writelines(['{"Format": "GUILDAscenario", "version": 1, "Time": [0, 2], "Judge": "Scenario.out_of_step", ' ...
+           '"Disturbances": [{"Tag": "f", "TimeSpan": [0.1, 0.2], "FaultBus": ["B001"], "Note": "x"}]}'], ...
+           fullfile(s_path, "scenario", "old.json"));
+lastwarn("");
+s_log = evalc("net = PowerNetwork.import(s_path, Initialize=false);");
+assert(contains(s_log, "Judge") && contains(s_log, "Disturbances(1).Note"), s_log)
+[s_msg, id] = lastwarn();
+assert(DebugScript.helper.msg_id(s_msg, id) == "GUILDA:PowerNetwork:UnknownScenarioField")
+sc = net.a_Scenario{1};
+assert(sc.s_tag == "old" && isequal(sc.Time, [0, 2]) && sc.tab_disturbance.FaultBus{1} == "B001")
+
+
+%% A disturbance whose tag is not in the network stops after the network is built
+[s_path, c] = csv_folder(); %#ok<ASGLU>
+mkdir(fullfile(s_path, "scenario"));
+writelines('{"Format": "GUILDAscenario", "version": 1, "Disturbances": [{"Tag": "f", "TimeSpan": [0.1, 0.2], "FaultBus": ["B099"]}]}', ...
+           fullfile(s_path, "scenario", "bad.json"));
+ME = import_error(s_path, PowerNetwork("Target"));
+assert(contains(ME.message, "B099"), ME.message)
+
+
+%% PowerNetwork.import works in a function with an import statement
+[s_path, c] = csv_folder(); %#ok<ASGLU>
+net = import_after_statement(s_path);
+assert(isa(net, "PowerNetwork") && numel(net.a_Bus) == 3)
+
+
 function [s_path, c] = csv_folder()
     % Exported folder of tag_network
     [s_dir, c] = temp_folder();
@@ -428,4 +529,11 @@ function [s_dir, c] = temp_folder()
     s_dir = tempname;
     mkdir(s_dir);
     c = onCleanup(@() rmdir(s_dir, "s"));
+end
+
+function net = import_after_statement(s_path)
+    % The import statement (built-in) and the static method PowerNetwork.import together
+    import tools.*
+    assert(isequal(vcellfun(@(x) x, {1; 2}), [1; 2]))
+    net = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
 end

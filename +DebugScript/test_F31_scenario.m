@@ -6,8 +6,8 @@
 %   result  = net.simulate("case1");             % タグで選び、シナリオの Time で実行
 %
 % 複数の外乱を持つシナリオ、系統の子としての作成・改名・削除・複製、タグの検査、入力の時系列を確認する。
-% CSV の入出力は S6 (系統のファイルの scenario/*.json) で、判定は S3 (ResultODE.judge_out_of_step) で
-% 新しいテストに置き換える。
+% シナリオのファイル scenario/<タグ>.json (net.export / PowerNetwork.import) の内容と往復も確かめる
+% (系統のフォルダ全体の往復は F16)。判定は F38 (ResultODE.judge_out_of_step)。
 %
 % 実行: runtests("DebugScript.test_F31_scenario")  または  DebugScript.run_all("Features","F31")
 
@@ -253,6 +253,48 @@ rb = DebugScript.helper.quiet(@() net.simulate(b.s_tag));
 assert(isequaln(ra.rm_variable, rb.rm_variable))
 
 
+%% Scenario files: the content, the time series and its method round trip
+net = DebugScript.helper.build_ieee14();
+sc = net.add_scenario("series", Time=[0, 5], Description="inputs");
+sc.add_input("B002SG1", "Pmech", [0, 0; 1, 0.02; 2, 0.01], [1, 4], Method="spline");
+sc.add_input("B002SG1", ["Pmech"; "Vfield"], [0, 0.1, 0.2], [1, 2], Method="zoh");
+sc.add_input("B002SG1", "Vfield", 0.01, [2, 3]);
+sc.add_offset("B001SG1", ["delta"; "omega"], [0.1; 1e-3], 0.5);
+[s_dir, c] = temp_folder(); %#ok<ASGLU>
+s_path = DebugScript.helper.quiet(@() net.export(fullfile(s_dir, "Net")));
+s_file = fullfile(s_path, "scenario", "series.json");
+sct = jsondecode(fileread(s_file));
+assert(sct.Format == "GUILDAscenario" && sct.version == 1 && ~isfield(sct, "Tag"), "タグはファイル名だけ")
+assert(isequal(sct.Time(:).', [0, 5]) && sct.Description == "inputs")
+e = sct.Disturbances{1};
+assert(isequal(e.InputValue.Time(:).', [0, 1, 2]) && e.InputMethod == "spline")
+assert(~isfield(e, "FaultBus") && ~isfield(e, "OffsetUnit"), "空の項目は書かない")
+assert(~isfield(sct.Disturbances{3}, "InputMethod") && sct.Disturbances{3}.InputValue == 0.01)
+assert(sct.Disturbances{4}.TimeSpan == 0.5, "オフセットの時刻は 1 つ")
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
+assert(isequaln(net2.a_Scenario{1}.tab_disturbance, sc.tab_disturbance))
+assert(isequal(net2.a_Scenario{1}.tab_disturbance.InputMethod, ["spline"; "zoh"; ""; ""]))
+% A scenario holds no function handles: struct and the table are plain data
+c_val = struct2cell(DebugScript.helper.quiet(@() struct(sc)));
+assert(~any(cellfun(@(v) isa(v, "function_handle"), c_val)))
+assert(~any(cellfun(@(v) isa(v, "function_handle"), sc.tab_disturbance.InputValue)))
+
+
+%% Scenario files: a series without InputMethod reads as "foh"
+net = DebugScript.helper.build_ieee14();
+[s_dir, c] = temp_folder(); %#ok<ASGLU>
+s_path = DebugScript.helper.quiet(@() net.export(fullfile(s_dir, "Net")));
+mkdir(fullfile(s_path, "scenario"));
+writelines(['{"Format": "GUILDAscenario", "version": 1, "Disturbances": [' ...
+            '{"Tag": "ramp", "TimeSpan": [1, 3], "InputUnit": "B002SG1", "InputName": ["Pmech"], ' ...
+            '"InputValue": {"Time": [0, 2], "Value": [[0], [0.02]]}}]}'], ...
+           fullfile(s_path, "scenario", "hand.json"));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
+tab = net2.a_Scenario{1}.tab_disturbance;
+assert(tab.InputMethod == "foh" && isequal(tab.InputValue{1}, [0, 0; 2, 0.02]))
+assert(isequal(net2.a_Scenario{1}.Time, [0, 10]), "Time を省くと既定")
+
+
 function id = error_id(f)
     id = "";
     try
@@ -282,4 +324,10 @@ end
 function net = new_ieee14()
     net = DebugScript.helper.build_ieee14();
     DebugScript.helper.quiet(@() net.initialize);
+end
+
+function [s_dir, c] = temp_folder()
+    s_dir = tempname;
+    mkdir(s_dir);
+    c = onCleanup(@() rmdir(s_dir, "s"));
 end

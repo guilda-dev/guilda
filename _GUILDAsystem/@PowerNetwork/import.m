@@ -1,13 +1,14 @@
 function net = import(path, opt)
-% Build a network from a CSV model folder.
+% Build a network and its scenarios from a model folder.
 %
-% Builds a PowerNetwork from a CSV model folder (the layout written by net.export):
+% Builds a PowerNetwork from a model folder (the layout written by net.export):
 %   <path>/network/parameter.csv        Hz, baseMVA of the network (optional)
 %   <path>/bus/parameter.csv            one row per bus (V, Varg required)
 %   <path>/branch/parameter.csv         one row per branch (Type, From, To required)
 %   <path>/component/<key>/main.csv     one row per component of type <key> (Bus, P, Q required)
 %   <path>/component/<key>/dynamics.csv parameters referenced by the column ParameterID
 %   <path>/component/<key>/opf.csv      OPF settings referenced by the column OpfID
+%   <path>/scenario/<tag>.json          one scenario per file (optional)
 % Buses are numbered by their row; From, To and Bus refer to these numbers.
 % A missing network/parameter.csv (folders written before v4) or a missing or NaN value
 % keeps the defaults Hz = GUILDA.config("Model","Hz") and baseMVA = 100.
@@ -19,12 +20,17 @@ function net = import(path, opt)
 % With Network=obj the buses are added to the existing network obj instead of a new
 % one; this is how the network classes such as network.IEEE14bus load their folder in
 % their constructor.
-% Every table is read and checked before the network changes: a wrong file, column or row
-% number leaves obj unchanged. An unknown column gives the warning
+% The scenarios are added after the components, in the order of the file names, by
+% net.add_scenario(<file name>) with the Time, Description and disturbances of the file
+% (see net.export); a tag in use gets a number suffix. A file that is not a scenario file
+% stops with GUILDA:PowerNetwork:ScenarioJson; unknown fields give the warning
+% GUILDA:PowerNetwork:UnknownScenarioField and are ignored.
+% Every table and scenario file is read and checked before the network changes: a wrong
+% file, column or row number leaves obj unchanged. An unknown column gives the warning
 % GUILDA:import:UnknownColumn and is ignored (a memo column does not stop the import);
 % the columns of dynamics.csv depend on the component class and are not checked. A later
-% failure, such as an unknown model key or a failing power flow, can leave obj partly
-% built, so build it again after an error.
+% failure, such as an unknown model key, a disturbance whose tag is not in the network or
+% a failing power flow, can leave obj partly built, so build it again after an error.
 %
 % <@Examples>
 % ```matlab
@@ -104,6 +110,9 @@ function net = import(path, opt)
                       "OPFcost_fP", "OPFcost_fQ", ...
                       "OPFcost_startup", "OPFcost_shutdown"];
     c_Comp = read_components(path, n_Bus, sr_CompOPF);
+
+    % Scenarios
+    sa_scenario = read_scenarios(path);
 
 % Network (Hz, baseMVA)
     tp = net.tab_parameter;
@@ -202,6 +211,12 @@ function net = import(path, opt)
             bus = a_Bus{i_slack};
             evalc("bus.l_isSlack = true;");     % without the SetSlack message
         end
+    end
+
+% Add scenarios (their disturbances are checked against the components)
+    for i_sc = 1:numel(sa_scenario)
+        sc = net.add_scenario(sa_scenario(i_sc).s_tag);
+        sc.add_from_json_struct(sa_scenario(i_sc).sct);
     end
 
     if opt.Initialize
