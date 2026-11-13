@@ -39,8 +39,19 @@ function [sct_solution, flag, output] = solve(obj, tab_bus, tab_component, tab_b
         sct_build.Cost       = [];
         sct_build.Constraint = [];
         [OPFprob, x0] = obj.build_problem(tab_bus, tab_component, tab_branch, sct_build);
-        check_problem(sct_input.Problem, OPFprob, s_method);
-        OPFprob = sct_input.Problem;
+        % the given problem must hold every variable of the built one with the same size,
+        % so that the solution can be formatted into the result tables
+        prob = sct_input.Problem;
+        if ~isa(prob, "optim.problemdef.OptimizationProblem")
+            error(msg("GUILDA:SolverOPF:InvalidProblem"))
+        end
+        sv_name = string(fieldnames(OPFprob.Variables)).';
+        lv_bad  = arrayfun(@(s) ~isfield(prob.Variables, s) ...
+                                || ~isequal(size(prob.Variables.(s)), size(OPFprob.Variables.(s))), sv_name);
+        if any(lv_bad)
+            error(msg("GUILDA:SolverOPF:ProblemMismatch", s_method, join(sv_name(lv_bad), ", ")))
+        end
+        OPFprob = prob;
     else
         [OPFprob, x0] = obj.build_problem(tab_bus, tab_component, tab_branch, sct_options);
     end
@@ -55,40 +66,25 @@ function [sct_solution, flag, output] = solve(obj, tab_bus, tab_component, tab_b
         fval = sum(cell2mat(struct2cell(fval)));
     end
 
-    [tab_busSol, tab_cub] = format_bus(tab_bus, tab_component, tab_branch, sol, s_method);
-    sct_solution = struct("tab_bus", tab_busSol, "tab_cub", tab_cub, ...
-        "tab_branch", format_branch(tab_branch, sol, s_method), ...
-        "r_cost", fval, "lambda", lambda, "OPFprob", OPFprob);
-
-    % keep the bus voltages of a solved AC OPF for the next warm start
-    if s_method == "AC OPF" && flag > 0
-        obj.sv_warmBus = string(tab_bus.Properties.RowNames);
-        obj.rm_Vwarm   = [tab_busSol.Varg, tab_busSol.V];
-    end
-end
-
-
-function [tab_bus, tab_cub] = format_bus(tab_data, tab_component, tab_branch, sol, s_method)
-% tab_cub has one row per connection to a bus, in bus order:
-%   the bus's components ("<component>"), then the branch ends at the bus ("<branch>_<bus>").
-% Each row is the injection into the bus (Iphasor, P, Q from the component / branch into the bus).
-    sv_bus   = string(tab_data.Properties.RowNames);
-    sv_com   = string(tab_component.Properties.RowNames);
-    sv_br    = string(tab_branch.Properties.RowNames);
-    rm_bus   = [];
-    rm_cub   = [];
-    sv_cub   = [];
-
+    % Buses and connections. tab_cub has one row per connection to a bus, in bus order: the
+    % components of the bus ("<component>"), then the branch ends at the bus
+    % ("<branch>_<bus>"); each row is the injection into the bus (Iphasor, P, Q).
+    sv_bus = string(tab_bus.Properties.RowNames);
+    sv_com = string(tab_component.Properties.RowNames);
+    sv_br  = string(tab_branch.Properties.RowNames);
+    rm_bus = [];
+    rm_cub = [];
+    sv_cub = [];
     for i_bus = 1:numel(sv_bus)
-        s_bus   = sv_bus(i_bus);
-        sv_c    = sv_com(tab_component.Bus == s_bus);
-        sv_bra  = string.empty(0,1);
+        s_bus  = sv_bus(i_bus);
+        sv_c   = sv_com(tab_component.Bus == s_bus);
+        sv_bra = string.empty(0,1);
         for i_bra = 1:numel(sv_br)
             if tab_branch.From(i_bra) == s_bus || tab_branch.To(i_bra) == s_bus
-                sv_bra = [sv_bra; sv_br(i_bra)+"_"+s_bus];  %#ok
+                sv_bra = [sv_bra; sv_br(i_bra)+"_"+s_bus];  %#ok<AGROW>
             end
         end
-        sv_cub = [sv_cub; sv_c(:); sv_bra];                       %#ok
+        sv_cub = [sv_cub; sv_c(:); sv_bra];                 %#ok<AGROW>
 
         switch s_method
             case "AC OPF"
@@ -105,52 +101,47 @@ function [tab_bus, tab_cub] = format_bus(tab_data, tab_component, tab_branch, so
                     r_P  = r_P + Pcub;
                     r_Q  = r_Q + Qcub;
                     c_I  = c_I + Icub;
-                    rm_cub = [rm_cub; [Icub,Pcub,Qcub]];                    %#ok
+                    rm_cub = [rm_cub; [Icub,Pcub,Qcub]];                    %#ok<AGROW>
                 end
                 for i_bra = 1:numel(sv_bra)
                     sol_bra = sol.(sv_bra(i_bra));
-                    rm_cub  = [rm_cub; [sol_bra(3)+1j*sol_bra(4),sol_bra(1),sol_bra(2)]]; %#ok
+                    rm_cub  = [rm_cub; [sol_bra(3)+1j*sol_bra(4),sol_bra(1),sol_bra(2)]]; %#ok<AGROW>
                 end
-                rm_bus = [rm_bus; [sol_V(1),sol_V(2),r_P,r_Q,c_V,c_I]];    %#ok
+                rm_bus = [rm_bus; [sol_V(1),sol_V(2),r_P,r_Q,c_V,c_I]];    %#ok<AGROW>
 
             case "DC OPF"
                 rv_P   = arrayfun(@(c) sol.(c), sv_c);
                 rv_Pbr = arrayfun(@(s) sol.(s), sv_bra);
-                rm_cub = [rm_cub; rv_P(:); rv_Pbr(:)];                      %#ok
-                rm_bus = [rm_bus; [sol.(s_bus), 1, sum(rv_P)]];           %#ok
+                rm_cub = [rm_cub; rv_P(:); rv_Pbr(:)];                      %#ok<AGROW>
+                rm_bus = [rm_bus; [sol.(s_bus), 1, sum(rv_P)]];             %#ok<AGROW>
 
             case "ELD"
-                % Branches are ignored in ELD, so the branch rows are NaN.
+                % branches are ignored in ELD, so the branch rows are NaN
                 rv_P   = arrayfun(@(c) sol.(c), sv_c);
-                rm_cub = [rm_cub; rv_P(:); nan(numel(sv_bra),1)];          %#ok
-                rm_bus = [rm_bus; sum(rv_P)];                               %#ok
+                rm_cub = [rm_cub; rv_P(:); nan(numel(sv_bra),1)];          %#ok<AGROW>
+                rm_bus = [rm_bus; sum(rv_P)];                               %#ok<AGROW>
         end
     end
-
     switch s_method
         case "AC OPF"
-            tab_bus = array2table( rm_bus, "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"], "RowNames",sv_bus);
-            tab_cub = array2table( rm_cub, "VariableNames",["Iphasor","P","Q"], "RowNames",sv_cub);
+            tab_busSol = array2table(rm_bus, "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"], "RowNames",sv_bus);
+            tab_cub    = array2table(rm_cub, "VariableNames",["Iphasor","P","Q"], "RowNames",sv_cub);
         case "DC OPF"
-            tab_bus = array2table( rm_bus, "VariableNames",["Varg","V","P"], "RowNames",sv_bus);
-            tab_cub = array2table( rm_cub, "VariableNames","P", "RowNames",sv_cub);
+            tab_busSol = array2table(rm_bus, "VariableNames",["Varg","V","P"], "RowNames",sv_bus);
+            tab_cub    = array2table(rm_cub, "VariableNames","P", "RowNames",sv_cub);
         case "ELD"
-            tab_bus = array2table( rm_bus, "VariableNames","P", "RowNames",sv_bus);
-            tab_cub = array2table( rm_cub, "VariableNames","P", "RowNames",sv_cub);
+            tab_busSol = array2table(rm_bus, "VariableNames","P", "RowNames",sv_bus);
+            tab_cub    = array2table(rm_cub, "VariableNames","P", "RowNames",sv_cub);
     end
-end
 
-
-function tab = format_branch(tab_branch, sol, s_method)
-% Flows at both ends of each branch (from = From, to = To of the branch table), as power
-% and current flowing into the branch: the negative of the branch-end rows of tab_cub.
-% ELD ignores branches, so its values are NaN.
-    n_br       = height(tab_branch);
-    sv_branch  = reshape(string(tab_branch.Properties.RowNames), [], 1);
-    cm_S       = nan(n_br,2);
-    cm_I       = nan(n_br,2);
+    % Branches: flows at both ends (from = From, to = To of the branch table), as power and
+    % current flowing into the branch, the negative of the branch-end rows of tab_cub; NaN
+    % in ELD, which ignores the branches
+    n_br = height(tab_branch);
+    cm_S = nan(n_br,2);
+    cm_I = nan(n_br,2);
     for k = 1:n_br
-        sv_end = sv_branch(k) + "_" + [tab_branch.From(k), tab_branch.To(k)];
+        sv_end = sv_br(k) + "_" + [tab_branch.From(k), tab_branch.To(k)];
         for i_end = 1:2
             switch s_method
                 case "AC OPF"
@@ -162,30 +153,23 @@ function tab = format_branch(tab_branch, sol, s_method)
             end
         end
     end
-    switch s_method
-        case "AC OPF"
-            tab = table(real(cm_S(:,1)), imag(cm_S(:,1)), real(cm_S(:,2)), imag(cm_S(:,2)), ...
-                        cm_I(:,1), cm_I(:,2), real(sum(cm_S,2)), imag(sum(cm_S,2)), ...
-                        'VariableNames', ["Pfrom","Qfrom","Pto","Qto","Ifrom","Ito","Ploss","Qloss"], ...
-                        'RowNames', sv_branch);
-        otherwise
-            tab = table(real(cm_S(:,1)), real(cm_S(:,2)), real(sum(cm_S,2)), ...
-                        'VariableNames', ["Pfrom","Pto","Ploss"], ...
-                        'RowNames', sv_branch);
+    if s_method == "AC OPF"
+        tab_branchSol = table(real(cm_S(:,1)), imag(cm_S(:,1)), real(cm_S(:,2)), imag(cm_S(:,2)), ...
+                              cm_I(:,1), cm_I(:,2), real(sum(cm_S,2)), imag(sum(cm_S,2)), ...
+                              'VariableNames', ["Pfrom","Qfrom","Pto","Qto","Ifrom","Ito","Ploss","Qloss"], ...
+                              'RowNames', sv_br);
+    else
+        tab_branchSol = table(real(cm_S(:,1)), real(cm_S(:,2)), real(sum(cm_S,2)), ...
+                              'VariableNames', ["Pfrom","Pto","Ploss"], ...
+                              'RowNames', sv_br);
     end
-end
 
+    sct_solution = struct("tab_bus", tab_busSol, "tab_cub", tab_cub, "tab_branch", tab_branchSol, ...
+        "r_cost", fval, "lambda", lambda, "OPFprob", OPFprob);
 
-function check_problem(prob, prob_def, s_method)
-% The given Problem must hold every variable of the built problem with the same size,
-% so that the solution can be formatted into the result tables.
-    if ~isa(prob, "optim.problemdef.OptimizationProblem")
-        error(msg("GUILDA:SolverOPF:InvalidProblem"))
-    end
-    sv_name = string(fieldnames(prob_def.Variables)).';
-    lv_bad  = arrayfun(@(s) ~isfield(prob.Variables, s) ...
-                            || ~isequal(size(prob.Variables.(s)), size(prob_def.Variables.(s))), sv_name);
-    if any(lv_bad)
-        error(msg("GUILDA:SolverOPF:ProblemMismatch", s_method, join(sv_name(lv_bad), ", ")))
+    % keep the bus voltages of a solved AC OPF for the next warm start
+    if s_method == "AC OPF" && flag > 0
+        obj.sv_warmBus = sv_bus;
+        obj.rm_Vwarm   = [tab_busSol.Varg, tab_busSol.V];
     end
 end
