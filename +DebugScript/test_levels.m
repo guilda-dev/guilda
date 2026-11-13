@@ -209,7 +209,7 @@ function tab = test_levels()
     "test_F7_linearization/EachComponentTypeGivesSameEigenvaluesInTwoAlgorithms", "large"
     "test_F7_linearization/LocalAndGlobalControllersInTwoAlgorithms", "large"
     "test_F7_linearization/TwoGlobalControllersInTwoAlgorithms", "large"
-    "test_F7_linearization/LayerGet_sys_RemovedArguments_OneSignatureAndSingleComputation__83___121_", "large"
+    "test_F7_linearization/LayerGet_sys_RemovedArguments_OneSignatureAndSingleComputation__83__121_", "large"
     "test_F7_linearization/LinearizationMatchesV3Get_sysMatricesForEveryAlgorithm", "large"
     "test_F7_linearization/PointFromASimulationResultAndATime", "large"
     "test_F7_linearization/BusWithoutComponentsInALargeNetwork", "large"

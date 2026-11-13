@@ -560,7 +560,7 @@ net.add_global_controller("agc-PI", ["B001SG1", "B002SG1"]);
 DebugScript.helper.quiet(@() net.initialize);
 [tab_all, c_idxAll, c_idxGCAll, tab_c] = net.get_variable_map();
 % 表は変数 (x, Vre, Vim, u, uc) の後に信号 (y, yc)。線形化の変数は先頭の x, Vre, Vim, u
-assert(isequal(string(tab_all.Properties.VariableNames), ["Index","Kind","Role","Owner","Name","Label","Bus"]))
+assert(isequal(string(tab_all.Properties.VariableNames), ["Index","Kind","Role","Owner","Name","Label","Bus","Equilibrium"]))
 sv_kind = ["x","Vre","Vim","u","uc","y","yc"];
 [~, iv_k] = ismember(tab_all.Kind, sv_kind);
 iv_k(iv_k == 3) = 2;                       % Vre, Vim は母線ごとに交互
