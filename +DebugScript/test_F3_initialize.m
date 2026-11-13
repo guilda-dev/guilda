@@ -3,7 +3,6 @@
 % net.initialize は潮流計算の結果から各母線・機器・制御器の平衡点を設定する。
 %   - 戻り値 [rm_pf, flag, output] (rm_pf: 書き込んだ運転点 n×4 の V, I, P, Q) と Method ("powerflow" / "OPF" / "equilibrium")
 %   - 解析が失敗したらエラーにし、系統 (平衡点・古さ) を変えない
-%   - 旧オプション methods と旧い値は非推奨の警告付きで受け付ける
 %   - 母線電圧・電流、機器ごとの P, Q の配分
 %   - 平衡点で各機器の状態微分 ≈ 0、出力電流 = 潮流計算の電流
 %   - 外乱なしのシミュレーションで平衡点に留まること (制御器付き・AGC 付きも)
@@ -24,7 +23,7 @@ net = DebugScript.helper.build_9bus();
 [pf, flag, output] = DebugScript.helper.quiet(@() net.initialize());
 
 % rm_pf: 書き込んだ運転点 (n×4 の複素数 V, I, P, Q)、flag: 収束フラグ、output: ソルバー出力 (構造体)
-assert(isa(pf, "double") && isequal(size(pf), [numel(net.a_Bus) 4]))
+assert(isa(pf, "double") && ~isreal(pf) && isequal(size(pf), [numel(net.a_Bus) 4]))   % complex() なしでも複素数の配列
 assert((isnumeric(flag) || islogical(flag)) && isscalar(flag), "flag が " + class(flag) + " で返っている")
 assert(flag > 0 && isstruct(output) && isfield(output, "iterations"))
 assert(norm(net.cv_Vequilibrium - pf(:,1)) < 1e-8 && norm(net.cv_Iequilibrium - pf(:,2)) < 1e-8)
@@ -291,6 +290,9 @@ assert_unchanged(net, V0, I0, X0, log0, flag0)
 %% Initialize rejects unknown options
 net = DebugScript.helper.build_9bus();
 assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="algebraic"))) == "GUILDA:PowerNetwork:InitializeMethod")
+% v3 の値とオプション methods は受け付けない
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="calculate from Xequilibrium"))) == "GUILDA:PowerNetwork:InitializeMethod")
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize("methods", "powerflow calculation"))) == "MATLAB:TooManyInputs")
 assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="powerflow", Foo=1))) ~= "")     % arguments ブロックのエラー
 assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="OPF", Foo=1))) == "MATLAB:TooManyInputs")    % calculate_optimal_powerflow の arguments ブロック
 assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="equilibrium", Foo=1))) == "GUILDA:PowerNetwork:InitializeEquilibriumOption")
@@ -301,31 +303,6 @@ for s_method = ["powerflow","OPF","FixedInput","equilibrium"]
 end
 assert(DebugScript.helper.msg_id(error_of(@() net.initialize(format="GUILDAorigin"))) == "GUILDA:PowerNetwork:InitializeFormat")
 assert(DebugScript.helper.edit_flag(net) == "unset")
-
-
-%% Deprecated methods option and values warn
-% COMPAT(v3): methods は Method、旧い値は "powerflow" / "OPF" / "equilibrium" として受け付ける
-net = DebugScript.helper.build_9bus();
-w = warning(); c = onCleanup(@() warning(w));
-clear Deprecated
-lastwarn("");
-warning("off", "GUILDA:Deprecated:InitializeMethodValue");
-[~, ~, output] = DebugScript.helper.quiet(@() net.initialize("methods", "powerflow calculation"));
-id = DebugScript.helper.msg_id();
-assert(string(id) == "GUILDA:Deprecated:InitializeMethods" && isfield(output, "iterations"))
-
-clear Deprecated
-lastwarn("");
-warning("on", "GUILDA:Deprecated:InitializeMethodValue");
-warning("off", "GUILDA:Deprecated:InitializeMethods");
-[~, ~, output] = DebugScript.helper.quiet(@() net.initialize(Method="calculate from Xequilibrium"));
-id = DebugScript.helper.msg_id();
-assert(string(id) == "GUILDA:Deprecated:InitializeMethodValue" && ~isfield(output, "iterations"))
-
-warning("off", "GUILDA:Deprecated:InitializeMethodValue");
-pf  = DebugScript.helper.quiet(@() net.initialize("methods", "optimal powerflow"));
-res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
-assert(norm(res.tab_bus.Vphasor - pf(:,1)) < 1e-6)            % AC OPF の運転点
 
 
 %% Dynamics parameter edit is used after initialize

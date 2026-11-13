@@ -11,7 +11,7 @@ function Deprecated(key, varargin)
 %
 % Convention for a new deprecated form:
 %
-% - KEY is UpperCamelCase, <Owner><What> (e.g. BusBaseMVA, InitializeMethods).
+% - KEY is UpperCamelCase, <Owner><What> (e.g. BusBaseMVA).
 %   Add <entry key="KEY"> to Deprecated.xml; the text says what is deprecated and what
 %   to use instead.
 % - Call it from _VersionSupport/ only (a wrapper, a hook helper such as
