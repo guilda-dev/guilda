@@ -1,5 +1,17 @@
 const updateLogData = [
   {
+    "title": "Simulate a scenario by its tag",
+    "date": "2026-11-13",
+    "type": "feature",
+    "content": "A scenario now belongs to one network: sc = net.add_scenario(\"fault\", Time=[0, 10]) creates it, sc.add_fault(...) and the other add_ methods fill it, net.remove_scenario(\"fault\") deletes it, and net.add_scenario(tag, From=sc) copies one. net.simulate(\"fault\") runs one scenario by its tag over its Time; Time=[t0, tend] replaces the time for that call only. The other options (Solver, Tolerance, AbsoluteTolerance, MaxStep, InitialStep, SeparateComplexParts, SampleTime, StopOnOutOfStep, StopAngle, TimeLimit, Progress, Verbose, PlotFcn) come from GUILDA.setting(\"TimeSimulation\"), and an option of the call changes them for that call only. New options: MaxStep and InitialStep for the solver steps, SampleTime for evenly spaced output times, and StopOnOutOfStep with StopAngle to stop when a rotor angle from the generator of the slack bus exceeds the angle (flag 2, output.outOfStep). Format=\"struct\" returns the trajectories as a struct that follows the buses, components and controllers, faster for repeated runs. An input of a scenario is a constant or a time series [t, v] with InputMethod \"zoh\", \"foh\" or \"spline\"; functions are no longer accepted. The verdict is result.judge_out_of_step() and a file is result.export(filename). Removed: Scenario(tag) on its own, several scenarios or a time as positional arguments of simulate, the options SolverOptions and Export of simulate, Options and Judge of a scenario, and sc.judge. Scripts that use these need updating."
+  },
+  {
+    "title": "Scenarios are saved with the network",
+    "date": "2026-11-13",
+    "type": "feature",
+    "content": "PowerNetwork.import_csv and net.export_csv are now PowerNetwork.import and net.export. net.export also writes each scenario of the network to scenario/<tag>.json in the model folder (its Time, Description and disturbances), and PowerNetwork.import adds them back. Scenario.import_csv and Scenario.export_csv are removed. Scripts and network classes that call import_csv or export_csv need updating; folders written before keep working, as they have no scenario folder."
+  },
+  {
     "title": "One get_sys for every linear model",
     "date": "2026-11-13",
     "type": "feature",
