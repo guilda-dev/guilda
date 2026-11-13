@@ -49,6 +49,7 @@
         <entry key="SimulationIncomplete">net.simulate did not reach the end time (flag = {0}); the result holds the trajectories up to the time reached.&#xA;{1}</entry>
         <entry key="ScenarioNotFound">No scenario with the tag ''{0}'' was found in ''{1}''. {2}</entry>
         <entry key="SlackSelected">Slack bus not found. Setting the bus ''{0}'' as the slack bus.</entry>
+        <entry key="SlackWithoutQnan">No component of slack bus ''{0}'' has Q = NaN, so ''{1}'' takes the remaining power in net.initialize, even if it is a load.&#xA;Add a generator to this bus, set l_isSlack = true on a bus that has one, or set Q = NaN on the component that should supply the power.</entry>
         <entry key="PowerflowNotConverged">{0}</entry>
         <entry key="SimulateStale">net.simulate stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
         <entry key="SimulateInputEdited">net.simulate stopped: inputs of components of ''{0}'' were edited ({1}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>

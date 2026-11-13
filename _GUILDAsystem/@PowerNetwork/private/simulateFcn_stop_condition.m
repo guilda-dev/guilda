@@ -17,8 +17,8 @@ function sct_stop = simulateFcn_stop_condition(net, sct_dae, r_angle)
     end
     tab  = sct_dae.tab_variable;
     iv_d = find(tab.Kind == "x" & tab.Name == "delta" & ismember(tab.Owner, sct_dae.sv_comp));
-    lv_slack = cellfun(@(b) b.l_isSlack, net.a_Bus);
-    sv_slack = sct_dae.sv_bus(lv_slack(:));
+    sv_slack = string(net.a_Bus(tools.slack_bus_index(net)));   % also a slack bus the power flow selected
+    sv_slack = sv_slack(:);
     i_ref = find(ismember(tab.Bus(iv_d), sv_slack), 1);
     if isempty(i_ref) || numel(iv_d) < 2
         sv_unit = tab.Owner(iv_d);

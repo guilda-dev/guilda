@@ -41,11 +41,44 @@ assert(all(ismember(["Varg","V","P","Q","Vphasor","Iphasor"], tab.Properties.Var
 net = DebugScript.helper.build_9bus();
 assert(~any(cellfun(@(b) b.l_isSlack, net.a_Bus)), "初期状態ではスラック母線は未指定")
 
-DebugScript.helper.quiet(@() net.calculate_powerflow);
+s_log = evalc("res = net.calculate_powerflow();");
 
-% 先頭の母線がスラックになる
-assert(net.a_Bus{1}.l_isSlack)
-assert(sum(cellfun(@(b) b.l_isSlack, net.a_Bus)) == 1)
+% 先頭の母線がこの計算のスラック母線になる (INFO)。系統の l_isSlack は書かない
+assert(contains(s_log, "Setting the bus 'B001' as the slack bus"), s_log)
+assert(~any(cellfun(@(b) b.l_isSlack, net.a_Bus)))
+assert(isequal(res.tab_PFcondition.Type(1), "slack") && sum(res.tab_PFcondition.Type == "slack") == 1)
+assert(res.sct_network.a_Bus{1}.l_isSlack && res.sct_network.a_Bus{1}.s_bustype == "slack")   % 結果のスナップショットは計算のスラック母線を持つ
+% 選んだ母線をスラックに指定したときと同じ解
+net1 = DebugScript.helper.build_9bus();
+evalc("net1.a_Bus{1}.l_isSlack = true;");
+res1 = DebugScript.helper.quiet(@() net1.calculate_powerflow());
+assert(max(abs(res1.tab_bus.Vphasor - res.tab_bus.Vphasor)) < 1e-12 && isequaln(res1.tab_PFcondition, res.tab_PFcondition))
+
+
+%% get_pf_condition returns the data of the power flow without changing the network
+% Bus (Bus.get_pf_condition を積んだ表) と Y (get_admittance_matrix)。スラック母線は表の中だけで選ぶ
+net = DebugScript.helper.build_9bus();
+sv_log = DebugScript.helper.stale(net);
+s_log = evalc("sct = net.get_pf_condition(Display=false);");
+assert(isequal(fieldnames(sct), {'Bus';'Y'}) && contains(s_log, "Setting the bus 'B001' as the slack bus"))
+assert(isequal(string(sct.Bus.Properties.VariableNames), ["Type","Varg","V","P","Q"]) && isequal(string(sct.Bus.Properties.RowNames), string(net.a_Bus)))
+assert(isequaln(sct.Y, net.get_admittance_matrix))
+assert(isequal(sct.Bus.Type', ["slack","PV","PV","PQ","PQ","PQ","PQ","PQ","PQ"]))
+tab_bus = tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus);
+assert(isequaln(sct.Bus(2:end,:), tab_bus(2:end,:)))                       % 選んだ母線以外は母線の表のまま
+assert(~any(cellfun(@(b) b.l_isSlack, net.a_Bus)) && isequal(DebugScript.helper.stale(net), sv_log))
+evalc("net.a_Bus{1}.l_isSlack = true;");
+assert(isequaln(sct.Bus, tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus)))   % 選んだ行はスラック母線の行と同じ
+% 指定済みのスラック母線では INFO なし。Display=true は Bus の表だけを表示し、出力なしでは何も返さない
+s_log = evalc("net.get_pf_condition();");
+assert(contains(s_log, "Bus") && contains(s_log, "slack") && ~contains(s_log, "Setting the bus"))
+s_log = evalc("sct2 = net.get_pf_condition();");
+assert(isequaln(sct2.Bus, sct.Bus) && contains(s_log, "Varg"))
+% 母線がない、機器がない
+assert(error_id(@() PowerNetwork("NoBuses").get_pf_condition(Display=false)) == "GUILDA:PowerNetwork:NoBus")
+net0 = PowerNetwork("NoComponents");
+net0.add_bus();
+assert(error_id(@() net0.get_pf_condition(Display=false)) == "GUILDA:PowerNetwork:NoSlackCandidate")
 
 
 %% Slack bus can be chosen explicitly
@@ -96,25 +129,27 @@ assert(isequal(DebugScript.helper.stale(net), sv_log) && n_slack(net) == 1)
 [~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
 assert(flag > 0 && n_slack(net) == 1 && net.a_Bus{2}.s_bustype == "slack")
 
-% スラック指定を外すこともできる (外すとスラックは0、潮流計算で先頭の母線が選ばれる)
+% スラック指定を外すこともできる (外すとスラックは0、潮流計算は先頭の母線を選ぶが書かない)
 evalc("net.a_Bus{2}.l_isSlack = false;");
 assert(n_slack(net) == 0)
-DebugScript.helper.quiet(@() net.calculate_powerflow);
-assert(n_slack(net) == 1 && net.a_Bus{1}.l_isSlack)
+res = DebugScript.helper.quiet(@() net.calculate_powerflow);
+assert(n_slack(net) == 0 && res.tab_PFcondition.Type(1) == "slack")
 
 % 別の系統の母線には影響しない
 net2 = DebugScript.helper.build_9bus();
 evalc("net2.a_Bus{2}.l_isSlack = true;");
-assert(n_slack(net) == 1 && net.a_Bus{1}.l_isSlack && n_slack(net2) == 1)
+assert(n_slack(net) == 0 && n_slack(net2) == 1)
 
 
 %% Bus types follow powerflow settings
 net = DebugScript.helper.build_9bus();
-DebugScript.helper.quiet(@() net.calculate_powerflow);
+res = DebugScript.helper.quiet(@() net.calculate_powerflow);
 
-% 発電機母線: Q が NaN → PV、負荷母線: P,Q 指定 → PQ、機器なし母線: P=Q=0 の PQ
+% 発電機母線: Q が NaN → PV、負荷母線: P,Q 指定 → PQ、機器なし母線: P=Q=0 の PQ。
+% スラック母線は未指定なので、母線自身の種別では B001 も PV。潮流条件では選ばれたスラック母線
 sv_type = string(cellfun(@(b) b.s_bustype, net.a_Bus, "UniformOutput", false));
-assert(isequal(sv_type(:)', ["slack","PV","PV","PQ","PQ","PQ","PQ","PQ","PQ"]))
+assert(isequal(sv_type(:)', ["PV","PV","PV","PQ","PQ","PQ","PQ","PQ","PQ"]))
+assert(isequal(res.tab_PFcondition.Type', ["slack","PV","PV","PQ","PQ","PQ","PQ","PQ","PQ"]))
 
 % get_pf_condition は母線ごとの潮流条件を返す
 tab_set = net.a_Bus{2}.get_pf_condition;
@@ -165,8 +200,9 @@ net = DebugScript.helper.build_ieee14();
 assert(flag > 0)
 
 % 各母線の指定値が守られている
+tab_cond = net.get_pf_condition(Display=false).Bus;   % スラック母線は選ばれた母線
 for i = 1:numel(net.a_Bus)
-    s = net.a_Bus{i}.get_pf_condition;
+    s = tab_cond(i,:);
     switch s.Type
         case "slack"; assert(abs(tab.V(i)-s.V) < tol && abs(tab.Varg(i)-s.Varg) < tol)
         case "PV";    assert(abs(tab.V(i)-s.V) < tol && abs(tab.P(i)-s.P) < tol)
@@ -243,7 +279,7 @@ assert(res.s_solver == "SolverPF" && isempty(res.a_PowerNetwork) && res.r_elapse
 assert(res.s_network == string(net.s_tag) && isstruct(res.sct_network) && numel(res.sct_network.a_Bus) == numel(net.a_Bus))
 tab_Y = net.get_admittance_matrix;
 assert(isequal(res.cm_Y, tab_Y{string(net.a_Bus), string(net.a_Bus)}))
-assert(isequal(res.tab_PFcondition.Type, tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus).Type))
+assert(isequaln(res.tab_PFcondition, DebugScript.helper.quiet(@() net.get_pf_condition(Display=false)).Bus))
 assert(res.options.Solver == "newton" && res.options.Tolerance == 1e-8 && isnan(res.options.MaxIteration) && res.options.Verbose == false)
 % 反復ごとの母線電圧 (最後が解)
 assert(size(res.cm_Vhistory,1) == numel(net.a_Bus) && isequal(res.rv_step, 0:size(res.cm_Vhistory,2)-1))

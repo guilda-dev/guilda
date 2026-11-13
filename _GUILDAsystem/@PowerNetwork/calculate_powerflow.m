@@ -5,12 +5,12 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
 % Format chooses (default: a ResultPF). The settings are the
 % PowerFlowCalculation section of GUILDA.setting; Name-Value options override them for
 % this call only (the settings file is not changed). The network assembles the data of
-% the calculation (the power flow conditions of the buses, Bus.get_pf_condition, and the
+% the calculation with net.get_pf_condition (the power flow conditions of the buses and the
 % admittance matrix) and net.solver_PF solves it; the solver keeps the last converged
-% solution for the next warm start. The network is not changed, except that a slack bus
-% is selected when none is set (with an INFO message): the first bus that has a
-% component with Q = NaN, otherwise the first bus that has a component
-% (GUILDA:Bus:SlackWithoutQnan). A network without buses stops with
+% solution for the next warm start. The network is not changed. When no slack bus is set,
+% get_pf_condition makes a bus the slack bus of this calculation only (with an INFO
+% message; l_isSlack is not written): the first bus that has a component with Q = NaN,
+% otherwise the first bus that has a component. A network without buses stops with
 % GUILDA:PowerNetwork:NoBus, and a network whose buses have no components with
 % GUILDA:PowerNetwork:NoSlackCandidate. A calculation that does not converge gives the
 % warning GUILDA:PowerNetwork:PowerflowNotConverged (WhenFailed of GUILDA.setting:
@@ -65,18 +65,10 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
 
     sct_options = solver_options(opt);
 
-    lv_isSlack = tools.vcellfun(@(b) b.l_isSlack, obj.a_Bus);
-    if ~any(lv_isSlack)
-        bus = select_slack_bus(obj);
-        show_msg("info", "GUILDA:PowerNetwork:SlackSelected", string(bus))
-        bus.l_isSlack = true;
-    end
-
-    sv_bus = reshape(string(obj.a_Bus), [], 1);
-    tab_PFcondition = tools.vcellfun(@(b) b.get_pf_condition, obj.a_Bus);
-    tab_PFcondition.Properties.RowNames = sv_bus;
-    tab_Y = obj.get_admittance_matrix;
-    cm_Y  = tab_Y{sv_bus, sv_bus};
+    sct_PFcondition = obj.get_pf_condition(Display=false);
+    tab_PFcondition = sct_PFcondition.Bus;
+    sv_bus = string(tab_PFcondition.Properties.RowNames);
+    cm_Y   = sct_PFcondition.Y{sv_bus, sv_bus};
 
     t0 = tic;
     [cv_V, flag, output, cm_Vhistory, rv_step] = obj.solver_PF.solve(cm_Y, tab_PFcondition, sct_options);
@@ -103,21 +95,12 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
             sct_solver = struct("solver", string(class(obj.solver_PF)), "options", sct_options, ...
                 "flag", flag, "output", output, "elapsed", r_elapsed, "cm_Vhistory", cm_Vhistory, ...
                 "rv_step", rv_step, "tab_PFcondition", tab_PFcondition);
-            result = ResultPF(tab_pf, cm_Y, struct(obj, false), sct_solver);
+            sct_network = struct(obj, false);   % with the slack bus of the calculation
+            i_slack = find(tab_PFcondition.Type == "slack", 1);
+            sct_network.a_Bus{i_slack}.l_isSlack = true;
+            sct_network.a_Bus{i_slack}.s_bustype = "slack";
+            result = ResultPF(tab_pf, cm_Y, sct_network, sct_solver);
     end
-end
-
-
-function bus = select_slack_bus(obj)
-% The bus of tools.slack_bus_index; stops when there is none
-    if isempty(obj.a_Bus)
-        error(msg("GUILDA:PowerNetwork:NoBus", string(obj)))
-    end
-    i_bus = tools.slack_bus_index(obj);
-    if isempty(i_bus)
-        error(msg("GUILDA:PowerNetwork:NoSlackCandidate", string(obj)))
-    end
-    bus = obj.a_Bus{i_bus};
 end
 
 

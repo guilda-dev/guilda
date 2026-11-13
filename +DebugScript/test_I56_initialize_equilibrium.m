@@ -159,7 +159,8 @@ assert(~DebugScript.helper.is_stale(net) && isequal(net.cv_Vequilibrium, V))
 
 %% Slack bus without a component is not an equilibrium
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
-DebugScript.helper.quiet(@() net.initialize);    % B001 がスラックになる
+evalc("net.a_Bus{1}.l_isSlack = true;");          % 潮流計算は選んだスラック母線を書かないので指定する
+DebugScript.helper.quiet(@() net.initialize);
 net.a_Bus{1}.remove_component(string(net.a_Bus{1}.a_Component{1}));
 ME = error_of(@() net.initialize());
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))

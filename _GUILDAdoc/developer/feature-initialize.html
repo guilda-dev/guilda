@@ -273,15 +273,15 @@
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li><code>Method="powerflow"</code> (default), when INIT-02 decides to solve: solves the power flow (see <a href="feature-power-flow.html">Power Flow</a>)</li>
-            <li>On failure, if no bus was a slack bus before the call: the <code>catch</code> of the solve clears the slack bus that was selected (the same for <code>"FixedInput"</code>, INIT-03d)</li>
+            <li>When no bus is the slack bus, <code>calculate_powerflow</code> uses the bus that <code>get_pf_condition</code> selects, without writing <code>l_isSlack</code>; after the solve, <code>initialize</code> sets <code>c_PQ</code> of that bus with <code>tools.distribute_power(..., true)</code>, so its components share the power as at a slack bus</li>
           </ul><ul lang="ja">
             <li><code>Method="powerflow"</code>（既定）で、INIT-02 が求解が必要と判断したときは潮流計算を解きます（<a href="feature-power-flow.html">潮流計算</a>を参照）。</li>
-            <li>失敗したときは、呼び出し前にスラック母線がなかった場合に限り、求解の <code>catch</code> が今回選ばれたスラック母線を解除します（<code>"FixedInput"</code>、INIT-03d も同じです）。</li>
+            <li>スラック母線がないときは、<code>calculate_powerflow</code> が <code>get_pf_condition</code> の選ぶ母線を使い、<code>l_isSlack</code> は書きません。求解の後、<code>initialize</code> はその母線の <code>c_PQ</code> を <code>tools.distribute_power(..., true)</code> で作り、機器はスラック母線と同じように電力を分けます。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>GUILDA.config("PowerFlowCalculation")</code>, <code>net.solver_PF</code> (warm start), <code>c_nv</code>, <code>Bus.l_isSlack</code>, <code>tab_parameter.powerflow</code></span><span lang="ja"><code>GUILDA.config("PowerFlowCalculation")</code>、<code>net.solver_PF</code>（ウォームスタート）、<code>c_nv</code>、<code>Bus.l_isSlack</code>、<code>tab_parameter.powerflow</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>rm_pf</code> (<code>Format="powerflow(mat)"</code> of <code>calculate_powerflow</code>: n_bus × 4, columns <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code> [pu]), which is also the first output; no <code>ResultPF</code> is built; may set <code>l_isSlack</code> of one bus</span><span lang="ja"><code>rm_pf</code>（<code>calculate_powerflow</code> の <code>Format="powerflow(mat)"</code>。n_bus × 4 で、列は <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code> [pu]）を返し、これがそのまま最初の出力になります。<code>ResultPF</code> は作りません。母線 1 つの <code>l_isSlack</code> を設定することがあります。</span></dd>
+          <dd><span lang="en"><code>rm_pf</code> (<code>Format="powerflow(mat)"</code> of <code>calculate_powerflow</code>: n_bus × 4, columns <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code> [pu]), which is also the first output; no <code>ResultPF</code> is built; <code>l_isSlack</code> is not written</span><span lang="ja"><code>rm_pf</code>（<code>calculate_powerflow</code> の <code>Format="powerflow(mat)"</code>。n_bus × 4 で、列は <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code> [pu]）を返し、これがそのまま最初の出力になります。<code>ResultPF</code> は作りません。<code>l_isSlack</code> は書きません。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-03b">
@@ -329,18 +329,18 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li><code>Method="FixedInput"</code>: first <code>initialize</code> selects a slack bus when none is set (INFO <code>SlackSelected</code>), then stops with <code>InitializeFixedInputIsland</code> on a network split into islands</li>
-            <li>Then calls <code>calculate_fixed_input_powerflow</code> with <code>Format="powerflow(mat)"</code>; it builds the equations of all components and buses in its own local functions (residual, Jacobian, initial point) and solves them with the <code>Method*</code> class of <code>Solver</code>. It writes nothing</li>
+            <li><code>Method="FixedInput"</code>: first <code>initialize</code> stops with <code>InitializeFixedInputIsland</code> on a network split into islands</li>
+            <li>Then calls <code>calculate_fixed_input_powerflow</code> with <code>Format="powerflow(mat)"</code>; it builds the equations of all components and buses in its own local functions (residual, Jacobian, initial point) and solves them with the <code>Method*</code> class of <code>Solver</code>. Its slack bus and Y come from <code>get_pf_condition</code> (a selected slack bus is not written). It writes nothing</li>
             <li><code>flag ≠ 1</code> stops with <code>InitializeFixedInputFailed</code></li>
           </ul><ul lang="ja">
-            <li><code>Method="FixedInput"</code>: まず <code>initialize</code> が、スラック母線がなければ 1 つを選び（INFO <code>SlackSelected</code>）、ネットワークが分断されていれば <code>InitializeFixedInputIsland</code> で停止します。</li>
-            <li>次に <code>calculate_fixed_input_powerflow</code> を <code>Format="powerflow(mat)"</code> で呼び出します。このメソッドは全機器と全母線の方程式（残差、ヤコビ行列、初期点）を自身のローカル関数で組み立て、<code>Solver</code> に対応する <code>Method*</code> クラスで解きます。何も書き込みません。</li>
+            <li><code>Method="FixedInput"</code>: まず <code>initialize</code> は、ネットワークが分断されていれば <code>InitializeFixedInputIsland</code> で停止します。</li>
+            <li>次に <code>calculate_fixed_input_powerflow</code> を <code>Format="powerflow(mat)"</code> で呼び出します。このメソッドは全機器と全母線の方程式（残差、ヤコビ行列、初期点）を自身のローカル関数で組み立て、<code>Solver</code> に対応する <code>Method*</code> クラスで解きます。スラック母線と Y は <code>get_pf_condition</code> から取ります（選んだスラック母線は書きません）。何も書き込みません。</li>
             <li><code>flag ≠ 1</code> のときは <code>InitializeFixedInputFailed</code> で停止します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>GUILDA.config("PowerFlowCalculation")</code>, <code>c_nv</code>, <code>Component.rv_Uequilibrium</code>, the held equilibria (<code>WarmStart</code>), <code>Bus.l_isSlack</code>, <code>get_admittance_matrix</code></span><span lang="ja"><code>GUILDA.config("PowerFlowCalculation")</code>、<code>c_nv</code>、<code>Component.rv_Uequilibrium</code>、保持している平衡点（<code>WarmStart</code>）、<code>Bus.l_isSlack</code>、<code>get_admittance_matrix</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>rm_pf</code> (n_bus × 4, the first output) and <code>output.tab_component</code> (Bus, X, U, I of each component), from which INIT-05 writes the states and inputs (<code>c_XU</code> of <code>Bus.set_equilibrium</code>, so <code>get_equilibrium</code> is not called); may set <code>l_isSlack</code> of one bus</span><span lang="ja"><code>rm_pf</code>（n_bus × 4。最初の出力）と <code>output.tab_component</code>（各機器の Bus、X、U、I）を返します。INIT-05 はこれから状態と入力を書き込みます（<code>Bus.set_equilibrium</code> の <code>c_XU</code>。<code>get_equilibrium</code> は呼びません）。母線 1 つの <code>l_isSlack</code> を設定することがあります。</span></dd>
+          <dd><span lang="en"><code>rm_pf</code> (n_bus × 4, the first output) and <code>output.tab_component</code> (Bus, X, U, I of each component), from which INIT-05 writes the states and inputs (<code>c_XU</code> of <code>Bus.set_equilibrium</code>, so <code>get_equilibrium</code> is not called); <code>l_isSlack</code> is not written</span><span lang="ja"><code>rm_pf</code>（n_bus × 4。最初の出力）と <code>output.tab_component</code>（各機器の Bus、X、U、I）を返します。INIT-05 はこれから状態と入力を書き込みます（<code>Bus.set_equilibrium</code> の <code>c_XU</code>。<code>get_equilibrium</code> は呼びません）。<code>l_isSlack</code> は書きません。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-04">
@@ -599,7 +599,7 @@
         <ul>
           <li>the equilibrium properties above</li>
           <li>the <code>f_*</code> handle caches that were stale, with <code>r_odefcnHz</code> (INIT-07, INIT-09, INIT-10)</li>
-          <li><code>l_isSlack</code> of the bus that the power flow selects when none is set (kept after a successful call)</li>
+          <li>never <code>l_isSlack</code>: when no bus is the slack bus, the power flow uses the bus that <code>get_pf_condition</code> selects, and INIT-05 gives its components the powers of a slack bus (<code>tools.distribute_power</code> with the slack argument)</li>
           <li>the gain of <code>controller.local_LQR</code></li>
         </ul>
       </li>
@@ -626,7 +626,7 @@
         <ul>
           <li>上の平衡点のプロパティ</li>
           <li>古かった <code>f_*</code> ハンドルのキャッシュと <code>r_odefcnHz</code>（INIT-07、INIT-09、INIT-10）</li>
-          <li>スラック母線が未設定のとき潮流計算が選ぶ母線の <code>l_isSlack</code>（呼び出しが成功すれば保持されます）</li>
+          <li><code>l_isSlack</code> は書きません。スラック母線が未設定なら、潮流計算は <code>get_pf_condition</code> が選ぶ母線を使い、INIT-05 はその母線の機器にスラック母線としての電力を配分します（<code>tools.distribute_power</code> のスラックの引数）。</li>
           <li><code>controller.local_LQR</code> のゲイン</li>
         </ul>
       </li>
@@ -691,10 +691,10 @@
           <dt><span lang="en">State of the network after the failure</span><span lang="ja">失敗後のネットワークの状態</span></dt>
           <dd><ul lang="en">
             <li>unchanged</li>
-            <li>a slack bus selected by this call is released</li>
+            <li><code>l_isSlack</code> is never written, so there is no slack bus to release</li>
           </ul><ul lang="ja">
             <li>変更されません。</li>
-            <li>この呼び出しで選んだスラック母線は解除します。</li>
+            <li><code>l_isSlack</code> は書かないので、解除するスラック母線はありません。</li>
           </ul></dd>
         </dl>
       </li>

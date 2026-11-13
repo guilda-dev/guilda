@@ -69,8 +69,9 @@ function [rm_pf, flag, output] = initialize(obj, varargin)
 %
 % When the analysis does not succeed (no convergence, an infeasible OPF, or stored
 % equilibria that do not satisfy the network equations), initialize stops with an error
-% naming the remedy, and the network keeps its previous equilibrium and stale state (a
-% slack bus set by calculate_powerflow is released again). When a later step fails, or
+% naming the remedy, and the network keeps its previous equilibrium and stale state. The
+% slack bus is never written: when no bus is the slack bus, the power flow uses the bus
+% that net.get_pf_condition selects for the solve, and l_isSlack stays false. When a later step fails, or
 % the point does not satisfy Y*V = I, the power flow is left stale, and analyses stop
 % (e.g. GUILDA:PowerNetwork:SimulateStale) until initialize succeeds.
 %
@@ -151,7 +152,6 @@ function [rm_pf, flag, output] = initialize(obj, varargin)
     n_Bus = numel(obj.a_Bus);
     c_PQ  = cell(n_Bus,1);   % [P Q] of the components of each bus when the analysis fixes them
     if l_solve
-        l_slack = any(tools.vcellfun(@(b) b.l_isSlack, obj.a_Bus));
         try
             switch s_method
                 case "powerflow"
@@ -165,17 +165,6 @@ function [rm_pf, flag, output] = initialize(obj, varargin)
                         stop_analysis(obj, output.message, "GUILDA:PowerNetwork:InitializeOPFFailed", "GUILDA:PowerNetwork:InitializeOPFIsland")
                     end
                 case "FixedInput"
-                    if ~l_slack   % selected as by calculate_powerflow
-                        if n_Bus == 0
-                            error(msg("GUILDA:PowerNetwork:NoBus", string(obj)))
-                        end
-                        i_bus = tools.slack_bus_index(obj);
-                        if isempty(i_bus)
-                            error(msg("GUILDA:PowerNetwork:NoSlackCandidate", string(obj)))
-                        end
-                        show_msg("info", "GUILDA:PowerNetwork:SlackSelected", string(obj.a_Bus{i_bus}))
-                        obj.a_Bus{i_bus}.l_isSlack = true;
-                    end
                     [n_island, s_island] = network_islands(obj);
                     if n_island > 1
                         error(msg("GUILDA:PowerNetwork:InitializeFixedInputIsland", string(obj), char(string(n_island)), char(s_island)))
@@ -186,11 +175,6 @@ function [rm_pf, flag, output] = initialize(obj, varargin)
                     end
             end
         catch ME
-            if ~l_slack   % release the slack bus selected for this solve
-                for i_bus = 1:n_Bus
-                    obj.a_Bus{i_bus}.l_isSlack = false;
-                end
-            end
             % building the OPF problem of a split network can stop with an internal error (it has an
             % identifier; GUILDA errors and the option errors of the arguments block are passed on)
             if s_method == "OPF" && ~isempty(ME.identifier) && network_islands(obj) > 1 ...
@@ -198,6 +182,10 @@ function [rm_pf, flag, output] = initialize(obj, varargin)
                 stop_analysis(obj, ME.message, "GUILDA:PowerNetwork:InitializeOPFFailed", "GUILDA:PowerNetwork:InitializeOPFIsland")
             end
             rethrow(ME)
+        end
+        if s_method == "powerflow"   % the slack bus of the solve shares P and Q as a slack bus, also when it was selected (not written)
+            i_slack = tools.slack_bus_index(obj);
+            c_PQ{i_slack} = tools.distribute_power(obj.a_Bus{i_slack}, real(rm_pf(i_slack,3)), real(rm_pf(i_slack,4)), "baseMVA", true);
         end
         if s_method == "OPF"   % bus V, I, P, Q of the AC OPF solution, and the power of each component
             cv_S  = res.tab_bus.Vphasor .* conj(res.tab_bus.Iphasor);

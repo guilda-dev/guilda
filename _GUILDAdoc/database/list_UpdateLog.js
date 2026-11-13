@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "The power flow no longer sets the slack bus",
+    "date": "2026-11-13",
+    "type": "feature",
+    "content": "net.get_pf_condition() returns the data of the power flow, as net.get_opf_condition() does for the OPF: Bus (Type, Varg, V, P, Q of each bus) and Y (the admittance matrix as a table); it prints the Bus table unless Display=false. When no bus is the slack bus, net.calculate_powerflow, net.calculate_fixed_input_powerflow and net.initialize still use the bus they used before (the first bus with a component with Q = NaN, else the first bus with a component) and give the same solution, but they no longer set l_isSlack: the network keeps no slack bus. Scripts that read l_isSlack after a power flow to find the slack bus should read net.get_pf_condition(Display=false).Bus.Type instead. The warning when that bus has no component with Q = NaN now has the ID GUILDA:PowerNetwork:SlackWithoutQnan."
+  },
+  {
     "title": "Power flow with the inputs held",
     "date": "2026-11-13",
     "type": "feature",
