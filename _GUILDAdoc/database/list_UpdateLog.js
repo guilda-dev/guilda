@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Power flow with the inputs held",
+    "date": "2026-11-13",
+    "type": "feature",
+    "content": "net.calculate_fixed_input_powerflow() solves the equilibrium with the inputs that the components hold (set with comp.set_input), without writing it: the states, the bus voltages, the currents and the Pmech of the generator of the slack bus. It takes Format (\"GUILDAorigin\" for a ResultPF, \"V\", \"powerflow(mat)\" or \"powerflow(tab)\"), Solver (\"newton\", \"levenberg-marquardt\" or \"fsolve\"), Tolerance, MaxIteration, Verbose and WarmStart; the values left out come from GUILDA.setting(\"PowerFlowCalculation\"), and Solver is \"newton\". output.tab_component lists the states X, inputs U and current I of each component. net.initialize(Method=\"FixedInput\") calls it and writes the solution, as before. With Method=\"FixedInput\", an unknown option name now stops with the MATLAB error of an unknown name."
+  },
+  {
     "title": "Network display methods follow disp_ and plot_",
     "date": "2026-11-13",
     "type": "feature",

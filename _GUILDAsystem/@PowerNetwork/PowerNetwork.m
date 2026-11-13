@@ -31,7 +31,8 @@ classdef PowerNetwork < PowerSystemModel
 % components (generators, loads, ...) are added to the buses (`Bus.add_component`) and
 % local controllers to the components. The network runs the analyses:
 %
-% - power flow (`calculate_powerflow`) and optimal power flow (`calculate_optimal_powerflow`)
+% - power flow (`calculate_powerflow`), power flow with the inputs of the components held
+%   (`calculate_fixed_input_powerflow`) and optimal power flow (`calculate_optimal_powerflow`)
 % - continuation power flow (`calculate_continuation_powerflow`)
 % - equilibrium (`initialize`), time simulation (`simulate`) of the scenarios it holds
 %   (`add_scenario`, `remove_scenario`, `a_Scenario`)
@@ -167,6 +168,7 @@ classdef PowerNetwork < PowerSystemModel
 
         % PF(powerflow) calculations
         [result, flag, output] = calculate_powerflow(obj, opt)
+        [result, flag, output] = calculate_fixed_input_powerflow(obj, opt)
 
         % CPF(continuation power-flow)
         [result, flag, output] = calculate_continuation_powerflow(obj, varargin)

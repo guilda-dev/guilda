@@ -42,18 +42,16 @@ function [rm_pf, flag, output] = initialize(obj, varargin)
 %   - "powerflow": net.calculate_powerflow (settings of GUILDA.setting).
 %   - "OPF": net.calculate_optimal_powerflow with Method="AC OPF" (OptimalPowerFlow section of GUILDA.setting;
 %     the AC formulation gives a complete AC operating point).
-%   - "FixedInput": the equilibrium with the inputs of the components held
-%     (rv_Uequilibrium, edited with Component.set_input): the states, the bus voltages,
-%     the currents and the Pmech of the first generator of the slack bus are solved
-%     (the slack bus angle is 0; its V and Varg settings and the powerflow settings of the
-%     components are not used). The controllers are not in the equations: they take
-%     their equilibria afterwards. Always solved. Options: Solver ("newton" (default),
-%     "levenberg-marquardt", "fsolve"), Tolerance and MaxIteration (default: the
-%     PowerFlowCalculation section of GUILDA.setting), Verbose and WarmStart (true: from
-%     the held equilibrium; false, or a component without one: from a power flow that is
-%     not written). Every component must hold its inputs
-%     (GUILDA:PowerNetwork:InitializeInputNotSet), the slack bus needs a generator, and a
-%     network split into islands stops.
+%   - "FixedInput": net.calculate_fixed_input_powerflow, the equilibrium with the inputs
+%     of the components held (rv_Uequilibrium, edited with Component.set_input): the
+%     states, the bus voltages, the currents and the Pmech of the first generator of the
+%     slack bus are solved (the slack bus angle is 0; its V and Varg settings and the
+%     powerflow settings of the components are not used). The controllers are not in the
+%     equations: they take their equilibria afterwards. Always solved. Options: those of
+%     calculate_fixed_input_powerflow except Format (Solver "newton" (default),
+%     "levenberg-marquardt", "fsolve"; Tolerance, MaxIteration, Verbose and WarmStart).
+%     Every component must hold its inputs (GUILDA:PowerNetwork:InitializeInputNotSet),
+%     the slack bus needs a generator, and a network split into islands stops.
 %   - "equilibrium": never solved; the equilibria the components already hold (from an
 %     earlier initialize) are kept, and buses without components get the voltage of
 %     Y*V = I. A stale power flow stops with an error: use net.initialize().
@@ -62,7 +60,7 @@ function [rm_pf, flag, output] = initialize(obj, varargin)
 %   the WarmStart of the PowerFlowCalculation or OptimalPowerFlow section of GUILDA.setting.
 %   Passed to calculate_powerflow or calculate_optimal_powerflow like the other options.
 % - Other options go unchanged to calculate_powerflow ("powerflow") or
-%   calculate_optimal_powerflow ("OPF") and are validated there (an unknown name stops with the
+%   calculate_optimal_powerflow ("OPF") or calculate_fixed_input_powerflow ("FixedInput") and are validated there (an unknown name stops with the
 %   error of that analysis); "equilibrium" takes no other option. Format is not an option
 %   of initialize (GUILDA:PowerNetwork:InitializeFormat, with every Method). `Solver`
 %   chooses the algorithm of that analysis, e.g. Solver="levenberg-marquardt" for the
@@ -100,7 +98,7 @@ function [rm_pf, flag, output] = initialize(obj, varargin)
 % res = net.calculate_powerflow();                 % ResultPF of the held network data
 % ```
 %
-% See also PowerNetwork.calculate_powerflow, PowerNetwork.calculate_optimal_powerflow, PowerNetwork.simulate
+% See also PowerNetwork.calculate_powerflow, PowerNetwork.calculate_optimal_powerflow, PowerNetwork.calculate_fixed_input_powerflow, PowerNetwork.simulate
 %
 % <@Group> Initialize
     arguments (Input)
@@ -182,7 +180,7 @@ function [rm_pf, flag, output] = initialize(obj, varargin)
                     if n_island > 1
                         error(msg("GUILDA:PowerNetwork:InitializeFixedInputIsland", string(obj), char(string(n_island)), char(s_island)))
                     end
-                    [rm_pf, flag, output, sct_point] = solve_fixed_input(obj, c_nv);
+                    [rm_pf, flag, output] = obj.calculate_fixed_input_powerflow(c_nv{:}, Format="powerflow(mat)");
                     if flag ~= 1
                         error(msg("GUILDA:PowerNetwork:InitializeFixedInputFailed", char(string(output.message))))
                     end
@@ -226,14 +224,15 @@ function [rm_pf, flag, output] = initialize(obj, varargin)
     try
         %% 3. Write the point to the buses (they set the equilibria of their components and local controllers)
         if s_method == "FixedInput"   % states, inputs and powers as solved (get_equilibrium is not called)
+            tab_comp = output.tab_component;
             for i_bus = 1:n_Bus
-                iv_k = find(sct_point.iv_bus == i_bus);
-                c_V  = sct_point.cv_V(i_bus);
-                cv_I = sct_point.cv_I(iv_k);
+                lv_k = tab_comp.Bus == string(obj.a_Bus{i_bus});
+                c_V  = rm_pf(i_bus,1);
+                cv_I = tab_comp.I(lv_k);
                 cv_S = c_V .* conj(cv_I);
                 rm_PQ = [real(cv_S), imag(cv_S)];
-                c_XU  = [sct_point.c_X(iv_k), sct_point.c_U(iv_k)];
-                if isempty(iv_k)
+                c_XU  = [tab_comp.X(lv_k), tab_comp.U(lv_k)];
+                if ~any(lv_k)
                     rm_PQ = [];
                     c_XU  = {};
                 end
