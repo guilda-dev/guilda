@@ -355,12 +355,3 @@ function u = input_of(eq, k, z)
         u(eq.i_Pm) = z(eq.i_zPm);
     end
 end
-
-
-function mustBeIntegerOrNaN(r)
-% NaN (the automatic value) or a nonnegative integer
-    if ~isnan(r)
-        mustBeNonnegative(r)
-        mustBeInteger(r)
-    end
-end
