@@ -1295,6 +1295,10 @@ of its parent, so the labels stay unique within a network.
 
 母線と機器の `graph` パラメータに `MarkerSize`(NaN: 既定)と `Color`("": 既定)の列が加わりました。CSV ファイルにもこの 2 列が書き出されます。2 列のない古い CSV は既定値で読み込みます。
 
+### 1.28 時間応答の機器ごとの電流(`ResultODE.rm_Icomponent`)
+
+`net.simulate` の結果 `ResultODE` に、各機器が母線へ注入する電流 `rm_Icomponent`(n_t × 2·機器数)が加わりました。列は `sv_bus` / `c_component` の順(母線ごと、母線内は機器の順)に `Ireal, Iimag` で、値は各機器の `f_I` を出力時刻で評価したもの(母線へ流れ込む向きが正)、解列中は `NaN` です。母線の機器電流の和はソルバーの許容誤差の範囲で `rm_I` と一致します(地絡中の地絡母線は地絡電流の分だけ違います)。`odeResults.Bus(i).Component(j).I`(表 `[Ireal, Iimag]`)で同じ値を読めます。`export` の表には `<機器>_Ireal`、`<機器>_Iimag` の列が加わります。
+
 ## 2. Changes so far — model authors
 
 新しいモデルの実装手順は `_GUILDAdoc/developer/model-implementation.html` を見てください。
