@@ -37,7 +37,7 @@ function net = import_matpower(mpc, opt)
 % mpc2 = tools.network_to_mpc(net);                              % back to MATPOWER
 % ```
 %
-% See also PowerNetwork.import_csv, tools.network_to_mpc
+% See also PowerNetwork.import, tools.network_to_mpc
 %
 % <@Group> Data IO
 

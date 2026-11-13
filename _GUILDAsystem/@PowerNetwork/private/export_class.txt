@@ -1,7 +1,7 @@
 classdef ___MODEL_NAME___ < PowerNetwork
 % Power network ___MODEL_NAME___ loaded from the CSV model folder next to this file.
 %
-% Made by PowerNetwork.export_csv (____MADE_DATE____).
+% Made by PowerNetwork.export (____MADE_DATE____).
 %
 % - Bus: ___BUS_NUM___
 % - Branch: ___BRANCH_NUM___
@@ -13,7 +13,7 @@ classdef ___MODEL_NAME___ < PowerNetwork
 % res = net.calculate_powerflow();
 % ```
 %
-% See also PowerNetwork.import_csv, PowerNetwork.export_csv
+% See also PowerNetwork.import, PowerNetwork.export
 
     properties(Constant)
         ver = 1
@@ -24,7 +24,7 @@ classdef ___MODEL_NAME___ < PowerNetwork
             % Build the network from the CSV model folder.
             s_filepath   = mfilename("fullpath");
             s_dirpath    = fileparts(s_filepath);
-            PowerNetwork.import_csv(s_dirpath, Network=obj);
+            PowerNetwork.import(s_dirpath, Network=obj);
         end
     end
 end

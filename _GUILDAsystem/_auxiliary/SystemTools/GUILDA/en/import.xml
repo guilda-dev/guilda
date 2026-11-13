@@ -1,7 +1,7 @@
-<!--This is an XML file containing error messages related to the file "import_csv".-->
+<!--This is an XML file containing error messages related to the file "import".-->
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
-        <entry key="NotFound">Model folder not found: {0}. Give the folder that holds bus/, branch/ and component/ (e.g. the path returned by net.export_csv).</entry>
+        <entry key="NotFound">Model folder not found: {0}. Give the folder that holds bus/, branch/ and component/ (e.g. the path returned by net.export).</entry>
         <entry key="InvalidNetwork">Network must be a PowerNetwork object (got {0}).</entry>
         <entry key="NoComponentFolder">Folder not found: {0}. The network is built without components. Give the folder that holds bus/, branch/ and component/.</entry>
         <entry key="MissingFile">File not found: {0}. Export the model again or add {1}.</entry>

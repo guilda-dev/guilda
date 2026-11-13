@@ -54,11 +54,11 @@ classdef PowerNetwork < PowerSystemModel
 %
 % - `Hz` [Hz]: nominal frequency. Models read it with get_Hz() and receive it as omega0.
 %   Set by the constructor (GUILDA.config("Model","Hz")), by writing the table and by
-%   import_csv. An edit marks the stale tag `odefcn` of the network: initialize only
+%   import. An edit marks the stale tag `odefcn` of the network: initialize only
 %   rebuilds the function handles (each model compares the frequency it was built with).
 % - `baseMVA` [MVA]: system base of all per-unit values (default 100). Stored per-unit
 %   values are not converted when it changes. Set by the constructor, by writing the
-%   table, import_csv and import_matpower. An edit makes the power flow stale.
+%   table, import and import_matpower. An edit makes the power flow stale.
 %
 % Power-flow settings are parameters of the buses (`tab_parameter.powerflow`: V, Varg)
 % and the components (`tab_parameter.powerflow`: P, Q). OPF limits and costs are in
@@ -183,7 +183,7 @@ classdef PowerNetwork < PowerSystemModel
         G = draw_diagram(obj,ax)
 
         % IO
-        path = export_csv(obj, path, opt)
+        path = export(obj, path, opt)
     end
     methods (Hidden)
         % Time simulation: the data of one run for SolverODE.solve (tests and debugging)
@@ -191,7 +191,7 @@ classdef PowerNetwork < PowerSystemModel
     end
     methods(Static)
         % IO
-        net = import_csv(path, opt)
+        net = import(path, opt)
         net = import_matpower(mpc, opt)
     end
     methods(Access=protected)

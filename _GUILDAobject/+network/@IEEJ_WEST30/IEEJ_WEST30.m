@@ -117,7 +117,7 @@ classdef IEEJ_WEST30 < PowerNetwork
             s_filepath   = mfilename("fullpath");
             s_dirpath    = fileparts(s_filepath);
             s_section    = fullfile(s_dirpath, opt.Section);
-            PowerNetwork.import_csv(s_section, Network=obj, Initialize=false);
+            PowerNetwork.import(s_section, Network=obj, Initialize=false);
             if opt.LocalController
                 add_avr(obj, s_section);
                 if opt.Governor

@@ -1,14 +1,14 @@
 function net = import(path, net, opt)
-% Build a network from a CSV model folder (v3 wrapper of PowerNetwork.import_csv).
+% Build a network from a CSV model folder (v3 wrapper of PowerNetwork.import).
 %
 % v3 entry point of the CSV import (deprecated: warns GUILDA:Deprecated:CsvNetHandlerImport).
-% Calls PowerNetwork.import_csv(path, Network=net, Initialize=opt.Initialize); without net
+% Calls PowerNetwork.import(path, Network=net, Initialize=opt.Initialize); without net
 % a new network is built.
 %
 % <@Deprecated>
-% Use PowerNetwork.import_csv(path, Network=net) instead.
+% Use PowerNetwork.import(path, Network=net) instead.
 %
-% See also PowerNetwork.import_csv
+% See also PowerNetwork.import
     arguments (Input)
         path               (1,1) string   % Model folder.
         net                       = []   % Network to add the model to.
@@ -18,5 +18,5 @@ function net = import(path, net, opt)
         net   % The built network.
     end
     Deprecated("CsvNetHandlerImport");
-    net = PowerNetwork.import_csv(path, Network=net, Initialize=opt.Initialize);
+    net = PowerNetwork.import(path, Network=net, Initialize=opt.Initialize);
 end

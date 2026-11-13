@@ -1,6 +1,6 @@
 % F16 CSV の書き出しと読み込みの確認
 %
-%   export_csv は書き出さなかったローカル制御器とグローバル制御器を警告で示す (Issue #94)
+%   export は書き出さなかったローカル制御器とグローバル制御器を警告で示す (Issue #94)
 %   組み込み系統の構築では警告を出さない
 %   母線、ブランチ、機器のタグは FullTag 列で往復し、FullTag の無い CSV は従来どおり読む (Issue #95)
 %   add_bus の FullTag は完全なタグを与え、読み込みは母線の改名を記録しない (Issue #95)
@@ -13,7 +13,7 @@
 s_id = "GUILDA:PowerNetwork:ControllersNotSaved";
 
 
-%% export_csv names the local controllers it does not write
+%% export names the local controllers it does not write
 net = DebugScript.helper.quiet(@() network.IEEE9bus());
 [s_dir, c] = temp_folder(); %#ok<ASGLU>
 [s_msg, id, s_path] = export_with_warning(net, fullfile(s_dir, "Net9"));
@@ -24,12 +24,12 @@ assert(contains(s_msg, "Global (0): none"))
 assert(isfile(fullfile(s_path, "bus", "parameter.csv")), "警告の前に書き出しを終える")
 
 % 読み込んだ系統に制御器は戻らない (仕様)
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path));
 assert(isempty(net2.a_Bus{1}.a_Component{1}.a_LocalController))
 assert(size(net2.get_sys().A, 1) == 9)
 
 
-%% export_csv names the global controllers it does not write
+%% export names the global controllers it does not write
 net = DebugScript.helper.quiet(@() network.IEEE9bus());
 agc = net.add_global_controller("agc-PI", ["B001SG1","B002SG1"]);
 [s_dir, c] = temp_folder(); %#ok<ASGLU>
@@ -39,7 +39,7 @@ assert(contains(s_msg, "Local (6):"))
 assert(contains(s_msg, "Global (1): " + string(agc)))
 
 
-%% export_csv does not warn without controllers
+%% export does not warn without controllers
 net = DebugScript.helper.build_ieee14();
 [s_dir, c] = temp_folder(); %#ok<ASGLU>
 [~, id] = export_with_warning(net, fullfile(s_dir, "Net14"));
@@ -115,7 +115,7 @@ net.a_Bus{1}.s_tag = "B1000";
 net.a_Bus{2}.s_tag = "Bus2";
 net.a_Bus{3}.s_tag = "BX";
 [s_dir, c] = temp_folder(); %#ok<ASGLU>
-s_path = DebugScript.helper.quiet(@() net.export_csv(fullfile(s_dir, "Net")));
+s_path = DebugScript.helper.quiet(@() net.export(fullfile(s_dir, "Net")));
 tab = readtable(fullfile(s_path, "bus", "parameter.csv"), "TextType", "string");
 assert(isequal(tab.Tag, ["B"; "Bus"; "BX"]))
 assert(isequal(tab.FullTag, ["B1000"; "Bus2"; "BX"]))
@@ -124,7 +124,7 @@ assert(isequal(tab.FullTag, ["B1000"; "Bus2"; "BX"]))
 %% CSV without FullTag loads as before
 net = tag_network();
 [s_dir, c] = temp_folder(); %#ok<ASGLU>
-s_path = DebugScript.helper.quiet(@() net.export_csv(fullfile(s_dir, "Old")));
+s_path = DebugScript.helper.quiet(@() net.export(fullfile(s_dir, "Old")));
 remove_full_tag(fullfile(s_path, "bus", "parameter.csv"));
 remove_full_tag(fullfile(s_path, "branch", "parameter.csv"));
 for s_key = string({dir(fullfile(s_path, "component", "*-*")).name})
@@ -134,7 +134,7 @@ s_file = fullfile(s_path, "bus", "parameter.csv");
 tab = readtable(s_file, "TextType", "string");
 tab.Tag = ["Bus"; "Bus"; "Bus"];
 writetable(tab, s_file);
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
 assert(isequal(string(net2.a_Bus), ["Bus001"; "Bus002"; "Bus003"]), "Tag は接頭辞のまま")
 assert(isequal(sort(string(net2.a_Bus{1}.a_Component)), ["Bus001LPQ2"; "Bus001SG1"]))
 
@@ -142,24 +142,24 @@ assert(isequal(sort(string(net2.a_Bus{1}.a_Component)), ["Bus001LPQ2"; "Bus001SG
 %% An empty FullTag keeps the automatic tag
 net = tag_network();
 [s_dir, c] = temp_folder(); %#ok<ASGLU>
-s_path   = DebugScript.helper.quiet(@() net.export_csv(fullfile(s_dir, "Blank")));
+s_path   = DebugScript.helper.quiet(@() net.export(fullfile(s_dir, "Blank")));
 s_file   = fullfile(s_path, "bus", "parameter.csv");
 tab = readtable(s_file, "TextType", "string");
 tab.FullTag = ["Keep7"; ""; ""];
 writetable(tab, s_file);
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
 assert(isequal(string(net2.a_Bus), ["Keep7"; "B008"; "B009"]))
 
 
 %% A duplicate FullTag is renamed by the tag rule
 net = tag_network();
 [s_dir, c] = temp_folder(); %#ok<ASGLU>
-s_path   = DebugScript.helper.quiet(@() net.export_csv(fullfile(s_dir, "Dup")));
+s_path   = DebugScript.helper.quiet(@() net.export(fullfile(s_dir, "Dup")));
 s_file   = fullfile(s_path, "bus", "parameter.csv");
 tab = readtable(s_file, "TextType", "string");
 tab.FullTag(2) = tab.FullTag(1);
 writetable(tab, s_file);
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
 assert(numel(unique(string(net2.a_Bus))) == 3)
 assert(string(net2.a_Bus{2}) == "B001002")
 
@@ -189,11 +189,11 @@ net.add_branch("pi", [1, 2], X=0.1);
 net.a_Bus{1}.add_component("load-power", P=-0.1);
 net.a_Bus{2}.add_component("load-power", P=-0.1);
 [s_dir, c] = temp_folder(); %#ok<ASGLU>
-s_path = DebugScript.helper.quiet(@() net.export_csv(fullfile(s_dir, "Net")));
+s_path = DebugScript.helper.quiet(@() net.export(fullfile(s_dir, "Net")));
 
 % 古さのメッセージは初回の initialize の後から積まれるので、初期化済みの系統へ読み込む
 net2 = initialized_network();
-DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Network=net2, Initialize=false));
+DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Network=net2, Initialize=false));
 assert(all(ismember(["Sub7"; "N1234"], string(net2.a_Bus))))
 sv_log = net2.sct_stale.powerflow;
 assert(any(endsWith(sv_log, "<<-Add--- Sub7")) && any(endsWith(sv_log, "<<-Add--- N1234")))
@@ -209,7 +209,7 @@ tab = renamevars(tab, "Bshunt", "Bshnt");
 tab.Bshnt(:) = 0.5;
 writetable(tab, s_file);
 [net2, s_msg, id] = import_with_warning(s_path);
-assert(id == "GUILDA:import_csv:UnknownColumn")
+assert(id == "GUILDA:import:UnknownColumn")
 assert(contains(s_msg, "bus/parameter.csv") && contains(s_msg, "Bshnt"))
 assert(numel(net2.a_Bus) == 3 && net2.a_Bus{1}.tab_parameter.dynamics.Bshunt == 0, "列は無視する")
 
@@ -223,7 +223,7 @@ tab.V0(:) = 1.1;
 tab.Varg0(:) = 0.1;
 writetable(tab, s_file);
 lastwarn("");
-s_log = evalc("net2 = PowerNetwork.import_csv(s_path);");
+s_log = evalc("net2 = PowerNetwork.import(s_path);");
 assert(isempty(lastwarn()) && contains(s_log, "V0, Varg0") && contains(s_log, "bus/parameter.csv"))
 assert(numel(net2.a_Bus) == 3 && ~any(ismember(["V0","Varg0"], net2.a_Bus{1}.tab_parameter.powerflow.Properties.VariableNames)))
 
@@ -239,7 +239,7 @@ for s_rel = ["network/parameter.csv", "branch/parameter.csv", "component/load-po
     sv_line(2:end) = sv_line(2:end) + ",1";
     writelines(sv_line, s_file);
     [~, s_msg, id] = import_with_warning(s_path);
-    assert(id == "GUILDA:import_csv:UnknownColumn", s_rel)
+    assert(id == "GUILDA:import:UnknownColumn", s_rel)
     assert(contains(s_msg, s_rel) && contains(s_msg, "備考"), s_rel)
 end
 
@@ -268,7 +268,7 @@ for sct = [struct("rel", "branch/parameter.csv", "col", "To", "row", 2, "val", 9
     tab.Hz = r_baseHz + 1;
     writetable(tab, s_file);
     ME = import_error(s_path, net);
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:import_csv:BusRow", sct.rel)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:import:BusRow", sct.rel)
     s_want = sprintf("%s row %d: %s = %s", sct.rel, sct.row, sct.col, string(sct.val));
     assert(contains(ME.message, s_want), ME.message)
     assert(isempty(net.a_Bus) && isempty(net.a_Branch), "検査の前に追加しない")
@@ -285,7 +285,7 @@ for s_val = ["x", ""]
     tab.To(2) = s_val;
     writetable(tab, s_file);
     ME = import_error(s_path, PowerNetwork("Host"));
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:import_csv:BusRow", s_val)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:import:BusRow", s_val)
     assert(contains(ME.message, "branch/parameter.csv row 2: To = NaN"), ME.message)
 end
 
@@ -297,7 +297,7 @@ tab = readtable(s_file, "TextType", "string");
 tab.ParameterID(1) = NaN;
 writetable(tab, s_file);
 ME = import_error(s_path, PowerNetwork("Host"));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:import_csv:UnknownID")
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:import:UnknownID")
 assert(contains(ME.message, "main.csv row 1: ParameterID = NaN"), ME.message)
 
 
@@ -305,7 +305,7 @@ assert(contains(ME.message, "main.csv row 1: ParameterID = NaN"), ME.message)
 [s_path, c] = csv_folder(); %#ok<ASGLU>
 rmdir(fullfile(s_path, "component"), "s");
 [net2, s_msg, id] = import_with_warning(s_path);
-assert(id == "GUILDA:import_csv:NoComponentFolder")
+assert(id == "GUILDA:import:NoComponentFolder")
 assert(contains(s_msg, "component"))
 assert(numel(net2.a_Bus) == 3)
 
@@ -317,7 +317,7 @@ for s_rel = ["bus/parameter.csv", "branch/parameter.csv", "component/load-power/
     delete(fullfile(s_path, s_rel));
     net = PowerNetwork("Host");
     ME = import_error(s_path, net);
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:import_csv:MissingFile", s_rel)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:import:MissingFile", s_rel)
     assert(contains(ME.message, s_rel), ME.message)
     assert(isempty(net.a_Bus), s_rel)
 end
@@ -332,7 +332,7 @@ for s_col = ["ParameterID", "OpfID"]
     writetable(tab, s_file);
     net = PowerNetwork("Host");
     ME = import_error(s_path, net);
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:import_csv:UnknownID", s_col)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:import:UnknownID", s_col)
     assert(contains(ME.message, "component/load-power/main.csv row 2: " + s_col + " = 99"), ME.message)
     assert(isempty(net.a_Bus), s_col)
 end
@@ -364,13 +364,13 @@ assert(numel(net.a_Bus) == 3 && numel(net.a_Branch) == 1)
 function [s_path, c] = csv_folder()
     % Exported folder of tag_network
     [s_dir, c] = temp_folder();
-    s_path = DebugScript.helper.quiet(@() tag_network().export_csv(fullfile(s_dir, "Net")));
+    s_path = DebugScript.helper.quiet(@() tag_network().export(fullfile(s_dir, "Net")));
 end
 
 function [net, s_msg, id] = import_with_warning(s_path)
     % Import without initialize and return the last warning
     lastwarn("");
-    net = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
+    net = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
     [s_msg, id] = lastwarn(); id = DebugScript.helper.msg_id(s_msg, id);
     s_msg   = string(s_msg);
     id      = string(id);
@@ -379,7 +379,7 @@ end
 function ME = import_error(s_path, net)
     ME = [];
     try
-        DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Network=net, Initialize=false));
+        DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Network=net, Initialize=false));
     catch ME
     end
     assert(~isempty(ME), "エラーにならない")
@@ -406,8 +406,8 @@ end
 
 function [net2, c] = round_trip(net)
     [s_dir, c] = temp_folder();
-    s_path = DebugScript.helper.quiet(@() net.export_csv(fullfile(s_dir, "Net")));
-    net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
+    s_path = DebugScript.helper.quiet(@() net.export(fullfile(s_dir, "Net")));
+    net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
 end
 
 function remove_full_tag(s_file)
@@ -416,9 +416,9 @@ function remove_full_tag(s_file)
 end
 
 function [s_msg, id, s_path] = export_with_warning(net, s_path)
-    % Run export_csv and return the last warning
+    % Run export and return the last warning
     lastwarn("");
-    s_path = DebugScript.helper.quiet(@() net.export_csv(s_path));
+    s_path = DebugScript.helper.quiet(@() net.export(s_path));
     [s_msg, id] = lastwarn(); id = DebugScript.helper.msg_id(s_msg, id);
     s_msg   = string(s_msg);
     id      = string(id);

@@ -1,7 +1,7 @@
-function path = export_csv(obj, path, opt)
+function path = export(obj, path, opt)
 % Write the network to a CSV model folder.
 %
-% Writes the network to a CSV model folder that PowerNetwork.import_csv reads back:
+% Writes the network to a CSV model folder that PowerNetwork.import reads back:
 %   <path>/network/parameter.csv        Hz, baseMVA (net.tab_parameter.base)
 %   <path>/bus/parameter.csv            one row per bus, in the order of net.a_Bus
 %   <path>/branch/parameter.csv         one row per branch; From/To are bus row numbers
@@ -21,11 +21,11 @@ function path = export_csv(obj, path, opt)
 % <@Examples>
 % ```matlab
 % net  = network.IEEE14bus;
-% path = net.export_csv(fullfile(tempdir, "@MyIEEE14"), Overwrite=true);
-% net2 = PowerNetwork.import_csv(path);
+% path = net.export(fullfile(tempdir, "@MyIEEE14"), Overwrite=true);
+% net2 = PowerNetwork.import(path);
 % ```
 %
-% See also PowerNetwork.import_csv
+% See also PowerNetwork.import
 %
 % <@Group> Data IO
 
@@ -45,14 +45,14 @@ function path = export_csv(obj, path, opt)
     end
     s_class = strip(s_folder, "left", "@");
     if opt.ClassFile && ~isvarname(s_class)
-        error(msg("GUILDA:export_csv:InvalidClassName", s_class));
+        error(msg("GUILDA:export:InvalidClassName", s_class));
     end
     if s_parent ~= "" && ~isfolder(s_parent)
-        error(msg("GUILDA:export_csv:NoParentFolder", s_parent));
+        error(msg("GUILDA:export:NoParentFolder", s_parent));
     end
     if isfolder(path)
         if ~opt.Overwrite
-            error(msg("GUILDA:export_csv:FolderExists", path));
+            error(msg("GUILDA:export:FolderExists", path));
         end
         for s_sub = ["network", "bus", "branch", "component"]
             if isfolder(fullfile(path, s_sub))
@@ -220,7 +220,7 @@ function [tab_opt, tab_para, tab_opf] = component_table(a_Comp, sv_Bus)
 end
 
 function s_code = class_file(s_class, net)
-    s_template   = fullfile(fileparts(mfilename("fullpath")), "private", "export_csv_class.txt");
+    s_template   = fullfile(fileparts(mfilename("fullpath")), "private", "export_class.txt");
     s_code       = string(fileread(s_template));
 
     a_comp   = tools.vcellfun(@(bus) bus.a_Component, net.a_Bus);

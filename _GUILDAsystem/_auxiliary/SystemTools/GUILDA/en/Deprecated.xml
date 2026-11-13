@@ -6,8 +6,8 @@
         <entry key="InitializeMethods">The initialize option methods is deprecated: use net.initialize(Method="{0}").</entry>
         <entry key="InitializeMethodValue">The initialize method "{0}" is deprecated: use net.initialize(Method="{1}"). Note that initialize now returns [result, flag, output]; result.tab_bus is the old second output.</entry>
         <entry key="ContinuationPowerFlowFunction">Continuation_Power_Flow(net, opt) is deprecated: use [result, flag] = net.calculate_continuation_powerflow(LoadBus=opt.CPFBus). The v3 options map to LoadBus, InitialLambda, MaxIteration, StepSize, ArcLength and UseInternalState; result.rm_x is the old CPF_Result.x_sol.</entry>
-        <entry key="CsvNetHandlerImport">CsvNetHandler.import(path, net) is deprecated: use net = PowerNetwork.import_csv(path) for a new network, or PowerNetwork.import_csv(path, Network=obj) to load into an existing one (e.g. in the constructor of a network class).</entry>
-        <entry key="CsvNetHandlerExport">CsvNetHandler.export(net, ModelName, savepath=folder) is deprecated: use net.export_csv(fullfile(folder, "@"+ModelName)). The folder now also holds network/parameter.csv with Hz and baseMVA.</entry>
+        <entry key="CsvNetHandlerImport">CsvNetHandler.import(path, net) is deprecated: use net = PowerNetwork.import(path) for a new network, or PowerNetwork.import(path, Network=obj) to load into an existing one (e.g. in the constructor of a network class).</entry>
+        <entry key="CsvNetHandlerExport">CsvNetHandler.export(net, ModelName, savepath=folder) is deprecated: use net.export(fullfile(folder, "@"+ModelName)). The folder now also holds network/parameter.csv with Hz and baseMVA.</entry>
         <entry key="GetSysPositionalPoint">The positional point get_sys(x, V, u) of a {0} is deprecated: use get_sys(Point=p), with p in the order of the variables of the layer (states, voltage, inputs; for a component, comp.get_variable_map()).</entry>
     </message>
 </rsccat>

@@ -1,4 +1,4 @@
-<!--This is an XML file containing error messages related to the file "export_csv".-->
+<!--This is an XML file containing error messages related to the file "export".-->
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
         <entry key="InvalidClassName">The class file needs a valid MATLAB name, but the folder name gives "{0}". Rename the folder or set ClassFile=false.</entry>
