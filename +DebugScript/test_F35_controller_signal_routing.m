@@ -141,7 +141,7 @@ s_rm = evalc("gen.remove_local_controller(gov.s_tag);");
 assert(contains(s_rm, ysrc(gc, gen, "Pref") + " -> (no input)"), s_rm)
 DebugScript.helper.quiet(@() net.initialize);
 ME = caught(@() net.simulate(DebugScript.helper.noop_event(net,[0,0.1]).s_tag, Time=[0,0.1]));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:GconNoTarget", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:GconNoTarget", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "Pref") && contains(ME.message, gen.s_tag), ME.message)
 
 
@@ -295,7 +295,7 @@ function c_val = probe_all(net, tspan, c_events, f)
     box = containers.Map("KeyType", "double", "ValueType", "any");
     sct_options = DebugScript.helper.ode_options("Progress", "none");
     sct_options.PhaseProbe = @(o) store(box, f(o));
-    DebugScript.helper.quiet(@() net.solver_ODE.solve(net, tspan, c_events, sct_options));
+    DebugScript.helper.quiet(@() DebugScript.helper.solve_direct(net, one_scenario(net, c_events), tspan, sct_options));
     c_val = box.values;
 end
 
@@ -337,4 +337,14 @@ function ME = caught(fcn)
     catch ME
     end
     assert(~isempty(ME), "エラーにならない")
+end
+
+
+function s_tag = one_scenario(net, c_events)
+% シナリオのセルを 1 つのシナリオのタグにする (2 つ以上は DebugScript.helper.combine でまとめる)
+    sc = c_events{1};
+    if numel(c_events) > 1
+        sc = DebugScript.helper.combine(net, c_events{:});
+    end
+    s_tag = sc.s_tag;
 end

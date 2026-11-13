@@ -29,7 +29,7 @@ classdef (Sealed = true) Scenario < LayerPackage
 % - An opened branch is left out of the bus admittance matrix and is reconnected at t_end;
 %   a t_end at or after the end of the simulation keeps it open. Opening branches so that a
 %   part of the network is left without any component is an error
-%   (GUILDA:SolverODE:OpenBranchIsland). A part with components is simulated as an island; a
+%   (GUILDA:PowerNetwork:OpenBranchIsland). A part with components is simulated as an island; a
 %   constant-power load cut off from all generators usually makes the phase fail (flag = -1).
 % - An input value is a constant (one number per input name, or one for all) or a time
 %   series [t, v_1, ..., v_n] (or a table with the variables Time and the input names), t
@@ -146,12 +146,12 @@ classdef (Sealed = true) Scenario < LayerPackage
         sct_page = gui_content(obj)
     end
 
-    methods (Access={?PowerNetwork, ?SolverODE, ?Scenario})
+    methods (Access={?PowerNetwork, ?Scenario})
         validate(obj)
     end
 
-    methods (Static, Access={?SolverODE})
-        [tab_phase, sct_phase] = compile(c_scenario, net, time)
+    methods (Access={?PowerNetwork})
+        [tab_phase, sct_event] = compile(obj, sct_dae, time)
     end
 
     methods (Access=private)

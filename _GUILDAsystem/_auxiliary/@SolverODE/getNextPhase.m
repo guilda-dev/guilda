@@ -1,10 +1,11 @@
 function [x0, M0] = getNextPhase(ctx, x0, M0, RM, EM)
 % Initial value and mass matrix of the next phase from the end of the current one.
 %
-% A generator tripped in the phase just solved restarts from its equilibrium at the bus
-% voltage (and its local controllers from theirs), a faulted bus from its equilibrium
-% voltage and current, and a tripped global controller from its equilibrium. The trips and
-% faults are those of ctx (the phase just solved).
+% A generator tripped in the phase just solved restarts from its state at the bus voltage
+% (f_reconnect; and its local controllers from their equilibrium), a faulted bus from its
+% equilibrium voltage and current, and a tripped global controller from its equilibrium.
+% A tripped component without f_reconnect keeps the values it had when it was tripped.
+% The trips and faults are those of ctx (the phase just solved).
     arguments (Input)
         ctx                % Context of the run.
         x0   (:,1) double  % Reduced state vector at the end of the phase.
@@ -22,8 +23,8 @@ function [x0, M0] = getNextPhase(ctx, x0, M0, RM, EM)
     c_comp = ctx.c_comp;
     for j = 1:numel(c_comp)
         b = c_comp{j};
-        if ~ctx.lv_compOn(j) && isa(b.comp, 'component.generator.abstract')
-            x0(b.iv_x) = b.comp.get_equilibrium([1,1j]*x0(b.iv_V), 0, 0, 0);
+        if ~ctx.lv_compOn(j) && ~isempty(b.f_reconnect)
+            x0(b.iv_x) = b.f_reconnect([1,1j]*x0(b.iv_V));
             M0(b.iv_x, b.iv_x) = ctx.rm_M(b.iv_x, b.iv_x);
 
             % Its local controllers restart from their equilibrium too
@@ -35,8 +36,7 @@ function [x0, M0] = getNextPhase(ctx, x0, M0, RM, EM)
         end
     end
 
-    a_bus = ctx.net.a_Bus;
-    for i = 1:numel(a_bus)
+    for i = 1:ctx.n_bus
         if ctx.lv_fault(i)
             iv = [ctx.iv_V(2*i-1 + (0:1)'); ctx.iv_I(2*i-1 + (0:1)')];
             x0(iv) = ctx.rv_z0(iv);

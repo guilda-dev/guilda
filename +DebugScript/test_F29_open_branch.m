@@ -49,7 +49,7 @@ assert(norm(full(c_Y{2} - Y_full), 1) > 1, "開放で Y が変わる")
 box = containers.Map("KeyType", "double", "ValueType", "double");
 sct_options = DebugScript.helper.ode_options("Progress", "none");
 sct_options.PhaseProbe = @(o) store(box, jacobian_error_ode(o));
-net.solver_ODE.solve(net, [0,2], {DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003")}, sct_options);
+DebugScript.helper.solve_direct(net, DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003").s_tag, [0,2], sct_options);
 err = cell2mat(box.values);
 assert(numel(err) == 3 && max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
@@ -140,7 +140,7 @@ net3.add_branch("pi", [3,4], "R", 0.01, "X", 0.1, "C", 0.01);
 DebugScript.helper.quiet(@() net3.initialize);
 ev = DebugScript.helper.scenario("open", net3, "TimeSpan", [1,1.5], "OpenBranch", "EL003");
 [s_id, s_msg] = event_error(net3, ev);
-assert(s_id == "GUILDA:SolverODE:OpenBranchIsland", s_id + ": " + s_msg)
+assert(s_id == "GUILDA:PowerNetwork:OpenBranchIsland", s_id + ": " + s_msg)
 assert(all(contains(s_msg, ["EL003", "B004", "Phase 2"])), s_msg)
 
 
@@ -189,7 +189,7 @@ function c_Y = phase_admittance(net, time, c_events)
     box = containers.Map("KeyType", "double", "ValueType", "any");
     sct_options = DebugScript.helper.ode_options("Progress", "none");
     sct_options.PhaseProbe = @(o) store(box, ode_ymat(o));
-    [~, flag, output] = net.solver_ODE.solve(net, time, c_events, sct_options);
+    [~, flag, output] = DebugScript.helper.solve_direct(net, one_scenario(net, c_events), time, sct_options);
     assert(flag == 1, output.message)
     % PhaseProbe は区間ごとに 1 回 (密行列で解き直す区間は、切り替え前の疎行列を記録)
     assert(box.Count == output.nPhases)
@@ -268,4 +268,14 @@ function net = ring(N)
     end
     
     DebugScript.helper.quiet(@() net.initialize);
+end
+
+
+function s_tag = one_scenario(net, c_events)
+% シナリオのセルを 1 つのシナリオのタグにする (2 つ以上は DebugScript.helper.combine でまとめる)
+    sc = c_events{1};
+    if numel(c_events) > 1
+        sc = DebugScript.helper.combine(net, c_events{:});
+    end
+    s_tag = sc.s_tag;
 end

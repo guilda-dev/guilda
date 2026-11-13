@@ -23,7 +23,7 @@ classdef PowerNetwork < PowerSystemModel
 %   every model; the edit does not reach them). The components and controllers mark
 %   their own stale tags.
 % - `initialize` brings every layer up to date; the analyses only read the stale tags
-%   they need and stop with their own error (GUILDA:SolverODE:Stale,
+%   they need and stop with their own error (GUILDA:PowerNetwork:SimulateStale,
 %   SolverCPF:Stale, and PowerSystemModel:Stale of get_sys), naming the
 %   reasons, until it has run.
 %
@@ -184,6 +184,10 @@ classdef PowerNetwork < PowerSystemModel
 
         % IO
         path = export_csv(obj, path, opt)
+    end
+    methods (Hidden)
+        % Time simulation: the data of one run for SolverODE.solve (tests and debugging)
+        [sct_dae, sct_event, rv_x0, tab_phase] = build_simulation_data(obj, s_scenario, time)
     end
     methods(Static)
         % IO

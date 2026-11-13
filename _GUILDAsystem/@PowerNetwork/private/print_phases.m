@@ -1,5 +1,9 @@
-function print_phases(tab_phase, sr_evt)
+function print_phases(tab_phase)
 % Verbose: one line per integration phase with its active events
+    arguments (Input)
+        tab_phase table  % output.phases.
+    end
+    sr_evt = string(tab_phase.Properties.VariableNames(3:end));
     fprintf("Time simulation: %d phase(s)\n", height(tab_phase));
     for k = 1:height(tab_phase)
         sv = sr_evt(tab_phase{k,3:end});

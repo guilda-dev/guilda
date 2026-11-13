@@ -75,8 +75,18 @@ function odeX = getODEFunction(ctx, t, x, RM, EM, lg)
 
     % 4. Inputs: the sum of their sources (connection map) and the input events
     e = ctx.rv_e;
-    for m = 1:numel(ctx.c_offset)
-        e(ctx.c_offset{m}{1}) = e(ctx.c_offset{m}{1}) + ctx.c_offset{m}{2}(t);
+    if ~isempty(ctx.c_input)
+        acc = zeros(size(e));
+        for m = 1:numel(ctx.c_input)
+            ev = ctx.c_input{m};
+            if isempty(ev.c_F)
+                v = ev.rv_v;
+            else
+                v = cellfun(@(F) F(t), ev.c_F);
+            end
+            acc(ev.iv) = acc(ev.iv) + v;
+        end
+        e(ctx.iv_inputAll) = e(ctx.iv_inputAll) + acc(ctx.iv_inputAll);
     end
     iv_in = ctx.iv_in;
     odeX(iv_in) = x(iv_in) - e - ctx.S_sig*s - ctx.S_var*x;

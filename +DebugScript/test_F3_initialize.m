@@ -393,7 +393,7 @@ ld.set_input(u0/0.95);
 assert(numel(net.sct_stale.input) == 1 && contains(net.sct_stale.input, "rv_Uequilibrium"))
 assert(numel(ld.sct_stale.equilibrium) == 1 && isempty(ld.sct_stale.odefcn))
 assert(isempty(net.sct_stale.powerflow) && isequal(ld.rv_Uequilibrium, u0/0.95))
-assert(DebugScript.helper.msg_id(error_of(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0 1]))) == "GUILDA:SolverODE:InputEdited")
+assert(DebugScript.helper.msg_id(error_of(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0 1]))) == "GUILDA:PowerNetwork:SimulateInputEdited")
 assert(DebugScript.helper.msg_id(error_of(@() net.get_sys())) == "GUILDA:PowerSystemModel:InputEdited")
 assert(DebugScript.helper.msg_id(error_of(@() ld.get_sys())) == "GUILDA:PowerSystemModel:InputEdited")
 assert(DebugScript.helper.msg_id(error_of(@() net.a_Bus{5}.get_sys())) == "GUILDA:PowerSystemModel:InputEdited")

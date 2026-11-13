@@ -731,7 +731,7 @@ assert(flag == 1, output.message)
 % output.message は止まった区間・時刻とソルバーの警告文を示す
 ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", [0, 0; 1, 1e3]);
 lastwarn("");
-[~, flag, output] = net.solver_ODE.solve(net, [0,4], {ev}, DebugScript.helper.ode_options());   % net.simulate の警告で lastwarn が変わらない
+[~, flag, output] = DebugScript.helper.solve_direct(net, ev.s_tag, [0,4], DebugScript.helper.ode_options());   % net.simulate の警告で lastwarn が変わらない
 s_warn = lastwarn();
 assert(flag == -1)
 assert(output.tEnd > 1 && output.tEnd < 2.5)
@@ -812,7 +812,7 @@ function [d_x, d_v] = boundary_jumps(net, sol)
     for k = 1:numel(c_model)
         m = c_model{k};
         if isempty(m.sv_x); continue; end
-        sv_dif = m.sv_x(any(tools.read_mass(m) ~= 0, 1));
+        sv_dif = m.sv_x(any(m.f_Mass([],[],[],[]) ~= 0, 1));   % 定数の質量行列
         lv_dif = lv_dif | (sol.tab_variable.Kind == "x" & sol.tab_variable.Owner == string(m) ...
                            & ismember(sol.tab_variable.Name, sv_dif));
     end

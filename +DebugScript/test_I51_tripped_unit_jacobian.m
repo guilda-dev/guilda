@@ -139,7 +139,7 @@ function err = jacobian_errors(net, tspan, c_events)
     box = containers.Map("KeyType", "double", "ValueType", "double");
     sct_options = DebugScript.helper.ode_options("Progress", "none");
     sct_options.PhaseProbe = @(o) store(box, jacobian_error_ode(o));
-    net.solver_ODE.solve(net, tspan, c_events, sct_options);
+    DebugScript.helper.solve_direct(net, one_scenario(net, c_events), tspan, sct_options);
     err = cell2mat(box.values);
 end
 
@@ -158,4 +158,14 @@ function err = jacobian_error_ode(o)
         Jn(:,i) = (o.ODEFcn(0, x+e) - o.ODEFcn(0, x-e)) / (2*h);
     end
     err = max(abs(J - Jn), [], "all");
+end
+
+
+function s_tag = one_scenario(net, c_events)
+% シナリオのセルを 1 つのシナリオのタグにする (2 つ以上は DebugScript.helper.combine でまとめる)
+    sc = c_events{1};
+    if numel(c_events) > 1
+        sc = DebugScript.helper.combine(net, c_events{:});
+    end
+    s_tag = sc.s_tag;
 end

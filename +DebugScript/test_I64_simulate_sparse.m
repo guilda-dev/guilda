@@ -16,7 +16,7 @@ sct_options = DebugScript.helper.ode_options("Progress", "none");
 sct_options.PhaseProbe = @(o) store(box, issparse(o.MassMatrix.MassMatrix) && ...
                                        issparse(o.Jacobian.Jacobian(0, o.InitialValue)));
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.6], "FaultBus", "B008");
-[~, flag, output] = net.solver_ODE.solve(net, [0,1], {ev}, sct_options);
+[~, flag, output] = DebugScript.helper.solve_direct(net, ev.s_tag, [0,1], sct_options);
 assert(flag == 1 && output.isSparse)
 assert(all(cell2mat(box.values)))
 
@@ -42,7 +42,7 @@ box = containers.Map("KeyType", "double", "ValueType", "logical");
 sct_options = DebugScript.helper.ode_options("Progress", "none");
 sct_options.PhaseProbe = @(o) store(box, issparse(o.MassMatrix.MassMatrix));
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.05,0.06], "FaultBus", string(net.a_Bus{1}));
-[res, flag, output] = net.solver_ODE.solve(net, [0,0.1], {ev}, sct_options);
+[res, flag, output] = DebugScript.helper.solve_direct(net, ev.s_tag, [0,0.1], sct_options);
 assert(flag == 1 && ~output.isSparse)
 assert(all(~cell2mat(box.values(num2cell(2:box.Count)))), "2 番目以降の区間は密")
 assert(all(isfinite(res.rm_variable(end,:))))

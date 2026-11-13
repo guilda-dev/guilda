@@ -102,6 +102,10 @@ function tab = test_levels()
     % ---- F36_tutorial_all_models -----------------------------------------------------------------
     "test_F36_tutorial_all_models/TheNetworkHasEveryRegisteredModelKeyAndAnEmptyBus", "medium"
     "test_F36_tutorial_all_models/AThree_phaseFaultOnBus8Settles", "medium"
+    % ---- F39_simulation_data -----------------------------------------------------------------------
+    "test_F39_simulation_data/solveReadsOnlyTheData", "medium"
+    "test_F39_simulation_data/DisturbancesArePositions", "medium"
+    "test_F39_simulation_data/FormatStructMirrorsTheModelHierarchy", "medium"
     % ---- F37_disp_connection ---------------------------------------------------------------------
     % ネットワークはファイル内で共有 (shared_net): 最初に走るテストが Tutorial10bus と IEEE14bus を作る
     "test_F37_disp_connection/ItRunsOnTutorial10busAndIEEE14busWith0And1Outputs", "medium"

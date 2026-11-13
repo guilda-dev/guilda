@@ -1,12 +1,11 @@
-function [tab_phase, sct_phase] = compile(c_scenario, net, time)
-% Build the phases of one run from its scenarios (called by SolverODE.solve).
+function [tab_phase, sct_event] = compile(obj, sct_dae, time)
+% Build the phases of one run of the scenario (called by PowerNetwork.build_simulation_data).
 %
-% Checks the scenarios against net (each belongs to it, and the tags of its disturbances
-% exist in it now), combines their disturbances and splits the simulation time into phases
-% in which the set of active disturbances does not change. Without any disturbance, the
-% run has one disturbance "NoAction" at t0. The time is that of the call or of the
-% scenarios (Scenario.Time); time = [] (no scenario and no time) gives [0, 10], the default
-% Time of a scenario. The disturbances do not change the time.
+% Checks the disturbances against the network as it is now (validate) and splits the
+% simulation time into phases in which the set of active disturbances does not change.
+% Each point after the first of a time series input with InputMethod "zoh" is also a
+% phase boundary, so that the input is constant within a phase. Without any disturbance,
+% the run has one disturbance "NoAction" at t0. The disturbances do not change the time.
 %
 % tab_phase is output.phases: t1, t2 and one logical column per disturbance (its tag), plus
 % NoAction<k> for a phase k without any active disturbance:
@@ -16,58 +15,41 @@ function [tab_phase, sct_phase] = compile(c_scenario, net, time)
 %      0  |  1 |   0   |   0  |    0       <- NoAction1 when no disturbance is active
 %      1  | .. |   1   |   0  |    0
 %
-% sct_phase(k) holds what phase k applies, built once here: t1, t2, sr_event (tags of the
-% active disturbances), sv_fault, sv_trip, sv_open (tags), and c_Xoffset, c_Uoffset with one
-% cell per component in the order of the buses and their components: the state offset
-% added at the start of the phase (offsets of the disturbances that start there; all active
-% offsets in the first phase) and the input function u(t) of the phase, t from the start
-% of the phase ([] without an input). A time series input is interpolated here by its
-% InputMethod (the last value kept after the last point).
+% sct_event(k) holds what phase k applies, as positions in the data of the run sct_dae
+% (the tags are matched here, the solver matches none):
+%   t1, t2          [s] start and end of the phase
+%   iv_tripComp     tripped components (positions in sct_dae.c_comp)
+%   iv_tripGC       tripped global controllers (positions in sct_dae.c_gc)
+%   iv_faultBus     faulted buses (positions in sct_dae.sv_bus)
+%   iv_openBranch   open branches (positions in sct_dae.sv_branch, ascending)
+%   iv_offset, rv_offset  the state offsets added at the start of the phase: rows x of
+%                   sct_dae.tab_variable and their values (offsets of the disturbances that
+%                   start there; all active offsets in the first phase)
+%   c_input         one row {iv_row, rv_t, rm_v, s_method} per active input disturbance:
+%                   the rows u of tab_variable, the times from the start of the phase
+%                   (increasing), the values (one row per time, one column per row) and the
+%                   interpolation ("foh", "spline"; "zoh" and a constant value: one point,
+%                   the value of the phase)
+%   sr_event        tags of the active disturbances
     arguments (Input)
-        c_scenario cell                 % Scenarios of the run.
-        net                             % Network being simulated.
-        time (:,1) double = []          % [s] [t0; tend], or [] for [0, 10].
+        obj                     % Scenario (checked against its network).
+        sct_dae (1,1) struct    % Data of the run: tab_variable, sv_bus, sv_branch, sv_comp, sv_gc.
+        time    (1,2) double    % [s] Simulation time [t0, tend].
     end
     arguments (Output)
-        tab_phase table   % Phase table (output.phases).
-        sct_phase struct  % Data of each phase (n_phase x 1).
+        tab_phase table           % Phase table (output.phases).
+        sct_event (:,1) struct    % Data of each phase (n_phase x 1).
     end
+    obj.validate();
 
-    % Each scenario: a scalar of this network, with its tags in the network now
-    if ~all(cellfun(@(s) isa(s, "Scenario") && isscalar(s), c_scenario))
-        error(msg("GUILDA:Scenario:ScenarioArray"));
-    end
-    for k = 1:numel(c_scenario)
-        sc = c_scenario{k};
-        if sc.a_PowerNetwork ~= net
-            error(msg("GUILDA:Scenario:OtherNetwork", char(sc.s_tag), char(net.s_tag), ...
-                      char("network """ + sc.a_PowerNetwork.s_tag + """")));
-        end
-        sc.validate();
-    end
-
-    % Disturbances of all the scenarios, in the order of the scenarios
     c_dist = cell(1,0);
-    for k = 1:numel(c_scenario)
-        tab = c_scenario{k}.tab_disturbance;
-        for r = 1:height(tab)
-            d = Scenario.record(tab, r);
-            d.Scenario = c_scenario{k}.s_tag;
-            c_dist{end+1} = d; %#ok<AGROW>
-        end
-    end
-    sv_tag = string(cellfun(@(d) d.Tag, c_dist, 'UniformOutput', false));
-    [~, iv_first] = unique(sv_tag, 'stable');
-    if numel(iv_first) < numel(sv_tag)
-        s_dup   = sv_tag(setdiff(1:numel(sv_tag), iv_first));
-        s_dup   = s_dup(1);
-        sv_sc   = cellfun(@(d) d.Scenario, c_dist(sv_tag == s_dup));
-        error(msg("GUILDA:Scenario:DuplicateRunTag", char(s_dup), char(join(unique(sv_sc, 'stable'), ", "))));
+    tab = obj.tab_disturbance;
+    for r = 1:height(tab)
+        d = Scenario.record(tab, r);
+        d.Scenario = obj.s_tag;
+        c_dist{end+1} = d; %#ok<AGROW>
     end
 
-    if isempty(time)
-        time = [0; 10];
-    end
     % Without disturbances: an empty one at t0, so that the time table is built as usual
     if isempty(c_dist)
         d = Scenario.blank("NoAction", time(1));
@@ -76,7 +58,7 @@ function [tab_phase, sct_phase] = compile(c_scenario, net, time)
     end
 
     [tab_phase, c_dist] = phase_table(c_dist, time);
-    sct_phase = phase_data(tab_phase, c_dist, net);
+    sct_event = phase_data(tab_phase, c_dist, sct_dae);
 end
 
 
@@ -103,7 +85,16 @@ function [tab_phase, c_dist] = phase_table(c_dist, time)
                 mat2str(ts), mat2str(time([1,end]).'));
     end
 
-    all_time = getTimeSpan(times, time);
+    % The points of a "zoh" input are phase boundaries
+    rv_zoh = zeros(0,1);
+    for k = 1:n_dist
+        d = c_dist{k};
+        if d.InputMethod == "zoh"
+            tb = d.TimeSpan(1) + d.InputValue(2:end,1);
+            rv_zoh = [rv_zoh; tb(tb < d.TimeSpan(end))]; %#ok<AGROW>
+        end
+    end
+    all_time = getTimeSpan([times(:); rv_zoh], time);
 
     vtab = size(all_time,1);
     rtab = size(times,1);
@@ -143,10 +134,9 @@ function [tab_phase, c_dist] = phase_table(c_dist, time)
 end
 
 
-function sct_phase = phase_data(tab_phase, c_dist, net)
-% What each phase applies (see compile)
-    c_comp = cellfun(@(b) b.a_Component, net.a_Bus, 'UniformOutput', false);
-    c_comp = vertcat(cell(0,1), c_comp{:});
+function sct_event = phase_data(tab_phase, c_dist, sct_dae)
+% What each phase applies, as positions (see compile)
+    tab = sct_dae.tab_variable;
     n_phase = height(tab_phase);
     c_s = cell(n_phase, 1);
     sv_name = string(tab_phase.Properties.VariableNames(3:end));
@@ -154,118 +144,80 @@ function sct_phase = phase_data(tab_phase, c_dist, net)
         lv_act = tab_phase{tp,3:end};
         c_act  = c_dist(lv_act);
         s = struct();
-        s.t1       = tab_phase{tp,"t1"};
-        s.t2       = tab_phase{tp,"t2"};
+        s.t1 = tab_phase{tp,"t1"};
+        s.t2 = tab_phase{tp,"t2"};
+        sv = tags(c_act, "TripUnit");
+        s.iv_tripComp   = find(ismember(sct_dae.sv_comp, sv));
+        s.iv_tripGC     = find(ismember(sct_dae.sv_gc, sv));
+        s.iv_faultBus   = find(ismember(sct_dae.sv_bus, tags(c_act, "FaultBus")));
+        s.iv_openBranch = find(ismember(sct_dae.sv_branch, tags(c_act, "OpenBranch")));
+        [s.iv_offset, s.rv_offset] = phase_offsets(c_act(:), tab, s.t1, tp == 1);
+        s.c_input  = phase_inputs(c_act(:), tab, s.t1);
         s.sr_event = sv_name(lv_act).';
-        c = cellfun(@(d) d.FaultBus, c_act, 'UniformOutput', false);
-        s.sv_fault = vertcat(strings(0,1), c{:});
-        c = cellfun(@(d) d.TripUnit, c_act, 'UniformOutput', false);
-        s.sv_trip  = vertcat(strings(0,1), c{:});
-        c = cellfun(@(d) d.OpenBranch, c_act, 'UniformOutput', false);
-        s.sv_open  = unique(vertcat(strings(0,1), c{:}));
-        [s.c_Xoffset, s.c_Uoffset] = phase_offsets(c_act(:), c_comp, [s.t1, s.t2], tp);
         c_s{tp} = s;
     end
-    sct_phase = vertcat(c_s{:});
+    sct_event = vertcat(c_s{:});
 end
 
 
-function [c_Xoffset, c_Uoffset] = phase_offsets(odeEvents, c_comp, TimePhase, Iteration)
-% State offsets and input functions of each component in one phase.
-% Offsets and inputs are matched by name and summed over the disturbances, in their order.
-    c_Xoffset = cell(size(c_comp));
-    c_Uoffset = cell(size(c_comp));
+function sv = tags(c_act, s_field)
+% Tags of one field over the active disturbances
+    c  = cellfun(@(d) reshape(string(d.(s_field)), [], 1), c_act, 'UniformOutput', false);
+    sv = vertcat(strings(0,1), c{:});
+end
 
-    osU = cellfun(@(c) c.OffsetUnit,  odeEvents);
-    % An offset is applied only once, in the phase where its disturbance starts.
-    lv_osStart = cellfun(@(c) c.TimeSpan(1) == TimePhase(1), odeEvents) | Iteration == 1;
-    osU(~lv_osStart) = "";
-    osX = cellfun(@(c) c.OffsetState, odeEvents, 'UniformOutput', false);
-    osV = cellfun(@(c) c.OffsetValue, odeEvents, 'UniformOutput', false);
-
-    inU = cellfun(@(c) c.InputUnit,  odeEvents);
-    inN = cellfun(@(c) c.InputName,  odeEvents, 'UniformOutput', false);
-    inV = cellfun(@(c) c.InputValue, odeEvents, 'UniformOutput', false);
-    inM = cellfun(@(c) c.InputMethod, odeEvents);
-
-    for j = 1:numel(c_comp)
-        comp  = c_comp{j};
-        c_tag = comp.s_tag;
-        l_osU = ismember(osU, c_tag);
-        l_inU = ismember(inU, c_tag);
-
-        rv_Xoffset = zeros(size(comp.sv_x(:)));
-        for k = find(l_osU(:))'
-            [lv_X, loc] = ismember(osX{k}, comp.sv_x);
-            osVk = osV{k} .* ones(size(osX{k}));
-            rv_Xoffset(loc(lv_X)) = rv_Xoffset(loc(lv_X)) + osVk(lv_X);
+function [iv_offset, rv_offset] = phase_offsets(c_act, tab, t1, l_first)
+% State offsets added at the start of a phase: those of the disturbances that start
+% there (all active offsets in the first phase), summed per row in the order of the
+% disturbances
+    rv_acc = zeros(height(tab), 1);
+    lv_set = false(height(tab), 1);
+    for k = 1:numel(c_act)
+        d = c_act{k};
+        if strlength(d.OffsetUnit) == 0 || ~(l_first || d.TimeSpan(1) == t1)
+            continue
         end
-        c_Xoffset{j} = rv_Xoffset;
+        iv_row = find(tab.Kind == "x" & tab.Owner == d.OffsetUnit);
+        [lv_X, loc] = ismember(string(d.OffsetState), tab.Name(iv_row));
+        rv_v = d.OffsetValue .* ones(size(d.OffsetState));
+        iv = iv_row(loc(lv_X));
+        rv_acc(iv) = rv_acc(iv) + reshape(rv_v(lv_X), [], 1);
+        lv_set(iv) = true;
+    end
+    iv_offset = find(lv_set);
+    rv_offset = rv_acc(iv_offset);
+end
 
-        ini = repmat({@(t) 0}, size(comp.sv_u(:)));
-        lv_set = false(size(ini));
-        for k = find(l_inU(:))'
-            [lv_N, loc] = ismember(inN{k}, comp.sv_u);
-
-            exV = inV{k};
-            if inM(k) == ""
-                exV = num2cell(exV);
-                if isscalar(exV)
-                    exV = repmat(exV, size(inN{k}));
-                end
-            else
-                % Time series: one per input, made a function of the phase in event2fhandle
-                exV = arrayfun(@(i) struct("rv_t", exV(:,1), "rv_v", exV(:,1+i), "s_method", inM(k)), ...
-                               (1:numel(inN{k})).', 'UniformOutput', false);
-            end
-
-            for ni = find(lv_N(:))'
-                f1 = event2fhandle(exV{ni}, odeEvents{k}, TimePhase);
-                if lv_set(loc(ni))
-                    f0 = ini{loc(ni)};
-                    ini{loc(ni)} = @(t) f0(t) + f1(t);
-                else
-                    ini{loc(ni)} = f1;
-                    lv_set(loc(ni)) = true;
-                end
-            end
+function c_input = phase_inputs(c_act, tab, t1)
+% Input events of a phase: {iv_row, rv_t, rm_v, s_method} per active input disturbance
+% (the times from the start of the phase; one point for a constant value and for "zoh")
+    c_input = cell(0,4);
+    for k = 1:numel(c_act)
+        d = c_act{k};
+        if strlength(d.InputUnit) == 0
+            continue
         end
-        % Without an input, empty: the right-hand side skips it
-        if any(lv_set)
-            c_Uoffset{j} = @(t) cellfun(@(f) f(t), ini);
+        iv_row = find(tab.Kind == "u" & tab.Owner == d.InputUnit);
+        [lv_N, loc] = ismember(string(d.InputName), tab.Name(iv_row));
+        if ~any(lv_N)
+            continue
+        end
+        exV = d.InputValue;
+        if d.InputMethod == ""
+            rv_v = reshape(exV, 1, []) .* ones(1, numel(d.InputName));
+            c_in = {0, rv_v(lv_N), "zoh"};
         else
-            c_Uoffset{j} = [];
+            rv_t = exV(:,1);
+            rm_v = exV(:, 1 + find(lv_N));
+            if d.InputMethod == "zoh"
+                % The value of the last point at or before the start of the phase (a
+                % point after the first starts a phase, see phase_table)
+                i_pt = max(1, nnz(d.TimeSpan(1) + rv_t <= t1));
+                c_in = {0, rm_v(i_pt,:), "zoh"};
+            else
+                c_in = {rv_t - (t1 - d.TimeSpan(1)), rm_v, d.InputMethod};
+            end
         end
-    end
-end
-
-function exV = event2fhandle(exV, oev, TimePhase)
-% A value as a function of the time since the start of the phase
-    if isa(exV, 'double')
-        exV = @(t) exV;
-    else
-        % t of each phase starts at 0; the series takes the time since the disturbance start.
-        ts = TimePhase(1) - oev.TimeSpan(1);
-        F  = series_function(exV, TimePhase(2) - oev.TimeSpan(1));
-        exV = @(t) F(t+ts);
-    end
-end
-
-function F = series_function(sct, te)
-% Interpolating function of one input of a time series, of the time since the disturbance
-% start (temporary, until SolverODE interpolates). "foh" is linear and "spline" a cubic
-% spline (griddedInterpolant); outside the points the end values are kept. "zoh" holds the
-% value of the last point at or before the time; at the end te of the phase it keeps the
-% value from the left, so that a point at a phase boundary acts in the next phase. A
-% single point is a constant.
-    rv_t = sct.rv_t;
-    rv_v = sct.rv_v;
-    if isscalar(rv_t)
-        F = @(t) rv_v;
-    elseif sct.s_method == "zoh"
-        F = @(t) rv_v(max(1, nnz(rv_t <= t & rv_t < te)));
-    else
-        sct_method = struct("foh", "linear", "spline", "spline");
-        F = griddedInterpolant(rv_t, rv_v, sct_method.(sct.s_method), "nearest");
+        c_input(end+1,:) = [{iv_row(loc(lv_N))}, c_in]; %#ok<AGROW>
     end
 end
