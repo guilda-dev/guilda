@@ -4,12 +4,12 @@ function sol = simulateFcn_struct_result(sct_sol, sct_dae, sct_event, tab_phase,
 % sol.t is the time of every row of every table (no Time column in the tables). Each bus
 % has the tables V (Vre, Vim), I (Ire, Iim: the current injected into the network) and
 % P, Q (P + jQ = V conj(I)); each component x (states), u (inputs) and I (the current it
-% injects, f_I evaluated at each time; 0 while tripped); each local controller x and u
+% injects: rm_Icomponent of the solver, 0 while tripped); each local controller x and u
 % (its inputs uc), nested as in the model; each global controller x and u (one column
 % <input>_<unit tag> per controlled unit). The states and inputs of a tripped component
 % or global controller are NaN. The outputs y are not computed.
     arguments (Input)
-        sct_sol    (1,1) struct  % Trajectories of SolverODE.solve (rv_t, rm_variable, rm_I, rv_phase).
+        sct_sol    (1,1) struct  % Trajectories of SolverODE.solve (rv_t, rm_variable, rm_I, rm_Icomponent, rv_phase).
         sct_dae    (1,1) struct  % Data of the run (build_simulation_data).
         sct_event  (:,1) struct  % Phases of the run (the trips of each phase).
         tab_phase  table         % output.phases.
@@ -25,17 +25,15 @@ function sol = simulateFcn_struct_result(sct_sol, sct_dae, sct_event, tab_phase,
     X     = sct_sol.rm_variable;
     rv_phase = sct_sol.rv_phase(:);
 
-    % Trips of each time; time from the start of its phase (as the solver)
+    % Trips of each time
     n_comp = numel(sct_dae.c_comp);
     n_gc   = numel(sct_dae.c_gc);
     lm_compOff = false(n_t, n_comp);
     lm_gcOff   = false(n_t, n_gc);
-    rv_tp = zeros(n_t, 1);
     for p = 1:numel(sct_event)
         lv_p = rv_phase == p;
         lm_compOff(lv_p, sct_event(p).iv_tripComp) = true;
         lm_gcOff(lv_p, sct_event(p).iv_tripGC)     = true;
-        rv_tp(lv_p) = rv_t(lv_p) - sct_event(p).t1;
     end
 
     sol = struct();
@@ -69,12 +67,8 @@ function sol = simulateFcn_struct_result(sct_sol, sct_dae, sct_event, tab_phase,
         Xb = X(:, b.iv_x);
         Ub = X(:, b.iv_u);
         Ub(lv_off, :) = NaN;
-        Vb = X(:, iv_V(2*b.i_bus - 1 + (0:1)));
-        Ib = zeros(n_t, 2);
-        for k = find(~lv_off).'
-            Ik = b.f_I(rv_tp(k), Xb(k,:).', Vb(k,:).', Ub(k,:).');
-            Ib(k,:) = [real(Ik), imag(Ik)];
-        end
+        Ib = sct_sol.rm_Icomponent(:, 2*j - 1 + (0:1));
+        Ib(lv_off, :) = 0;
         sc = struct();
         sc.s_tag = b.s_tag;
         sc.x = block_table(Xb, tab.Name(b.iv_x), n_t);

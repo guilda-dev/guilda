@@ -31,6 +31,12 @@ classdef ResultODE < ResultBase
 %   event inputs).
 % - `rm_I` holds the columns B1 Ireal, B1 Iimag, B2 Ireal, ... They are not variables of the
 %   map; odeResults.Bus(i).I and .PQ are made from them.
+% - `rm_Icomponent` holds the current each component injects into its bus (its f_I at each
+%   time, positive into the bus): Ireal, Iimag of each component in the order of sv_bus and
+%   c_component. It is NaN while the component is tripped. At each time the currents of
+%   the components of a bus add up to its rm_I (Y V) within the tolerance of the solver
+%   (the residual of the current balance), except at a faulted bus during the fault: the
+%   fault current is in neither.
 % - `tab_output` has the rows y (outputs of the components) and yc (outputs of the
 %   controllers) of the variable map, with the columns of tab_variable. `rm_output` holds
 %   their trajectories, computed by the constructor from the output functions of the
@@ -38,8 +44,9 @@ classdef ResultODE < ResultBase
 %   tripped unit (its states are NaN) are NaN.
 % - `odeResults` has the fields t (time [s], column), Bus(i).V (table Vreal, Vimag),
 %   Bus(i).I (Ireal, Iimag), Bus(i).PQ (P, Q), Bus(i).Component(j).X (states, columns named
-%   by sv_x), Bus(i).Component(j).U (inputs, columns named by sv_u) and
-%   Bus(i).Component(j).Y (outputs, columns named by sv_y). Bus(i) follows net.a_Bus and
+%   by sv_x), Bus(i).Component(j).U (inputs, columns named by sv_u),
+%   Bus(i).Component(j).Y (outputs, columns named by sv_y) and Bus(i).Component(j).I (the
+%   current of the component: Ireal, Iimag of rm_Icomponent). Bus(i) follows net.a_Bus and
 %   Component(j) follows a_Component of the bus. The states and outputs of the local and
 %   global controllers are in rm_variable and rm_output only.
 % - At a boundary between two phases the time appears twice in rv_t and odeResults: the
@@ -66,6 +73,7 @@ classdef ResultODE < ResultBase
         tab_variable table = table()        % Variable map at the time of the simulation: its rows are the columns of rm_variable. <@Type> table ((n_x + n_v + n_u) x 8)
         rm_variable double = zeros(0,0)     % Trajectory of all variables: row k at rv_t(k), column m the variable tab_variable(m,:). <@Type> double (n_t x (n_x + n_v + n_u))
         rm_I double = zeros(0,0)            % [pu] Currents injected into the buses: Ireal, Iimag of each bus in the order of sv_bus. <@Type> double (n_t x 2 n_bus)
+        rm_Icomponent double = zeros(0,0)   % [pu] Current each component injects into its bus (its f_I): Ireal, Iimag of each component in the order of sv_bus and c_component; NaN while it is tripped. <@Type> double (n_t x 2 n_component)
         tab_output table = table()          % Outputs y and yc of the variable map: its rows are the columns of rm_output; columns as tab_variable. <@Type> table (n_out x 8)
         rm_output double = zeros(0,0)       % Trajectory of the outputs: row k at rv_t(k), column m the output tab_output(m,:); NaN while the unit is tripped. <@Type> double (n_t x n_out)
         sv_bus (:,1) string = strings(0,1)  % Bus tags, in the order of odeResults.Bus.
@@ -74,7 +82,7 @@ classdef ResultODE < ResultBase
     end
 
     properties (Dependent) % Result
-        odeResults                          % Trajectories per bus and component: a view of rv_t, rm_variable, rm_I and rm_output (see the class help). <@Type> struct (1x1)
+        odeResults                          % Trajectories per bus and component: a view of rv_t, rm_variable, rm_I, rm_Icomponent and rm_output (see the class help). <@Type> struct (1x1)
     end
 
     properties (Access=private, Hidden) % Internal state
@@ -90,7 +98,7 @@ classdef ResultODE < ResultBase
         % the trajectories of the solver and computes the outputs y, yc with the output
         % functions of the blocks; no network object is read.
             arguments (Input)
-                sct_sol      struct = struct() % Solver data: rv_t, rm_variable (variable rows of sct_dae.tab_variable: x, Vre, Vim, u, uc), rm_I, rv_phase (phase of each time).
+                sct_sol      struct = struct() % Solver data: rv_t, rm_variable (variable rows of sct_dae.tab_variable: x, Vre, Vim, u, uc), rm_I, rm_Icomponent (NaN when missing), rv_phase (phase of each time).
                 sct_dae      struct = struct() % Data of the run: tab_variable (the variable map) and the blocks c_comp, c_lc, c_gc (iv_x, iv_u, iv_y, i_bus, f_Y, s_tag), to recompute the outputs.
                 sct_network  struct = struct() % Snapshot of the network: struct(net, false).
                 sct_solver   struct = struct() % Solver information: solver, options, flag, output, elapsed (s or a tic value).
@@ -132,6 +140,11 @@ classdef ResultODE < ResultBase
             obj.rv_t        = sct_sol.rv_t;
             obj.rm_variable = sct_sol.rm_variable(:, lv_xu(1:n_var));
             obj.rm_I        = sct_sol.rm_I;
+            if isfield(sct_sol, "rm_Icomponent")
+                obj.rm_Icomponent = sct_sol.rm_Icomponent;
+            else
+                obj.rm_Icomponent = NaN(numel(obj.rv_t), 2*numel(vertcat(obj.c_component{:})));
+            end
             obj.rm_output   = output_trajectory(sct_sol, sct_dae);
             obj.c_index     = simulator_columns(obj.tab_variable, obj.tab_output, obj.sv_bus, obj.c_component);
         end
