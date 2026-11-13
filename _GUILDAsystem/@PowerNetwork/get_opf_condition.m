@@ -4,9 +4,7 @@ function varargout = get_opf_condition(obj, opt)
 % Stacks Bus.get_opf_condition of every bus (in the order of a_Bus, the components bus by
 % bus) and Branch.get_opf_condition of every branch (in the order of a_Branch). These are
 % the tables net.calculate_optimal_powerflow and net.build_opf_problem pass to
-% net.solver_OPF; row names are the tags. When no bus is the slack bus, the bus that
-% net.get_pf_condition would select (tools.slack_bus_index) has the Type "slack", as in the
-% power flow; l_isSlack is not written.
+% net.solver_OPF; row names are the tags.
 %
 % - Bus: Vmin, Vmax, Gshunt, Bshunt, Type, V, Varg.
 % - Component: Bus, HP, fP, HQ, fQ, P0, Q0, Pmin, Pmax, Qmin, Qmax (a load with infinite
@@ -53,11 +51,8 @@ function varargout = get_opf_condition(obj, opt)
                 array2table(zeros(0,10), "VariableNames", ["HP","fP","HQ","fQ","P0","Q0","Pmin","Pmax","Qmin","Qmax"])];
     tab_br0  = [table(strings(0,1), strings(0,1), complex(zeros(0,2,2)), 'VariableNames', ["From","To","Y"]), ...
                 array2table(zeros(0,8), "VariableNames", ["X","tap","phase","Pmax","Qmax","Vargmax","Imax","Smax"])];
-    tab_bus = vertcat(tab_bus0, c_bus{:});
-    i_slack = tools.slack_bus_index(obj);   % a slack bus that the power flow selects
-    tab_bus.Type(i_slack) = "slack";
     sct_OPFcondition = struct( ...
-              "Bus", tab_bus, ...
+              "Bus", vertcat(tab_bus0, c_bus{:}), ...
         "Component", vertcat(tab_com0, c_com{:}), ...
            "Branch", vertcat(tab_br0, c_br{:}));
 

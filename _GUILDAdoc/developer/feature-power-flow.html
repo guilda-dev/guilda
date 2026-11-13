@@ -189,13 +189,13 @@
     <p lang="en">Preconditions and notes:</p>
     <p lang="ja">前提条件と注意点は次のとおりです。</p>
     <ul lang="en">
-      <li>At least one bus, and a slack bus or at least one bus with a component</li>
+      <li>At least one bus, and a slack bus set by the user (<code>bus.l_isSlack = true</code>); GUILDA never selects one (<code>GUILDA:PowerNetwork:NoSlackBus</code>)</li>
       <li><code>net.initialize()</code> not needed</li>
       <li>MATLAB alone: every method except <code>"fsolve"</code></li>
       <li><code>"fsolve"</code> needs Optimization Toolbox; without it the call stops with <code>GUILDA:require_toolbox:Unavailable</code></li>
     </ul>
     <ul lang="ja">
-      <li>母線が 1 つ以上必要です。さらに、slack 母線があるか、機器を持つ母線が 1 つ以上なければなりません。</li>
+      <li>母線が 1 つ以上と、利用者が設定した slack 母線（<code>bus.l_isSlack = true</code>）が必要です。GUILDA は slack 母線を選びません（<code>GUILDA:PowerNetwork:NoSlackBus</code>）。</li>
       <li><code>net.initialize()</code> を先に実行する必要はありません。</li>
       <li><code>"fsolve"</code> 以外の計算方法は、MATLAB 本体だけで動きます。</li>
       <li><code>"fsolve"</code> には Optimization Toolbox が必要です。ないときは <code>GUILDA:require_toolbox:Unavailable</code> で止まります。</li>
@@ -204,12 +204,12 @@
 <pre><code>sct_PFcondition = net.get_pf_condition(Display=true)</code></pre>
     <ul lang="en">
       <li>Returns what <code>calculate_powerflow</code> solves, the same way <code>get_opf_condition</code> does for the OPF: <code>Bus</code> (the rows of <code>Bus.get_pf_condition</code>: Type, Varg, V, P, Q; row names = bus tags) and <code>Y</code> (the table of <code>get_admittance_matrix</code>)</li>
-      <li>When no bus is the slack bus, the bus that would be selected is the slack bus of the table (INFO <code>SlackSelected</code>); <code>l_isSlack</code> is never written, so the network is not changed</li>
+      <li>The slack bus is the bus with <code>l_isSlack = true</code>; GUILDA never selects one. Without it, <code>get_pf_condition</code> stops with <code>GUILDA:PowerNetwork:NoSlackBus</code>, whose message shows how to set one. It changes nothing</li>
       <li><code>Display=true</code> (default) prints the <code>Bus</code> table, not Y</li>
     </ul>
     <ul lang="ja">
       <li><code>calculate_powerflow</code> が解くデータを、OPF の <code>get_opf_condition</code> と同じ形で返します。<code>Bus</code>（<code>Bus.get_pf_condition</code> の行。列は Type, Varg, V, P, Q、行名は母線のタグ）と <code>Y</code>（<code>get_admittance_matrix</code> の table）です。</li>
-      <li>スラック母線がないときは、選ばれる母線を表の中でスラック母線にします（INFO <code>SlackSelected</code>）。<code>l_isSlack</code> は書かないので、ネットワークは変わりません。</li>
+      <li>スラック母線は <code>l_isSlack = true</code> の母線で、GUILDA は選びません。ないときは <code>get_pf_condition</code> が <code>GUILDA:PowerNetwork:NoSlackBus</code> で停止し、メッセージで設定の仕方を示します。何も変えません。</li>
       <li><code>Display=true</code>（既定）では <code>Bus</code> の表を表示します。Y は表示しません。</li>
     </ul>
     <h3 id="fixed-input"><span lang="en">Power flow with the inputs held: <code>calculate_fixed_input_powerflow</code></span><span lang="ja">入力を固定した潮流計算: <code>calculate_fixed_input_powerflow</code></span></h3>
@@ -219,7 +219,7 @@
       <li>Options: <code>Format</code> (the same four values and default as above; the <code>ResultPF</code> has the solver <code>"FixedInput"</code> and no <code>tab_PFcondition</code>), <code>Solver</code> (<code>"newton"</code> when left out, <code>"levenberg-marquardt"</code>, <code>"fsolve"</code>; <code>"gradient"</code> and <code>"dynamic"</code> stop with <code>GUILDA:PowerNetwork:InitializeFixedInputSolver</code>), <code>Tolerance</code>, <code>MaxIteration</code> (<code>NaN</code>: 50, 100 or 400), <code>Verbose</code>, <code>WarmStart</code> (<code>true</code>: from the held equilibrium; <code>false</code>, or a component without one: from a power flow that is not written). The values left out come from the PowerFlowCalculation section, except <code>Solver</code></li>
       <li><code>output.tab_component</code>: one row per component (row names = component tags) with <code>Bus</code>, <code>X</code>, <code>U</code>, <code>I</code></li>
       <li>The equations are built in the method file (residual, Jacobian, initial point) and solved by <code>MethodNewtonRaphson</code>, <code>MethodLevenbergMarquardt</code> or <code>MethodFsolve</code>; <code>net.solver_PF</code> is not used</li>
-      <li>Writes nothing; the slack bus and Y come from <code>get_pf_condition</code>, which selects a slack bus for the calculation when none is set, as for <code>calculate_powerflow</code>. <code>net.initialize(Method="FixedInput")</code> writes the solution (see <a href="feature-initialize.html#INIT-03d">Initialization</a>)</li>
+      <li>Writes nothing; the slack bus and Y come from <code>get_pf_condition</code>, as for <code>calculate_powerflow</code> (no slack bus: <code>NoSlackBus</code>). <code>net.initialize(Method="FixedInput")</code> writes the solution (see <a href="feature-initialize.html#INIT-03d">Initialization</a>)</li>
       <li>Every component must hold its inputs (<code>InitializeInputNotSet</code>) and the slack bus needs a generator (<code>InitializeNoSlackGenerator</code>). A network split into islands does not converge; <code>initialize</code> checks the islands before the call</li>
     </ul>
     <ul lang="ja">
@@ -227,7 +227,7 @@
       <li>オプションは <code>Format</code>（上と同じ 4 つの値と既定値。<code>ResultPF</code> のソルバーは <code>"FixedInput"</code> で、<code>tab_PFcondition</code> は持ちません）、<code>Solver</code>（省くと <code>"newton"</code>。ほかに <code>"levenberg-marquardt"</code>、<code>"fsolve"</code>。<code>"gradient"</code> と <code>"dynamic"</code> は <code>GUILDA:PowerNetwork:InitializeFixedInputSolver</code> で止まります）、<code>Tolerance</code>、<code>MaxIteration</code>（<code>NaN</code> なら 50、100、400）、<code>Verbose</code>、<code>WarmStart</code>（<code>true</code> なら保持している平衡点から、<code>false</code> のときや平衡点のない機器があるときは書き込まない潮流計算から始めます）です。<code>Solver</code> 以外の省いた値は PowerFlowCalculation セクションから読みます。</li>
       <li><code>output.tab_component</code> は機器ごとに 1 行（行名は機器のタグ）の table で、変数は <code>Bus</code>、<code>X</code>、<code>U</code>、<code>I</code> です。</li>
       <li>方程式（残差、ヤコビ行列、初期点）はメソッドのファイル内で組み立て、<code>MethodNewtonRaphson</code>、<code>MethodLevenbergMarquardt</code>、<code>MethodFsolve</code> で解きます。<code>net.solver_PF</code> は使いません。</li>
-      <li>何も書き込みません。スラック母線と Y は <code>get_pf_condition</code> から取ります。スラック母線がなければ、<code>calculate_powerflow</code> と同じくこの計算のために 1 つを選びます。解を書き込むのは <code>net.initialize(Method="FixedInput")</code> です（<a href="feature-initialize.html#INIT-03d">初期化</a>を参照）。</li>
+      <li>何も書き込みません。スラック母線と Y は、<code>calculate_powerflow</code> と同じく <code>get_pf_condition</code> から取ります（スラック母線がなければ <code>NoSlackBus</code>）。解を書き込むのは <code>net.initialize(Method="FixedInput")</code> です（<a href="feature-initialize.html#INIT-03d">初期化</a>を参照）。</li>
       <li>すべての機器が入力を持つこと（<code>InitializeInputNotSet</code>）、スラック母線に発電機があること（<code>InitializeNoSlackGenerator</code>）が必要です。分断されたネットワークでは収束しません。<code>initialize</code> は呼び出しの前に分断を確かめます。</li>
     </ul>
     <!-- ============================== 2. SEQUENCE ============================== -->
@@ -235,7 +235,7 @@
     <figure class="dg-figure">
       <div class="dg-only-wide">
         <svg class="dg-svg dg-sv fpf-seq" viewBox="0 0 780 544" role="img" aria-labelledby="fpf-seq-title">
-          <title id="fpf-seq-title">Call sequence of net.calculate_powerflow: the network checks the options in its arguments block and builds the solver settings, takes from get_pf_condition the power flow conditions of the buses (with a slack bus of the table if none is set; nothing is written) and the admittance matrix, and calls SolverPF.solve, which runs a Method class (fsolve or ode15s for two of them). The network then reports a failure, returns the solution in the form of Format, and builds a ResultPF only for Format "GUILDAorigin".</title>
+          <title id="fpf-seq-title">Call sequence of net.calculate_powerflow: the network checks the options in its arguments block and builds the solver settings, takes from get_pf_condition the power flow conditions of the buses (stopping with NoSlackBus when no bus is the slack bus; nothing is written) and the admittance matrix, and calls SolverPF.solve, which runs a Method class (fsolve or ode15s for two of them). The network then reports a failure, returns the solution in the form of Format, and builds a ResultPF only for Format "GUILDAorigin".</title>
           <defs>
             <marker id="fpf-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
             <marker id="fpf-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head is-muted" d="M0 0L10 5L0 10z"/></marker>
@@ -331,7 +331,7 @@
       </div>
       <ol class="dg-only-narrow fpf-narrow">
         <li><b>PF-01</b> <span lang="en">Caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.calculate_powerflow</code> (<code>arguments</code>, <code>solver_options</code>)</li>
-        <li><b>PF-02</b> <code>PowerNetwork.calculate_powerflow</code> → <code>PowerNetwork.get_pf_condition</code> (<code>Bus.l_isSlack</code>, <code>tools.slack_bus_index</code>)</li>
+        <li><b>PF-02</b> <code>PowerNetwork.calculate_powerflow</code> → <code>PowerNetwork.get_pf_condition</code> (<code>Bus.l_isSlack</code>)</li>
         <li><b>PF-03</b> <code>PowerNetwork.get_pf_condition</code> → <code>Bus.get_pf_condition</code></li>
         <li><b>PF-04</b> <code>PowerNetwork.get_admittance_matrix</code> → <code>Branch.get_admittance_matrix</code></li>
         <li><b>PF-05</b> <code>PowerNetwork</code> → <code>SolverPF.solve</code></li>
@@ -374,18 +374,18 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Stops with <code>GUILDA:PowerNetwork:NoBus</code> (no bus) or <code>NoSlackCandidate</code> (no bus with a component)</li>
+            <li>Stops with <code>GUILDA:PowerNetwork:NoBus</code> (no bus)</li>
             <li>Stacks the rows of PF-03 and adds Y (PF-04): <code>sct_PFcondition.Bus</code> and <code>sct_PFcondition.Y</code></li>
-            <li>When no bus is the slack bus: the bus of <code>tools.slack_bus_index</code> (first bus with a component with <code>Q = NaN</code>, else first bus with a component) is the slack bus of the table, its row the one of a slack bus (<code>[Varg, V]</code>); INFO <code>SlackSelected</code>, and <code>SlackWithoutQnan</code> when none of its components has <code>Q = NaN</code></li>
-            <li><code>l_isSlack</code> is never written: a get_ method does not change the network</li>
+            <li>Stops with <code>GUILDA:PowerNetwork:NoSlackBus</code> when no row is a slack bus: the user sets it (<code>bus.l_isSlack = true</code>), GUILDA never selects one; the message shows how</li>
+            <li>A get_ method: the network is not changed</li>
           </ul><ul lang="ja">
-            <li>母線がなければ <code>GUILDA:PowerNetwork:NoBus</code>、機器を持つ母線がなければ <code>NoSlackCandidate</code> で止まります。</li>
+            <li>母線がなければ <code>GUILDA:PowerNetwork:NoBus</code> で止まります。</li>
             <li>PF-03 の行を積み、Y（PF-04）を加えます。返すのは <code>sct_PFcondition.Bus</code> と <code>sct_PFcondition.Y</code> です。</li>
-            <li>slack 母線が 1 つもないときは、<code>tools.slack_bus_index</code> の母線（<code>Q = NaN</code> の機器を持つ最初の母線、なければ機器を持つ最初の母線）を表の slack 母線とし、その行を slack 母線の行（<code>[Varg, V]</code>）にします。INFO <code>SlackSelected</code> を表示し、その母線に <code>Q = NaN</code> の機器がなければ <code>SlackWithoutQnan</code> の警告を出します。</li>
-            <li><code>l_isSlack</code> は書きません。get_ のメソッドはネットワークを変えません。</li>
+            <li>slack 母線の行がなければ <code>GUILDA:PowerNetwork:NoSlackBus</code> で止まります。スラック母線は利用者が設定し（<code>bus.l_isSlack = true</code>）、GUILDA は選びません。メッセージに設定の仕方を示します。</li>
+            <li>get_ のメソッドなので、ネットワークは変えません。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>Bus.l_isSlack</code>, <code>a_Component</code>, <span lang="en">bus and component</span><span lang="ja">母線と機器の</span> <code>tab_parameter.powerflow</code></dd>
+          <dd><code>Bus.l_isSlack</code>, <span lang="en">bus and component</span><span lang="ja">母線と機器の</span> <code>tab_parameter.powerflow</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>tab_PFcondition</code> (= <code>sct_PFcondition.Bus</code>) and <code>cm_Y</code> (from <code>sct_PFcondition.Y</code> in the order of the bus tags); nothing in the network</span><span lang="ja"><code>tab_PFcondition</code>（= <code>sct_PFcondition.Bus</code>）と <code>cm_Y</code>（<code>sct_PFcondition.Y</code> から母線のタグの順に取り出します）。ネットワークは変えません。</span></dd>
         </dl>
@@ -660,7 +660,7 @@
     <!-- ============================== 5. SIDE EFFECTS ============================== -->
     <h2 id="side-effects"><span lang="en">5. Side effects on the model and caches</span><span lang="ja">5. モデルへの副作用とキャッシュ</span></h2>
     <ul lang="en">
-      <li>Nothing is written to the network. A slack bus that <code>get_pf_condition</code> selects (PF-02) is the slack bus of this calculation only: <code>l_isSlack</code> stays false, and the snapshot of the <code>ResultPF</code> records it as the slack bus</li>
+      <li>Nothing is written to the network; the slack bus is the one the user set</li>
       <li><code>net.solver_PF</code>: no settings; <code>sct_options</code> is built for each call</li>
       <li><code>net.solver_PF</code> keeps only the last converged solution and its bus tags (private <code>cv_Vwarm</code>, <code>sv_warmBus</code>):
         <ul>
@@ -676,7 +676,7 @@
       <li>Without <code>Format="GUILDAorigin"</code>, neither a <code>ResultPF</code> nor a snapshot is built</li>
     </ul>
     <ul lang="ja">
-      <li>ネットワークには何も書き込みません。<code>get_pf_condition</code> が選んだ slack 母線（PF-02）はこの計算だけの slack 母線で、<code>l_isSlack</code> は false のままです。<code>ResultPF</code> のスナップショットには、計算の slack 母線として記録します。</li>
+      <li>ネットワークには何も書き込みません。slack 母線は利用者が設定したものです。</li>
       <li><code>net.solver_PF</code> は設定を持ちません。<code>sct_options</code> は呼び出しのたびに作ります。</li>
       <li><code>net.solver_PF</code> が持つのは、最後に収束した解とその母線タグだけです（private の <code>cv_Vwarm</code> と <code>sv_warmBus</code>）。
         <ul>
@@ -709,7 +709,7 @@
         <tr><td><span lang="en">dynamic stop reasons</span><span lang="ja">dynamic の停止理由</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en"><code>output.message</code>: converged (flag 1); voltage collapse, phase angle instability or integration failure (flag −2); virtual time 1e4 reached without convergence (flag 0)</span><span lang="ja"><code>output.message</code> に理由が入ります。収束なら flag 1、電圧崩壊、位相角の不安定、積分の失敗なら flag −2、収束しないまま仮想時間 1e4 に達したら flag 0 です。</span></td></tr>
         <tr><td><span lang="en"><code>Solver="fsolve"</code> without Optimization Toolbox</span><span lang="ja">Optimization Toolbox なしの <code>Solver="fsolve"</code></span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:require_toolbox:Unavailable</code></td></tr>
         <tr><td><span lang="en">Unknown option name / invalid value</span><span lang="ja">未知のオプション名・不正な値</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en">The MATLAB error of the <code>arguments</code> block of <code>calculate_powerflow</code></span><span lang="ja"><code>calculate_powerflow</code> の <code>arguments</code> ブロックによる MATLAB のエラー</span></td></tr>
-        <tr><td><span lang="en">No bus / no component</span><span lang="ja">母線がない・機器がない</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:PowerNetwork:NoBus</code> / <code>GUILDA:PowerNetwork:NoSlackCandidate</code></td></tr>
+        <tr><td><span lang="en">No bus / no slack bus set</span><span lang="ja">母線がない・スラック母線が未設定</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:PowerNetwork:NoBus</code> / <code>GUILDA:PowerNetwork:NoSlackBus</code> <span lang="en">(the message shows how to set one)</span><span lang="ja">（メッセージに設定の仕方を示します）</span></td></tr>
         <tr><td><span lang="en">Slack bus without a component with Q = NaN</span><span lang="ja">Q = NaN の機器がない slack 母線</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><ul lang="en">
           <li>Warning <code>GUILDA:Bus:SlackWithoutQnan</code> from <code>set.l_isSlack</code></li>
           <li>Power flow still runs (the bus settings ignore component P and Q)</li>

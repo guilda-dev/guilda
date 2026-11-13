@@ -40,7 +40,7 @@ function [result, flag, output] = calculate_optimal_powerflow(obj, opt)
 % - `Cost` — Function handle @(v, p) returning a scalar added to the objective; [] = none. v holds the variables by tag: v.Component.(tag).P/.Q, v.Bus.(tag).Varg/.V, v.Branch.(tag).Pfrom/.Pto/...; p holds p.Method and p.base (see SolverOPF). Default: [].
 % - `Constraint` — Function handle @(v, p) returning struct(name1, constraint1, ...); field <name> becomes prob.Constraints.<name> and result.lambda.Constraints.<name>; [] = none. Default: [].
 % - `DefaultCost` — false leaves out the costs HP, fP, HQ, fQ of tab_parameter.OPF of all components. Default: true.
-% - `ReferenceBus` — Bus with a fixed angle: "auto" (bus of tools.slack_bus_index, else the first bus), a bus tag, or "none". Default: "auto".
+% - `ReferenceBus` — Bus with a fixed angle: "auto" (the slack bus if one is set, else the first bus; the OPF needs no slack bus), a bus tag, or "none". Default: "auto".
 % - `Problem` — optimproblem to solve instead of building one, e.g. from net.build_opf_problem with the same Method, modified by the user; Cost, Constraint, DefaultCost and ReferenceBus are not applied to it. Default: none.
 % - `InitialPoint` — Initial point (struct of values by variable name). Default: the x0 of net.build_opf_problem for the same Method; give it when Problem has added variables.
 % - `WarmStart` — true starts "AC OPF" from the bus voltages of the last solved "AC OPF" of this network (kept by net.solver_OPF); false from the flat start (see SolverOPF). Default: GUILDA.setting (false).
@@ -110,7 +110,7 @@ function [result, flag, output] = calculate_optimal_powerflow(obj, opt)
     sct_OPF = obj.get_opf_condition(Display=false);
     sct_options.base = table2struct(obj.tab_parameter.base);
     if opt.ReferenceBus == "auto"
-        i_ref = tools.slack_bus_index(obj);
+        i_ref = find(cellfun(@(b) b.l_isSlack, obj.a_Bus), 1);   % the slack bus, else the first bus
         if isempty(i_ref); i_ref = 1; end
         if isempty(obj.a_Bus)
             sct_options.ReferenceBus = "none";

@@ -355,30 +355,6 @@ DebugScript.helper.quiet(@() net9.initialize);
 assert(isempty(net9.a_Bus{4}.a_Component) && net9.a_Bus{4}.c_Iequilibrium == 0)
 
 
-%% initialize with a selected slack bus gives the equilibrium of the set slack bus
-% スラック母線は書かれず (l_isSlack は false のまま)、平衡点は指定したときと同じ。FixedInput と simulate も同じ
-net  = network.IEEE9bus();
-net1 = network.IEEE9bus();                        % B001 がスラック母線
-assert(net1.a_Bus{1}.l_isSlack)
-evalc("net.a_Bus{1}.l_isSlack = false;");         % 指定を外すと潮流計算が同じ B001 を選ぶ
-DebugScript.helper.quiet(@() net.initialize);
-DebugScript.helper.quiet(@() net1.initialize);
-assert(~any(cellfun(@(b) b.l_isSlack, net.a_Bus)) && isempty(net.sct_stale.powerflow))
-assert(max(abs(net.cv_Vequilibrium - net1.cv_Vequilibrium)) < 1e-12 && max(abs(net.cv_Iequilibrium - net1.cv_Iequilibrium)) < 1e-12)
-c_X = component_values(net, "rv_Xequilibrium");  c_X1 = component_values(net1, "rv_Xequilibrium");
-c_U = component_values(net, "rv_Uequilibrium");  c_U1 = component_values(net1, "rv_Uequilibrium");
-assert(max(abs(vertcat(c_X{:}) - vertcat(c_X1{:}))) < 1e-12 && max(abs(vertcat(c_U{:}) - vertcat(c_U1{:}))) < 1e-12)
-for n = {net, net1}
-    ld = n{1}.a_Bus{5}.a_Component{1};
-    ld.set_input(ld.rv_Uequilibrium/0.95);
-    DebugScript.helper.quiet(@() n{1}.initialize(Method="FixedInput"));
-end
-assert(~any(cellfun(@(b) b.l_isSlack, net.a_Bus)) && max(abs(net.cv_Vequilibrium - net1.cv_Vequilibrium)) < 1e-12)
-res = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0 1]));
-assert(res.sct_network.a_Bus{1}.l_isSlack && DebugScript.helper.max_state_drift(res) < 1e-6)
-assert(~any(cellfun(@(b) b.l_isSlack, net.a_Bus)))
-
-
 %% FixedInput with the held inputs keeps the equilibrium
 % 入力を変えなければ同じ平衡点 (スラック母線の位相 0) を反復 0 回で返す
 net = network.IEEE9bus();

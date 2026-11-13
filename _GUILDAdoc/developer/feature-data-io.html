@@ -705,14 +705,14 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Bus row <em>i</em> = <code>a_Bus{i}</code>: type PQ, PV when it has a non-load component, REF at <code>tools.slack_bus_index</code> (VA = its <code>Varg</code>)</li>
+            <li>Bus row <em>i</em> = <code>a_Bus{i}</code>: type PQ, PV when it has a non-load component, REF at the slack bus (<code>l_isSlack</code>; the first bus when none is set; VA = its <code>Varg</code>)</li>
             <li>VM/VA = <code>|c_Vequilibrium|</code>/<code>angle(c_Vequilibrium)</code> of the bus (1/0 before <code>initialize</code>)</li>
             <li>Loads (<code>component.load.abstract</code>) add −P, −Q to PD/QD</li>
             <li>Every other component: a gen row with PG/QG = OPF <code>P0</code>/<code>Q0</code>, VG = bus <code>V</code> (1 when NaN), limits and polynomial costs (<code>c2 = HP/baseMVA^2</code>, <code>c1 = fP/baseMVA</code>)</li>
             <li>Each branch fitted from its 2×2 matrix to R, X, B, TAP, SHIFT</li>
             <li>Asymmetric shunts moved to the bus GS/BS</li>
           </ul><ul lang="ja">
-            <li>母線の <em>i</em> 行目は <code>a_Bus{i}</code> に対応します。種類は基本的に PQ で、負荷以外の機器がある母線は PV にします。<code>tools.slack_bus_index</code> が返す母線は REF にし、VA にはその母線の <code>Varg</code> を入れます。</li>
+            <li>母線の <em>i</em> 行目は <code>a_Bus{i}</code> に対応します。種類は基本的に PQ で、負荷以外の機器がある母線は PV にします。スラック母線（<code>l_isSlack</code>。設定がなければ最初の母線）は REF にし、VA にはその母線の <code>Varg</code> を入れます。</li>
             <li>VM と VA には、母線の <code>|c_Vequilibrium|</code> と <code>angle(c_Vequilibrium)</code> を入れます。<code>initialize</code> の前なら 1 と 0 です。</li>
             <li>負荷（<code>component.load.abstract</code>）は −P、−Q を PD/QD に加算します。</li>
             <li>負荷以外の機器は gen の行にします。PG と QG には OPF の <code>P0</code> と <code>Q0</code> を、VG には母線の <code>V</code>（NaN なら 1）を入れます。上下限と多項式コスト（<code>c2 = HP/baseMVA^2</code>、<code>c1 = fP/baseMVA</code>）も書き込みます。</li>

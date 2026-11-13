@@ -50,6 +50,7 @@ classdef Tutorial3bus < PowerNetwork
             obj.a_Bus{1}.add_component( "gen-park", "P", 0.0, "parameter",para(1,:));
             obj.a_Bus{2}.add_component( "gen-park", "P", 0.5, "parameter",para(2,:));
             obj.a_Bus{3}.add_component("load-power", "P",-3.0, "Q",0);
+            evalc("obj.a_Bus{1}.l_isSlack = true;");   % the slack bus (GUILDA never selects one)
 
             obj.initialize;
         end

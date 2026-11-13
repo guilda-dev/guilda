@@ -337,9 +337,8 @@ function tab = test_levels()
     "test_I71_layer_get_sys/LayerGet_sysAfterADynamicsEditAsksForInitialize", "medium"
     "test_I71_layer_get_sys/LayerGet_sysAfterInitializeUsesTheEditedModel", "medium"
     "test_I71_layer_get_sys/CPFAfterADynamicsEditAsksForInitialize", "medium"
-    % ---- I90_auto_slack_selection ----------------------------------------------------------------
-    "test_I90_auto_slack_selection/ThePowerFlow_OPFAndNetwork_to_mpcUseTheSameBusWhenTheFirstBusHasNoQ_NaN", "large"
-    "test_I90_auto_slack_selection/TheBusThatIsSetStaysTheReferenceOfOPFAndNetwork_to_mpc", "medium"
+    % ---- I90_slack_bus_required -------------------------------------------------------------------
+    "test_I90_slack_bus_required/OPFAndNetwork_to_mpcUseTheSlackBus_ElseTheFirstBus", "medium"
     % ---- I91_slack_power_assignment --------------------------------------------------------------
     "test_I91_slack_power_assignment/ACSVRoundTripKeepsTheOperatingPoint", "medium"
     "test_I91_slack_power_assignment/Method__OPF_And_equilibrium_KeepThePowersTheyFix_WhateverTheOrder", "medium"

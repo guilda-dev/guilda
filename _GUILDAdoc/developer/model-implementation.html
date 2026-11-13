@@ -254,6 +254,7 @@ net.add_branch("pi", [b2.s_tag, b3.s_tag], R=0.017, X=0.092);
 g1   = b1.add_component("gen-simple", "parameter",para);
 g2   = b2.add_component("gen-simple", "P",0.5, "parameter",para);
 b3.add_component("load-impedance", "P",-1.0, "Q",-0.2);
+b1.l_isSlack = true;                          % the slack bus is always set by the user
 net.initialize();
 
 sc  = net.add_scenario("fault", Time=[0,10]);
@@ -431,6 +432,7 @@ function [net, g2] = make_network(s_key, para)
     b1.add_component(s_key, "parameter",para);
     g2  = b2.add_component(s_key, "P",0.5, "parameter",para);
     b3.add_component("load-impedance", "P",-1.0, "Q",-0.2);
+    b1.l_isSlack = true;
     net.initialize();
 end
 </pre>

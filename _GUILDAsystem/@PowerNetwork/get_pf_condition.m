@@ -9,14 +9,10 @@ function varargout = get_pf_condition(obj, opt)
 %   value); row names = bus tags.
 % - Y: the bus admittance matrix as a table, the same as get_admittance_matrix.
 %
-% When no bus is the slack bus (l_isSlack), the bus of tools.slack_bus_index is the slack
-% bus of the table (INFO GUILDA:PowerNetwork:SlackSelected): the first bus that has a
-% component with Q = NaN, otherwise the first bus that has a component. Its row is the one
-% Bus.get_pf_condition gives for a slack bus (its set V and Varg); a selected bus without
-% a component with Q = NaN warns (GUILDA:PowerNetwork:SlackWithoutQnan). The network is not
-% changed: l_isSlack is never written. A network without buses stops with
-% GUILDA:PowerNetwork:NoBus, and a network whose buses have no components with
-% GUILDA:PowerNetwork:NoSlackCandidate.
+% The slack bus is the bus with l_isSlack = true; GUILDA never selects one. A network
+% without buses stops with GUILDA:PowerNetwork:NoBus, and a network without a slack bus
+% with GUILDA:PowerNetwork:NoSlackBus, which tells how to set one. The network is not
+% changed.
 %
 % With Display=true (default) the Bus table is printed (Y is not); with no output
 % nothing is returned.
@@ -43,21 +39,10 @@ function varargout = get_pf_condition(obj, opt)
     if isempty(obj.a_Bus)
         error(msg("GUILDA:PowerNetwork:NoBus", string(obj)))
     end
-    i_slack = tools.slack_bus_index(obj);
-    if isempty(i_slack)
-        error(msg("GUILDA:PowerNetwork:NoSlackCandidate", string(obj)))
-    end
     tab_bus = tools.vcellfun(@(b) b.get_pf_condition, obj.a_Bus);
     tab_bus.Properties.RowNames = reshape(string(obj.a_Bus), [], 1);
-    if tab_bus.Type(i_slack) ~= "slack"   % selected: the row of a slack bus, l_isSlack not written
-        bus = obj.a_Bus{i_slack};
-        show_msg("info", "GUILDA:PowerNetwork:SlackSelected", string(bus))
-        if ~any(cellfun(@(c) isnan(c.tab_parameter.powerflow.Q), bus.a_Component))   % as when l_isSlack is set
-            show_msg("warning", "GUILDA:PowerNetwork:SlackWithoutQnan", string(bus), string(bus.a_Component{1}))
-        end
-        tp = bus.tab_parameter.powerflow;
-        tab_bus(i_slack,:) = [table("slack", 'VariableNames', "Type"), ...
-                              array2table([tp.Varg, tp.V, NaN, NaN], "VariableNames", ["Varg","V","P","Q"])];
+    if ~any(tab_bus.Type == "slack")
+        error(msg("GUILDA:PowerNetwork:NoSlackBus", string(obj)))
     end
     sct_PFcondition = struct("Bus", tab_bus, "Y", obj.get_admittance_matrix);
 

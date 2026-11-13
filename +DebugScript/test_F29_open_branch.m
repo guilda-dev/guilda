@@ -268,6 +268,7 @@ function net = ring(N)
         net.a_Bus{i}.a_Component{1}.add_local_controller("pss-PSS1");
     end
     
+    evalc("net.a_Bus{1}.l_isSlack = true;");
     DebugScript.helper.quiet(@() net.initialize);
 end
 
