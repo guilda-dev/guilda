@@ -516,11 +516,12 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   `rv_step`; `Plot` draws the voltage profile, `Export` writes the bus or
   branch table (`.csv`, Excel) or the history (`.json`, GridSpring viewer).
 - Behavior: `Solver="dynamic"` no longer writes the JSON history by default
-  (v3 did). The network is not changed, except that a slack bus is selected
-  when none is set.
+  (v3 did). The network is not changed: when none is set, a slack bus is
+  selected for the calculation only (`net.get_pf_condition`), and `l_isSlack`
+  stays false (2026-11-13).
 - **Silent change: the automatic slack bus.** v3 always took the first bus. Now
   it takes the first bus with a component with `Q = NaN`, otherwise the first
-  bus with a component (then `GUILDA:Bus:SlackWithoutQnan` warns). A network
+  bus with a component (then `GUILDA:PowerNetwork:SlackWithoutQnan` warns). A network
   whose first bus has such a component is unchanged. Any other network gets
   another slack bus, so its results change; only the INFO message shows it. To
   keep the old choice, set `net.a_Bus{1}.l_isSlack = true`.
