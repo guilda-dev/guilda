@@ -77,6 +77,7 @@
       {"name":"C","kind":"namevalue","type":["double"],"purpose":"[pu] Shunt susceptance at each end (half of the line charging). Default: 0."},
       {"name":"Tap","kind":"namevalue","type":["double"],"purpose":"Off-nominal tap ratio (1 for a line). Default: 1."},
       {"name":"Phase","kind":"namevalue","type":["double"],"purpose":"[rad] Phase shift of the transformer. Default: 0/180*pi."},
+      {"name":"Circuit","kind":"namevalue","type":["double"],"purpose":"Number of parallel circuits; R, X and C are for all of them together (one circuit: Circuit*R, Circuit*X, C/Circuit). Default: 2."},
       {"name":"Smax","kind":"namevalue","type":["double"],"purpose":"[pu] Limit of the apparent power at both ends (Inf: none). Default: inf."},
       {"name":"Imax","kind":"namevalue","type":["double"],"purpose":"[pu] Limit of the current at both ends (Inf: none). Default: inf."},
       {"name":"Pmax","kind":"namevalue","type":["double"],"purpose":"[pu] Limit of the active power at both ends (Inf: none). Default: inf."},
