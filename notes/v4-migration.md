@@ -16,11 +16,10 @@
 >   stopped early. v4: `flag = 1` completed, `0` stopped by `TimeLimit`,
 >   `-1` stopped by the solver. `if flag` is now true for a completed run
 >   **and** for a solver stop; test `flag < 1` for "stopped early" (1.11).
-> - **`initialize`'s outputs are reordered.** v3: `[flag, tab, output]`.
->   v4: `[result, flag, output]` with `result.tab_bus` the old `tab`.
->   `[flag, tab] = net.initialize()` gives no error: `flag` is then a
->   `ResultPF` and `tab` the exit flag. `if flag` on the result
->   object fails or means something else; test `result.l_success` (1.17).
+> - **`initialize` の出力の順序が変わりました。** v3: `[flag, tab, output]`。
+>   v4: `[rm_pf, flag, output]`。`rm_pf` は設定した運転点の n×4 の配列(V・I・P・Q)です。
+>   `[flag, tab] = net.initialize()` はエラーになりません。`flag` がその配列、`tab` が
+>   終了フラグになります。母線の表は `net.calculate_powerflow().tab_bus` で得ます(1.17)。
 > - **The slack power goes to the first component with `Q = NaN`.** v3 gave it to
 >   the first component of the slack bus, so a load added before a generator
 >   generated power. Those networks now split the power differently (1.8).
@@ -484,7 +483,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 | `net.calculate_powerflow("dynamic", "export", true, "filename", f)` | `res = net.calculate_powerflow(Solver="dynamic"); res.export(f)` (`.json`) |
 | `net.solver_PF.rm_response`, `rr_step`, `i_iteration` | `res.cm_Vhistory`, `res.rv_step` |
 
-- **最初の出力は `Format` で選びます(2026-11-12)。** 既定の `"GUILDAorigin"` は `ResultPF`、`"V"` は母線の複素電圧の列、`"powerflow(mat)"` は V・I・P・Q の n×4 の複素行列、`"powerflow(tab)"` は同じ内容の table です。`initialize` も同じ値の `Format` を取りますが、既定は `"powerflow(mat)"`(平衡点に書く V・I・P・Q の n×4 の配列)です。`initialize` の結果から `res.tab_bus` などを読むスクリプトには `Format="GUILDAorigin"` が必要です。詳細は [powerflow-structure.md](powerflow-structure.md)。
+- **最初の出力は `Format` で選びます(2026-11-12)。** 既定の `"GUILDAorigin"` は `ResultPF`、`"V"` は母線の複素電圧の列、`"powerflow(mat)"` は V・I・P・Q の n×4 の複素行列、`"powerflow(tab)"` は同じ内容の table です。`initialize` は `Format` を取らず(2026-11-13)、常に平衡点に書く V・I・P・Q の n×4 の配列を返します。`initialize` の結果から `res.tab_bus` などを読んでいたスクリプトは、`res = net.calculate_powerflow()` で結果を得てください。詳細は [powerflow-structure.md](powerflow-structure.md)。
 - **v3 の呼び出し形式は使えません(2026-11-12)。** 位置引数の mode(`calculate_powerflow("dynamic")`)と `"export"` / `"filename"` は、互換の変換をせずエラーになります。`Solver=` と `res.export(f)` を使ってください。
 - **`Export` オプションはありません(2026-11-12)。** 書き出しは結果のメソッド `res.export(...)` だけです(`initialize` も `Export` を受け付けません)。
 - オプション: `Solver`(`"newton"` | `"gradient"` | `"levenberg-marquardt"` | `"fsolve"` | `"dynamic"`。開発版の `Method` から改名)、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`、`PlotFcn`、`Format`。v3 の潮流計算(fsolve)は `Solver="fsolve"` で、Optimization Toolbox が必要です。
@@ -1001,15 +1000,13 @@ there.
 
 | v3 | v4 |
 |----|----|
-| `[flag, tab, output] = net.initialize()` | `[result, flag, output] = net.initialize()`; `tab = result.tab_bus` |
+| `[flag, tab, output] = net.initialize()` | `[rm_pf, flag, output] = net.initialize()`; `tab = net.calculate_powerflow().tab_bus` |
 | `net.initialize("methods", "powerflow calculation")` | `net.initialize(Method="powerflow")` (default) |
 | `net.initialize("methods", "optimal powerflow")` | `net.initialize(Method="OPF")` |
 | `net.initialize("methods", "calculate from Xequilibrium")` | `net.initialize(Method="equilibrium")` |
 | – | `comp.set_input(u)`, then `net.initialize(Method="FixedInput")` (the equilibrium with the inputs held) |
 
-- `result` is a `ResultPF` (`"powerflow"`, and `"equilibrium"` with
-  `s_solver = "equilibrium"` and no branch flows) or a `ResultOPF`
-  (`"OPF"`, which runs AC OPF).
+- 最初の出力 `rm_pf` は、どの `Method` でも設定した運転点の n×4 の複素数の配列です(列は V・I・P・Q、行は `net.a_Bus` の順。`"OPF"` では AC OPF の解)。`initialize` は `Format` を取らず、渡すと `GUILDA:PowerNetwork:InitializeFormat` で止まります(2026-11-13)。結果のオブジェクトは `calculate_powerflow`(`ResultPF`)と `calculate_optimal_powerflow`(`ResultOPF`)で得ます。
 - Other Name-Value options go unchanged to `calculate_powerflow` or
   `calculate_optimal_powerflow` (e.g. `net.initialize(Method="OPF",
   Solver="fmincon")`, `net.initialize(MaxIteration=50)`); unknown names stop

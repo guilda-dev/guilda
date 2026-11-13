@@ -79,8 +79,8 @@ assert_stale_error(@() avr.get_sys(), "GUILDA:PowerSystemModel:Stale")
 assert_stale_error(@() avr.get_sys(Point=SolverLIN.point_vector(avr, [])), "GUILDA:PowerSystemModel:Stale")
 assert(DebugScript.helper.handle_Hz(gen) == Hz0)
 
-res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
-assert(res.s_solver == "equilibrium")
+[~, ~, out_init] = DebugScript.helper.quiet(@() net.initialize());
+assert(~isfield(out_init, "iterations"))          % 潮流計算は解かない
 A_gen2 = gen.get_sys().A;
 assert(DebugScript.helper.handle_Hz(avr) == net.tab_parameter.base.Hz && DebugScript.helper.handle_Hz(pss) == net.tab_parameter.base.Hz)
 assert(DebugScript.helper.handle_Hz(gen) == net.tab_parameter.base.Hz && ~isequal(A_gen2, A_gen))

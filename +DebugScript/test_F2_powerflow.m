@@ -287,24 +287,24 @@ assert(isequal(string(tab.Properties.VariableNames), ["V","I","P","Q"]))
 assert(isequal(string(tab.Properties.RowNames), string(net.a_Bus)) && isreal(tab.P) && isreal(tab.Q))
 assert(max(abs(tab{:,:} - mat), [], "all") < 1e-12)
 assert(error_id(@() net.calculate_powerflow(Format="table")) == "MATLAB:validators:mustBeMember")
-% initialize も同じ Format の値を取る。既定は set_equilibrium に書く n×4 の配列 "powerflow(mat)"
+% initialize の最初の出力は常に set_equilibrium に書く n×4 の配列 ("powerflow(mat)" と同じ形)。Format は取らない
 mat0 = DebugScript.helper.quiet(@() net.initialize(Method="powerflow"));
 assert(isequal(size(mat0), [numel(net.a_Bus), 4]) && max(abs(mat0 - mat), [], "all") < 1e-8)
 assert(max(abs(mat0(:,1) - net.cv_Vequilibrium)) < 1e-12 && max(abs(mat0(:,2) - net.cv_Iequilibrium)) < 1e-12)
-V0 = DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Format="V"));
-assert(max(abs(V0 - V)) < 1e-8)
-tab0 = DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Format="powerflow(tab)"));
-assert(max(abs(tab0.V - tab.V)) < 1e-8 && isequal(string(tab0.Properties.VariableNames), ["V","I","P","Q"]))
-assert(isa(DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Format="GUILDAorigin")), "ResultPF"))
 mat_eq = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium"));
-assert(max(abs(mat_eq - mat), [], "all") < 1e-6)
-V_eq = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium", Format="V"));
-assert(max(abs(V_eq - mat(:,1))) < 1e-6)
+assert(isequal(size(mat_eq), [numel(net.a_Bus), 4]) && max(abs(mat_eq - mat), [], "all") < 1e-6)
 mat_fi = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput"));
 assert(isequal(size(mat_fi), [numel(net.a_Bus), 4]) && max(abs(abs(mat_fi(:,1)) - abs(mat(:,1)))) < 1e-6)
-tab_fi = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput", Format="powerflow(tab)"));
-assert(istable(tab_fi) && max(abs(tab_fi.V - mat_fi(:,1))) < 1e-8)
-assert(error_id(@() net.initialize(Format="table")) == "MATLAB:validators:mustBeMember")
+assert(max(abs(mat_fi(:,1) - net.cv_Vequilibrium)) < 1e-12 && max(abs(mat_fi(:,2) - net.cv_Iequilibrium)) < 1e-12)
+% Format を渡すと (どの値でも、どの Method でも) initialize のエラーで止まり、calculate_powerflow へは渡らない
+mat_before = [net.cv_Vequilibrium, net.cv_Iequilibrium];
+for s_format = ["V","powerflow(mat)","powerflow(tab)","GUILDAorigin","table"]
+    assert(error_id(@() net.initialize(Format=s_format)) == "GUILDA:PowerNetwork:InitializeFormat")
+    assert(error_id(@() net.initialize(Method="powerflow", Format=s_format)) == "GUILDA:PowerNetwork:InitializeFormat")
+end
+assert(error_id(@() net.initialize(Method="FixedInput", Format="V")) == "GUILDA:PowerNetwork:InitializeFormat")
+assert(error_id(@() net.initialize(Method="equilibrium", Format="V")) == "GUILDA:PowerNetwork:InitializeFormat")
+assert(isequal([net.cv_Vequilibrium, net.cv_Iequilibrium], mat_before))
 % 書き出しは結果のメソッド (res.export) だけ。calculate_powerflow と initialize に Export オプションはない
 assert(error_id(@() net.calculate_powerflow(Export="pf.csv")) ~= "")
 assert(error_id(@() net.initialize(Method="powerflow", Export="pf.csv")) ~= "")
@@ -682,11 +682,11 @@ g2.tab_parameter.operation.Qmax = Inf;                                  % 無限
 assert(isequal(tools.distribute_power(bus, r_P, r_Q, "Qmax"), tools.distribute_power(bus, r_P, r_Q)))
 assert(isequal(size(tools.distribute_power(PowerNetwork().add_bus(), 1, 1)), [0 2]))
 % initialize の機器の P、Q と tab_violation の値は同じ配分
-res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
+pf  = DebugScript.helper.quiet(@() net.initialize());
 c_V = bus.c_Vequilibrium;
 rm_init = cell2mat(cellfun(@(c) [real(c_V*conj(c.c_Iequilibrium)), imag(c_V*conj(c.c_Iequilibrium))], ...
                            bus.a_Component(:), "UniformOutput", false));
-rm_dist = tools.distribute_power(bus, res.tab_bus.P(2), res.tab_bus.Q(2));
+rm_dist = tools.distribute_power(bus, real(pf(2,3)), real(pf(2,4)));
 assert(max(abs(rm_init - rm_dist), [], "all") < 1e-12)
 g2.tab_parameter.operation.Qmax = rm_dist(2,2) - 0.01;                  % 違反させる
 res = DebugScript.helper.quiet(@() net.calculate_powerflow());

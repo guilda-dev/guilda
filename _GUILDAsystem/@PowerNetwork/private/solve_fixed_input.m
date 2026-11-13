@@ -1,4 +1,4 @@
-function [result, flag, output, sct_point] = solve_fixed_input(net, c_nv, s_format)
+function [rm_pf, flag, output, sct_point] = solve_fixed_input(net, c_nv)
 % Solve the equilibrium with the inputs of the components held (initialize, Method="FixedInput").
 %
 % Unknowns: the states x and the injected currents I of every component, the bus voltages
@@ -16,16 +16,14 @@ function [result, flag, output, sct_point] = solve_fixed_input(net, c_nv, s_form
 % get_equilibrium of each component.
     arguments (Input)
         net    % Network with a slack bus (initialize selects one when none is set).
-        c_nv   % Name-Value options of initialize without Method and Format.
-        s_format (1,1) string = "GUILDAorigin" % Format of result (see PowerNetwork.initialize).
+        c_nv   % Name-Value options of initialize without Method.
     end
     arguments (Output)
-        result     % Solution in the form of s_format; for "GUILDAorigin" a ResultPF (s_solver "FixedInput").
+        rm_pf      % [pu] n-by-4 complex double, one row per bus (net.a_Bus order): V, I (complex phasors), P, Q (real injections into the network).
         flag       % 1 converged, 0 MaxIteration reached, -2 diverged or no solution (the Method class).
         output     % Details of the Method class; output.message describes the outcome.
         sct_point  % Solution: cv_V (bus voltages), c_X, c_U, cv_I (per component, in sct_eq order), c_comp, iv_bus.
     end
-    t0  = tic;
     sct = options(c_nv);
     eq  = equation_data(net);
 
@@ -57,12 +55,8 @@ function [result, flag, output, sct_point] = solve_fixed_input(net, c_nv, s_form
     for k = 1:eq.n_comp
         cv_Ibus(eq.iv_bus(k)) = cv_Ibus(eq.iv_bus(k)) + sct_point.cv_I(k);
     end
-    rm_pf = powerflow_matrix(cv_V, cv_Ibus);
-    sct_solver = struct("solver", "FixedInput", "options", struct("Method", "FixedInput", "Solver", sct.Solver, ...
-        "Tolerance", sct.Tolerance, "MaxIteration", sct.MaxIteration, "WarmStart", sct.WarmStart), ...
-        "flag", flag, "output", output, "elapsed", toc(t0));
-    result = format_powerflow(s_format, eq.sv_bus(:), rm_pf, ...
-        @() ResultPF(powerflow_table(eq.sv_bus(:), rm_pf), eq.cm_Y, struct(net, false), sct_solver));
+    cv_S  = cv_V .* conj(cv_Ibus);
+    rm_pf = [cv_V, cv_Ibus, complex(real(cv_S)), complex(imag(cv_S))];
 end
 
 

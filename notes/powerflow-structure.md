@@ -36,13 +36,14 @@
 | `"powerflow(tab)"` | 同じ内容の table(変数 `V`・`I`・`P`・`Q`、行名は母線タグ) |
 | `"GUILDAorigin"`(既定) | `ResultPF` |
 
-- **既定値(ユーザーの決定、2026-11-12):** `calculate_powerflow` の既定は `"GUILDAorigin"` です。最初の実装は `"V"` でした。`initialize` の既定は `"powerflow(mat)"` です(ユーザーの決定、2026-11-12)。`set_equilibrium` に書く n×4 の配列そのものなので、余分な処理がありません。
+- **既定値(ユーザーの決定、2026-11-12):** `calculate_powerflow` の既定は `"GUILDAorigin"` です。最初の実装は `"V"` でした。`initialize` は `Format` を取りません(下の項目)。
 
 - `flag` と `output` はどの Format でも 2 番目・3 番目の出力です。
 - **Export(ユーザーの決定、2026-11-12):** `calculate_powerflow` に `Export` オプションはありません。書き出しは `res.export(...)` だけです(`initialize` も受け付けません)。最初の実装では、ほかの Format でも書き出しのためだけに `ResultPF` を作っていましたが、オプションごと削除しました。書き出しのメソッドは、すべての結果クラスで `export` に改名しました(ユーザーの決定、2026-11-12。別名や互換の変換はありません)。
-- `initialize` にも同じ値の `Format`(既定 `"powerflow(mat)"`)を加えました。潮流計算・FixedInput・平衡点からの計算は解いた点を、OPF は `"GUILDAorigin"` で `ResultOPF`、それ以外で AC OPF の解の母線 V・I・P・Q を返します。
-- 内部の呼び出しは必要なものだけを求めます(ユーザーの決定、2026-11-12)。`initialize` の潮流計算と `solve_fixed_input` の初期点は `Format="powerflow(mat)"` の n×4 の配列で、`set_equilibrium` は列から V・I・P・Q を読みます。`calculate_powerflow` は `"V"` では `cv_V` だけを返し、`"powerflow(mat)"` では `cv_V` と `Y*cv_V` から配列を作ります。table を作るのは `"powerflow(tab)"` と `ResultPF` のときだけ、`ResultPF` を作るのは `"GUILDAorigin"` のときだけです(OPF・FixedInput・平衡点の経路も同じ)。
-- 書き換えた呼び出し元: DebugScript(`initialize` の結果を読むテストに `Format="GUILDAorigin"` を追加。`calculate_powerflow` では既定なので書かない)、`calculate_powerflow`・`initialize`・`SolverPF` のヘルプの例。同梱ネットワークのヘルプの例(`res = net.calculate_powerflow()`)は元のままです。`_GUILDAverification`、`Scenario`、CPF、OPF は `calculate_powerflow` の結果を読んでいません。
+- **`initialize` の Format(ユーザーの決定、2026-11-13):** `initialize` は `Format` を取りません。最初の出力は、どの `Method` でも `set_equilibrium` に書く n×4 の複素数の配列(V・I・P・Q、`net.a_Bus` の順。OPF では AC OPF の解)です。`Format` を渡すと、どの `Method` でも `take_method` が `GUILDA:PowerNetwork:InitializeFormat` で止め、`calculate_powerflow` へは渡しません(2026-11-12 の実装では `Format` を取り、既定が `"powerflow(mat)"` でした)。結果のオブジェクトは `calculate_powerflow` / `calculate_optimal_powerflow` で得ます。
+- 内部の呼び出しは必要なものだけを求めます(ユーザーの決定、2026-11-12)。`initialize` の潮流計算は `Format="powerflow(mat)"` の n×4 の配列を求め、`set_equilibrium` は列から V・I・P・Q を読みます。`calculate_powerflow` は `"V"` では `cv_V` だけを返し、`"powerflow(mat)"` では `cv_V` と `Y*cv_V` から配列を作ります。table を作るのは `"powerflow(tab)"` と `ResultPF` のときだけ、`ResultPF` を作るのは `"GUILDAorigin"` のときだけです。FixedInput(`solve_fixed_input`)は母線の n×4 の配列と `sct_point`(機器ごとの X・U・I。`write_fixed_input` が書く)を返し、何も整形しません。OPF は `opf_point` が `ResultOPF.tab_cub` から機器ごとの P・Q を、`tab_bus` から配列を作ります。平衡点からの計算も配列だけを返します。
+- **補助関数の削除(ユーザーの決定、2026-11-13):** `@PowerNetwork/private/format_powerflow.m`・`powerflow_matrix.m`・`powerflow_table.m` を削除し、1〜2 行の中身を呼び出し元に直接書きました。`calculate_powerflow` は Format の分岐を自分の中に持ちます。`calculate_powerflow` の `PlotFcn` はローカルの `mustBePlotFcn` ではなく、`arguments` ブロックで `tools.check_plotfcn(...)` を直接呼びます。
+- 書き換えた呼び出し元: DebugScript(`initialize` の結果を読んでいたテストは、最初の出力の配列と平衡点を確かめるか、`calculate_powerflow` / `calculate_optimal_powerflow` を呼びます。解いたかどうかは `output` に `iterations` があるかで確かめます。F2・F3 に Format を拒むテスト)、`calculate_powerflow`・`initialize`・`SolverPF` のヘルプの例。同梱ネットワークのヘルプの例(`res = net.calculate_powerflow()`)は元のままです。`_GUILDAverification`、`Scenario`、CPF、OPF は `calculate_powerflow` の結果を読んでいません。
 - **未対応:** `_GUILDAtutorial/*.mlx` は保留中のチュートリアルの作業(Issue #113)に含まれるため、変えていません。
 
 ### 4. データから作る `ResultPF`
