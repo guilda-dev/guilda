@@ -215,6 +215,25 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **S7 のテスト(MATLAB R2026a):** small 527 件(PASS 525 / KNOWN 1 / FAIL 0 / SKIP 1、450 s)。`GUILDA.doc` は 74 クラス、警告 3(`component.generator.abstract` の `set_avr` / `set_pss` / `set_governor`、既知)、エラー 0。旧名(`import_csv`, `export_csv`, `SolverOptions`, `Scenario(`, `simulate([`, `read_mass`, `sc.judge`, `Export=`)は `_GUILDAdoc` に残っていない(`o.SolverOptions` は MATLAB の `ode` のプロパティ)。ページの図は目視していない。
 - **未対応:** チュートリアル(`.mlx`)は旧 API のままです(#113 の保留)。`notes/simulate-review-measurements.m` は基準 `951800e` の API の測定の記録で、現在のコードでは動きません(冒頭に再現の方法を記載)。
 
+## 設定の検査とオプションの受け渡し(2026-11-13)
+
+ブランチは `refactor/option-handling`(未 push)です。
+
+- **設定の検査:** 設定は `GUILDA.config` が読み込むときに 1 回だけ検査します。検査は `@GUILDA/private/check_setting.m` が行い、`get_config`(`merge_config`)と `GUILDA.setting` が共通に使います。
+  - 型: 値を `Type` のクラス(string の行、logical、double)に変換します。logical の 0/1、char、cell も受け付けます。
+  - 条件: 設定の定義に、省略できる条件 `Valid`(MATLAB の式。例 `"v > 0 || isnan(v)"`)と、select の `FromLogical` を加えました。
+  - 不正な値: 利用者のファイルの不正な値は既定値に戻し、ファイルを書き直したうえで INFO `GUILDA:GUILDA:ConfigValueReset`(新規)で知らせます。`GUILDA.setting` では従来どおり `InvalidSettingValue` のエラーです。
+  - `Valid` の条件: 各解析の Name-Value オプションの検証関数と同じ条件にしました。対象は OPF、CPF、潮流計算、TimeSimulation、Model の Hz です。TimeSimulation の Progress には `FromLogical` を付けました。
+- **OPF と CPF:** 設定のセクションの読み直し、型の変換、`solver_options` を削除しました。Name-Value オプション(既定値は `GUILDA.config`)を、そのままソルバーへ渡します。
+  - Name-Value オプションの無い設定は、使う位置で `GUILDA.config` から読みます。OPF の `<Solver><option>` は `SolverOPF.optimoption`、CPF の `Corrector*` と `Increment` は `SolverCPF.solve` が読みます。
+  - このため、これらの設定は `result.options` に入りません。
+  - OPF の `PlotFcn` の検査は 1 回にしました。`build_opf_problem` は変えていません。
+- **結果の一致:** IEEE14 の OPF(AC/DC/ELD、ReferenceBus="none"、quadprog、WarmStart、FminconAlgorithm="sqp")と CPF(4 通り)の結果が変更前と完全に一致しました。
+- **テスト(MATLAB R2026a):** 最後の small は 554 件、PASS 551 / KNOWN 1 / FAIL 1 / SKIP 1(582 s)でした。
+  - FAIL は F34(`functionSignatures.json` が古い)で、基準のブランチから続いています。原因は IEEJ の `Circuit` オプションで、この作業とは関係ありません。
+  - medium は 745 件、PASS 741 / KNOWN 1 / FAIL 2 / SKIP 1(1231 s)でした。F34 のほかに F4 が 1 件失敗しました。lsqlin が選ばれると `LsqlinAlgorithm` の設定が無いことが原因で、`28dd711d` で直しました。F4 は単独の実行で PASS 38 / SKIP 1 です。
+- **未対応(別のセッションの担当):** `simulate` の `simulate_options`、`calculate_powerflow` の `solver_options`、`get_sys` の `string()` は、設定を読み込むときの正規化によって冗長になりました。いずれも壊れはしません。
+
 ## 未決事項
 
 状態は `a9afe24` のコードと履歴で確認しました(`301b5d0` までの統合はコードを変えていません)(下で日付や基準を別に示した項目を除く)。
