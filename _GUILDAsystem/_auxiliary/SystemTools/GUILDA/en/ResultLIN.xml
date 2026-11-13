@@ -2,8 +2,9 @@
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
         <entry key="NotFinite">{0}</entry>
-        <entry key="SingularAvv">{0} Method "{1}" eliminates the bus voltages; use "DAE" to keep them.</entry>
+        <entry key="SingularAvv">{0} Type "{1}" eliminates the bus voltages; use Type "DAE" to keep them.</entry>
         <entry key="UnknownOutput">Output "{0}" is not "x", "V", "I", "y" or a name of those outputs of this model.</entry>
+        <entry key="UnknownTarget">Target "{0}" is not a tag, a class name or a package name of an element of this model (see res.sct_model.sct_sys.tab_owner).</entry>
         <entry key="UnknownInput">Input "{0}" is not "u" or a Label of an input of this model.</entry>
     </message>
 </rsccat>

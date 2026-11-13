@@ -4,7 +4,7 @@
 %
 % GUILDA.keymap に登録されたすべての機器、ローカル制御器、グローバル制御器、ブランチを 1 つの網に含み、
 % 空の母線 (B006) も持つ。キーを追加したのにこの網へ入れていなければ最初のテストが失敗する。
-% initialize、線形化 (Kron / DAE の固有値の一致と安定性)、変数表の AGC の接続、
+% initialize、線形化 (ODE / DAE の固有値の一致と安定性)、変数表の AGC の接続、
 % B008 の三相地絡のシミュレーションを確かめる。
 %
 % 実行: runtests("DebugScript.test_F36_tutorial_all_models")  または  DebugScript.run_all("Features","F36")
@@ -50,11 +50,11 @@ for i = 1:numel(net.a_Bus)
 end
 
 
-%% Kron and DAE give the same stable eigenvalues
+%% ODE and DAE give the same stable eigenvalues
 res = net.get_sys();
-eK = DebugScript.helper.finite_eigs(DebugScript.helper.quiet(@() res.get_ss("Kron")));
+eK = DebugScript.helper.finite_eigs(DebugScript.helper.quiet(@() res.get_ss("ODE")));
 eD = DebugScript.helper.finite_eigs(DebugScript.helper.quiet(@() res.get_ss("DAE")));
-assert(DebugScript.helper.same_eigs(eK, eD, 1e-6), "Kron と DAE の固有値が違う")
+assert(DebugScript.helper.same_eigs(eK, eD, 1e-6), "ODE と DAE の固有値が違う")
 % 回転子の共通の角度のモードだけが 0、ほかは実部が負
 lv_zero = abs(eK) < 1e-8;
 assert(nnz(lv_zero) == 1, "0 の固有値が %d 個", nnz(lv_zero))

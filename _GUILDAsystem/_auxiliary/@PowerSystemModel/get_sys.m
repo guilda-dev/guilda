@@ -10,7 +10,7 @@ function [sys, flag, output] = get_sys(obj, point, opt)
 %
 % | Layer | Inputs | Outputs | Bus voltages |
 % |---|---|---|---|
-% | PowerNetwork | inputs u of the components | outputs y and yc | algebraic: 0 = Y v - I of the components, reduced by Method |
+% | PowerNetwork | inputs u of the components | outputs y and yc | algebraic: 0 = Y v - I of the components, eliminated for Type "ODE" |
 % | Bus, Component | V, u, uc | I, y, yc | inputs |
 % | LocalController | V of its bus, its inputs | its outputs | inputs |
 % | GlobalController | V of all buses, its inputs | its outputs | inputs |
@@ -38,16 +38,21 @@ function [sys, flag, output] = get_sys(obj, point, opt)
 %
 % Format chooses the form of sys: "GUILDAorigin" (default) is the ResultLIN of the
 % linearization, also when flag is false; its properties A, B, C, D, E, StateName,
-% InputName and OutputName hold the model of Method with the selected Input and Output.
-% "struct" is a struct with these eight fields and "ss" a descriptor state-space model
-% (dss, Control System Toolbox): they stop with the error of ResultLIN.get_ss when flag
-% is false (except "DAE" with a singular Avv).
+% InputName and OutputName hold the model of its Type (the Type of the call) with the
+% selected Input and Output. "struct" is a struct with these eight fields and "ss" a
+% descriptor state-space model (dss, Control System Toolbox): they stop with the error of
+% ResultLIN.get_ss when flag is false (except "DAE" with a singular Avv).
+%
+% Type chooses the model of the network: "DAE" is the connected model, with the bus
+% voltages as algebraic variables (E is singular on their rows), in the bus variables of
+% Coordinate; "ODE" is the model with the bus voltages eliminated (SolverLIN.reduce).
+% The result keeps the DAE, so res.Type switches between them later.
 %
 % <@Examples>
 % ```matlab
-% res = net.get_sys();                          % ResultLIN of the network (Method of GUILDA.setting)
+% res = net.get_sys();                          % ResultLIN of the network (Type of GUILDA.setting)
 % eig(res.A, res.E)
-% sct = net.get_sys(Method="DAE", Format="struct");
+% sct = net.get_sys(Type="DAE", Format="struct");
 % resV = net.get_sys(Output="V");               % bus voltages as outputs
 % sys = net.a_Bus{1}.a_Component{1}.get_sys(Format="ss");   % component, V to I
 % res2 = net.get_sys({sim, 1.5});               % at a time of a simulation result
@@ -60,7 +65,7 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     arguments (Input)
         obj
         point = []                    % Point: [] (the equilibrium), a vector in the order of get_variable_map(), {sim, t} or {sim, t, Side}.
-        opt.Method (1,1) string {mustBeMember(opt.Method, ["Kron","DAE"])}   % Form of the model of the network: "Kron" (eliminate the bus voltages) or "DAE". Default: GUILDA.setting.
+        opt.Type (1,1) string {mustBeMember(opt.Type, ["ODE","DAE"])}   % Model of the network: "ODE" (the bus voltages eliminated) or "DAE" (the connected model). Default: GUILDA.setting.
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])}   % Bus variables of "DAE". Default: GUILDA.setting.
         opt.PlotFcn                   % Live display: "none" (draw the eigenvalue map with result.plot_eigenvalue()). Default: GUILDA.setting.
         opt.Input (1,:) string        % Inputs of the model: "u" or Labels (see ResultLIN.get_ss). Default: all inputs.
@@ -75,7 +80,7 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     t0 = tic;
     SolverLIN.check_point(point);
     sct_cfg = GUILDA.config("Linearization");
-    for s = ["Method","Coordinate","PlotFcn"]
+    for s = ["Type","Coordinate","PlotFcn"]
         if ~isfield(opt, s)
             opt.(s) = string(sct_cfg.(s).Value);
         end
@@ -95,11 +100,15 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     a_comp = a_obj(cellfun(@(o) isa(o, "Component"), a_obj));
     sct_port.tab_current = current_table(a_comp);
     if isa(obj, "PowerNetwork")
+        sct_port.tab_stamp = admittance_stamps(obj);   % the parts of cm_Y: branches, bus shunts
+    end
+    if isa(obj, "PowerNetwork")
         solver = obj.solver_LIN;
     else
         solver = SolverLIN();
     end
     [sct_sys, output] = solver.solve(c_block, tab, tab_c, sct_port);
+    sct_sys.tab_owner = owner_table(obj, a_obj);   % the classes of the owners of the terms
 
     % Messages
     sv_layer = ["PowerNetwork","Bus","Component","LocalController","GlobalController"];
@@ -136,7 +145,7 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     output.l_equilibrium = l_eq;
     output.s_layer = s_layer;
 
-    sct_options = struct("Method", opt.Method, "Coordinate", opt.Coordinate, "PlotFcn", opt.PlotFcn, "Point", {point});
+    sct_options = struct("Type", opt.Type, "Coordinate", opt.Coordinate, "PlotFcn", opt.PlotFcn, "Point", {point});
     c_channel = cell(1,0);
     for s = ["Input","Output"]
         if isfield(opt, s)
@@ -149,10 +158,10 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     if opt.Format == "GUILDAorigin"
         sys = result;
         if flag && ~isempty(c_channel)
-            result.get_ss(opt.Method, c_channel{:}, Format="struct");   % stops with the reason, if any
+            result.get_ss(opt.Type, c_channel{:}, Format="struct");   % stops with the reason, if any
         end
     else
-        sys = result.get_ss(opt.Method, c_channel{:}, Format=opt.Format);
+        sys = result.get_ss(opt.Type, c_channel{:}, Format=opt.Format);
     end
     output.result = result;
 end
@@ -235,6 +244,7 @@ function c_block = blocks(obj, a_obj, tab, tab_c, rv_point)
     if isa(obj, "LocalController") || isa(obj, "GlobalController")
         S = obj.get_linear_block(val(tab.Kind == "x"), val(tab.Kind == "Vre" | tab.Kind == "Vim"), val(tab.Kind == "uc"));
         S.Owner = layer_text(obj);
+        S.s_tag = string(obj.s_tag);
         c_block{1} = S;
         return
     end
@@ -279,6 +289,7 @@ function c_block = blocks(obj, a_obj, tab, tab_c, rv_point)
             S = o.get_linear_block(val(rows(o, "x")), val(lv_V), val(rows(o, "uc")));
         end
         S.Owner = layer_text(o);
+        S.s_tag = string(o.s_tag);
         c_block{k} = S;
     end
 end
@@ -312,6 +323,49 @@ function tab = current_table(a_comp)
         sv_bus(2*k-1:2*k)   = string(a_comp{k}.a_Bus.s_tag);
     end
     tab = table(sv_label, sv_bus, repmat(["Ire";"Iim"], n, 1), VariableNames=["Label","Bus","Name"]);
+end
+
+
+function tab = admittance_stamps(net)
+% Admittance stamps of the network, which sum to net.get_admittance_matrix(): the 2-by-2
+% matrix of each branch at its two buses, and the shunt Gshunt + j*Bshunt of each bus
+    n_br  = numel(net.a_Branch);
+    n_bus = numel(net.a_Bus);
+    sv_owner = strings(n_br + n_bus, 1);
+    c_bus = cell(n_br + n_bus, 1);
+    c_Y   = cell(n_br + n_bus, 1);
+    for i = 1:n_br
+        br = net.a_Branch{i};
+        sv_owner(i) = string(br.s_tag);
+        c_bus{i} = reshape(string(br.a_Bus), 1, []);
+        c_Y{i}   = br.get_admittance_matrix();
+    end
+    for i = 1:n_bus
+        b = net.a_Bus{i};
+        para = b.a_Parameter{cellfun(@(p) p.s_tag == "dynamics", b.a_Parameter)}.tab_parameter;
+        sv_owner(n_br+i) = string(b.s_tag);
+        c_bus{n_br+i} = string(b.s_tag);
+        c_Y{n_br+i}   = [para.Gshunt, para.Bshunt]*[1; 1j];
+    end
+    tab = table(sv_owner, c_bus, c_Y, VariableNames=["Owner","Bus","Y"]);
+end
+
+
+function tab = owner_table(obj, a_obj)
+% Tag and class of each element of the layer: its model objects and, for the network, its
+% buses and branches (for a bus, the bus)
+    if isa(obj, "PowerNetwork")
+        a_obj = [a_obj(:); obj.a_Bus(:); obj.a_Branch(:)];
+    elseif isa(obj, "Bus")
+        a_obj = [a_obj(:); {obj}];
+    end
+    sv_tag   = strings(numel(a_obj),1);
+    sv_class = strings(numel(a_obj),1);
+    for k = 1:numel(a_obj)
+        sv_tag(k)   = string(a_obj{k}.s_tag);
+        sv_class(k) = string(class(a_obj{k}));
+    end
+    tab = table(sv_tag, sv_class, VariableNames=["Owner","Class"]);
 end
 
 

@@ -1,13 +1,13 @@
 {
     "version": 1,
-    "Method":{
-        "Value": "Kron",
+    "Type":{
+        "Value": "ODE",
         "Type": "select",
         "options":[
-            "Kron",
+            "ODE",
             "DAE"
         ],
-        "Description": "Reduction of net.get_sys and result.get_ss(): 'Kron' (eliminate the bus voltages) or 'DAE' (descriptor form)"
+        "Description": "Model of net.get_sys and result.get_ss(): 'ODE' (the bus voltages eliminated) or 'DAE' (the connected model with the bus voltages as algebraic variables)"
     },
     "Coordinate":{
         "Value": "theta&rho",
@@ -17,7 +17,7 @@
             "theta&V",
             "Vre&Vim"
         ],
-        "Description": "Bus variables of the 'DAE' reduction: 'theta&rho' (angle and log magnitude), 'theta&V' (angle and magnitude) or 'Vre&Vim' (real and imaginary parts)"
+        "Description": "Bus variables of the 'DAE' model: 'theta&rho' (angle and log magnitude), 'theta&V' (angle and magnitude) or 'Vre&Vim' (real and imaginary parts)"
     },
     "PlotFcn":{
         "Value": "none",

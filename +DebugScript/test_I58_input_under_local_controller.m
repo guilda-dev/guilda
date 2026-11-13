@@ -83,14 +83,14 @@ function r = simulate_step(net, s_unit, s_input, r_step, rv_time)
 end
 
 function [r_err, r_max] = error_to_linear(net, s_unit, s_input, r_step)
-% Relative 2-norm error of the omega of the unit to the Kron model, and the largest change of omega.
+% Relative 2-norm error of the omega of the unit to the ODE model, and the largest change of omega.
     rv_time = [0,10];
     % 既定の許容誤差では応答 (1e-5 程度) に対して積分誤差が目立つ
     c_cfg = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none", "Tolerance", 1e-8, "AbsoluteTolerance", 1e-10)); %#ok<NASGU>
     r = simulate_step(net, s_unit, s_input, r_step, rv_time);
 
     gen = component_of(net, s_unit);
-    sys = net.get_sys("Method", "Kron");
+    sys = net.get_sys("Type", "ODE");
     i_u = string(sys.InputName) == gen.attach_tag(s_input);
     i_x = string(sys.StateName) == gen.attach_tag("omega");
     assert(nnz(i_u) == 1 && nnz(i_x) == 1)

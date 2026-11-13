@@ -449,7 +449,7 @@ function J = fd_jacobian(f, z)
 end
 
 function [r_err, r_max] = error_to_linear(net, s_unit, comp, r_step)
-% s_unit の Pmech の小さなステップへの comp の omega の応答と Kron モデルの応答の相対誤差
+% s_unit の Pmech の小さなステップへの comp の omega の応答と ODE モデルの応答の相対誤差
     rv_time = [0,10];
     ev  = DebugScript.helper.scenario("step", net, "TimeSpan", rv_time, "InputUnit", s_unit, "InputName", "Pmech", "InputValue", r_step);
     sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=rv_time, Tolerance=1e-8, AbsoluteTolerance=1e-10));
@@ -462,7 +462,7 @@ function [r_err, r_max] = error_to_linear(net, s_unit, comp, r_step)
             end
         end
     end
-    sys = net.get_sys("Method", "Kron");
+    sys = net.get_sys("Type", "ODE");
     i_u = string(sys.InputName) == unit.attach_tag("Pmech");
     i_x = string(sys.StateName) == comp.attach_tag("omega");
     assert(nnz(i_u) == 1 && nnz(i_x) == 1)

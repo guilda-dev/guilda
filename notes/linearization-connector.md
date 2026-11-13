@@ -418,3 +418,43 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 - `test_levels.m` の `LayerGet_sys_RemovedArguments_OneSignatureAndSingleComputation__83___121_` は実際の名前(`__83__121_`)と違い、この large のテストが small で実行されていました(以前からの警告)。名前を直したので、small の件数が 1 件減りました。
 - `git grep` で `Point=`、`Port=`、`I2V`、`v3_get_sys_point`、`v3_linearizer_constructor` が残るのは、`+DebugScript/archive/`、この文書の §2〜§11、ほかの過去の調査の notes だけです(`InitialPoint=` は OPF の別のオプション)。
 
+
+
+## 13. `Type`(`"ODE"`/`"DAE"`)、`SolverLIN.reduce`、DAE を持つ `ResultLIN`、要素の寄与(2026-11-13)
+
+ブランチは `feature/linearization-type-contribution`(未 push、分岐元 `06656d9d`)です。指示のブランチ名 `feat/...` は git-workflow の型(`feature|fix|refactor|docs|test`)のフックで拒否されたので、`feature/` にしました。§2〜§12 の `Method`、`"Kron"` の記述は、当時の記録としてそのまま残します。
+
+### 13.1 決定(ユーザー、2026-11-13)
+
+1. `get_sys` の `Method="Kron"|"DAE"` を `Type="ODE"|"DAE"` にします。既定は GUILDA.setting の `"ODE"` です。`"DAE"` は母線電圧を消去する前の接続したモデル、`"ODE"` は消去したモデルです。`Format` と `Coordinate` の意味は変えません。
+2. DAE から ODE への消去を `SolverLIN` の Static メソッドにします。`SolverLIN.solve` は接続した DAE だけを返します。
+3. `ResultLIN` は DAE を持ち、`A`〜`OutputName` は設定できる `Type` に従う Dependent プロパティにします。`rm_*` は変えません。`get_ss` の最初の引数は `Type` です。
+4. `ResultLIN.get_contribution(target)` で、要素ごとの DAE への寄与を返します(研究に重要)。
+
+### 13.2 実装 [事実]
+
+- **`Type`:** `get_sys`、`get_ss`、`plot_eigenvalue` の `Method` を `Type` にし、`DefaultLinearization.json` の項目も `Type`(`"ODE"`、`"DAE"`)にしました。`"Kron"` と `Method` を使っていた呼び出し、テスト、`Tutorial10bus` のヘルプ、`Task_linearization`、開発者ページ(`feature-linearization.html`、`api-design.html`、`class-design.html`)、`v4-migration.md`、`status.md` を書き換えました。`_GUILDAverification` には該当がありません。`api-design.html` のオプション名の表には `Type`(同じ解析から返すモデルの種類)の行を加え、`Method` の例から `"Kron"` を除きました。
+- **`SolverLIN.reduce(sct_dae, iv_algebraic)`(Static):** DAE の構造体(`A`〜`E` と名前)から代数変数を消去します。`iv_algebraic` の既定は `E` の行と列がともに 0 の変数です。`ResultLIN.get_ss` は母線電圧の位置を明示して渡します(AVR の時定数が 0 のときなど、機器の `E` が特異な状態は消去しないため。以前の Kron と同じ)。`A_aa` の `rcond` が `1e-14` 未満なら、定まらない代数変数を挙げて `GUILDA:SolverLIN:SingularAvv` で止まります(新しい ID)。
+- **`get_ss("ODE")`:** `"Vre&Vim"` の DAE(`Output`、`Input` を適用したもの)を `SolverLIN.reduce` で消去します。`Output` がなければ、以前と同じく出力は名前のない状態です。`via_kron` は削除しました。ネットワークの `"SingularAvv"` では、これまでどおり `get_ss` が `output.message` を繰り返す `GUILDA:ResultLIN:SingularAvv` で先に止まります。`get_sys` の `"struct"`、`"ss"` は `result.get_ss(Type, ...)` を通して `reduce` を使います。
+- **`ResultLIN`:** `Type`(設定できる、既定は `options.Type`)を加え、`A`〜`OutputName` を Dependent にしました。初めて読んだとき `get_ss(Type)`(`options.Input`、`options.Output`)を求め、private の hidden プロパティ `sct_cache` に `Type` ごとに保持します。`get_ss` と `plot_eigenvalue` の `Type` の既定は `res.Type` です。
+- **寄与の項(`SolverLIN.solve`):** `sct_sys.sct_term` に、行列ごとの非零の項を `[Row, Column, Owner, Value]` の行で返します(`sv_owner` が所有者の一覧。`Y` は電流の出力 `Y v` 用に v だけの部分)。所有者は、状態の行がその状態のブロック(ブロックの新しいフィールド `s_tag`)、母線の電流の釣り合いの行が各機器(自分の電流の項)と各アドミタンスの部分(`sct_port.tab_stamp` の送電線の 2×2 と母線のシャント)、出力の行が出力の所有者(電圧は母線、`Y v` は Y の部分、電流の和は各機器)です。各行列の項の和はその行列です。
+- **`get_sys`:** ネットワークで `sct_port.tab_stamp`(`Owner`、`Bus`、`Y`)を作り(`get_admittance_matrix` と同じ和)、`solve` の後に `sct_sys.tab_owner`(層の要素のタグとクラス。ネットワークは母線と送電線も)を加えます。ソルバーはネットワークを読みません。
+- **`ResultLIN.get_contribution(target)`:** `target` をタグ、クラス名(子クラスを含む)、パッケージ名で所有者に変え、その項から同じ大きさの接続したモデルを作り、`ResultLIN` のコンストラクタで一時的な結果にして `get_ss("DAE")` と同じ経路で DAE にします。状態と母線電圧の出力(`get_ss` が単位行列の行で書く)は所有者で選びます。`sct_mask` は `"Vre&Vim"` での寄与の非零の要素で、極座標では各母線の 2 つの変数をまとめて印を付けます。当たらない対象は `GUILDA:ResultLIN:UnknownTarget`(新しい ID)です。
+- **局所関数:** `reduce.m` の `algebraic_rows`、`undetermined`、`list_names`。`solve.m` の `stamps`、`add_term`、`term_table`。`get_sys.m` の `admittance_stamps`、`owner_table`。`ResultLIN.m` の `fill_cache`。`get_contribution.m` の `owners`、`gather_terms`、`pair`。
+
+### 13.3 選んだ点 [事実]
+
+- **縮約の名前は `reduce` です。** 命名のページの動詞+目的語の規則では `reduce_dae` も考えられますが、`SolverLIN.reduce` はクラス名が目的語(線形モデル)を示すので短くしました。
+- **ODE の出力名は以前と同じく空です。** `reduce` は DAE の出力名(状態の名前)を残しますが、`get_ss("ODE")` の既定の出力は v3 からの「名前のない状態」のまま(F7 "Default channels of get_sys do not change")にしました。名前を付けるかは別の判断です。
+- **キャッシュを加えました。** IEEE68bus(AVR・PSS 付き、状態 144)で `get_ss("ODE")` は 1 回 約 6 ms で、8 つのプロパティを毎回計算すると 1 回の読み出しの組で約 50 ms になるためです。キャッシュからの読み出しは 16 回で 1.6 ms でした [計測]。結果のデータは変わらないので、無効化は要りません。
+- **ブランチ名:** 13 章の冒頭のとおり `feature/` です。
+- **`+helper/linearize_v3.m` の `"Kron"` は残しました。** v3 のコードの写しなので、F7 の比較では `"ODE"` を `"Kron"` に読み替えて渡します。`+branch/@T/get_admittance_matrix.m` の "Kron reduction" は T 形回路の中間節点の消去(数学の用語)なので変えていません。
+- **保存された設定:** ユーザーの設定ファイルにある Linearization の `Method` は、`GUILDA.config` が未知の項目として捨てて読みます(`Remove unknown environment field 'Method'.`)。
+
+### 13.4 結果 [計測]
+
+- small(手順ごと): 手順 1+2 の後 529 件、PASS 526 / KNOWN 1 / FAIL 1 / SKIP 1(`get_sys("Typ", ...)` が `Type` の前方一致で通るので、テストを `"Typo"` に直して PASS)。手順 3 の後と手順 4 の後 531 件、PASS 529 / KNOWN 1 / FAIL 0 / SKIP 1。
+- medium(1 回): 718 件、PASS 714 / KNOWN 1 / FAIL 2 / SKIP 1、583 s。2 件(F7 `BusModelsWithAZeroD`、`LinearModelsMatchTheReferenceValues`)は、ブロックのない層(機器のない母線)で `solve` の所有者の `repelem` が止まったためです。直した後の small は 531 件、PASS 529 / KNOWN 1 / FAIL 0 / SKIP 1、F7 の medium は 50 件すべて PASS です。large は実行していません(F7 の large を手順 3 で 1 回実行し、`linearize_v3` の名前の読み替えを直しました)。
+- 基準値との一致: F7 "Linear models match the reference values"(`"ODE"` は以前の Kron、`"DAE"`)は PASS(許容 1e-9)です。
+- 寄与の和: すべての要素の寄与の和と DAE の相対差の最大は、IEEE14bus(AVR・PSS・AGC 付き、54 要素)で 1.3e-17、IEEE68bus(235 要素)で 5.0e-17 です。1 要素あたり 7〜9 ms です。
+- テスト(F7): "Type switches the model of the result"、"Reduce eliminates the algebraic variables of a DAE"(small)、"Contributions by tag, by class and by several targets"、"Contributions of all elements sum to the DAE"、"... of IEEE68"(medium)を加えました。

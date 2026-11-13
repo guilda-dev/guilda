@@ -10,20 +10,20 @@ net.initialize();
 % 2. 線形モデルを 1 回で求める。sys は ResultLIN で、記述子形式のモデル (E dx = A x + B u) を
 %    sys.A, sys.B, sys.C, sys.D, sys.E と名前 (StateName, InputName, OutputName) に持つ。Toolbox は不要
 sys = net.get_sys();
-[sys_kron, flag, output] = net.get_sys("Method", "Kron");
+[sys_ode, flag, output] = net.get_sys("Type", "ODE");
 disp(output.message)
 assert(flag && isa(sys, "ResultLIN") && isequal(size(sys.A), size(sys.E)))
 % 構造体でも受け取れる。ss (Format="ss") は Control System Toolbox が必要
-sct = net.get_sys("Method", "Kron", "Format", "struct");
-assert(isequal(sct.A, sys_kron.A))
+sct = net.get_sys("Type", "ODE", "Format", "struct");
+assert(isequal(sct.A, sys_ode.A))
 
 % 3. 結果を残して、方式ごとにモデルを取り出す (線形化は 1 回で済む)
 res = net.get_sys();
 sys_dae    = res.get_ss("DAE", Format="struct");
 tab = net.get_variable_map();             % 変数の順 (res.rm_Axx などの行と列)
 disp(head(tab))
-e_kron = DebugScript.helper.finite_eigs(sys_kron);
-assert(DebugScript.helper.same_eigs(e_kron, DebugScript.helper.finite_eigs(sys_dae), 1e-6))
+e_ode = DebugScript.helper.finite_eigs(sys_ode);
+assert(DebugScript.helper.same_eigs(e_ode, DebugScript.helper.finite_eigs(sys_dae), 1e-6))
 
 % 4. 入出力を選ぶ。種類 ("x", "V", "I", "y") と名前を指定できる。Input は tab の Label から選ぶ
 sv_u = tab.Label(tab.Kind == "u");

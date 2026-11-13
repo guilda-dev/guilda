@@ -466,8 +466,8 @@ for s_layer = ["component", "bus", "network"]
     s = gen.get_sys();  sys_ref = gen_ref.get_sys();
     assert(norm(s.A - sys_ref.A, 1) < 1e-6 * norm(sys_ref.A, 1) && norm(s.B - sys_ref.B, 1) < 1e-6 * norm(sys_ref.B, 1), s_layer + ": 機器のモデル")
     assert(isequal(s.StateName, sys_ref.StateName) && isequal(s.InputName, sys_ref.InputName), s_layer + ": 名前")
-    for alg = ["Kron", "DAE"]
-        s = net.get_sys("Method", alg);  sys_ref = ref.get_sys("Method", alg);
+    for alg = ["ODE","DAE"]
+        s = net.get_sys("Type", alg);  sys_ref = ref.get_sys("Type", alg);
         assert(isequal(size(s.A), size(sys_ref.A)) && norm(s.A - sys_ref.A, 1) < 1e-6 * norm(sys_ref.A, 1), s_layer + " " + alg)
     end
 end
