@@ -138,9 +138,9 @@ end
 
 
 function S = alone(comp)
-% 機器単体のモデル (旧: get_sys(Controllers=false)、新: get_linear_block)
+% 機器単体のモデル (旧: get_sys(Controllers=false)、新: get_linear_matrix)
     try
-        S = comp.get_linear_block(comp.rv_Xequilibrium(:), [real(comp.c_Vequilibrium); imag(comp.c_Vequilibrium)], comp.rv_Uequilibrium(:));
+        S = comp.get_linear_matrix(comp.rv_Xequilibrium(:), [real(comp.c_Vequilibrium); imag(comp.c_Vequilibrium)], comp.rv_Uequilibrium(:));
         S.OutputName = S.OutputName(1:2);       % 単体の旧モデルの出力は電流だけ
         S.C = S.C(1:2,:);
         S.D = S.D(1:2,:);

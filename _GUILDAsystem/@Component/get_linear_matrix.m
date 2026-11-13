@@ -1,4 +1,4 @@
-function sct_block = get_linear_block(obj, x, V, u)
+function sct_block = get_linear_matrix(obj, x, V, u)
 % Get the linear block of the component alone at a point.
 %
 % Returns the linear model of the component without its local controllers at the
@@ -18,7 +18,7 @@ function sct_block = get_linear_block(obj, x, V, u)
 % ```matlab
 % comp = net.a_Bus{1}.a_Component{1};
 % V = [real(comp.c_Vequilibrium); imag(comp.c_Vequilibrium)];
-% S = comp.get_linear_block(comp.rv_Xequilibrium, V, comp.rv_Uequilibrium);
+% S = comp.get_linear_matrix(comp.rv_Xequilibrium, V, comp.rv_Uequilibrium);
 % eig(S.A, S.E)
 % ```
 %

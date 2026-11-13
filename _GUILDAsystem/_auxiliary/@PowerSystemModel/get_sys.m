@@ -4,7 +4,7 @@ function [sys, flag, output] = get_sys(obj, point, opt)
 % One method for every layer with a linear model: PowerNetwork, Bus, Component (with
 % its local controllers), LocalController and GlobalController (Branch has none:
 % GUILDA:PowerSystemModel:NoLinearModel). Each model object gives its own linear block
-% (get_linear_block); get_sys takes the inputs and outputs of the layer (its port) from
+% (get_linear_matrix); get_sys takes the inputs and outputs of the layer (its port) from
 % the variable map, and SolverLIN.solve connects the blocks along it. The linearization needs no
 % toolbox, and the model is not changed.
 %
@@ -295,7 +295,7 @@ function c_block = blocks(obj, a_obj, tab, tab_c, rv_point)
     val = [rv_point; zeros(height(tab) - n_lin, 1)];
     c_block = cell(numel(a_obj),1);
     if isa(obj, "LocalController") || isa(obj, "GlobalController")
-        S = obj.get_linear_block(val(tab.Kind == "x"), val(tab.Kind == "Vre" | tab.Kind == "Vim"), val(tab.Kind == "uc"));
+        S = obj.get_linear_matrix(val(tab.Kind == "x"), val(tab.Kind == "Vre" | tab.Kind == "Vim"), val(tab.Kind == "uc"));
         S.Owner = layer_text(obj);
         S.s_tag = string(obj.s_tag);
         c_block{1} = S;
@@ -335,11 +335,11 @@ function c_block = blocks(obj, a_obj, tab, tab_c, rv_point)
     for k = 1:numel(a_obj)
         o = a_obj{k};
         if isa(o, "Component")
-            S = o.get_linear_block(val(rows(o, "x")), V_of(o), val(rows(o, "u")));
+            S = o.get_linear_matrix(val(rows(o, "x")), V_of(o), val(rows(o, "u")));
         elseif isa(o, "LocalController")
-            S = o.get_linear_block(val(rows(o, "x")), V_of(root_component(o)), val(rows(o, "uc")));
+            S = o.get_linear_matrix(val(rows(o, "x")), V_of(root_component(o)), val(rows(o, "uc")));
         else
-            S = o.get_linear_block(val(rows(o, "x")), val(lv_V), val(rows(o, "uc")));
+            S = o.get_linear_matrix(val(rows(o, "x")), val(lv_V), val(rows(o, "uc")));
         end
         S.Owner = layer_text(o);
         S.s_tag = string(o.s_tag);

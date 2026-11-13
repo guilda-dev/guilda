@@ -829,7 +829,7 @@ Option names:
 
 ### 1.12 Linearization
 
-`get_sys` は 1 つのメソッド(`PowerSystemModel.get_sys`)で、`PowerNetwork`、`Bus`、`Component`(ローカル制御器を含む)、`LocalController`、`GlobalController` のすべてで同じ引数を取ります(Issue #121)。各モデルオブジェクトは自分の線形ブロックだけを返し(`get_linear_block`)、`SolverLIN.solve` が変数表と接続表に沿ってつなぎます。`net.linearize` は削除しました。
+`get_sys` は 1 つのメソッド(`PowerSystemModel.get_sys`)で、`PowerNetwork`、`Bus`、`Component`(ローカル制御器を含む)、`LocalController`、`GlobalController` のすべてで同じ引数を取ります(Issue #121)。各モデルオブジェクトは自分の線形ブロックだけを返し(`get_linear_matrix`)、`SolverLIN.solve` が変数表と接続表に沿ってつなぎます。`net.linearize` は削除しました。
 
 | v3 | v4 |
 |----|----|
@@ -838,7 +838,7 @@ Option names:
 | – | `res.get_contribution(target)`: タグやクラスの要素の DAE への寄与 |
 | `lin.Kxx`, `lin.Kxv`, `lin.Kvx`, `lin.Kvv`, `lin.get_DAE` | `res.rm_Axx`, `rm_Axv`, `rm_Bx`, `rm_Avx`, `rm_Avv`, `rm_Bv`, `rm_E`(縮約前の DAE。並びは `res.tab_variable`) |
 | `comp.get_sys(x, V, u)` | `comp.get_sys(p)`(`p` は `comp.get_variable_map()` の先頭の x, Vre, Vim, u の行の順。`p = [x; V; u]` に制御器の状態も入れる) |
-| `comp.get_sys(false)` / `Controllers=false` | `comp.get_linear_block(x, V, u)`(機器単体のブロック) |
+| `comp.get_sys(false)` / `Controllers=false` | `comp.get_linear_matrix(x, V, u)`(機器単体のブロック) |
 | – | `net.get_sys(x)` または `net.get_sys({sim, t})`: 平衡点以外での線形化(点は最初の引数) |
 | – | `net.get_variable_map()`、`bus.get_variable_map()`、`comp.get_variable_map()`(信号と接続表も)、`con.get_variable_map()`、`gc.get_variable_map()`。`Equilibrium` 列は平衡点での値 |
 
