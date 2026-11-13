@@ -177,6 +177,7 @@ classdef ResultLIN < ResultBase
         end
 
         sys = get_ss(obj, Type, opt)
+        [sct_value, sct_mask] = get_contribution(obj, target)
         fig = plot_eigenvalue(obj, opt)
     end
 end

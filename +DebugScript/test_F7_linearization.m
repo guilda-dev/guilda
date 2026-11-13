@@ -1418,6 +1418,86 @@ sRS = SolverLIN.reduce(sS);
 assert(sRS.StateName == "x" && abs(sRS.A - (-1 - 1*0/2)) < 1e-15 && abs(sRS.C - 1) < 1e-15)
 
 
+%% Contributions by tag, by class and by several targets
+% get_contribution は要素の DAE への寄与を返す。状態の行は状態の所有者、母線の電流の釣り合いの行は
+% 機器の電流の項がその機器、Y が送電線 (と母線のシャント) のもの
+netc = contribution_net("IEEE14bus");
+res = netc.get_sys(Output=["x","V","I","y"]);
+tab = res.tab_variable;
+tab_owner = res.sct_model.sct_sys.tab_owner;
+res.Type = "DAE";
+s_gen = string(netc.a_Bus{1}.a_Component{1}.s_tag);
+con = netc.a_Bus{1}.a_Component{1}.a_LocalController{1};
+s_con = string(con.s_tag);
+[v_gen, m_gen] = res.get_contribution(s_gen);
+assert(isequal(size(v_gen.A), size(res.A)) && isequal(size(v_gen.B), size(res.B)) && isequal(size(v_gen.C), size(res.C)))
+assert(isequal(v_gen.StateName, res.StateName) && isequal(v_gen.OutputName, res.OutputName) && islogical(m_gen.A))
+% 状態の行は所有者のもの: 発電機の行はすべて発電機、制御器の行 (B_con C_gen を含む) に発電機の項はない
+lv_gen = ismember(res.StateName, tab.Label(tab.Kind == "x" & tab.Owner == s_gen));
+lv_con = ismember(res.StateName, tab.Label(tab.Kind == "x" & tab.Owner == s_con));
+assert(any(lv_gen) && any(lv_con))
+assert(isequal(v_gen.A(lv_gen,:), res.A(lv_gen,:)) && isequal(v_gen.E(lv_gen,:), res.E(lv_gen,:)) && ~any(v_gen.A(lv_con,:), "all"))
+v_con = res.get_contribution(s_con);
+assert(isequal(v_con.A(lv_con,:), res.A(lv_con,:)) && any(v_con.A(lv_con, lv_gen), "all"))
+% マスクは値の変わる要素を含む
+for s = ["A","B","C","D","E"]
+    assert(~any(v_gen.(s) ~= 0 & ~m_gen.(s), "all"), s)
+end
+% 出力の行: 状態はその所有者、電圧は母線
+lv_out = res.OutputName == tab.Label(find(tab.Kind == "x" & tab.Owner == s_gen, 1));
+assert(isequal(v_gen.C(lv_out,:), res.C(lv_out,:)))
+% 複数の対象は和
+v_two = res.get_contribution([s_gen, s_con]);
+for s = ["A","B","C","D","E"]
+    assert(norm(v_two.(s) - v_gen.(s) - v_con.(s), Inf) <= 1e-12*max(1, norm(res.(s), Inf)), s)
+end
+% クラス名: そのクラスの要素の和。親クラスは子クラスを含む。パッケージ名はその中のクラス
+s_cls = tab_owner.Class(tab_owner.Owner == s_gen);
+v_cls = res.get_contribution(s_cls);
+v_sum = sum_contribution(res, tab_owner.Owner(tab_owner.Class == s_cls));
+assert(same_parts(v_cls, v_sum, res))
+lv_lc = arrayfun(@(c) any(superclasses(char(c)) == "LocalController"), tab_owner.Class);
+assert(same_parts(res.get_contribution("LocalController"), sum_contribution(res, tab_owner.Owner(lv_lc)), res))
+lv_avr = startsWith(tab_owner.Class, "controller.avr.");
+assert(any(lv_avr) && same_parts(res.get_contribution("controller.avr"), sum_contribution(res, tab_owner.Owner(lv_avr)), res))
+% 送電線: Y の行と列の部分だけ。母線はシャントと電圧の出力
+br = netc.a_Branch{1};
+v_br = res.get_contribution(string(br.s_tag));
+n_xd = nnz(tab.Kind == "x");
+assert(~any(v_br.A(1:n_xd,:), "all") && any(v_br.A(n_xd+1:end, n_xd+1:end), "all") && ~any(v_br.A(n_xd+1:end, 1:n_xd), "all"))
+lv_br = arrayfun(@(c) any(superclasses(char(c)) == "Branch"), tab_owner.Class);
+assert(any(lv_br) && same_parts(res.get_contribution("Branch"), sum_contribution(res, tab_owner.Owner(lv_br)), res))
+lv_vout = res.OutputName == tab.Label(find(tab.Kind == "Vre", 1));
+v_bus = res.get_contribution(tab.Bus(find(tab.Kind == "Vre", 1)));
+assert(isequal(v_bus.C(lv_vout,:), res.C(lv_vout,:)))
+% 不明な対象は止まる
+assert(error_id(@() res.get_contribution("NoSuchElement")) == "GUILDA:ResultLIN:UnknownTarget")
+
+
+%% Contributions of all elements sum to the DAE
+% すべての要素の寄与の和は DAE (IEEE14: 要素ごと、IEEE68: 種類ごと)
+netc = contribution_net("IEEE14bus");
+res = netc.get_sys(Output=["x","V","I","y"]);
+res.Type = "DAE";
+tab_owner = res.sct_model.sct_sys.tab_owner;
+assert(same_parts(sum_contribution(res, tab_owner.Owner), res, res), "IEEE14: 要素の和が DAE と違う")
+assert(same_parts(sum_contribution(res, ["Component","LocalController","GlobalController","Branch","Bus"]), res, res))
+% 結果の座標で求める
+resR = netc.get_sys(Type="DAE", Coordinate="Vre&Vim");
+assert(same_parts(sum_contribution(resR, ["Component","LocalController","GlobalController","Branch","Bus"]), resR, resR))
+% 機器の結果 (ポートのモデル) も同じ規則で分かれる
+resC = netc.a_Bus{1}.a_Component{1}.get_sys();
+assert(same_parts(sum_contribution(resC, resC.sct_model.sct_sys.tab_owner.Owner), resC, resC))
+
+
+%% Contributions of all elements sum to the DAE of IEEE68
+netc = contribution_net("IEEE68bus");
+res = netc.get_sys(Type="DAE", Output=["V","y"]);
+assert(same_parts(sum_contribution(res, ["Component","LocalController","GlobalController","Branch","Bus"]), res, res), "IEEE68: 種類の和が DAE と違う")
+tab_owner = res.sct_model.sct_sys.tab_owner;
+assert(same_parts(sum_contribution(res, tab_owner.Owner), res, res), "IEEE68: 要素の和が DAE と違う")
+
+
 %% Linear models match the reference values
 % 接続器 SolverLIN に置き換える前のコードで求めた基準値 (+helper/linearization_reference.mat) と、
 % 網 (rm_*, ODE, DAE)・機器・母線・LC・GC のモデルが数値精度で一致する (Issue #121)
@@ -1439,6 +1519,53 @@ end
 function set_type(res, s_type)
 % res.Type に代入する (error_id で検証のエラーを調べるため)
     res.Type = s_type;
+end
+
+
+function net = contribution_net(s_case)
+% 寄与のテストの系統: 最初の発電機に AVR と PSS (なければ)、Pmech を入力にもつ 2 台に AGC
+    net = DebugScript.helper.quiet(@() network.(s_case)());
+    g = net.a_Bus{1}.a_Component{1};
+    if isempty(g.a_LocalController)
+        g.add_local_controller("avr-ST1");
+        g.add_local_controller("pss-PSS1");
+    end
+    cc = {};
+    for i = 1:numel(net.a_Bus)
+        for j = 1:numel(net.a_Bus{i}.a_Component)
+            c = net.a_Bus{i}.a_Component{j};
+            if any(c.sv_u == "Pmech")
+                cc{end+1} = c; %#ok<AGROW>
+            end
+        end
+    end
+    DebugScript.helper.quiet(@() net.add_global_controller("agc-PI", cc(1:2), parameter=struct(alpha=[1;1], beta=[1;1])));
+    DebugScript.helper.quiet(@() net.initialize());
+end
+
+
+function sct = sum_contribution(res, sv_target)
+% 対象ごとの寄与 (1 つずつ求めたもの) の和
+    sct = struct();
+    for s = ["A","B","C","D","E"]
+        sct.(s) = 0;
+    end
+    for t = reshape(string(sv_target), 1, [])
+        v = res.get_contribution(t);
+        for s = ["A","B","C","D","E"]
+            sct.(s) = sct.(s) + v.(s);
+        end
+    end
+end
+
+
+function tf = same_parts(a, b, res)
+% A ... E が res の大きさに比べて丸めの範囲で一致するか
+    tf = true;
+    for s = ["A","B","C","D","E"]
+        tf = tf && isequal(size(a.(s)), size(res.(s))) && ...
+             norm(a.(s) - b.(s), Inf) <= 1e-10*max(1, norm(res.(s), Inf));
+    end
 end
 
 

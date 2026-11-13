@@ -100,11 +100,15 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     a_comp = a_obj(cellfun(@(o) isa(o, "Component"), a_obj));
     sct_port.tab_current = current_table(a_comp);
     if isa(obj, "PowerNetwork")
+        sct_port.tab_stamp = admittance_stamps(obj);   % the parts of cm_Y: branches, bus shunts
+    end
+    if isa(obj, "PowerNetwork")
         solver = obj.solver_LIN;
     else
         solver = SolverLIN();
     end
     [sct_sys, output] = solver.solve(c_block, tab, tab_c, sct_port);
+    sct_sys.tab_owner = owner_table(obj, a_obj);   % the classes of the owners of the terms
 
     % Messages
     sv_layer = ["PowerNetwork","Bus","Component","LocalController","GlobalController"];
@@ -240,6 +244,7 @@ function c_block = blocks(obj, a_obj, tab, tab_c, rv_point)
     if isa(obj, "LocalController") || isa(obj, "GlobalController")
         S = obj.get_linear_block(val(tab.Kind == "x"), val(tab.Kind == "Vre" | tab.Kind == "Vim"), val(tab.Kind == "uc"));
         S.Owner = layer_text(obj);
+        S.s_tag = string(obj.s_tag);
         c_block{1} = S;
         return
     end
@@ -284,6 +289,7 @@ function c_block = blocks(obj, a_obj, tab, tab_c, rv_point)
             S = o.get_linear_block(val(rows(o, "x")), val(lv_V), val(rows(o, "uc")));
         end
         S.Owner = layer_text(o);
+        S.s_tag = string(o.s_tag);
         c_block{k} = S;
     end
 end
@@ -317,6 +323,49 @@ function tab = current_table(a_comp)
         sv_bus(2*k-1:2*k)   = string(a_comp{k}.a_Bus.s_tag);
     end
     tab = table(sv_label, sv_bus, repmat(["Ire";"Iim"], n, 1), VariableNames=["Label","Bus","Name"]);
+end
+
+
+function tab = admittance_stamps(net)
+% Admittance stamps of the network, which sum to net.get_admittance_matrix(): the 2-by-2
+% matrix of each branch at its two buses, and the shunt Gshunt + j*Bshunt of each bus
+    n_br  = numel(net.a_Branch);
+    n_bus = numel(net.a_Bus);
+    sv_owner = strings(n_br + n_bus, 1);
+    c_bus = cell(n_br + n_bus, 1);
+    c_Y   = cell(n_br + n_bus, 1);
+    for i = 1:n_br
+        br = net.a_Branch{i};
+        sv_owner(i) = string(br.s_tag);
+        c_bus{i} = reshape(string(br.a_Bus), 1, []);
+        c_Y{i}   = br.get_admittance_matrix();
+    end
+    for i = 1:n_bus
+        b = net.a_Bus{i};
+        para = b.a_Parameter{cellfun(@(p) p.s_tag == "dynamics", b.a_Parameter)}.tab_parameter;
+        sv_owner(n_br+i) = string(b.s_tag);
+        c_bus{n_br+i} = string(b.s_tag);
+        c_Y{n_br+i}   = [para.Gshunt, para.Bshunt]*[1; 1j];
+    end
+    tab = table(sv_owner, c_bus, c_Y, VariableNames=["Owner","Bus","Y"]);
+end
+
+
+function tab = owner_table(obj, a_obj)
+% Tag and class of each element of the layer: its model objects and, for the network, its
+% buses and branches (for a bus, the bus)
+    if isa(obj, "PowerNetwork")
+        a_obj = [a_obj(:); obj.a_Bus(:); obj.a_Branch(:)];
+    elseif isa(obj, "Bus")
+        a_obj = [a_obj(:); {obj}];
+    end
+    sv_tag   = strings(numel(a_obj),1);
+    sv_class = strings(numel(a_obj),1);
+    for k = 1:numel(a_obj)
+        sv_tag(k)   = string(a_obj{k}.s_tag);
+        sv_class(k) = string(class(a_obj{k}));
+    end
+    tab = table(sv_tag, sv_class, VariableNames=["Owner","Class"]);
 end
 
 
