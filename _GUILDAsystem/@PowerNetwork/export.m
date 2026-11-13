@@ -13,8 +13,8 @@ function path = export(obj, path, opt)
 % The bus column Slack is 1 for the slack bus. The column FullTag of the bus, branch and
 % component tables holds the full tag; the bus column Tag holds its prefix (the tag
 % without its trailing digits). A scenario file holds Format ("GUILDAscenario"), version,
-% Description, Time and Disturbances: one object per disturbance with the names of the
-% add_disturbance options (Tag, TimeSpan, FaultBus, ..., InputMethod), empty ones left out;
+% Description, Time, and Event, Offset and Input: one object per row of tab_event, tab_offset
+% and tab_input with the column names as fields (version 2), empty ones left out;
 % a time-series InputValue is an object with Time and Value (one array per point).
 % Equilibria and controllers are not saved;
 % the warning GUILDA:PowerNetwork:ControllersNotSaved lists the controllers left out.

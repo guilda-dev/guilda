@@ -155,7 +155,7 @@ sc.add_input("B002SG1", "Pmech", [0, 0.01; 0.5, 0.03; 1.5, -0.01], [1,3], Method
 [res, flag, output] = DebugScript.helper.quiet(@() net.simulate(sc.s_tag));
 assert(flag == 1)
 assert(isequal(output.phases.t1.', [0, 1, 1.5, 2.5, 3]), mat2str(output.phases.t1.'))
-assert(all(output.phases{2:4, sc.tab_disturbance.Tag}))
+assert(all(output.phases{2:4, sc.tab_input.Tag}))
 Pm = res.odeResults.Bus(2).Component(1).U.Pmech;
 rv_val = [0, 0.01, 0.03, -0.01, 0];
 for p = 1:5

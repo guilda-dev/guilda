@@ -1,24 +1,24 @@
 function s_tag = add_disturbance(obj, tag, opt)
-% Add a disturbance given by any of the disturbance fields.
+% Add an offset and an input with one tag.
 %
-% The general form: one disturbance may
-% combine a fault, a trip, a branch opening, an offset and an input with one time
-% span. The tags are checked against the network of the scenario now, and again at the
-% start of each simulation. The checks are those of the simulation: unknown tags, states
-% and inputs, a TimeSpan without duration for a lasting disturbance, value counts and the
-% input time series (see add_input). Nothing is added when a check fails.
+% The general form of add_offset and add_input: the offset (applied at t_start) goes to
+% tab_offset and the input (from t_start to t_end) to tab_input, both with the tag. Faults,
+% trips and branch openings are added with add_fault, add_trip and add_open_branch. The
+% tags are checked against the network of the scenario now, and again at the start of
+% each simulation. The checks are those of the simulation: unknown tags, states and
+% inputs, a TimeSpan without duration for an input, value counts and the input time
+% series (see add_input). Nothing is added when a check fails. Without an offset and an
+% input, the tag only marks its time span (a column of output.phases).
 %
 % <@Examples>
 % ```matlab
-% sc.add_disturbance("fault+open", TimeSpan=[1, 1.05], FaultBus="B008", OpenBranch="EL003");
+% sc.add_disturbance("kick", TimeSpan=[1, 1.5], OffsetUnit="B001SG1", OffsetState="delta", ...
+%     OffsetValue=0.01, InputUnit="B002SG1", InputName="Pmech", InputValue=0.05);
 % ```
     arguments (Input)
         obj
-        tag (1,1) string % Tag of the disturbance, unique in the scenario (the column of output.phases).
-        opt.TimeSpan {mustBeRow, validateTimeSpanSize} = [0,10] % [s] [t_start, t_end], or t_start alone for an offset only.
-        opt.FaultBus    (:,1) string = strings(0,1) % Tags of the buses with a ground fault (voltage 0).
-        opt.TripUnit    (:,1) string = strings(0,1) % Tags of the components or global controllers disconnected.
-        opt.OpenBranch  (:,1) string = strings(0,1) % Tags of the branches left out of the network (reconnected at t_end).
+        tag (1,1) string % Tag of the disturbance, unique in the scenario (the column of output.phases; not Fault or Parallel followed by digits).
+        opt.TimeSpan {mustBeRow, validateTimeSpanSize} = [0,10] % [s] [t_start, t_end], or t_start alone without an input.
         opt.OffsetUnit  (1,1) string = ""           % Tag of the component whose initial states are offset at t_start.
         opt.OffsetState (:,1) string = strings(0,1) % Names of the states to offset (e.g. "delta").
         opt.OffsetValue (:,1) double = zeros(0,1)   % Offsets of OffsetState, one per name or one for all.

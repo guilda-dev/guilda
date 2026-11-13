@@ -58,7 +58,7 @@ function tab = test_levels()
     "test_F29_open_branch/YOfTheOpenPhaseIsTheYWithoutTheBranch", "medium"
     "test_F29_open_branch/BusCurrentsFollowTheYOfEachPhase", "medium"
     "test_F29_open_branch/PermanentOpeningAfterAFault", "medium"
-    "test_F29_open_branch/OverlappingOpeningsUseTheUnionOfTheOpenBranches", "medium"
+    "test_F29_open_branch/OverlappingOpeningsOfDifferentBranchesUseTheUnionOfTheOpenBranches", "medium"
     % ---- F2_powerflow ----------------------------------------------------------------------------
     "test_F2_powerflow/DynamicMethodReachesTheAlgebraicSolution", "large"
     "test_F2_powerflow/PlotAndExportOfTheResult", "large"
@@ -87,7 +87,7 @@ function tab = test_levels()
     "test_F30_governor/replace_componentWithControllers__keep_MovesBothSlots", "medium"
     "test_F30_governor/exportNamesTheGovernorItDoesNotWrite", "medium"
     % ---- F31_scenario ----------------------------------------------------------------------------
-    "test_F31_scenario/AFaultThenAPermanentOpeningEqualsTheGeneralForm", "large"
+    "test_F31_scenario/AFaultThenAPermanentOpening_TwoRowsPerTargetWithOneTag", "large"
     "test_F31_scenario/StoredTime_TheTimeAndTheSettingsOfTheCallWinForThatCall", "medium"
     "test_F31_scenario/ChildrenOfTheNetwork_Create_Rename_Copy_Remove", "medium"
     "test_F31_scenario/UnknownTagsAtAddAndAtRunTime", "medium"
