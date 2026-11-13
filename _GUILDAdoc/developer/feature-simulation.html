@@ -212,15 +212,15 @@ net.remove_scenario(tag)</code></pre>
           <path class="dg-sv-line" d="M50 90H168" marker-end="url(#sim-ah)"/>
           <text class="is-sm" x="56" y="84"><tspan style="fill:var(--dg-accent)">01</tspan> simulate(tag, NV)</text>
           <path class="dg-sv-line" d="M170 108h26v14h-24" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="204" y="119"><tspan style="fill:var(--dg-accent)">02</tspan> build_simulation_data(tag, time): check_simulation</text>
+          <text class="is-sm" x="204" y="119"><tspan style="fill:var(--dg-accent)">02</tspan> build_simulation_data(tag, time): simulateFcn_check</text>
           <path class="dg-sv-line" d="M170 140h26v14h-24" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="204" y="151"><tspan style="fill:var(--dg-accent)">03</tspan> simulation_blocks → sct_dae</text>
+          <text class="is-sm" x="204" y="151"><tspan style="fill:var(--dg-accent)">03</tspan> simulateFcn_blocks → sct_dae</text>
           <path class="dg-sv-line" d="M170 190H298" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="176" y="184"><tspan style="fill:var(--dg-accent)">04</tspan> compile(sct_dae, time) → tab_phase, sct_event; check_islands</text>
+          <text class="is-sm" x="176" y="184"><tspan style="fill:var(--dg-accent)">04</tspan> compile(sct_dae, time) → tab_phase, sct_event; simulateFcn_check_islands</text>
           <path class="dg-sv-line" d="M170 208h26v14h-24" marker-end="url(#sim-ah)"/>
           <text class="is-sm" x="204" y="219"><tspan style="fill:var(--dg-accent)">05</tspan> rv_x0</text>
           <path class="dg-sv-line" d="M170 240h26v14h-24" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="204" y="251"><tspan style="fill:var(--dg-accent)">06</tspan> stop_condition → sct_dae.sct_stop; print_phases</text>
+          <text class="is-sm" x="204" y="251"><tspan style="fill:var(--dg-accent)">06</tspan> simulateFcn_stop_condition → sct_dae.sct_stop; simulateFcn_print_phases</text>
           <path class="dg-sv-line" d="M170 290H428" marker-end="url(#sim-ah)"/>
           <text class="is-sm" x="176" y="284"><tspan style="fill:var(--dg-accent)">07</tspan> solve(sct_dae, sct_event, rv_x0, sct_options): build_index</text>
           <path class="dg-sv-line" d="M430 316H553" marker-end="url(#sim-ah)"/>
@@ -250,7 +250,7 @@ net.remove_scenario(tag)</code></pre>
           <path class="dg-sv-line is-muted" d="M430 724H172" marker-end="url(#sim-ah-m)"/>
           <text class="is-sm" x="176" y="718"><tspan style="fill:var(--dg-accent)">20</tspan> [sct_sol, flag, output]</text>
           <path class="dg-sv-line" d="M170 754H933" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="176" y="748"><tspan style="fill:var(--dg-accent)">21</tspan> ResultODE(sct_sol, sct_dae, struct(net, false), sct_solver) | struct_result</text>
+          <text class="is-sm" x="176" y="748"><tspan style="fill:var(--dg-accent)">21</tspan> ResultODE(sct_sol, sct_dae, struct(net, false), sct_solver) | simulateFcn_struct_result</text>
           <path class="dg-sv-line is-muted" d="M170 786H52" marker-end="url(#sim-ah-m)"/>
           <text class="is-sm" x="56" y="780">[result, flag, output]</text>
         </g>
@@ -258,11 +258,11 @@ net.remove_scenario(tag)</code></pre>
       <div class="dg-only-narrow">
         <ol class="sim-seq-list">
           <li><span class="sim-id">SIM-01</span> <span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.simulate</code></li>
-          <li><span class="sim-id">SIM-02</span> <code>PowerNetwork.simulate</code> → <code>build_simulation_data</code>, <code>check_simulation</code></li>
-          <li><span class="sim-id">SIM-03</span> <code>build_simulation_data</code> → <code>simulation_blocks</code> → <code>PowerNetwork.get_variable_map</code></li>
-          <li><span class="sim-id">SIM-04</span> <code>build_simulation_data</code> → <code>Scenario.compile</code>, <code>check_islands</code></li>
+          <li><span class="sim-id">SIM-02</span> <code>PowerNetwork.simulate</code> → <code>build_simulation_data</code>, <code>simulateFcn_check</code></li>
+          <li><span class="sim-id">SIM-03</span> <code>build_simulation_data</code> → <code>simulateFcn_blocks</code> → <code>PowerNetwork.get_variable_map</code></li>
+          <li><span class="sim-id">SIM-04</span> <code>build_simulation_data</code> → <code>Scenario.compile</code>, <code>simulateFcn_check_islands</code></li>
           <li><span class="sim-id">SIM-05</span> <code>build_simulation_data</code>: <code>rv_x0</code></li>
-          <li><span class="sim-id">SIM-06</span> <code>PowerNetwork.simulate</code> → <code>stop_condition</code>, <code>print_phases</code></li>
+          <li><span class="sim-id">SIM-06</span> <code>PowerNetwork.simulate</code> → <code>simulateFcn_stop_condition</code>, <code>simulateFcn_print_phases</code></li>
           <li><span class="sim-id">SIM-07</span> <code>PowerNetwork</code> → <code>SolverODE.solve</code> → <code>SolverODE.build_index</code></li>
           <li><span class="sim-id">SIM-08</span> <code>SolverODE</code> → <code>makeODE</code>, <code>ProgressODE</code></li>
           <li class="sim-loop"><span class="sim-id">SIM-09</span> <code>SolverODE.solve</code> → <code>set_phase</code></li>
@@ -277,7 +277,7 @@ net.remove_scenario(tag)</code></pre>
           <li class="sim-loop"><span class="sim-id">SIM-18</span> <code>SolverODE.phase_result</code></li>
           <li class="sim-loop"><span class="sim-id">SIM-19</span> <code>SolverODE.getNextPhase</code> → <code>f_reconnect</code></li>
           <li><span class="sim-id">SIM-20</span> <code>SolverODE.solve</code> → <code>PowerNetwork.simulate</code></li>
-          <li><span class="sim-id">SIM-21</span> <code>PowerNetwork.simulate</code> → <code>ResultODE</code> | <code>struct_result</code> → <span lang="en">caller</span><span lang="ja">呼び出し側</span></li>
+          <li><span class="sim-id">SIM-21</span> <code>PowerNetwork.simulate</code> → <code>ResultODE</code> | <code>simulateFcn_struct_result</code> → <span lang="en">caller</span><span lang="ja">呼び出し側</span></li>
         </ol>
       </div>
       <figcaption lang="en">One run of <code>net.simulate</code>. SIM-02 to SIM-05 run in the Hidden method <code>net.build_simulation_data</code>. The <code>ode</code> object calls SIM-15 to SIM-17 many times per phase; SIM-13 also calls the right-hand side and Jacobian of SIM-15 and SIM-16.</figcaption>
@@ -300,11 +300,11 @@ net.remove_scenario(tag)</code></pre>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>The <code>arguments</code> block checks the tag (<code>mustBeScenarioOf</code>: <code>GUILDA:PowerNetwork:ScenarioNotFound</code>), <code>Time</code> (<code>mustBeSimulationTime</code>) and each option.</li>
+              <li>The <code>arguments</code> block checks the tag (<code>simulateFcn_mustBeScenarioOf</code>: <code>GUILDA:PowerNetwork:ScenarioNotFound</code>), <code>Time</code> (<code>mustBeSimulationTime</code>) and each option.</li>
               <li>Selects the scenario by its tag; the time is <code>sc.Time</code>, or the <code>Time</code> option.</li>
               <li>Builds the settings of the run (<code>simulate_options</code>): the values of <code>GUILDA.config("TimeSimulation")</code>, invalid ones replaced (<code>TimeLimit</code> → <code>Inf</code>; <code>MaxStep</code>, <code>InitialStep</code>, <code>SampleTime</code> → <code>NaN</code>; <code>StopAngle</code> → 360), then the options of the call; <code>Progress</code> to its mode, <code>PlotFcn</code> through <code>tools.check_plotfcn</code>.</li>
             </ul><ul lang="ja">
-              <li><code>arguments</code> ブロックで、タグ（<code>mustBeScenarioOf</code>。<code>GUILDA:PowerNetwork:ScenarioNotFound</code>）、<code>Time</code>（<code>mustBeSimulationTime</code>）と各オプションを検査します。</li>
+              <li><code>arguments</code> ブロックで、タグ（<code>simulateFcn_mustBeScenarioOf</code>。<code>GUILDA:PowerNetwork:ScenarioNotFound</code>）、<code>Time</code>（<code>mustBeSimulationTime</code>）と各オプションを検査します。</li>
               <li>タグでシナリオを選びます。時間は <code>sc.Time</code> か、<code>Time</code> オプションです。</li>
               <li>実行の設定を作ります（<code>simulate_options</code>）。<code>GUILDA.config("TimeSimulation")</code> の値を取り、不正な値を置き換え（<code>TimeLimit</code> は <code>Inf</code>、<code>MaxStep</code>・<code>InitialStep</code>・<code>SampleTime</code> は <code>NaN</code>、<code>StopAngle</code> は 360）、その上に呼び出しのオプションを重ねます。<code>Progress</code> は表示の種類に直し、<code>PlotFcn</code> は <code>tools.check_plotfcn</code> で検査します。</li>
             </ul></dd>
@@ -315,7 +315,7 @@ net.remove_scenario(tag)</code></pre>
         </dl>
       </li>
       <li class="fs-step" id="SIM-02">
-        <p class="fs-head"><b class="fs-id">SIM-02</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <code>PowerNetwork.build_simulation_data(tag, time)</code> → <code>check_simulation</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-02</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <code>PowerNetwork.build_simulation_data(tag, time)</code> → <code>simulateFcn_check</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -334,7 +334,7 @@ net.remove_scenario(tag)</code></pre>
         </dl>
       </li>
       <li class="fs-step" id="SIM-03">
-        <p class="fs-head"><b class="fs-id">SIM-03</b> <span class="fs-call"><code>build_simulation_data</code> → <code>simulation_blocks</code> → <code>PowerNetwork.get_variable_map</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-03</b> <span class="fs-call"><code>build_simulation_data</code> → <code>simulateFcn_blocks</code> → <code>PowerNetwork.get_variable_map</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -357,19 +357,19 @@ net.remove_scenario(tag)</code></pre>
         </dl>
       </li>
       <li class="fs-step" id="SIM-04">
-        <p class="fs-head"><b class="fs-id">SIM-04</b> <span class="fs-call"><code>build_simulation_data</code> → <code>Scenario.compile(sct_dae, time)</code>, <code>check_islands</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-04</b> <span class="fs-call"><code>build_simulation_data</code> → <code>Scenario.compile(sct_dae, time)</code>, <code>simulateFcn_check_islands</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
               <li>Checks the disturbances against the network as it is now (<code>validate</code>). Without disturbances, adds one empty one (<code>"NoAction"</code> at <code>t0</code>).</li>
               <li>Warns for disturbances outside <code>time</code>; cuts the span at every disturbance time and at each point after the first of a <code>"zoh"</code> input series, and marks the active disturbances of each phase. A phase without an active disturbance gets its own <code>NoAction&lt;k&gt;</code>.</li>
               <li>Matches the tags once and gives what each phase applies as positions in <code>sct_dae</code>: the tripped components and global controllers, the faulted buses, the open branches, the state offsets of the disturbances that start in the phase (all active ones in the first phase), and one row per active input: its rows of <code>tab_variable</code>, the times from the start of the phase, the values and the interpolation (a constant and a <code>"zoh"</code> series: one point, the value of the phase).</li>
-              <li><code>check_islands</code>: stops with <code>GUILDA:PowerNetwork:OpenBranchIsland</code> if the open branches of a phase leave buses without any component.</li>
+              <li><code>simulateFcn_check_islands</code>: stops with <code>GUILDA:PowerNetwork:OpenBranchIsland</code> if the open branches of a phase leave buses without any component.</li>
             </ul><ul lang="ja">
               <li>外乱を今のネットワークと照らし合わせます（<code>validate</code>）。外乱が 1 つもなければ、<code>t0</code> に空の外乱 <code>"NoAction"</code> を 1 つ加えます。</li>
               <li><code>time</code> の範囲外にある外乱があれば警告します。外乱の時刻と、<code>"zoh"</code> の入力の時系列の 2 点目以降の時刻で区間を区切り、フェーズごとに有効な外乱に印を付けます。有効な外乱がないフェーズには、専用の <code>NoAction&lt;k&gt;</code> を割り当てます。</li>
               <li>タグをここで一度だけ照合し、各フェーズで適用する内容を <code>sct_dae</code> の中の位置で表します。トリップする機器とグローバル制御器、地絡する母線、開くブランチ、そのフェーズで始まる外乱の状態オフセット（最初のフェーズでは有効な外乱すべて）、有効な入力ごとの 1 行です。入力の行は、<code>tab_variable</code> の行、フェーズの始めからの時刻、値、補間の方法を持ちます（定数と <code>"zoh"</code> の時系列は、そのフェーズの値を 1 点で持ちます）。</li>
-              <li><code>check_islands</code> は、あるフェーズでブランチを開いた結果、機器のない母線が切り離される場合に <code>GUILDA:PowerNetwork:OpenBranchIsland</code> で処理を止めます。</li>
+              <li><code>simulateFcn_check_islands</code> は、あるフェーズでブランチを開いた結果、機器のない母線が切り離される場合に <code>GUILDA:PowerNetwork:OpenBranchIsland</code> で処理を止めます。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>sc.tab_disturbance</code> (<code>TimeSpan</code>, <code>FaultBus</code>, <code>TripUnit</code>, <code>OpenBranch</code>, <code>Offset*</code>, <code>Input*</code>), <code>sct_dae</code> (<code>tab_variable</code>, <code>sv_bus</code>, <code>sv_branch</code>, <code>sv_comp</code>, <code>sv_gc</code>), <code>time</code></dd>
@@ -389,7 +389,7 @@ net.remove_scenario(tag)</code></pre>
         </dl>
       </li>
       <li class="fs-step" id="SIM-06">
-        <p class="fs-head"><b class="fs-id">SIM-06</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <code>stop_condition</code>, <code>print_phases</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-06</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <code>simulateFcn_stop_condition</code>, <code>simulateFcn_print_phases</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -658,16 +658,16 @@ net.remove_scenario(tag)</code></pre>
         </dl>
       </li>
       <li class="fs-step" id="SIM-21">
-        <p class="fs-head"><b class="fs-id">SIM-21</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <code>ResultODE</code> | <code>struct_result</code> → <span lang="en">caller</span><span lang="ja">呼び出し側</span></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-21</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <code>ResultODE</code> | <code>simulateFcn_struct_result</code> → <span lang="en">caller</span><span lang="ja">呼び出し側</span></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
               <li>Adds <code>output.phases</code> (the phase table) and orders the fields of <code>output</code>.</li>
-              <li><code>Format="GUILDAorigin"</code>: <code>ResultODE(sct_sol, sct_dae, struct(net, false), sct_solver)</code> keeps the rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code>, computes the outputs <code>y</code>, <code>yc</code> with the <code>f_Y</code> of the blocks and builds the columns of each bus for <code>odeResults</code> (<code>simulator_columns</code>). <code>Format="struct"</code>: <code>struct_result</code> (no <code>struct(net, false)</code>, no outputs).</li>
+              <li><code>Format="GUILDAorigin"</code>: <code>ResultODE(sct_sol, sct_dae, struct(net, false), sct_solver)</code> keeps the rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code>, computes the outputs <code>y</code>, <code>yc</code> with the <code>f_Y</code> of the blocks and builds the columns of each bus for <code>odeResults</code> (<code>simulator_columns</code>). <code>Format="struct"</code>: <code>simulateFcn_struct_result</code> (no <code>struct(net, false)</code>, no outputs).</li>
               <li>Warns with <code>GUILDA:PowerNetwork:SimulationIncomplete</code> when <code>flag</code> is neither 1 nor 2.</li>
             </ul><ul lang="ja">
               <li><code>output.phases</code>（フェーズ表）を加え、<code>output</code> のフィールドの順を整えます。</li>
-              <li><code>Format="GUILDAorigin"</code> なら <code>ResultODE(sct_sol, sct_dae, struct(net, false), sct_solver)</code> を作ります。<code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> の行を残し、出力 <code>y</code>、<code>yc</code> をブロックの <code>f_Y</code> で計算し、<code>odeResults</code> のための母線ごとの列を作ります（<code>simulator_columns</code>）。<code>Format="struct"</code> なら <code>struct_result</code> で struct を作ります（<code>struct(net, false)</code> も出力の計算もしません）。</li>
+              <li><code>Format="GUILDAorigin"</code> なら <code>ResultODE(sct_sol, sct_dae, struct(net, false), sct_solver)</code> を作ります。<code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> の行を残し、出力 <code>y</code>、<code>yc</code> をブロックの <code>f_Y</code> で計算し、<code>odeResults</code> のための母線ごとの列を作ります（<code>simulator_columns</code>）。<code>Format="struct"</code> なら <code>simulateFcn_struct_result</code> で struct を作ります（<code>struct(net, false)</code> も出力の計算もしません）。</li>
               <li><code>flag</code> が 1 でも 2 でもなければ、警告 <code>GUILDA:PowerNetwork:SimulationIncomplete</code> を出します。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -851,12 +851,12 @@ net.remove_scenario(tag)</code></pre>
         <tr><td><span lang="en">New disturbance kind</span><span lang="ja">新しい種類の外乱</span></td><td><ul lang="en">
             <li>Add the field to <code>Scenario</code> (<code>sr_field</code>, the empty record, an <code>add_*</code> method).</li>
             <li>Check it in <code>validate_disturbance</code>; give it per phase as positions in <code>sct_dae</code> in <code>Scenario.compile</code> (a new field of <code>sct_event</code>).</li>
-            <li>Apply it in <code>SolverODE.solve</code> from the positions only (as <code>set_admittance</code> does for <code>OpenBranch</code>; variables removed through <code>lv_FBorTC</code> in <code>initial_condition</code>) and in <code>getNextPhase</code> (restart values); any data from the models goes into <code>sct_dae</code> through <code>simulation_blocks</code>.</li>
+            <li>Apply it in <code>SolverODE.solve</code> from the positions only (as <code>set_admittance</code> does for <code>OpenBranch</code>; variables removed through <code>lv_FBorTC</code> in <code>initial_condition</code>) and in <code>getNextPhase</code> (restart values); any data from the models goes into <code>sct_dae</code> through <code>simulateFcn_blocks</code>.</li>
             <li>Keep its per-phase state in <code>ctx</code> (as <code>set_phase</code> in <code>solve.m</code> does); never write to the models. Add it to the scenario file (<code>to_json_struct</code>, <code>read_scenarios</code>).</li>
           </ul><ul lang="ja">
             <li><code>Scenario</code> にフィールドを加えます（<code>sr_field</code>、空のレコード、<code>add_*</code> メソッド）。</li>
             <li><code>validate_disturbance</code> で検査し、<code>Scenario.compile</code> でフェーズごとに <code>sct_dae</code> の中の位置として渡します（<code>sct_event</code> の新しいフィールド）。</li>
-            <li><code>SolverODE.solve</code> と <code>getNextPhase</code>（再開時の値）に、位置だけを使う処理を加えます。<code>SolverODE.solve</code> では、<code>OpenBranch</code> に対する <code>set_admittance</code> のように扱い、変数を除く場合は <code>initial_condition</code> の <code>lv_FBorTC</code> を使います。モデルから要るデータは、<code>simulation_blocks</code> で <code>sct_dae</code> に入れます。</li>
+            <li><code>SolverODE.solve</code> と <code>getNextPhase</code>（再開時の値）に、位置だけを使う処理を加えます。<code>SolverODE.solve</code> では、<code>OpenBranch</code> に対する <code>set_admittance</code> のように扱い、変数を除く場合は <code>initial_condition</code> の <code>lv_FBorTC</code> を使います。モデルから要るデータは、<code>simulateFcn_blocks</code> で <code>sct_dae</code> に入れます。</li>
             <li>フェーズごとの状態は、<code>solve.m</code> の <code>set_phase</code> と同じように <code>ctx</code> に置き、モデルには書き込みません。シナリオのファイル（<code>to_json_struct</code>、<code>read_scenarios</code>）にも加えます。</li>
           </ul></td></tr>
       </tbody>

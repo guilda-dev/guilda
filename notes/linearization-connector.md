@@ -408,7 +408,7 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 
 - **制御器の `get_variable_map` の出力は表 1 つだけです。** 接続表は返しません。制御器の入力の源(機器の y・x、親の制御器、GC の出力先)は制御器の表の行ではないので、`SourceIndex` が 0 になり意味を持たないためです。接続は親の表(`comp.get_variable_map()`、`net.get_variable_map()`)にあります。`get_sys` は制御器では空の接続表を使います(以前と同じ)。
 - **新しい局所関数:** `@Component/get_variable_map.m` の `equilibrium`(平衡値の列)と `output_value`(LC の出力の評価)、2 つの制御器の `get_variable_map.m` の `tag`(Label を付ける)です。`@SolverLIN/point_vector.m` の `class_name` は以前からあり、制御器の場合を加えました。
-- **表の形の速さ [計測]:** IEEE68bus の `net.get_variable_map()` は 31 ms から 60 ms になりました(`"rows"` は 14〜17 ms で変わらない)。初めの実装(母線の表を経由)では 127 ms だったので、ネットワークが機器の表を直接読むようにしました。`net.get_sys()` は 352 ms から 297 ms です(`point_vector` が平衡点を組み立てなくなったため)。`simulate` は内部で表の形を 1 回読むので(`simulation_blocks`)、その分だけ遅くなります。
+- **表の形の速さ [計測]:** IEEE68bus の `net.get_variable_map()` は 31 ms から 60 ms になりました(`"rows"` は 14〜17 ms で変わらない)。初めの実装(母線の表を経由)では 127 ms だったので、ネットワークが機器の表を直接読むようにしました。`net.get_sys()` は 352 ms から 297 ms です(`point_vector` が平衡点を組み立てなくなったため)。`simulate` は内部で表の形を 1 回読むので(`simulateFcn_blocks`)、その分だけ遅くなります。
 
 ### 12.4 結果 [計測]
 
