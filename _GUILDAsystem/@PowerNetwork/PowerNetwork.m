@@ -38,7 +38,8 @@ classdef PowerNetwork < PowerSystemModel
 % - equilibrium (`initialize`), time simulation (`simulate`) of the scenarios it holds
 %   (`add_scenario`, `remove_scenario`, `a_Scenario`)
 % - linearization and eigenvalue analysis (`get_sys`)
-% - network diagrams (`plot_diagram`), the signal connections of the controllers
+% - network diagrams (`plot_diagram`), spring-mass pictures of the equilibrium
+%   (`plot_spring_model`), the signal connections of the controllers
 %   (`disp_connection`) and CSV / MATPOWER import and export
 %
 % Each analysis runs a solver object stored in a `solver_*` property; a subclass of the
@@ -186,7 +187,7 @@ classdef PowerNetwork < PowerSystemModel
         disp_summary(obj, opt)
         varargout = disp_connection(obj, opt)
         G = plot_diagram(obj,ax)
-        G = plot_spring_model(obj,mode)
+        G = plot_spring_model(obj, opt)
 
         % IO
         path = export(obj, path, opt)

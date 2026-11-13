@@ -52,6 +52,7 @@
         <entry key="SlackWithoutQnan">No component of slack bus ''{0}'' has Q = NaN, so ''{1}'' takes the remaining power in net.initialize, even if it is a load.&#xA;Add a generator to this bus, set l_isSlack = true on a bus that has one, or set Q = NaN on the component that should supply the power.</entry>
         <entry key="PowerflowNotConverged">{0}</entry>
         <entry key="SimulateStale">net.simulate stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
+        <entry key="SpringModelStale">net.plot_spring_model stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
         <entry key="SimulateInputEdited">net.simulate stopped: inputs of components of ''{0}'' were edited ({1}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
         <entry key="GconNoTarget">The global controller ''{0}'' drives the input ''{1}'' of ''{2}'', but neither the component nor its local controllers have this input now.&#xA;Attach a local controller with this input, or remove the global controller with net.remove_global_controller(TAG).</entry>
         <entry key="OpenBranchIsland">Phase {0} (t = [{1}, {2}] s): the open branches {3} leave the buses {4} connected to no component, so their voltages are undetermined. Open branches so that every bus stays connected to a component, or remove those buses from the network.</entry>
