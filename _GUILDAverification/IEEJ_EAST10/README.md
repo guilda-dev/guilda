@@ -54,15 +54,15 @@ See the help of `network.IEEJ_EAST10` for the full list. The ones that matter he
 
 ## Files
 
-- `table4_3_scenarios.csv`: the 44 cases as scenarios, in the format of
-  `Scenario.export_csv` (one scenario per case, two rows each: `fault` and `open`; with
-  `Time = [0, 20]` and a Description). Scenario tags are `<section>_card<k>_<n>cct`.
+- `table4_3_scenarios.csv`: the 44 cases as scenarios, one row per disturbance (one
+  scenario per case, two rows each: `fault` and `open`; with `Time = [0, 20]` and a
+  Description). Scenario tags are `<section>_card<k>_<n>cct`.
 - `table4_3_report.csv`: the report verdict of each scenario: `Scenario` (tag),
   `Section`, `Card`, `From`, `To`, `Circuits`, `Report` (text of the table) and
   `ReportVerdict` (`stable` or `out-of-step`).
 - `compare_table4_3.m`: builds the network of each section (options `Governor`,
-  `Sections`, `Cases`, `Tolerance`, `Plot`, `Display`), imports the scenarios with
-  `Scenario.import_csv(..., Network=net)`, simulates and judges each case, prints report
+  `Sections`, `Cases`, `Tolerance`, `Plot`, `Display`), adds the scenarios with its
+  local function `add_csv_scenarios`, simulates and judges each case, prints report
   vs GUILDA and the agreement, and returns a table.
 
 ## How to run

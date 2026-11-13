@@ -3,13 +3,13 @@ function [tab, r_agree] = compare_table4_9(opt)
 % Table 4.9 lists the Y-method results of the EAST 30-machine model for a three-phase
 % ground fault on one or two circuits of a line, cleared after 70 ms by opening the
 % faulted circuits (3LG-O). `table4_9_scenarios.csv` in this folder holds its 55 cases as
-% scenarios (Scenario.export_csv format, one scenario per case: a fault and the opening of
+% scenarios (one row per disturbance, one scenario per case: a fault and the opening of
 % the faulted circuits until the end, Time [0, 21] s), and `table4_9_report.csv` the
 % report's result of each scenario. See README.md for the sequence, the criterion and the
 % modelling differences.
 %
 % For each section the network is built (network.IEEJ_EAST30 with Section and Governor),
-% the scenarios are imported into it with Scenario.import_csv(..., Network=net), and each
+% the scenarios are added to it with the local function add_csv_scenarios, and each
 % selected scenario is simulated and judged by ResultODE.judge_out_of_step with the reference
 % B3010SG1 (G18, the slack) and the threshold 360 degrees. A simulation that stops early
 % without an out-of-step ("incomplete") is run again with the relative tolerance
@@ -73,7 +73,7 @@ function [tab, r_agree] = compare_table4_9(opt)
         if tab.Section(k) ~= s_sec
             s_sec = tab.Section(k);
             net = network.IEEJ_EAST30(Section=s_sec, Governor=opt.Governor);
-            c_sc = Scenario.import_csv(s_csv, Network=net);
+            c_sc = add_csv_scenarios(s_csv, net);
             sv_tag = cellfun(@(s) s.s_tag, c_sc);
         end
         sc = c_sc{sv_tag == tab.Scenario(k)};
@@ -165,4 +165,44 @@ function c = agree_mark(l)
         c  % Text of the agreement column.
     end
     if l, c = "agree"; else, c = "DIFFERENT"; end
+end
+
+function c_sc = add_csv_scenarios(s_file, net)
+% Add the scenarios of a CSV file (one row per disturbance) to net and return them.
+%
+% The rows with the same Scenario form one scenario, in the order of their first rows:
+% Description and Time [ScenarioTimeStart, ScenarioTimeEnd] from its first row, and one
+% disturbance per row with Tag, TimeSpan [TimeStart, TimeEnd] and the tags in FaultBus,
+% TripUnit and OpenBranch (several separated by ";"). The other columns of the file are
+% empty and not read.
+    arguments (Input)
+        s_file (1,1) string   % CSV file.
+        net PowerNetwork      % Network to add the scenarios to.
+    end
+    arguments (Output)
+        c_sc (:,1) cell       % The added scenarios, in the order of the file.
+    end
+    o = detectImportOptions(s_file, "Delimiter", ",", "TextType", "string");
+    o = setvartype(o, o.VariableNames, "string");
+    tab = readtable(s_file, o);
+    for s_col = string(tab.Properties.VariableNames)
+        tab.(s_col)(ismissing(tab.(s_col))) = "";
+    end
+    sv_sc = unique(tab.Scenario, "stable");
+    c_sc  = cell(numel(sv_sc), 1);
+    for i = 1:numel(sv_sc)
+        tab_i = tab(tab.Scenario == sv_sc(i), :);
+        sc = net.add_scenario(sv_sc(i), Description=tab_i.Description(1), ...
+                              Time=double([tab_i.ScenarioTimeStart(1), tab_i.ScenarioTimeEnd(1)]));
+        for r = 1:height(tab_i)
+            c_nv = cell(1, 0);
+            for s_col = ["FaultBus", "TripUnit", "OpenBranch"]
+                if tab_i.(s_col)(r) ~= ""
+                    c_nv = [c_nv, {s_col, strip(split(tab_i.(s_col)(r), ";"))}]; %#ok<AGROW>
+                end
+            end
+            sc.add_disturbance(tab_i.Tag(r), "TimeSpan", double([tab_i.TimeStart(r), tab_i.TimeEnd(r)]), c_nv{:});
+        end
+        c_sc{i} = sc;
+    end
 end

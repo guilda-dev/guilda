@@ -5,15 +5,15 @@ function tab = compare_table4_3(opt)
 % three-phase fault at the From end of a line card for 70 ms (0 to 0.07 s), then the
 % opening of 1 or 2 circuits of that card until the end (20 s). The verdict of the report
 % for each scenario is in `table4_3_report.csv`. The function builds the network of each
-% section, imports the scenarios into it (Scenario.import_csv with Network), simulates
+% section, adds the scenarios to it (local function add_csv_scenarios), simulates
 % the scenarios of that section, judges each result with ResultODE.judge_out_of_step (reference:
 % the slack generator, G3 at peak and G6 at night; threshold 360 degrees) and compares
 % the verdict with the report. The report's "sustained oscillation" (peak, card 36)
 % counts as stable. See README.md in this folder.
 %
 % The solver tolerance is `Tolerance` (1e-6, relative and absolute) instead of the
-% default 1e-4: with 1e-4, ode15s stops early in some large-swing cases. It is stored in
-% the Options of each scenario, as Options are not saved in the CSV.
+% default 1e-4: with 1e-4, ode15s stops early in some large-swing cases. It is given to
+% each call of net.simulate.
 %
 % Use (this folder is not on the MATLAB path; run GUILDA first). When the current folder
 % is not the GUILDA root, the root is added to the path for the run and removed after it:
@@ -63,7 +63,7 @@ function tab = compare_table4_3(opt)
 
     for s = intersect(opt.Sections, tab.Section.', "stable")
         net  = network.IEEJ_EAST10(Section=s, Governor=opt.Governor);
-        c_sc = Scenario.import_csv(s_scenario, Network=net);
+        c_sc = add_csv_scenarios(s_scenario, net);
         sv_tag = cellfun(@(sc) sc.s_tag, c_sc);
         for k = find(tab.Section == s).'
             sc = c_sc{sv_tag == tab.Scenario(k)};
@@ -114,4 +114,44 @@ function plot_angles(result, s_ref, s_title)
     xlabel("t [s]"); ylabel("rotor angle - " + s_ref + " [deg]");
     legend(sv_unit, Location="eastoutside", Interpreter="none");
     title(s_title, Interpreter="none");
+end
+
+function c_sc = add_csv_scenarios(s_file, net)
+% Add the scenarios of a CSV file (one row per disturbance) to net and return them.
+%
+% The rows with the same Scenario form one scenario, in the order of their first rows:
+% Description and Time [ScenarioTimeStart, ScenarioTimeEnd] from its first row, and one
+% disturbance per row with Tag, TimeSpan [TimeStart, TimeEnd] and the tags in FaultBus,
+% TripUnit and OpenBranch (several separated by ";"). The other columns of the file are
+% empty and not read.
+    arguments (Input)
+        s_file (1,1) string   % CSV file.
+        net PowerNetwork      % Network to add the scenarios to.
+    end
+    arguments (Output)
+        c_sc (:,1) cell       % The added scenarios, in the order of the file.
+    end
+    o = detectImportOptions(s_file, "Delimiter", ",", "TextType", "string");
+    o = setvartype(o, o.VariableNames, "string");
+    tab = readtable(s_file, o);
+    for s_col = string(tab.Properties.VariableNames)
+        tab.(s_col)(ismissing(tab.(s_col))) = "";
+    end
+    sv_sc = unique(tab.Scenario, "stable");
+    c_sc  = cell(numel(sv_sc), 1);
+    for i = 1:numel(sv_sc)
+        tab_i = tab(tab.Scenario == sv_sc(i), :);
+        sc = net.add_scenario(sv_sc(i), Description=tab_i.Description(1), ...
+                              Time=double([tab_i.ScenarioTimeStart(1), tab_i.ScenarioTimeEnd(1)]));
+        for r = 1:height(tab_i)
+            c_nv = cell(1, 0);
+            for s_col = ["FaultBus", "TripUnit", "OpenBranch"]
+                if tab_i.(s_col)(r) ~= ""
+                    c_nv = [c_nv, {s_col, strip(split(tab_i.(s_col)(r), ";"))}]; %#ok<AGROW>
+                end
+            end
+            sc.add_disturbance(tab_i.Tag(r), "TimeSpan", double([tab_i.TimeStart(r), tab_i.TimeEnd(r)]), c_nv{:});
+        end
+        c_sc{i} = sc;
+    end
 end
