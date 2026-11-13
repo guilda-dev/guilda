@@ -4,8 +4,9 @@ function validate_events(tab, s_scenario, net)
 % Per tag: the targets are known (a fault: buses or branches, not both; a parallel event:
 % components, local or global controllers, or branches), each target has two rows (the
 % start, then the end) with t_start < t_end, and the Status and Point of the rows fit the
-% kind of the target. Over the table: two faults, or two parallel events, of one target do
-% not overlap (touching is allowed).
+% kind of the target; "3LG" and "3open" need a branch of two or more circuits. Over the
+% table: two faults, or two parallel events, of one target do not overlap (touching is
+% allowed).
     arguments (Input)
         tab table                   % Rows of tab_event (Tag, Target, Time, Status, Point).
         s_scenario (1,1) string     % Tag of the scenario (for the messages).
@@ -96,6 +97,10 @@ function validate_events(tab, s_scenario, net)
             end
             if s_reason ~= ""
                 error(msg("GUILDA:Scenario:InvalidEventRows", c_lbl{:}, char(s_target), char(s_reason)));
+            end
+            if lv_br(i) && ismember(sv_status(1), ["3LG","3open"]) ...
+                    && net.a_Branch{sv_br == s_target}.tab_parameter.dynamics.circuit == 1
+                error(msg("GUILDA:Scenario:SingleCircuit", c_lbl{:}, char(sv_status(1)), char(s_target)));
             end
         end
     end

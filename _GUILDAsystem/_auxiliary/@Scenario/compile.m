@@ -27,8 +27,12 @@ function [tab_phase, sct_event] = compile(obj, sct_dae, time)
 %   t1, t2          [s] start and end of the phase
 %   iv_tripComp     tripped components (positions in sct_dae.c_comp)
 %   iv_tripGC       tripped global controllers (positions in sct_dae.c_gc)
+%   iv_tripLC       tripped local controllers (positions in sct_dae.c_lc)
 %   iv_faultBus     faulted buses (positions in sct_dae.sv_bus)
-%   iv_openBranch   branches opened with "6open" (positions in sct_dae.sv_branch, ascending)
+%   tab_branch      branch states other than the defaults "none" and "close": the rows
+%                   Target, Status, Point of tab_event that set them, by position in
+%                   sct_dae.sv_branch, the fault row of a branch before its parallel row
+%                   (build_simulation_data makes the admittance matrix of the phase from it)
 %   iv_offset, rv_offset  the state offsets added at the start of the phase: rows x of
 %                   sct_dae.tab_variable and their values (offsets that start there; all
 %                   active offsets in the first phase)
@@ -38,9 +42,6 @@ function [tab_phase, sct_event] = compile(obj, sct_dae, time)
 %                   ("foh", "spline"; "zoh" and a constant value: one point, the value of
 %                   the phase)
 %   sr_event        tags of the active disturbances
-%
-% Branch faults ("3LG", "6LG"), "3open" and trips of local controllers stop with
-% GUILDA:Scenario:NotYetSupported.
     arguments (Input)
         obj                     % Scenario (checked against its network).
         sct_dae (1,1) struct    % Data of the run: tab_variable, sv_bus, sv_branch, sv_comp, sv_lc, sv_gc.
@@ -53,15 +54,6 @@ function [tab_phase, sct_event] = compile(obj, sct_dae, time)
     obj.validate();
     s_sc   = obj.s_tag;
     tab_ev = obj.tab_event;
-
-    % Events that the simulation does not handle yet
-    lv_new = ismember(tab_ev.Status, ["3LG","6LG","3open"]) ...
-           | (tab_ev.Status == "open" & ismember(tab_ev.Target, sct_dae.sv_lc));
-    if any(lv_new)
-        i = find(lv_new, 1);
-        error(msg("GUILDA:Scenario:NotYetSupported", char(tab_ev.Tag(i)), char(s_sc), ...
-                  char(tab_ev.Status(i)), char(tab_ev.Target(i))));
-    end
 
     % One record per tag of tab_event (its span), per offset and per input
     c_dist = cell(1,0);
@@ -140,10 +132,16 @@ function [tab_phase, sct_event] = compile(obj, sct_dae, time)
         iv = iv(ia);
         sv_target = tab_ev.Target(iv);
         sv_status = tab_ev.Status(iv);
-        s.iv_tripComp   = find(ismember(sct_dae.sv_comp, sv_target(sv_status == "open")));
-        s.iv_tripGC     = find(ismember(sct_dae.sv_gc, sv_target(sv_status == "open")));
-        s.iv_faultBus   = find(ismember(sct_dae.sv_bus, sv_target(sv_status == "BG")));
-        s.iv_openBranch = find(ismember(sct_dae.sv_branch, sv_target(sv_status == "6open")));
+        s.iv_tripComp = find(ismember(sct_dae.sv_comp, sv_target(sv_status == "open")));
+        s.iv_tripGC   = find(ismember(sct_dae.sv_gc, sv_target(sv_status == "open")));
+        s.iv_tripLC   = find(ismember(sct_dae.sv_lc, sv_target(sv_status == "open")));
+        s.iv_faultBus = find(ismember(sct_dae.sv_bus, sv_target(sv_status == "BG")));
+        % Branch states other than "none" and "close": by branch, the fault row first
+        [lv_br, iv_br] = ismember(sv_target, sct_dae.sv_branch);
+        lv_br = lv_br & ~ismember(sv_status, ["none","close"]);
+        iv = iv(lv_br);
+        [~, iv_sort] = sortrows([iv_br(lv_br), double(~startsWith(tab_ev.Tag(iv), "Fault"))]);
+        s.tab_branch = tab_ev(iv(iv_sort), ["Target","Status","Point"]);
 
         % State offsets added at the start of the phase: those that start there (all active
         % offsets in the first phase), summed per row in the order of tab_offset

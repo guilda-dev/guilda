@@ -1,6 +1,7 @@
 function sct_out = phase_result(ctx, ph, sct_sol)
 % Trajectory of one phase: the variables x, V, u, uc in the order of the variable map, and
-% the bus currents; the states of the tripped components and global controllers are NaN.
+% the bus currents; the states of the tripped components, local controllers and global
+% controllers are NaN.
     arguments (Input)
         ctx      % Context of the run (Ymat of the phase).
         ph       % Data of the phase (an element of sct_event).
@@ -11,8 +12,8 @@ function sct_out = phase_result(ctx, ph, sct_sol)
     end
     xsol = sct_sol.Solution;
 
-    % States of the tripped components and global controllers (not of local controllers)
-    c_unit = [ctx.c_comp(ph.iv_tripComp); ctx.c_gc(ph.iv_tripGC)];
+    % States of the tripped components, local controllers and global controllers
+    c_unit = [ctx.c_comp(ph.iv_tripComp); ctx.c_lc(ph.iv_tripLC); ctx.c_gc(ph.iv_tripGC)];
     if ~isempty(c_unit)
         iv = tools.vcellfun(@(b) b.iv_x, c_unit);
         xsol(:, iv) = NaN;

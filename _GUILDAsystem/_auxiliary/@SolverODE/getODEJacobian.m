@@ -50,9 +50,12 @@ function odeJac = getODEJacobian(ctx, t, x, RM, EM, lg)
         end
     end
 
-    % 2. Local controllers
+    % 2. Local controllers (a tripped one gives no output)
     c_lc = ctx.c_lc;
     for k = 1:numel(c_lc)
+        if ~ctx.lv_lcOn(k)
+            continue
+        end
         b  = c_lc{k};
         xk = x(b.iv_x);
         Vk = x(b.iv_V);

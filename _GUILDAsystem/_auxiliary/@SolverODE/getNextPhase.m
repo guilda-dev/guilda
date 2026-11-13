@@ -3,7 +3,8 @@ function [x0, M0] = getNextPhase(ctx, x0, M0, RM, EM)
 %
 % A generator tripped in the phase just solved restarts from its state at the bus voltage
 % (f_reconnect; and its local controllers from their equilibrium), a faulted bus from its
-% equilibrium voltage and current, and a tripped global controller from its equilibrium.
+% equilibrium voltage and current, and a tripped local or global controller from its
+% equilibrium.
 % A tripped component without f_reconnect keeps the values it had when it was tripped.
 % The trips and faults are those of ctx (the phase just solved).
     arguments (Input)
@@ -43,13 +44,11 @@ function [x0, M0] = getNextPhase(ctx, x0, M0, RM, EM)
         end
     end
 
-    % A global controller tripped in the phase just solved restarts from its
+    % A local or global controller tripped in the phase just solved restarts from its
     % equilibrium, like a tripped generator (EM left its states and mass at zero)
-    for k = 1:numel(ctx.c_gc)
-        if ~ctx.lv_gcOn(k)
-            idx_GC = ctx.c_gc{k}.iv_x;
-            x0(idx_GC) = ctx.rv_z0(idx_GC);
-            M0(idx_GC, idx_GC) = ctx.rm_M(idx_GC, idx_GC);
-        end
+    for b = [ctx.c_lc(~ctx.lv_lcOn); ctx.c_gc(~ctx.lv_gcOn)].'
+        iv_x = b{1}.iv_x;
+        x0(iv_x) = ctx.rv_z0(iv_x);
+        M0(iv_x, iv_x) = ctx.rm_M(iv_x, iv_x);
     end
 end

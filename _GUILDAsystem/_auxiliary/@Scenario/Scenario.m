@@ -51,13 +51,22 @@ classdef (Sealed = true) Scenario < LayerPackage
 %   fault at an end of a branch is a fault of the bus (add_fault(bus, ...)).
 % - An end at or after the end of the simulation (Inf too) keeps the state to the end of
 %   the run: the rows stay in the table, and Time of a later run may reach them.
-% - A branch opened with "6open" is left out of the bus admittance matrix and reconnected
-%   at the end; opening branches so that a part of the network is left without any
-%   component is an error (GUILDA:PowerNetwork:OpenBranchIsland). A part with components
-%   is simulated as an island; a constant-power load cut off from all generators usually
-%   makes the phase fail (flag = -1).
-% - Branch faults, "3open" and trips of local controllers are recorded but cannot be
-%   simulated yet (GUILDA:Scenario:NotYetSupported).
+% - The admittance matrix of each phase is net.get_admittance_matrix(BranchStatus=...) of
+%   the branch states of the phase (the table of Branch.get_admittance_matrix: a branch
+%   with a fault and an opening at once gets one combined matrix). A branch opened with
+%   "6open" is left out of the matrix; a bus fault holds the bus voltage at 0. Opening
+%   branches, or grounding all their circuits ("6LG"), so that a part of the network is
+%   left without any component is an error (GUILDA:PowerNetwork:OpenBranchIsland). A part
+%   with components is simulated as an island; a constant-power load cut off from all
+%   generators usually makes the phase fail (flag = -1).
+% - A tripped component, global controller or local controller has NaN states in the
+%   result and restarts from its equilibrium when it is reconnected (a generator from the
+%   bus voltage). An input whose source is tripped (the observed component, the local
+%   controller that drives it, or a global controller) takes its equilibrium value, as if
+%   the source were not connected; the other sources of the input stay. A tripped AVR thus
+%   keeps the field voltage of the generator at its equilibrium; a loss of excitation is
+%   modelled by an input, e.g. add_input(gen, "Vfield", -Vfield0, [t1, t2]). The local
+%   controllers of a tripped local controller keep running.
 %
 % Offsets and inputs:
 %
