@@ -49,7 +49,7 @@ function [net, ev] = build_case(s_load, s_bus)
     net.a_Bus{1}.add_component("gen-park");
     net.a_Bus{2}.add_component("gen-classical", "P", 0.5, "Q", nan);
     net.a_Bus{3}.add_component(s_load, "P",-1.0, "Q",-0.2);
-    
+    evalc("net.a_Bus{1}.l_isSlack = true;");
     DebugScript.helper.quiet(@() net.initialize);
     ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", s_bus);
 end

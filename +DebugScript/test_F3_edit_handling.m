@@ -480,6 +480,7 @@ net = PowerNetwork();
 net.tab_parameter.base.Hz = 50;
 net.add_bus("V",1.0);
 gen = net.a_Bus{1}.add_component("gen-1axis");
+evalc("net.a_Bus{1}.l_isSlack = true;");
 assert(gen.get_Hz() == 50 && isempty(gen.f_dx))
 avr = gen.add_local_controller("avr-ST1");
 assert(avr.get_Hz() == 50 && isempty(avr.f_dx))

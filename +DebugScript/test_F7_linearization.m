@@ -941,6 +941,7 @@ net_s.add_bus();
 net_s.add_branch("pi", [1,2], "R", 0.01, "X", 0.085);
 net_s.a_Bus{1}.add_component("load-power", "P", 0, "Q", 0);
 net_s.a_Bus{2}.add_component("load-power", "P", 0, "Q", 0);
+evalc("net_s.a_Bus{1}.l_isSlack = true;");
 DebugScript.helper.quiet(@() net_s.initialize);
 [res, flag, output] = net_s.get_sys();
 assert(islogical(flag) && ~flag && ~res.l_success)
@@ -1134,6 +1135,7 @@ net_load.add_bus();
 net_load.add_branch("pi", [1,2], "R", 0.01, "X", 0.085);
 net_load.a_Bus{1}.add_component("load-impedance", "P", -0.5, "Q", -0.1);
 net_load.a_Bus{2}.add_component("load-impedance", "P", -0.5, "Q", -0.1);
+evalc("net_load.a_Bus{1}.l_isSlack = true;");
 DebugScript.helper.quiet(@() net_load.initialize);
 assert(isempty(net_load.get_sys("Type", "ODE").A) && net_load.get_sys("Type", "ODE").l_success)
 assert(size(net_load.get_sys("Type", "DAE").A, 1) == 4)

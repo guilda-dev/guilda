@@ -51,7 +51,7 @@ function varargout = build_opf_problem(obj, opt)
     sct_OPF = obj.get_opf_condition(Display=false);
     sct_options.base = table2struct(obj.tab_parameter.base);
     if opt.ReferenceBus == "auto"
-        i_ref = tools.slack_bus_index(obj);
+        i_ref = find(cellfun(@(b) b.l_isSlack, obj.a_Bus), 1);   % the slack bus, else the first bus
         if isempty(i_ref); i_ref = 1; end
         if isempty(obj.a_Bus)
             sct_options.ReferenceBus = "none";

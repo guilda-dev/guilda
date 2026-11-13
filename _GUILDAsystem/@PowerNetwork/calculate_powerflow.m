@@ -7,12 +7,9 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
 % this call only (the settings file is not changed). The network assembles the data of
 % the calculation with net.get_pf_condition (the power flow conditions of the buses and the
 % admittance matrix) and net.solver_PF solves it; the solver keeps the last converged
-% solution for the next warm start. The network is not changed. When no slack bus is set,
-% get_pf_condition makes a bus the slack bus of this calculation only (with an INFO
-% message; l_isSlack is not written): the first bus that has a component with Q = NaN,
-% otherwise the first bus that has a component. A network without buses stops with
-% GUILDA:PowerNetwork:NoBus, and a network whose buses have no components with
-% GUILDA:PowerNetwork:NoSlackCandidate. A calculation that does not converge gives the
+% solution for the next warm start. The network is not changed. A network without buses
+% stops with GUILDA:PowerNetwork:NoBus, and a network without a slack bus (set one with
+% bus.l_isSlack = true) with GUILDA:PowerNetwork:NoSlackBus. A calculation that does not converge gives the
 % warning GUILDA:PowerNetwork:PowerflowNotConverged (WhenFailed of GUILDA.setting:
 % "WARN", "ERROR", "DISP" or "NONE"). Options not listed below stop with the MATLAB
 % error of an unknown name.
@@ -95,11 +92,7 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
             sct_solver = struct("solver", string(class(obj.solver_PF)), "options", sct_options, ...
                 "flag", flag, "output", output, "elapsed", r_elapsed, "cm_Vhistory", cm_Vhistory, ...
                 "rv_step", rv_step, "tab_PFcondition", tab_PFcondition);
-            sct_network = struct(obj, false);   % with the slack bus of the calculation
-            i_slack = find(tab_PFcondition.Type == "slack", 1);
-            sct_network.a_Bus{i_slack}.l_isSlack = true;
-            sct_network.a_Bus{i_slack}.s_bustype = "slack";
-            result = ResultPF(tab_pf, cm_Y, sct_network, sct_solver);
+            result = ResultPF(tab_pf, cm_Y, struct(obj, false), sct_solver);
     end
 end
 

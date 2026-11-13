@@ -70,8 +70,8 @@ function [rm_pf, flag, output] = initialize(obj, varargin)
 % When the analysis does not succeed (no convergence, an infeasible OPF, or stored
 % equilibria that do not satisfy the network equations), initialize stops with an error
 % naming the remedy, and the network keeps its previous equilibrium and stale state. The
-% slack bus is never written: when no bus is the slack bus, the power flow uses the bus
-% that net.get_pf_condition selects for the solve, and l_isSlack stays false. When a later step fails, or
+% power flow and Method="FixedInput" need a slack bus set with l_isSlack
+% (GUILDA:PowerNetwork:NoSlackBus); initialize never sets one. When a later step fails, or
 % the point does not satisfy Y*V = I, the power flow is left stale, and analyses stop
 % (e.g. GUILDA:PowerNetwork:SimulateStale) until initialize succeeds.
 %
@@ -182,10 +182,6 @@ function [rm_pf, flag, output] = initialize(obj, varargin)
                 stop_analysis(obj, ME.message, "GUILDA:PowerNetwork:InitializeOPFFailed", "GUILDA:PowerNetwork:InitializeOPFIsland")
             end
             rethrow(ME)
-        end
-        if s_method == "powerflow"   % the slack bus of the solve shares P and Q as a slack bus, also when it was selected (not written)
-            i_slack = tools.slack_bus_index(obj);
-            c_PQ{i_slack} = tools.distribute_power(obj.a_Bus{i_slack}, real(rm_pf(i_slack,3)), real(rm_pf(i_slack,4)), "baseMVA", true);
         end
         if s_method == "OPF"   % bus V, I, P, Q of the AC OPF solution, and the power of each component
             cv_S  = res.tab_bus.Vphasor .* conj(res.tab_bus.Iphasor);

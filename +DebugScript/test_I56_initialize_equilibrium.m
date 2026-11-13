@@ -67,6 +67,7 @@ net.add_bus();
 net.add_branch("pi",[1,2], "R",0.01, "X",0.085);
 net.a_Bus{1}.add_component("load-impedance", "P",-0.5, "Q",-0.1);
 net.a_Bus{2}.add_component("load-impedance", "P",-0.5, "Q",-0.1);
+evalc("net.a_Bus{1}.l_isSlack = true;");
 DebugScript.helper.quiet(@() net.initialize);
 assert(kcl_residual(net) < 1e-8)
 
@@ -159,8 +160,7 @@ assert(~DebugScript.helper.is_stale(net) && isequal(net.cv_Vequilibrium, V))
 
 %% Slack bus without a component is not an equilibrium
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
-evalc("net.a_Bus{1}.l_isSlack = true;");          % 潮流計算は選んだスラック母線を書かないので指定する
-DebugScript.helper.quiet(@() net.initialize);
+DebugScript.helper.quiet(@() net.initialize);    % B001 がスラックになる
 net.a_Bus{1}.remove_component(string(net.a_Bus{1}.a_Component{1}));
 ME = error_of(@() net.initialize());
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))
@@ -192,7 +192,7 @@ function net = build_shared_bus()
     net.a_Bus{2}.add_component("gen-1axis", "P",0.2, "Q",nan);
     net.a_Bus{2}.add_component("load-power", "P",-0.1, "Q",-0.05);
     net.a_Bus{3}.add_component("load-power", "P",-1.0, "Q",-0.2);
-    
+    evalc("net.a_Bus{1}.l_isSlack = true;");
 end
 
 function r = kcl_residual(net)

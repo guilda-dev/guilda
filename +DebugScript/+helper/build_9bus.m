@@ -66,5 +66,8 @@ function net = build_9bus(opt)
     net.a_Bus{6}.a_Component{1}.tab_parameter.powerflow{:,["P","Q"]} = [-0.8, -0.2];
     net.a_Bus{8}.a_Component{1}.tab_parameter.powerflow{:,["P","Q"]} = [-1.2, -0.4];
 
+% スラック母線 (GUILDA は自動では選ばない)
+    evalc("net.a_Bus{1}.l_isSlack = true;");     % 表示 (INFO) は抑制
+
 % バッチ実行用のソルバー設定 (進捗ダイアログを出さない)
 end

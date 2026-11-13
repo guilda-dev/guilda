@@ -306,6 +306,8 @@ assert(contains(ME.message, "main.csv row 1: ParameterID = NaN"), ME.message)
 %% A folder without component/ warns
 [s_path, c] = csv_folder(); %#ok<ASGLU>
 rmdir(fullfile(s_path, "component"), "s");
+s_bus = fullfile(s_path, "bus", "parameter.csv");                  % a slack bus needs a component
+writetable(removevars(readtable(s_bus, "TextType", "string"), "Slack"), s_bus);
 [net2, s_msg, id] = import_with_warning(s_path);
 assert(id == "GUILDA:import:NoComponentFolder")
 assert(contains(s_msg, "component"))
@@ -503,6 +505,7 @@ function net = tag_network()
     net.a_Bus{1}.add_component("load-power", P=-0.1);
     net.a_Bus{1}.add_component("gen-park", P=0.1);
     net.a_Bus{3}.add_component("load-power", P=-0.1);
+    evalc("net.a_Bus{1}.l_isSlack = true;");
 end
 
 function [net2, c] = round_trip(net)

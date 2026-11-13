@@ -78,12 +78,12 @@ check_failure(net, "OPF", "InitializeOPFIsland", "[B004]");
 check_failure(no_branch_network(), "OPF", "InitializeOPFIsland", "[B001], [B002]");
 
 
-%% A failure releases the slack bus that the power flow set
+%% A failure keeps the slack bus that the user set
 net = connected_network();
 net.add_bus();
-assert(~any(cellfun(@(b) b.l_isSlack, net.a_Bus)))
+assert(find(cellfun(@(b) b.l_isSlack, net.a_Bus)) == 1)
 check_failure(net, "powerflow", "InitializePowerflowIsland", "[B004]");
-assert(~any(cellfun(@(b) b.l_isSlack, net.a_Bus)))
+assert(find(cellfun(@(b) b.l_isSlack, net.a_Bus)) == 1)
 
 
 %% A failure on a connected network keeps its message about the solver settings
@@ -191,6 +191,7 @@ function net = no_branch_network()
     net.add_bus();
     net.a_Bus{1}.add_component("gen-park");
     net.a_Bus{2}.add_component("load-power", "P",-0.5, "Q",-0.1);
+    evalc("net.a_Bus{1}.l_isSlack = true;");
 end
 
 function check_failure(net, s_method, s_id, s_island)
@@ -210,6 +211,7 @@ function check_failure_text(net, sv_text)
 % 機器がなくても島の一覧が短くなることを、一覧を作る関数を通して確かめる
     net.a_Bus{1}.add_component("gen-park");
     net.a_Bus{end}.add_component("load-power", "P",-0.5, "Q",-0.1);
+    evalc("net.a_Bus{1}.l_isSlack = true;");
     ME = [];
     try
         DebugScript.helper.quiet(@() net.initialize);

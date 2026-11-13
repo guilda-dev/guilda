@@ -156,6 +156,7 @@ for k = 1:height(tab)
     net.add_bus();
     net.a_Bus{1}.add_component("gen-park");
     net.a_Bus{2}.add_component("load-power", "P", -0.5, "Q", -0.1);
+    evalc("net.a_Bus{1}.l_isSlack = true;");
     bra = net.add_branch(tab.Key(k), [1,2], "R", 0.01, "X", 0.1, "C", 0.01, "Tap", 0.98);
     assert(class(bra) == tab.Class(k) && bra.key == tab.Key(k), tab.Key(k))
     Y = bra.get_admittance_matrix();
