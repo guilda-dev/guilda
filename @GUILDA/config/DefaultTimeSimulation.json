@@ -29,6 +29,21 @@
         "Type": "double",
         "Description": "[s] First step of each phase; NaN for the solver default"
     },
+    "SampleTime":{
+        "Value": NaN,
+        "Type": "double",
+        "Description": "[s] Interval of the recorded times on a uniform grid from the start time; the start and end of each phase are also recorded. NaN or 0 records the steps of the solver"
+    },
+    "StopOnOutOfStep":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Stop the simulation when the rotor angle of a generator from the generator of the slack bus exceeds StopAngle (flag = 2)"
+    },
+    "StopAngle":{
+        "Value": 360,
+        "Type": "double",
+        "Description": "[deg] Threshold of StopOnOutOfStep: largest allowed absolute rotor angle from the reference"
+    },
     "SeparateComplexParts":{
         "Value": false,
         "Type": "logical",

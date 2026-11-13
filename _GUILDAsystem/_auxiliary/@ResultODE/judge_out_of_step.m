@@ -13,6 +13,10 @@ function verdict = judge_out_of_step(obj, opt)
 %   Threshold),
 % - "stable" otherwise.
 %
+% A run stopped by StopOnOutOfStep (flag = 2) from the same reference at StopAngle >=
+% Threshold is "out-of-step" for the unit of output.outOfStep at the time of the stop,
+% even when the angle at the located stop is a rounding error below StopAngle.
+%
 % The reference is the generator of the slack bus (Reference="slack", the default; the
 % first component with delta on the slack bus of the network snapshot sct_network), the
 % center of inertia of all the units (Reference="COI", weights the dynamics parameter M of
@@ -91,11 +95,20 @@ function verdict = judge_out_of_step(obj, opt)
     r_lim  = opt.Threshold*pi/180;
     lm_out = m_rel > r_lim;
     lv_out = any(lm_out, 1);
+    r_stop = Inf;                       % time of a stop of StopOnOutOfStep beyond Threshold
+    sct_st = struct([]);
+    if isequal(obj.flag, 2) && isfield(obj.output, "outOfStep")
+        sct_st = obj.output.outOfStep;
+    end
+    if ~isempty(sct_st) && sct_st.Reference == s_ref && sct_st.Angle >= opt.Threshold
+        lv_out(sv_unit == sct_st.Unit) = true;
+        r_stop = sct_st.Time;
+    end
 
     verdict = struct();
     if any(lv_out)
         verdict.Verdict = "out-of-step";
-        verdict.Time    = rv_t(find(any(lm_out, 2), 1));
+        verdict.Time    = min([rv_t(find(any(lm_out, 2), 1)); r_stop]);
     elseif ~isequal(obj.flag, 1)
         verdict.Verdict = "incomplete";
         verdict.Time    = NaN;

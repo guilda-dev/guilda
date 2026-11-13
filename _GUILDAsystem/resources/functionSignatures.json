@@ -147,6 +147,9 @@
       {"name":"MaxStep","kind":"namevalue","type":["double"],"purpose":"[s] Largest step of the solver; NaN for the solver default. Default: GUILDA.setting."},
       {"name":"InitialStep","kind":"namevalue","type":["double"],"purpose":"[s] First step of each phase; NaN for the solver default. Default: GUILDA.setting."},
       {"name":"SeparateComplexParts","kind":"namevalue","type":["logical"],"purpose":"SeparateComplexParts of the ode object (true: \"on\", false: \"off\"). Default: GUILDA.setting."},
+      {"name":"SampleTime","kind":"namevalue","type":["double"],"purpose":"[s] Interval of the recorded times from the start time (with the start and end of each phase); NaN or 0 for the solver steps. Default: GUILDA.setting."},
+      {"name":"StopOnOutOfStep","kind":"namevalue","type":["logical"],"purpose":"Stop the run when a rotor angle from the generator of the slack bus exceeds StopAngle (flag 2). Default: GUILDA.setting."},
+      {"name":"StopAngle","kind":"namevalue","type":["double"],"purpose":"[deg] Threshold of StopOnOutOfStep. Default: GUILDA.setting."},
       {"name":"TimeLimit","kind":"namevalue","type":["double"],"purpose":"[s] Wall-clock limit of the whole run; Inf for none. Default: GUILDA.setting."},
       {"name":"Progress","kind":"namevalue","purpose":"\"dialog\", \"disp\" or \"none\" (true: \"dialog\", false: \"none\"). Default: GUILDA.setting."},
       {"name":"Verbose","kind":"namevalue","type":["logical"],"purpose":"Print the phases and the outcome. Default: GUILDA.setting."},
@@ -155,8 +158,8 @@
     ],
     "outputs": [
       {"name":"result","purpose":"Trajectories: ResultODE (Format \"GUILDAorigin\"; result.odeResults) or a struct that mirrors the model hierarchy, with tables (Format \"struct\")."},
-      {"name":"flag","purpose":"1 completed, 0 stopped by TimeLimit, -1 stopped by the solver."},
-      {"name":"output","purpose":"Details: message, tEnd, phases, nPhases, nPhasesDone, isSparse, exception."}
+      {"name":"flag","purpose":"1 completed, 2 stopped by StopOnOutOfStep, 0 stopped by TimeLimit, -1 stopped by the solver."},
+      {"name":"output","purpose":"Details: message, tEnd, phases, nPhases, nPhasesDone, isSparse, exception, outOfStep."}
     ]
   }
 }
