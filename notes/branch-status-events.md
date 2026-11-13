@@ -494,7 +494,7 @@ s_tag = add_trip(obj, unit, time)
 
 ### 6.3 `get_admittance_matrix` の引数なしの呼び出し(変えない)
 
-`PowerNetwork.get_admittance_matrix`(引数なし), `calculate_powerflow`, `initialize`, `get_linear_port`, `private/solve_fixed_input`, `private/simulateFcn_blocks`, `Branch.struct`, `Branch.get_opf_condition`, `Branch.cv_Iequilibrium`, `SolverPF`, `SolverCPF`(`solve`, `limit_set`), `ResultPF`, `MethodDynamic`, `DrawerNetDiagram/set_network`, `tools.network_to_mpc`。
+`PowerNetwork.get_admittance_matrix`(引数なし), `calculate_powerflow`, `initialize`, `get_sys`(局所関数 `port`), `private/solve_fixed_input`, `private/simulateFcn_blocks`, `Branch.struct`, `Branch.get_opf_condition`, `Branch.cv_Iequilibrium`, `SolverPF`, `SolverCPF`(`solve`, `limit_set`), `ResultPF`, `MethodDynamic`, `DrawerNetDiagram/set_network`, `tools.network_to_mpc`。
 
 ## 7. 実装の手順
 

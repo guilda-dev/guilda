@@ -458,3 +458,24 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 - 基準値との一致: F7 "Linear models match the reference values"(`"ODE"` は以前の Kron、`"DAE"`)は PASS(許容 1e-9)です。
 - 寄与の和: すべての要素の寄与の和と DAE の相対差の最大は、IEEE14bus(AVR・PSS・AGC 付き、54 要素)で 1.3e-17、IEEE68bus(235 要素)で 5.0e-17 です。1 要素あたり 7〜9 ms です。
 - テスト(F7): "Type switches the model of the result"、"Reduce eliminates the algebraic variables of a DAE"(small)、"Contributions by tag, by class and by several targets"、"Contributions of all elements sum to the DAE"、"... of IEEE68"(medium)を加えました。
+
+## 14. `get_linear_port` の廃止(2026-11-13)
+
+### 14.1 決定(ユーザー、2026-11-13)
+
+- `get_linear_port` はメソッドとして要りません。中身のほとんどは変数マップから導け、呼ぶのは `get_sys` だけで、`get_sys` はすでに `tab_current` と `tab_stamp` を自分で `sct_port` に加えていました。
+- 固有の中身は、層ごとのポートの規則(ネットワーク: V が代数変数で u が入力。機器・母線: V が入力で I が出力。制御器: V と uc が入力で yc が出力)、電流の Label `Ire`/`Iim`(`attach_tag`。変数マップにない)、ネットワークのアドミタンス行列だけです。
+- これらは `get_variable_map` に入れません。変数マップは `simulate`/`ResultODE` と共有で、Y は変数ではなくネットワークのデータだからです。
+
+### 14.2 実装 [事実]
+
+- 6 つの `get_linear_port.m`(`@PowerNetwork`、`@Bus`、`@Component`、`@LocalController`、`@GlobalController`、`_auxiliary/@PowerSystemModel`)と classdef の宣言を削除しました。空になった `methods (Access=protected)` の区画(`Component`、`LocalController`、`PowerSystemModel`)も除きました。XML ヘルプと `functionSignatures.json` には項目がありませんでした。
+- `get_sys.m` の局所関数 `port(obj, tab, a_obj)` が、`layer_maps` が読んだ変数マップから `sct_port` 全体(`sv_input`、`sv_output`、`sv_algebraic`、`cm_Y`、`tab_bus`、`tab_current`、ネットワークでは `tab_stamp`)を作ります。`get_variable_map` は 1 回だけ呼びます。規則とフィールドは以前と同じで、`SolverLIN.solve` の署名は変えていません。
+- `layer_maps` の対象外の層(`Branch` など)は、クラスの判定で `GUILDA:PowerSystemModel:NoLinearModel` を出します。
+- `get_variable_map` は変えていません。新しい局所関数は `port` だけです。
+
+### 14.3 結果 [計測]
+
+- small: 554 件、PASS 551 / KNOWN 1 / FAIL 1 / SKIP 1。medium(1 回): 745 件、PASS 742 / KNOWN 1 / FAIL 1 / SKIP 1、1239 s。FAIL は両方とも F34 `functionSignatures_jsonMatchesTheArgumentsBlocks` で、マージ済みの `Branch` の `Circuit` 引数が `functionSignatures.json` にないためです(この変更とは無関係。`GUILDA.update_keymap(Signature=true)` で 1 行加わることを確認し、ここでは戻しました)。large は実行していません。
+- F7 "Linear models match the reference values" と、寄与の和のテスト(IEEE14、IEEE68)は PASS です。
+- IEEE68bus の `net.get_sys()`(10 回の中央値): 変更前 0.355 s、変更後 0.254 s。機器 1 つの `get_sys()`: 0.0157 s → 0.0131 s。別々の MATLAB セッションでの計測なので、差には負荷の揺れを含みます。少なくとも遅くはなっていません。
