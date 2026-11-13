@@ -113,6 +113,10 @@ function tab = test_levels()
     "test_F40_stop_and_sample_time/StopOnOutOfStepFromGUILDA_setting", "medium"
     "test_F40_stop_and_sample_time/TheReferenceTrippedDoesNotStop", "medium"
     "test_F40_stop_and_sample_time/SampleTimeRecordsAUniformGridAndThePhaseBoundaries", "medium"
+    % ---- F42_graph_spring --------------------------------------------------------------------------
+    "test_F42_graph_spring/BothPicturesAreBuiltFromTheDataWithTheDefaultsOfTheScripts", "medium"
+    "test_F42_graph_spring/set_timeDrawsTheNearestSampleAtTheExpectedCoordinates", "medium"
+    "test_F42_graph_spring/animateCallsUpdateFcnAtEveryFrameAndExport_videoWritesAnMPEG_4File", "medium"
     % ---- F37_disp_connection ---------------------------------------------------------------------
     % ネットワークはファイル内で共有 (shared_net): 最初に走るテストが Tutorial10bus と IEEE14bus を作る
     "test_F37_disp_connection/ItRunsOnTutorial10busAndIEEE14busWith0And1Outputs", "medium"
