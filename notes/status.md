@@ -188,6 +188,7 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **`refactor/design-alignment`(d41057ba)のマージ(`e21f629c`):** 衝突は両方を残して解決しました(`optimize_powerflow.m` は削除し、`plot_dispatch` のヘルプの変更を `calculate_optimal_powerflow.m` に移しました。F10 のフックは 11 行)。マージ後の small 513 件、PASS 511 / KNOWN 1 / FAIL 0 / SKIP 1。medium 686 件、PASS 683 / KNOWN 1 / FAIL 1 / SKIP 1、1082 s。FAIL は I55 の時間制限のテスト `PhasesThatEachFitInTheLimitStopWhenTheirSumDoesNot` で、単独で 2 回実行してどちらも PASS(実行が遅かったための失敗と判断)。
 - **版番号の削除(`7f574d7c`):** small 513 件、PASS 511 / KNOWN 1 / FAIL 0 / SKIP 1、575 s。medium 686 件、PASS 684 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、865 s。large は未実行。
 - 読むものがなくなった版番号 `PowerNetwork.n_revY`・`n_revPF`・`n_revTopology` と、`handle_edit` のその増分を削除しました。`net.solver_PF` / `net.solver_OPF` のウォームスタートは母線タグで照合します。
+- **OPF の条件の表示 `get_opf_condition`(2026-11-13、利用者の要望):** `Bus.get_opf_condition` → `[tab_bus, tab_component]`、`Branch.get_opf_condition` → ブランチの 1 行、`PowerNetwork.get_opf_condition` → 構造体 `Bus`・`Component`・`Branch`(母線とブランチの結果を積み重ねたもの)。どれも `Display`(既定 true)で見出し Bus / Component / Branch の下に表を表示し、表示では `Y` の列を除きます。`calculate_optimal_powerflow` と `build_opf_problem` は `net.get_opf_condition(Display=false)` の表を使い、基準値と `ReferenceBus` は `private/opf_setting.m` で求めます。`opf_data.m` は削除しました。IEEE14bus で旧 `opf_data` の表と完全に一致することを確認済みで、`SolverOPF` は変えていません。
 - **未対応:** F8 の large のテスト 2 件(`MATFileRoundTripKeepsControllersAndLowerLayers`、`MATPOWERImportReproducesCase14`)は、この作業の前のコミットでも失敗します。
 
 ## 線形化の接続器と共通の get_sys(Issue #121、2026-11-13)
