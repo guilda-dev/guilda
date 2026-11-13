@@ -1,0 +1,9 @@
+<!--This is an XML file containing error messages related to the class "GraphSpringBase".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="MissingField">The data of the spring model has no field {0}.</entry>
+        <entry key="FieldSize">The field {0} of the spring model data must be {1}; it is {2}.</entry>
+        <entry key="FieldValue">The field {0} of the spring model data must hold {1}.</entry>
+        <entry key="ParentNotAxes">Parent of the spring model must be an axes; it is a {0}.</entry>
+    </message>
+</rsccat>
