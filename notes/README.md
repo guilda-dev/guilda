@@ -21,7 +21,7 @@
 - [fixed-input.md](fixed-input.md): `initialize` の Method="FixedInput"(入力 u を固定した平衡点)、`rv_Uequilibrium` の編集、アルゴリズムの選択の `Solver` への改名、線形化の `Algorithm` から `Method` への改名の仕様。
 - [controller-signal-routing.md](controller-signal-routing.md): 機器・ローカル制御器・グローバル制御器の信号構造(母線電流 I の廃止、出力の直達の禁止、GC の観測と出力の振り分け、DAE の右辺の評価順)の仕様。
 - [structural-checks.md](structural-checks.md): モデルの物体を追加メソッドだけで作り、外すと削除する設計と、それで起きえなくなった親の検査の削除(Issue #119)。
-- [linearization-connector.md](linearization-connector.md): 線形化の接続器 `SolverLIN` と共通の `get_sys`、各層のブロックとポート、Kron と Feedback の比較の仕様(Issue #121)。
+- [linearization-connector.md](linearization-connector.md): 線形化の接続器 `SolverLIN` と共通の `get_sys`、各層のブロックとポート、Kron と Feedback の比較の仕様(Issue #121)。§13 は `Type`(`"ODE"`/`"DAE"`)、`SolverLIN.reduce`、`ResultLIN.get_contribution`。
 
 ## 調査と改善案
 

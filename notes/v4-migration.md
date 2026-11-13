@@ -43,10 +43,10 @@
 >   `[res, flag, output] = net.calculate_optimal_powerflow(Method=...)`; the old
 >   name, the 6-output tuple and the option `"methods"` stop with MATLAB errors
 >   (no compatibility, 2026-11-12) (1.9).
-> - **DAE `B` sign.** `get_sys(Method="DAE")` / `get_ss("DAE")` returns
+> - **DAE `B` sign.** `get_sys(Type="DAE")` / `get_ss("DAE")` returns
 >   `B` with the opposite sign on the algebraic rows (the bus current
 >   balance). v3 had the wrong sign there, so its DAE model did not match
->   Kron (1.12).
+>   the reduced model (v3 Kron, v4 `"ODE"`) (1.12).
 > - **IEEE14bus numbers.** `network.IEEE14bus` now has the MATPOWER case14
 >   data, `IEEE14bus_lossless` is that data with R = 0, and CSV import reads
 >   transformer taps, so power flow, OPF, simulation and linearization
@@ -148,7 +148,7 @@
   | TimeSimulation | `RelativeTolerance` | `Tolerance` |
   | TimeSimulation | なし | `Solver`(既定 `"ode15s"`。`"ode15s"` / `"ode23t"`)、`Verbose`(既定 false) |
   | TimeSimulation | なし | `MaxStep`, `InitialStep`(既定 NaN = ソルバーの既定)、`SampleTime`(既定 NaN = ソルバーの刻み)、`StopOnOutOfStep`(既定 false)、`StopAngle`(既定 360) |
-  | Linearization(新設) | なし | `Method`(既定 `"Kron"`。`"Kron"` / `"DAE"`)、`Coordinate`(既定 `"theta&rho"`) |
+  | Linearization(新設) | なし | `Type`(既定 `"ODE"`。`"ODE"` / `"DAE"`)、`Coordinate`(既定 `"theta&rho"`) |
   | 各解析のセクション | なし | `PlotFcn`(既定 `"none"`) |
   | PowerFlowCalculation | なし | `Verbose`(logical、既定 false) |
   | PowerFlowCalculation | `MaxIteration`・`GradientStepSize` の 0 = 自動 | NaN = 自動(0 は 0 回・刻み幅 0。保存した 0 は直してください) |
@@ -318,7 +318,7 @@ net.a_Bus{3}.l_isSlack = true;   % bus 1 is no longer slack
 ### 1.6 Global and local controllers
 
 Any number of global controllers is supported: `initialize`, `simulate` and
-all `get_sys` methods (Kron, DAE) handle every controller.
+all `get_sys` models (`"ODE"`, `"DAE"`) handle every controller.
 Outputs of several controllers on the same input add up. Scalar `alpha` /
 `beta` of the AGC are expanded to every controlled unit.
 
@@ -832,23 +832,26 @@ Option names:
 
 | v3 | v4 |
 |----|----|
-| `[sys, lin] = net.get_sys(NonUnit=n, Algorithm=a)` | `[res, flag, output] = net.get_sys(Method=a)`(`a` は `"Kron"` か `"DAE"`)。`res` は `ResultLIN` |
-| `lin = odeLinearizer(net, n, Algorithm=a); sys = lin.get_sys` | `res = net.get_sys(); sys = res.get_ss(a)` |
+| `[sys, lin] = net.get_sys(NonUnit=n, Algorithm=a)` | `[res, flag, output] = net.get_sys(Type=t)`(`t` は `"ODE"`(v3 の `"Kron"`)か `"DAE"`)。`res` は `ResultLIN` |
+| `lin = odeLinearizer(net, n, Algorithm=a); sys = lin.get_sys` | `res = net.get_sys(); sys = res.get_ss(t)`、または `res.Type = t` として `res.A` など |
+| – | `res.get_contribution(target)`: タグやクラスの要素の DAE への寄与 |
 | `lin.Kxx`, `lin.Kxv`, `lin.Kvx`, `lin.Kvv`, `lin.get_DAE` | `res.rm_Axx`, `rm_Axv`, `rm_Bx`, `rm_Avx`, `rm_Avv`, `rm_Bv`, `rm_E`(縮約前の DAE。並びは `res.tab_variable`) |
 | `comp.get_sys(x, V, u)` | `comp.get_sys(p)`(`p` は `comp.get_variable_map()` の先頭の x, Vre, Vim, u の行の順。`p = [x; V; u]` に制御器の状態も入れる) |
 | `comp.get_sys(false)` / `Controllers=false` | `comp.get_linear_block(x, V, u)`(機器単体のブロック) |
 | – | `net.get_sys(x)` または `net.get_sys({sim, t})`: 平衡点以外での線形化(点は最初の引数) |
 | – | `net.get_variable_map()`、`bus.get_variable_map()`、`comp.get_variable_map()`(信号と接続表も)、`con.get_variable_map()`、`gc.get_variable_map()`。`Equilibrium` 列は平衡点での値 |
 
-- **`Feedback` は廃止しました。** `Method` は `"Kron"` と `"DAE"` だけを受け付け、`GUILDA.setting` の既定値は `"Kron"` です。`Method="Feedback"` は arguments ブロックの検証のエラーです。`Feedback` が消していた状態(入力から届かない状態)は `"Kron"` では残ります。必要なら `get_ss` の結果を `minreal` などで縮約してください。ユーザーの設定ファイルに `"Feedback"` が保存されていると、`GUILDA.config` は既定値の `"Kron"` に変えて読みます(`Auto-change @Method (Feedback >> Kron)`)。
+- **`Method` は `Type` になりました。** `Type` は `"ODE"`(既定。v3 の `"Kron"` と同じ、母線電圧を消去したモデル)と `"DAE"` だけを受け付けます。`Method=...` と `"Kron"` は arguments ブロックの検証のエラーです。ユーザーの設定ファイルに Linearization の `Method` が保存されていると、`GUILDA.config` はそれを捨てて読みます(`Remove unknown environment field 'Method'.`)。
+- **`Feedback` は廃止しました。** `Feedback` が消していた状態(入力から届かない状態)は `"ODE"` では残ります。必要なら `get_ss` の結果を `minreal` などで縮約してください。
+- **結果は DAE を持ちます。** `res.A` … `res.OutputName` は `res.Type`(既定は `get_sys` の `Type`)のモデルで、`res.Type = "DAE"` のように切り替えられます。線形化をやり直す必要はありません。DAE の母線電圧を消去する計算は `SolverLIN.reduce` です。
 - **`net.linearize` は削除しました。** `net.get_sys()`(`Format="GUILDAorigin"`、既定)が同じ `ResultLIN` を返します。`flag` が false でも結果を返し、`"struct"` と `"ss"` だけが `get_ss` のエラーで止まります(`"DAE"` で `Avv` が特異なときを除く)。
 - **点は最初の引数**(`get_sys(point, Name=Value)`、既定 `[]` = 平衡点)です。v3 の位置引数の点 `get_sys(x, V, u)` は使えません(余分な引数のエラー)。
-- **オプション** は arguments ブロックです: `Method`、`Coordinate`、`PlotFcn`、`Input`、`Output`、`Format`。`Method`、`Coordinate`、`PlotFcn` を省くと GUILDA.setting の Linearization の値を使います。機器と母線のポートは V2I(電圧が入力、電流が出力)だけで、`Port` オプションはありません。v3 の `Algorithm=`、`NonUnit=`、`solver_LIN.NonUnit`、`tag`、`Controllers`、`full`、`con` は削除しました(検証のエラー)。2 番目以降の出力は全層で `[sys, flag, output]` で、cellstr の名前の出力はありません。
-- `res.get_ss(Method)` の行列と名前は v3 の `get_sys` と同じです(F7 で v3 のコードの写しと比べています)。`get_ss("DAE", Coordinate=...)` は母線変数を `"theta&rho"`(既定)、`"theta&V"`、`"Vre&Vim"` から選びます。
-- **DAE の `B` の符号**(黙った変更): 代数方程式の行の符号が逆になり、DAE の入力から状態までの伝達関数が Kron と同じになりました。
+- **オプション** は arguments ブロックです: `Type`、`Coordinate`、`PlotFcn`、`Input`、`Output`、`Format`。`Type`、`Coordinate`、`PlotFcn` を省くと GUILDA.setting の Linearization の値を使います。機器と母線のポートは V2I(電圧が入力、電流が出力)だけで、`Port` オプションはありません。v3 の `Algorithm=`、`NonUnit=`、`solver_LIN.NonUnit`、`tag`、`Controllers`、`full`、`con` は削除しました(検証のエラー)。2 番目以降の出力は全層で `[sys, flag, output]` で、cellstr の名前の出力はありません。
+- `res.get_ss(t)` の行列と名前は v3 の `get_sys`(`"ODE"` は v3 の `"Kron"`)と同じです(F7 で v3 のコードの写しと比べています)。`get_ss("DAE", Coordinate=...)` は母線変数を `"theta&rho"`(既定)、`"theta&V"`、`"Vre&Vim"` から選びます。
+- **DAE の `B` の符号**(黙った変更): 代数方程式の行の符号が逆になり、DAE の入力から状態までの伝達関数が `"ODE"` と同じになりました。
 - `flag` は、すべての要素が有限で `Avv` が正則なとき true です。`output` は `message`、`s_issue`、`l_equilibrium`、`n_x`、`n_v`、`n_u`、`rcond_Avv`、`sv_faultBus`、`s_layer`、`result` を持ちます。有限でない点やモデルは `GUILDA:SolverLIN:PointNotFinite`、`JacobianNotFinite` で止まります。
-- `get_ss` の既定の出力(v3 と同じ): `"Kron"` は状態(出力名なし)、`"DAE"` は動的な状態です。`Input` と `Output` でほかのチャネルを選びます。`Output` の種類 `"y"` は変数表の `y` と `yc`(グローバル制御器の出力も含む)です。
-- `get_ss` の状態の並び(v3 と同じ): `"Kron"` と `"DAE"` はグローバル制御器の状態が先、次に機器です。状態は位置でなく `StateName` で探してください。
+- `get_ss` の既定の出力(v3 と同じ): `"ODE"` は状態(出力名なし)、`"DAE"` は動的な状態です。`Input` と `Output` でほかのチャネルを選びます。`Output` の種類 `"y"` は変数表の `y` と `yc`(グローバル制御器の出力も含む)です。
+- `get_ss` の状態の並び(v3 と同じ): `"ODE"` と `"DAE"` はグローバル制御器の状態が先、次に機器です。状態は位置でなく `StateName` で探してください。
 - 機器のない母線(つなぎの母線など)も線形化できます。状態はなく、電流も流れません。
 - **チャネル名で添字できます。** `sys(出力名, 入力名)` は `sys(行, 列)` と同じ結果です。`InputGroup` と `OutputGroup` は空です。
 - **点での制御器の入力。** 与えた点では、制御器の入力 `uc` を接続表の源の和(`"global"` を除き、`"equilibrium"` は平衡値)で求めるので、制御器も与えた点で線形化します。
@@ -858,7 +861,7 @@ Option names:
 
   | ID | 条件 | 対応 |
   |----|------|------|
-  | `GUILDA:ResultLIN:SingularAvv` | Kron で `Avv` が正則でない(`rcond < 1e-14`)。`get_sys` は止まらず `flag = false`、`output.s_issue = "SingularAvv"` | `output.message` が示す母線電圧を確認する。`DAE` は計算できる |
+  | `GUILDA:ResultLIN:SingularAvv` | `"ODE"` で `Avv` が正則でない(`rcond < 1e-14`)。`get_sys` は止まらず `flag = false`、`output.s_issue = "SingularAvv"` | `output.message` が示す母線電圧を確認する。`DAE` は計算できる |
   | `GUILDA:GlobalController:GlobalControllerPort` | 機器にグローバル制御器の入出力がない | 対象の機器を直す |
   | `GUILDA:SolverLIN:AlgebraicLoop` | ブロックの出力が接続を通して自分に戻る(`I - D K` が特異) | モデルの直達を見直す |
   | `GUILDA:PowerSystemModel:NoLinearModel` | `Branch` の `get_sys` | 網か母線の `get_sys` を使う |
