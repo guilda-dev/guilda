@@ -203,7 +203,6 @@ classdef PowerNetwork < PowerSystemModel
     methods(Access=protected)
         % Edit handling: the one-slack-bus rule and the stale tag powerflow
         handle_edit(obj, a_layer, tag, log)
-        sct_port = get_linear_port(obj)
         sct_page = gui_content(obj)
     end
 
