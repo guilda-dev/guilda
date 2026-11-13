@@ -94,10 +94,10 @@ E [dx; dv]/dt = A [x; v] + B w,   y = C [x; v] + D w
 
 ## 3. 各層のブロックのメソッド [提案]
 
-名前は `get_linear_block` です(Hidden、public)。`local_LQR.design_gain` が機器単体のブロックを使うため public にします。
+名前は `get_linear_matrix` です(Hidden、public)。`local_LQR.design_gain` が機器単体のブロックを使うため public にします。
 
 ```matlab
-sct_block = get_linear_block(obj, x, V, u)
+sct_block = get_linear_matrix(obj, x, V, u)
 ```
 
 | クラス | x | V | u | 返すもの |
@@ -187,7 +187,7 @@ end
 
 - 既定のない名前は、呼び出しが省くと `opt` にありません。`Method`、`Coordinate`、`PlotFcn` は、そのとき `GUILDA.config("Linearization")` の値を使います。`take_call_options` は使いません。
 - 名前の照合は MATLAB の規則(大文字小文字を区別しない、部分一致)なので、今の `"port"` もそのまま `Port` になります。
-- **削除する引数:** `Component` の `tag`、`Controllers`、`LocalController` の `full`、`tag`、`Bus` の `full`、`con`、`GlobalController` の `full`。名前はいつも Label です。`Controllers=false`(機器単体)は `get_linear_block` で得られます。`local_LQR.design_gain` はそちらに書き換えます(§9 Q4)。
+- **削除する引数:** `Component` の `tag`、`Controllers`、`LocalController` の `full`、`tag`、`Bus` の `full`、`con`、`GlobalController` の `full`。名前はいつも Label です。`Controllers=false`(機器単体)は `get_linear_matrix` で得られます。`local_LQR.design_gain` はそちらに書き換えます(§9 Q4)。
 - `Method` と `Coordinate` は網だけに効きます。ほかの層では受け付けますが何もしません(§9 Q7)。
 - 位置引数は `nargin > 1` のとき `v3_get_sys_point(obj, x, V, u)` が `Point` にします(§6)。`Point` と同時に与えるとエラーです。
 
@@ -197,7 +197,7 @@ end
 2. 古さの検査(§5.3)。
 3. 層の変数表と接続表: `Component`、`Bus`、`PowerNetwork` は `get_variable_map`。`LocalController` と `GlobalController` は親(機器、網)の表から自分の行を選ぶ(局所関数)。
 4. 点: `SolverLIN.point_vector(obj, Point)`。有限でなければ `GUILDA:SolverLIN:PointNotFinite`(今と同じ)。
-5. 点での制御器の入力(§4.1)と、各ブロック `get_linear_block` を集める。
+5. 点での制御器の入力(§4.1)と、各ブロック `get_linear_matrix` を集める。
 6. ポート `get_linear_port(Port)`、`tab_current`、網なら `cm_Y`。
 7. `SolverLIN.solve`(網は `obj.solver_LIN`、ほかは `SolverLIN()`)。
 8. `ResultLIN` を作る(§5.4)。母線電圧 0 の点は今と同じく INFO とメッセージで知らせる(ID は §7)。
@@ -300,7 +300,7 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 | Q1 | Feedback を Kron の別名にするか。共通の状態は一致するが、Feedback は可制御でない状態を消すため、IEEJ では固有値が減る(§8) | 別名にする。固有値解析では消さない Kron が正しく、`remove_unreachable_states` が必要なら `get_ss` の後に利用者が `minreal` などで行える。設定の既定値 `Method="Feedback"` は `"Kron"` に変える |
 | Q2 | v3 の `Algorithm=`、`NonUnit=`、`solver_LIN.NonUnit` を残すか | PF と同じく削除(§6、§7) |
 | Q3 | 古さの検査をいつ行うか | `odefcn` と入力の編集はいつも、`powerflow`・`equilibrium` は平衡点のときだけ(§5.3) |
-| Q4 | `Controllers`、`tag`、`full`、`con` を削除してよいか | 削除。`local_LQR.design_gain` は `comp.get_linear_block(x0, V, u)` を使う |
+| Q4 | `Controllers`、`tag`、`full`、`con` を削除してよいか | 削除。`local_LQR.design_gain` は `comp.get_linear_matrix(x0, V, u)` を使う |
 | Q5 | 点での制御器の入力に `"global"` の源(GC の出力)を足すか | 今と同じく足さない。シミュレーションとの一致を求めるなら別の Issue |
 | Q6 | `LocalController`、`GlobalController` で `Point={sim, t}` を受け付けるか | 受け付けない(`PointLayer`)。必要なら網の点から作る |
 | Q7 | 網以外で `Method`、`Coordinate` を与えたらエラーにするか | 何もしない(エラーにしない) |
@@ -321,7 +321,7 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 各手順の後に small(`DebugScript.run_all("FailOnUnexpected",false)`)を実行してコミットします。既知の失敗は F7 `PointFromASimulationResultAndATime` と F8 の 2 件です。
 
 1. `test:` 基準値の MAT ファイル(Q11)と比較のテスト(全同梱系統の Kron・DAE、平衡点とずらした点、全機器・制御器のモデル、名前で対応)。
-2. `refactor:` `get_linear_block`(3 クラス)と `get_linear_port`(`PowerSystemModel` と 5 層)を加える。この時点では旧 `get_sys` から呼ぶ。
+2. `refactor:` `get_linear_matrix`(3 クラス)と `get_linear_port`(`PowerSystemModel` と 5 層)を加える。この時点では旧 `get_sys` から呼ぶ。
 3. `refactor:` `SolverLIN.solve` を接続器にし、`get_options`、`OptionMap`、`validate_options`、`add_global_controllers` を削除。
 4. `refactor:` `PowerSystemModel.get_sys` と `v3_get_sys_point` を加え、5 つの `get_sys`、`connect_blocks`、`connect_states`、`point_values`、`gc_input` を削除。呼び出し元(`SolverLIN`、`local_LQR`、`get_environment` は v2 の未使用コード)を書き換え。
 5. `refactor:` `ResultLIN` を `sct_sys` から作る。Feedback(Q1)と `net.linearize`(Q8)。
@@ -335,7 +335,7 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 | メンバー | 場所 | 許可 |
 |---|---|---|
 | `get_sys` | `PowerSystemModel` | 指示で許可 |
-| `get_linear_block` | `Component`、`LocalController`、`GlobalController` | 指示で許可(層ごとに 1 つ) |
+| `get_linear_matrix` | `Component`、`LocalController`、`GlobalController` | 指示で許可(層ごとに 1 つ) |
 | `get_linear_port` | `PowerSystemModel`(既定でエラー)、`Component`、`Bus`、`PowerNetwork`、`LocalController`、`GlobalController` | 指示で許可(層ごとに 1 つ) |
 | `SolverLIN.solve`(署名の変更) | `SolverLIN` | 指示で許可(接続器の入口 1 つ) |
 | `v3_get_sys_point` | `_VersionSupport` | 指示で許可 |

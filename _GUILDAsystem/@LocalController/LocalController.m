@@ -207,7 +207,7 @@ classdef LocalController < PowerSystemModel
     end
     methods (Hidden)
         % Linearization (get_sys connects the blocks)
-        sct_block = get_linear_block(obj, x, V, u)
+        sct_block = get_linear_matrix(obj, x, V, u)
     end
 
 %% Get Methods    

@@ -458,12 +458,12 @@ profile("on");
 gen.get_sys();
 profile("off");
 tab = struct2table(profile("info").FunctionTable);
-lv  = contains(string(tab.FileName), "@LocalController") & endsWith(string(tab.FunctionName), "get_linear_block");
+lv  = contains(string(tab.FileName), "@LocalController") & endsWith(string(tab.FunctionName), "get_linear_matrix");
 assert(sum(tab.NumCalls(lv)) == 2, "制御器 2 個に %d 回", sum(tab.NumCalls(lv)))
 
 
 %% Linear block of the component alone
-% get_linear_block: 入力は母線の V と u、状態は x、出力は [I; y] (制御器を含まない)。名前は変数表の Label
+% get_linear_matrix: 入力は母線の V と u、状態は x、出力は [I; y] (制御器を含まない)。名前は変数表の Label
 net = network.IEEE9bus();
 gen = net.a_Bus{1}.a_Component{1};
 gen.add_local_controller("avr-ST1");
@@ -480,7 +480,7 @@ Cix = reshape(full(Cix), 2, nx);   Div = reshape(full(Div), 2, 2);   Diu = resha
 Cyx = reshape(full(Cyx), ny, nx);  Dyv = reshape(full(Dyv), ny, 2);
 E   = reshape(full(gen.f_Mass(0, x, V, u)), nx, nx);
 
-s = gen.get_linear_block(x, V, u);
+s = gen.get_linear_matrix(x, V, u);
 assert(isequal(s.A, Axx) && isequal(s.B, [Bxv, Bxu]) && isequal(s.C, [Cix; Cyx]) && isequal(s.D, [Div, Diu; Dyv, zeros(ny,nu)]) && isequal(s.E, E))
 tab = gen.get_variable_map();
 assert(isequal(s.StateName, tab.Label(tab.Kind == "x" & tab.Owner == gen.s_tag)))
@@ -489,7 +489,7 @@ assert(isequal(s.OutputName, [reshape(string(gen.attach_tag(["Ire";"Iim"])), [],
 
 % 制御器のない機器の get_sys は、そのブロックと同じ
 load1 = net.a_Bus{5}.a_Component{1};
-sa = load1.get_linear_block(load1.rv_Xequilibrium, [real(load1.c_Vequilibrium); imag(load1.c_Vequilibrium)], load1.rv_Uequilibrium);
+sa = load1.get_linear_matrix(load1.rv_Xequilibrium, [real(load1.c_Vequilibrium); imag(load1.c_Vequilibrium)], load1.rv_Uequilibrium);
 sb = load1.get_sys(Format="struct");
 assert(isequal(sa.A, sb.A) && isequal(sa.B, sb.B) && isequal(sa.C, sb.C) && isequal(sa.D, sb.D) && isequal(sa.E, sb.E) ...
        && isequal(sa.InputName, sb.InputName) && isequal(sa.OutputName, sb.OutputName))

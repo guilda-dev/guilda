@@ -1,4 +1,4 @@
-function sct_block = get_linear_block(obj, x, V, u)
+function sct_block = get_linear_matrix(obj, x, V, u)
 % Get the linear block of the local controller at a point.
 %
 % Returns the linear model of the controller at the states x, the voltage V = [Vre; Vim]
@@ -13,7 +13,7 @@ function sct_block = get_linear_block(obj, x, V, u)
 % simulation (f_JacobiDx, f_JacobiY); a model that returns [] for a block gives zeros.
 % The model is not changed.
 %
-% See also PowerSystemModel.get_sys, Component.get_linear_block
+% See also PowerSystemModel.get_sys, Component.get_linear_matrix
 %
 % <@Group> Called by analyses
     arguments (Input)
