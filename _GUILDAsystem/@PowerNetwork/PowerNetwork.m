@@ -33,6 +33,7 @@ classdef PowerNetwork < PowerSystemModel
 %
 % - power flow (`calculate_powerflow`), power flow with the inputs of the components held
 %   (`calculate_fixed_input_powerflow`) and optimal power flow (`calculate_optimal_powerflow`)
+% - the data of the power flow and the OPF (`get_pf_condition`, `get_opf_condition`)
 % - continuation power flow (`calculate_continuation_powerflow`)
 % - equilibrium (`initialize`), time simulation (`simulate`) of the scenarios it holds
 %   (`add_scenario`, `remove_scenario`, `a_Scenario`)
@@ -169,6 +170,7 @@ classdef PowerNetwork < PowerSystemModel
         % PF(powerflow) calculations
         [result, flag, output] = calculate_powerflow(obj, opt)
         [result, flag, output] = calculate_fixed_input_powerflow(obj, opt)
+        varargout = get_pf_condition(obj, opt)
 
         % CPF(continuation power-flow)
         [result, flag, output] = calculate_continuation_powerflow(obj, varargin)

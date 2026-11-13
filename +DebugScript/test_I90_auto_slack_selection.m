@@ -12,7 +12,7 @@ net.a_Bus{1}.add_component("load-power", "P",-0.5, "Q",-0.1);
 net.a_Bus{2}.add_component("gen-1axis", "P",0.3, "Q",nan);
 net.a_Bus{3}.add_component("gen-1axis", "P",0.2, "Q",nan);
 assert(quiet_powerflow(net) == "")
-assert(slack_index(net) == 2)
+assert(slack_index(net) == 2 && isempty(set_slack(net)))   % 選ぶが l_isSlack は書かない
 
 
 %% The first bus may have no component
@@ -20,7 +20,7 @@ net = three_bus();
 net.a_Bus{2}.add_component("load-power", "P",-0.5, "Q",-0.1);
 net.a_Bus{3}.add_component("gen-1axis", "P",0.3, "Q",nan);
 assert(quiet_powerflow(net) == "")
-assert(slack_index(net) == 3)
+assert(slack_index(net) == 3 && isempty(set_slack(net)))
 
 
 %% A first bus with Q = NaN stays the slack bus
@@ -29,7 +29,7 @@ net.a_Bus{1}.add_component("gen-1axis", "P",0.3, "Q",nan);
 net.a_Bus{2}.add_component("gen-1axis", "P",0.3, "Q",nan);
 net.a_Bus{3}.add_component("load-power", "P",-0.5, "Q",-0.1);
 assert(quiet_powerflow(net) == "")
-assert(slack_index(net) == 1)
+assert(slack_index(net) == 1 && isempty(set_slack(net)))
 
 
 %% A slack bus that is already set is kept
@@ -39,15 +39,15 @@ net.a_Bus{2}.add_component("load-power", "P",-0.5, "Q",-0.1);
 net.a_Bus{3}.add_component("gen-1axis", "P",0.3, "Q",nan);
 evalc("net.a_Bus{3}.l_isSlack = true;");
 assert(quiet_powerflow(net) == "")
-assert(slack_index(net) == 3)
+assert(set_slack(net) == 3)
 
 
 %% Without Q = NaN the first bus with a component is selected, with the warning
 net = three_bus();
 net.a_Bus{2}.add_component("load-impedance", "P",-0.5, "Q",-0.1);
 net.a_Bus{3}.add_component("load-impedance", "P",-0.5, "Q",-0.1);
-assert(quiet_powerflow(net) == "GUILDA:Bus:SlackWithoutQnan")
-assert(slack_index(net) == 2)
+assert(quiet_powerflow(net) == "GUILDA:PowerNetwork:SlackWithoutQnan")
+assert(slack_index(net) == 2 && isempty(set_slack(net)))
 
 
 %% A load-only network still initializes and passes KCL
@@ -55,7 +55,7 @@ net = three_bus();
 net.a_Bus{1}.add_component("load-impedance", "P",-0.5, "Q",-0.1);
 net.a_Bus{3}.add_component("load-impedance", "P",-0.5, "Q",-0.1);
 DebugScript.helper.quiet(@() net.initialize);
-assert(slack_index(net) == 1 && ~DebugScript.helper.is_stale(net))
+assert(slack_index(net) == 1 && isempty(set_slack(net)) && ~DebugScript.helper.is_stale(net))
 sv_Bus  = string(net.a_Bus);
 tab_Y   = net.get_admittance_matrix;
 assert(max(abs(tab_Y{sv_Bus,sv_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium)) < 1e-6)   % initialize の許容値
@@ -73,7 +73,7 @@ net = three_bus();
 ME = powerflow_error(net);
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:NoSlackCandidate", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "add_component") && ~contains(ME.message, "BUS001"), ME.message)
-assert(isempty(slack_index(net)))
+assert(isempty(set_slack(net)))
 
 
 %% initialize passes on these errors
@@ -92,10 +92,10 @@ try
 catch ME
 end
 assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:NoSlackCandidate")
-assert(isempty(slack_index(net)))
+assert(isempty(set_slack(net)))
 
 
-%% initialize releases the selected slack bus when the power flow fails
+%% initialize leaves no slack bus when the power flow fails
 net = three_bus();
 net.a_Bus{1}.add_component("load-power", "P",-0.5, "Q",-0.1);
 net.a_Bus{2}.add_component("gen-1axis", "P",0.3, "Q",nan);
@@ -106,7 +106,7 @@ try
 catch ME
 end
 assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializePowerflowFailed")
-assert(isempty(slack_index(net)))
+assert(isempty(set_slack(net)))
 
 
 %% The power flow, OPF and network_to_mpc use the same bus when the first bus has no Q = NaN
@@ -119,14 +119,14 @@ assert(tools.slack_bus_index(net) == 2)
 % OPF と network_to_mpc は参照するだけで、スラックを設定しない
 mpc = tools.network_to_mpc(net);
 assert(find(mpc.bus(:,2) == 3) == 2)
-assert(isempty(slack_index(net)))
+assert(isempty(set_slack(net)))
 for s_method = ["DC OPF", "AC OPF"]
     res = net.calculate_optimal_powerflow(Method=s_method, Verbose=false);
     assert(res.l_success && abs(res.tab_bus.Varg(2)) < 1e-9 && abs(res.tab_bus.Varg(1)) > 1e-3)
-    assert(isempty(slack_index(net)))
+    assert(isempty(set_slack(net)))
 end
 assert(quiet_powerflow(net) == "")
-assert(slack_index(net) == 2)
+assert(slack_index(net) == 2 && isempty(set_slack(net)))
 
 
 %% The bus that is set stays the reference of OPF and network_to_mpc
@@ -148,7 +148,7 @@ assert(isempty(tools.slack_bus_index(net)))
 mpc = tools.network_to_mpc(net);
 assert(find(mpc.bus(:,2) == 3) == 1)
 res = net.calculate_optimal_powerflow(Method="DC OPF", Verbose=false);
-assert(res.l_success && isempty(slack_index(net)))
+assert(res.l_success && isempty(set_slack(net)))
 
 
 % ---- local functions ----
@@ -179,6 +179,12 @@ function ME = powerflow_error(net)
     assert(~isempty(ME), "エラーになるはず")
 end
 
-function i = slack_index(net)
+function i = set_slack(net)
+% 指定された (l_isSlack の) スラック母線
     i = find(cellfun(@(b) b.l_isSlack, net.a_Bus));
+end
+
+function i = slack_index(net)
+% 潮流計算のスラック母線: get_pf_condition の表で "slack" の母線
+    i = find(DebugScript.helper.quiet(@() net.get_pf_condition(Display=false)).Bus.Type == "slack");
 end

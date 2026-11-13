@@ -117,7 +117,13 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
     if opt.Format == "struct"
         result = struct_result(sct_sol, sct_dae, sct_event, tab_phase, s_scenario);
     else
-        result = ResultODE(sct_sol, sct_dae, struct(obj, false), struct("solver", obj.solver_ODE, ...
+        sct_network = struct(obj, false);
+        i_slack = tools.slack_bus_index(obj);   % a slack bus the power flow selected is the slack bus of the snapshot (judge_out_of_step)
+        if ~isempty(i_slack)
+            sct_network.a_Bus{i_slack}.l_isSlack = true;
+            sct_network.a_Bus{i_slack}.s_bustype = "slack";
+        end
+        result = ResultODE(sct_sol, sct_dae, sct_network, struct("solver", obj.solver_ODE, ...
                            "options", sct_options, "flag", flag, "output", output, "elapsed", t0));
     end
 

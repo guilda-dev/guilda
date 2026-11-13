@@ -410,7 +410,7 @@ Y    = net.get_admittance_matrix.Variables;
 assert(norm(mpc_ybus(mpc) - Y) < 1e-10)
 assert(isequal(size(mpc.bus), [14 13]) && size(mpc.gen,1) == 5 && size(mpc.gencost,1) == 5)
 assert(isequal(mpc.bus_name(:).', cellstr(string(net.a_Bus)).'))
-assert(mpc.bus(cellfun(@(b) b.l_isSlack, net.a_Bus), 2) == 3)
+assert(mpc.bus(tools.slack_bus_index(net), 2) == 3 && sum(mpc.bus(:,2) == 3) == 1)
 ld = net.a_Bus{3}.a_Component{end};
 assert(isa(ld, "component.load.abstract"))
 assert(max(abs(mpc.bus(3,3:4) + 100*ld.tab_parameter.powerflow{1,["P","Q"]})) < 1e-12)
@@ -1112,15 +1112,16 @@ assert(isequal(string(sct.Bus.Properties.RowNames), string(net.a_Bus)))
 assert(isequal(string(sct.Branch.Properties.RowNames), string(net.a_Branch)))
 a_com = tools.vcellfun(@(b) reshape(b.a_Component, [], 1), net.a_Bus);
 assert(isequal(string(sct.Component.Properties.RowNames), string(a_com)))
+sv_type = DebugScript.helper.quiet(@() net.get_pf_condition(Display=false)).Bus.Type;   % with the slack bus the power flow selects
 for i = 1:numel(net.a_Bus)
     bus = net.a_Bus{i};
     row = sct.Bus(string(bus), :);
     assert(isequaln([row.Vmin, row.Vmax], [bus.tab_parameter.operation.Vmin, bus.tab_parameter.operation.Vmax]))
     assert(isequaln([row.Gshunt, row.Bshunt], [bus.tab_parameter.dynamics.Gshunt, bus.tab_parameter.dynamics.Bshunt]))
     assert(isequaln([row.V, row.Varg], [bus.tab_parameter.powerflow.V, bus.tab_parameter.powerflow.Varg]))
-    assert(row.Type == bus.get_pf_condition().Type)
+    assert(row.Type == sv_type(i))
     [tb, tc] = bus.get_opf_condition(Display=false);
-    assert(isequaln(tb, row) && isequaln(tc, sct.Component(string(bus.a_Component), :)))
+    assert(isequaln(removevars(tb, "Type"), removevars(row, "Type")) && isequaln(tc, sct.Component(string(bus.a_Component), :)))
     assert(all(tc.Bus == string(bus)))
 end
 for k = 1:numel(a_com)

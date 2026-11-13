@@ -11,8 +11,9 @@ function [result, flag, output] = calculate_fixed_input_powerflow(obj, opt)
 % in the equations. net.initialize(Method="FixedInput") writes the solution and gives the
 % controllers their equilibria.
 %
-% The network is not changed, except that a slack bus is selected when none is set, as
-% by calculate_powerflow. Every component must hold its inputs
+% The network is not changed. The slack bus and the admittance matrix come from
+% net.get_pf_condition, which selects a slack bus for this calculation when none is set,
+% as for calculate_powerflow (l_isSlack is not written). Every component must hold its inputs
 % (GUILDA:PowerNetwork:InitializeInputNotSet), and the slack bus needs a generator
 % (GUILDA:PowerNetwork:InitializeNoSlackGenerator). A network split into islands has no
 % unique solution, so the calculation does not converge (initialize names the islands in
@@ -71,21 +72,11 @@ function [result, flag, output] = calculate_fixed_input_powerflow(obj, opt)
     if any(opt.Solver == ["gradient","dynamic"])
         error(msg("GUILDA:PowerNetwork:InitializeFixedInputSolver", char(opt.Solver)))
     end
-    if ~any(tools.vcellfun(@(b) b.l_isSlack, obj.a_Bus))   % selected as by calculate_powerflow
-        if isempty(obj.a_Bus)
-            error(msg("GUILDA:PowerNetwork:NoBus", string(obj)))
-        end
-        i_bus = tools.slack_bus_index(obj);
-        if isempty(i_bus)
-            error(msg("GUILDA:PowerNetwork:NoSlackCandidate", string(obj)))
-        end
-        show_msg("info", "GUILDA:PowerNetwork:SlackSelected", string(obj.a_Bus{i_bus}))
-        obj.a_Bus{i_bus}.l_isSlack = true;
-    end
+    sct_PFcondition = obj.get_pf_condition(Display=false);   % slack bus (selected when none is set) and Y
 
     %% Solve the equations of all components and buses for z = [x; I of each component; V; Pmech]
     t0  = tic;
-    eq  = equation_data(obj);
+    eq  = equation_data(obj, sct_PFcondition);
     z0  = initial_point(obj, eq, opt.WarmStart);
     f_F = @(z) residual(eq, z);
     f_J = @(z) residual_jacobian(eq, z);
@@ -144,12 +135,15 @@ function [result, flag, output] = calculate_fixed_input_powerflow(obj, opt)
             cm_Vhistory = rm_history(eq.iv_V(1:2:end),:) + 1j*rm_history(eq.iv_V(2:2:end),:);
             sct_solver = struct("solver", "FixedInput", "options", opt, "flag", flag, "output", output, ...
                 "elapsed", r_elapsed, "cm_Vhistory", cm_Vhistory, "rv_step", 0:size(rm_history,2)-1);
-            result = ResultPF(tab_pf, eq.cm_Y, struct(obj, false), sct_solver);
+            sct_network = struct(obj, false);   % with the slack bus of the calculation
+            sct_network.a_Bus{eq.i_slack}.l_isSlack = true;
+            sct_network.a_Bus{eq.i_slack}.s_bustype = "slack";
+            result = ResultPF(tab_pf, eq.cm_Y, sct_network, sct_solver);
     end
 end
 
 
-function eq = equation_data(net)
+function eq = equation_data(net, sct_PFcondition)
 % Components, their positions in z, the admittance matrix and the slack generator
     a_Bus  = net.a_Bus;
     n_bus  = numel(a_Bus);
@@ -171,7 +165,7 @@ function eq = equation_data(net)
     end
 
     % the first generator of the slack bus balances the power with its Pmech
-    i_slack = find(cellfun(@(b) b.l_isSlack, a_Bus), 1);
+    i_slack = find(sct_PFcondition.Bus.Type == "slack", 1);
     k_slack = find(iv_bus == i_slack & cellfun(@(c) isa(c, "component.generator.abstract"), c_comp), 1);
     if isempty(k_slack)
         error(msg("GUILDA:PowerNetwork:InitializeNoSlackGenerator", char(sv_bus(i_slack))))
@@ -189,8 +183,7 @@ function eq = equation_data(net)
     iv_V  = p + (1:2*n_bus)';     % [Vre; Vim] of each bus
     i_zPm = p + 2*n_bus + 1;
 
-    tab_Y = net.get_admittance_matrix;
-    cm_Y  = tab_Y{sv_bus, sv_bus};
+    cm_Y  = sct_PFcondition.Y{sv_bus, sv_bus};
     % real form of Y for the interleaved [Vre; Vim] of the buses
     rm_Y = kron(sparse(real(cm_Y)), sparse([1 0; 0 1])) + kron(sparse(imag(cm_Y)), sparse([0 -1; 1 0]));
 
@@ -222,7 +215,7 @@ function z0 = initial_point(net, eq, l_warm)
                       char("the power flow for the initial point did not converge: " + string(out.message))))
         end
         cv_V = rm_pf(:,1);
-        c_PQ = component_power(net, real(rm_pf(:,3:4)));
+        c_PQ = component_power(net, real(rm_pf(:,3:4)), eq.i_slack);
         for k = 1:eq.n_comp
             c_V   = cv_V(eq.iv_bus(k));
             rr_PQ = c_PQ{k};
@@ -248,7 +241,7 @@ function z0 = initial_point(net, eq, l_warm)
 end
 
 
-function c_PQ = component_power(net, rm_PQbus)
+function c_PQ = component_power(net, rm_PQbus, i_slack)
 % [P Q] of each component at the power flow solution (initial point only): the settings,
 % the rest of the bus to the components with Q = NaN (equally) and the rest of P at the
 % slack bus to its first generator
@@ -269,7 +262,7 @@ function c_PQ = component_power(net, rm_PQbus)
         if any(lv_nan)
             rm(lv_nan,2) = (rm_PQbus(i_bus,2) - sum(rm(~lv_nan,2))) / sum(lv_nan);
         end
-        if bus.l_isSlack
+        if i_bus == i_slack
             i_rest = find(cellfun(@(c) isa(c, "component.generator.abstract"), a_Comp), 1);
             if isempty(i_rest), i_rest = 1; end
             lv_other = (1:n)' ~= i_rest;
