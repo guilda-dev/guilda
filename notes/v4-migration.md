@@ -1040,7 +1040,9 @@ there.
   equilibria afterwards (an AVR or governor shifts its reference). Options:
   `Solver` (`"newton"` (default), `"levenberg-marquardt"`, `"fsolve"`),
   `Tolerance`, `MaxIteration` (default: PowerFlowCalculation), `Verbose`,
-  `WarmStart`. Inputs are edited with `comp.set_input(u)`: the edit is stale
+  `WarmStart` — the options of `net.calculate_fixed_input_powerflow`, which
+  solves the same point without writing it (`Format` as `calculate_powerflow`,
+  `output.tab_component`). Inputs are edited with `comp.set_input(u)`: the edit is stale
   (`net.sct_stale.input`), so the analyses and `net.initialize()` stop with
   `InputEdited` until `Method="FixedInput"`; `Method="powerflow"` or `"OPF"`
   replaces the edited inputs (INFO `GUILDA:PowerNetwork:InputOverwritten`).

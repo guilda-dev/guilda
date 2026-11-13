@@ -200,6 +200,24 @@
       <li><code>"fsolve"</code> 以外の計算方法は、MATLAB 本体だけで動きます。</li>
       <li><code>"fsolve"</code> には Optimization Toolbox が必要です。ないときは <code>GUILDA:require_toolbox:Unavailable</code> で止まります。</li>
     </ul>
+    <h3 id="fixed-input"><span lang="en">Power flow with the inputs held: <code>calculate_fixed_input_powerflow</code></span><span lang="ja">入力を固定した潮流計算: <code>calculate_fixed_input_powerflow</code></span></h3>
+<pre><code>[result, flag, output] = net.calculate_fixed_input_powerflow(Name=Value, ...)</code></pre>
+    <ul lang="en">
+      <li>Solves the equilibrium with the inputs the components hold (<code>rv_Uequilibrium</code>, edited with <code>Component.set_input</code>), not the power-flow settings: the unknowns are the states, the currents of the components, the bus voltages and the <code>Pmech</code> of the first generator of the slack bus; the slack bus angle is 0</li>
+      <li>Options: <code>Format</code> (the same four values and default as above; the <code>ResultPF</code> has the solver <code>"FixedInput"</code> and no <code>tab_PFcondition</code>), <code>Solver</code> (<code>"newton"</code> when left out, <code>"levenberg-marquardt"</code>, <code>"fsolve"</code>; <code>"gradient"</code> and <code>"dynamic"</code> stop with <code>GUILDA:PowerNetwork:InitializeFixedInputSolver</code>), <code>Tolerance</code>, <code>MaxIteration</code> (<code>NaN</code>: 50, 100 or 400), <code>Verbose</code>, <code>WarmStart</code> (<code>true</code>: from the held equilibrium; <code>false</code>, or a component without one: from a power flow that is not written). The values left out come from the PowerFlowCalculation section, except <code>Solver</code></li>
+      <li><code>output.tab_component</code>: one row per component (row names = component tags) with <code>Bus</code>, <code>X</code>, <code>U</code>, <code>I</code></li>
+      <li>The equations are built in the method file (residual, Jacobian, initial point) and solved by <code>MethodNewtonRaphson</code>, <code>MethodLevenbergMarquardt</code> or <code>MethodFsolve</code>; <code>net.solver_PF</code> is not used</li>
+      <li>Writes nothing; selects a slack bus when none is set, as <code>calculate_powerflow</code> does. <code>net.initialize(Method="FixedInput")</code> writes the solution (see <a href="feature-initialize.html#INIT-03d">Initialization</a>)</li>
+      <li>Every component must hold its inputs (<code>InitializeInputNotSet</code>) and the slack bus needs a generator (<code>InitializeNoSlackGenerator</code>). A network split into islands does not converge; <code>initialize</code> checks the islands before the call</li>
+    </ul>
+    <ul lang="ja">
+      <li>潮流設定ではなく、機器が保持する入力（<code>rv_Uequilibrium</code>。<code>Component.set_input</code> で編集）を固定して平衡点を求めます。未知数は状態、機器の電流、母線電圧と、スラック母線にある 1 台目の発電機の <code>Pmech</code> です。スラック母線の位相角は 0 です。</li>
+      <li>オプションは <code>Format</code>（上と同じ 4 つの値と既定値。<code>ResultPF</code> のソルバーは <code>"FixedInput"</code> で、<code>tab_PFcondition</code> は持ちません）、<code>Solver</code>（省くと <code>"newton"</code>。ほかに <code>"levenberg-marquardt"</code>、<code>"fsolve"</code>。<code>"gradient"</code> と <code>"dynamic"</code> は <code>GUILDA:PowerNetwork:InitializeFixedInputSolver</code> で止まります）、<code>Tolerance</code>、<code>MaxIteration</code>（<code>NaN</code> なら 50、100、400）、<code>Verbose</code>、<code>WarmStart</code>（<code>true</code> なら保持している平衡点から、<code>false</code> のときや平衡点のない機器があるときは書き込まない潮流計算から始めます）です。<code>Solver</code> 以外の省いた値は PowerFlowCalculation セクションから読みます。</li>
+      <li><code>output.tab_component</code> は機器ごとに 1 行（行名は機器のタグ）の table で、変数は <code>Bus</code>、<code>X</code>、<code>U</code>、<code>I</code> です。</li>
+      <li>方程式（残差、ヤコビ行列、初期点）はメソッドのファイル内で組み立て、<code>MethodNewtonRaphson</code>、<code>MethodLevenbergMarquardt</code>、<code>MethodFsolve</code> で解きます。<code>net.solver_PF</code> は使いません。</li>
+      <li>何も書き込みません。スラック母線がなければ、<code>calculate_powerflow</code> と同じく 1 つを選びます。解を書き込むのは <code>net.initialize(Method="FixedInput")</code> です（<a href="feature-initialize.html#INIT-03d">初期化</a>を参照）。</li>
+      <li>すべての機器が入力を持つこと（<code>InitializeInputNotSet</code>）、スラック母線に発電機があること（<code>InitializeNoSlackGenerator</code>）が必要です。分断されたネットワークでは収束しません。<code>initialize</code> は呼び出しの前に分断を確かめます。</li>
+    </ul>
     <!-- ============================== 2. SEQUENCE ============================== -->
     <h2 id="sequence"><span lang="en">2. Call sequence between classes</span><span lang="ja">2. クラス間の呼び出し順</span></h2>
     <figure class="dg-figure">
@@ -616,12 +634,12 @@
     </table>
     <ul lang="en">
       <li>Nothing stored back on the model objects</li>
-      <li><code>net.initialize()</code> (Method <code>"powerflow"</code>) calls <code>calculate_powerflow</code> with <code>Format="powerflow(mat)"</code> (<code>initialize</code> takes no <code>Format</code>; that array is its first output) and writes the columns V, I, P, Q of each row with <code>Bus.set_equilibrium</code></li>
+      <li><code>net.initialize()</code> (Method <code>"powerflow"</code>) calls <code>calculate_powerflow</code> with <code>Format="powerflow(mat)"</code> (<code>initialize</code> takes no <code>Format</code>; that array is its first output) and writes the columns V, I, P, Q of each row with <code>Bus.set_equilibrium</code>; Method <code>"FixedInput"</code> calls <code>calculate_fixed_input_powerflow</code> the same way and also writes the states and inputs of <code>output.tab_component</code></li>
       <li><code>Bus.set_equilibrium</code> sets <code>Bus.c_Vequilibrium</code> and distributes P and Q to <code>Component.set_equilibrium</code> (see <a href="feature-initialize.html">Initialization</a>)</li>
     </ul>
     <ul lang="ja">
       <li>モデルのオブジェクトには何も書き戻しません。</li>
-      <li><code>net.initialize()</code>（Method <code>"powerflow"</code>）は <code>calculate_powerflow</code> を <code>Format="powerflow(mat)"</code> で呼び出し（<code>initialize</code> は <code>Format</code> を取らず、この配列が最初の出力です）、配列の各行の V、I、P、Q の列を <code>Bus.set_equilibrium</code> で書き込みます。</li>
+      <li><code>net.initialize()</code>（Method <code>"powerflow"</code>）は <code>calculate_powerflow</code> を <code>Format="powerflow(mat)"</code> で呼び出し（<code>initialize</code> は <code>Format</code> を取らず、この配列が最初の出力です）、配列の各行の V、I、P、Q の列を <code>Bus.set_equilibrium</code> で書き込みます。Method <code>"FixedInput"</code> は <code>calculate_fixed_input_powerflow</code> を同じように呼び出し、<code>output.tab_component</code> の状態と入力も書き込みます。</li>
       <li><code>Bus.set_equilibrium</code> は <code>Bus.c_Vequilibrium</code> を設定し、P と Q を <code>Component.set_equilibrium</code> で機器に配分します（<a href="feature-initialize.html">初期化</a>を参照）。</li>
     </ul>
 

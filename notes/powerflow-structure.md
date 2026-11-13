@@ -85,6 +85,17 @@
 - **v3 互換の削除:** `_VersionSupport/v3_initialize_args.m` とその呼び出し、`Deprecated.xml` の `InitializeMethods`・`InitializeMethodValue`、F3 の「Deprecated methods option and values warn」とその `test_levels.m` の行を削除しました。`"methods"` は未知の名前として解析のエラー、旧い値は `GUILDA:PowerNetwork:InitializeMethod` になります(F3 の「Initialize rejects unknown options」で確認)。
 - **読みやすさ(動作は変えない):** 本体を上から順に 1. Method とオプションの解析、2. Method ごとの運転点、3. 母線への書き込み、4. 母線・ブランチ・グローバル制御器の initialize、5. KCL とモデルの残差の確認、6. 古さの解除、7. INFO と警告、の節に並べました。1〜2 行の関数や 1 回だけ使う関数(`take_method`、`solve_powerflow`、`solve_opf`、`opf_point`、`solve_fixed`、`write_powerflow`、`write_fixed_input`、`release_slack`、`stale_list`、`equilibrium_tolerance`、`large_model_residuals`、`largest`)は本体に入れ、`stop_powerflow` と `stop_opf` は `stop_analysis` に、潮流計算と FixedInput のスラック母線の解除は 1 つの `try/catch` にまとめました。行のまとめは `residual_row` です。634 行・ローカル関数 24 個 → 519 行・11 個。
 
+## 7. `calculate_fixed_input_powerflow`(ユーザーの決定、2026-11-13)
+
+- **公開メソッド化:** `private/solve_fixed_input.m` を削除し、`@PowerNetwork/calculate_fixed_input_powerflow.m` を追加しました。シグネチャは `[result, flag, output] = calculate_fixed_input_powerflow(obj, opt)` です。新しい公開メンバーはこのメソッドだけです。
+- **オプション(`arguments` ブロック):** `Solver`(省くと `"newton"`。`"levenberg-marquardt"`、`"fsolve"`)、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`、`Format`(`calculate_powerflow` と同じ値と既定値。`"GUILDAorigin"` は `s_solver` が `"FixedInput"` の `ResultPF`)。`Solver` 以外の省いた値は `GUILDA.config("PowerFlowCalculation", ...)` です。`Solver` だけはブロックに `"newton"` と書きました。PowerFlowCalculation の `Solver` は FixedInput で使えない `"gradient"`・`"dynamic"` のことがあるためです。`"gradient"`・`"dynamic"` は検証関数では通し、本体で従来どおり `GUILDA:PowerNetwork:InitializeFixedInputSolver` を出します。`tools.resolve_options` は使いません。
+- **機器ごとの値:** `output.tab_component`(行名は機器のタグ、変数は `Bus`、`X`、`U`、`I`)。4 つ目の出力はありません。`ResultPF` には反復ごとの母線電圧(`cm_Vhistory`)も入れますが、`tab_PFcondition` は空です(`plot_convergence` は使えません)。
+- **数値計算:** 方程式のデータ、残差、ヤコビ行列、初期点、`component_power` はメソッドのファイルのローカル関数です(案 A)。`MethodNewtonRaphson`・`MethodLevenbergMarquardt`・`MethodFsolve` を直接呼びます。`auto`・`blocks`・`rotate_point`・`split_point`・`options`・`validate` は本体または呼び出し元に入れました。
+- **スラック母線と分断の検査の置き場所:** メソッドは `calculate_powerflow` と同じく、スラック母線がなければ選び(INFO `SlackSelected`)、解除しません。分断の検査はメソッドに入れず、`initialize` に残しました。`network_islands` は `initialize` のローカル関数で、メソッドにも置くと重複するためです。直接呼び出した場合、分断された系統は収束しない結果(flag ≠ 1)になり、`calculate_powerflow` と同じ扱いです。`initialize` は従来どおり、スラック母線の選択 → 分断の検査 → 求解の順に行います(選択がすでに済んでいるので、メソッドの選択は働きません)。これで `initialize` の動作、メッセージ、ID は変わりません。
+- **`initialize(Method="FixedInput")`:** `obj.calculate_fixed_input_powerflow(c_nv{:}, Format="powerflow(mat)")` を呼び、`output.tab_component` から状態・入力・電流を書き込みます。未収束は従来どおり `InitializeFixedInputFailed` です。
+- **変わった動作:** `initialize(Method="FixedInput", Foo=1)` のような未知の名前は、`GUILDA:resolve_options:UnknownName` から MATLAB の arguments ブロックのエラー(`MATLAB:TooManyInputs`)になりました。ほかの Method と同じです。
+- **残した点:** `InitializeFixedInputSolver` などのメッセージの文面は「net.initialize(Method="FixedInput")」を主語にしたままです(`initialize` のメッセージを変えないため)。メソッドを直接呼んだときの文面を変えるかは未決定です。
+
 ## テスト
 
 - 手順ごとに `DebugScript.run_all('Level','small','FailOnUnexpected',true)` を実行しました。最後の medium は 688 件、PASS 686 / KNOWN 1 / FAIL 0 / SKIP 1 です。詳細は [status.md](status.md) の「潮流計算の構造の見直し」節にあります。

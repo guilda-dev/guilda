@@ -84,13 +84,13 @@
           <td lang="en" data-label="Values and default"><ul>
             <li><code>"powerflow"</code> (default): <code>net.calculate_powerflow</code> with the settings of <code>GUILDA.setting</code> (PowerFlowCalculation); when not given, only if <code>net.sct_stale.powerflow</code> is not empty</li>
             <li><code>"OPF"</code>: <code>net.calculate_optimal_powerflow</code> with <code>Method="AC OPF"</code> and the OptimalPowerFlow section of <code>GUILDA.setting</code>; <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code> only when given in the call; always solved</li>
-            <li><code>"FixedInput"</code>: the equilibrium with the inputs of the components held (<code>rv_Uequilibrium</code>, edited with <code>Component.set_input</code>); the states, bus voltages, currents and the <code>Pmech</code> of the first generator of the slack bus are solved, with the slack bus angle 0; controllers take their equilibria afterwards; always solved</li>
+            <li><code>"FixedInput"</code>: <code>net.calculate_fixed_input_powerflow</code>, the equilibrium with the inputs of the components held (<code>rv_Uequilibrium</code>, edited with <code>Component.set_input</code>); the states, bus voltages, currents and the <code>Pmech</code> of the first generator of the slack bus are solved, with the slack bus angle 0; controllers take their equilibria afterwards; always solved</li>
             <li><code>"equilibrium"</code>: never solved; the equilibria the components already hold are kept, stale ones recomputed from the held <code>V</code> and <code>I</code></li>
           </ul><small>Default fixed in <code>initialize</code>; no <code>solver_*</code> property or <code>GUILDA.config</code> entry for it</small></td>
           <td lang="ja" data-label="値と既定値"><ul>
             <li><code>"powerflow"</code>（既定）: <code>GUILDA.setting</code>（PowerFlowCalculation）の設定で <code>net.calculate_powerflow</code> を実行します。指定がない場合は、<code>net.sct_stale.powerflow</code> が空でないときだけ実行します。</li>
             <li><code>"OPF"</code>: <code>GUILDA.setting</code> の OptimalPowerFlow セクションの設定で、<code>Method="AC OPF"</code> として <code>net.calculate_optimal_powerflow</code> を実行します。<code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code> は、呼び出しで指定したときだけ使います。常に求解します。</li>
-            <li><code>"FixedInput"</code>: 機器の入力（<code>rv_Uequilibrium</code>。<code>Component.set_input</code> で編集）を固定して平衡点を求めます。未知数は状態、母線電圧、電流と、スラック母線にある 1 台目の発電機の <code>Pmech</code> です（スラック母線の位相角は 0）。制御器の平衡点はその後で設定します。常に求解します。</li>
+            <li><code>"FixedInput"</code>: <code>net.calculate_fixed_input_powerflow</code> で、機器の入力（<code>rv_Uequilibrium</code>。<code>Component.set_input</code> で編集）を固定して平衡点を求めます。未知数は状態、母線電圧、電流と、スラック母線にある 1 台目の発電機の <code>Pmech</code> です（スラック母線の位相角は 0）。制御器の平衡点はその後で設定します。常に求解します。</li>
             <li><code>"equilibrium"</code>: 求解しません。機器が持っている平衡点をそのまま使い、古くなったものだけを保持済みの <code>V</code> と <code>I</code> から計算し直します。</li>
           </ul><small>既定値は <code>initialize</code> 内で固定されています。対応する <code>solver_*</code> のプロパティや <code>GUILDA.config</code> の項目はありません。</small></td>
         </tr>
@@ -110,22 +110,22 @@
         <tr>
           <td><span lang="en">other names</span><span lang="ja">その他の名前</span></td>
           <td lang="en" data-label="Values and default"><ul>
-            <li>Passed unchanged to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>calculate_optimal_powerflow</code> (<code>"OPF"</code>)</li>
-            <li>Validated there, by the <code>arguments</code> block of <code>calculate_powerflow</code> or <code>calculate_optimal_powerflow</code>; its errors (unknown name: <code>MATLAB:TooManyInputs</code>; bad value: the MATLAB validator error) are passed on unchanged, also on a split network</li>
+            <li>Passed unchanged to <code>calculate_powerflow</code> (<code>"powerflow"</code>), <code>calculate_optimal_powerflow</code> (<code>"OPF"</code>) or <code>calculate_fixed_input_powerflow</code> (<code>"FixedInput"</code>)</li>
+            <li>Validated there, by the <code>arguments</code> block of that method; its errors (unknown name: <code>MATLAB:TooManyInputs</code>; bad value: the MATLAB validator error) are passed on unchanged, also on a split network</li>
             <li>Defaults: the PowerFlowCalculation / OptimalPowerFlow section of <code>GUILDA.setting</code>; for the OPF, <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code> default to <code>[]</code>, <code>[]</code>, <code>true</code>, <code>"auto"</code> (options of the call only)</li>
             <li><code>WarmStart</code>: passed the same way; <code>true</code> starts the power flow or the AC OPF from the last solution of the network (kept by <code>net.solver_PF</code> / <code>net.solver_OPF</code>), <code>false</code> from the flat start; default: <code>WarmStart</code> of the PowerFlowCalculation / OptimalPowerFlow section of <code>GUILDA.setting</code></li>
             <li><code>"equilibrium"</code>: no other option</li>
             <li><code>Solver</code>: the algorithm of the analysis, passed the same way (e.g. <code>Solver="levenberg-marquardt"</code> for the power flow, <code>Solver="fmincon"</code> for the OPF); default: the PowerFlowCalculation / OptimalPowerFlow section of <code>GUILDA.setting</code></li>
-            <li><code>"FixedInput"</code>: <code>Solver</code> (<code>"newton"</code> (default), <code>"levenberg-marquardt"</code>, <code>"fsolve"</code>), <code>Tolerance</code> and <code>MaxIteration</code> (default: the PowerFlowCalculation section), <code>Verbose</code>, <code>WarmStart</code> (<code>true</code>: from the held equilibrium; <code>false</code>, or a component without one: from a power flow that is not written)</li>
+            <li><code>"FixedInput"</code>: the options of <code>calculate_fixed_input_powerflow</code> except <code>Format</code>: <code>Solver</code> (<code>"newton"</code> (default), <code>"levenberg-marquardt"</code>, <code>"fsolve"</code>), <code>Tolerance</code> and <code>MaxIteration</code> (default: the PowerFlowCalculation section), <code>Verbose</code>, <code>WarmStart</code> (<code>true</code>: from the held equilibrium; <code>false</code>, or a component without one: from a power flow that is not written)</li>
           </ul></td>
           <td lang="ja" data-label="値と既定値"><ul>
-            <li><code>calculate_powerflow</code>（<code>"powerflow"</code>）または <code>calculate_optimal_powerflow</code>（<code>"OPF"</code>）へそのまま渡します。</li>
-            <li>検査は渡し先の <code>calculate_powerflow</code> または <code>calculate_optimal_powerflow</code> の <code>arguments</code> ブロックで行います。そのエラー（未知の名前は <code>MATLAB:TooManyInputs</code>、不正な値は MATLAB の検証関数のエラー）は、ネットワークが分断されているときも含め、そのまま伝えます。</li>
+            <li><code>calculate_powerflow</code>（<code>"powerflow"</code>）、<code>calculate_optimal_powerflow</code>（<code>"OPF"</code>）、または <code>calculate_fixed_input_powerflow</code>（<code>"FixedInput"</code>）へそのまま渡します。</li>
+            <li>検査は渡し先のメソッドの <code>arguments</code> ブロックで行います。そのエラー（未知の名前は <code>MATLAB:TooManyInputs</code>、不正な値は MATLAB の検証関数のエラー）は、ネットワークが分断されているときも含め、そのまま伝えます。</li>
             <li>既定値は <code>GUILDA.setting</code> の PowerFlowCalculation / OptimalPowerFlow セクションから取ります。OPF の <code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code> は呼び出しのときだけのオプションで、既定値は <code>[]</code>、<code>[]</code>、<code>true</code>、<code>"auto"</code> です。</li>
             <li><code>WarmStart</code>: これも同じように渡します。<code>true</code> なら、ネットワークが持つ最後の解（<code>net.solver_PF</code> / <code>net.solver_OPF</code> に保存）から潮流計算または AC OPF を始めます。<code>false</code> ならフラットスタートです。既定値は <code>GUILDA.setting</code> の PowerFlowCalculation / OptimalPowerFlow セクションの <code>WarmStart</code> です。</li>
             <li><code>"equilibrium"</code>: 他のオプションは指定できません。</li>
             <li><code>Solver</code>: 解析のアルゴリズムで、これも同じように渡します（例: 潮流計算の <code>Solver="levenberg-marquardt"</code>、OPF の <code>Solver="fmincon"</code>）。既定値は <code>GUILDA.setting</code> の PowerFlowCalculation / OptimalPowerFlow セクションの値です。</li>
-            <li><code>"FixedInput"</code>: 指定できるのは <code>Solver</code>（<code>"newton"</code>（既定）、<code>"levenberg-marquardt"</code>、<code>"fsolve"</code>）、<code>Tolerance</code> と <code>MaxIteration</code>（既定値は PowerFlowCalculation セクション）、<code>Verbose</code>、<code>WarmStart</code> です。後者は <code>true</code> なら保持している平衡点から始め、<code>false</code> のときや平衡点のない機器があるときは、結果を書き込まない潮流計算から始めます。</li>
+            <li><code>"FixedInput"</code>: 指定できるのは <code>calculate_fixed_input_powerflow</code> の <code>Format</code> 以外のオプション、つまり <code>Solver</code>（<code>"newton"</code>（既定）、<code>"levenberg-marquardt"</code>、<code>"fsolve"</code>）、<code>Tolerance</code> と <code>MaxIteration</code>（既定値は PowerFlowCalculation セクション）、<code>Verbose</code>、<code>WarmStart</code> です。後者は <code>true</code> なら保持している平衡点から始め、<code>false</code> のときや平衡点のない機器があるときは、結果を書き込まない潮流計算から始めます。</li>
           </ul></td>
         </tr>
       </tbody>
@@ -226,8 +226,8 @@
         <path class="dg-sv-line is-muted" d="M185 588H64" marker-end="url(#init-ah-m)"/>
         <text x="191" y="592"><tspan class="init-num">14</tspan> <tspan class="dg-mono">result, flag, output</tspan> <tspan lang="en">+ warnings</tspan><tspan lang="ja">＋警告</tspan></text>
       </svg>
-      <figcaption lang="en">Numbers: the step IDs below (INIT-01 to INIT-14). Step 03 calls <code>calculate_powerflow</code> or <code>calculate_optimal_powerflow</code> when the operating point is solved; otherwise, a call inside <code>PowerNetwork</code> (<code>calculate_from_equilibrium</code>), and steps 04 to 08 are skipped. Steps 05 to 09 repeat for every bus, component, and local controller; step 12 also evaluates the local and global controllers.</figcaption>
-      <figcaption lang="ja">番号は下の処理ステップの ID（INIT-01〜INIT-14）です。ステップ 03 は、運転点を求める場合は <code>calculate_powerflow</code> または <code>calculate_optimal_powerflow</code> を呼び出します。それ以外の場合は <code>PowerNetwork</code> 内の <code>calculate_from_equilibrium</code> を呼び、ステップ 04〜08 は省きます。ステップ 05〜09 はすべての母線、機器、ローカル制御器について繰り返し、ステップ 12 ではローカル制御器とグローバル制御器も評価します。</figcaption>
+      <figcaption lang="en">Numbers: the step IDs below (INIT-01 to INIT-14). Step 03 calls <code>calculate_powerflow</code>, <code>calculate_optimal_powerflow</code> or <code>calculate_fixed_input_powerflow</code> when the operating point is solved; otherwise, a call inside <code>PowerNetwork</code> (<code>calculate_from_equilibrium</code>), and steps 04 to 08 are skipped. Steps 05 to 09 repeat for every bus, component, and local controller; step 12 also evaluates the local and global controllers.</figcaption>
+      <figcaption lang="ja">番号は下の処理ステップの ID（INIT-01〜INIT-14）です。ステップ 03 は、運転点を求める場合は <code>calculate_powerflow</code>、<code>calculate_optimal_powerflow</code>、または <code>calculate_fixed_input_powerflow</code> を呼び出します。それ以外の場合は <code>PowerNetwork</code> 内の <code>calculate_from_equilibrium</code> を呼び、ステップ 04〜08 は省きます。ステップ 05〜09 はすべての母線、機器、ローカル制御器について繰り返し、ステップ 12 ではローカル制御器とグローバル制御器も評価します。</figcaption>
     </figure>
 
     <!-- ============================== STEPS ============================== -->
@@ -255,10 +255,10 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Decides only about the power flow of the network: solves the operating point (INIT-03a/b) when <code>Method</code> is given (<code>"powerflow"</code> or <code>"OPF"</code>) or <code>net.sct_stale.powerflow</code> is not empty</li>
+            <li>Decides only about the power flow of the network: solves the operating point (INIT-03a/b/d) when <code>Method</code> is given (<code>"powerflow"</code>, <code>"OPF"</code> or <code>"FixedInput"</code>) or <code>net.sct_stale.powerflow</code> is not empty</li>
             <li>No upfront check of the other layers: each decides from its own stale tags in its own <code>initialize</code> (INIT-09, INIT-10)</li>
           </ul><ul lang="ja">
-            <li>ここで判断するのはネットワークの潮流だけです。<code>Method</code> を指定したとき（<code>"powerflow"</code> または <code>"OPF"</code>）か、<code>net.sct_stale.powerflow</code> が空でないときに運転点を求めます（INIT-03a/b）。</li>
+            <li>ここで判断するのはネットワークの潮流だけです。<code>Method</code> を指定したとき（<code>"powerflow"</code>、<code>"OPF"</code>、または <code>"FixedInput"</code>）か、<code>net.sct_stale.powerflow</code> が空でないときに運転点を求めます（INIT-03a/b/d）。</li>
             <li>ほかの層は事前に確認しません。各層が自分の <code>initialize</code> の中で、自分の stale タグを見て判断します（INIT-09、INIT-10）。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -273,10 +273,10 @@
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li><code>Method="powerflow"</code> (default), when INIT-02 decides to solve: solves the power flow (see <a href="feature-power-flow.html">Power Flow</a>)</li>
-            <li>On failure, if no bus was a slack bus before the call: the <code>catch</code> of the solve clears the slack bus that was selected (the same for <code>"FixedInput"</code>)</li>
+            <li>On failure, if no bus was a slack bus before the call: the <code>catch</code> of the solve clears the slack bus that was selected (the same for <code>"FixedInput"</code>, INIT-03d)</li>
           </ul><ul lang="ja">
             <li><code>Method="powerflow"</code>（既定）で、INIT-02 が求解が必要と判断したときは潮流計算を解きます（<a href="feature-power-flow.html">潮流計算</a>を参照）。</li>
-            <li>失敗したときは、呼び出し前にスラック母線がなかった場合に限り、求解の <code>catch</code> が今回選ばれたスラック母線を解除します（<code>"FixedInput"</code> も同じです）。</li>
+            <li>失敗したときは、呼び出し前にスラック母線がなかった場合に限り、求解の <code>catch</code> が今回選ばれたスラック母線を解除します（<code>"FixedInput"</code>、INIT-03d も同じです）。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>GUILDA.config("PowerFlowCalculation")</code>, <code>net.solver_PF</code> (warm start), <code>c_nv</code>, <code>Bus.l_isSlack</code>, <code>tab_parameter.powerflow</code></span><span lang="ja"><code>GUILDA.config("PowerFlowCalculation")</code>、<code>net.solver_PF</code>（ウォームスタート）、<code>c_nv</code>、<code>Bus.l_isSlack</code>、<code>tab_parameter.powerflow</code></span></dd>
@@ -322,6 +322,25 @@
           <dd><span lang="en"><code>net.sct_stale.powerflow</code>; <code>Component.c_Vequilibrium</code>, <code>c_Iequilibrium</code>; <code>get_admittance_matrix</code></span><span lang="ja"><code>net.sct_stale.powerflow</code>、<code>Component.c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>get_admittance_matrix</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>rm_pf</code> (n_bus × 4: the bus V and I, and P, Q = real, imag of V.*conj(I)), the first output; <code>flag = 1</code>; <code>output.residual</code>, <code>output.message</code> (no <code>iterations</code> field, unlike a solve)</span><span lang="ja">最初の出力として <code>rm_pf</code>（n_bus × 4。母線の V と I、および V.*conj(I) の実部・虚部の P、Q）を返します。<code>flag = 1</code>、<code>output.residual</code>、<code>output.message</code> も返します（求解したときと違い、<code>iterations</code> のフィールドはありません）。</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-03d">
+        <p class="fs-head"><b class="fs-id">INIT-03d</b> <span class="fs-call"><code>initialize</code> → <code>PowerNetwork.calculate_fixed_input_powerflow</code><small>→ <code>MethodNewtonRaphson</code> / <code>MethodLevenbergMarquardt</code> / <code>MethodFsolve</code></small></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li><code>Method="FixedInput"</code>: first <code>initialize</code> selects a slack bus when none is set (INFO <code>SlackSelected</code>), then stops with <code>InitializeFixedInputIsland</code> on a network split into islands</li>
+            <li>Then calls <code>calculate_fixed_input_powerflow</code> with <code>Format="powerflow(mat)"</code>; it builds the equations of all components and buses in its own local functions (residual, Jacobian, initial point) and solves them with the <code>Method*</code> class of <code>Solver</code>. It writes nothing</li>
+            <li><code>flag ≠ 1</code> stops with <code>InitializeFixedInputFailed</code></li>
+          </ul><ul lang="ja">
+            <li><code>Method="FixedInput"</code>: まず <code>initialize</code> が、スラック母線がなければ 1 つを選び（INFO <code>SlackSelected</code>）、ネットワークが分断されていれば <code>InitializeFixedInputIsland</code> で停止します。</li>
+            <li>次に <code>calculate_fixed_input_powerflow</code> を <code>Format="powerflow(mat)"</code> で呼び出します。このメソッドは全機器と全母線の方程式（残差、ヤコビ行列、初期点）を自身のローカル関数で組み立て、<code>Solver</code> に対応する <code>Method*</code> クラスで解きます。何も書き込みません。</li>
+            <li><code>flag ≠ 1</code> のときは <code>InitializeFixedInputFailed</code> で停止します。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><span lang="en"><code>GUILDA.config("PowerFlowCalculation")</code>, <code>c_nv</code>, <code>Component.rv_Uequilibrium</code>, the held equilibria (<code>WarmStart</code>), <code>Bus.l_isSlack</code>, <code>get_admittance_matrix</code></span><span lang="ja"><code>GUILDA.config("PowerFlowCalculation")</code>、<code>c_nv</code>、<code>Component.rv_Uequilibrium</code>、保持している平衡点（<code>WarmStart</code>）、<code>Bus.l_isSlack</code>、<code>get_admittance_matrix</code></span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><span lang="en"><code>rm_pf</code> (n_bus × 4, the first output) and <code>output.tab_component</code> (Bus, X, U, I of each component), from which INIT-05 writes the states and inputs (<code>c_XU</code> of <code>Bus.set_equilibrium</code>, so <code>get_equilibrium</code> is not called); may set <code>l_isSlack</code> of one bus</span><span lang="ja"><code>rm_pf</code>（n_bus × 4。最初の出力）と <code>output.tab_component</code>（各機器の Bus、X、U、I）を返します。INIT-05 はこれから状態と入力を書き込みます（<code>Bus.set_equilibrium</code> の <code>c_XU</code>。<code>get_equilibrium</code> は呼びません）。母線 1 つの <code>l_isSlack</code> を設定することがあります。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-04">
@@ -468,9 +487,9 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Only when the operating point was solved (INIT-03a/b): checks Kirchhoff's current law at every bus at the point that was written. The other steps recompute from the held V and I</li>
+            <li>Only when the operating point was solved (INIT-03a/b/d): checks Kirchhoff's current law at every bus at the point that was written. The other steps recompute from the held V and I</li>
           </ul><ul lang="ja">
-            <li>書き込んだ運転点で全母線のキルヒホッフの電流則を確かめるのは、運転点を求解したとき（INIT-03a/b）だけです。それ以外の場合は、保持中の V と I から計算し直しています。</li>
+            <li>書き込んだ運転点で全母線のキルヒホッフの電流則を確かめるのは、運転点を求解したとき（INIT-03a/b/d）だけです。それ以外の場合は、保持中の V と I から計算し直しています。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>net.cv_Vequilibrium</code>, <code>net.cv_Iequilibrium</code> (n_bus × 1, dependent), the admittance matrix</span><span lang="ja"><code>net.cv_Vequilibrium</code>、<code>net.cv_Iequilibrium</code>（n_bus × 1、従属プロパティ）、アドミタンス行列</span></dd>
@@ -649,10 +668,10 @@
           <dt><span lang="en">Error or warning raised</span><span lang="ja">発生するエラー・警告</span></dt>
           <dd><ul lang="en">
             <li><code>InitializePairs</code>, <code>InitializeMethod</code></li>
-            <li>other names: the error of the analysis they go to; <code>"powerflow"</code> and <code>"OPF"</code>: the MATLAB error of the <code>arguments</code> block (<code>MATLAB:TooManyInputs</code> for an unknown name, a validator error for a bad value), passed on unchanged, also on a split network; <code>"FixedInput"</code>: <code>GUILDA:resolve_options:UnknownName</code>; <code>"equilibrium"</code>: <code>InitializeEquilibriumOption</code></li>
+            <li>other names: the error of the analysis they go to; <code>"powerflow"</code> and <code>"OPF"</code>: the MATLAB error of the <code>arguments</code> block (<code>MATLAB:TooManyInputs</code> for an unknown name, a validator error for a bad value), passed on unchanged, also on a split network; <code>"FixedInput"</code>: the same, from <code>calculate_fixed_input_powerflow</code>; <code>"equilibrium"</code>: <code>InitializeEquilibriumOption</code></li>
           </ul><ul lang="ja">
             <li><code>InitializePairs</code>、<code>InitializeMethod</code></li>
-            <li>それ以外の名前は、渡し先の解析のエラーになります。<code>"powerflow"</code> と <code>"OPF"</code> では <code>arguments</code> ブロックによる MATLAB のエラー（未知の名前は <code>MATLAB:TooManyInputs</code>、不正な値は検証関数のエラー）で、ネットワークが分断されているときもそのまま伝えます。<code>"FixedInput"</code> では <code>GUILDA:resolve_options:UnknownName</code>、<code>"equilibrium"</code> では <code>InitializeEquilibriumOption</code> です。</li>
+            <li>それ以外の名前は、渡し先の解析のエラーになります。<code>"powerflow"</code> と <code>"OPF"</code> では <code>arguments</code> ブロックによる MATLAB のエラー（未知の名前は <code>MATLAB:TooManyInputs</code>、不正な値は検証関数のエラー）で、ネットワークが分断されているときもそのまま伝えます。<code>"FixedInput"</code> では <code>calculate_fixed_input_powerflow</code> の同じエラー、<code>"equilibrium"</code> では <code>InitializeEquilibriumOption</code> です。</li>
           </ul></dd>
           <dt><span lang="en">State of the network after the failure</span><span lang="ja">失敗後のネットワークの状態</span></dt>
           <dd><span lang="en">unchanged</span><span lang="ja">変更されません。</span></dd>

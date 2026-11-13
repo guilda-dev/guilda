@@ -144,7 +144,7 @@
     `get_equilibrium` は x、u を返すだけの関数になる(負荷の `obj.Z` / `obj.PQ_st` の廃止で副作用がなくなる)。
   - V、I も、x を保持していない機器のある母線は潮流解の値から始める(提案)。
 - `WarmStart=false`(**決定**): 保持値があっても、すべての機器と母線で上の潮流計算と `get_equilibrium` の初期値を使う。内部の潮流計算もフラットスタート(提案)。
-- 受け付ける Name-Value: `Method`、`Solver`、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`。他の名前は `GUILDA:resolve_options:UnknownName`。
+- 受け付ける Name-Value: `Method`、`Solver`、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`。他の名前は `GUILDA:resolve_options:UnknownName`(2026-11-13 以降は `calculate_fixed_input_powerflow` の arguments ブロックのエラー。[powerflow-structure.md](powerflow-structure.md) の 7 節)。
 - 置き場所: `@PowerNetwork/private/` の関数(新しい Solver クラスや `net.solver_*` を増やさない)。
   ウォームスタートの解は機器の平衡点そのものなので、Solver オブジェクトに解を保持する必要がない。
   方程式の組み立てに `SolverODE` の `getODEFunction` / `getODEJacobian` を流用する案もあるが、シナリオ・制御器・オフセットを含むため、専用の関数を推奨。
@@ -357,7 +357,7 @@ Xconst(x を固定して u・V・I を解く)の方程式は、機器ごとに�
   (`msg` は呼び出し元のクラスの ID しか使えないため、クラスごとに ID を持つ)。
 - `initialize`: `sct_stale.input` が空でないとき、Method なしと `"equilibrium"` は `GUILDA:PowerNetwork:InputEdited`。
   `"powerflow"` / `"OPF"` は求解して INFO `GUILDA:PowerNetwork:InputOverwritten`。成功時に `sct_stale.input` を空にする。
-- FixedInput: `@PowerNetwork/private/solve_fixed_input.m`(方程式、ブロック疎のヤコビアン、初期値、オプション)。
+- FixedInput: `@PowerNetwork/private/solve_fixed_input.m`(方程式、ブロック疎のヤコビアン、初期値、オプション)。2026-11-13 に公開メソッド `calculate_fixed_input_powerflow` に置き換えました([powerflow-structure.md](powerflow-structure.md) の 7 節)。
   `initialize.m` の `solve_fixed`(スラック母線の自動選択と失敗時の解除、島の検査、未収束のエラー)と `write_fixed_input`(書き戻し)。
   - 書き戻し: `Bus.set_equilibrium(..., "rm_PQ", rm_PQ, "c_XU", c_XU)`、`Component.set_equilibrium(..., "c_XU", {x, u})`。`c_XU` があれば `get_equilibrium` を呼ばない。
   - 結果: `ResultPF`(`s_solver` = `"FixedInput"`、`options` = Method、Solver、Tolerance、MaxIteration、WarmStart。ブランチの潮流なし)。
