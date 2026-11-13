@@ -56,7 +56,7 @@ function [rm_pf, flag, output, sct_point] = solve_fixed_input(net, c_nv)
         cv_Ibus(eq.iv_bus(k)) = cv_Ibus(eq.iv_bus(k)) + sct_point.cv_I(k);
     end
     cv_S  = cv_V .* conj(cv_Ibus);
-    rm_pf = [cv_V, cv_Ibus, complex(real(cv_S)), complex(imag(cv_S))];
+    rm_pf = [cv_V, cv_Ibus, real(cv_S), imag(cv_S)];
 end
 
 

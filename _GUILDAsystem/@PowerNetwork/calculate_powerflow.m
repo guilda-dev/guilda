@@ -92,7 +92,7 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
     cv_I  = cm_Y*cv_V;
     cv_S  = cv_V .* conj(cv_I);
     if opt.Format == "powerflow(mat)"
-        result = [cv_V, cv_I, complex(real(cv_S)), complex(imag(cv_S))];
+        result = [cv_V, cv_I, real(cv_S), imag(cv_S)];
         return
     end
     tab_pf = table(cv_V, cv_I, real(cv_S), imag(cv_S), 'VariableNames', ["V","I","P","Q"], 'RowNames', sv_bus);

@@ -165,7 +165,7 @@
 | `sv_bad`(定数プロパティ) | `sr_bad` | `BadComponentStub`、`BadControllerStub`、`test_I93_model_equilibrium` |
 | `sv_reserved`(定数プロパティ) | `sr_reserved` | `LocalController` |
 | `sv_method` | `sr_method` | `PowerNetwork/initialize` |
-| `sv_old`、`sv_new` | `sr_old`、`sr_new` | `v3_initialize_args`、`v3_simulate_args` |
+| `sv_old`、`sv_new` | `sr_old`、`sr_new` | `v3_simulate_args`(`v3_initialize_args` は 2026-11-13 に削除) |
 | `sv_field` | `sr_field` | `Scenario` |
 | `sv_col` | `sr_col` | `Scenario/export_csv`、`Scenario/import_csv` |
 | `sv_names`、`sv_in`、`sv_part` | `sr_names`、`sr_in`、`sr_part` | `tools.resolve_options` |

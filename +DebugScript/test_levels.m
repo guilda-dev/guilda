@@ -139,7 +139,6 @@ function tab = test_levels()
     "test_F3_initialize/No_eventSimulationWithLocalControllersStaysAtEquilibrium", "medium"
     "test_F3_initialize/No_eventSimulationWithGlobalControllerStaysAtEquilibrium", "medium"
     "test_F3_initialize/InitializeFromXequilibrium", "medium"
-    "test_F3_initialize/DeprecatedMethodsOptionAndValuesWarn", "medium"
     "test_F3_initialize/EquilibriumVoltageAndCurrentHaveASingleOwner", "medium"
     "test_F3_initialize/FixedInputWithTheHeldInputsKeepsTheEquilibrium", "medium"
     "test_F3_initialize/set_inputMakesTheInputsStaleUntilFixedInput", "medium"

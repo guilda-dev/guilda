@@ -6,6 +6,12 @@ const updateLogData = [
     "content": "The display and drawing methods of PowerNetwork are renamed to the verbs of the rest of the API: net.info is now net.disp_summary, net.draw_diagram is now net.plot_diagram, and net.draw_spring_model is now net.plot_spring_model. Options, outputs and behaviour are unchanged. The old names are removed, so scripts that call them need updating."
   },
   {
+    "title": "Old initialize options removed",
+    "date": "2026-11-13",
+    "type": "feature",
+    "content": "net.initialize no longer accepts the option methods or the values \"powerflow calculation\", \"optimal powerflow\" and \"calculate from Xequilibrium\", which used to work with a warning. Use Method=\"powerflow\", \"OPF\" or \"equilibrium\". Scripts that still use the old forms now stop with an error."
+  },
+  {
     "title": "Simulate a scenario by its tag",
     "date": "2026-11-13",
     "type": "feature",

@@ -375,7 +375,7 @@ IEEE68bus の `linearize` のプロファイル(合計 4.9 s、プロファイ�
 
 - `get_sys` 専用の変換はありません。旧 `[sys, lin] = net.get_sys()` は例外も警告も出さず、`lin` が logical の `flag` になります **[実行 E15]**。意図された仕様で、移行ガイドに記載があります(`notes/v4-migration.md:32`)。
 - `odeLinearizer(net, ...)` は `GUILDA:Deprecated:OdeLinearizerConstructor` で止まります(`_VersionSupport/v3_linearizer_constructor.m`)。
-- `initialize` は `v3_initialize_args`、`simulate` は `v3_simulate_args` で旧名を変換します(`@PowerNetwork/initialize.m:44`, `@PowerNetwork/simulate.m:54`)。
+- `simulate` は `v3_simulate_args` で旧名を変換します(`@PowerNetwork/simulate.m:54`)。`initialize` の `v3_initialize_args` は 2026-11-13 に削除しました。
 - `comp.para_base` と `comp.tab_parameter.base` は `ComponentBaseView` で互換を保ちます(`@Component/Component.m:255,263,269,271`)。
 - `Bus.get_sys` の `full`, `con` は「古い呼び出しのために残した無視される引数」です(`@Bus/get_sys.m:22-23`)。
 
