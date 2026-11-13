@@ -35,9 +35,11 @@ function [s_solver, c_nv] = optimoption(obj, prob, sct_options)
     c_opt = {};
     sct_cfg = GUILDA.config("OptimalPowerFlow");     % settings <Solver><option>
     s_pre = upper(extractBefore(s_solver, 2)) + extractAfter(s_solver, 1);    % key prefix of the solver: "Fmincon"
-    o_def = optimoptions(s_solver);
-    if sct_cfg.(s_pre + "Algorithm").Value ~= o_def.Algorithm
-        c_opt = [c_opt, {"Algorithm", sct_cfg.(s_pre + "Algorithm").Value}];
+    if isfield(sct_cfg, s_pre + "Algorithm")     % none for a solver that solve chooses itself (e.g. lsqlin)
+        o_def = optimoptions(s_solver);
+        if sct_cfg.(s_pre + "Algorithm").Value ~= o_def.Algorithm
+            c_opt = [c_opt, {"Algorithm", sct_cfg.(s_pre + "Algorithm").Value}];
+        end
     end
     if sct_options.Verbose
         c_opt = [c_opt, {"Display", "iter"}];
