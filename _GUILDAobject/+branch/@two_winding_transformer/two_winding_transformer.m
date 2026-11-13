@@ -5,6 +5,13 @@ classdef two_winding_transformer < Branch
 % phase shift (set with "Tap" and "Phase" in PowerNetwork.add_branch).
 % Other values are in per unit on the network base.
 %
+% R, X and C are the values of all circuits together (tab_parameter.dynamics.circuit,
+% default 2). get_admittance_matrix(Status=, Point=) also gives the branch with one or all
+% circuits grounded ("3LG", "6LG") or open ("3open", "6open"); see Branch. The ideal
+% transformer is taken to be at the from end, and Point (0 < Point < 1) is the fault
+% position on the series impedance after it. Common simulators place a transformer fault
+% on a terminal bus and only open a transformer; GUILDA also accepts the fault states.
+%
 % <@Examples>
 % Add a transformer with tap 0.969 between buses 1 and 2 of a network:
 %

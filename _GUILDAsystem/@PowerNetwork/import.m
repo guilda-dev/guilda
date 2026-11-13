@@ -96,11 +96,12 @@ function net = import(path, opt)
 
     % Branch
     sr_BraReq    = ["Type", "From", "To"];
-    sr_BraOpt    = ["R", "X", "C", "Tap", "Phase", "Smax", "Imax", "Pmax", "Qmax", "Vargmax", ...
+    sr_BraOpt    = ["R", "X", "C", "Tap", "Phase", "Circuit", "Smax", "Imax", "Pmax", "Qmax", "Vargmax", ...
                     "MidXaxis","MidYaxis","Marker"];
     tab_bra = read_csv(path, "branch/parameter.csv");
-    % export writes "tap"/"phase" (the Branch parameter names); "Tap"/"Phase" (the add_branch names) are also accepted
-    tab_bra = rename_cols(tab_bra, ["tap","phase"], ["Tap","Phase"], "branch/parameter.csv");
+    % export writes "tap"/"phase"/"circuit" (the Branch parameter names); "Tap"/"Phase"/"Circuit" (the add_branch names) are also accepted.
+    % Without the circuit column, add_branch gives 2 circuits.
+    tab_bra = rename_cols(tab_bra, ["tap","phase","circuit"], ["Tap","Phase","Circuit"], "branch/parameter.csv");
     sr_BraOpt = check_cols(tab_bra, sr_BraReq, sr_BraOpt, "branch/parameter.csv", "FullTag");
     check_bus_rows(tab_bra, ["From", "To"], n_Bus, "branch/parameter.csv");
     sv_BraTag = read_full_tag(fullfile(path, "branch", "parameter.csv"));

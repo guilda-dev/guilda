@@ -1,0 +1,7 @@
+<!--This is an XML file containing error messages related to the class "Branch".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="InvalidPoint">Branch ''{0}'': Status "{1}" needs a fault position Point with 0 &lt; Point &lt; 1 (0 is the from end, 1 the to end), but Point = {2}.&#xA;Give it as e.g. Point=0.5. For a fault at an end of the branch, give a bus fault on the end bus instead: sc.add_fault(BUS_TAG, [t1, t2]).</entry>
+        <entry key="SingleCircuit">Branch ''{0}'' has one circuit (tab_parameter.dynamics.circuit = 1), so it has no Status "{1}", which acts on one of several circuits.&#xA;Use "6LG" or "6open" for the whole branch, or set the number of circuits: net.add_branch(..., Circuit=n) or br.tab_parameter.dynamics.circuit = n.</entry>
+    </message>
+</rsccat>

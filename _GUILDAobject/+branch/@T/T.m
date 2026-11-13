@@ -4,6 +4,11 @@ classdef T < Branch
 % admittance `1j*C` sits between them, so `C` is the total line charging.
 % All values are in per unit on the network base.
 %
+% R, X and C are the values of all circuits together (tab_parameter.dynamics.circuit,
+% default 2). get_admittance_matrix(Status=, Point=) also gives the line with one or all
+% circuits grounded ("3LG", "6LG" at Point from the from end, 0 < Point < 1) or open
+% ("3open", "6open"); see Branch.
+%
 % ```
 %  ---[(R+jX)/2]---+---[(R+jX)/2]---
 %                  |
