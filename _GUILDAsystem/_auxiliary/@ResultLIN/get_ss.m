@@ -54,7 +54,7 @@ function sys = get_ss(obj, Type, opt)
 % See also PowerSystemModel.get_sys, SolverLIN.reduce, ResultLIN.Type, ResultLIN.plot_eigenvalue
     arguments (Input)
         obj
-        Type (1,1) string {mustBeMember(Type, ["ODE","DAE"])} = default_type(obj) % Model: "ODE" (the bus voltages eliminated) or "DAE" (the connected model). Default: the Type of the result.
+        Type (1,1) string {mustBeMember(Type, ["ODE","DAE"])} = default_type(obj) % Model: "ODE" (the bus voltages eliminated) or "DAE" (the connected model). Default: res.Type.
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = default_coordinate(obj) % Bus variables of "DAE": angle and log magnitude (rho), angle and magnitude, or real and imaginary parts. Default: options.Coordinate of the result.
         opt.Input (1,:) string % Inputs of the model: "u" or Labels. Default: all inputs.
         opt.Output (1,:) string % Outputs of the model: "x", "V", "I", "y" or names. Default: as described for each algorithm.
@@ -155,10 +155,7 @@ end
 
 
 function str = default_type(obj)
-    str = "ODE";
-    if isfield(obj.options, "Type")
-        str = obj.options.Type;
-    end
+    str = obj.Type;
 end
 
 function str = default_coordinate(obj)

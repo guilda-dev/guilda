@@ -15,19 +15,23 @@ classdef ResultLIN < ResultBase
 % of the analysis). The algebraic equations are the current balance of each bus,
 % 0 = (Y v - I of the components), in the order of v. The values are deviations from the
 % point rv_point. Y is the admittance matrix of the model, also at a point inside a fault.
-% get_ss returns a reduced model ("Kron" or "DAE"); plot_eigenvalue draws the eigenvalue map.
+% get_ss returns the model of a Type ("ODE": the bus voltages eliminated, or "DAE"),
+% get_contribution the part of each element in the DAE, and plot_eigenvalue draws the
+% eigenvalue map.
 %
 % The properties A, B, C, D, E, StateName, InputName and OutputName hold one linear model
 % (E dx/dt = A x + B u, y = C x + D u) with the names of the states, inputs and outputs, as
-% in a state-space (ss) object, without the Control System Toolbox: get_ss(options.Method)
-% with the Input and Output of get_sys. They are empty when get_ss stops (flag false);
-% get_ss gives the reason.
+% in a state-space (ss) object, without the Control System Toolbox: get_ss(Type) with the
+% Input, Output and Coordinate of get_sys. They are computed from the DAE when read, and
+% Type chooses the model: its default is the Type of get_sys, and setting it (res.Type =
+% "DAE") switches all of them. They are empty when get_ss stops (flag false, or "ODE" with
+% a singular Avv); get_ss gives the reason.
 %
 % A result of comp.get_sys, bus.get_sys, con.get_sys or gc.get_sys (output.s_layer
 % "Component", "Bus", "LocalController" or "GlobalController") holds the port model of the
 % layer in A ... OutputName (see PowerSystemModel.get_sys), the point rv_point and the
 % blocks rm_Axx, rm_Axv (the voltage inputs), rm_Bx (the other inputs of tab_variable)
-% and rm_E. get_ss returns that model, and Method and Coordinate do not apply.
+% and rm_E. get_ss returns that model, and Type and Coordinate do not apply.
 %
 % - `tab_variable` has one row per variable with Index, Kind, Role, Owner, Name, Label, Bus
 %   and Equilibrium: the leading rows x, Vre, Vim, u of the variable map of the layer (for
@@ -35,8 +39,9 @@ classdef ResultLIN < ResultBase
 % - `sct_model` holds the connected model (field sct_sys: the descriptor model over
 %   [x; v] with its outputs, from SolverLIN.solve) and, for the network, the admittance
 %   matrix, the bus voltages at the point and the names of the bus currents: used by the
-%   coordinates of get_ss("DAE") and its Output option. The result holds computed values
-%   only; the network is not changed.
+%   coordinates of get_ss("DAE") and its Output option; sct_sys also holds the terms of
+%   each element (sct_term) and their classes (tab_owner) for get_contribution. The
+%   result holds computed values only; the network is not changed.
 %
 % <@Examples>
 % ```matlab
@@ -44,9 +49,11 @@ classdef ResultLIN < ResultBase
 % net.initialize();
 % [result, flag] = net.get_sys();
 % eig(full(result.rm_Axx))          % Jacobian blocks of the unreduced DAE
-% eig(result.A, result.E)           % model of options.Method
-% sct = result.get_ss("Kron", Format="struct");   % reduced model as a struct
-% sys = result.get_ss("Kron");      % ss object (Control System Toolbox)
+% eig(result.A, result.E)           % model of result.Type (the Type of get_sys)
+% result.Type = "DAE";              % A ... OutputName are now the DAE
+% sct = result.get_ss("ODE", Format="struct");   % reduced model as a struct
+% sys = result.get_ss("ODE");       % ss object (Control System Toolbox)
+% sct_gen = result.get_contribution("component.generator.abstract");   % part of the generators in the DAE
 % result.plot_eigenvalue();                    % eigenvalue map
 % ```
 %
@@ -63,18 +70,24 @@ classdef ResultLIN < ResultBase
         rm_Bv double = zeros(0,0)              % Jacobian of the bus current balance (Y v - I) with respect to the inputs.
         rm_E double = zeros(0,0)               % Mass matrix of the state equations (the algebraic equations have none).
     end
-    properties (SetAccess=private) % Model
-        A double = zeros(0,0)                  % State matrix of the model (E dx/dt = A x + B u, y = C x + D u): get_ss(options.Method) with the Input and Output of get_sys.
-        B double = zeros(0,0)                  % Input matrix of the model.
-        C double = zeros(0,0)                  % Output matrix of the model.
-        D double = zeros(0,0)                  % Feedthrough matrix of the model.
-        E double = zeros(0,0)                  % Mass matrix of the model (singular for "DAE").
-        StateName (:,1) string = strings(0,1)  % Names of the states of the model.
-        InputName (:,1) string = strings(0,1)  % Names of the inputs of the model.
-        OutputName (:,1) string = strings(0,1) % Names of the outputs of the model (the network has none by default).
+    properties % Model
+        Type (1,1) string {mustBeMember(Type, ["ODE","DAE"])} = "ODE"   % Model of A ... OutputName: "ODE" (the bus voltages eliminated) or "DAE" (the connected model). Default: the Type of get_sys.
+    end
+    properties (Dependent, SetAccess=private) % Model
+        A          % State matrix of the model (E dx/dt = A x + B u, y = C x + D u): get_ss(Type) with the Input and Output of get_sys. <@Type> double
+        B          % Input matrix of the model. <@Type> double
+        C          % Output matrix of the model. <@Type> double
+        D          % Feedthrough matrix of the model. <@Type> double
+        E          % Mass matrix of the model (singular for "DAE"). <@Type> double
+        StateName  % Names of the states of the model. <@Type> string (:,1)
+        InputName  % Names of the inputs of the model. <@Type> string (:,1)
+        OutputName % Names of the outputs of the model (the network has none by default). <@Type> string (:,1)
     end
     properties (SetAccess=private, Hidden) % Model data
         sct_model struct = struct()            % Data of get_ss: the connected model sct_sys and, for the network, cm_Y, cv_V, sv_I (see the class help).
+    end
+    properties (Access=private, Hidden) % Cache
+        sct_cache struct = struct()            % Models of A ... OutputName by Type, computed when first read.
     end
 
     methods
@@ -98,6 +111,9 @@ classdef ResultLIN < ResultBase
                 obj % The result object.
             end
             obj@ResultBase(net, solver, options, flag, output, elapsed);
+            if isfield(options, "Type")
+                obj.Type = options.Type;
+            end
             obj.tab_variable = tab_variable;
             obj.rv_point     = rv_point(:);
             obj.sct_model    = struct("sct_sys", sct_sys);
@@ -125,26 +141,69 @@ classdef ResultLIN < ResultBase
                     obj.sct_model.(s) = sct_sys.(s);
                 end
             end
+        end
 
-            % The model: get_ss(Method) with the Input and Output of get_sys
-            c_nv = cell(1,0);
-            for str = ["Input","Output"]
-                if isfield(options, str)
-                    c_nv = [c_nv, {str, options.(str)}]; %#ok<AGROW>
-                end
-            end
-            try
-                sct = obj.get_ss(c_nv{:}, Format="struct");
-                for str = ["A","B","C","D","E","StateName","InputName","OutputName"]
-                    obj.(str) = sct.(str);
-                end
-            catch
-                % flag false or no model for these channels: get_ss gives the reason
-            end
+        function v = get.A(obj)
+            obj.sct_cache = fill_cache(obj, obj.sct_cache);
+            v = obj.sct_cache.(obj.Type).A;
+        end
+        function v = get.B(obj)
+            obj.sct_cache = fill_cache(obj, obj.sct_cache);
+            v = obj.sct_cache.(obj.Type).B;
+        end
+        function v = get.C(obj)
+            obj.sct_cache = fill_cache(obj, obj.sct_cache);
+            v = obj.sct_cache.(obj.Type).C;
+        end
+        function v = get.D(obj)
+            obj.sct_cache = fill_cache(obj, obj.sct_cache);
+            v = obj.sct_cache.(obj.Type).D;
+        end
+        function v = get.E(obj)
+            obj.sct_cache = fill_cache(obj, obj.sct_cache);
+            v = obj.sct_cache.(obj.Type).E;
+        end
+        function v = get.StateName(obj)
+            obj.sct_cache = fill_cache(obj, obj.sct_cache);
+            v = obj.sct_cache.(obj.Type).StateName;
+        end
+        function v = get.InputName(obj)
+            obj.sct_cache = fill_cache(obj, obj.sct_cache);
+            v = obj.sct_cache.(obj.Type).InputName;
+        end
+        function v = get.OutputName(obj)
+            obj.sct_cache = fill_cache(obj, obj.sct_cache);
+            v = obj.sct_cache.(obj.Type).OutputName;
         end
 
         sys = get_ss(obj, Type, opt)
         fig = plot_eigenvalue(obj, opt)
     end
+end
+
+
+function sct_cache = fill_cache(obj, sct_cache)
+% Adds the model of obj.Type to the cache: get_ss(Type) with the Input and Output of
+% get_sys, or an empty model when get_ss stops (flag false: get_ss gives the reason)
+    s_type = obj.Type;
+    if isfield(sct_cache, s_type)
+        return
+    end
+    c_nv = cell(1,0);
+    for str = ["Input","Output"]
+        if isfield(obj.options, str)
+            c_nv = [c_nv, {str, obj.options.(str)}]; %#ok<AGROW>
+        end
+    end
+    sct = struct("A", zeros(0,0), "B", zeros(0,0), "C", zeros(0,0), "D", zeros(0,0), "E", zeros(0,0), ...
+                 "StateName", strings(0,1), "InputName", strings(0,1), "OutputName", strings(0,1));
+    if ~isempty(obj.tab_variable) && isfield(obj.sct_model, "sct_sys") && isfield(obj.sct_model.sct_sys, "A")
+        try
+            sct = obj.get_ss(s_type, c_nv{:}, Format="struct");
+        catch
+            % no model of this Type: get_ss gives the reason
+        end
+    end
+    sct_cache.(s_type) = sct;
 end
 

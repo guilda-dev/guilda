@@ -521,7 +521,7 @@ for k = 1:numel(nets)
     res = nets{k}.get_sys();
     for alg = ["ODE","DAE"]
         sys_new = res.get_ss(alg);
-        sys_old = DebugScript.helper.linearize_v3(nets{k}, [], alg);
+        sys_old = DebugScript.helper.linearize_v3(nets{k}, [], replace(alg, "ODE", "Kron"));   % v3 の名前
         str = nets{k}.s_tag + " " + alg;
         B_old = sys_old.B;
         if alg == "DAE"
@@ -1367,6 +1367,57 @@ end
 clear c_tmp
 
 
+%% Type switches the model of the result
+% res.Type は A ... OutputName のモデルを選ぶ。既定は get_sys の Type。結果は DAE を持つので線形化は 1 回
+res = net.get_sys();
+assert(res.Type == "ODE" && net.get_sys(Type="DAE").Type == "DAE")
+sO = res.get_ss("ODE", Format="struct");
+sD = res.get_ss("DAE", Format="struct");
+for s = ["A","B","C","D","E","StateName","InputName","OutputName"]
+    assert(isequal(res.(s), sO.(s)), "ODE: " + s)
+end
+res.Type = "DAE";
+for s = ["A","B","C","D","E","StateName","InputName","OutputName"]
+    assert(isequal(res.(s), sD.(s)), "DAE: " + s)
+end
+assert(size(res.A,1) == size(sO.A,1) + 2*numel(net.a_Bus) && rank(res.E) == rank(sO.E))
+res.Type = "ODE";
+assert(isequal(res.A, sO.A) && isequal(res.E, sO.E))
+assert(error_id(@() set_type(res, "Kron")) ~= "")
+% Input, Output, Coordinate の選択は Type を変えても同じ
+resV = net.get_sys(Output="V", Coordinate="Vre&Vim");
+nO = numel(resV.OutputName);
+resV.Type = "DAE";
+assert(numel(resV.OutputName) == nO && isequal(resV.C, resV.get_ss("DAE", Output="V", Coordinate="Vre&Vim", Format="struct").C))
+assert(all(startsWith(resV.StateName(end-1:end), "Vim")))
+
+
+%% Reduce eliminates the algebraic variables of a DAE
+% SolverLIN.reduce は E が 0 の行と列 (母線電圧) を消去する。get_ss("ODE") はこれを使う
+res = net.get_sys();
+sD = res.get_ss("DAE", Coordinate="Vre&Vim", Format="struct");
+sR = SolverLIN.reduce(sD);
+sO = res.get_ss("ODE", Format="struct");
+assert(isequal(sR.StateName, sO.StateName) && isequal(sR.InputName, sO.InputName))
+for s = ["A","B","C","D","E"]
+    assert(norm(sR.(s) - sO.(s), Inf) <= 1e-12*max(1, norm(sO.(s), Inf)), s)
+end
+% 極座標の DAE でも消去した結果は同じ
+sR2 = SolverLIN.reduce(res.get_ss("DAE", Coordinate="theta&rho", Format="struct"));
+assert(norm(sR2.A - sO.A, Inf) <= 1e-9*norm(sO.A, Inf))
+% 代数変数のないモデルはそのまま
+sP = net.a_Bus{1}.a_Component{1}.get_sys(Format="struct");
+assert(isequal(SolverLIN.reduce(sP).A, sP.A))
+% 代数変数の部分が特異なら止まる
+sS = struct("A", [-1 1; 1 0], "B", [1; 0], "C", [1 0], "D", 0, "E", diag([1 0]), ...
+            "StateName", ["x";"z"], "InputName", "u", "OutputName", "y");
+sS.A(2,2) = 0;  sS.A(2,1) = 0;
+assert(error_id(@() SolverLIN.reduce(sS)) == "GUILDA:SolverLIN:SingularAvv")
+sS.A(2,2) = 2;
+sRS = SolverLIN.reduce(sS);
+assert(sRS.StateName == "x" && abs(sRS.A - (-1 - 1*0/2)) < 1e-15 && abs(sRS.C - 1) < 1e-15)
+
+
 %% Linear models match the reference values
 % 接続器 SolverLIN に置き換える前のコードで求めた基準値 (+helper/linearization_reference.mat) と、
 % 網 (rm_*, ODE, DAE)・機器・母線・LC・GC のモデルが数値精度で一致する (Issue #121)
@@ -1382,6 +1433,12 @@ assert(all(tab.Diff <= 1e-9), "基準値と違う: %s", strjoin(tab.Case(tab.Dif
 function run_task_linearization()
 % スクリプトの変数がテストの変数と混ざらないように関数の中で実行する
     DebugScript.Task_linearization
+end
+
+
+function set_type(res, s_type)
+% res.Type に代入する (error_id で検証のエラーを調べるため)
+    res.Type = s_type;
 end
 
 

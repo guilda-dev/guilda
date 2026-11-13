@@ -9,7 +9,7 @@ function fig = plot_eigenvalue(obj, opt)
 % during the linearization).
     arguments (Input)
         obj
-        opt.Type (1,1) string {mustBeMember(opt.Type, ["ODE","DAE"])} = default_type(obj) % Model whose eigenvalues are drawn: "ODE" or "DAE". Default: the Type of the result.
+        opt.Type (1,1) string {mustBeMember(opt.Type, ["ODE","DAE"])} = default_type(obj) % Model whose eigenvalues are drawn: "ODE" or "DAE". Default: res.Type.
         opt.Tolerance (1,1) double {mustBeNonnegative} = 1e-6 % Real part above which an eigenvalue is drawn as unstable.
         opt.Parent = [] % Container to draw in. A new figure when empty.
     end
@@ -47,9 +47,6 @@ end
 
 
 function str = default_type(obj)
-% Type of the linearization ("ODE" when the result has none)
-    str = "ODE";
-    if isfield(obj.options, "Type")
-        str = obj.options.Type;
-    end
+% Type of the result (res.Type)
+    str = obj.Type;
 end
