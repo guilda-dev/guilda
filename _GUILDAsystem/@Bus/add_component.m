@@ -34,6 +34,8 @@ function comp = add_component(obj,Key,opt)
         opt.Xaxis            (1,1) double = nan;   % x coordinate in network diagrams (NaN = automatic layout).
         opt.Yaxis            (1,1) double = nan;   % y coordinate in network diagrams (NaN = automatic layout).
         opt.Marker           (1,1) string = "o";   % Marker of the component in network diagrams.
+        opt.MarkerSize       (1,1) double = nan;   % Marker size in network drawings (NaN = drawer default).
+        opt.Color            (1,1) string = "";   % Color in network drawings: a MATLAB color name or "#RRGGBB" ("" = drawer default).
         opt.MidXaxis         (1,1) string = "";   % x coordinates of intermediate points of the connection line in network diagrams.
         opt.MidYaxis         (1,1) string = "";   % y coordinates of intermediate points of the connection line in network diagrams.
     end

@@ -23,6 +23,8 @@
       {"name":"Xaxis","kind":"namevalue","type":["double"],"purpose":"x coordinate in network diagrams (NaN = automatic layout). Default: nan."},
       {"name":"Yaxis","kind":"namevalue","type":["double"],"purpose":"y coordinate in network diagrams (NaN = automatic layout). Default: nan."},
       {"name":"Marker","kind":"namevalue","type":["string"],"purpose":"Marker of the component in network diagrams. Default: \"o\"."},
+      {"name":"MarkerSize","kind":"namevalue","type":["double"],"purpose":"Marker size in network drawings (NaN = drawer default). Default: nan."},
+      {"name":"Color","kind":"namevalue","type":["string"],"purpose":"Color in network drawings: a MATLAB color name or \"#RRGGBB\" (\"\" = drawer default). Default: \"\"."},
       {"name":"MidXaxis","kind":"namevalue","type":["string"],"purpose":"x coordinates of intermediate points of the connection line in network diagrams. Default: \"\"."},
       {"name":"MidYaxis","kind":"namevalue","type":["string"],"purpose":"y coordinates of intermediate points of the connection line in network diagrams. Default: \"\"."}
     ],
