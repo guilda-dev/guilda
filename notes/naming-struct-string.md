@@ -47,7 +47,7 @@
 | `str_bad` | `sv_bad` | `test_F10_api_foundation.m` |
 | `str_body` | `sv_body` | `+tools/next_tag_number.m` |
 | `str_br` | `sv_br` | `@ResultOPF/Plot.m` |
-| `str_Bra` | `sv_Bra` | `@PowerNetwork/draw_spring_model.m` |
+| `str_Bra` | `sv_Bra` | `@PowerNetwork/plot_spring_model.m` |
 | `str_bra` | `sv_bra` | `@SolverOPF/solve.m` |
 | `str_branch` | `sv_branch` | `+tools/network_to_mpc.m`, `@DrawerNetDiagram/DrawerNetDiagram.m`, `@DrawerNetDiagram/hover_branch.m`, `@DrawerNetDiagram/set_network.m`, `@SolverOPF/solve.m`, `@SolverPF/solve.m` |
 | `str_BraOpt` | `sr_BraOpt` | `@PowerNetwork/import_csv.m` |
@@ -55,7 +55,7 @@
 | `str_BraTag` | `sv_BraTag` | `@PowerNetwork/import_csv.m` |
 | `str_Bus` | `sr_Bus` | `@PowerNetwork/add_branch.template` |
 | `str_bus` | `sr_bus` | `test_F8_utilities.m` |
-| `str_Bus` | `sv_Bus` | `test_I56_initialize_equilibrium.m`, `test_I89_slack_cannot_balance.m`, `test_I90_auto_slack_selection.m`, `test_I91_slack_power_assignment.m`, `test_I92_network_islands.m`, `@PowerNetwork/draw_spring_model.m`, `@PowerNetwork/export_csv.m`, `@PowerNetwork/get_admittance_matrix.m`, `@PowerNetwork/initialize.m` |
+| `str_Bus` | `sv_Bus` | `test_I56_initialize_equilibrium.m`, `test_I89_slack_cannot_balance.m`, `test_I90_auto_slack_selection.m`, `test_I91_slack_power_assignment.m`, `test_I92_network_islands.m`, `@PowerNetwork/plot_spring_model.m`, `@PowerNetwork/export_csv.m`, `@PowerNetwork/get_admittance_matrix.m`, `@PowerNetwork/initialize.m` |
 | `str_bus` | `sv_bus` | `+helper/branch_losses.m`, `test_F4_opf.m`, `+tools/network_to_mpc.m`, `@Branch/build_opf_problem.m`, `@PowerNetwork/export_csv.m`, `+opffcn/variables.m`, `@DrawerNetDiagram/DrawerNetDiagram.m`, `@DrawerNetDiagram/hover_bus.m`, `@DrawerNetDiagram/reflect_node_label.m`, `@DrawerNetDiagram/set_network.m`, `@ResultOPF/Plot.m`, `@ResultPF/Export.m`, `@ResultPF/Plot.m`, `@SolverPF/solve.m` |
 | `str_bus2bus` | `sm_bus2bus` | `@DrawerNetDiagram/set_network.m` |
 | `str_BusOpt` | `sr_BusOpt` | `@PowerNetwork/import_csv.m` |
@@ -78,7 +78,7 @@
 | `str_const` | `sv_const` | `@PowerNetwork/build_opf_problem.m` |
 | `str_ctrl` | `sv_ctrl` | `@PowerNetwork/remove_bus.m` |
 | `str_cub` | `sv_cub` | `@SolverOPF/solve.m` |
-| `str_edge` | `sm_edge` | `@PowerNetwork/draw_spring_model.m` |
+| `str_edge` | `sm_edge` | `@PowerNetwork/plot_spring_model.m` |
 | `str_edit` | `sv_edit` | `@PowerNetwork/check_edit.m`, `@PowerNetwork/initialize.m` |
 | `str_end` | `sv_end` | `test_F4_opf.m`, `+opffcn/variables.m`, `@SolverOPF/solve.m` |
 | `str_evt` | `sr_evt` | `@SolverODE/SolverODE.m` |
@@ -142,7 +142,7 @@
 | `str_templates` | `sr_templates` | `test_F8_utilities.m` |
 | `str_to` | `sv_to` | `test_F2_powerflow.m` |
 | `str_trip` | `sv_trip` | `@SolverODE/SolverODE.m` |
-| `str_type` | `sv_type` | `test_F2_powerflow.m`, `test_F8_utilities.m`, `@PowerNetwork/draw_spring_model.m` |
+| `str_type` | `sv_type` | `test_F2_powerflow.m`, `test_F8_utilities.m`, `@PowerNetwork/plot_spring_model.m` |
 | `str_u` | `sv_u` | `+helper/linearize_v3.m`, `@ResultLIN/get_ss.m`, `@SolverLIN/solve.m` |
 | `str_usable` | `sr_usable` | `@SolverOPF/optimoption.m` |
 | `str_written` | `sr_written` | `@PowerNetwork/import_csv.m` |
@@ -153,7 +153,7 @@
 
 - 大きさが変わる変数は、通常の大きさにしました。`dictionary.m` の `str_parent` は最初はスカラーで、その後は列になるので `sv_parent`。`Scenario/compile.m` の `str_dup` は重複の列を作った直後に先頭の 1 つにするので `s_dup`。
 - 同じファイルで大きさの違う使い方をしている所は、行の範囲で分けました: `test_F16_csv_io` と `test_F1_model_building` の `str_tag`(ループのスカラーと、`string(net.a_Branch)` の列)、`test_F4_opf` の `str_bus`、`test_F7_linearization` の `str_id`、`publish_doc` の `str_pattern`(ループのスカラーと cell の行)、`get_ss` の `str_busvar`(`coordinate_filter` では列 `sv_busvar`、呼び出し側では行 `sr_busvar`)、`import_csv` の `str_tag`(`read_full_tag` の出力と `sct_comp` のフィールドは列 `sv_tag`、`set_full_tag` の引数はスカラー)。
-- `Branch.a_Bus` は 2x1 の cell なので、`string(br.a_Bus)` は列(`sv_bus`、`sv_end`)。`draw_spring_model` の `str_edge`(N x 2)と `set_network` の `str_bus2bus`(2 x N)は `sm_`。
+- `Branch.a_Bus` は 2x1 の cell なので、`string(br.a_Bus)` は列(`sv_bus`、`sv_end`)。`plot_spring_model` の `str_edge`(N x 2)と `set_network` の `str_bus2bus`(2 x N)は `sm_`。
 - `LayerPackage.attach_tag` の引数 `str_name_list` は `(:,:) string` と宣言されているので `sm_name_list`。
 - 文字列でないもの: `ResultODE` の `str_key` は関数ハンドルなので `f_key`、`import_csv` の `str_CompDir` は `dir` の構造体なので `sct_CompDir`。
 - 既存の名前との衝突: `SolverLIN/solve` の主関数では、母線ごとのループの `sv_u` と、その後の入力名の列 `str_u` → `sv_u` が同じ名前になります。ループの値はループの中でしか使わないので、動作は変わりません。`linearize_v3`、`get_ss`、`test_F7_linearization` の `sv_x`/`sv_u` は別の関数かテストのセクションで、衝突しません。
