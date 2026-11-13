@@ -578,3 +578,11 @@ s_tag = add_trip(obj, unit, time)
 | Q13 | IEEJ の系統の回線数 | **N1 で設定**: EAST10・WEST10 の回線のブランチは `Circuit=1`、WEST30 はカードの n。変圧器は 1(バンク数が分かればその数) |
 | 行列 | シミュレーションの行列の作り方 | `PowerNetwork.get_admittance_matrix` に `BranchStatus`(列 `Target`, `Status`, `Point`、既定はすべて閉じた状態)。`build_simulation_data` は区間の状態の異なる組ごとに 1 回呼び、行列のセルと区間ごとの位置を `SolverODE` に渡す。ブランチごとのスタンプと別の補助関数は置かない。母線の故障はソルバーで V = 0 |
 | 名前 | simulate の private 関数 | `simulateFcn_<名前>`(§0.4) |
+
+## 実装の状況(E1)
+
+ブランチ `feature/scenario-event-table`(基準 `7f6154c5`)。§3 のシナリオの表と API を実装し、`compile` は新しい表から今と同じ `sct_event` を作ります。
+
+- 決めたこと(仕様にない細部): `add_events` と `add_record` は `add_scenario(From=)` から呼ぶため `Access={?PowerNetwork, ?Scenario}`(公開ではない)。行の形の誤り(対象ごとに 2 行でない、終了の Status が `none`/`close` でない、機器に `3open`/`6open` など)は新しい ID `GUILDA:Scenario:InvalidEventRows`。`SingleCircuit` は `Scenario.xml` に置いただけで、検査は E2(回線数は B1)。オフセットと入力を持たない `add_disturbance` は区間の目印として、1 つの時刻なら `tab_offset`、期間なら `tab_input` に 1 行を入れる(F6 の「何もしないイベント」)。オフセットだけの `add_disturbance` に `[t1 t2]` を与えたときは `t1` だけを残す。JSON の `version` が 2 でないものと、同じタグのオフセットと入力の開始時刻が違うものは `ScenarioJson`。`PowerNetwork.xml` の `ScenarioJson` の本文の「version 1」を「version 2」にした(1 行)。
+- テスト: small 535 件(PASS 533 / KNOWN 1 / SKIP 1)、medium 723 件(F6 の Verbose の列名を直した後 FAIL 0)。`simulate_baseline(Mode="compare")`: 6 例すべて `isequaln`(`phases` は列名を §3.6 の対応で読み替え)。
+- `_GUILDAverification/IEEJ_EAST10/compare_table4_3(Sections="peak")`(調速機あり): 14 of 21 で README の記録(2026-11-04)と同じ。

@@ -166,19 +166,22 @@ a_fig = findall(groot, "Type", "figure");
 assert(numel(a_fig) == n_fig + 1 && any(string({a_fig.Name}) == "Bus B001"))
 
 
-%% A scenario shows its disturbances and settings, without a Parameter tab
+%% A scenario shows its events, offsets, inputs and settings, without a Parameter tab
 sc = net.add_scenario("case1", Description="fault and ramp");
 sc.add_fault("B008", [1,1.05]);
 sc.add_input("B002SG1", "Pmech", [0, 0; 1, 0.1], [1,3]);
 h = sc.gui();
 assert(h.a_target == sc && contains(header_text(h), "case1") && contains(header_text(h), "Scenario"))
-assert(isequal(tab_titles(h), ["Disturbances","Settings"]) && isempty(parameter_tables(h)))
+assert(isequal(tab_titles(h), ["Events","Offsets","Inputs","Settings"]) && isempty(parameter_tables(h)))
 assert(isempty(cards(h)) && contains(stale_text(h), "none"))
 [h_crumb, l_link] = breadcrumb(h);
 assert(numel(h_crumb) == 2 && isequal(l_link, [true false]) && h_crumb(1).UserData == net)
-tab = page_data(h, "Disturbances");
-assert(height(tab) == 2 && isequal(tab.Tag, ["fault1";"input1"]) && tab.FaultBus(1) == "B008")
-assert(tab.TimeSpan(1) == "[1 1.05]" && tab.InputValue(2) == "[0 0;1 0.1]" && tab.InputMethod(2) == "foh")
+tab = page_data(h, "Events");
+assert(height(tab) == 2 && isequal(tab.Tag, ["Fault001";"Fault001"]) && isequal(tab.Target, ["B008";"B008"]))
+assert(isequal(tab.Time, ["1";"1.05"]) && isequal(tab.Status, ["BG";"none"]) && tab.Point(1) == "NaN")
+assert(height(page_data(h, "Offsets")) == 0)
+tab = page_data(h, "Inputs");
+assert(height(tab) == 1 && tab.Tag == "input1" && tab.TimeSpan == "[1 3]" && tab.InputValue == "[0 0;1 0.1]" && tab.InputMethod == "foh")
 tab = page_data(h, "Settings");
 assert(isequal(tab.Value, ["[0 10]"; "fault and ramp"]))
 % The card of the network opens the scenario in a new window

@@ -1,5 +1,10 @@
 function validate_disturbance(d, s_scenario, net)
-% Checks of one disturbance; with net = [], only those without the network.
+% Checks of one offset and input record; with net = [], only those without the network.
+    arguments (Input)
+        d           % Record (struct with the fields of add_disturbance, see blank_record).
+        s_scenario  % Tag of the scenario (for the messages).
+        net         % Network of the scenario, or [].
+    end
     c_lbl = {char(d.Tag), char(s_scenario)};
     ts = d.TimeSpan;
     if ~isnumeric(ts) || ~isreal(ts) || any(isnan(ts)) || (numel(ts) == 2 && ts(1) > ts(2))
@@ -10,39 +15,18 @@ function validate_disturbance(d, s_scenario, net)
         error(msg("GUILDA:Scenario:InvalidTimeSpan", c_lbl{:}, s_ts));
     end
 
-    % A fault, trip, opening or input needs its end time; only an offset acts at one instant.
-    l_lasting = ~isempty(d.FaultBus) || ~isempty(d.TripUnit) || ~isempty(d.OpenBranch) ...
-        || strlength(d.InputUnit) > 0 ...
-        || ~isempty(d.InputName) || ~isempty(d.InputValue);
+    % An input needs its end time; an offset acts at one instant.
+    l_lasting = strlength(d.InputUnit) > 0 || ~isempty(d.InputName) || ~isempty(d.InputValue);
     if l_lasting && (isscalar(ts) || ts(1) == ts(2))
         error(msg("GUILDA:Scenario:ZeroLengthTimeSpan", c_lbl{:}, mat2str(ts)));
     end
 
     l_net = ~isempty(net);
     if l_net
-        s_net = char(net.s_tag);
-        a_bus  = net.a_Bus;
-        sv_bus = string(cellfun(@(b) b.s_tag, a_bus, 'UniformOutput', false));
-        lv_bad = ~ismember(d.FaultBus, sv_bus);
-        if any(lv_bad)
-            error(msg("GUILDA:Scenario:UnknownFaultBus", c_lbl{:}, char(join(d.FaultBus(lv_bad), ", ")), s_net));
-        end
-
-        sv_br  = string(net.a_Branch);
-        lv_bad = ~ismember(d.OpenBranch, sv_br);
-        if any(lv_bad)
-            error(msg("GUILDA:Scenario:UnknownOpenBranch", c_lbl{:}, char(join(d.OpenBranch(lv_bad), ", ")), s_net));
-        end
-
-        a_comp = cellfun(@(b) b.a_Component, a_bus, 'UniformOutput', false);
+        s_net  = char(net.s_tag);
+        a_comp = cellfun(@(b) b.a_Component, net.a_Bus, 'UniformOutput', false);
         a_comp = vertcat(cell(0,1), a_comp{:});
         sv_tag = string(cellfun(@(c) c.s_tag, a_comp, 'UniformOutput', false));
-
-        sv_gc  = string(cellfun(@(g) g.s_tag, net.a_GlobalController, 'UniformOutput', false));
-        lv_bad = ~ismember(d.TripUnit, [sv_tag(:); sv_gc(:)]);
-        if any(lv_bad)
-            error(msg("GUILDA:Scenario:UnknownTripUnit", c_lbl{:}, char(join(d.TripUnit(lv_bad), ", ")), s_net));
-        end
     end
 
     if strlength(d.OffsetUnit) > 0 || ~isempty(d.OffsetState) || ~isempty(d.OffsetValue)

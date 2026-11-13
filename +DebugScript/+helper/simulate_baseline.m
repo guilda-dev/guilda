@@ -59,6 +59,20 @@ function sct_report = simulate_baseline(opt)
         a = sct_run.(s_name);
         b = S.baseline.(s_name);
         sct_cmp = struct();
+        % phases の列名は旧タグを新しいタグに読み替える (notes/branch-status-events.md §3.6, §4.4):
+        % fault<n> → Fault%03d、trip<n> と open<n> → Parallel%03d (基準の各例は一方だけを使う)
+        tab_b = b.phases;
+        sv_var = string(tab_b.Properties.VariableNames);
+        for s_old = ["fault", "trip", "open"]
+            lv = matches(sv_var, s_old + digitsPattern);
+            s_new = "Fault";
+            if s_old ~= "fault"
+                s_new = "Parallel";
+            end
+            sv_var(lv) = s_new + compose("%03d", str2double(extractAfter(sv_var(lv), strlength(s_old))));
+        end
+        tab_b.Properties.VariableNames = sv_var;
+        b.phases = tab_b;
         for s_f = ["rv_t","rm_variable","rm_I","phases","flag"]
             sct_cmp.(s_f) = isequaln(a.(s_f), b.(s_f));
         end

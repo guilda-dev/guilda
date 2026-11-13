@@ -29,8 +29,8 @@ ev_other = DebugScript.helper.scenario("other", net, "TimeSpan", [1.5,2], c_trip
 assert(event_error(@() DebugScript.helper.scenario("fault", net, "TimeSpan", 1, c_fault{:})) == "GUILDA:Scenario:ZeroLengthTimeSpan")
 sc = net.add_scenario("both");
 sc.add_trip("B003LPQ2", [1.5,2]);
-assert(event_error(@() sc.add_disturbance("fault", "TimeSpan", 1, c_fault{:})) == "GUILDA:Scenario:ZeroLengthTimeSpan")
-assert(height(sc.tab_disturbance) == 1)
+assert(event_error(@() sc.add_fault("B008", [1,1])) == "GUILDA:Scenario:ZeroLengthTimeSpan")
+assert(height(sc.tab_event) == 2)
 [~, flag] = net.simulate(ev_other.s_tag, Time=[0,3]);
 assert(flag == 1)
 
@@ -41,9 +41,9 @@ expect_zero_length(net, "1", "TimeSpan", 1, c_os{:}, c_fault{:});
 
 %% A scenario checks the duration when the disturbance is added
 sc = net.add_scenario("loose");
-assert(event_error(@() sc.add_disturbance("ev", "TimeSpan", 1, c_fault{:})) == "GUILDA:Scenario:ZeroLengthTimeSpan")
+assert(event_error(@() sc.add_disturbance("ev", "TimeSpan", 1, c_input{:})) == "GUILDA:Scenario:ZeroLengthTimeSpan")
 assert(event_error(@() sc.add_fault("B008", [1,1])) == "GUILDA:Scenario:ZeroLengthTimeSpan")
-assert(height(sc.tab_disturbance) == 0)
+assert(height(sc.tab_event) == 0 && height(sc.tab_offset) == 0 && height(sc.tab_input) == 0)
 
 
 %% Offset and an event without effect keep a single time
@@ -68,7 +68,7 @@ function expect_zero_length(net, s_ts, varargin)
     % エラーの ID と、メッセージが原因と対処を示すことを確認する
     [s_id, s_msg] = event_error(@() net.simulate(DebugScript.helper.scenario("ev", net, varargin{:}).s_tag, Time=[0,3]));
     assert(s_id == "GUILDA:Scenario:ZeroLengthTimeSpan", s_id + ": " + s_msg)
-    assert(all(contains(s_msg, ['"ev"', s_ts, "[t_start, t_end]"])), "原因が示されない: " + s_msg)
+    assert(all(contains(s_msg, [s_ts, "[t_start, t_end]"])) && any(contains(s_msg, ["""ev""", """Fault001""", """Parallel001"""])), "原因が示されない: " + s_msg)
 end
 
 function [s_id, s_msg] = event_error(f)

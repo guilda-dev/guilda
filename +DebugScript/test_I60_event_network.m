@@ -41,16 +41,21 @@ assert(error_id(@() net.simulate(ev)) ~= "")
 
 %% Duplicate tags
 % 外乱のタグの重なりは、1 つのシナリオの中で追加の時点でエラー
-ev1 = DebugScript.helper.scenario("same", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-assert(error_id(@() ev1.add_fault("B003", [2,2.05], Tag="same")) == "GUILDA:Scenario:DuplicateTag")
+ev1 = DebugScript.helper.scenario("same", net, "TimeSpan", [1,1.05], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.01);
+assert(error_id(@() ev1.add_offset("B001SG1", "delta", 0.01, 0, Tag="same")) == "GUILDA:Scenario:DuplicateTag")
+% 故障と並列のタグは番号が振られ、重ならない
+assert(ev1.add_fault("B008", [1,1.05]) == "Fault001" && ev1.add_fault("B003", [2,2.05]) == "Fault002")
 
 
 %% Reserved tags
-for tag = ["t1","t2","NoAction1","NoAction12","Properties","Row","Variables",""]
-    assert(error_id(@() DebugScript.helper.scenario(tag, net, "TimeSpan", [1,1.05], "FaultBus", "B008")) == "GUILDA:Scenario:ReservedTag")
+c_input = {"TimeSpan", [1,1.05], "InputUnit", "B002SG1", "InputName", "Pmech", "InputValue", 0.01};
+for tag = ["t1","t2","NoAction1","NoAction12","Properties","Row","Variables","","Fault001","Parallel12"]
+    assert(error_id(@() DebugScript.helper.scenario(tag, net, c_input{:})) == "GUILDA:Scenario:ReservedTag")
 end
 % 予約名に似ているだけのタグは使える
-ev = DebugScript.helper.scenario("NoAction", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev = DebugScript.helper.scenario("NoAction", net, c_input{:});
+ev.add_offset("B001SG1", "delta", 1e-3, 0, Tag="Fault");
+ev.add_offset("B001SG1", "delta", 1e-3, 0, Tag="Parallel1x");
 [~, flag] = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,2]));
 assert(flag == 1)
 

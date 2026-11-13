@@ -1,11 +1,15 @@
 function d = blank_record(tag, time)
-% Disturbance record with only a tag and a time span
+% Offset and input record with only a tag and a time span (the fields of add_disturbance)
+    arguments (Input)
+        tag   % Tag of the disturbance.
+        time  % [s] TimeSpan: t_start, or [t_start, t_end].
+    end
+    arguments (Output)
+        d (1,1) struct  % Tag, TimeSpan, OffsetUnit, OffsetState, OffsetValue, InputUnit, InputName, InputValue, InputMethod.
+    end
     d = struct();
     d.Tag         = string(tag);
     d.TimeSpan    = time;
-    d.FaultBus    = strings(0,1);
-    d.TripUnit    = strings(0,1);
-    d.OpenBranch  = strings(0,1);
     d.OffsetUnit  = "";
     d.OffsetState = strings(0,1);
     d.OffsetValue = zeros(0,1);
