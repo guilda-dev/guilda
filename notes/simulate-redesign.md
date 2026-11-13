@@ -130,7 +130,7 @@
   - 公開メンバーの追加はありません(`import` / `export` は改名、`to_json_struct` / `add_from_json_struct` は `Access={?PowerNetwork}`)。
   - 文書(S7): `_GUILDAdoc/developer/` の 6 ページ(`api-design`, `feature-data-io`, `feature-initialize`, `feature-model-building`, `feature-simulation`, `folder-structure`)、`v4-migration.md`, `status.md` に旧名が残っています。
 - **S6 のテスト:** F16 に、シナリオの往復(IEEE14、地絡・2 回線の開放(終わり `Inf`)・オフセット・一定値と `"foh"` / `"zoh"` の入力・解列と外乱のないシナリオ。往復で `tab_disturbance`, `Time`, `Description` が `isequaln`、`case1` と `steps` の `simulate` の `rv_t` と `rm_variable` が `isequaln`。medium に登録)、シナリオのない書き出しと `scenario/` のない読み込み、`Overwrite` での `scenario/` の置き換え、壊れたファイル 8 種(系統を変えない)、未知の項目(古い `Judge` を含む)の警告、系統にないタグ、`import` 文のある関数からの `PowerNetwork.import`。F31 に、ファイルの内容(タグを書かない、空の項目を書かない、オフセットの時刻は 1 つ、`"spline"` / `"zoh"` / 一定値の往復、`struct(sc)` と `InputValue` に関数ハンドルがない)と、`InputMethod` を省いた手書きの JSON が `"foh"` になること。
-- **S6 の確認:** `simulate_baseline(Mode="compare")` は 6 例すべて `isequaln`。small は 527 件(PASS 525 / KNOWN 1 / SKIP 1、FAIL 0)。
+- **S6 の確認:** `simulate_baseline(Mode="compare")` は 6 例すべて `isequaln`。small は 527 件(PASS 525 / KNOWN 1 / SKIP 1、FAIL 0)。medium は 1 回、705 件(PASS 703 / KNOWN 1 / SKIP 1、FAIL 0)。
 
 ## 1. 現状の構造: `SolverODE` が系統を読む箇所
 
