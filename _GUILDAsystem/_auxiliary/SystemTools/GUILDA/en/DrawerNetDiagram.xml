@@ -1,7 +1,7 @@
 <!--This is an XML file containing error messages related to the class "DrawerNetDiagram".-->
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
-        <entry key="InvalidColorLim">ColorLim must be a finite 1x2 numeric array.</entry>
+        <entry key="InvalidColorLimits">ColorLimits must be a finite 1x2 numeric array.</entry>
         <entry key="NoPowerflowSource">Either pass a PowerNetwork class to `net` or define `Vbus` and `Ibus` options.</entry>
         <entry key="MidPointsBranch">The number of elements in MidX and MidY differs. (branch{0})</entry>
         <entry key="MidPointsComponent">The number of elements in MidX and MidY differs. (component{0})</entry>

@@ -9,7 +9,7 @@ function draw_graph_network(obj)
     rm_axis  = obj.tab_bus.graph{:, {'Xaxis', 'Yaxis'}}.';
     x_main   = rm_axis(1,:);
     y_main   = rm_axis(2,:);
-    z_main   = get_node_height(obj, obj.NodeHeightMode).';
+    z_main   = get_node_height(obj, obj.BusHeightMode).';
     
     label_bg     = [0.98 0.98 0.98];
     label_edge   = [0.75 0.75 0.75];
@@ -25,15 +25,15 @@ function draw_graph_network(obj)
     rv_edge_width = zeros(n_edge, 1);
     for i_edge = 1:n_edge
         pd = obj.tab_branch.dynamics(i_edge, :);
-        if strcmp(obj.EdgeWidthMode, "SvdMaxYmat")
-            rv_edge_width(i_edge) = pd.SvdMaxYmat;
+        if strcmp(obj.BranchWidthMode, "Ysvd")
+            rv_edge_width(i_edge) = pd.Ysvd;
             continue
         end
         y_series = 1/(pd.R + 1j*pd.X);
         Y = abs(y_series);
         G = abs(real(y_series));
         B = abs(imag(y_series));
-        switch obj.EdgeWidthMode
+        switch obj.BranchWidthMode
             case "none"
                 rv_edge_width(i_edge) = 3;
             case "G"
@@ -68,8 +68,8 @@ function draw_graph_network(obj)
         h_label(i_node) = text(ax, ...
             x_main(i_node), y_main(i_node) + node_radius/2, z_main(i_node) + node_radius*1.5, ...
             "", ...
-            'FontSize',   obj.NodeFontSize, ...
-            'FontWeight', obj.NodeFontWeight, ...
+            'FontSize',   obj.LabelFontSize, ...
+            'FontWeight', obj.LabelFontWeight, ...
             'Color',      [0,0,0], ... 
             'BackgroundColor', label_bg, ...
             'EdgeColor',  label_edge, ...
@@ -82,7 +82,7 @@ function draw_graph_network(obj)
     edge_data = struct("Type","Branch","Index",0);
     for i_edge = 1:n_edge
         idx = obj.im_edge(:, i_edge);
-        edge_radius = edge_base_radius * (obj.EdgeWidthOffset + obj.EdgeWidthSclae * rv_edge_width(i_edge));
+        edge_radius = edge_base_radius * (obj.BranchWidthOffset + obj.BranchWidthScale * rv_edge_width(i_edge));
         
         edge_para   = tab_branchgraph(i_edge,:);
         from_max    = sct_nodelim(idx(1)).max;
@@ -156,7 +156,7 @@ function draw_graph_network(obj)
         comp_labels(i_comp)  = text(ax, ...
             comp_pos(1) + node_radius*1.5, comp_pos(2) + node_radius*1.5, comp_pos(3) + node_radius*1.5, ...
             "", ...
-            'FontSize', obj.NodeFontSize, ...
+            'FontSize', obj.LabelFontSize, ...
             'FontWeight', 'bold', ...
             'Color', [0 0 1], ... % 青
             'BackgroundColor', label_bg, ...
@@ -165,7 +165,7 @@ function draw_graph_network(obj)
         comp_parent(i_comp, 1) = tab_compi.bus;
     end
 
-    obj.plt = struct(         ...
+    obj.sct_plt = struct(         ...
         'EdgeMain', h_edge,   ...
         'EdgeArrow', h_arrow, ...
         'NodeMain', h_node,   ...
@@ -186,15 +186,15 @@ function draw_graph_network(obj)
 
     fit_axes_to_content(ax, x_main, y_main, z_main, comp_xyz, node_radius);
     
-    clim(    ax, obj.ColorLim);
-    colormap(ax, obj.ColorMap);
+    clim(    ax, obj.ColorLimits);
+    colormap(ax, obj.Colormap);
     c = colorbar(ax, "westoutside");
     c.Position(3) = 0.005;
     ax.XColor  = "none";
     ax.YColor  = "none";
     ax.ZColor  = "none";
     % grid(    ax, 'on');
-    obj.GridWidth = obj.GridWidth;
+    obj.GridSpacing = obj.GridSpacing;
     zticks(0)
     % arrayfun(@(x) plot(x*[1,1],[0,0.005],'k-',"LineWidth",1), 0:0.1:1)
     % arrayfun(@(y) plot([0,0.005],y*[1,1],'k-',"LineWidth",1), 0:0.1:1)
@@ -264,7 +264,7 @@ end
 
 function rv_order = get_node_height(obj, mode)
     if nargin < 2 || isempty(mode)
-        mode = obj.NodeHeightMode;
+        mode = obj.BusHeightMode;
     end
 
     if mode == "none"
@@ -273,11 +273,11 @@ function rv_order = get_node_height(obj, mode)
         cv_Vst = obj.cv_Vbus;
         cv_Ist = obj.cv_Ibus;
         switch mode
-            case "Vmag"
+            case "V"
                 rv_order = abs(cv_Vst);
-            case "Varg"
+            case "angle"
                 rv_order = angle(cv_Vst);
-            case "Vsin"
+            case "Vimag"
                 rv_order = imag(cv_Vst);
             case "P"
                 rv_order = real(cv_Vst .* conj(cv_Ist));

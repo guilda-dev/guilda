@@ -75,15 +75,15 @@ function set_network(obj, net)
     obj.sv_branch       = string(nan(obj.n_branch, 1));
     obj.cm_Vbus2Ibranch = zeros(obj.n_branch*2, obj.n_bus);
     obj.cm_Vbus2Vbranch = zeros(obj.n_branch*2, obj.n_bus);
-    SvdMaxYmat = nan(obj.n_branch, 1);
+    Ysvd = nan(obj.n_branch, 1);
     for i = 1:obj.n_branch
         obj.sv_branch(i)     = string(a_branch{i});
         Ymat_branchi          = a_branch{i}.get_admittance_matrix();
         obj.cm_Vbus2Ibranch(2*i-1:2*i, obj.im_edge(:,i)) = Ymat_branchi;
         obj.cm_Vbus2Vbranch(2*i-1:2*i, obj.im_edge(:,i)) = eye(2);
-        SvdMaxYmat(i) = max(svd(Ymat_branchi));
+        Ysvd(i) = max(svd(Ymat_branchi));
     end
-    obj.tab_branch.dynamics = [table(SvdMaxYmat), obj.tab_branch.dynamics];
+    obj.tab_branch.dynamics = [table(Ysvd), obj.tab_branch.dynamics];
     obj.cm_Vbus2Ibranch = sparse(obj.cm_Vbus2Ibranch);
     obj.cm_Vbus2Vbranch = sparse(obj.cm_Vbus2Vbranch);
 

@@ -3,15 +3,15 @@ classdef DrawerNetDiagram < auxiliary
 %
 % net.plot_diagram creates one. The diagram shows the power flow state of the network:
 % the colors of the branches and component connections follow ColorMode, the widths of the
-% branches follow EdgeWidthMode, and the heights of the buses follow NodeHeightMode.
+% branches follow BranchWidthMode, and the heights of the buses follow BusHeightMode.
 % Changing a property updates the drawing; hovering over an element shows its values. It
 % is implemented without the digraph plot.
 %
-% - `ColorMode`: "Loss", "I (current)", "P (active power)", "Q (reactive power)", "none",
-%   or "User defined" (set NodeB_ColorVal, NodeC_ColorVal, EdgeB2B_ColorVal,
-%   EdgeB2C_ColorVal).
-% - `EdgeWidthMode`: "G", "B", "Y" (conductance, susceptance, magnitude of the series
-%   admittance of the branch), "SvdMaxYmat" (largest singular value of the admittance
+% - `ColorMode`: "Loss", "I", "P", "Q", "none",
+%   or "user" (set BusColorData, ComponentColorData, BranchColorData,
+%   LinkColorData).
+% - `BranchWidthMode`: "G", "B", "Y" (conductance, susceptance, magnitude of the series
+%   admittance of the branch), "Ysvd" (largest singular value of the admittance
 %   matrix of the branch) or "none".
 %
 % <@Examples>
@@ -19,53 +19,53 @@ classdef DrawerNetDiagram < auxiliary
 % net = network.IEEE14bus();
 % net.initialize();
 % G = net.plot_diagram();
-% G.ColorMode = "P (active power)";
-% G.NodeHeightMode = "Vmag";
-% G.NodeLabelMode = "info";
+% G.ColorMode = "P";
+% G.BusHeightMode = "V";
+% G.LabelMode = "value";
 % ```
 %
 % See also PowerNetwork.plot_diagram
 
     properties % Appearance
-        ColorLim (1,2) double = [0,2];                                                                                    % Limits of the color scale (clim of the axes).
-        ColorMap (:,3) double = turbo;                                                                                    % Colormap of the color values.
+        ColorLimits (1,2) double = [0,2];                                                                                    % Limits of the color scale (clim of the axes).
+        Colormap (:,3) double = turbo;                                                                                    % Colormap of the color values.
         ColorMode (1,1) string {mustBeMember(ColorMode, [...
                                             "none",               ...
                                             "Loss",               ...
-                                            "I (current)",        ...
-                                            "P (active power)",   ...
-                                            "Q (reactive power)", ...
-                                            "User defined"])} = "I (current)";                                            % Quantity that colors the branches and component connections (see the class help).
-        NodeFontSize (1,1) double = 5;                                                                                    % Font size of the labels.
-        NodeFontWeight (1,1) string = "bold";                                                                             % Font weight of the labels.
-        EdgeWidthSclae (1,1) double = 0.15;                                                                               % Scale of the branch width per unit of the EdgeWidthMode value.
-        EdgeWidthOffset (1,1) double = 1;                                                                                 % Branch width added to the scaled value.
-        EdgeWidthMode (1,1) string {mustBeMember(EdgeWidthMode, ["none","G", "B", "Y", "SvdMaxYmat"])} = "SvdMaxYmat";    % Admittance quantity that sets the branch widths (see the class help).
+                                            "I",        ...
+                                            "P",   ...
+                                            "Q", ...
+                                            "user"])} = "I";                                            % Quantity that colors the branches and component connections (see the class help).
+        LabelFontSize (1,1) double = 5;                                                                                    % Font size of the labels.
+        LabelFontWeight (1,1) string = "bold";                                                                             % Font weight of the labels.
+        BranchWidthScale (1,1) double = 0.15;                                                                               % Scale of the branch width per unit of the BranchWidthMode value.
+        BranchWidthOffset (1,1) double = 1;                                                                                 % Branch width added to the scaled value.
+        BranchWidthMode (1,1) string {mustBeMember(BranchWidthMode, ["none","G", "B", "Y", "Ysvd"])} = "Ysvd";    % Admittance quantity that sets the branch widths (see the class help).
         MarkerSize (1,1) double = 10;                                                                                     % Size of the bus and component solids.
-        NodeHeightMode (1,1) string {mustBeMember(NodeHeightMode, ["none", "Vmag", "Varg", "Vsin", "P", "Q"])} = "none";  % Quantity that sets the height of each bus: "Vmag", "Varg", "Vsin", "P", "Q" or "none".
-        NodeB_ColorVal (:,1) double = [];                                                                                 % Color values of the buses, one per bus.
-        NodeC_ColorVal (:,1) double = [];                                                                                 % Color values of the components, one per component.
-        EdgeB2B_ColorVal (:,1) double = [];                                                                               % Color values of the branches, one per branch.
-        EdgeB2C_ColorVal (:,1) double = [];                                                                               % Color values of the component connections, one per component.
-        NodeLabelB (:,1) string = [];                                                                                     % Labels of the buses, one per bus.
-        NodeLabelC (:,1) string = [];                                                                                     % Labels of the components, one per component.
-        NodeLabelMode (1,1) string {mustBeMember(NodeLabelMode, ["none", "name", "info"])} = "name"                       % Labels shown: "name" (tags), "info" (values) or "none".
-        EdgeB2B_forward (:,1) double = [];                                                                                % Arrow direction of each branch: 1 forward, -1 backward, 0 none.
-        EdgeB2C_forward (:,1) double = [];                                                                                % Arrow direction of each component connection: 1, -1 or 0.
-        GridWidth (1,1) double = 0.01;                                                                                    % Spacing of the grid lines of the axes.
+        BusHeightMode (1,1) string {mustBeMember(BusHeightMode, ["none", "V", "angle", "Vimag", "P", "Q"])} = "none";  % Quantity that sets the height of each bus: "V", "angle", "Vimag", "P", "Q" or "none".
+        BusColorData (:,1) double = [];                                                                                 % Color values of the buses, one per bus.
+        ComponentColorData (:,1) double = [];                                                                                 % Color values of the components, one per component.
+        BranchColorData (:,1) double = [];                                                                               % Color values of the branches, one per branch.
+        LinkColorData (:,1) double = [];                                                                               % Color values of the component connections, one per component.
+        BusLabel (:,1) string = [];                                                                                     % Labels of the buses, one per bus.
+        ComponentLabel (:,1) string = [];                                                                                     % Labels of the components, one per component.
+        LabelMode (1,1) string {mustBeMember(LabelMode, ["none", "tag", "value"])} = "tag"                       % Labels shown: "tag" (tags), "value" (values) or "none".
+        BranchDirection (:,1) double = [];                                                                                % Arrow direction of each branch: 1 forward, -1 backward, 0 none.
+        LinkDirection (:,1) double = [];                                                                                % Arrow direction of each component connection: 1, -1 or 0.
+        GridSpacing (1,1) double = 0.01;                                                                                    % Spacing of the grid lines of the axes.
     end
     properties % Graphics
         ax                                                                                                                % Axes of the diagram. <@Type> matlab.graphics.axis.Axes
     end
     properties(SetAccess = private) % Graphics
-        plt                                                                                                               % Graphics objects of the diagram, as a struct of handle arrays. <@Type> struct
-        flag_new                                                                                                          % True when the diagram must be drawn again (new axes). <@Type> logical
+        sct_plt                                                                                                               % Graphics objects of the diagram, as a struct of handle arrays. <@Type> struct
+        l_redraw                                                                                                          % True when the diagram must be drawn again (new axes). <@Type> logical
     end
     properties(Access = private) % Network data
         im_edge                                                                                                           % End-bus indices of each branch (2 x n_branch).
         cm_Ymat                                                                                                           % [pu] Admittance matrix of the network (sparse).
         tab_bus                                                                                                           % Bus type and operation and graph parameters, one row per bus.
-        tab_branch                                                                                                        % Branch class and operation, graph and dynamics parameters (with SvdMaxYmat), one row per branch.
+        tab_branch                                                                                                        % Branch class and operation, graph and dynamics parameters (with Ysvd), one row per branch.
         tab_component                                                                                                     % Bus index, class and operation and graph parameters, one row per component.
         n_bus                                                                                                             % Number of buses.
         n_branch                                                                                                          % Number of branches.
@@ -142,18 +142,18 @@ classdef DrawerNetDiagram < auxiliary
                 ax (1,1) matlab.graphics.axis.Axes
             end
             obj.ax = ax;
-            obj.flag_new = true; %#ok
+            obj.l_redraw = true; %#ok
         end
 
-        function set.ColorLim(obj, color_lim)
-            obj.ColorLim  = color_lim;
-            clim(obj.ax, obj.ColorLim);                                     %#ok
+        function set.ColorLimits(obj, color_lim)
+            obj.ColorLimits  = color_lim;
+            clim(obj.ax, obj.ColorLimits);                                     %#ok
             obj.rehash();
         end
 
-        function set.ColorMap(obj, cmap)
-            obj.ColorMap  = cmap;
-            colormap(obj.ax, obj.ColorMap);                                 %#ok
+        function set.Colormap(obj, cmap)
+            obj.Colormap  = cmap;
+            colormap(obj.ax, obj.Colormap);                                 %#ok
             obj.rehash();
         end
 
@@ -163,28 +163,28 @@ classdef DrawerNetDiagram < auxiliary
         end
 
         % Setters for properties for node label appearance
-        function set.NodeFontSize(obj, font_size)
-            obj.NodeFontSize = font_size;
+        function set.LabelFontSize(obj, font_size)
+            obj.LabelFontSize = font_size;
             if validate(obj); return; end
 
-            h_label = obj.plt.NodeLabel;                                    %#ok
+            h_label = obj.sct_plt.NodeLabel;                                    %#ok
             for i = 1:numel(h_label)
                 if isgraphics(h_label(i))
                     h_label(i).FontSize = font_size;
                 end
             end
-            h_label = obj.plt.CompLabel;                                    %#ok
+            h_label = obj.sct_plt.CompLabel;                                    %#ok
             for i = 1:numel(h_label)
                 if isgraphics(h_label(i))
                     h_label(i).FontSize = font_size;
                 end
             end
         end
-        function set.NodeFontWeight(obj, font_weight)
-            obj.NodeFontWeight = font_weight;
+        function set.LabelFontWeight(obj, font_weight)
+            obj.LabelFontWeight = font_weight;
             if validate(obj); return; end
 
-            h_label = obj.plt.NodeLabel;                                    %#ok
+            h_label = obj.sct_plt.NodeLabel;                                    %#ok
             for i = 1:numel(h_label)
                 if isgraphics(h_label(i))
                     h_label(i).FontWeight = font_weight;
@@ -193,24 +193,24 @@ classdef DrawerNetDiagram < auxiliary
         end
 
         % Setters for properties that require re-plotting
-        function set.EdgeWidthOffset(obj, edge_width_offset)
-            obj.EdgeWidthOffset = edge_width_offset;
+        function set.BranchWidthOffset(obj, edge_width_offset)
+            obj.BranchWidthOffset = edge_width_offset;
             if ~validate(obj)
                 obj.draw_graph_network;
                 obj.reflect_color_mode;
                 obj.reflect_node_label;
             end
         end
-        function set.EdgeWidthSclae(obj, edge_width_sclae)
-            obj.EdgeWidthSclae = edge_width_sclae;
+        function set.BranchWidthScale(obj, branch_width_scale)
+            obj.BranchWidthScale = branch_width_scale;
             if ~validate(obj)
                 obj.draw_graph_network;
                 obj.reflect_color_mode;
                 obj.reflect_node_label;
             end
         end
-        function set.EdgeWidthMode(obj, edge_width_mode)
-            obj.EdgeWidthMode = edge_width_mode;
+        function set.BranchWidthMode(obj, edge_width_mode)
+            obj.BranchWidthMode = edge_width_mode;
             if ~validate(obj)
                 obj.draw_graph_network;
                 obj.reflect_color_mode;
@@ -225,8 +225,8 @@ classdef DrawerNetDiagram < auxiliary
                 obj.reflect_node_label;
             end
         end
-        function set.NodeHeightMode(obj, mode)
-            obj.NodeHeightMode = mode;
+        function set.BusHeightMode(obj, mode)
+            obj.BusHeightMode = mode;
             if ~validate(obj)
                 obj.draw_graph_network;
                 obj.reflect_color_mode;
@@ -235,63 +235,63 @@ classdef DrawerNetDiagram < auxiliary
         end
 
         % Setters for color values
-        function set.NodeB_ColorVal(obj, rv_value)
-            obj.NodeB_ColorVal = rv_value;
-            if validate(obj) || ~isfield(obj.plt, 'NodeMain'); return; end  %#ok
-            obj.apply_color_values(obj.plt.NodeMain, rv_value);             %#ok
+        function set.BusColorData(obj, rv_value)
+            obj.BusColorData = rv_value;
+            if validate(obj) || ~isfield(obj.sct_plt, 'NodeMain'); return; end  %#ok
+            obj.apply_color_values(obj.sct_plt.NodeMain, rv_value);             %#ok
         end
 
-        function set.NodeC_ColorVal(obj, rv_value)
-            obj.NodeC_ColorVal = rv_value;
-            if validate(obj) || ~isfield(obj.plt, 'CompMain'); return; end  %#ok
-            obj.apply_color_values(obj.plt.CompMain, rv_value);             %#ok
+        function set.ComponentColorData(obj, rv_value)
+            obj.ComponentColorData = rv_value;
+            if validate(obj) || ~isfield(obj.sct_plt, 'CompMain'); return; end  %#ok
+            obj.apply_color_values(obj.sct_plt.CompMain, rv_value);             %#ok
         end
 
-        function set.EdgeB2B_ColorVal(obj, rv_value)
-            obj.EdgeB2B_ColorVal = rv_value;
-            if validate(obj) || ~isfield(obj.plt, 'EdgeMain') || ~isfield(obj.plt, 'EdgeArrow'); return; end %#ok
-            obj.apply_color_values(obj.plt.EdgeMain,  rv_value);            %#ok
-            obj.apply_color_values(obj.plt.EdgeArrow, rv_value);            %#ok
+        function set.BranchColorData(obj, rv_value)
+            obj.BranchColorData = rv_value;
+            if validate(obj) || ~isfield(obj.sct_plt, 'EdgeMain') || ~isfield(obj.sct_plt, 'EdgeArrow'); return; end %#ok
+            obj.apply_color_values(obj.sct_plt.EdgeMain,  rv_value);            %#ok
+            obj.apply_color_values(obj.sct_plt.EdgeArrow, rv_value);            %#ok
         end
 
-        function set.EdgeB2C_ColorVal(obj, rv_value)
-            obj.EdgeB2C_ColorVal = rv_value;
-            if validate(obj) || ~isfield(obj.plt, 'CompEdge'); return; end  %#ok
-            obj.apply_color_values(obj.plt.CompEdge, rv_value);             %#ok
-            obj.apply_color_values(obj.plt.CompArrow,rv_value);             %#ok
+        function set.LinkColorData(obj, rv_value)
+            obj.LinkColorData = rv_value;
+            if validate(obj) || ~isfield(obj.sct_plt, 'CompEdge'); return; end  %#ok
+            obj.apply_color_values(obj.sct_plt.CompEdge, rv_value);             %#ok
+            obj.apply_color_values(obj.sct_plt.CompArrow,rv_value);             %#ok
         end
 
         % Setters for node labels
-        function set.NodeLabelB(obj, label)
-            obj.NodeLabelB = string(label);
-            for i =1:numel(obj.plt.NodeLabel)                               %#ok
-                if isgraphics(obj.plt.NodeLabel(i))                         %#ok
-                    obj.plt.NodeLabel(i).String = obj.NodeLabelB(i);        %#ok
+        function set.BusLabel(obj, label)
+            obj.BusLabel = string(label);
+            for i =1:numel(obj.sct_plt.NodeLabel)                               %#ok
+                if isgraphics(obj.sct_plt.NodeLabel(i))                         %#ok
+                    obj.sct_plt.NodeLabel(i).String = obj.BusLabel(i);        %#ok
                 end
             end
         end
 
-        function set.NodeLabelC(obj, label)
-            obj.NodeLabelC = string(label);
-            for i =1:numel(obj.plt.CompLabel)                               %#ok
-                if isgraphics(obj.plt.CompLabel(i))                         %#ok
-                    obj.plt.CompLabel(i).String = obj.NodeLabelC(i);        %#ok
+        function set.ComponentLabel(obj, label)
+            obj.ComponentLabel = string(label);
+            for i =1:numel(obj.sct_plt.CompLabel)                               %#ok
+                if isgraphics(obj.sct_plt.CompLabel(i))                         %#ok
+                    obj.sct_plt.CompLabel(i).String = obj.ComponentLabel(i);        %#ok
                 end
             end
         end
 
-        function set.NodeLabelMode(obj, mode)
-            obj.NodeLabelMode = mode;
-            if validate(obj) || ~isfield(obj.plt, 'NodeLabel'); return; end %#ok
+        function set.LabelMode(obj, mode)
+            obj.LabelMode = mode;
+            if validate(obj) || ~isfield(obj.sct_plt, 'NodeLabel'); return; end %#ok
             obj.reflect_node_label
         end
 
         % Setters for edge direction (for directed edge shapes)
-        function set.EdgeB2B_forward(obj, forward)
-            obj.EdgeB2B_forward = forward;
-            if validate(obj) || ~isfield(obj.plt, 'EdgeArrow'); return; end %#ok
-            for i = 1:numel(obj.plt.EdgeArrow)                              %#ok
-                h_arrowi = obj.plt.EdgeArrow(i);                            %#ok
+        function set.BranchDirection(obj, forward)
+            obj.BranchDirection = forward;
+            if validate(obj) || ~isfield(obj.sct_plt, 'EdgeArrow'); return; end %#ok
+            for i = 1:numel(obj.sct_plt.EdgeArrow)                              %#ok
+                h_arrowi = obj.sct_plt.EdgeArrow(i);                            %#ok
                 if ~isgraphics(h_arrowi)
                     continue
                 end
@@ -310,11 +310,11 @@ classdef DrawerNetDiagram < auxiliary
             end
         end
 
-        function set.EdgeB2C_forward(obj, forward)
-            obj.EdgeB2C_forward = forward;
-            if validate(obj) || ~isfield(obj.plt, 'CompEdge'); return; end  %#ok
-            for i = 1:numel(obj.plt.CompArrow)                              %#ok
-                h_edgei = obj.plt.CompArrow(i);                             %#ok
+        function set.LinkDirection(obj, forward)
+            obj.LinkDirection = forward;
+            if validate(obj) || ~isfield(obj.sct_plt, 'CompEdge'); return; end  %#ok
+            for i = 1:numel(obj.sct_plt.CompArrow)                              %#ok
+                h_edgei = obj.sct_plt.CompArrow(i);                             %#ok
                 if ~isgraphics(h_edgei)
                     continue
                 end
@@ -333,10 +333,10 @@ classdef DrawerNetDiagram < auxiliary
             end
         end
 
-        function set.GridWidth(obj,val)
+        function set.GridSpacing(obj,val)
             val = abs(val);
             if obj.validate; return; end
-            obj.GridWidth = val;
+            obj.GridSpacing = val;
             xticks(obj.ax, 0:val:1) %#ok
             yticks(obj.ax, 0:val:1) %#ok
         end

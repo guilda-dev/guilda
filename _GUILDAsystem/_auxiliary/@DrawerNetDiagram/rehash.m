@@ -5,9 +5,9 @@ function rehash(obj)
     if ~isgraphics(obj.ax)
        obj.ax = axes('Parent',figure());
     end
-    if obj.flag_new || obj.NodeHeightMode ~= "none"
+    if obj.l_redraw || obj.BusHeightMode ~= "none"
         obj.draw_graph_network();
-        obj.flag_new = false;
+        obj.l_redraw = false;
     end
     obj.reflect_color_mode();
     obj.reflect_node_label();
