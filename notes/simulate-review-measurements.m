@@ -1,5 +1,12 @@
 % net.simulate の挙動と性能の実測スクリプト (結果: notes/simulate-review-measurements.md)
 %
+% 当時の調査の記録です。基準のコミット 951800e の API (odeEventSet、net.simulate(time, ev, ...)、
+% net.solver_ODE.Progress、SolverOptions、net.linearize など) で書かれており、現在のコードでは
+% 動きません。現在の API は notes/simulate-redesign.md と notes/v4-migration.md 1.11, 1.18 を参照。
+% 再現するときは、当時のコードを別のフォルダに取り出して、そのフォルダで下の手順を実行する:
+%
+%   git worktree add ../guilda-951800e 951800e
+%
 % ファイル名に "-" を含むので run() では実行できない。リポジトリのルートで、
 % 有効な名前に複製してから実行する (リポジトリには何も書き込まない):
 %

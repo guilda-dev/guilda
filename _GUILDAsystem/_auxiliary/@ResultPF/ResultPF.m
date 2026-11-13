@@ -78,7 +78,14 @@ classdef ResultPF < ResultBase
             arguments (Output)
                 obj % The result object.
             end
-            sct_solver = solver_info(sct_solver);
+            sct_default = struct("solver", "SolverPF", "options", struct(), "flag", false, ...
+                "output", struct(), "elapsed", NaN, "cm_Vhistory", zeros(0,0), "rv_step", zeros(1,0), ...
+                "tab_PFcondition", table());
+            for s_name = string(fieldnames(sct_default)).'
+                if ~isfield(sct_solver, s_name)
+                    sct_solver.(s_name) = sct_default.(s_name);      % missing field: its default
+                end
+            end
             obj@ResultBase([], sct_solver.solver, sct_solver.options, sct_solver.flag, sct_solver.output, sct_solver.elapsed);
             if isfield(sct_network, "s_tag")
                 obj.s_network = string(sct_network.s_tag);
@@ -88,7 +95,12 @@ classdef ResultPF < ResultBase
             obj.tab_PFcondition = sct_solver.tab_PFcondition;
             obj.cm_Vhistory     = sct_solver.cm_Vhistory;
             obj.rv_step         = reshape(sct_solver.rv_step, 1, []);
-            obj.tab_bus         = bus_table(tab_powerflow);
+            if width(tab_powerflow) > 0      % else tab_bus stays table()
+                cv_V = tab_powerflow.V;
+                obj.tab_bus = table(angle(cv_V), abs(cv_V), tab_powerflow.P, tab_powerflow.Q, cv_V, tab_powerflow.I, ...
+                    'VariableNames', ["Varg","V","P","Q","Vphasor","Iphasor"], ...
+                    'RowNames', tab_powerflow.Properties.RowNames);
+            end
             obj.tab_violation   = rows_to_table();
             if ~isfield(sct_network, "a_Bus") || ~isfield(sct_network, "a_Branch")
                 return

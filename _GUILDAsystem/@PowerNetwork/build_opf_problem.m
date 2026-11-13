@@ -48,9 +48,10 @@ function varargout = build_opf_problem(obj, opt)
         varargout   % prob (the optimproblem), then x0 (the initial point as a struct of the variables).
     end
     sct_options = rmfield(opt, "validate");
-    [tab_bus, tab_component, tab_branch, sct_options.base, sct_options.ReferenceBus] = opf_data(obj, opt.ReferenceBus);
+    sct_OPF = obj.get_opf_condition(Display=false);
+    [sct_options.base, sct_options.ReferenceBus] = opf_setting(obj, opt.ReferenceBus);
 
-    [prob, x0] = obj.solver_OPF.build_problem(tab_bus, tab_component, tab_branch, sct_options);
+    [prob, x0] = obj.solver_OPF.build_problem(sct_OPF.Bus, sct_OPF.Component, sct_OPF.Branch, sct_options);
 
     switch nargout
         case 0; disp(prob);

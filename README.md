@@ -63,11 +63,12 @@ Power flow calculations can be done using the `calculate_powerflow(obj)` method.
 But if you want to set the operating points easily, it is recommended to use the `initialize(obj)` method, which not only performs power flow calculations but also sets up equilibrium points for dynamic simulations.
 
 ### 3. Analysis
-After setting up the power flow conditions, you can perform various analyses such as dynamic simulations using the `simulate(obj)` method, or optimal power flow calculations using the `calculate_optimal_powerflow(obj)` method.
+After setting up the power flow conditions, you can perform various analyses such as dynamic simulations using the `simulate` method, or optimal power flow calculations using the `calculate_optimal_powerflow(obj)` method.
 
 #### _**・Dynamic Simulation**_
-Dynamic simulations can be performed using the `simulate(obj)` method, which simulates the time-domain
-response of the system to various disturbances or inputs.
+Dynamic simulations simulate the time-domain response of the system to various disturbances or inputs.
+First create a scenario with `net.add_scenario("tag", Time=[0, 20])` and add disturbances to it (e.g. `add_fault`), then run it with `net.simulate("tag")`.
+The solver options come from `GUILDA.setting` and can be overridden in the call (e.g. `net.simulate("tag", Solver="ode23t")`).
 
 #### _**・Linearization**_
 Linearization around an operating point can be performed using the `get_sys(obj)` method, whichreturns the linearized state-space representation of the system. 

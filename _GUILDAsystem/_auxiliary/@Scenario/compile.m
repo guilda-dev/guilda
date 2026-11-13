@@ -94,7 +94,10 @@ function [tab_phase, c_dist] = phase_table(c_dist, time)
             rv_zoh = [rv_zoh; tb(tb < d.TimeSpan(end))]; %#ok<AGROW>
         end
     end
-    all_time = getTimeSpan([times(:); rv_zoh], time);
+    % Phases between consecutive switching times; events outside the simulation time do not extend it
+    rv_switch = unique([time(1); times(:); rv_zoh; time(2)], "sorted", "first");
+    rv_switch = rv_switch(rv_switch >= time(1) & rv_switch <= time(2));
+    all_time = [rv_switch(1:end-1), rv_switch(2:end)];
 
     vtab = size(all_time,1);
     rtab = size(times,1);

@@ -30,7 +30,7 @@ the end as open questions.
 
 - 既定: 問題の種類ごとに標準の目的関数・制約・アルゴリズム。
 - 問題の構築: 潮流計算と同じ方式（2026-11-12）。`calculate_optimal_powerflow` と
-  `build_opf_problem` が `@PowerNetwork/private/opf_data.m` で母線・機器・ブランチの
+  `build_opf_problem` が `net.get_opf_condition(Display=false)` で母線・機器・ブランチの
   `tab_parameter`（operation / OPF / powerflow / dynamics）から 3 つの表（行名はタグ）、
   `base`（baseMVA、Hz）、解決済みの `ReferenceBus`（`"auto"` → 母線タグ）を集める。
   `SolverOPF.build_problem` / `solve` はこの表とオプションだけを受け取り、系統や
@@ -38,6 +38,18 @@ the end as open questions.
   （`PowerNetwork.n_revOPF` も削除）、`net.solver_OPF` はウォームスタートの母線電圧と
   母線タグだけを持つ。`ResultOPF` は `struct(net, false)` と解から作り、系統のハンドルを
   持たない。問題の Description に系統の木（`disp_tree`）は入れない。
+- OPF の条件の表示（2026-11-13 に利用者が要望。それまでの「公開の get_opf_condition は
+  作らない」を取り消し）: `Bus.get_opf_condition(Display=true)` → `[tab_bus, tab_component]`
+  （母線の 1 行とその機器の行。負荷の上下限が両方 Inf なら潮流設定の P/Q に固定した値）、
+  `Branch.get_opf_condition(Display=true)` → ブランチの 1 行（From, To, Y, X, tap, phase,
+  Pmax, Qmax, Vargmax, Imax, Smax）、`PowerNetwork.get_opf_condition(Display=true)` →
+  構造体（`Bus`, `Component`, `Branch`）。ネットワークの表は母線・ブランチの結果を
+  積み重ねたもの（`calculate_powerflow` が `Bus.get_pf_condition` を積み重ねるのと同じ）で、
+  OPF が使う表そのもの。`Display=true` は見出し Bus / Component / Branch の下に表を表示し、
+  表示では `Y` の列を除く（返す表には残す）。出力なしで呼ぶと表示だけ。内部の呼び出し
+  （`calculate_optimal_powerflow`、`build_opf_problem`、ネットワークからの Bus / Branch）は
+  常に `Display=false`。基準値と `ReferenceBus` の `"auto"` の解決は
+  `@PowerNetwork/private/opf_setting.m`。`opf_data.m` は削除。
   Bus / Component / Branch に OPF のメソッドや状態は持たせない。
   - 理由: OPF を使う解析はほかにない。動特性（`f_dx` など）は `simulate` と `get_sys`
     が再利用するため、キャッシュしたハンドルをクラスに保持するのとは事情が異なる。

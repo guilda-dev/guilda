@@ -120,6 +120,9 @@ classdef Bus < PowerSystemModel
 
         % PF(powerflow) calculation
         tab_PFcondition = get_pf_condition(obj)
+
+        % OPF(optimal power-flow) condition
+        varargout = get_opf_condition(obj, opt)
     end
     methods(Access=protected)
         sct_port = get_linear_port(obj)
@@ -129,8 +132,22 @@ classdef Bus < PowerSystemModel
 %% Get Methods
     methods
         function type = get.s_bustype(obj)
-            s = obj.get_pf_condition;
-            type = s.Type;
+            % The Type of get_pf_condition, without building its table (the network
+            % snapshot struct(net, false) reads it for every bus).
+            if obj.l_isSlack
+                type = "slack";
+                return
+            end
+            a_com = obj.a_Component;
+            Q = 0;
+            for i = 1:numel(a_com)
+                Q = Q + a_com{i}.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", a_com{i}.a_Parameter)}.tab_parameter.Q;
+            end
+            if isnan(Q)
+                type = "PV";
+            else
+                type = "PQ";
+            end
         end
         function I = get.c_Iequilibrium(obj)
             % Components without an equilibrium yet (c_Iequilibrium = []) add nothing.

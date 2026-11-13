@@ -16,11 +16,12 @@
 >   stopped early. v4: `flag = 1` completed, `0` stopped by `TimeLimit`,
 >   `-1` stopped by the solver. `if flag` is now true for a completed run
 >   **and** for a solver stop; test `flag < 1` for "stopped early" (1.11).
-> - **`initialize`'s outputs are reordered.** v3: `[flag, tab, output]`.
->   v4: `[result, flag, output]` with `result.tab_bus` the old `tab`.
->   `[flag, tab] = net.initialize()` gives no error: `flag` is then a
->   `ResultPF` and `tab` the exit flag. `if flag` on the result
->   object fails or means something else; test `result.l_success` (1.17).
+>   `flag = 2` (stopped by `StopOnOutOfStep`) occurs only when that option is
+>   true (default false).
+> - **`initialize` の出力の順序が変わりました。** v3: `[flag, tab, output]`。
+>   v4: `[rm_pf, flag, output]`。`rm_pf` は設定した運転点の n×4 の配列(V・I・P・Q)です。
+>   `[flag, tab] = net.initialize()` はエラーになりません。`flag` がその配列、`tab` が
+>   終了フラグになります。母線の表は `net.calculate_powerflow().tab_bus` で得ます(1.17)。
 > - **The slack power goes to the first component with `Q = NaN`.** v3 gave it to
 >   the first component of the slack bus, so a load added before a generator
 >   generated power. Those networks now split the power differently (1.8).
@@ -124,7 +125,7 @@
 
 ## 解析の設定は GUILDA.setting、`net.solver_*` は条件だけ
 
-潮流計算(1.8)と同じく、最適潮流計算、連続潮流計算、時間応答シミュレーション、近似線形化の設定も `GUILDA.setting` に置きました。各ソルバーの `get_options` が実行のたびに解析ごとのセクション(`GUILDA.config("<セクション>")`。既定値は `@GUILDA/config/Default<セクション>.json`、`@GUILDA/user/` の同名ファイルで上書き)を読み、呼び出しの Name-Value をその呼び出しだけに適用します(設定ファイルは変わりません)。
+潮流計算(1.8)と同じく、最適潮流計算、連続潮流計算、時間応答シミュレーション、近似線形化の設定も `GUILDA.setting` に置きました。各解析が実行のたびに解析ごとのセクション(`GUILDA.config("<セクション>")`。既定値は `@GUILDA/config/Default<セクション>.json`、`@GUILDA/user/` の同名ファイルで上書き)を読み、呼び出しの Name-Value をその呼び出しだけに適用します(設定ファイルは変わりません)。
 
 | 解析 | セクション | `net.solver_*` に残るもの |
 |---|---|---|
@@ -134,8 +135,8 @@
 | 時間応答シミュレーション | TimeSimulation | `solver_ODE`: なし |
 | 近似線形化 | Linearization(新設) | `solver_LIN`: なし(ブロックをつなぐ接続器) |
 
-- **削除したプロパティへの代入はエラーです(互換なし)。** 例: `net.solver_ODE.RelativeTolerance = 1e-6`、`net.solver_ODE.Progress = "none"`、`net.solver_ODE.TimeLimit = 60`、`net.solver_OPF.Method = "ELD"`、`net.solver_CPF.MaxIterations = 100`、`net.solver_LIN.Method`、`.Point`、`.Coordinate`。いずれも存在しないプロパティへの代入として止まります。既定を変えるときは `GUILDA.setting` で該当するセクションを編集し、1 回だけ変えるときは Name-Value を渡してください(例 `net.simulate(t, sc, Tolerance=1e-6, Progress="none")`)。
-- **v3 互換の `net.solver_ODE.Reporter` も削除しました。** `v3_ode_reporter.m` と警告 `GUILDA:Deprecated:SimulatorReporter` はなくなり、代入はエラーです。Name-Value の `simulate(..., Reporter=..., RelativeTolerance=...)` の読み替え(`v3_simulate_args`、`GUILDA:Deprecated:SimulateOptionName`)も削除しました。`Progress=` / `Tolerance=` を使ってください。旧名は未知の名前のエラー(`GUILDA:resolve_options:UnknownName`)になります。
+- **削除したプロパティへの代入はエラーです(互換なし)。** 例: `net.solver_ODE.RelativeTolerance = 1e-6`、`net.solver_ODE.Progress = "none"`、`net.solver_ODE.TimeLimit = 60`、`net.solver_OPF.Method = "ELD"`、`net.solver_CPF.MaxIterations = 100`、`net.solver_LIN.Method`、`.Point`、`.Coordinate`。いずれも存在しないプロパティへの代入として止まります。既定を変えるときは `GUILDA.setting` で該当するセクションを編集し、1 回だけ変えるときは Name-Value を渡してください(例 `net.simulate("fault", Tolerance=1e-6, Progress="none")`)。
+- **v3 互換の `net.solver_ODE.Reporter` も削除しました。** `v3_ode_reporter.m` と警告 `GUILDA:Deprecated:SimulatorReporter` はなくなり、代入はエラーです。Name-Value の `simulate(..., Reporter=..., RelativeTolerance=...)` の読み替え(`v3_simulate_args`、`GUILDA:Deprecated:SimulateOptionName`)も削除しました。`Progress=` / `Tolerance=` を使ってください。旧名は `simulate` の `arguments` ブロックの未知の名前のエラーになります。
 - **JSON のキーを Name-Value の名前にそろえました。** `@GUILDA/user/` の旧キーは変換しません。読み込み時に未知のキーとして捨てられ(`Remove unknown environment field '<キー>'.` を表示、警告なし)、新しいキーは既定値になります。
 
   | セクション | 旧キー | 新キー |
@@ -146,6 +147,7 @@
   | ContinuationPowerFlow | `LoadBus` | なし(`net.solver_CPF.LoadBus` の条件か Name-Value `LoadBus`) |
   | TimeSimulation | `RelativeTolerance` | `Tolerance` |
   | TimeSimulation | なし | `Solver`(既定 `"ode15s"`。`"ode15s"` / `"ode23t"`)、`Verbose`(既定 false) |
+  | TimeSimulation | なし | `MaxStep`, `InitialStep`(既定 NaN = ソルバーの既定)、`SampleTime`(既定 NaN = ソルバーの刻み)、`StopOnOutOfStep`(既定 false)、`StopAngle`(既定 360) |
   | Linearization(新設) | なし | `Method`(既定 `"Kron"`。`"Kron"` / `"DAE"`)、`Coordinate`(既定 `"theta&rho"`) |
   | 各解析のセクション | なし | `PlotFcn`(既定 `"none"`) |
   | PowerFlowCalculation | なし | `Verbose`(logical、既定 false) |
@@ -159,8 +161,8 @@
   キーの規則: Name-Value と同じ名前・型、1 つのソルバーだけの設定は `<Solver 名><MATLAB のオプション名>`、自動・ソルバーの既定は NaN、オン・オフは logical。
 
   結果の `res.options` のフィールドも新しい名前です(`res.options.Tolerance`、`res.options.MaxIteration` など)。
-- **`SolverOptions` と `Point` は呼び出しだけ。** 時間応答シミュレーションの `SolverOptions`(`matlab.ode.Options`)は呼び出しかシナリオの `Options` でだけ与えます。与えなければ `ode` オブジェクトは `Solver` のオプションを使います。優先順位は `GUILDA.setting` < `sc.Options` < 呼び出しの Name-Value です。線形化の `Point` も呼び出しだけで(既定 `[]` = 平衡点)、保存しません。
-- **`Plot` オプションを `PlotFcn` に置き換えました。** `calculate_powerflow`、`calculate_optimal_powerflow`、`calculate_continuation_powerflow`、`simulate`、`get_sys` の `Plot`(解析後に `result.Plot()` を呼ぶ)は廃止し、渡すと `GUILDA:resolve_options:UnknownName` で止まります。解析後の図は `result.Plot()` で描いてください。`PlotFcn`(MATLAB の `optimoptions` / `odeset` と同じ名前)は解析中のライブ表示で、値は `"none"`、表示キーの string 配列、または関数ハンドルです。既定は各セクションのキー `PlotFcn`(select、選択肢は `"none"` と各解析のキー)です。
+- **`SolverOptions` はなく、`Point` は呼び出しだけ。** 時間応答シミュレーションの `SolverOptions`(`matlab.ode.Options`)とシナリオの `Options` は削除しました。刻み幅は `MaxStep`、`InitialStep` で与えます(`MaxOrder` などほかのソルバーのオプションは指定できません)。優先順位は `GUILDA.setting` < 呼び出しの Name-Value です(1.11)。線形化の `Point` は呼び出しだけで(既定 `[]` = 平衡点)、保存しません。
+- **`Plot` オプションを `PlotFcn` に置き換えました。** `calculate_powerflow`、`calculate_optimal_powerflow`、`calculate_continuation_powerflow`、`simulate`、`get_sys` の `Plot`(解析後に `result.Plot()` を呼ぶ)は廃止し、渡すと未知の名前のエラーで止まります。解析後の図は `result.Plot()` で描いてください。`PlotFcn`(MATLAB の `optimoptions` / `odeset` と同じ名前)は解析中のライブ表示で、値は `"none"`、表示キーの string 配列、または関数ハンドルです。既定は各セクションのキー `PlotFcn`(select、選択肢は `"none"` と各解析のキー)です。
   - 潮流計算 `"residual"`(方程式ごとの残差の棒グラフ。全 Solver)、OPF は fmincon のプロット関数(`"fval"` → `optimplotfval` など。linprog・quadprog では `GUILDA:SolverOPF:PlotFcnUnsupported`)、連続潮流計算 `"pvcurve"`(全母線の PV 曲線を伸ばす)。
   - 関数ハンドルは `stop = f(x, optimValues, state)`(optimoptions と同じ形。OPF は fmincon にそのまま渡す)。
   - 時間応答シミュレーションと線形化は `"none"` のみ(ほかの値は `GUILDA:check_plotfcn:InDevelopment`)。未知のキーは `GUILDA:check_plotfcn:UnknownKey`、別の型の値は `GUILDA:check_plotfcn:InvalidValue` で止まります(`tools.check_plotfcn`)。
@@ -241,21 +243,21 @@ v3 の編集ログ(`tab_editLog`)はありません。各層は、古くなっ�
 
   | 解析 | 読むタグ | エラー |
   |---|---|---|
-  | `simulate`(`solver_ODE.solve`、`initialize_index` のループ内) | 系統の `powerflow`・`odefcn`、機器・ローカル制御器・グローバル制御器の `equilibrium`・`odefcn` | `GUILDA:SolverODE:Stale` |
+  | `simulate`(`net.build_simulation_data`) | 系統の `powerflow`・`odefcn`、機器・ローカル制御器・グローバル制御器の `equilibrium`・`odefcn`、入力の編集 | `GUILDA:PowerNetwork:SimulateStale`、`GUILDA:PowerNetwork:SimulateInputEdited` |
   | `get_sys`(すべての層、`PowerSystemModel.get_sys`) | 系統と、集めるモデルオブジェクト(機器・ローカル制御器・グローバル制御器)。`odefcn` と入力の編集はいつも、`powerflow`・`equilibrium` は `Point` が平衡点のときだけ | `GUILDA:PowerSystemModel:Stale`、`GUILDA:PowerSystemModel:InputEdited` |
   | `calculate_continuation_powerflow`(`solver_CPF.solve`) | 系統の `powerflow`・`odefcn`、機器の `equilibrium`・`odefcn`(制御器は読まない) | `GUILDA:SolverCPF:Stale` |
   | `con.validate` | 系統、その制御器 | `GUILDA:LocalController:Stale` |
 
-  検査はソルバーの中にあるので、ソルバーを直接呼んでも検査されます。
+  連続潮流計算の検査はソルバーの中にあるので、ソルバーを直接呼んでも検査されます。`simulate` の検査は `net.build_simulation_data` が行い、`SolverODE.solve` はデータだけを読みます。
 - **改名は何も古くしません。** 母線を改名しても、その機器のタグは変わりません(タグは永続的な ID として扱います)。
 - **パラメータの型の誤りはエラーです。** 宣言と違うクラスの値を代入すると `GUILDA:Parameter:ClassNameMismatch` で止まり、値も編集履歴も変わりません。以前は MATLAB がリスナー内のエラーを警告に変えていたので、スクリプトは止まりませんでした。`try` / `catch` なしで型の違う値を代入しているスクリプトは、正しいクラスの値に直してください。
 
 ```matlab
 net.a_Bus{2}.tab_parameter.powerflow.V = 1.02;
 net.sct_stale.powerflow      % "powerflow/B002: edit V: 1.025 -> 1.02"
-net.simulate([0 10]);        % error GUILDA:SolverODE:Stale
+net.simulate("steady");      % error GUILDA:PowerNetwork:SimulateStale
 net.initialize();
-net.simulate([0 10]);        % OK
+net.simulate("steady");      % OK
 ```
 
 パラメータを編集して古い(変わらない)平衡点のまま解析していたスクリプトは、編集の後に `net.initialize()` を呼ぶ必要があります。
@@ -484,7 +486,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 | `net.calculate_powerflow("dynamic", "export", true, "filename", f)` | `res = net.calculate_powerflow(Solver="dynamic"); res.export(f)` (`.json`) |
 | `net.solver_PF.rm_response`, `rr_step`, `i_iteration` | `res.cm_Vhistory`, `res.rv_step` |
 
-- **最初の出力は `Format` で選びます(2026-11-12)。** 既定の `"GUILDAorigin"` は `ResultPF`、`"V"` は母線の複素電圧の列、`"powerflow(mat)"` は V・I・P・Q の n×4 の複素行列、`"powerflow(tab)"` は同じ内容の table です。`initialize` も同じ値の `Format` を取りますが、既定は `"powerflow(mat)"`(平衡点に書く V・I・P・Q の n×4 の配列)です。`initialize` の結果から `res.tab_bus` などを読むスクリプトには `Format="GUILDAorigin"` が必要です。詳細は [powerflow-structure.md](powerflow-structure.md)。
+- **最初の出力は `Format` で選びます(2026-11-12)。** 既定の `"GUILDAorigin"` は `ResultPF`、`"V"` は母線の複素電圧の列、`"powerflow(mat)"` は V・I・P・Q の n×4 の複素行列、`"powerflow(tab)"` は同じ内容の table です。`initialize` は `Format` を取らず(2026-11-13)、常に平衡点に書く V・I・P・Q の n×4 の配列を返します。`initialize` の結果から `res.tab_bus` などを読んでいたスクリプトは、`res = net.calculate_powerflow()` で結果を得てください。詳細は [powerflow-structure.md](powerflow-structure.md)。
 - **v3 の呼び出し形式は使えません(2026-11-12)。** 位置引数の mode(`calculate_powerflow("dynamic")`)と `"export"` / `"filename"` は、互換の変換をせずエラーになります。`Solver=` と `res.export(f)` を使ってください。
 - **`Export` オプションはありません(2026-11-12)。** 書き出しは結果のメソッド `res.export(...)` だけです(`initialize` も `Export` を受け付けません)。
 - オプション: `Solver`(`"newton"` | `"gradient"` | `"levenberg-marquardt"` | `"fsolve"` | `"dynamic"`。開発版の `Method` から改名)、`Tolerance`、`MaxIteration`、`Verbose`、`WarmStart`、`PlotFcn`、`Format`。v3 の潮流計算(fsolve)は `Solver="fsolve"` で、Optimization Toolbox が必要です。
@@ -664,23 +666,40 @@ Option names:
 
 ### 1.11 Time simulation
 
-> **再設計の予定(未実装):** `simulate` と `Scenario` の API は [simulate-redesign.md](simulate-redesign.md) の仕様で変わります(1 回に 1 つのシナリオをタグで選ぶ、`add_scenario(tag)`、`Scenario.Options` と v3 互換の削除、`Export` オプションの削除と `result.export`、シナリオは系統のフォルダの `scenario/<tag>.json`)。この節と §1.18 は現行の動作です。
+`simulate` と `Scenario` は [simulate-redesign.md](simulate-redesign.md) の仕様で作り直しました(S0–S7、2026-11-13)。1 回の実行は系統のシナリオ 1 つをタグで選び、設定は `GUILDA.setting` の TimeSimulation セクションから読み、呼び出しの Name-Value はその呼び出しだけに効きます。シナリオの持ち方は 1.18 を参照してください。
 
 | v3 | v4 |
 |----|----|
-| `[out, l_stop] = net.simulate(t, ev1, ev2)` | `[res, flag, output] = net.simulate(t, ev1, ev2)` |
-| `if l_stop` (stopped early) | `if flag < 1` (`0` TimeLimit, `-1` solver stop) |
-| `net.solver_ODE.Reporter = "none"; net.simulate(t, ev)` | `net.simulate(t, ev, Progress="none")` (one call) or the key `Progress` of the TimeSimulation section; assigning `net.solver_ODE.Reporter` is an error |
-| `net.solver_ODE.RelativeTolerance = 1e-6; ...` | `net.simulate(t, ev, Tolerance=1e-6)` (one call) or the key `Tolerance` of the TimeSimulation section; assigning the property is an error |
-| `out.odeNetwork` | `res.a_PowerNetwork` |
+| `[out, l_stop] = net.simulate(t, ev1, ev2)` | 外乱を 1 つのシナリオにまとめて `[res, flag, output] = net.simulate("case", Time=t)` |
+| `if l_stop` (stopped early) | `if flag < 1` (`0` TimeLimit, `-1` solver stop; `2` は `StopOnOutOfStep` による停止) |
+| `net.solver_ODE.Reporter = "none"; net.simulate(t, ev)` | `net.simulate("case", Progress="none")` (one call) or the key `Progress` of the TimeSimulation section; assigning `net.solver_ODE.Reporter` is an error |
+| `net.solver_ODE.RelativeTolerance = 1e-6; ...` | `net.simulate("case", Tolerance=1e-6)` (one call) or the key `Tolerance` of the TimeSimulation section; assigning the property is an error |
+| `out.odeNetwork` | `res.sct_network`(実行時の `struct(net, false)` のスナップショット。系統そのものは呼び出し側の変数) |
 
-- Options after the events: `Solver` (MATLAB `ode` solver, default
-  `"ode15s"`), `SolverOptions`, `Tolerance` (`RelativeTolerance`),
-  `AbsoluteTolerance`, `SeparateComplexParts` (logical), `TimeLimit`, `Progress`
-  (`"dialog"` | `"disp"` | `"none"`, or true/false), `Verbose`, `PlotFcn`,
-  `Export`. Defaults: the TimeSimulation section of `GUILDA.setting`
-  (`SolverOptions`: call or `sc.Options` only); `net.solver_ODE` holds no
-  settings.
+開発途中の v4(S0 より前)からの書き換え:
+
+| 旧 | 新 |
+|---|---|
+| `sc = Scenario("f"); sc.add_fault(...); net.add_scenario(sc)` | `sc = net.add_scenario("f"); sc.add_fault(...)`(`Time` の既定は `[0, 10]`) |
+| `net.simulate([0 20], sc)` | `net.simulate("f", Time=[0 20])`、または `sc.Time = [0 20]; net.simulate("f")` |
+| `net.simulate([0 10])`(外乱なし) | `net.add_scenario("free"); net.simulate("free")` |
+| `net.simulate(sc)` で外乱の時間幅から時間を決めていた | `Time` を明示する(既定は `[0, 10]`。外乱の時刻で時間は変わらない) |
+| `net.simulate(t, sc1, sc2)` | 1 つのシナリオに外乱をまとめる: `net.add_scenario("both", From=sc1)` の後に `sc2` の外乱を足す |
+| `sc.Options = struct("Tolerance",1e-6)` | 呼び出しで `net.simulate("f", Tolerance=1e-6)`、または `GUILDA.setting("TimeSimulation", Tolerance=1e-6)` |
+| `SolverOptions=matlab.ode.options.ODE15s(MaxStep=0.01)` | `MaxStep=0.01`(`InitialStep` も同様。`MaxOrder` などは指定できない) |
+| 脱調で止めるための `TimeLimit` や `OutputFcn` の代用 | `StopOnOutOfStep=true, StopAngle=...`(`flag = 2`、`output.outOfStep`) |
+| 一定間隔の時刻で取り出すための `interp1` | `SampleTime=0.01`(各区間の始めと終わりも記録。ソルバーの刻みは変わらない) |
+| `net.simulate(..., Export="sim.csv")` | `res = net.simulate(...); res.export("sim.csv")` |
+| `sc.judge(result)` / `Scenario.out_of_step(result, ...)` | `result.judge_out_of_step(...)` |
+| `sc.Judge = @my_judge; sc.judge(result)` | `my_judge(result)` |
+| `res.a_PowerNetwork` | `res.sct_network`(スナップショット。`a_PowerNetwork` は空) |
+| 繰り返し実行で `ResultODE` が重い | `sol = net.simulate("f", Format="struct")`(`sol.t`、`sol.a_Bus{i}.V` など、モデルの階層をなぞる表) |
+| `net.solver_ODE.solve(net, time, events, options)` | `[d, e, x0] = net.build_simulation_data(tag, time); net.solver_ODE.solve(d, e, x0, options)`(Hidden。テストと上級者向け) |
+
+- Options (Name-Value; 既定は TimeSimulation セクション): `Time`(その呼び出しの `[t0, tend]`)、`Solver`(`"ode15s"` / `"ode23t"`)、`Tolerance`、`AbsoluteTolerance`、`MaxStep`、`InitialStep`、`SeparateComplexParts`(logical)、`SampleTime`、`StopOnOutOfStep`、`StopAngle`、`TimeLimit`、`Progress`(`"dialog"` | `"disp"` | `"none"`, or true/false)、`Verbose`、`PlotFcn`、`Format`(`"GUILDAorigin"` / `"struct"`。設定にはない)。`arguments` ブロックで検査するので、オプションにない名前や不正な値は MATLAB のエラーで止まり、存在しないタグは `GUILDA:PowerNetwork:ScenarioNotFound`(系統のタグを最大 10 個示す)、不正な `Time` は `GUILDA:mustBeSimulationTime:InvalidTime` で止まります。`net.solver_ODE` は設定を持ちません。
+- **`StopOnOutOfStep`.** 状態 `delta` を持つ機器の回転子角とスラック母線の発電機の回転子角の差の絶対値が `StopAngle` [deg] を超えたら止まり、`flag = 2`、`output.outOfStep`(`Time`, `Unit`, `Reference`, `Angle`)を返します。警告は出しません。解列中の機器は比べず、基準が解列中は止まりません。基準か比べる機器がない系統は積分の前に `GUILDA:PowerNetwork:StopNoRotorAngle` で止まります。`result.judge_out_of_step()` は、同じ基準で `StopAngle >= Threshold` のとき止まった機器を脱調とします。
+- **`SampleTime`.** 結果の時刻は `t0 + k*SampleTime` と各区間の始めと終わり(境目は 2 回)で、値はその時刻のソルバーの解です。刻み幅を制限するには `MaxStep` を使います。
+- **`Format="struct"`.** `sol.t`、`sol.s_tag`、`sol.phase`、`sol.tab_variable`、`sol.a_Bus{i}.V`, `.I`, `.P`, `.Q`、`sol.a_Bus{i}.a_Component{j}.x`, `.u`, `.I`、入れ子の `.a_LocalController{k}.x`, `.u`、`sol.a_GlobalController{k}.x`, `.u`(制御対象ごとに `<入力>_<機器のタグ>`)。表に Time の列はなく、出力 `y` は計算しません。解列中の状態と入力は NaN です。
 - `ResultODE` stores the trajectory once, in the order of
   `net.get_variable_map()`: `res.rv_t` (times), `res.tab_variable` (the
   rows `x`, `Vre`, `Vim`, `u` of the map at the time of the run, which are its
@@ -708,13 +727,14 @@ Option names:
   `options`, `flag`, `output`); `odeNetwork` is removed. The table also has
   one column per state of a local or global controller, named by `Label` of
   `tab_variable`, after the bus and component columns. `output` has
-  `message`, `tEnd`, `phases`, `nPhases`, `nPhasesDone`, `isSparse`,
-  `exception`.
+  `tEnd`, `nPhases`, `nPhasesDone`, `phases`, `isSparse`, `exception`,
+  `outOfStep`, `message`.
+- `ResultODE` はデータだけから作り、系統を参照しません。系統を編集・削除した後でも `plot_trajectory`、`get_point`、`export`、`judge_out_of_step`、`odeResults` が動きます。出力 `y`, `yc` は `res.tab_output` と `res.rm_output`、`odeResults.Bus(i).Component(j).Y` にあります。
 - Behavior:
   - **flag** (silent change, see the box at the top).
   - **A run that does not reach the end time warns.** `net.simulate` always
-    warns `GUILDA:PowerNetwork:SimulationIncomplete` when `flag` is not 1,
-    also when `flag` is requested; check `flag` and silence this ID if you
+    warns `GUILDA:PowerNetwork:SimulationIncomplete` when `flag` is 0 or -1
+    (not 2), also when `flag` is requested; check `flag` and silence this ID if you
     handle the stop yourself. Calling `solver_ODE.solve` directly does not
     warn.
   - On a stop the result holds the trajectories up to `output.tEnd`.
@@ -729,8 +749,7 @@ Option names:
     points and `output.tEnd` is the start time, so check `flag` before reading
     the trajectories. Scripts that caught these errors must test `flag`
     instead.
-  - **Other errors during a phase still stop.** An error of an input function
-    or a model stops with `GUILDA:SolverODE:PhaseFailed`, or with
+  - **Other errors during a phase still stop.** An error of a model stops with `GUILDA:SolverODE:PhaseFailed`, or with
     `InitialConditionFailed` / `UnfeasibleDAE` during the retry from a
     recomputed initial condition (phase and interval in the message, the
     original error as its cause). Only the
@@ -738,8 +757,7 @@ Option names:
     `MATLAB:daeic12:IndexGTOne`, `MATLAB:decic:IndexGTOne`,
     `MATLAB:decic:ConvergenceFail` and the all-zero mass matrix errors of
     the phase count as numerical failures.
-  - **Working data is restored.** After every run, also after an error,
-    faults, connections and offsets are back at their initial values.
+  - **モデルに作業データを書きません。** 実行のデータは `net.build_simulation_data` が集め、`SolverODE.solve` はそのデータだけを読みます。実行後やエラーの後に戻すものはありません。
   - Phases that start at rest no longer stop at t = 0 in large networks
     (e.g. `IEEE68bus(LocalController=false)`): bus current residuals below
     the round-off level of their terms are set to zero in the ODE function,
@@ -756,19 +774,16 @@ Option names:
     matrices; `output.isSparse` is then false. Step counts and values differ
     from earlier versions within the tolerance, so compare results within it,
     not exactly.
-  - **`Export` is checked before the run.** A file name whose extension is
-    not `.csv`, `.txt`, `.xlsx`, `.xls` or `.mat` stops at once with
-    `GUILDA:PowerNetwork:SimulateExport` (before: after the integration, and
-    the result was lost).
   - `SolverODE` no longer holds `odeNetwork`, `odeTimeTable`, `odeYmat`,
     `odeResult`, `rv_odeV`; `solver_ODE.simulate(net, ...)` is replaced by
-    the internal `solve(net, time, events, options)`.
+    `solve(sct_dae, sct_event, rv_x0, sct_options)` on the data of
+    `net.build_simulation_data` (see the table above).
   - **Event checks.** Before the integration, an event's `InputUnit` must
     be a component of the network (`GUILDA:Scenario:UnknownInputUnit`),
     each `InputName` an input of it (`GUILDA:Scenario:UnknownInputName`,
-    the message lists the inputs), and a function `InputValue` must take
-    one argument, the time since the event start
-    (`GUILDA:Scenario:InvalidNargin`). Errors that used to fail inside
+    the message lists the inputs), and a time series `InputValue` must be
+    valid (`GUILDA:Scenario:InvalidInputSeries`; `InputMethod` without a
+    series: `MethodWithoutSeries`). Errors that used to fail inside
     the integration now stop at once.
   - **イベントの検査の追加。** 次も積分の前に止まります。
 
@@ -779,12 +794,10 @@ Option names:
     | `GUILDA:Scenario:UnknownOffsetUnit`, `UnknownOffsetState` | `OffsetUnit` が機器でない、`OffsetState` がその状態でない |
     | `GUILDA:Scenario:InvalidTimeSpan` | `TimeSpan` に NaN がある、または順序が逆 |
     | `GUILDA:Scenario:ValueCountMismatch` | 値の数が `OffsetState` や `InputName` の数と合わない(1 つの値は全部に共通) |
-    | `GUILDA:Scenario:OtherNetwork` | 別の系統で作ったイベント(構成が同じでも)。実行する系統で作り直す |
     | `GUILDA:Scenario:DuplicateTag`, `ReservedTag` | タグの重複、または `t1`, `t2`, `Properties`, `Row`, `Variables`, 空, `NoAction<数字>` |
-    | `GUILDA:Scenario:ScenarioArray` | シナリオを配列で渡した。`net.simulate(time, sc1, sc2)` のように別の引数で渡す |
 
     イベントは系統のタグや状態数の写しを持たなくなったので、作成後にグローバル制御器を足すなど構成を変えても、そのイベントは使えます。
-  - **`simulate` の時間の検査。** `time` は有限で `t0 < tend` の `[t0, tend]`、またはイベントの時間幅を使う `[]` だけです。他の値は `GUILDA:PowerNetwork:SimulateTime` で止まり、理由を示します。以前は 3 点以上の時間を渡すと無言で短い区間だけを計算することがありました。時刻の列が欲しいスクリプトは `res.get_point` で読み出してください。引数の順序(時間、イベント、Name-Value)の誤りは `GUILDA:PowerNetwork:SimulateArguments` で止まります。
+  - **`simulate` の時間の検査。** `Time`(と `sc.Time`)は有限で `t0 < tend` の `[t0, tend]` だけです。他の値は `GUILDA:mustBeSimulationTime:InvalidTime` で止まります。以前は 3 点以上の時間を渡すと無言で短い区間だけを計算することがありました。一定間隔の時刻は `SampleTime`、任意の時刻は `res.get_point` で読み出してください。
   - **初期条件の失敗の説明。** 区間の開始の初期条件が解けない場合は、これまでどおり `flag = -1` で `output.exception` が `GUILDA:SolverODE:InitialConditionFailed` です。`output.message` が理由と対処を示すようになりました。よくある原因は、故障で供給できなくなる定電力負荷(`"load-power"`)です。その負荷を `"load-impedance"` にするか、別の母線を故障させてください。同じ故障が定インピーダンス負荷なら完走することをテストで確認しています。
   - **区間の開始では微分状態を動かしません。** 区間の境界で微分状態はそのまま引き継ぎ、代数変数だけを新しい区間の網で解き直します(解析的なヤコビアンによるニュートン法。`decic` とソルバ自身の初期条件の計算は使いません)。解けなければ `InitialConditionFailed` で止まり、ソルバが微分状態を動かした場合も止まります。以前は、解けないと微分状態も動かして続け、`GUILDA:SolverODE:InitialConditionRelaxed` を警告するだけでした(IEEJ WEST10 の B003 の地絡で回転子角が最大 2.16 rad 跳んでいました)。この警告と緩めた再計算は `8bd906c`(`fix/ode-initial-condition-jump`、統合は `bf7512b`)で削除しました。
   - An event whose `TimeSpan` lies entirely outside the simulation time
@@ -805,7 +818,7 @@ Option names:
 - Removed: the old option names `simulate(..., "Reporter", v)` /
   `"RelativeTolerance", v` (and their warning
   `GUILDA:Deprecated:SimulateOptionName`). Use `Progress` / `Tolerance`;
-  the old names stop with `GUILDA:resolve_options:UnknownName`.
+  the old names stop with the error of the `arguments` block.
 
 - Fixed earlier (stage 1): `simulate` works without events, clears previous
   phase results, keeps phases inside the requested time range, applies
@@ -879,38 +892,41 @@ Option names:
 
 | v3 | v4 |
 |----|----|
-| `net = CsvNetHandler.import(path)` | `net = PowerNetwork.import_csv(path)` |
-| `CsvNetHandler.import(path, obj)` (network class constructor) | `PowerNetwork.import_csv(path, Network=obj)` |
-| `CsvNetHandler.export(net, "MyNet", savepath=d)` | `net.export_csv(fullfile(d, "@MyNet"))` |
+| `net = CsvNetHandler.import(path)` | `net = PowerNetwork.import(path)` |
+| `CsvNetHandler.import(path, obj)` (network class constructor) | `PowerNetwork.import(path, Network=obj)` |
+| `CsvNetHandler.export(net, "MyNet", savepath=d)` | `net.export(fullfile(d, "@MyNet"))` |
 | – | `net = PowerNetwork.import_matpower(mpc)` (`"case14"`, a struct, a file or a function handle) |
 
-- `import_csv` options: `Initialize` (default true), `Network`.
-  `export_csv` options: `Overwrite` (an existing folder is otherwise an
-  error, `GUILDA:export_csv:FolderExists`), `ClassFile` (default: when the
+- **改名(開発途中の v4 から)。** `PowerNetwork.import_csv` / `net.export_csv` は `PowerNetwork.import` / `net.export` に、メッセージ ID `GUILDA:import_csv:*` / `GUILDA:export_csv:*` は `GUILDA:import:*` / `GUILDA:export:*` になりました。`import` は静的メソッドなので `PowerNetwork.import(path)` の形で呼びます(関数形式の `import(net, path)` は MATLAB の `import` 文になります)。以前に書き出したクラスファイル(`<Name>.m`)の `import_csv` の行も書き換えてください。
+- **シナリオも保存します。** `net.export` は各シナリオを `scenario/<tag>.json` に書き(シナリオがなければフォルダを作らない。`Overwrite=true` は `scenario/` も消す)、`PowerNetwork.import` は機器と slack の後、`initialize` の前に、ファイル名の順で `add_scenario(<ファイル名>)` して外乱を加えます。ファイルは `Format`(`"GUILDAscenario"`)、`version`(1)、`Description`、`Time`、`Disturbances`(外乱ごとに `add_disturbance` の Name-Value と同じ名前の項目。時系列の入力は `InputValue: {Time, Value}` と `InputMethod`)を持ちます。`Inf` / `NaN` は `Infinity` / `NaN` と書きます。読めない JSON や形の誤りは系統を変える前に `GUILDA:PowerNetwork:ScenarioJson` で止まり、未知の項目(古い `Judge` など)は警告 `GUILDA:PowerNetwork:UnknownScenarioField` を出して無視します。`Scenario.import_csv` / `export_csv` は削除しました。
+
+- `import` options: `Initialize` (default true), `Network`.
+  `export` options: `Overwrite` (an existing folder is otherwise an
+  error, `GUILDA:export:FolderExists`), `ClassFile` (default: when the
   folder name starts with `@`).
 - Folder format: `network/parameter.csv` holds `Hz` and `baseMVA`; the bus
   column `Slack` marks the slack bus. Folders written before v4 (no
   `network/parameter.csv`) import with the defaults
   (`GUILDA.config("Model","Hz")`, 100 MVA); a bus column `baseMVA` is
   ignored. Equilibria and controllers are not saved.
-- **母線の列 `V0`、`Varg0` は読みません。** 古いフォルダの `bus/parameter.csv` にあれば、INFO `GUILDA:import_csv:RemovedColumn` を表示して無視します。`import_matpower` は VM を初期値として使いません(発電機のない母線の `V` には使います)。`tools.network_to_mpc` の VM/VA は母線の平衡点の電圧(`initialize` の前は 1、0)です。
-- **保存しない制御器を警告します。** `export_csv` は書き出しを終えた後、制御器が残っていると `GUILDA:PowerNetwork:ControllersNotSaved` で警告し、ローカル制御器(`<機器>/<AVR>/<PSS>`)とグローバル制御器を列挙します。読み込んだ系統には戻らないので、`import_csv` の後に付け直してください。
+- **母線の列 `V0`、`Varg0` は読みません。** 古いフォルダの `bus/parameter.csv` にあれば、INFO `GUILDA:import:RemovedColumn` を表示して無視します。`import_matpower` は VM を初期値として使いません(発電機のない母線の `V` には使います)。`tools.network_to_mpc` の VM/VA は母線の平衡点の電圧(`initialize` の前は 1、0)です。
+- **保存しない制御器を警告します。** `export` は書き出しを終えた後、制御器が残っていると `GUILDA:PowerNetwork:ControllersNotSaved` で警告し、ローカル制御器(`<機器>/<AVR>/<PSS>`)とグローバル制御器を列挙します。読み込んだ系統には戻らないので、`import` の後に付け直してください。
 - **往復でタグを保持します。** 母線、ブランチ、機器の表に `FullTag` 列を追加しました。欠番や改名を含めて保存時のタグが戻ります。`FullTag` のないフォルダや空の値は、これまでどおり自動のタグになります。母線の `Tag` 列は接頭辞(タグの末尾の数字を除いた部分)です。`FullTag` の重複は番号を付けて改名します。
-- **`import_csv` は系統を変える前に表を検査します。** 間違ったファイル、列、行番号では `Network=` の系統は変わりません(モデルのキーが不明な場合や潮流の失敗など、検査の後の失敗では途中まで作られることがあるので、作り直してください)。
+- **`import` は系統を変える前に表を検査します。** 間違ったファイル、列、行番号では `Network=` の系統は変わりません(モデルのキーが不明な場合や潮流の失敗など、検査の後の失敗では途中まで作られることがあるので、作り直してください)。
 
   | ID | 種類 | 条件 |
   |----|------|------|
-  | `GUILDA:import_csv:UnknownColumn` | 警告 | 未知の列。列は無視する(メモの列で止めないため)。綴りの誤りはこの警告で分かる。`dynamics.csv` の列は機器のクラスによるので検査しない |
-  | `GUILDA:import_csv:UnknownID` | エラー | `ParameterID` や `OpfID` が参照先にない、または空 |
-  | `GUILDA:import_csv:BusRow` | エラー | `From`, `To`, `Bus` が 1 から行数までの整数でない |
-  | `GUILDA:import_csv:MissingFile` | エラー | 必要な表がない |
-  | `GUILDA:import_csv:NoComponentFolder` | 警告 | `component/` がない |
+  | `GUILDA:import:UnknownColumn` | 警告 | 未知の列。列は無視する(メモの列で止めないため)。綴りの誤りはこの警告で分かる。`dynamics.csv` の列は機器のクラスによるので検査しない |
+  | `GUILDA:import:UnknownID` | エラー | `ParameterID` や `OpfID` が参照先にない、または空 |
+  | `GUILDA:import:BusRow` | エラー | `From`, `To`, `Bus` が 1 から行数までの整数でない |
+  | `GUILDA:import:MissingFile` | エラー | 必要な表がない |
+  | `GUILDA:import:NoComponentFolder` | 警告 | `component/` がない |
 
   メッセージはファイル、行、列を示します。
 - CSV import reads the branch columns `tap`/`phase` (as export writes
   them) and `Tap`/`Phase`; both in one file is an error. v3 read only
   `Tap`/`Phase`, so every imported transformer tap was 1.
-- CSV import errors have the IDs `GUILDA:import_csv:*` (e.g.
+- CSV import errors have the IDs `GUILDA:import:*` (e.g.
   `DuplicateColumns`, `MissingColumns`); catch them by these IDs.
 - `import_matpower` is the inverse of `tools.network_to_mpc`; MATPOWER is
   not needed. Options `GeneratorModel`, `GeneratorParameter`, `LoadModel`,
@@ -924,7 +940,7 @@ Option names:
   | `CsvNetHandler.export(net, ModelName, savepath=d, Overwrite=tf, version=v)` | `GUILDA:Deprecated:CsvNetHandlerExport` |
 
   `CsvNetHandler` now lives in `_VersionSupport/`. The bundled network
-  classes call `PowerNetwork.import_csv(..., Network=obj)`; your own
+  classes call `PowerNetwork.import(..., Network=obj)`; your own
   network classes that call `CsvNetHandler.import` warn once.
 
 ### 1.14 Toolbox はすべて任意
@@ -1001,15 +1017,13 @@ there.
 
 | v3 | v4 |
 |----|----|
-| `[flag, tab, output] = net.initialize()` | `[result, flag, output] = net.initialize()`; `tab = result.tab_bus` |
-| `net.initialize("methods", "powerflow calculation")` | `net.initialize(Method="powerflow")` (default) |
+| `[flag, tab, output] = net.initialize()` | `[rm_pf, flag, output] = net.initialize()`; `tab = net.calculate_powerflow().tab_bus` |
+| `net.initialize("methods", "powerflow calculation")` | `net.initialize(Method="powerflow")` (default)。旧形式はエラー |
 | `net.initialize("methods", "optimal powerflow")` | `net.initialize(Method="OPF")` |
 | `net.initialize("methods", "calculate from Xequilibrium")` | `net.initialize(Method="equilibrium")` |
 | – | `comp.set_input(u)`, then `net.initialize(Method="FixedInput")` (the equilibrium with the inputs held) |
 
-- `result` is a `ResultPF` (`"powerflow"`, and `"equilibrium"` with
-  `s_solver = "equilibrium"` and no branch flows) or a `ResultOPF`
-  (`"OPF"`, which runs AC OPF).
+- 最初の出力 `rm_pf` は、どの `Method` でも設定した運転点の n×4 の複素数の配列です(列は V・I・P・Q、行は `net.a_Bus` の順。`"OPF"` では AC OPF の解)。`initialize` は `Format` を取らず、渡すと `GUILDA:PowerNetwork:InitializeFormat` で止まります(2026-11-13)。結果のオブジェクトは `calculate_powerflow`(`ResultPF`)と `calculate_optimal_powerflow`(`ResultOPF`)で得ます。
 - Other Name-Value options go unchanged to `calculate_powerflow` or
   `calculate_optimal_powerflow` (e.g. `net.initialize(Method="OPF",
   Solver="fmincon")`, `net.initialize(MaxIteration=50)`); unknown names stop
@@ -1085,37 +1099,34 @@ there.
   components and none has `Q = NaN`. `net.initialize` still runs: the first
   component of the bus takes the remaining power, so a load can generate power.
   If a custom component should balance the network, set `Q = nan` on it.
-- Deprecated, still working:
-
-  | Old form | Warning ID |
-  |----------|------------|
-  | option `"methods"` | `GUILDA:Deprecated:InitializeMethods` |
-  | old values `"powerflow calculation"`, `"optimal powerflow"`, `"calculate from Xequilibrium"` (with `methods` or `Method`) | `GUILDA:Deprecated:InitializeMethodValue` |
-
-  The old output order cannot be detected and is not converted.
+- **v3 の形式は使えません(2026-11-13)。** オプション `"methods"` は未知の名前として解析のエラー(`MATLAB:TooManyInputs` など)になり、旧い値 `"powerflow calculation"`・`"optimal powerflow"`・`"calculate from Xequilibrium"` は `GUILDA:PowerNetwork:InitializeMethod` で止まります。警告付きの変換(`v3_initialize_args`)は削除しました。旧い出力の順序は検出できず、変換しません。
 
 ### 1.18 シナリオ(`ODEevent` → `Scenario`)
 
-外乱のイベント `ODEevent` は `Scenario` に置き換わりました。1 つのシナリオが 1 回のシミュレーションの外乱の一覧(外乱ごとに時間区間)を持ち、シミュレーション時間 `Time`、`simulate` のオプション `Options`、説明 `Description`、判定関数 `Judge` も保存できます。シナリオは系統が所有します(`net.a_Scenario`、親の参照 `sc.a_PowerNetwork`)。
+外乱のイベント `ODEevent` は `Scenario` に置き換わりました。シナリオは 1 つの系統の子で、1 回のシミュレーションの外乱の一覧(外乱ごとに時間区間)、シミュレーション時間 `Time`(既定 `[0, 10]`)、説明 `Description` を持ちます。データだけを持ち、関数ハンドルやソルバーの設定は持ちません。
 
 | v3 / 旧 v4 | v4 |
 |----|----|
-| `ev = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008")` | `sc = Scenario("fault"); sc.add_fault("B008", [1,1.05]); net.add_scenario(sc)` |
+| `ev = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008")` | `sc = net.add_scenario("fault"); sc.add_fault("B008", [1,1.05])` |
 | `ODEevent(..., "TripUnit", u)` / `"OpenBranch", b` | `sc.add_trip(u, [t1,t2])` / `sc.add_open_branch(b, [t1,t2])` |
 | `ODEevent(..., "OffsetUnit", c, "OffsetState", x, "OffsetValue", v)` | `sc.add_offset(c, x, v, t)` |
 | `ODEevent(..., "InputUnit", c, "InputName", n, "InputValue", v)` | `sc.add_input(c, n, v, [t1,t2])` |
-| 複数の種類を 1 つのイベントに | `sc.add_disturbance(tag, TimeSpan=..., FaultBus=..., OpenBranch=..., ...)`(旧 `ODEevent` と同じ Name-Value) |
-| `net.simulate([0,20], ev_fault, ev_open)` | 1 つのシナリオに 2 つの外乱を入れて `net.simulate(sc)`(`sc.Time` を使う)。`net.simulate(time, sc1, sc2, ...)` も使えます |
-| 安定判別のスクリプト | `verdict = sc.judge(result)`(既定は `Scenario.out_of_step`) |
+| `sc.add_input(c, n, @(t) 0.01*t, [1 3])`(関数の入力) | `sc.add_input(c, n, [0 0; 2 0.02], [1 3])`(時系列 `[t, 値]`。`Method` の既定は `"foh"`) |
+| 複数の種類を 1 つのイベントに | `sc.add_disturbance(tag, TimeSpan=..., FaultBus=..., OpenBranch=..., ...)`(旧 `ODEevent` と同じ Name-Value。入力の補間は `InputMethod`) |
+| `net.simulate([0,20], ev_fault, ev_open)` | 1 つのシナリオに 2 つの外乱を入れて `net.simulate("fault", Time=[0,20])` |
+| `sc = Scenario("f"); net.add_scenario(sc)` | `sc = net.add_scenario("f")`(`Scenario(...)` を直接呼ぶとエラー) |
+| `other.add_scenario(sc.copy())` | `other.add_scenario("f", From=sc)` |
+| 安定判別のスクリプト、`sc.judge(result)` | `verdict = result.judge_out_of_step()` |
+| `Scenario.import_csv(file, Network=net)` / `Scenario.export_csv(file, net.a_Scenario)` | `net.export(folder)` が `folder/scenario/<tag>.json` を書き、`PowerNetwork.import(folder)` が読む(1.13)。シナリオだけの読み書きはない |
 
-- **所有。** `net.add_scenario(sc)` で追加、`net.remove_scenario(tag)` で外します(親の参照も消えます)。タグは系統の中で一意です。他の系統のシナリオを追加すると移動します(親は 1 つ)。別の系統でも使うときは `sc.copy()`(親のない複製)を追加します。シナリオの追加や編集は平衡点を古くしません(編集履歴にも記録しません)。
-- **タグの検査。** 外乱は母線、ブランチ、機器を(番号ではなく)タグで指します。系統に属するシナリオへ外乱を足すとき、シナリオを系統へ追加するとき、シミュレーションの開始時(そのときの系統で)に検査します。検査に失敗すると何も追加しません。属していないシナリオの `simulate` は `GUILDA:Scenario:OtherNetwork` で止まります。
-- **時間と設定。** `net.simulate(sc)` または `time = []` は `sc.Time`、なければ外乱の時間幅を使います。オプションの優先順位は `GUILDA.setting` の TimeSimulation セクション < `sc.Options` < 呼び出しの Name-Value です。一緒に実行するシナリオの `Time` や `Options` が食い違うときは、呼び出しで与えないと `GUILDA:PowerNetwork:ScenarioTimeConflict` / `ScenarioOptionConflict` で止まります。
-- **判定。** `sc.judge(result)` は `sc.Judge(result)` を返します。既定の `Scenario.out_of_step` は、状態 `delta` を持つ機器(同期発電機)の回転子角の基準からの差の絶対値が `Threshold`(既定 360 度)を超えたら `"out-of-step"`、超えずに `flag ~= 1` なら `"incomplete"`、それ以外は `"stable"` を返します。基準 `Reference` は既定がスラック母線の発電機で、`"COI"`(慣性 `M` の重み付き重心)や機器のタグも指定できます。結果は構造体(`Verdict`, `Time`, `Units`, `MaxAngle`, `Reference`, `Threshold`)です。`net.simulate` の `output` には判定を入れません(複数のシナリオを一緒に実行できるため)。文献との比較や一致数の集計は GUILDA には入れず、検証用スクリプトで行います。
-- **CSV。** `Scenario.import_csv(path, Network=net)` が 1 つのファイルの複数のシナリオを読み(`Scenario` 列が同じ行が 1 つのシナリオ、1 行が 1 つの外乱)、`Scenario.export_csv(path, net.a_Scenario)` が同じ形式で書きます。列は `Scenario`, `Description`, `ScenarioTimeStart`, `ScenarioTimeEnd`, `Tag`, `TimeStart`, `TimeEnd`, `FaultBus`, `TripUnit`, `OpenBranch`, `OffsetUnit`, `OffsetState`, `OffsetValue`, `InputUnit`, `InputName`, `InputValue` で、リストは `;` 区切りです。`InputValue` の関数ハンドルは CSV に書けず `GUILDA:Scenario:CsvFunctionHandle` で止まります(MAT ファイルに保存してください)。`Options` と既定以外の `Judge` は保存せず、`GUILDA:Scenario:CsvNotSaved` で警告します。
-- **メッセージ ID。** `GUILDA:ODEevent:*` は `GUILDA:Scenario:*` になりました(キーは同じ)。`EventArray` は `ScenarioArray` に、一緒に実行するシナリオ間のタグの重複は `DuplicateRunTag` に、シナリオ内のタグの重複は追加の時点の `DuplicateTag` になりました。`add_scenario` / `remove_scenario` の誤りは `GUILDA:PowerNetwork:ScenarioTagInUse`, `ScenarioNotFound`, `NotScenario` です。
-- **互換。** `ODEevent(tag, net, Name=Value)` の互換(`_VersionSupport/ODEevent.m`、警告 `GUILDA:Deprecated:ODEevent`、`Scenario.l_compat`)は削除しました。上の表のとおり `Scenario` を作って `net.add_scenario` で追加してください。返り値の違い(旧 `ev.TimeSpan` などは `sc.tab_disturbance` の列)と、タグ・状態・入力の検査が追加の時点で行われることは、`Scenario` でも同じです。
-- **内部。** 区間ごとのデータ(有効な外乱、地絡、解列、開放ブランチ、オフセット、入力関数)は `solve` の冒頭で `Scenario.compile` が 1 回だけ作ります(EV5)。モデルの作業データを書くのは `SolverODE` だけです。結果は以前の `ODEevent` と同じ(`rv_t`, `rm_variable`, `rm_I`, `output.phases` が代表的な地絡、解列、オフセット、入力、開放の例でビット単位で一致)です。
+- **所有。** `net.add_scenario(tag, Time=..., Description=..., From=...)` で作り、`net.remove_scenario(tag)` で削除します。シナリオのタグは系統の母線・ブランチ・グローバル制御器と同じ名前空間を使い、使用中のタグには番号が付きます。シナリオの追加や編集は平衡点を古くしません(編集履歴にも記録しません)。
+- **タグの検査。** 外乱は母線、ブランチ、機器を(番号ではなく)タグで指します。外乱を足すときと、シミュレーションの開始時(そのときの系統で)に検査します。検査に失敗すると何も追加しません。
+- **時間と設定。** `net.simulate(tag)` は `sc.Time` を使い、`Time=` を渡すとその呼び出しだけ置き換わります。外乱の時刻で時間は変わりません。ソルバーの設定はシナリオには置かず、`GUILDA.setting` の TimeSimulation セクションと呼び出しの Name-Value で与えます(1.11)。
+- **入力の時系列。** `InputValue` は定数(名前ごとに 1 つ、または全部に 1 つ)か、時系列 `[t, v_1, ..., v_n]`(または `Time` と入力名を変数に持つ table)です。`t` は `t_start` からの時刻で 0 から増加します。補間は `"zoh"`、`"foh"`(既定)、`"spline"` で、最後の点の後は最後の値を保ちます。`"zoh"` の 2 点目以降は区間の境目になります。関数ハンドルは受け付けません。
+- **判定。** `result.judge_out_of_step(Reference=..., Threshold=...)` は、状態 `delta` を持つ機器(同期発電機)の回転子角の基準からの差の絶対値が `Threshold`(既定 360 度)を超えたら `"out-of-step"`、超えずに `flag ~= 1` なら `"incomplete"`、それ以外は `"stable"` を返します。基準 `Reference` は既定がスラック母線の発電機で、`"COI"`(慣性 `M` の重み付き重心)や機器のタグも指定できます。結果は構造体(`Verdict`, `Time`, `Units`, `MaxAngle`, `Reference`, `Threshold`)です。結果だけを読むので、系統を編集・削除した後でも使えます。ほかの基準は結果を受け取る関数 `v = my_judge(result)` として書きます。文献との比較や一致数の集計は GUILDA には入れず、検証用スクリプトで行います。
+- **メッセージ ID。** `GUILDA:ODEevent:*` は `GUILDA:Scenario:*` になりました(キーは同じ)。シナリオ内のタグの重複は追加の時点の `DuplicateTag` です。存在しないタグの `simulate` / `remove_scenario` は `GUILDA:PowerNetwork:ScenarioNotFound` です。判定のエラーは `GUILDA:ResultODE:NoRotorAngle`, `NoSlackGenerator`, `NoInertia`, `UnknownReference` です。
+- **互換。** `ODEevent(tag, net, Name=Value)` の互換(`_VersionSupport/ODEevent.m`、警告 `GUILDA:Deprecated:ODEevent`、`Scenario.l_compat`)は削除しました。上の表のとおり `net.add_scenario` で作ってください。返り値の違い(旧 `ev.TimeSpan` などは `sc.tab_disturbance` の列)と、タグ・状態・入力の検査が追加の時点で行われることは、`Scenario` でも同じです。
+- **内部。** 区間ごとのデータ(有効な外乱、地絡、解列、開放ブランチ、オフセット、入力)は `net.build_simulation_data` の中で `Scenario.compile` が 1 回だけ、`sct_dae` の中の位置として作ります。`SolverODE` は系統もシナリオも読みません。結果は以前の `ODEevent` と同じ(`rv_t`, `rm_variable`, `rm_I`, `output.phases` が代表的な地絡、解列、オフセット、入力、開放の例で一致。`simulate_baseline` の 6 例)です。
 
 ### 1.19 文字列と構造体の名前(`str_` → `s_`、`s_` → `sct_`)
 
@@ -1129,7 +1140,7 @@ there.
 | `get_sys` の `output.str_issue` | `output.s_issue` |
 | `comp.sct_edit.str_odefcn`(モデル作者向け) | `comp.sct_stale.odefcn`(古い理由のメッセージ。空なら最新。1.3 と 2.「`set_odefcn` は廃止」を参照) |
 
-- `net.info` と `struct(obj)` の表や構造体の列名、フィールド名も `s_tag`、`s_bustype` になります。
+- `net.disp_summary` と `struct(obj)` の表や構造体の列名、フィールド名も `s_tag`、`s_bustype` になります。
 - 名前の対応表は [naming-struct-string.md](naming-struct-string.md) にあります。
 
 ### 1.20 パラメータは `tab_parameter` で読み書き(`para_*` の廃止)
@@ -1255,6 +1266,16 @@ of its parent, so the labels stay unique within a network.
 - **作成。** 機器・ブランチ・ローカル制御器・グローバル制御器は、キーで作るメソッド(`add_component`、`replace_component`、`add_branch`、`add_local_controller`、`add_global_controller`)の中でしか作れません。具体クラスのコンストラクタを直接呼ぶと `MATLAB:class:MethodRestricted` で止まります(例: `controller.avr.AVR_ST1("1")`、`component.generator.park("1", nan, opt)`、`branch.pi("1", opt)`)。以前は制御器、発電機、ブランチのコンストラクタは公開でした。
 - **削除。** 外した物体は `delete` されます(1.4)。外した制御器を別の機器に付け直したり、外した機器を読んだりしていたスクリプトは、キーで新しく作ってください。`replace_component` の `Controllers="drop"`(既定)で残らなかったローカル制御器も削除されます。
 - **親のない物体の扱いの廃止。** 親のない物体がなくなったため、それを前提にした動作もなくなりました: 系統にない層の `get_sys` が古いハンドルを作り直す動作、`comp.c_Vequilibrium` / `con.c_Vequilibrium` が `[]` を返す動作、`gc.get_sys` の系統外の名前付け、`get_Hz` の `GUILDA.config("Model","Hz")` への切り替え。エラー ID `GUILDA:Component:InputNotConnected`、`GUILDA:LocalController:ValidateNotAttached`、`GUILDA:local_LQR:NotOnComponent`、`GUILDA:PowerNetwork:GconOtherNetwork`、`GUILDA:SolverODE:ForeignControlledUnit` はなくなりました(起きえない状況の検査)。
+
+### 1.25 系統の表示と図のメソッド名(`disp_*` / `plot_*`)
+
+`PowerNetwork` の表示と図のメソッドは、ほかの API と同じ動詞に揃えました。文字で表示するものは `disp_*`(`disp_connection`、`ResultPF.disp_summary` と同じ)、図を描くものは `plot_*`(`ResultPF.plot_voltage`、`ResultODE.plot_trajectory` と同じ)です。オプション、出力、動作は変わりません。互換の別名はないため、古い名前を呼ぶスクリプトは書き換えてください。
+
+| 旧 | 新 |
+|---|---|
+| `net.info(...)` | `net.disp_summary(...)` |
+| `net.draw_diagram(ax)` | `net.plot_diagram(ax)` |
+| `net.draw_spring_model(mode)` | `net.plot_spring_model(mode)` |
 
 ## 2. Changes so far — model authors
 
@@ -1396,8 +1417,8 @@ of its parent, so the labels stay unique within a network.
 Everything that was listed here is implemented (sections 1.7–1.13 and
 1.17): result classes, `[result, flag, output]` (also for `initialize`),
 UpperCamelCase Name-Value options over `GUILDA.setting` defaults,
-`net.calculate_continuation_powerflow`, `PowerNetwork.import_csv` /
-`import_matpower`, `net.export_csv`, `Plot` / `Export` as result methods,
+`net.calculate_continuation_powerflow`, `PowerNetwork.import` /
+`import_matpower`, `net.export`, `Plot` / `Export` as result methods,
 and simulation results in the order of `get_variable_map`. Open follow-ups
 (e.g. external OPF backends) are in [status.md](status.md#未決事項).
 
@@ -1424,10 +1445,8 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | `net.add_bus(..., "baseMVA", x)` with x ≠ system base | `GUILDA:Deprecated:BusBaseMVAMismatch` | warning; ignored, system base used |
 | `Continuation_Power_Flow(net, opt)` | `GUILDA:Deprecated:ContinuationPowerFlowFunction` | warning; returns a `ContinuationPowerFlowV3` (v3 properties, `solve`, `CPF_Result`) |
 | `SolverCPF(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | error |
-| `initialize("methods", m)` | `GUILDA:Deprecated:InitializeMethods` | warning; becomes `Method=m` |
-| `initialize` values `"powerflow calculation"` / `"optimal powerflow"` / `"calculate from Xequilibrium"` | `GUILDA:Deprecated:InitializeMethodValue` | warning; become `"powerflow"` / `"OPF"` / `"equilibrium"` |
-| `CsvNetHandler.import(path, net, Initialize=tf)` | `GUILDA:Deprecated:CsvNetHandlerImport` | warning; calls `PowerNetwork.import_csv` |
-| `CsvNetHandler.export(net, ModelName, savepath=d)` | `GUILDA:Deprecated:CsvNetHandlerExport` | warning; calls `net.export_csv(fullfile(d, "@"+ModelName))` |
+| `CsvNetHandler.import(path, net, Initialize=tf)` | `GUILDA:Deprecated:CsvNetHandlerImport` | warning; calls `PowerNetwork.import` |
+| `CsvNetHandler.export(net, ModelName, savepath=d)` | `GUILDA:Deprecated:CsvNetHandlerExport` | warning; calls `net.export(fullfile(d, "@"+ModelName))` |
 
 Not kept: the v3 options `Algorithm` and `NonUnit` of `get_sys` and `solver_LIN.NonUnit` (validation errors; Issue #121), the v3 constructor arguments of `SolverLIN` (MATLAB's too-many-arguments error) and the v3 positional point `get_sys(x, V, u)` (the first positional argument of `get_sys` is now the point; 2026-11-13), the v3 second output `lin` of `get_sys`, the v3 meaning of the
 second output of `simulate`, the v3 output order of `initialize` (see the
@@ -1444,14 +1463,13 @@ lists all of them:
 |------|------|------|
 | `@PowerNetwork/add_bus.m` | `opt.baseMVA` argument | accepts the old option |
 | `@PowerNetwork/add_bus.m` | `v3_bus_baseMVA(obj, opt)` | warns and removes the option |
-| `@PowerNetwork/initialize.m` | `v3_initialize_args(varargin)` | `methods` option and old values |
 | `_auxiliary/@SolverCPF/SolverCPF.m` | `v3_cpf_constructor(varargin)` | rejects v3 constructor arguments |
 
 `DebugScript.test_F10_api_foundation` checks this list and that core code
 does not call `Deprecated` outside a hook line. Update both when a hook is
 added.
 
-フックは 2026-11-13 の時点で 4 行で、上の表の行数と一致します(`grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA` で数えました。ファイルごとの行数は F10 のテストが検査します)。
+フックは 2026-11-13 の時点で 3 行で、上の表の行数と一致します(`grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA` で数えました。ファイルごとの行数は F10 のテストが検査します)。
 `Continuation_Power_Flow` and `CsvNetHandler` are old names; they live
 entirely in `_VersionSupport/` and need no hook. CSV import ignores a bus
 `baseMVA` column simply by not reading it (no compat code).
@@ -1467,9 +1485,8 @@ settings (an untagged line, needed by the `get_config` hook).
 | `v3_bus_baseMVA.m` | `add_bus` `baseMVA` option |
 | `Continuation_Power_Flow.m` | old CPF entry point (returns `ContinuationPowerFlowV3`) |
 | `ContinuationPowerFlowV3.m` | v3 CPF object: `CPF*` properties, `solve`, `CPF_Result` |
-| `@CsvNetHandler/` | old CSV import / export, wrappers of `import_csv` / `export_csv` |
+| `@CsvNetHandler/` | old CSV import / export, wrappers of `import` / `export` |
 | `v3_cpf_constructor.m` | error for `SolverCPF(net, ...)` |
-| `v3_initialize_args.m` | `initialize` option `methods` and old method values |
 
 ### Adding a compat form (stages 2 and 3)
 

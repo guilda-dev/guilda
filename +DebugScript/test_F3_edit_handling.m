@@ -65,8 +65,8 @@ assert(isequal(h_dx, comp.f_dx))                         % 解析は作り直さ
 
 % initialize は潮流計算をせず、保持している V, I から平衡点とハンドルを作り直す
 V0 = net.cv_Vequilibrium;
-res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
-assert(res.s_solver == "equilibrium" && isequal(net.cv_Vequilibrium, V0))
+[~, ~, out_init] = DebugScript.helper.quiet(@() net.initialize());   % 解いたときだけ output に iterations がある
+assert(~isfield(out_init, "iterations") && isequal(net.cv_Vequilibrium, V0))
 assert(~isequal(h_dx, comp.f_dx) && ~DebugScript.helper.is_stale(net))
 sol = net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]);
 assert(sol.odeResults.t(end) == 1)
@@ -89,8 +89,8 @@ ME = error_of(@() net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, T
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:SimulateStale" && contains(ME.message, "edit Hz"))
 
 % initialize はハンドルだけを作り直し、平衡点は変わらない
-res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
-assert(res.s_solver == "equilibrium" && isequal(comp.rv_Xequilibrium, x_eq))
+[~, ~, out_init] = DebugScript.helper.quiet(@() net.initialize());
+assert(~isfield(out_init, "iterations") && isequal(comp.rv_Xequilibrium, x_eq))
 assert(DebugScript.helper.handle_Hz(comp) == 50 && ~DebugScript.helper.is_stale(net))
 sol = net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]);
 assert(sol.odeResults.t(end) == 1)
@@ -113,8 +113,8 @@ assert(isequal(net.sct_stale.powerflow, "base/" + net.s_tag + ": edit baseMVA: 1
 assert(isequal(comp.f_dx, f_dx))
 assert_stale_error(@() net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]), "GUILDA:PowerNetwork:SimulateStale")
 assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
-res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
-assert(res.s_solver ~= "equilibrium" && ~DebugScript.helper.is_stale(net))
+[~, ~, out_init] = DebugScript.helper.quiet(@() net.initialize());
+assert(isfield(out_init, "iterations") && ~DebugScript.helper.is_stale(net))
 
 
 %% Powerflow edit makes the power flow stale
@@ -130,8 +130,8 @@ assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 DebugScript.helper.quiet(@() net.initialize);
 net.a_Bus{2}.tab_parameter.powerflow.V = 1.01;
 assert(contains(net.sct_stale.powerflow, "powerflow/B002: "))
-res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
-assert(res.s_solver ~= "equilibrium" && ~DebugScript.helper.is_stale(net))
+[~, ~, out_init] = DebugScript.helper.quiet(@() net.initialize());
+assert(isfield(out_init, "iterations") && ~DebugScript.helper.is_stale(net))
 
 
 %% Bus and branch dynamics edits make the power flow stale
@@ -188,8 +188,8 @@ assert(any(contains(comp.sct_stale.equilibrium, avr1.s_tag)) && isempty(net.sct_
 assert(avr1.sct_stale.odefcn(1) == avr1.s_notInitialized)   % 新しい制御器は未初期化
 assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 assert_stale_error(@() net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]), "GUILDA:PowerNetwork:SimulateStale")
-res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
-assert(res.s_solver == "equilibrium" && ~DebugScript.helper.is_stale(net))   % 潮流計算はしない
+[~, ~, out_init] = DebugScript.helper.quiet(@() net.initialize());
+assert(~isfield(out_init, "iterations") && ~DebugScript.helper.is_stale(net))   % 潮流計算はしない
 assert(~isempty(avr1.f_dx) && ~isempty(avr1.rv_Xequilibrium))
 
 % PSS の追加
@@ -225,8 +225,8 @@ assert(isequal(lqr.sct_stale.odefcn, lqr.sct_stale.equilibrium) && isempty(comp.
 assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 
 % initialize でゲインが計算し直される (潮流計算はしない)
-res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
-assert(res.s_solver == "equilibrium")
+[~, ~, out_init] = DebugScript.helper.quiet(@() net.initialize());
+assert(~isfield(out_init, "iterations"))
 assert(~DebugScript.helper.is_stale(net) && norm(lqr.K - K1) > 1e-6)
 
 
@@ -330,8 +330,8 @@ DebugScript.helper.quiet(@() net.initialize);
 agc = net.add_global_controller("agc-PI", "B001SG1");
 assert(isempty(net.sct_stale.powerflow) && DebugScript.helper.is_stale(net))
 assert(agc.sct_stale.equilibrium(1) == agc.s_notInitialized)   % 新しい制御器は未初期化のまま
-res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
-assert(res.s_solver == "equilibrium" && ~DebugScript.helper.is_stale(net))
+[~, ~, out_init] = DebugScript.helper.quiet(@() net.initialize());
+assert(~isfield(out_init, "iterations") && ~DebugScript.helper.is_stale(net))
 net.remove_global_controller(agc.s_tag);
 assert(~DebugScript.helper.is_stale(net))
 sol = net.simulate(DebugScript.helper.noop_event(net,[0,1]).s_tag, Time=[0,1]);
@@ -381,9 +381,9 @@ net.tab_parameter.base.Hz = 50;
 assert(isequal(lqr.K, K60) && DebugScript.helper.handle_Hz(lqr) == 60, "編集の時点では作り直さない")
 assert_stale_error(@() net.get_sys(), "GUILDA:PowerSystemModel:Stale")
 assert(isequal(lqr.K, K60), "解析では作り直さない")
-res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
+[~, ~, out_init] = DebugScript.helper.quiet(@() net.initialize());
 K50 = lqr.K;
-assert(res.s_solver == "equilibrium")
+assert(~isfield(out_init, "iterations"))
 assert(norm(K50 - K60) > 1e-3, "initialize で K を作り直す")
 assert(~DebugScript.helper.is_stale(net) && DebugScript.helper.handle_Hz(lqr) == 50)
 DebugScript.helper.quiet(@() net.initialize);
@@ -422,8 +422,8 @@ K60 = lqr.K;
 net.tab_parameter.base.Hz = 50;
 net.tab_parameter.base.Hz = 60;
 assert(numel(net.sct_stale.odefcn) == 2 && DebugScript.helper.is_stale(net))
-res = DebugScript.helper.quiet(@() net.initialize(Format="GUILDAorigin"));
-assert(res.s_solver == "equilibrium" && ~DebugScript.helper.is_stale(net))
+[~, ~, out_init] = DebugScript.helper.quiet(@() net.initialize());
+assert(~isfield(out_init, "iterations") && ~DebugScript.helper.is_stale(net))
 net.get_sys();
 assert(isequal(lqr.K, K60))
 

@@ -7,6 +7,7 @@
   <script src="../doc-lang.js"></script>
   <link rel="stylesheet" href="../style.css">
   <style>
+    .fio-json { margin: var(--dg-s3) 0 var(--dg-s4); }
     /* Data Import and Export feature page only (fio-*); shared parts are dg-* in style.css */
     .fio-seq { max-width: 900px; margin: 0 auto; }
     .fio-seq .fio-l { paint-order: stroke; stroke: var(--dg-panel); stroke-width: 7px; stroke-linejoin: round; }
@@ -50,8 +51,8 @@
   <main>
     <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Data Import and Export Feature Design</span><span lang="ja">データの入出力機能の設計</span></h1>
-    <p class="page-lead" lang="en">Reads a network from a CSV model folder or a MATPOWER case; writes it to a CSV model folder or a MATPOWER case struct. The importers check the input, then build the network through the public <code>add_*</code> methods, so an imported network is the same as one built by hand.</p>
-    <p class="page-lead" lang="ja">ネットワークは、CSV のモデルフォルダか MATPOWER のケースから読み込めます。書き出し先は、CSV のモデルフォルダか MATPOWER のケース構造体です。読み込みでは、まず入力を検査し、それから公開の <code>add_*</code> メソッドでネットワークを組み立てます。そのため、読み込んだネットワークは手で組み立てたネットワークと変わりません。</p>
+    <p class="page-lead" lang="en">Reads a network and its scenarios from a model folder (CSV tables and scenario JSON files), or a network from a MATPOWER case; writes them to a model folder or a MATPOWER case struct. The importers check the input, then build the network through the public <code>add_*</code> methods, so an imported network is the same as one built by hand.</p>
+    <p class="page-lead" lang="ja">ネットワークとそのシナリオは、モデルフォルダ（CSV の表とシナリオの JSON ファイル）から読み込めます。ネットワークは MATPOWER のケースからも読み込めます。書き出し先は、モデルフォルダか MATPOWER のケース構造体です。読み込みでは、まず入力を検査し、それから公開の <code>add_*</code> メソッドでネットワークを組み立てます。そのため、読み込んだネットワークは手で組み立てたネットワークと変わりません。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#entry"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></a>
@@ -69,8 +70,8 @@
     <table class="dg-table fio-entry">
       <thead><tr><th><span lang="en">Call</span><span lang="ja">呼び出し</span></th><th><span lang="en">Options (default)</span><span lang="ja">オプション（既定値）</span></th><th><span lang="en">Returns</span><span lang="ja">戻り値</span></th></tr></thead>
       <tbody>
-        <tr><td><code>net = PowerNetwork.import_csv(path, Name=Value)</code></td><td data-label="Options (default)" data-label-ja="オプション（既定値）"><code>Initialize</code> (<code>true</code>), <code>Network</code> (<code>[]</code>: <span lang="en">a new network tagged with the folder name without a leading <code>@</code></span><span lang="ja">先頭の <code>@</code> を除いたフォルダ名をタグにした新しいネットワーク</span>)</td><td data-label="Returns" data-label-ja="戻り値"><code>PowerNetwork</code></td></tr>
-        <tr><td><code>path = net.export_csv(path, Name=Value)</code></td><td data-label="Options (default)" data-label-ja="オプション（既定値）"><code>Overwrite</code> (<code>false</code>), <code>ClassFile</code> (<span lang="en"><code>true</code> when the folder name starts with <code>@</code></span><span lang="ja">フォルダ名が <code>@</code> で始まるとき <code>true</code></span>)</td><td data-label="Returns" data-label-ja="戻り値"><span lang="en">folder path (string)</span><span lang="ja">フォルダのパス（string）</span></td></tr>
+        <tr><td><code>net = PowerNetwork.import(path, Name=Value)</code></td><td data-label="Options (default)" data-label-ja="オプション（既定値）"><code>Initialize</code> (<code>true</code>), <code>Network</code> (<code>[]</code>: <span lang="en">a new network tagged with the folder name without a leading <code>@</code></span><span lang="ja">先頭の <code>@</code> を除いたフォルダ名をタグにした新しいネットワーク</span>)</td><td data-label="Returns" data-label-ja="戻り値"><code>PowerNetwork</code></td></tr>
+        <tr><td><code>path = net.export(path, Name=Value)</code></td><td data-label="Options (default)" data-label-ja="オプション（既定値）"><code>Overwrite</code> (<code>false</code>), <code>ClassFile</code> (<span lang="en"><code>true</code> when the folder name starts with <code>@</code></span><span lang="ja">フォルダ名が <code>@</code> で始まるとき <code>true</code></span>)</td><td data-label="Returns" data-label-ja="戻り値"><span lang="en">folder path (string)</span><span lang="ja">フォルダのパス（string）</span></td></tr>
         <tr><td><code>net = PowerNetwork.import_matpower(mpc, Name=Value)</code></td><td data-label="Options (default)" data-label-ja="オプション（既定値）"><code>GeneratorModel</code> (<code>"gen-park"</code>), <code>GeneratorParameter</code> (<code>NaN</code>: <span lang="en">class default</span><span lang="ja">クラスの既定値</span>), <code>LoadModel</code> (<code>"load-power"</code>), <code>Hz</code> (<code>GUILDA.config("Model","Hz")</code>), <code>Tag</code> (<span lang="en">case name, or <code>"PowerNetwork"</code> for a struct</span><span lang="ja">ケース名、構造体なら <code>"PowerNetwork"</code></span>), <code>Initialize</code> (<code>true</code>)</td><td data-label="Returns" data-label-ja="戻り値"><code>PowerNetwork</code></td></tr>
         <tr><td><code>mpc = tools.network_to_mpc(net)</code></td><td data-label="Options (default)" data-label-ja="オプション（既定値）">—</td><td data-label="Returns" data-label-ja="戻り値"><span lang="en">MATPOWER case struct (version 2)</span><span lang="ja">MATPOWER のケース構造体（version 2）</span></td></tr>
       </tbody>
@@ -80,24 +81,28 @@
       <li>Outputs: the network, the folder path or the struct, not <code>[result, flag, output]</code>; a failure is an error</li>
       <li><code>mpc</code> of <code>import_matpower</code>: a struct, a case name on the path (<code>"case14"</code>), a <code>.m</code> or <code>.mat</code> file, or a function handle</li>
       <li>MATPOWER itself not needed</li>
-      <li><code>CsvNetHandler.import(path, net, Initialize=tf)</code> and <code>CsvNetHandler.export(net, ModelName, savepath=d)</code>: call <code>import_csv</code> / <code>export_csv</code> and warn that they are deprecated</li>
+      <li><code>import</code> is a static method: call it as <code>PowerNetwork.import(path)</code> (the function form <code>import(net, path)</code> is the MATLAB <code>import</code> statement); <code>net.export(path)</code> and <code>export(net, path)</code> both work</li>
+      <li>Scenarios: <code>net.export</code> writes each scenario of <code>net.a_Scenario</code> to <code>scenario/&lt;tag&gt;.json</code>; <code>PowerNetwork.import</code> adds the scenarios of the folder (see <a href="#scenario-json">Scenario files</a>)</li>
+      <li><code>CsvNetHandler.import(path, net, Initialize=tf)</code> and <code>CsvNetHandler.export(net, ModelName, savepath=d)</code>: call <code>import</code> / <code>export</code> and warn that they are deprecated</li>
     </ul>
     <ul lang="ja">
       <li>オプションの既定値は、各関数の arguments ブロックで決めています。<code>solver_*</code> の設定は使いません。</li>
       <li>戻り値はネットワーク、フォルダのパス、構造体のどれかで、<code>[result, flag, output]</code> の形ではありません。失敗したときはエラーになります。</li>
       <li><code>import_matpower</code> の <code>mpc</code> には、構造体、パス上のケース名（<code>"case14"</code>）、<code>.m</code> や <code>.mat</code> のファイル、関数ハンドルのどれでも渡せます。</li>
       <li>MATPOWER 本体をインストールする必要はありません。</li>
-      <li><code>CsvNetHandler.import(path, net, Initialize=tf)</code> と <code>CsvNetHandler.export(net, ModelName, savepath=d)</code> は、非推奨の警告を出したうえで <code>import_csv</code> / <code>export_csv</code> を呼びます。</li>
+      <li><code>import</code> は静的メソッドなので、<code>PowerNetwork.import(path)</code> の形で呼びます（関数形式の <code>import(net, path)</code> は MATLAB の <code>import</code> 文になります）。<code>net.export(path)</code> と <code>export(net, path)</code> はどちらも使えます。</li>
+      <li>シナリオは、<code>net.export</code> が <code>net.a_Scenario</code> の各シナリオを <code>scenario/&lt;tag&gt;.json</code> に書き出し、<code>PowerNetwork.import</code> がフォルダのシナリオを加えます（<a href="#scenario-json">シナリオのファイル</a>を参照）。</li>
+      <li><code>CsvNetHandler.import(path, net, Initialize=tf)</code> と <code>CsvNetHandler.export(net, ModelName, savepath=d)</code> は、非推奨の警告を出したうえで <code>import</code> / <code>export</code> を呼びます。</li>
     </ul>
     <p lang="en">Preconditions:</p>
     <p lang="ja">前提条件は次のとおりです。</p>
     <ul lang="en">
       <li><code>GUILDA</code> already run, so that <code>add_branch</code> and <code>add_component</code> know the model keys used in the files</li>
-      <li>For <code>export_csv</code>: the parent folder exists</li>
+      <li>For <code>export</code>: the parent folder exists</li>
     </ul>
     <ul lang="ja">
       <li>先に <code>GUILDA</code> を実行しておく必要があります。そうしないと、ファイルに書かれたモデルのキーを <code>add_branch</code> と <code>add_component</code> が認識できません。</li>
-      <li><code>export_csv</code> では、書き出し先の親フォルダがあらかじめ存在している必要があります。</li>
+      <li><code>export</code> では、書き出し先の親フォルダがあらかじめ存在している必要があります。</li>
     </ul>
 
     <!-- ============================== 2. SEQUENCE ============================== -->
@@ -105,7 +110,7 @@
     <figure class="dg-figure">
       <div class="dg-only-wide">
         <svg class="dg-svg dg-sv fio-seq" viewBox="0 0 900 1088" role="img" aria-labelledby="fio-seq-title">
-          <title id="fio-seq-title">Call sequence of data import and export: import_csv reads and checks every CSV table, then builds the network with add_bus, add_branch and add_component; export_csv writes the same tables; import_matpower builds a network from a MATPOWER case and tools.network_to_mpc converts a network back.</title>
+          <title id="fio-seq-title">Call sequence of data import and export: import reads and checks every CSV table and scenario file, then builds the network with add_bus, add_branch and add_component and adds the scenarios; export writes the same tables and scenario files; import_matpower builds a network from a MATPOWER case and tools.network_to_mpc converts a network back.</title>
           <defs>
             <marker id="fio-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
             <marker id="fio-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head is-muted" d="M0 0L10 5L0 10z"/></marker>
@@ -142,7 +147,7 @@
           <path class="dg-sv-line is-muted" d="M34 134H84" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="126" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="138" text-anchor="middle" style="font-size:10px">01</text>
-          <text class="dg-mono is-sm fio-l" x="98" y="128" text-anchor="start">import_csv(path, Network=, Initialize=)</text>
+          <text class="dg-mono is-sm fio-l" x="98" y="128" text-anchor="start">import(path, Network=, Initialize=)</text>
           <path class="dg-sv-line" d="M246 164H391" marker-end="url(#fio-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 164H236" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="156" width="30" height="16" rx="8"/>
@@ -152,7 +157,7 @@
           <path class="dg-sv-line is-muted" d="M34 194H236" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="186" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="198" text-anchor="middle" style="font-size:10px">03</text>
-          <text class="dg-mono is-sm fio-l" x="250" y="188" text-anchor="start">read_components: main, dynamics, opf</text>
+          <text class="dg-mono is-sm fio-l" x="250" y="188" text-anchor="start">read_components; read_scenarios</text>
           <path class="dg-sv-line is-muted" d="M390 224H245" marker-end="url(#fio-ah-m)"/>
           <text class="dg-mono is-sm fio-l" lang="en" x="386" y="218" text-anchor="end">tables, checked</text>
           <text class="dg-mono is-sm fio-l" lang="ja" x="386" y="218" text-anchor="end">検査済みの table</text>
@@ -180,7 +185,7 @@
           <path class="dg-sv-line is-muted" d="M34 374H236" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="366" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="378" text-anchor="middle" style="font-size:10px">08</text>
-          <text class="dg-mono is-sm fio-l" x="250" y="368" text-anchor="start">l_isSlack = true</text>
+          <text class="dg-mono is-sm fio-l" x="250" y="368" text-anchor="start">l_isSlack = true; add_scenario(file name)</text>
           <path class="dg-sv-line" d="M246 404H543" marker-end="url(#fio-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 404H236" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="396" width="30" height="16" rx="8"/>
@@ -195,7 +200,7 @@
           <path class="dg-sv-line is-muted" d="M34 514H84" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="506" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="518" text-anchor="middle" style="font-size:10px">10</text>
-          <text class="dg-mono is-sm fio-l" x="98" y="508" text-anchor="start">export_csv(path, Overwrite=, ClassFile=)</text>
+          <text class="dg-mono is-sm fio-l" x="98" y="508" text-anchor="start">export(path, Overwrite=, ClassFile=)</text>
           <path class="dg-sv-line" d="M542 544H397" marker-end="url(#fio-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 544H388" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="536" width="30" height="16" rx="8"/>
@@ -205,7 +210,7 @@
           <path class="dg-sv-line is-muted" d="M34 574H388" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="566" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="578" text-anchor="middle" style="font-size:10px">12</text>
-          <text class="dg-mono is-sm fio-l" x="538" y="568" text-anchor="end">writetable: component/&lt;key&gt;/*.csv</text>
+          <text class="dg-mono is-sm fio-l" x="538" y="568" text-anchor="end">component/&lt;key&gt;/*.csv; scenario/*.json</text>
           <path class="dg-sv-line" d="M542 604H397" marker-end="url(#fio-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 604H388" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="596" width="30" height="16" rx="8"/>
@@ -268,19 +273,19 @@
         </svg>
       </div>
       <ol class="dg-only-narrow fio-narrow">
-        <li><b>IO-01</b> <span lang="en">Caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.import_csv</code></li>
-        <li><b>IO-02</b> <code>import_csv</code> → <code>readtable</code> (network, bus, branch)</li>
-        <li><b>IO-03</b> <code>import_csv</code> → <code>read_components</code></li>
-        <li><b>IO-04</b> <code>import_csv</code> → <code>net.tab_parameter.base</code></li>
-        <li><b>IO-05</b> <code>import_csv</code> → <code>net.add_bus</code></li>
-        <li><b>IO-06</b> <code>import_csv</code> → <code>net.add_branch</code></li>
-        <li><b>IO-07</b> <code>import_csv</code> → <code>Bus.add_component</code></li>
-        <li><b>IO-08</b> <code>import_csv</code> → <code>Bus.l_isSlack</code></li>
-        <li><b>IO-09</b> <code>import_csv</code> → <code>net.initialize</code></li>
-        <li><b>IO-10</b> <span lang="en">Caller</span><span lang="ja">呼び出し側</span> → <code>net.export_csv</code></li>
-        <li><b>IO-11</b> <code>export_csv</code> → <code>writetable</code> (network, bus, branch)</li>
-        <li><b>IO-12</b> <code>export_csv</code> → <code>writetable</code> (component)</li>
-        <li><b>IO-13</b> <code>export_csv</code> → <code>class_file</code>, <code>warn_controllers_not_saved</code></li>
+        <li><b>IO-01</b> <span lang="en">Caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.import</code></li>
+        <li><b>IO-02</b> <code>import</code> → <code>readtable</code> (network, bus, branch)</li>
+        <li><b>IO-03</b> <code>import</code> → <code>read_components</code>, <code>read_scenarios</code></li>
+        <li><b>IO-04</b> <code>import</code> → <code>net.tab_parameter.base</code></li>
+        <li><b>IO-05</b> <code>import</code> → <code>net.add_bus</code></li>
+        <li><b>IO-06</b> <code>import</code> → <code>net.add_branch</code></li>
+        <li><b>IO-07</b> <code>import</code> → <code>Bus.add_component</code></li>
+        <li><b>IO-08</b> <code>import</code> → <code>Bus.l_isSlack</code>, <code>net.add_scenario</code></li>
+        <li><b>IO-09</b> <code>import</code> → <code>net.initialize</code></li>
+        <li><b>IO-10</b> <span lang="en">Caller</span><span lang="ja">呼び出し側</span> → <code>net.export</code></li>
+        <li><b>IO-11</b> <code>export</code> → <code>writetable</code> (network, bus, branch)</li>
+        <li><b>IO-12</b> <code>export</code> → <code>writetable</code> (component), <code>write_scenarios</code></li>
+        <li><b>IO-13</b> <code>export</code> → <code>class_file</code>, <code>warn_controllers_not_saved</code></li>
         <li><b>IO-14</b> <span lang="en">Caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.import_matpower</code></li>
         <li><b>IO-15</b> <code>import_matpower</code> → <code>PowerNetwork</code></li>
         <li><b>IO-16</b> <code>import_matpower</code> → <code>gen_costs</code></li>
@@ -298,7 +303,7 @@
     <h2 id="steps"><span lang="en">3. Processing steps in detail</span><span lang="ja">3. 処理ステップの詳細</span></h2>
     <ol class="fs-steps">
       <li class="fs-step" id="IO-01">
-        <p class="fs-head"><b class="fs-id">IO-01</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.import_csv</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-01</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.import</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -317,21 +322,21 @@
         </dl>
       </li>
       <li class="fs-step" id="IO-02">
-        <p class="fs-head"><b class="fs-id">IO-02</b> <span class="fs-call"><code>import_csv</code> → <code>readtable</code>, <code>check_cols</code>, <code>check_bus_rows</code>, <code>read_full_tag</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-02</b> <span class="fs-call"><code>import</code> → <code>readtable</code>, <code>check_cols</code>, <code>check_bus_rows</code>, <code>read_full_tag</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Reads <code>network/parameter.csv</code> (optional), <code>bus/parameter.csv</code> and <code>branch/parameter.csv</code></li>
             <li>Maps the branch columns <code>tap</code>/<code>phase</code> to <code>Tap</code>/<code>Phase</code></li>
             <li>Checks the required columns; warns about unknown columns</li>
-            <li>Old bus columns <code>V0</code>, <code>Varg0</code>: ignored with the INFO message <code>GUILDA:import_csv:RemovedColumn</code></li>
+            <li>Old bus columns <code>V0</code>, <code>Varg0</code>: ignored with the INFO message <code>GUILDA:import:RemovedColumn</code></li>
             <li>Checks that <code>From</code>/<code>To</code> are bus row numbers</li>
             <li>Reads <code>FullTag</code> as text</li>
           </ul><ul lang="ja">
             <li><code>network/parameter.csv</code>（任意）、<code>bus/parameter.csv</code>、<code>branch/parameter.csv</code> を読み込みます。</li>
             <li>ブランチの列 <code>tap</code>/<code>phase</code> を <code>Tap</code>/<code>Phase</code> に対応付けます。</li>
             <li>必須列を検査し、未知の列は警告します。</li>
-            <li>母線の古い列 <code>V0</code> と <code>Varg0</code> は、INFO メッセージ <code>GUILDA:import_csv:RemovedColumn</code> を出して読み飛ばします。</li>
+            <li>母線の古い列 <code>V0</code> と <code>Varg0</code> は、INFO メッセージ <code>GUILDA:import:RemovedColumn</code> を出して読み飛ばします。</li>
             <li><code>From</code>/<code>To</code> が母線の行番号であることを確認します。</li>
             <li><code>FullTag</code> を文字列として読み込みます。</li>
           </ul></dd>
@@ -342,7 +347,7 @@
         </dl>
       </li>
       <li class="fs-step" id="IO-03">
-        <p class="fs-head"><b class="fs-id">IO-03</b> <span class="fs-call"><code>import_csv</code> → <code>read_components</code>, <code>check_ids</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-03</b> <span class="fs-call"><code>import</code> → <code>read_components</code>, <code>check_ids</code>, <code>read_scenarios</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -350,20 +355,22 @@
             <li>Reads <code>dynamics.csv</code> when <code>main.csv</code> has <code>ParameterID</code>, <code>opf.csv</code> when it has <code>OpfID</code></li>
             <li>Checks the columns, the bus rows and that every ID exists in the referenced file</li>
             <li>Missing <code>component</code> folder: warning</li>
+            <li><code>read_scenarios</code>: reads every <code>scenario/*.json</code> in the order of the file names (no <code>scenario</code> folder: none) and checks <code>Format</code>, <code>version</code>, <code>Time</code>, <code>Description</code>, the shape of <code>Disturbances</code> and the <code>Tag</code> of each disturbance (<code>GUILDA:PowerNetwork:ScenarioJson</code>); unknown fields give the warning <code>GUILDA:PowerNetwork:UnknownScenarioField</code> and are removed</li>
           </ul><ul lang="ja">
             <li><code>component/&lt;key&gt;/</code> の各サブフォルダから <code>main.csv</code> を読み込みます。名前が <code>.</code> で始まるフォルダは飛ばします。</li>
             <li><code>main.csv</code> に <code>ParameterID</code> があれば <code>dynamics.csv</code>、<code>OpfID</code> があれば <code>opf.csv</code> を読み込みます。</li>
             <li>列、母線の行番号、各 ID が参照先のファイルにあることを検査します。</li>
             <li><code>component</code> フォルダがない場合は警告します。</li>
+            <li><code>read_scenarios</code> は、<code>scenario/*.json</code> をファイル名の順にすべて読みます（<code>scenario</code> フォルダがなければシナリオはありません）。<code>Format</code>、<code>version</code>、<code>Time</code>、<code>Description</code>、<code>Disturbances</code> の形、各外乱の <code>Tag</code> を検査します（<code>GUILDA:PowerNetwork:ScenarioJson</code>）。未知の項目は警告 <code>GUILDA:PowerNetwork:UnknownScenarioField</code> を出して取り除きます。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>component/&lt;key&gt;/main.csv</code>, <code>dynamics.csv</code>, <code>opf.csv</code></dd>
+          <dd><code>component/&lt;key&gt;/main.csv</code>, <code>dynamics.csv</code>, <code>opf.csv</code>, <code>scenario/*.json</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en">one struct per key (key, tables, column list, full tags)</span><span lang="ja">キーごとの構造体（キー、table、列の一覧、フルタグ）</span></dd>
+          <dd><span lang="en">one struct per key (key, tables, column list, full tags); one struct per scenario file (<code>s_tag</code> = file name, <code>s_file</code>, decoded content)</span><span lang="ja">キーごとの構造体（キー、table、列の一覧、フルタグ）、シナリオのファイルごとの構造体（<code>s_tag</code> = ファイル名、<code>s_file</code>、読み込んだ内容）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="IO-04">
-        <p class="fs-head"><b class="fs-id">IO-04</b> <span class="fs-call"><code>import_csv</code> → <code>net.tab_parameter.base</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-04</b> <span class="fs-call"><code>import</code> → <code>net.tab_parameter.base</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -380,7 +387,7 @@
         </dl>
       </li>
       <li class="fs-step" id="IO-05">
-        <p class="fs-head"><b class="fs-id">IO-05</b> <span class="fs-call"><code>import_csv</code> → <code>PowerNetwork.add_bus</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-05</b> <span class="fs-call"><code>import</code> → <code>PowerNetwork.add_bus</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -399,7 +406,7 @@
         </dl>
       </li>
       <li class="fs-step" id="IO-06">
-        <p class="fs-head"><b class="fs-id">IO-06</b> <span class="fs-call"><code>import_csv</code> → <code>PowerNetwork.add_branch</code>, <code>set_full_tag</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-06</b> <span class="fs-call"><code>import</code> → <code>PowerNetwork.add_branch</code>, <code>set_full_tag</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -416,7 +423,7 @@
         </dl>
       </li>
       <li class="fs-step" id="IO-07">
-        <p class="fs-head"><b class="fs-id">IO-07</b> <span class="fs-call"><code>import_csv</code> → <code>Bus.add_component</code>, <code>set_full_tag</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-07</b> <span class="fs-call"><code>import</code> → <code>Bus.add_component</code>, <code>set_full_tag</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -437,26 +444,28 @@
         </dl>
       </li>
       <li class="fs-step" id="IO-08">
-        <p class="fs-head"><b class="fs-id">IO-08</b> <span class="fs-call"><code>import_csv</code> → <code>Bus.l_isSlack</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-08</b> <span class="fs-call"><code>import</code> → <code>Bus.l_isSlack</code>, <code>PowerNetwork.add_scenario</code>, <code>Scenario.add_from_json_struct</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Runs after the components exist</li>
             <li>First bus row whose <code>Slack</code> is 1 (or the text <code>"1"</code> / <code>"true"</code>) becomes the slack bus</li>
             <li>Runs inside <code>evalc</code> so that the SetSlack message is not printed</li>
+            <li>Then, for each scenario file in the order of the file names: <code>net.add_scenario(&lt;file name&gt;)</code> (a tag in use gets a number suffix) and <code>sc.add_from_json_struct</code>, which sets <code>Time</code> and <code>Description</code> and adds each disturbance by <code>add_disturbance</code> with its fields as options, so it is checked against the components as when added by hand</li>
           </ul><ul lang="ja">
             <li>機器の作成後に実行します。</li>
             <li><code>Slack</code> が 1（または文字列 <code>"1"</code> / <code>"true"</code>）である最初の母線の行を slack 母線に設定します。</li>
             <li>SetSlack のメッセージを表示しないよう、<code>evalc</code> の中で実行します。</li>
+            <li>続いて、シナリオのファイルごとにファイル名の順で <code>net.add_scenario(&lt;ファイル名&gt;)</code>（使用中のタグには番号が付きます）と <code>sc.add_from_json_struct</code> を呼びます。<code>add_from_json_struct</code> は <code>Time</code> と <code>Description</code> を設定し、各外乱を、その項目をオプションにした <code>add_disturbance</code> で加えます。そのため、手で加えたときと同じように機器と照らし合わせて検査します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>tab_bus.Slack</code></dd>
+          <dd><code>tab_bus.Slack</code>, <span lang="en">the scenario files of IO-03</span><span lang="ja">IO-03 で読んだシナリオのファイル</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>l_isSlack</code> <span lang="en">(see <a href="feature-model-building.html#MB-08">MB-08</a>)</span><span lang="ja">（<a href="feature-model-building.html#MB-08">MB-08</a> 参照）</span></dd>
+          <dd><code>l_isSlack</code> <span lang="en">(see <a href="feature-model-building.html#MB-08">MB-08</a>)</span><span lang="ja">（<a href="feature-model-building.html#MB-08">MB-08</a> 参照）</span>, <code>net.a_Scenario</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="IO-09">
-        <p class="fs-head"><b class="fs-id">IO-09</b> <span class="fs-call"><code>import_csv</code> → <code>PowerNetwork.initialize</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-09</b> <span class="fs-call"><code>import</code> → <code>PowerNetwork.initialize</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -473,18 +482,18 @@
         </dl>
       </li>
       <li class="fs-step" id="IO-10">
-        <p class="fs-head"><b class="fs-id">IO-10</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.export_csv</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-10</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.export</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Strips a trailing separator</li>
             <li>Checks the class name (when <code>ClassFile</code>), the parent folder and an existing folder</li>
-            <li><code>Overwrite=true</code>: deletes only the subfolders <code>network</code>, <code>bus</code>, <code>branch</code>, <code>component</code> and the class file</li>
+            <li><code>Overwrite=true</code>: deletes only the subfolders <code>network</code>, <code>bus</code>, <code>branch</code>, <code>component</code>, <code>scenario</code> and the class file</li>
             <li>Then creates the four subfolders</li>
           </ul><ul lang="ja">
             <li>末尾の区切り文字を除去します。</li>
             <li>クラス名（<code>ClassFile</code> のとき）、親フォルダ、既存のフォルダを検査します。</li>
-            <li><code>Overwrite=true</code> のときは、サブフォルダ <code>network</code>、<code>bus</code>、<code>branch</code>、<code>component</code> とクラスファイルだけを削除します。</li>
+            <li><code>Overwrite=true</code> のときは、サブフォルダ <code>network</code>、<code>bus</code>、<code>branch</code>、<code>component</code>、<code>scenario</code> とクラスファイルだけを削除します。</li>
             <li>その後 4 つのサブフォルダを作成します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -494,7 +503,7 @@
         </dl>
       </li>
       <li class="fs-step" id="IO-11">
-        <p class="fs-head"><b class="fs-id">IO-11</b> <span class="fs-call"><code>export_csv</code> → <code>bus_table</code>, <code>branch_table</code>, <code>writetable</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-11</b> <span class="fs-call"><code>export</code> → <code>bus_table</code>, <code>branch_table</code>, <code>writetable</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -513,35 +522,37 @@
         </dl>
       </li>
       <li class="fs-step" id="IO-12">
-        <p class="fs-head"><b class="fs-id">IO-12</b> <span class="fs-call"><code>export_csv</code> → <code>component_table</code>, <code>writetable</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-12</b> <span class="fs-call"><code>export</code> → <code>component_table</code>, <code>writetable</code>, <code>write_scenarios</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Groups the components by key</li>
             <li>Distinct dynamics rows and distinct OPF rows (<code>unique(..., "rows", "stable")</code>) become <code>dynamics.csv</code> and <code>opf.csv</code></li>
             <li><code>main.csv</code> refers to them by <code>ParameterID</code> and <code>OpfID</code></li>
+            <li><code>write_scenarios</code>: each scenario to <code>scenario/&lt;tag&gt;.json</code> (<code>Scenario.to_json_struct</code>, <code>jsonencode(..., PrettyPrint=true, ConvertInfAndNaN=false)</code>); without scenarios no folder is made</li>
           </ul><ul lang="ja">
             <li>機器をキーごとに分類します。</li>
             <li>重複のない dynamics の行と OPF の行（<code>unique(..., "rows", "stable")</code>）を <code>dynamics.csv</code> と <code>opf.csv</code> に出力します。</li>
             <li><code>main.csv</code> は <code>ParameterID</code> と <code>OpfID</code> でそれらを参照します。</li>
+            <li><code>write_scenarios</code> は、各シナリオを <code>scenario/&lt;tag&gt;.json</code> に書き出します（<code>Scenario.to_json_struct</code>、<code>jsonencode(..., PrettyPrint=true, ConvertInfAndNaN=false)</code>）。シナリオがなければフォルダは作りません。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en">component</span><span lang="ja">機器の</span> <code>key</code>, <code>a_Bus</code>, <code>tab_parameter.powerflow</code>, <code>tab_parameter.operation</code>, <code>tab_parameter.graph</code>, <code>tab_parameter.dynamics</code>, <code>tab_parameter.OPF</code></dd>
+          <dd><span lang="en">component</span><span lang="ja">機器の</span> <code>key</code>, <code>a_Bus</code>, <code>tab_parameter.powerflow</code>, <code>tab_parameter.operation</code>, <code>tab_parameter.graph</code>, <code>tab_parameter.dynamics</code>, <code>tab_parameter.OPF</code>; <code>net.a_Scenario</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>component/&lt;key&gt;/main.csv</code>, <code>dynamics.csv</code>, <code>opf.csv</code></dd>
+          <dd><code>component/&lt;key&gt;/main.csv</code>, <code>dynamics.csv</code>, <code>opf.csv</code>; <code>scenario/&lt;tag&gt;.json</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="IO-13">
-        <p class="fs-head"><b class="fs-id">IO-13</b> <span class="fs-call"><code>export_csv</code> → <code>class_file</code>, <code>warn_controllers_not_saved</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-13</b> <span class="fs-call"><code>export</code> → <code>class_file</code>, <code>warn_controllers_not_saved</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>With <code>ClassFile</code>: writes <code>&lt;Name&gt;.m</code> from <code>private/export_csv_class.txt</code> (class name, date, counts of buses, branches, generators, loads and others)</li>
-            <li>Its constructor calls <code>PowerNetwork.import_csv(folder, Network=obj)</code></li>
+            <li>With <code>ClassFile</code>: writes <code>&lt;Name&gt;.m</code> from <code>private/export_class.txt</code> (class name, date, counts of buses, branches, generators, loads and others)</li>
+            <li>Its constructor calls <code>PowerNetwork.import(folder, Network=obj)</code></li>
             <li>Then warns with the list of local controllers (as <code>component/avr/pss</code> paths) and global controllers that are not written</li>
           </ul><ul lang="ja">
-            <li><code>ClassFile</code> が true なら、<code>private/export_csv_class.txt</code> をひな形にして <code>&lt;Name&gt;.m</code> を書き出します。ファイルには、クラス名、日付、母線・ブランチ・発電機・負荷・その他の機器の数が入ります。</li>
-            <li>このクラスのコンストラクタは、<code>PowerNetwork.import_csv(folder, Network=obj)</code> を呼んでネットワークを組み立てます。</li>
+            <li><code>ClassFile</code> が true なら、<code>private/export_class.txt</code> をひな形にして <code>&lt;Name&gt;.m</code> を書き出します。ファイルには、クラス名、日付、母線・ブランチ・発電機・負荷・その他の機器の数が入ります。</li>
+            <li>このクラスのコンストラクタは、<code>PowerNetwork.import(folder, Network=obj)</code> を呼んでネットワークを組み立てます。</li>
             <li>最後に、書き出されないローカル制御器（<code>component/avr/pss</code> の形のパスで示します）とグローバル制御器を並べて警告します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -718,15 +729,15 @@
 
     <!-- ============================== 4. DATA ============================== -->
     <h2 id="data"><span lang="en">4. Data the feature produces</span><span lang="ja">4. この機能が生成するデータ</span></h2>
-    <h3><span lang="en">CSV model folder</span><span lang="ja">CSV モデルフォルダ</span></h3>
+    <h3><span lang="en">Model folder</span><span lang="ja">モデルフォルダ</span></h3>
     <ul lang="en">
-      <li>Written by <code>export_csv</code>, read by <code>import_csv</code></li>
+      <li>Written by <code>export</code>, read by <code>import</code></li>
       <li>Buses numbered by their row; <code>From</code>, <code>To</code> and <code>Bus</code> refer to these numbers</li>
       <li>Required columns marked <b>*</b>; any other column optional</li>
       <li>Missing optional value: default of the <code>add_*</code> method</li>
     </ul>
     <ul lang="ja">
-      <li><code>export_csv</code> が書き出し、<code>import_csv</code> が読み込みます。</li>
+      <li><code>export</code> が書き出し、<code>import</code> が読み込みます。</li>
       <li>母線は行で番号付けします。<code>From</code>・<code>To</code>・<code>Bus</code> はその番号を参照します。</li>
       <li>必須列には <b>*</b> を付けています。それ以外の列は任意です。</li>
       <li>任意の値がない場合は、<code>add_*</code> メソッドの既定値を使います。</li>
@@ -740,9 +751,41 @@
         <tr><td><code>component/&lt;key&gt;/main.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">component of type <code>&lt;key&gt;</code></span><span lang="ja">種類 <code>&lt;key&gt;</code> の機器</span></td><td data-label="Columns" data-label-ja="列"><code>Bus</code>*, <code>P</code>*, <code>Q</code>*, <code>FullTag</code>, <code>baseMVA</code>, <code>Pmin</code>, <code>Pmax</code>, <code>Qmin</code>, <code>Qmax</code>, <code>Xaxis</code>, <code>Yaxis</code>, <code>Marker</code>, <code>MidXaxis</code>, <code>MidYaxis</code>, <code>ParameterID</code>, <code>OpfID</code></td></tr>
         <tr><td><code>component/&lt;key&gt;/dynamics.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">distinct parameter set</span><span lang="ja">異なるパラメータの組</span></td><td data-label="Columns" data-label-ja="列"><code>ParameterID</code>*, <span lang="en">the <code>sv_para</code> of the class (not checked by the importer)</span><span lang="ja">クラスの <code>sv_para</code>（読み込み側では検査しません）</span></td></tr>
         <tr><td><code>component/&lt;key&gt;/opf.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">distinct OPF setting</span><span lang="ja">異なる OPF 設定</span></td><td data-label="Columns" data-label-ja="列"><code>OpfID</code>*, <code>OPFinit_P0</code>*, <code>OPFinit_Q0</code>*, <code>OPFcost_HP</code>*, <code>OPFcost_HQ</code>*, <code>OPFcost_fP</code>*, <code>OPFcost_fQ</code>*, <code>OPFcost_startup</code>*, <code>OPFcost_shutdown</code>*</td></tr>
+        <tr><td><code>scenario/&lt;tag&gt;.json</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">one file per scenario (optional folder)</span><span lang="ja">シナリオごとに 1 ファイル（任意のフォルダ）</span></td><td data-label="Columns" data-label-ja="列"><span lang="en">JSON, see <a href="#scenario-json">Scenario files</a></span><span lang="ja">JSON。<a href="#scenario-json">シナリオのファイル</a>を参照</span></td></tr>
         <tr><td><code>&lt;Name&gt;.m</code></td><td data-label="One row per" data-label-ja="1 行が表すもの">—</td><td data-label="Columns" data-label-ja="列"><span lang="en">class file, written when the folder is <code>@&lt;Name&gt;</code> or <code>ClassFile=true</code></span><span lang="ja">クラスファイルです。フォルダが <code>@&lt;Name&gt;</code> のとき、または <code>ClassFile=true</code> のときに書き出します。</span></td></tr>
       </tbody>
     </table>
+    <h3 id="scenario-json"><span lang="en">Scenario files</span><span lang="ja">シナリオのファイル</span></h3>
+    <ul lang="en">
+      <li>One JSON object per file <code>scenario/&lt;tag&gt;.json</code>; the tag of the scenario is the file name only (not written in the file)</li>
+      <li>Top level: <code>Format</code> (<code>"GUILDAscenario"</code>), <code>version</code> (1; a larger number is refused), <code>Description</code>, <code>Time</code> (<code>[t0, tend]</code>), <code>Disturbances</code></li>
+      <li>One object per disturbance, in the order of <code>tab_disturbance</code>, with the names of the <code>add_disturbance</code> options: <code>Tag</code>, <code>TimeSpan</code>, <code>FaultBus</code>, <code>TripUnit</code>, <code>OpenBranch</code>, <code>OffsetUnit</code>, <code>OffsetState</code>, <code>OffsetValue</code>, <code>InputUnit</code>, <code>InputName</code>, <code>InputValue</code>, <code>InputMethod</code>; empty fields left out</li>
+      <li><code>TimeSpan</code>: one number for an offset at one time, else two. Lists of tags and names are arrays even for one element</li>
+      <li><code>InputValue</code>: an array of numbers for a constant; for a time series an object with <code>Time</code> (from <code>t_start</code>) and <code>Value</code> (one array per point), its interpolation in <code>InputMethod</code> (<code>"foh"</code> when left out)</li>
+      <li><code>Inf</code> and <code>NaN</code> are written as <code>Infinity</code> and <code>NaN</code> (not standard JSON; read back by <code>jsondecode</code>), so a <code>TimeSpan</code> that ends at <code>Inf</code> survives the round trip. Numbers are written with 17 digits, so the values do not change</li>
+    </ul>
+    <ul lang="ja">
+      <li>ファイル <code>scenario/&lt;tag&gt;.json</code> ごとに JSON のオブジェクトを 1 つ持ちます。シナリオのタグはファイル名だけで表し、ファイルの中には書きません。</li>
+      <li>最上位の項目は <code>Format</code>（<code>"GUILDAscenario"</code>）、<code>version</code>（1。より大きい数は読みません）、<code>Description</code>、<code>Time</code>（<code>[t0, tend]</code>）、<code>Disturbances</code> です。</li>
+      <li>外乱は <code>tab_disturbance</code> の順に 1 つずつオブジェクトにし、項目名は <code>add_disturbance</code> のオプションと同じ <code>Tag</code>、<code>TimeSpan</code>、<code>FaultBus</code>、<code>TripUnit</code>、<code>OpenBranch</code>、<code>OffsetUnit</code>、<code>OffsetState</code>、<code>OffsetValue</code>、<code>InputUnit</code>、<code>InputName</code>、<code>InputValue</code>、<code>InputMethod</code> です。空の項目は書きません。</li>
+      <li><code>TimeSpan</code> は、1 時刻のオフセットなら 1 つの数、それ以外は 2 つの数です。タグや名前の一覧は、要素が 1 つでも配列にします。</li>
+      <li><code>InputValue</code> は、定数なら数の配列です。時系列なら <code>Time</code>（<code>t_start</code> からの時刻）と <code>Value</code>（点ごとに 1 つの配列）を持つオブジェクトで、補間の方法は <code>InputMethod</code> に書きます（省くと <code>"foh"</code>）。</li>
+      <li><code>Inf</code> と <code>NaN</code> は <code>Infinity</code> と <code>NaN</code> と書きます（標準の JSON ではありませんが、<code>jsondecode</code> は読めます）。そのため、終わりが <code>Inf</code> の <code>TimeSpan</code> も往復で保たれます。数は 17 桁で書くので、値は変わりません。</li>
+    </ul>
+<pre class="fio-json"><code>{
+  "Format": "GUILDAscenario",
+  "version": 1,
+  "Description": "fault B008, EL003 opened",
+  "Time": [0, 20],
+  "Disturbances": [
+    {"Tag": "fault1", "TimeSpan": [0.1, 0.17], "FaultBus": ["B008"]},
+    {"Tag": "open1", "TimeSpan": [0.17, Infinity], "OpenBranch": ["EL003"]},
+    {"Tag": "input1", "TimeSpan": [1, 1.5], "InputUnit": "B002SG1", "InputName": ["Pmech"],
+     "InputValue": {"Time": [0, 0.5], "Value": [[0], [0.005]]}, "InputMethod": "zoh"}
+  ]
+}</code></pre>
+    <p lang="en">The file written by <code>net.export</code> for a scenario <code>case1</code> of <code>network.IEEE14bus</code> (<code>jsonencode</code> puts each array element on its own line; shown compact here).</p>
+    <p lang="ja"><code>network.IEEE14bus</code> のシナリオ <code>case1</code> を <code>net.export</code> で書き出したファイルです（<code>jsonencode</code> は配列の要素を 1 行ずつ書きますが、ここでは詰めて示しています）。</p>
     <h3><span lang="en">MATPOWER case</span><span lang="ja">MATPOWER のケース</span></h3>
     <ul lang="en">
       <li><code>tools.network_to_mpc</code> returns <code>version = '2'</code>, <code>baseMVA</code>, <code>bus</code> (n_bus×13), <code>gen</code> (n_gen×21), <code>branch</code> (n_branch×13), <code>gencost</code> (n_gen×7, or 2·n_gen×7 with Q costs) and <code>bus_name</code>, <code>gen_name</code>, <code>branch_name</code> (cell of GUILDA tags)</li>
@@ -755,18 +798,20 @@
     <h3><span lang="en">Round trips between formats</span><span lang="ja">形式間の往復変換</span></h3>
     <div class="fio-trip">
       <div class="fio-trip-item">
-        <p class="fio-trip-head"><code>export_csv</code> → <code>import_csv</code></p>
+        <p class="fio-trip-head"><code>export</code> → <code>import</code></p>
         <dl class="fs-body">
           <dt><span lang="en">Kept in the round trip</span><span lang="ja">往復で保持されるもの</span></dt>
           <dd><ul lang="en">
             <li>buses, branches and components with their keys and tags</li>
             <li>power-flow, operating-limit (operation), OPF, dynamics and graph parameters</li>
             <li>slack bus; <code>Hz</code>, <code>baseMVA</code></li>
+            <li>scenarios: tag (file name), <code>Time</code>, <code>Description</code> and disturbances; the trajectories of <code>simulate</code> are the same</li>
             <li>power flow of <code>network.IEEE9bus</code>: reproduced exactly</li>
           </ul><ul lang="ja">
             <li>母線・ブランチ・機器とそのキー、タグ</li>
             <li>潮流・運転制約（operation）・OPF・dynamics・graph のパラメータ</li>
             <li>slack 母線、<code>Hz</code>、<code>baseMVA</code></li>
+            <li>シナリオのタグ（ファイル名）、<code>Time</code>、<code>Description</code>、外乱。<code>simulate</code> の軌道も同じになります。</li>
             <li><code>network.IEEE9bus</code> の潮流計算結果は完全に再現します。</li>
           </ul></dd>
           <dt><span lang="en">Lost or changed in the round trip</span><span lang="ja">往復で失われる・変わるもの</span></dt>
@@ -821,18 +866,20 @@
     <ul lang="en">
       <li>Importers build through <code>add_bus</code>, <code>add_branch</code>, <code>add_component</code> and <code>l_isSlack</code>: references, edit flags and handle states as in <a href="feature-model-building.html#side-effects">Model Building</a></li>
       <li>New network: nothing logged before <code>initialize</code></li>
-      <li><code>import_csv(path, Network=obj)</code>: adds to <code>obj</code> without clearing it; overwrites its <code>Hz</code> and <code>baseMVA</code> when the file gives them</li>
-      <li><code>export_csv</code> and <code>network_to_mpc</code>: read the network only</li>
-      <li><code>export_csv</code> writes to disk; with <code>Overwrite=true</code> it deletes the four subfolders and the class file of an existing export (other files in the folder stay)</li>
+      <li>Scenarios added through <code>add_scenario</code> and <code>add_disturbance</code>; they make nothing stale</li>
+      <li><code>import(path, Network=obj)</code>: adds to <code>obj</code> without clearing it; overwrites its <code>Hz</code> and <code>baseMVA</code> when the file gives them</li>
+      <li><code>export</code> and <code>network_to_mpc</code>: read the network only</li>
+      <li><code>export</code> writes to disk; with <code>Overwrite=true</code> it deletes the five subfolders (<code>scenario</code> included) and the class file of an existing export (other files in the folder stay)</li>
       <li>No cache involved</li>
       <li>A file or struct is a snapshot: later edits of the network not reflected until the next export</li>
     </ul>
     <ul lang="ja">
       <li>読み込みは <code>add_bus</code>・<code>add_branch</code>・<code>add_component</code>・<code>l_isSlack</code> で組み立てます。参照、編集フラグ、ハンドルの状態は<a href="feature-model-building.html#side-effects">モデル構築</a>と同じです。</li>
       <li>新しいネットワークには、<code>initialize</code> を実行するまで何も記録されません。</li>
-      <li><code>import_csv(path, Network=obj)</code> は、<code>obj</code> の中身を消さずに、そこへ追加します。<code>Hz</code> と <code>baseMVA</code> は、ファイルに値があれば上書きします。</li>
-      <li><code>export_csv</code> と <code>network_to_mpc</code> は、ネットワークを読み取るだけです。</li>
-      <li><code>export_csv</code> はディスクに書き込みます。<code>Overwrite=true</code> のときは、前に書き出した 4 つのサブフォルダとクラスファイルを削除します。フォルダにあるそれ以外のファイルは残します。</li>
+      <li>シナリオは <code>add_scenario</code> と <code>add_disturbance</code> で加えます。シナリオで古くなる層はありません。</li>
+      <li><code>import(path, Network=obj)</code> は、<code>obj</code> の中身を消さずに、そこへ追加します。<code>Hz</code> と <code>baseMVA</code> は、ファイルに値があれば上書きします。</li>
+      <li><code>export</code> と <code>network_to_mpc</code> は、ネットワークを読み取るだけです。</li>
+      <li><code>export</code> はディスクに書き込みます。<code>Overwrite=true</code> のときは、前に書き出した 5 つのサブフォルダ（<code>scenario</code> を含む）とクラスファイルを削除します。フォルダにあるそれ以外のファイルは残します。</li>
       <li>キャッシュは関係しません。</li>
       <li>ファイルや構造体はその時点の写しです。ネットワークを後で編集しても、次に書き出すまで反映されません。</li>
     </ul>
@@ -840,20 +887,20 @@
     <!-- ============================== 6. FAILURES ============================== -->
     <h2 id="failures"><span lang="en">6. Failure behavior and result flags</span><span lang="ja">6. 失敗時の動作と結果フラグ</span></h2>
     <ul lang="en">
-      <li><code>import_csv</code> reads and checks every table (IO-02, IO-03) before it changes the network: a wrong file, column or row number leaves <code>Network</code> unchanged</li>
-      <li>A later failure (unknown model key, wrong dynamics column, failing <code>initialize</code>) can leave it partly built</li>
+      <li><code>import</code> reads and checks every table and scenario file (IO-02, IO-03) before it changes the network: a wrong file, column, row number or scenario file leaves <code>Network</code> unchanged</li>
+      <li>A later failure (unknown model key, wrong dynamics column, a disturbance whose tag or value does not fit the network, failing <code>initialize</code>) can leave it partly built</li>
       <li><code>import_matpower</code> checks the case (IO-14, IO-16) before it builds</li>
     </ul>
     <ul lang="ja">
-      <li><code>import_csv</code> は、ネットワークに手を加える前にすべての table を読んで検査します（IO-02、IO-03）。そのため、ファイル、列、行番号に誤りがあっても <code>Network</code> は変わりません。</li>
-      <li>その後の失敗（未知のモデルのキー、dynamics の列の誤り、<code>initialize</code> の失敗など）では、途中まで組み立てた状態が残る場合があります。</li>
+      <li><code>import</code> は、ネットワークに手を加える前にすべての table とシナリオのファイルを読んで検査します（IO-02、IO-03）。そのため、ファイル、列、行番号、シナリオのファイルに誤りがあっても <code>Network</code> は変わりません。</li>
+      <li>その後の失敗（未知のモデルのキー、dynamics の列の誤り、タグや値がネットワークに合わない外乱、<code>initialize</code> の失敗など）では、途中まで組み立てた状態が残る場合があります。</li>
       <li><code>import_matpower</code> は組み立ての前にケースを検査します（IO-14、IO-16）。</li>
     </ul>
     <table class="dg-table fio-fail">
       <thead><tr><th><span lang="en">Call</span><span lang="ja">呼び出し</span></th><th><span lang="en">What the caller sees</span><span lang="ja">呼び出し側に見えるもの</span></th></tr></thead>
       <tbody>
-        <tr><td><code>import_csv</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:import_csv:NotFound</code>, <code>InvalidNetwork</code>, <code>MissingFile</code>, <code>BusRow</code>, <code>UnknownID</code>; <code>GUILDA:import_csv:MissingColumns</code>, <code>DuplicateColumns</code> <span lang="en">(raised by <code>assert</code> with this identifier)</span><span lang="ja">（この識別子付きの <code>assert</code>）</span>; <span lang="en">warnings</span><span lang="ja">警告</span> <code>UnknownColumn</code>, <code>NoComponentFolder</code></td></tr>
-        <tr><td><code>export_csv</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:export_csv:InvalidClassName</code>, <code>NoParentFolder</code>, <code>FolderExists</code>; <span lang="en">warning</span><span lang="ja">警告</span> <code>GUILDA:PowerNetwork:ControllersNotSaved</code></td></tr>
+        <tr><td><code>import</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:import:NotFound</code>, <code>InvalidNetwork</code>, <code>MissingFile</code>, <code>BusRow</code>, <code>UnknownID</code>; <code>GUILDA:import:MissingColumns</code>, <code>DuplicateColumns</code> <span lang="en">(raised by <code>assert</code> with this identifier)</span><span lang="ja">（この識別子付きの <code>assert</code>）</span>; <span lang="en">warnings</span><span lang="ja">警告</span> <code>UnknownColumn</code>, <code>NoComponentFolder</code>; <code>GUILDA:PowerNetwork:ScenarioJson</code>, <span lang="en">warning</span><span lang="ja">警告</span> <code>GUILDA:PowerNetwork:UnknownScenarioField</code>; <span lang="en">errors of <code>add_disturbance</code></span><span lang="ja"><code>add_disturbance</code> のエラー</span> (<code>GUILDA:Scenario:*</code>)</td></tr>
+        <tr><td><code>export</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:export:InvalidClassName</code>, <code>NoParentFolder</code>, <code>FolderExists</code>; <span lang="en">warning</span><span lang="ja">警告</span> <code>GUILDA:PowerNetwork:ControllersNotSaved</code></td></tr>
         <tr><td><code>import_matpower</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:import_matpower:CaseNotFound</code>, <code>InvalidCaseType</code>, <code>InvalidCaseField</code>, <code>UnsupportedVersion</code>, <code>InvalidCaseColumns</code>, <code>GenBusMissing</code>, <code>BranchBusMissing</code>, <code>IsolatedBus</code>, <code>ReferenceBusEmpty</code>, <code>GencostRows</code>, <code>GencostPiecewise</code>, <code>GencostDegree</code>; <span lang="en">warning</span><span lang="ja">警告</span> <code>ConstantCost</code></td></tr>
         <tr><td><code>tools.network_to_mpc</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:network_to_mpc:LoadNoPQ</code>, <code>BranchLimit</code>, <code>BranchNoImpedance</code>, <code>BranchAdmittance</code></td></tr>
         <tr><td><code>CsvNetHandler</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en">warnings</span><span lang="ja">警告</span> <code>GUILDA:Deprecated:CsvNetHandlerImport</code>, <code>CsvNetHandlerExport</code></td></tr>
@@ -861,8 +908,8 @@
       </tbody>
     </table>
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
-      <p lang="en">Most IDs: entry names of <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>, read by <code>msg</code>. <code>error(msg(...))</code> passes only the text, so those exceptions have an empty identifier. Only the <code>assert</code> calls of <code>import_csv</code> set the identifier.</p>
-      <p lang="ja">ほとんどの ID は、<code>msg</code> が読む <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のエントリ名です。<code>error(msg(...))</code> にはメッセージ本文だけを渡すので、例外の識別子は空になります。識別子が付くのは、<code>import_csv</code> の <code>assert</code> で出るエラーだけです。</p>
+      <p lang="en">Most IDs: entry names of <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>, read by <code>msg</code>. <code>error(msg(...))</code> passes only the text, so those exceptions have an empty identifier. Only the <code>assert</code> calls of <code>import</code> set the identifier.</p>
+      <p lang="ja">ほとんどの ID は、<code>msg</code> が読む <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のエントリ名です。<code>error(msg(...))</code> にはメッセージ本文だけを渡すので、例外の識別子は空になります。識別子が付くのは、<code>import</code> の <code>assert</code> で出るエラーだけです。</p>
     </div>
 
     <!-- ============================== 7. EXTENSION ============================== -->
@@ -885,10 +932,11 @@
       <li><b>Controllers</b>
         <ul>
           <li>Not stored</li>
-          <li>A network class adds them in its constructor after <code>import_csv(..., Initialize=false)</code>, as <code>network.IEEE9bus</code> does</li>
+          <li>A network class adds them in its constructor after <code>import(..., Initialize=false)</code>, as <code>network.IEEE9bus</code> does</li>
         </ul>
       </li>
-      <li><b>New column</b>: add it to the required or optional list in <code>import_csv</code>, to the table of <code>export_csv</code>, and to the <code>add_*</code> option it feeds</li>
+      <li><b>New column</b>: add it to the required or optional list in <code>import</code>, to the table of <code>export</code>, and to the <code>add_*</code> option it feeds</li>
+      <li><b>New disturbance field</b>: a field of <code>Scenario.sr_field</code> is read and written by name; give its JSON form in <code>Scenario.to_json_struct</code> and its conversion back in <code>add_from_json_struct</code></li>
     </ul>
     <ul lang="ja">
       <li><b>機器</b>
@@ -908,10 +956,11 @@
       <li><b>制御器</b>
         <ul>
           <li>制御器はファイルに保存されません。</li>
-          <li>制御器が必要なら、<code>network.IEEE9bus</code> のように、ネットワーククラスのコンストラクタで <code>import_csv(..., Initialize=false)</code> の後に追加します。</li>
+          <li>制御器が必要なら、<code>network.IEEE9bus</code> のように、ネットワーククラスのコンストラクタで <code>import(..., Initialize=false)</code> の後に追加します。</li>
         </ul>
       </li>
-      <li><b>新しい列</b>: 3 か所に追加します。<code>import_csv</code> の必須列か任意列の一覧、<code>export_csv</code> が作る table、その値を受け取る <code>add_*</code> のオプションです。</li>
+      <li><b>新しい列</b>: 3 か所に追加します。<code>import</code> の必須列か任意列の一覧、<code>export</code> が作る table、その値を受け取る <code>add_*</code> のオプションです。</li>
+      <li><b>新しい外乱の項目</b>: <code>Scenario.sr_field</code> の項目は名前で読み書きします。JSON での形を <code>Scenario.to_json_struct</code> に、元に戻す変換を <code>add_from_json_struct</code> に書きます。</li>
     </ul>
     <p lang="en">Network classes: see <a href="model-implementation.html#other">Model Implementation: New branches and networks</a>.</p>
     <p lang="ja">ネットワーククラスについては、<a href="model-implementation.html#other">モデルの実装: 新しいブランチとネットワーク</a>を参照してください。</p>

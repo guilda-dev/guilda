@@ -1,7 +1,7 @@
 classdef DrawerNetDiagram < auxiliary
 % 3D diagram of a network: buses, components and branches drawn as solids.
 %
-% net.draw_diagram creates one. The diagram shows the power flow state of the network:
+% net.plot_diagram creates one. The diagram shows the power flow state of the network:
 % the colors of the branches and component connections follow ColorMode, the widths of the
 % branches follow EdgeWidthMode, and the heights of the buses follow NodeHeightMode.
 % Changing a property updates the drawing; hovering over an element shows its values. It
@@ -18,13 +18,13 @@ classdef DrawerNetDiagram < auxiliary
 % ```matlab
 % net = network.IEEE14bus();
 % net.initialize();
-% G = net.draw_diagram();
+% G = net.plot_diagram();
 % G.ColorMode = "P (active power)";
 % G.NodeHeightMode = "Vmag";
 % G.NodeLabelMode = "info";
 % ```
 %
-% See also PowerNetwork.draw_diagram
+% See also PowerNetwork.plot_diagram
 
     properties % Appearance
         ColorLim (1,2) double = [0,2];                                                                                    % Limits of the color scale (clim of the axes).

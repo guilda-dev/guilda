@@ -21,6 +21,7 @@
 %   - 上下限を ±Inf (送電線は NaN も) にすると既定の制約が外れる
 %   - build_opf_problem の問題を変更して Problem / InitialPoint で解く
 %   - IEEJ_WEST10 (送電線のタグが制約名になる系統) の AC OPF が解ける
+%   - get_opf_condition (Bus / Branch / PowerNetwork): OPF が使う表、表示 (Display)
 % 費用関数は機器の tab_parameter.OPF、制約は各クラスの tab_parameter.operation で設定する。
 % 利用者の費用・制約は calculate_optimal_powerflow / build_opf_problem の Cost, Constraint で追加する。
 %
@@ -1092,6 +1093,85 @@ assert(res4.l_success)
 % GUILDA.setting の PlotFcn (select) にキーがある
 assert(isequal(string(GUILDA.config("OptimalPowerFlow").PlotFcn.options(:)).', ["none", sv_key]))
 assert(GUILDA.config("OptimalPowerFlow", "Verbose") == false && ~isfield(GUILDA.config("OptimalPowerFlow"), "Display"))
+
+
+%% get_opf_condition shows the data the OPF runs with
+% IEEE14bus: Bus / Branch の get_opf_condition を積み重ねた表が、OPF が使うデータ
+% (tab_parameter の operation, dynamics, powerflow, OPF) と行・列・値まで一致する
+net = DebugScript.helper.quiet(@() DebugScript.helper.build_ieee14());
+a_load = net.a_Bus{3}.a_Component(cellfun(is_load, net.a_Bus{3}.a_Component));
+ld = a_load{1};
+set_pf(ld, "P", -0.9);
+ld.tab_parameter.operation.Qmin = -0.5;      % Q は上下限があるので固定しない (Qmax は Inf のまま)
+sct = net.get_opf_condition(Display=false);
+assert(isequal(fieldnames(sct), {'Bus';'Component';'Branch'}))
+assert(isequal(string(sct.Bus.Properties.VariableNames), ["Vmin","Vmax","Gshunt","Bshunt","Type","V","Varg"]))
+assert(isequal(string(sct.Component.Properties.VariableNames), ["Bus","HP","fP","HQ","fQ","P0","Q0","Pmin","Pmax","Qmin","Qmax"]))
+assert(isequal(string(sct.Branch.Properties.VariableNames), ["From","To","Y","X","tap","phase","Pmax","Qmax","Vargmax","Imax","Smax"]))
+assert(isequal(string(sct.Bus.Properties.RowNames), string(net.a_Bus)))
+assert(isequal(string(sct.Branch.Properties.RowNames), string(net.a_Branch)))
+a_com = tools.vcellfun(@(b) reshape(b.a_Component, [], 1), net.a_Bus);
+assert(isequal(string(sct.Component.Properties.RowNames), string(a_com)))
+for i = 1:numel(net.a_Bus)
+    bus = net.a_Bus{i};
+    row = sct.Bus(string(bus), :);
+    assert(isequaln([row.Vmin, row.Vmax], [bus.tab_parameter.operation.Vmin, bus.tab_parameter.operation.Vmax]))
+    assert(isequaln([row.Gshunt, row.Bshunt], [bus.tab_parameter.dynamics.Gshunt, bus.tab_parameter.dynamics.Bshunt]))
+    assert(isequaln([row.V, row.Varg], [bus.tab_parameter.powerflow.V, bus.tab_parameter.powerflow.Varg]))
+    assert(row.Type == bus.get_pf_condition().Type)
+    [tb, tc] = bus.get_opf_condition(Display=false);
+    assert(isequaln(tb, row) && isequaln(tc, sct.Component(string(bus.a_Component), :)))
+    assert(all(tc.Bus == string(bus)))
+end
+for k = 1:numel(a_com)
+    com = a_com{k};
+    row = sct.Component(string(com), :);
+    assert(isequaln([row.HP, row.fP, row.HQ, row.fQ], [com.tab_parameter.OPF.HP, com.tab_parameter.OPF.fP, com.tab_parameter.OPF.HQ, com.tab_parameter.OPF.fQ]))
+    if ~is_load(com)
+        assert(isequaln([row.P0, row.Q0, row.Pmin, row.Pmax, row.Qmin, row.Qmax], ...
+            [com.tab_parameter.OPF.P0, com.tab_parameter.OPF.Q0, com.tab_parameter.operation.Pmin, ...
+             com.tab_parameter.operation.Pmax, com.tab_parameter.operation.Qmin, com.tab_parameter.operation.Qmax]))
+    end
+end
+% 上下限が両方 Inf の負荷は潮流設定の P, Q に固定 (上下限と初期値)、上下限のある側はそのまま
+row = sct.Component(string(ld), :);
+assert(row.Pmin == -0.9 && row.Pmax == -0.9 && row.P0 == -0.9)
+assert(row.Qmin == -0.5 && row.Qmax == Inf && row.Q0 == ld.tab_parameter.OPF.Q0)
+for k = 1:numel(net.a_Branch)
+    br  = net.a_Branch{k};
+    row = sct.Branch(string(br), :);
+    assert(row.From == string(br.a_Bus{1}) && row.To == string(br.a_Bus{2}))
+    assert(isequal(squeeze(row.Y), br.get_admittance_matrix))
+    [b, phase] = dc_susceptance(br);
+    assert(abs(1/(row.X*row.tap) - b) < 1e-12 && row.phase == phase)
+    ope = br.tab_parameter.operation;
+    assert(isequaln([row.Pmax, row.Qmax, row.Vargmax, row.Imax, row.Smax], [ope.Pmax, ope.Qmax, ope.Vargmax, ope.Imax, ope.Smax]))
+    assert(isequaln(br.get_opf_condition(Display=false), row))
+end
+% OPF はこの表から作る: 問題の説明 (SolverOPF) が同じ表を示し、解は表を変えない
+prob = net.build_opf_problem(Method="DC OPF");
+assert(contains(prob.Description, formattedDisplayText(sct.Component)))
+% Display=true (既定): 見出し Bus, Component, Branch の下に表を表示し、Y の列は表示しない
+s_text = evalc("net.get_opf_condition();");
+assert(all(contains(s_text, ["Bus","Component","Branch"])))
+assert(~contains(s_text, regexpPattern("\<Y\>")))
+assert(contains(s_text, formattedDisplayText(sct.Bus)) && contains(s_text, formattedDisplayText(removevars(sct.Branch, "Y"))))
+s_text = evalc("net.a_Bus{3}.get_opf_condition();");
+assert(contains(s_text, "Bus") && contains(s_text, "Component") && ~contains(s_text, "Branch"))
+s_text = evalc("net.a_Branch{1}.get_opf_condition();");
+assert(contains(s_text, "Branch") && ~contains(s_text, regexpPattern("\<Y\>")))
+% Display=true でも出力を受け取れば表を返す。Display=false は何も表示しない
+s_text = evalc("sct2 = net.get_opf_condition();");
+assert(strlength(s_text) > 0 && isequaln(sct2, sct))
+assert(evalc("net.get_opf_condition(Display=false);") == "")
+assert(evalc("net.a_Bus{3}.get_opf_condition(Display=false);") == "")
+assert(evalc("net.a_Branch{1}.get_opf_condition(Display=false);") == "")
+% calculate_optimal_powerflow は表を表示しない
+assert(evalc("net.calculate_optimal_powerflow(Method=""DC OPF"");") == "")
+% 母線・送電線の無い系統は列だけの表
+sct0 = PowerNetwork("Empty").get_opf_condition(Display=false);
+assert(height(sct0.Bus) == 0 && height(sct0.Component) == 0 && height(sct0.Branch) == 0)
+assert(isequal(sct0.Branch.Properties.VariableNames, sct.Branch.Properties.VariableNames))
 
 
 function net = build_loop3()

@@ -36,13 +36,14 @@
 | `"powerflow(tab)"` | 同じ内容の table(変数 `V`・`I`・`P`・`Q`、行名は母線タグ) |
 | `"GUILDAorigin"`(既定) | `ResultPF` |
 
-- **既定値(ユーザーの決定、2026-11-12):** `calculate_powerflow` の既定は `"GUILDAorigin"` です。最初の実装は `"V"` でした。`initialize` の既定は `"powerflow(mat)"` です(ユーザーの決定、2026-11-12)。`set_equilibrium` に書く n×4 の配列そのものなので、余分な処理がありません。
+- **既定値(ユーザーの決定、2026-11-12):** `calculate_powerflow` の既定は `"GUILDAorigin"` です。最初の実装は `"V"` でした。`initialize` は `Format` を取りません(下の項目)。
 
 - `flag` と `output` はどの Format でも 2 番目・3 番目の出力です。
 - **Export(ユーザーの決定、2026-11-12):** `calculate_powerflow` に `Export` オプションはありません。書き出しは `res.export(...)` だけです(`initialize` も受け付けません)。最初の実装では、ほかの Format でも書き出しのためだけに `ResultPF` を作っていましたが、オプションごと削除しました。書き出しのメソッドは、すべての結果クラスで `export` に改名しました(ユーザーの決定、2026-11-12。別名や互換の変換はありません)。
-- `initialize` にも同じ値の `Format`(既定 `"powerflow(mat)"`)を加えました。潮流計算・FixedInput・平衡点からの計算は解いた点を、OPF は `"GUILDAorigin"` で `ResultOPF`、それ以外で AC OPF の解の母線 V・I・P・Q を返します。
-- 内部の呼び出しは必要なものだけを求めます(ユーザーの決定、2026-11-12)。`initialize` の潮流計算と `solve_fixed_input` の初期点は `Format="powerflow(mat)"` の n×4 の配列で、`set_equilibrium` は列から V・I・P・Q を読みます。`calculate_powerflow` は `"V"` では `cv_V` だけを返し、`"powerflow(mat)"` では `cv_V` と `Y*cv_V` から配列を作ります。table を作るのは `"powerflow(tab)"` と `ResultPF` のときだけ、`ResultPF` を作るのは `"GUILDAorigin"` のときだけです(OPF・FixedInput・平衡点の経路も同じ)。
-- 書き換えた呼び出し元: DebugScript(`initialize` の結果を読むテストに `Format="GUILDAorigin"` を追加。`calculate_powerflow` では既定なので書かない)、`calculate_powerflow`・`initialize`・`SolverPF` のヘルプの例。同梱ネットワークのヘルプの例(`res = net.calculate_powerflow()`)は元のままです。`_GUILDAverification`、`Scenario`、CPF、OPF は `calculate_powerflow` の結果を読んでいません。
+- **`initialize` の Format(ユーザーの決定、2026-11-13):** `initialize` は `Format` を取りません。最初の出力は、どの `Method` でも `set_equilibrium` に書く n×4 の複素数の配列(V・I・P・Q、`net.a_Bus` の順。OPF では AC OPF の解)です。`Format` を渡すと、どの `Method` でも `initialize` がオプションの解析で `GUILDA:PowerNetwork:InitializeFormat` で止め、`calculate_powerflow` へは渡しません(2026-11-12 の実装では `Format` を取り、既定が `"powerflow(mat)"` でした)。結果のオブジェクトは `calculate_powerflow` / `calculate_optimal_powerflow` で得ます。
+- 内部の呼び出しは必要なものだけを求めます(ユーザーの決定、2026-11-12)。`initialize` の潮流計算は `Format="powerflow(mat)"` の n×4 の配列を求め、`set_equilibrium` は列から V・I・P・Q を読みます。`calculate_powerflow` は `"V"` では `cv_V` だけを返し、`"powerflow(mat)"` では `cv_V` と `Y*cv_V` から配列を作ります。table を作るのは `"powerflow(tab)"` と `ResultPF` のときだけ、`ResultPF` を作るのは `"GUILDAorigin"` のときだけです。FixedInput(`solve_fixed_input`)は母線の n×4 の配列と `sct_point`(機器ごとの X・U・I。`initialize` が母線へ書く)を返し、何も整形しません。OPF は `initialize` が `ResultOPF.tab_cub` から機器ごとの P・Q を、`tab_bus` から配列を作ります。平衡点からの計算も配列だけを返します。
+- **補助関数の削除(ユーザーの決定、2026-11-13):** `@PowerNetwork/private/format_powerflow.m`・`powerflow_matrix.m`・`powerflow_table.m` を削除し、1〜2 行の中身を呼び出し元に直接書きました。`calculate_powerflow` は Format の分岐を自分の中に持ちます。`calculate_powerflow` の `PlotFcn` はローカルの `mustBePlotFcn` ではなく、`arguments` ブロックで `tools.check_plotfcn(...)` を直接呼びます。
+- 書き換えた呼び出し元: DebugScript(`initialize` の結果を読んでいたテストは、最初の出力の配列と平衡点を確かめるか、`calculate_powerflow` / `calculate_optimal_powerflow` を呼びます。解いたかどうかは `output` に `iterations` があるかで確かめます。F2・F3 に Format を拒むテスト)、`calculate_powerflow`・`initialize`・`SolverPF` のヘルプの例。同梱ネットワークのヘルプの例(`res = net.calculate_powerflow()`)は元のままです。`_GUILDAverification`、`Scenario`、CPF、OPF は `calculate_powerflow` の結果を読んでいません。
 - **未対応:** `_GUILDAtutorial/*.mlx` は保留中のチュートリアルの作業(Issue #113)に含まれるため、変えていません。
 
 ### 4. データから作る `ResultPF`
@@ -77,6 +78,12 @@
 - 未知のタグは `GUILDA:ResultPF:UnknownTag`、スナップショットのない結果での `Unit="SI"` は `GUILDA:ResultPF:NoBase` です。
 - **`Plot` の廃止(ユーザーの決定、2026-11-12):** すべての結果クラスの `Plot` を、中身を変えずに `plot_*` に改名しました(別名なし)。`ResultPF.plot_voltage`(制約の線を追加)、`ResultOPF.plot_dispatch`、`ResultCPF.plot_pvcurve`、`ResultODE.plot_trajectory`、`ResultLIN.plot_eigenvalue` です。`ResultBase.Plot` は削除しました。`GUILDA:ResultBase:Unsupported` は `export` がまだ使うので残しています。
 - **未対応:** `_GUILDAtutorial/*.mlx` は保留中のチュートリアルの作業に含まれるため、`Plot` の呼び出しを変えていません。
+
+## 6. `initialize` の整理(ユーザーの決定、2026-11-13)
+
+- **`complex()` の削除:** [V I P Q] の配列は `[cv_V, cv_I, real(cv_S), imag(cv_S)]` と書きます(`calculate_powerflow`、`initialize` の OPF と平衡点からの計算、`solve_fixed_input`)。V が複素数なので、連結した配列は複素数のままです。出力の型(n×4 の複素数の配列)は変わりません。
+- **v3 互換の削除:** `_VersionSupport/v3_initialize_args.m` とその呼び出し、`Deprecated.xml` の `InitializeMethods`・`InitializeMethodValue`、F3 の「Deprecated methods option and values warn」とその `test_levels.m` の行を削除しました。`"methods"` は未知の名前として解析のエラー、旧い値は `GUILDA:PowerNetwork:InitializeMethod` になります(F3 の「Initialize rejects unknown options」で確認)。
+- **読みやすさ(動作は変えない):** 本体を上から順に 1. Method とオプションの解析、2. Method ごとの運転点、3. 母線への書き込み、4. 母線・ブランチ・グローバル制御器の initialize、5. KCL とモデルの残差の確認、6. 古さの解除、7. INFO と警告、の節に並べました。1〜2 行の関数や 1 回だけ使う関数(`take_method`、`solve_powerflow`、`solve_opf`、`opf_point`、`solve_fixed`、`write_powerflow`、`write_fixed_input`、`release_slack`、`stale_list`、`equilibrium_tolerance`、`large_model_residuals`、`largest`)は本体に入れ、`stop_powerflow` と `stop_opf` は `stop_analysis` に、潮流計算と FixedInput のスラック母線の解除は 1 つの `try/catch` にまとめました。行のまとめは `residual_row` です。634 行・ローカル関数 24 個 → 519 行・11 個。
 
 ## テスト
 

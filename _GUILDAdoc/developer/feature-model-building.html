@@ -116,7 +116,7 @@ b1.l_isSlack = true;</code></pre>
     <figure class="dg-figure">
       <div class="dg-only-wide">
         <svg class="dg-svg dg-sv fmb-seq" viewBox="0 0 960 976" role="img" aria-labelledby="fmb-seq-title">
-          <title id="fmb-seq-title">Call sequence of model building: the caller creates the network, adds buses, branches, components and controllers, sets the slack bus and parameters, and every edit is reported up to the network; a shipped network class runs the same calls through import_csv.</title>
+          <title id="fmb-seq-title">Call sequence of model building: the caller creates the network, adds buses, branches, components and controllers, sets the slack bus and parameters, and every edit is reported up to the network; a shipped network class runs the same calls through import.</title>
           <defs>
             <marker id="fmb-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
             <marker id="fmb-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head is-muted" d="M0 0L10 5L0 10z"/></marker>
@@ -227,7 +227,7 @@ b1.l_isSlack = true;</code></pre>
           <text class="is-inv is-b" x="18" y="668" text-anchor="middle" style="font-size:10px">11</text>
           <text class="dg-mono is-sm fmb-l" x="92" y="658" text-anchor="start">network.IEEE9bus()</text>
           <path class="dg-sv-line" d="M203 688h26v14h-24" marker-end="url(#fmb-ah)"/>
-          <text class="dg-mono is-sm fmb-l" x="235" y="699" text-anchor="start">import_csv(dir, Network=obj, Initialize=false)</text>
+          <text class="dg-mono is-sm fmb-l" x="235" y="699" text-anchor="start">import(dir, Network=obj, Initialize=false)</text>
           <path class="dg-sv-line" d="M207 732H556" marker-end="url(#fmb-ah)"/>
           <text class="dg-mono is-sm fmb-l" x="211" y="726" text-anchor="start">add_local_controller(Key, ...)</text>
           <path class="dg-sv-line" d="M203 756h26v14h-24" marker-end="url(#fmb-ah)"/>
@@ -268,7 +268,7 @@ b1.l_isSlack = true;</code></pre>
         <li><b>MB-08</b> → <code>Bus.l_isSlack</code></li>
         <li><b>MB-09</b> → <code>Parameter</code> <span lang="en">(set)</span><span lang="ja">（設定）</span></li>
         <li><b>MB-10</b> <code>Parameter</code> → <code>LayerPackage.log_edit</code> → <code>handle_edit</code></li>
-        <li><b>MB-11</b> → <code>network.IEEE9bus</code> → <code>import_csv</code>, <code>add_local_controller</code>, <code>initialize</code></li>
+        <li><b>MB-11</b> → <code>network.IEEE9bus</code> → <code>import</code>, <code>add_local_controller</code>, <code>initialize</code></li>
         <li><b>MB-12</b> → <code>PowerNetwork.remove_*</code></li>
         <li><b>MB-13</b> → <code>Bus.remove_component</code> / <code>replace_component</code></li>
         <li><b>MB-14</b> → <code>Component.remove_local_controller</code></li>
@@ -563,12 +563,12 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Shipped network: a <code>PowerNetwork</code> subclass in <code>+network/@&lt;Name&gt;/</code></li>
-            <li>Constructor: build itself from the CSV folders next to the class file with <code>PowerNetwork.import_csv(dir, Network=obj, Initialize=false)</code> (runs MB-02 to MB-04 and MB-08)</li>
+            <li>Constructor: build itself from the CSV folders next to the class file with <code>PowerNetwork.import(dir, Network=obj, Initialize=false)</code> (runs MB-02 to MB-04 and MB-08)</li>
             <li>Add what the CSV format does not hold with the key form of <code>add_local_controller</code> (IEEE9bus: <code>"avr-ST1"</code> and <code>"pss-PSS1"</code> per generator, with the parameters of <code>controller/avr</code> and <code>controller/pss</code>, unless <code>LocalController=false</code>)</li>
             <li>Call <code>initialize</code></li>
           </ul><ul lang="ja">
             <li>同梱のネットワークは、<code>+network/@&lt;Name&gt;/</code> にある <code>PowerNetwork</code> のサブクラスです。</li>
-            <li>コンストラクタは、クラスファイルの隣にある CSV フォルダから <code>PowerNetwork.import_csv(dir, Network=obj, Initialize=false)</code> で自身を構築します（MB-02〜MB-04、MB-08 を実行）。</li>
+            <li>コンストラクタは、クラスファイルの隣にある CSV フォルダから <code>PowerNetwork.import(dir, Network=obj, Initialize=false)</code> で自身を構築します（MB-02〜MB-04、MB-08 を実行）。</li>
             <li>CSV 形式が持たないものを <code>add_local_controller</code> のキーの形で追加します（IEEE9bus: <code>LocalController=false</code> でなければ、発電機ごとに <code>"avr-ST1"</code> と <code>"pss-PSS1"</code>。パラメータは <code>controller/avr</code> と <code>controller/pss</code>）。</li>
             <li>最後に <code>initialize</code> を呼び出します。</li>
           </ul></dd>
@@ -794,14 +794,14 @@ b1.l_isSlack = true;</code></pre>
     <h2 id="side-effects"><span lang="en">5. Side effects on the model and caches</span><span lang="ja">5. モデルへの副作用とキャッシュ</span></h2>
     <ul lang="en">
       <li><b>Before the first <code>initialize</code></b>: every stale tag holds "initialize has not been run" from the constructor, so edits add no message. <code>handle_edit</code> still keeps a single slack bus</li>
-      <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: Handling of model edits</a> appends its message to the stale tags it affects; <code>simulate</code> and <code>get_sys</code> then stop with their stale errors (e.g. <code>GUILDA:SolverODE:Stale</code>) until <code>initialize</code> runs again. Operation, OPF, graph and tag edits: nothing stale</li>
+      <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: Handling of model edits</a> appends its message to the stale tags it affects; <code>simulate</code> and <code>get_sys</code> then stop with their stale errors (e.g. <code>GUILDA:PowerNetwork:SimulateStale</code>) until <code>initialize</code> runs again. Operation, OPF, graph and tag edits: nothing stale</li>
       <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (they stay empty). <code>initialize</code> builds the stale ones (<code>set_odefcn</code>, see <a href="feature-initialize.html">Initialization</a>); analyses only check, and nothing else builds handles. After an edit without <code>initialize</code>, a <code>get_sys</code> at a given point uses the previous ones</li>
       <li><b>Removed objects</b>: the removal is a <code>"Topology"</code> edit of the parent (a removed global controller: nothing), and the removed object is deleted (<a href="class-design.html#parents">Class Design: parent references</a>), so it cannot be edited or attached again; <code>add_*</code> builds a new one</li>
       <li><b>Copies</b>: no deep-copy method; <code>b = a</code> copies a handle. For an independent network, save and load through a MAT file or CSV export. A loaded network, or a lower layer saved alone, keeps its parameter tables, so its edits are checked and logged as before saving</li>
     </ul>
     <ul lang="ja">
       <li><b>最初の <code>initialize</code> の前</b>: すべての stale タグがコンストラクタの "initialize has not been run" を保持するため、編集はメッセージを追加しません。<code>handle_edit</code> は slack 母線を 1 つに保ちます。</li>
-      <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>で古くなるとされる編集は、影響する stale タグにメッセージを追加します。<code>simulate</code>・<code>get_sys</code> は、再び <code>initialize</code> を実行するまでそれぞれの stale のエラー（例: <code>GUILDA:SolverODE:Stale</code>）で停止します。operation・OPF・graph・タグの編集は何も古くしません。</li>
+      <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>で古くなるとされる編集は、影響する stale タグにメッセージを追加します。<code>simulate</code>・<code>get_sys</code> は、再び <code>initialize</code> を実行するまでそれぞれの stale のエラー（例: <code>GUILDA:PowerNetwork:SimulateStale</code>）で停止します。operation・OPF・graph・タグの編集は何も古くしません。</li>
       <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作りません（空のままです）。古いものは <code>initialize</code> が作成し（<code>set_odefcn</code>、<a href="feature-initialize.html">初期化</a>を参照）、解析は確認するだけで、ほかにハンドルを作るものはありません。<code>initialize</code> を挟まない編集の後、点を与えた <code>get_sys</code> は以前のハンドルを使います。</li>
       <li><b>削除したオブジェクト</b>: 削除は親の <code>"Topology"</code> の編集です（グローバル制御器の削除では編集はありません）。削除したオブジェクトは <code>delete</code> されるため（<a href="class-design.html#parents">クラス設計: 親への参照</a>）、編集も再接続もできません。<code>add_*</code> で新しく作成します。</li>
       <li><b>コピー</b>: ディープコピーのメソッドはありません。<code>b = a</code> はハンドルのコピーです。独立したネットワークには、MAT ファイルへの保存と読み込み、または CSV への書き出しを使います。読み込んだネットワークや単独で保存した下の層もパラメータの表を保持し、編集の検査と記録は保存前と同じです。</li>
@@ -836,14 +836,14 @@ b1.l_isSlack = true;</code></pre>
       <li><b>Branch</b>: a class in <code>+branch</code> with the constants <code>key</code> and <code>header</code> and <code>get_admittance_matrix</code>, and a constructor <code>(index, opt)</code> with <code>Access={?PowerNetwork}</code> that calls the <code>Branch</code> constructor</li>
       <li><b>Local controller</b>: the constant <code>key</code>, the model key of a concrete class (e.g. <code>"avr-ST1"</code>), and the constant <code>s_role</code> <code>"avr"</code>, <code>"pss"</code>, <code>"local"</code> or <code>"governor"</code>, which decides where it goes; a constructor <code>(tag, Name=Value)</code> with <code>Access={?Component}</code>; outputs named after the inputs they drive; inputs named after the outputs or states they observe (<code>"Xall"</code> / <code>"Yall"</code> need an override of <code>set_inputs</code>; <code>resolve_ports</code> may adapt the ports to the component). Run <code>GUILDA</code> again so that <code>add_local_controller</code> knows the key</li>
       <li><b>Global controller</b>: the constants <code>key</code> (model key, e.g. <code>"agc-PI"</code>) and <code>s_role</code> (e.g. <code>"agc"</code>); constructor <code>(net, tag, units..., Name=Value)</code> with <code>Access={?PowerNetwork}</code>, calling the <code>GlobalController</code> constructor. <code>sv_u</code> must be outputs or states of every unit, and <code>sv_y</code> inputs of every unit or of one of its local controllers. Run <code>GUILDA</code> again so that <code>add_global_controller</code> knows the key</li>
-      <li><b>Network class</b>: a <code>PowerNetwork</code> subclass in <code>+network/@&lt;Name&gt;/</code> with the CSV folders, whose constructor calls <code>PowerNetwork.import_csv(dir, Network=obj)</code>. <code>net.export_csv(".../@&lt;Name&gt;")</code> writes such a class</li>
+      <li><b>Network class</b>: a <code>PowerNetwork</code> subclass in <code>+network/@&lt;Name&gt;/</code> with the CSV folders, whose constructor calls <code>PowerNetwork.import(dir, Network=obj)</code>. <code>net.export(".../@&lt;Name&gt;")</code> writes such a class</li>
     </ul>
     <ul lang="ja">
       <li><b>機器</b>: <code>+component</code> のクラスです。定数 <code>key</code>・<code>sv_x</code>・<code>sv_u</code>・<code>sv_y</code>・<code>sv_para</code> と、タグを付けて <code>Component</code> のコンストラクタを呼び、すべての <code>sv_para</code> を持つ <code>dynamics</code> コンテナに置き換えるコンストラクタ（<code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", sct)</code>、<code>sct</code> は既定値の struct） <code>(index, parameter, opt)</code> を <code>Access={?Bus}</code> で持ちます。<code>add_component</code> がキーを認識するよう <code>GUILDA</code> を再実行します。</li>
       <li><b>ブランチ</b>: <code>+branch</code> のクラスです。定数 <code>key</code>・<code>header</code> と <code>get_admittance_matrix</code>、<code>Branch</code> のコンストラクタを呼ぶコンストラクタ <code>(index, opt)</code> を <code>Access={?PowerNetwork}</code> で持ちます。</li>
       <li><b>ローカル制御器</b>: 定数 <code>key</code> は具象クラスのモデルのキー（例: <code>"avr-ST1"</code>）、定数 <code>s_role</code> は配置先を決める役割 <code>"avr"</code>・<code>"pss"</code>・<code>"local"</code>・<code>"governor"</code> です。コンストラクタは <code>(tag, Name=Value)</code> で、<code>Access={?Component}</code> にします。出力名は駆動する入力の名前、入力名は観測する出力または状態の名前です（<code>"Xall"</code> / <code>"Yall"</code> には <code>set_inputs</code> のオーバーライドが必要です。<code>resolve_ports</code> でポートを機器に合わせることもできます）。<code>add_local_controller</code> がキーを認識するよう <code>GUILDA</code> を再実行します。</li>
       <li><b>グローバル制御器</b>: 定数 <code>key</code>（モデルのキー、例: <code>"agc-PI"</code>）と <code>s_role</code>（例: <code>"agc"</code>）を持ちます。コンストラクタ <code>(net, tag, units..., Name=Value)</code> は <code>Access={?PowerNetwork}</code> で、<code>GlobalController</code> のコンストラクタを呼び出します。<code>sv_u</code> は各対象の出力または状態、<code>sv_y</code> は各対象またはそのローカル制御器の入力である必要があります。<code>add_global_controller</code> がキーを認識するよう <code>GUILDA</code> を再実行します。</li>
-      <li><b>ネットワーククラス</b>: CSV フォルダを持つ <code>+network/@&lt;Name&gt;/</code> の <code>PowerNetwork</code> サブクラスです。コンストラクタが <code>PowerNetwork.import_csv(dir, Network=obj)</code> を呼び出します。<code>net.export_csv(".../@&lt;Name&gt;")</code> はこの形のクラスを書き出します。</li>
+      <li><b>ネットワーククラス</b>: CSV フォルダを持つ <code>+network/@&lt;Name&gt;/</code> の <code>PowerNetwork</code> サブクラスです。コンストラクタが <code>PowerNetwork.import(dir, Network=obj)</code> を呼び出します。<code>net.export(".../@&lt;Name&gt;")</code> はこの形のクラスを書き出します。</li>
     </ul>
     <p lang="en">Step-by-step instructions and the model contracts: <a href="model-implementation.html">Model Implementation</a> (<a href="model-implementation.html#steps">steps</a>, <a href="model-implementation.html#contracts">contracts</a>, <a href="model-implementation.html#controller">controller</a>, <a href="model-implementation.html#other">branches and networks</a>).</p>
     <p lang="ja">手順とモデルの約束は <a href="model-implementation.html">モデルの実装</a>（<a href="model-implementation.html#steps">手順</a>、<a href="model-implementation.html#contracts">約束</a>、<a href="model-implementation.html#controller">制御器</a>、<a href="model-implementation.html#other">ブランチとネットワーク</a>）にあります。</p>

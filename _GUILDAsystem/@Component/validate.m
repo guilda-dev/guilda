@@ -92,7 +92,7 @@ function flag = validate(obj, l_message)
     [l_ok, s_detail] = check_size(y_test, s_id, ny);
     contract = add_row(contract, "fcn_Y size", l_ok, s_detail);
 
-    % simulate reads the mass matrix without a point (tools.read_mass)
+    % simulate reads the mass matrix without a point (SolverODE.build_index)
     [M_test, s_id] = eval_value(@() obj.fcn_Mass([],[],[],[],rr_param,r_omega0));
     l_ok = s_id == "" && (isequal(size(M_test),[nx,nx]) || (nx == 0 && isempty(M_test)));
     contract = add_row(contract, "fcn_Mass constant and square", l_ok, ...

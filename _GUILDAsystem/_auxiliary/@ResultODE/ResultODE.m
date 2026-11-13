@@ -8,9 +8,10 @@ classdef ResultODE < ResultBase
 % information. It keeps no reference to the network: its methods (plot_trajectory,
 % get_point, export, judge_out_of_step, odeResults) work after the network is edited or
 % deleted.
-% flag is 1 when the simulation reached the end time, 0 when it stopped by TimeLimit and
-% -1 when the solver stopped early; then the trajectories end at output.tEnd. When the
-% first phase could not be solved, they have no time points.
+% flag is 1 when the simulation reached the end time, 2 when it stopped by StopOnOutOfStep
+% (output.outOfStep holds the stop), 0 when it stopped by TimeLimit and -1 when the solver
+% stopped early; then the trajectories end at output.tEnd. When the first phase could not
+% be solved, they have no time points.
 %
 % The trajectory is stored once, in the order of the variable map of the network
 % (rm_variable, columns = rows of tab_variable): the states of the components with their
@@ -61,10 +62,10 @@ classdef ResultODE < ResultBase
 
     properties (SetAccess=private) % Result
         rv_t (:,1) double = zeros(0,1)      % [s] Output times, ascending; a phase boundary appears twice (end of one phase, start of the next).
-        tab_variable table = table()        % Variable map at the time of the simulation: its rows are the columns of rm_variable. <@Type> table ((n_x + n_v + n_u) x 7)
+        tab_variable table = table()        % Variable map at the time of the simulation: its rows are the columns of rm_variable. <@Type> table ((n_x + n_v + n_u) x 8)
         rm_variable double = zeros(0,0)     % Trajectory of all variables: row k at rv_t(k), column m the variable tab_variable(m,:). <@Type> double (n_t x (n_x + n_v + n_u))
         rm_I double = zeros(0,0)            % [pu] Currents injected into the buses: Ireal, Iimag of each bus in the order of sv_bus. <@Type> double (n_t x 2 n_bus)
-        tab_output table = table()          % Outputs y and yc of the variable map: its rows are the columns of rm_output; columns as tab_variable. <@Type> table (n_out x 7)
+        tab_output table = table()          % Outputs y and yc of the variable map: its rows are the columns of rm_output; columns as tab_variable. <@Type> table (n_out x 8)
         rm_output double = zeros(0,0)       % Trajectory of the outputs: row k at rv_t(k), column m the output tab_output(m,:); NaN while the unit is tripped. <@Type> double (n_t x n_out)
         sv_bus (:,1) string = strings(0,1)  % Bus tags, in the order of odeResults.Bus.
         c_component (:,1) cell = cell(0,1)  % Component tags of each bus, in the order of odeResults.Bus(i).Component.
@@ -96,7 +97,13 @@ classdef ResultODE < ResultBase
             arguments (Output)
                 obj % The result object.
             end
-            sct_solver = solver_info(sct_solver);
+            sct_default = struct("solver", "SolverODE", "options", struct(), "flag", false, ...
+                "output", struct(), "elapsed", NaN);
+            for s_name = string(fieldnames(sct_default)).'
+                if ~isfield(sct_solver, s_name)
+                    sct_solver.(s_name) = sct_default.(s_name);      % missing field: its default
+                end
+            end
             obj@ResultBase([], sct_solver.solver, sct_solver.options, sct_solver.flag, sct_solver.output, sct_solver.elapsed);
             if isfield(sct_network, "s_tag")
                 obj.s_network = string(sct_network.s_tag);

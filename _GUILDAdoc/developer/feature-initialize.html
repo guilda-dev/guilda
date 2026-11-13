@@ -97,21 +97,15 @@
         <tr>
           <td><code>Format</code></td>
           <td lang="en" data-label="Values and default"><ul>
-            <li>Form of the first output, with the values of <code>calculate_powerflow</code> (whose default is <code>"GUILDAorigin"</code>); <code>flag</code> and <code>output</code> stay the 2nd and 3rd outputs</li>
-            <li><code>"powerflow(mat)"</code> (default): the n_bus × 4 array that <code>initialize</code> writes with <code>Bus.set_equilibrium</code> (no extra work)</li>
-            <li><code>"V"</code>: complex bus voltages of the operating point, a column in <code>net.a_Bus</code> order</li>
-            <li><code>"powerflow(mat)"</code>: n_bus × 4 complex double; columns <code>V</code>, <code>I</code> (phasors), <code>P</code>, <code>Q</code> (real) [pu]</li>
-            <li><code>"powerflow(tab)"</code>: the same as a table with variables <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code>; row names = bus tags</li>
-            <li><code>"GUILDAorigin"</code>: the result object; <code>ResultPF</code> (<code>"powerflow"</code>, <code>"FixedInput"</code>, <code>"equilibrium"</code>) or <code>ResultOPF</code> (<code>"OPF"</code>)</li>
-          </ul><small>Taken out by <code>take_format</code> before the other options are passed on</small></td>
+            <li>Not an option of <code>initialize</code>: with every <code>Method</code>, <code>initialize</code> stops with <code>GUILDA:PowerNetwork:InitializeFormat</code>, so it is never passed to <code>calculate_powerflow</code></li>
+            <li>The first output is always the n_bus × 4 complex array that <code>initialize</code> writes with <code>Bus.set_equilibrium</code>: columns <code>V</code>, <code>I</code> (phasors), <code>P</code>, <code>Q</code> (real) [pu], rows in <code>net.a_Bus</code> order</li>
+            <li>A result object comes from <code>calculate_powerflow</code> (<code>ResultPF</code>) or <code>calculate_optimal_powerflow</code> (<code>ResultOPF</code>)</li>
+          </ul></td>
           <td lang="ja" data-label="値と既定値"><ul>
-            <li>最初の出力の形です。<code>calculate_powerflow</code> と同じ値を取ります（<code>calculate_powerflow</code> の既定は <code>"GUILDAorigin"</code>）。<code>flag</code> と <code>output</code> は、どの値でも 2 番目と 3 番目の出力です。</li>
-            <li><code>"powerflow(mat)"</code>（既定）: <code>initialize</code> が <code>Bus.set_equilibrium</code> で書き込む n_bus × 4 の配列そのものです（余分な処理はありません）。</li>
-            <li><code>"V"</code>: 運転点の母線の複素電圧です。<code>net.a_Bus</code> の順の列ベクトルです。</li>
-            <li><code>"powerflow(mat)"</code>: n_bus × 4 の複素数の行列です。列は <code>V</code>、<code>I</code>（フェーザ）、<code>P</code>、<code>Q</code>（実数）[pu] です。</li>
-            <li><code>"powerflow(tab)"</code>: 同じ内容の table です。変数は <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code>、行名は母線のタグです。</li>
-            <li><code>"GUILDAorigin"</code>: 結果のオブジェクトです。<code>"powerflow"</code>、<code>"FixedInput"</code>、<code>"equilibrium"</code> では <code>ResultPF</code>、<code>"OPF"</code> では <code>ResultOPF</code> です。</li>
-          </ul><small>ほかのオプションを渡す前に <code>take_format</code> が取り出します。</small></td>
+            <li><code>initialize</code> のオプションではありません。どの <code>Method</code> でも <code>initialize</code> が <code>GUILDA:PowerNetwork:InitializeFormat</code> で止めるので、<code>calculate_powerflow</code> へは渡りません。</li>
+            <li>最初の出力は常に、<code>initialize</code> が <code>Bus.set_equilibrium</code> で書き込む n_bus × 4 の複素数の配列です。列は <code>V</code>、<code>I</code>（フェーザ）、<code>P</code>、<code>Q</code>（実数）[pu]、行は <code>net.a_Bus</code> の順です。</li>
+            <li>結果のオブジェクトは <code>calculate_powerflow</code>（<code>ResultPF</code>）または <code>calculate_optimal_powerflow</code>（<code>ResultOPF</code>）で得ます。</li>
+          </ul></td>
         </tr>
         <tr>
           <td><span lang="en">other names</span><span lang="ja">その他の名前</span></td>
@@ -146,15 +140,15 @@
       <li>機器を持つ母線が 1 つ以上必要です（スラック母線が未設定なら潮流計算が選びます）。</li>
       <li><code>Method="equilibrium"</code> では、<code>net.sct_stale.powerflow</code> が空でなければなりません。つまり、先に <code>initialize</code> が成功していて、その後に潮流を変える編集をしていない状態です。</li>
     </ul>
-    <p lang="en">The deprecated option <code>methods</code> and its values are converted by <code>v3_initialize_args</code> with a warning.</p>
-    <p lang="ja">非推奨のオプション <code>methods</code> とその値は、<code>v3_initialize_args</code> が警告を出して変換します。</p>
+    <p lang="en">The option <code>methods</code> and the values <code>"powerflow calculation"</code>, <code>"optimal powerflow"</code> and <code>"calculate from Xequilibrium"</code> are not accepted: <code>methods</code> goes to the analysis as an unknown name, and an old value stops with <code>GUILDA:PowerNetwork:InitializeMethod</code>.</p>
+    <p lang="ja">オプション <code>methods</code> と、値 <code>"powerflow calculation"</code>、<code>"optimal powerflow"</code>、<code>"calculate from Xequilibrium"</code> は受け付けません。<code>methods</code> は未知の名前として解析に渡り、これらの値は <code>GUILDA:PowerNetwork:InitializeMethod</code> で止まります。</p>
     <ul lang="en">
       <li><code>initialize</code> changes the model: one of the few analysis methods that do (see <a href="api-design.html#side-effects">API Design, rule 6</a>)</li>
-      <li>Called when a network is built: by the shipped network classes and by <code>PowerNetwork.import_csv</code> / <code>import_matpower</code> (option <code>Initialize=true</code>, the default)</li>
+      <li>Called when a network is built: by the shipped network classes and by <code>PowerNetwork.import</code> / <code>import_matpower</code> (option <code>Initialize=true</code>, the default)</li>
     </ul>
     <ul lang="ja">
       <li><code>initialize</code> はモデルを書き換えます。解析メソッドとしては数少ない例です（<a href="api-design.html#side-effects">API 設計のルール 6</a>を参照）。</li>
-      <li>同梱のネットワーククラスと <code>PowerNetwork.import_csv</code> / <code>import_matpower</code> も、ネットワークを作るときに呼び出します（オプション <code>Initialize=true</code>、既定）。</li>
+      <li>同梱のネットワーククラスと <code>PowerNetwork.import</code> / <code>import_matpower</code> も、ネットワークを作るときに呼び出します（オプション <code>Initialize=true</code>、既定）。</li>
     </ul>
 
     <!-- ============================== SEQUENCE ============================== -->
@@ -197,7 +191,7 @@
         <text class="is-muted dg-mono" x="321" y="190">result.tab_bus</text>
         <!-- 04 -->
         <path class="dg-sv-line" d="M185 212h26v14h-22" marker-end="url(#init-ah)"/>
-        <text x="218" y="223"><tspan class="init-num">04</tspan> <tspan class="dg-mono">opf_point</tspan></text>
+        <text x="218" y="223"><tspan class="init-num">04</tspan> <tspan class="dg-mono">OPF point</tspan></text>
         <!-- 05 -->
         <path class="dg-sv-line" d="M185 262H581" marker-end="url(#init-ah)"/>
         <text x="330" y="256"><tspan class="init-num">05</tspan> <tspan class="dg-mono">set_equilibrium(V, I, P, Q)</tspan></text>
@@ -242,14 +236,12 @@
     <p lang="ja">ここに挙げる非公開の関数は、<code>_GUILDAsystem/@PowerNetwork/initialize.m</code> または <code>@Bus/set_equilibrium.m</code> のローカル関数です。<code>distribute_power</code> は <code>_GUILDAsystem/+tools/distribute_power.m</code> にあり、<code>@SolverPF/private/violation_table.m</code> からも使われます。</p>
     <ol class="fs-steps">
       <li class="fs-step" id="INIT-01">
-        <p class="fs-head"><b class="fs-id">INIT-01</b> <span class="fs-call">user → <code>PowerNetwork.initialize</code><small><code>v3_initialize_args</code>, <code>take_method</code></small></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-01</b> <span class="fs-call">user → <code>PowerNetwork.initialize</code><small><span lang="en">step 1 of the body</span><span lang="ja">本体の手順 1</span></small></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Converts the deprecated option <code>methods</code></li>
             <li>Separates <code>Method</code> from the options of the analysis</li>
           </ul><ul lang="ja">
-            <li>非推奨のオプション <code>methods</code> を変換します。</li>
             <li><code>Method</code> と解析へ渡すオプションを分離します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -276,24 +268,24 @@
         </dl>
       </li>
       <li class="fs-step" id="INIT-03a">
-        <p class="fs-head"><b class="fs-id">INIT-03a</b> <span class="fs-call"><code>initialize</code> → <code>solve_powerflow</code> → <code>PowerNetwork.calculate_powerflow</code><small>→ <code>SolverPF.solve</code></small></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-03a</b> <span class="fs-call"><code>initialize</code> → <code>PowerNetwork.calculate_powerflow</code><small>→ <code>SolverPF.solve</code></small></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li><code>Method="powerflow"</code> (default), when INIT-02 decides to solve: solves the power flow (see <a href="feature-power-flow.html">Power Flow</a>)</li>
-            <li>On failure, if no bus was a slack bus before the call: <code>release_slack</code> clears the slack bus it selected</li>
+            <li>On failure, if no bus was a slack bus before the call: the <code>catch</code> of the solve clears the slack bus that was selected (the same for <code>"FixedInput"</code>)</li>
           </ul><ul lang="ja">
             <li><code>Method="powerflow"</code>（既定）で、INIT-02 が求解が必要と判断したときは潮流計算を解きます（<a href="feature-power-flow.html">潮流計算</a>を参照）。</li>
-            <li>失敗したときは、呼び出し前にスラック母線がなかった場合に限り、<code>release_slack</code> が今回選ばれたスラック母線を解除します。</li>
+            <li>失敗したときは、呼び出し前にスラック母線がなかった場合に限り、求解の <code>catch</code> が今回選ばれたスラック母線を解除します（<code>"FixedInput"</code> も同じです）。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>GUILDA.config("PowerFlowCalculation")</code>, <code>net.solver_PF</code> (warm start), <code>c_nv</code>, <code>Format</code>, <code>Bus.l_isSlack</code>, <code>tab_parameter.powerflow</code></span><span lang="ja"><code>GUILDA.config("PowerFlowCalculation")</code>、<code>net.solver_PF</code>（ウォームスタート）、<code>c_nv</code>、<code>Format</code>、<code>Bus.l_isSlack</code>、<code>tab_parameter.powerflow</code></span></dd>
+          <dd><span lang="en"><code>GUILDA.config("PowerFlowCalculation")</code>, <code>net.solver_PF</code> (warm start), <code>c_nv</code>, <code>Bus.l_isSlack</code>, <code>tab_parameter.powerflow</code></span><span lang="ja"><code>GUILDA.config("PowerFlowCalculation")</code>、<code>net.solver_PF</code>（ウォームスタート）、<code>c_nv</code>、<code>Bus.l_isSlack</code>、<code>tab_parameter.powerflow</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>rm_pf</code> (<code>Format="powerflow(mat)"</code> of <code>calculate_powerflow</code>: n_bus × 4, columns <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code> [pu]), and the first output in <code>Format</code>; only <code>Format="GUILDAorigin"</code> requests a <code>ResultPF</code>, whose <code>tab_bus</code> gives <code>rm_pf</code>; may set <code>l_isSlack</code> of one bus</span><span lang="ja"><code>rm_pf</code>（<code>calculate_powerflow</code> の <code>Format="powerflow(mat)"</code>。n_bus × 4 で、列は <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code> [pu]）と、<code>Format</code> の形の最初の出力を返します。<code>ResultPF</code> を求めるのは <code>Format="GUILDAorigin"</code> のときだけで、そのときは <code>tab_bus</code> から <code>rm_pf</code> を作ります。母線 1 つの <code>l_isSlack</code> を設定することがあります。</span></dd>
+          <dd><span lang="en"><code>rm_pf</code> (<code>Format="powerflow(mat)"</code> of <code>calculate_powerflow</code>: n_bus × 4, columns <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code> [pu]), which is also the first output; no <code>ResultPF</code> is built; may set <code>l_isSlack</code> of one bus</span><span lang="ja"><code>rm_pf</code>（<code>calculate_powerflow</code> の <code>Format="powerflow(mat)"</code>。n_bus × 4 で、列は <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code> [pu]）を返し、これがそのまま最初の出力になります。<code>ResultPF</code> は作りません。母線 1 つの <code>l_isSlack</code> を設定することがあります。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-03b">
-        <p class="fs-head"><b class="fs-id">INIT-03b</b> <span class="fs-call"><code>initialize</code> → <code>solve_opf</code> → <code>PowerNetwork.calculate_optimal_powerflow</code><small>→ <code>SolverOPF.solve</code></small></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-03b</b> <span class="fs-call"><code>initialize</code> → <code>PowerNetwork.calculate_optimal_powerflow</code><small>→ <code>SolverOPF.solve</code></small></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -329,11 +321,11 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>net.sct_stale.powerflow</code>; <code>Component.c_Vequilibrium</code>, <code>c_Iequilibrium</code>; <code>get_admittance_matrix</code></span><span lang="ja"><code>net.sct_stale.powerflow</code>、<code>Component.c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>get_admittance_matrix</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en">The first output in <code>Format</code>; for <code>"GUILDAorigin"</code> a <code>ResultPF</code> with <code>s_solver = "equilibrium"</code>, <code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>, built from the bus V and I, the admittance matrix and <code>struct(net, false)</code>; <code>flag = 1</code>; <code>output.residual</code>, <code>output.message</code></span><span lang="ja"><code>Format</code> の形の最初の出力を返します。<code>"GUILDAorigin"</code> では、母線の V と I、アドミタンス行列、<code>struct(net, false)</code> から作る <code>ResultPF</code>（<code>s_solver = "equilibrium"</code>、<code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>）です。<code>flag = 1</code>、<code>output.residual</code>、<code>output.message</code> も返します。</span></dd>
+          <dd><span lang="en"><code>rm_pf</code> (n_bus × 4: the bus V and I, and P, Q = real, imag of V.*conj(I)), the first output; <code>flag = 1</code>; <code>output.residual</code>, <code>output.message</code> (no <code>iterations</code> field, unlike a solve)</span><span lang="ja">最初の出力として <code>rm_pf</code>（n_bus × 4。母線の V と I、および V.*conj(I) の実部・虚部の P、Q）を返します。<code>flag = 1</code>、<code>output.residual</code>、<code>output.message</code> も返します（求解したときと違い、<code>iterations</code> のフィールドはありません）。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-04">
-        <p class="fs-head"><b class="fs-id">INIT-04</b> <span class="fs-call"><code>initialize</code> → <code>opf_point</code></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-04</b> <span class="fs-call"><code>initialize</code><small><span lang="en">after the solve, <code>s_method == "OPF"</code></span><span lang="ja">求解の後、<code>s_method == "OPF"</code></span></small></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -348,11 +340,11 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>result.tab_bus</code> (<code>Vphasor</code>, <code>Iphasor</code>) and <code>result.tab_cub{tags, ["P","Q"]}</code> of the <code>ResultOPF</code></span><span lang="ja"><code>ResultOPF</code> の <code>result.tab_bus</code>（<code>Vphasor</code>、<code>Iphasor</code>）と <code>result.tab_cub{tags, ["P","Q"]}</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>rm_pf</code> (n_bus × 4: <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code> of each bus); <code>c_PQ</code>: n_bus × 1 cell, each n_comp × 2 [pu] or <code>[]</code>; with a <code>Format</code> other than <code>"GUILDAorigin"</code>, the first output is built from <code>rm_pf</code></span><span lang="ja"><code>rm_pf</code>（n_bus × 4。各母線の <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code>）と、<code>c_PQ</code>（n_bus × 1 のセル配列。各要素は n_comp × 2 [pu] または <code>[]</code>）を返します。<code>Format</code> が <code>"GUILDAorigin"</code> でないときは、最初の出力を <code>rm_pf</code> から作ります。</span></dd>
+          <dd><span lang="en"><code>rm_pf</code> (n_bus × 4: <code>V</code>, <code>I</code>, <code>P</code>, <code>Q</code> of each bus); <code>c_PQ</code>: n_bus × 1 cell, each n_comp × 2 [pu] or <code>[]</code>; <code>rm_pf</code> is the first output</span><span lang="ja"><code>rm_pf</code>（n_bus × 4。各母線の <code>V</code>、<code>I</code>、<code>P</code>、<code>Q</code>）と、<code>c_PQ</code>（n_bus × 1 のセル配列。各要素は n_comp × 2 [pu] または <code>[]</code>）を返します。<code>rm_pf</code> が最初の出力です。</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-05">
-        <p class="fs-head"><b class="fs-id">INIT-05</b> <span class="fs-call"><code>write_powerflow</code> → <code>Bus.set_equilibrium(c_V, c_I, r_P, r_Q, rm_PQ=c_PQ{i})</code></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-05</b> <span class="fs-call"><code>initialize</code> → <code>Bus.set_equilibrium(c_V, c_I, r_P, r_Q, rm_PQ=c_PQ{i})</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -487,7 +479,7 @@
         </dl>
       </li>
       <li class="fs-step" id="INIT-12">
-        <p class="fs-head"><b class="fs-id">INIT-12</b> <span class="fs-call"><code>initialize</code> → <code>large_model_residuals</code><small>→ <code>model_residuals</code>, <code>component_residuals</code>, <code>controller_residuals</code>, <code>global_controller_residual</code>, <code>check_point_size</code>, <code>model_value</code></small></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-12</b> <span class="fs-call"><code>initialize</code> → <code>model_residuals</code><small>→ <code>component_residuals</code>, <code>nested_outputs</code>, <code>controller_residuals</code>, <code>global_controller_residual</code>, <code>residual_row</code>, <code>check_point_size</code>, <code>model_value</code></small></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -546,13 +538,13 @@
     <!-- ============================== DATA ============================== -->
     <h2 id="data"><span lang="en">Data the feature produces</span><span lang="ja">この機能が生成するデータ</span></h2>
     <ul lang="en">
-      <li>First output: the operating point of step 03 in the form of <code>Format</code> (default <code>"powerflow(mat)"</code>, the n_bus × 4 array of V, I, P, Q that is written); with <code>"GUILDAorigin"</code>, <code>ResultPF</code> for <code>"powerflow"</code>, <code>"FixedInput"</code> and <code>"equilibrium"</code>, <code>ResultOPF</code> for <code>"OPF"</code></li>
-      <li><code>result.tab_bus</code> of the result object: the bus equilibrium in every case</li>
+      <li>First output: the operating point of step 03 as the n_bus × 4 complex array of V, I, P, Q that is written, for every <code>Method</code> (for <code>"OPF"</code>, that of the AC OPF solution)</li>
+      <li>No result object: <code>ResultPF</code> and <code>ResultOPF</code> come from <code>calculate_powerflow</code> and <code>calculate_optimal_powerflow</code></li>
       <li>The equilibrium itself: stored on the model objects, each on its owner</li>
     </ul>
     <ul lang="ja">
-      <li>最初の出力は、ステップ 03 の運転点を <code>Format</code> の形にしたものです（既定は <code>"powerflow(mat)"</code>、書き込む V・I・P・Q の n_bus × 4 の配列）。<code>"GUILDAorigin"</code> では、<code>"powerflow"</code>、<code>"FixedInput"</code>、<code>"equilibrium"</code> で <code>ResultPF</code>、<code>"OPF"</code> で <code>ResultOPF</code> です。</li>
-      <li>結果のオブジェクトの <code>result.tab_bus</code> は、どの場合も母線の平衡点を表します。</li>
+      <li>最初の出力は、ステップ 03 の運転点を表す V・I・P・Q の n_bus × 4 の複素数の配列（書き込むもの）です。どの <code>Method</code> でも同じ形です（<code>"OPF"</code> では AC OPF の解）。</li>
+      <li>結果のオブジェクトは返しません。<code>ResultPF</code> と <code>ResultOPF</code> は <code>calculate_powerflow</code> と <code>calculate_optimal_powerflow</code> で得ます。</li>
       <li>平衡点そのものは、所有者ごとにモデルのオブジェクトに保存します。</li>
     </ul>
     <table class="dg-table init-data">
@@ -604,7 +596,7 @@
         <ul>
           <li>each layer marks its own stale tags (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>)</li>
           <li>nothing re-runs <code>initialize</code> automatically</li>
-          <li><code>simulate</code>, <code>get_sys</code> (every layer), and the continuation power flow stop with their stale errors (<code>GUILDA:SolverODE:Stale</code>, <code>GUILDA:PowerSystemModel:Stale</code>, <code>GUILDA:SolverCPF:Stale</code>)</li>
+          <li><code>simulate</code>, <code>get_sys</code> (every layer), and the continuation power flow stop with their stale errors (<code>GUILDA:PowerNetwork:SimulateStale</code>, <code>GUILDA:PowerSystemModel:Stale</code>, <code>GUILDA:SolverCPF:Stale</code>)</li>
           <li>after edits of dynamics parameters only: <code>initialize()</code> does not solve the power flow; it keeps <code>V</code> and <code>I</code> and recomputes the states and inputs of the edited models</li>
         </ul>
       </li>
@@ -631,7 +623,7 @@
         <ul>
           <li>各層が自分の stale タグに印を付けます（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照）。</li>
           <li><code>initialize</code> が自動で再実行されることはありません。</li>
-          <li><code>simulate</code>、<code>get_sys</code>（全層）、連続潮流計算はそれぞれの stale のエラー（<code>GUILDA:SolverODE:Stale</code>、<code>GUILDA:PowerSystemModel:Stale</code>、<code>GUILDA:SolverCPF:Stale</code>）で停止します。</li>
+          <li><code>simulate</code>、<code>get_sys</code>（全層）、連続潮流計算はそれぞれの stale のエラー（<code>GUILDA:PowerNetwork:SimulateStale</code>、<code>GUILDA:PowerSystemModel:Stale</code>、<code>GUILDA:SolverCPF:Stale</code>）で停止します。</li>
           <li>動特性パラメータだけを編集した後の <code>initialize()</code> は、潮流計算を解きません。<code>V</code> と <code>I</code> はそのままにして、編集したモデルの状態と入力だけを計算し直します。</li>
         </ul>
       </li>
@@ -725,10 +717,10 @@
           <dt><span lang="en">State of the network after the failure</span><span lang="ja">失敗後のネットワークの状態</span></dt>
           <dd><ul lang="en">
             <li>the equilibrium is written in part; <code>net.sct_stale.powerflow</code> gets "the last initialize stopped before it finished", so the next <code>initialize</code> solves the power flow again</li>
-            <li>later analyses stop with their stale errors (e.g. <code>GUILDA:SolverODE:Stale</code>) naming that message</li>
+            <li>later analyses stop with their stale errors (e.g. <code>GUILDA:PowerNetwork:SimulateStale</code>) naming that message</li>
           </ul><ul lang="ja">
             <li>平衡点は途中まで書き込まれた状態です。<code>net.sct_stale.powerflow</code> に "the last initialize stopped before it finished" を追加するので、次の <code>initialize</code> は潮流計算から解き直します。</li>
-            <li>それ以降の解析は、このメッセージを含む stale のエラー（例: <code>GUILDA:SolverODE:Stale</code>）で停止します。</li>
+            <li>それ以降の解析は、このメッセージを含む stale のエラー（例: <code>GUILDA:PowerNetwork:SimulateStale</code>）で停止します。</li>
           </ul></dd>
         </dl>
       </li>

@@ -54,7 +54,7 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
         opt.MaxIteration (1,1) double {mustBeIntegerOrNaN} = GUILDA.config("PowerFlowCalculation", "MaxIteration") % Maximum number of iterations; NaN for the automatic value.
         opt.Verbose (1,1) logical = GUILDA.config("PowerFlowCalculation", "Verbose") % Print the progress of each iteration.
         opt.WarmStart (1,1) logical = GUILDA.config("PowerFlowCalculation", "WarmStart") % Start from the last converged solution of this network.
-        opt.PlotFcn {mustBePlotFcn} = GUILDA.config("PowerFlowCalculation", "PlotFcn") % Live display during the calculation: "residual", a function handle or "none".
+        opt.PlotFcn {tools.check_plotfcn(opt.PlotFcn, "calculate_powerflow", "residual")} = GUILDA.config("PowerFlowCalculation", "PlotFcn") % Live display during the calculation: "residual", a function handle or "none".
         opt.Format (1,1) string {mustBeMember(opt.Format, ["V","powerflow(mat)","powerflow(tab)","GUILDAorigin"])} = "GUILDAorigin" % Form of the first output.
     end
     arguments (Output)
@@ -83,16 +83,28 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
     r_elapsed = toc(t0);
     notify_failure(flag, output, sct_options.WhenFailed);
 
+    % V, I (complex phasors), P, Q (real injections, S = V.*conj(I)) of each bus; only
+    % "powerflow(tab)" builds a table and only "GUILDAorigin" the ResultPF and its snapshot
     if opt.Format == "V"
-        result = cv_V;                % nothing else to build
+        result = cv_V;
         return
     end
-    rm_pf = powerflow_matrix(cv_V, cm_Y*cv_V);
-    sct_solver = struct("solver", string(class(obj.solver_PF)), "options", sct_options, ...
-        "flag", flag, "output", output, "elapsed", r_elapsed, "cm_Vhistory", cm_Vhistory, ...
-        "rv_step", rv_step, "tab_PFcondition", tab_PFcondition);
-    result = format_powerflow(opt.Format, sv_bus, rm_pf, ...
-        @() ResultPF(powerflow_table(sv_bus, rm_pf), cm_Y, struct(obj, false), sct_solver));
+    cv_I  = cm_Y*cv_V;
+    cv_S  = cv_V .* conj(cv_I);
+    if opt.Format == "powerflow(mat)"
+        result = [cv_V, cv_I, real(cv_S), imag(cv_S)];
+        return
+    end
+    tab_pf = table(cv_V, cv_I, real(cv_S), imag(cv_S), 'VariableNames', ["V","I","P","Q"], 'RowNames', sv_bus);
+    switch opt.Format
+        case "powerflow(tab)"
+            result = tab_pf;
+        case "GUILDAorigin"
+            sct_solver = struct("solver", string(class(obj.solver_PF)), "options", sct_options, ...
+                "flag", flag, "output", output, "elapsed", r_elapsed, "cm_Vhistory", cm_Vhistory, ...
+                "rv_step", rv_step, "tab_PFcondition", tab_PFcondition);
+            result = ResultPF(tab_pf, cm_Y, struct(obj, false), sct_solver);
+    end
 end
 
 
@@ -145,10 +157,4 @@ function mustBeIntegerOrNaN(r)
         mustBeNonnegative(r)
         mustBeInteger(r)
     end
-end
-
-
-function mustBePlotFcn(x)
-% "none", "residual" or a function handle (tools.check_plotfcn)
-    tools.check_plotfcn(x, "calculate_powerflow", "residual");
 end

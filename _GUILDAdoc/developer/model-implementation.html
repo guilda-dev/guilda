@@ -84,7 +84,7 @@
         </tr>
         <tr>
           <td><span lang="en">Mass matrix</span><span lang="ja">質量行列</span></td>
-          <td colspan="3"><span lang="en"><code>fcn_Mass</code>: constant and square. <code>simulate</code> calls it with empty <code>t, x, V, u</code>; a matrix that uses them stops with <code>GUILDA:read_mass:NotConstant</code>.</span><span lang="ja"><code>fcn_Mass</code> は定数の正方行列を返します。<code>simulate</code> は空の <code>t, x, V, u</code> で呼び出すため、これらを使う行列は <code>GUILDA:read_mass:NotConstant</code> で停止します。</span></td>
+          <td colspan="3"><span lang="en"><code>fcn_Mass</code>: constant and square. <code>simulate</code> evaluates its handle <code>f_Mass([],[],[],[])</code> once (<code>SolverODE.build_index</code>); a matrix that uses <code>t, x, V, u</code> or is not of the block size stops with <code>GUILDA:SolverODE:MassNotConstant</code>.</span><span lang="ja"><code>fcn_Mass</code> は定数の正方行列を返します。<code>simulate</code> はハンドル <code>f_Mass([],[],[],[])</code> を 1 回だけ評価します（<code>SolverODE.build_index</code>）。<code>t, x, V, u</code> を使う行列やブロックの大きさでない行列は、<code>GUILDA:SolverODE:MassNotConstant</code> で停止します。</span></td>
         </tr>
         <tr>
           <td><span lang="en">Jacobians</span><span lang="ja">ヤコビ行列</span></td>
@@ -256,10 +256,9 @@ g2   = b2.add_component("gen-simple", "P",0.5, "parameter",para);
 b3.add_component("load-impedance", "P",-1.0, "Q",-0.2);
 net.initialize();
 
-sc  = Scenario("fault");
+sc  = net.add_scenario("fault", Time=[0,10]);
 sc.add_fault(b3.s_tag, [1,1.05]);
-net.add_scenario(sc);
-sim = net.simulate([0,10], sc);
+sim = net.simulate("fault");
 sys = net.get_sys();
 </pre>
 
@@ -336,12 +335,12 @@ sys = net.get_sys();
     end
 end
 </pre>
-    <p lang="en">Attaching a controller changes the dynamics, so run <code>initialize</code> again. Without it, <code>simulate</code> stops with <code>GUILDA:SolverODE:Stale</code>.</p>
-    <p lang="ja">制御器を接続すると動特性が変わるので、<code>initialize</code> をもう一度実行します。実行しないと、<code>simulate</code> は <code>GUILDA:SolverODE:Stale</code> で停止します。</p>
+    <p lang="en">Attaching a controller changes the dynamics, so run <code>initialize</code> again. Without it, <code>simulate</code> stops with <code>GUILDA:PowerNetwork:SimulateStale</code>.</p>
+    <p lang="ja">制御器を接続すると動特性が変わるので、<code>initialize</code> をもう一度実行します。実行しないと、<code>simulate</code> は <code>GUILDA:PowerNetwork:SimulateStale</code> で停止します。</p>
 <pre class="mi-code" data-run="controller">avr = g2.add_local_controller("avr-simple", parameter=struct(Ka=30, Te=0.05));
 pss = g2.add_local_controller("pss-PSS1");   % under the AVR
 net.initialize();
-sim = net.simulate([0,10], sc);
+sim = net.simulate("fault");
 </pre>
     <p lang="en">To detach it, call <code>g2.remove_local_controller(avr.s_tag, RemoveNested=true)</code>. The option also removes the PSS, and an AVR with a PSS cannot be removed without it.</p>
     <p lang="ja">取り外すには <code>g2.remove_local_controller(avr.s_tag, RemoveNested=true)</code> を使います。このオプションを付けると PSS も一緒に外れます。PSS の付いた AVR は、このオプションなしでは外せません。</p>
@@ -380,8 +379,8 @@ s.inputs          % Vref: "equilibrium (not connected)", Vpss: "output of B002SG
 
     <h3><span lang="en">Check the dynamic behavior</span><span lang="ja">動的な挙動を確認する</span></h3>
     <ol class="dg-list is-numbered">
-      <li><div><span class="dg-item-title"><span lang="en">Stay at the equilibrium</span><span lang="ja">平衡点にとどまる</span></span><p lang="en"><code>net.simulate</code> without scenarios keeps the states at <code>rv_Xequilibrium</code>.</p><p lang="ja">シナリオなしの <code>net.simulate</code> を実行し、状態が <code>rv_Xequilibrium</code> にとどまることを確かめます。</p></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Run through a fault and a trip</span><span lang="ja">地絡と解列を最後までシミュレーションする</span></span><p lang="en">Run a fault and a trip with a <code>Scenario</code> (<code>add_fault</code>, <code>add_trip</code>). <code>flag</code> is <code>1</code> when the simulation completes. A trip calls <code>get_equilibrium</code> with <code>I = P = Q = 0</code>.</p><p lang="ja"><code>Scenario</code>（<code>add_fault</code>、<code>add_trip</code>）で地絡と解列（トリップ）を起こします。シミュレーションが最後まで進めば <code>flag</code> は <code>1</code> です。解列では <code>I = P = Q = 0</code> で <code>get_equilibrium</code> が呼ばれます。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Stay at the equilibrium</span><span lang="ja">平衡点にとどまる</span></span><p lang="en"><code>net.simulate</code> of a scenario without disturbances keeps the states at <code>rv_Xequilibrium</code>.</p><p lang="ja">外乱のないシナリオで <code>net.simulate</code> を実行し、状態が <code>rv_Xequilibrium</code> にとどまることを確かめます。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Run through a fault and a trip</span><span lang="ja">地絡と解列を最後までシミュレーションする</span></span><p lang="en">Run a fault and a trip with a scenario (<code>net.add_scenario</code>, <code>add_fault</code>, <code>add_trip</code>). <code>flag</code> is <code>1</code> when the simulation completes. A trip calls <code>get_equilibrium</code> with <code>I = P = Q = 0</code>.</p><p lang="ja">シナリオ（<code>net.add_scenario</code>、<code>add_fault</code>、<code>add_trip</code>）で地絡と解列（トリップ）を起こします。シミュレーションが最後まで進めば <code>flag</code> は <code>1</code> です。解列では <code>I = P = Q = 0</code> で <code>get_equilibrium</code> が呼ばれます。</p></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Look at the linear model</span><span lang="ja">線形モデルを調べる</span></span><p lang="en"><code>eig(net.get_sys(Format="ss"))</code>. A network of synchronous machines has an eigenvalue near zero from the common rotation of the rotor angles. The others: in the left half plane unless intended. An unstable result can also come from the rest of the test network, so compare with an existing model on the same network.</p><p lang="ja"><code>eig(net.get_sys(Format="ss"))</code> を確認します。同期機からなるネットワークには、回転子角がそろって回る動きに対応する 0 付近の固有値があります。それ以外の固有値は、意図した場合を除いて左半平面にあるはずです。不安定な結果がテスト用ネットワークのほかの部分から来ることもあるので、同じネットワークで既存のモデルと比べてください。</p></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Compare with a known model</span><span lang="ja">既知のモデルと比較する</span></span><p lang="en">When an existing class reduces to your model, the eigenvalues should agree, as below.</p><p lang="ja">既存のクラスが新しいモデルに帰着する場合は、下のように固有値が一致します。</p></div></li>
     </ol>
@@ -400,7 +399,8 @@ s.inputs          % Vref: "equilibrium (not connected)", Vpss: "output of B002SG
 [net, g2] = make_network("gen-simple", table(100,10,0.3, VariableNames=["M","D","Xs"]));
 assert(~any(g2.validate(false).contract.status == "FAIL"))
 
-X = net.simulate([0,5], Progress="none").odeResults.Bus(2).Component(1).X;
+net.add_scenario("steady", Time=[0,5]);       % no disturbance
+X = net.simulate("steady", Progress="none").odeResults.Bus(2).Component(1).X;
 assert(max(abs(X{:,:} - g2.rv_Xequilibrium.'), [], "all") &lt; 1e-9)
 
 eig_new = sort(eig(net.get_sys(Format="ss")));

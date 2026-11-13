@@ -54,7 +54,7 @@ function varargout = disp_branch(obj, opt)
             [~, iv_sort] = sort(rv_load, "descend", "MissingPlacement", "last");
             tab_show = tab_show(iv_sort,:);
     end
-    varargout = show_text(table_text(tab_show), nargout);
+    varargout = show_text(string(formattedDisplayText(tab_show, "SuppressMarkup", true)), nargout);
 end
 
 

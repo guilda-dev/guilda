@@ -8,7 +8,7 @@
 
 %% A balanced island succeeds with a warning that lists the islands
 net = balanced_island();
-[s_id, s_msg] = warning_of(@() net.initialize(Format="GUILDAorigin"));
+[s_id, s_msg] = warning_of(@() net.initialize());
 assert(s_id == "GUILDA:PowerNetwork:NetworkIsland", s_id)
 assert(contains(s_msg, "[B001, B002, B003], [B004, B005]"), s_msg)
 assert(~DebugScript.helper.is_stale(net) && kcl_residual(net) < 1e-6)
@@ -150,7 +150,7 @@ for s_net = ["IEEE9bus","IEEE14bus","IEEE14bus_lossless","IEEE14bus_NoTap","IEEE
                "Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus", ...
                "IEEJ_EAST10","IEEJ_EAST30","IEEJ_WEST10","IEEJ_WEST30"]
     net = network.(s_net)();
-    s_id = warning_of(@() net.initialize(Format="GUILDAorigin"));
+    s_id = warning_of(@() net.initialize());
     assert(s_id ~= "GUILDA:PowerNetwork:NetworkIsland", s_net)
 end
 

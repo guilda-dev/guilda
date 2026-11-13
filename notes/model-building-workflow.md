@@ -363,7 +363,7 @@ gen.para_powerflow.P = 0.6;                      % Parameter を直接
 | シートの「現在」 | 実装 |
 |---|---|
 | `CsvNetHandler.import(path, net, options)` / `.export(...)`(net メソッド化されていない) | `PowerNetwork.import_csv` / `net.export_csv`。旧名は非推奨の互換層(C16) |
-| `net.initialize("methods",...)` → `[flag, tab_PFsol, output]` | `initialize(Method=...)` → `[result, flag, output]`。`methods` は互換(`@PowerNetwork/initialize.m:44`) |
+| `net.initialize("methods",...)` → `[flag, tab_PFsol, output]` | `initialize(Method=...)` → `[rm_pf, flag, output]`。`methods` は 2026-11-13 に互換を削除(エラー) |
 | `net.calculate_powerflow(mode,opt)` → `[tab_PFsol, flag, output]` | `PowerFlowResult` を返す。`Method` で指定 |
 | 横断ルール 2「実行時 NV とプロパティ書き換えの混在」 | `api-design.html` のルール 2 で分離済み。ただし構築系は `add_*` の NV と `tab_parameter` / `para_*` の編集が併存 |
 | 横断ルール 5「前提条件の失敗」 | 解析の入口は `EquilibriumStale` で統一。構築系は統一なし(問題 29) |
@@ -444,6 +444,6 @@ end
 
 - 実際の MATPOWER ケースファイル(`case14` など)の取り込みと、`network.IEEE14bus` との数値比較
 - `.mlx` の全セルの実行。旧 API の確認は、該当する呼び出しを個別に実行したものです
-- GUI 経由の操作(`GUILDA.newclass`、`draw_diagram`)
+- GUI 経由の操作(`GUILDA.newclass`、`plot_diagram`)
 - `+DebugScript` がリリースに含まれるか(問題 25 の影響範囲)。リリース用スクリプトに `DebugScript` の記述は見つかりませんでした
 - `Method="OPF"` の残差の原因(`notes/get-sys-workflow.md`, `notes/simulate-review-workflow.md` の結論を引用し、再分析はしていません)
