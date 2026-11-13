@@ -35,8 +35,8 @@ classdef ResultODE < ResultBase
 %   time, positive into the bus): Ireal, Iimag of each component in the order of sv_bus and
 %   c_component. It is NaN while the component is tripped. At each time the currents of
 %   the components of a bus add up to its rm_I (Y V) within the tolerance of the solver
-%   (the residual of the current balance), except at a faulted bus during the fault: the
-%   fault current is in neither.
+%   (the residual of the current balance), except at a faulted bus during the fault: rm_I
+%   there also holds the fault current.
 % - `tab_output` has the rows y (outputs of the components) and yc (outputs of the
 %   controllers) of the variable map, with the columns of tab_variable. `rm_output` holds
 %   their trajectories, computed by the constructor from the output functions of the
