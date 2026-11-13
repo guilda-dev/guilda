@@ -87,7 +87,8 @@
 | S3 | 済(2026-11-12) | `4434b396`, `c931880d`, `fac24132`(`refactor/simulate-redesign-s3`) |
 | S4 | 済(2026-11-13) | `03f727f7`, `505d411f`, `b82731df`(`refactor/simulate-redesign-s4`) |
 | S5 | 済(2026-11-13) | `0c74a92a`(`refactor/simulate-redesign-s5`) |
-| S5b-S7 | 未着手 | |
+| S5b | 済(2026-11-13) | `cae5f89b`(`refactor/simulate-redesign-s5b`) |
+| S6-S7 | 未着手 | |
 
 - **S0:** `+DebugScript/+helper/simulate_baseline.m` を加えました。§8.3 の 6 例(IEEE68 の地絡 `[0,10]`、IEEE68 `LocalController=false` の外乱なし、IEEE14 AVR+PSS の母線 3 の発電機の解列、IEEE14 の 3 番目のブランチの開放、IEEE9 のオフセットと一定値の入力、F18 の構成の AGC 付き IEEE14 の GC の解列と観測機器の解列。いずれも `[0,5]`、IEEE68 の地絡だけ `[0,10]`)を計算し、`rv_t`, `rm_variable`, `rm_I`, `output.phases`, `flag` を `Mode="record"` で保存、`Mode="compare"` で `isequaln` で比べ、違えば例ごとに差の最大値を示します。タグは系統から読みます。API に触れるのはローカル関数 `new_scenario` と `run_case` だけで、S2-S6 はこの 2 つの数行を書き換えます。
 - **基準:** `/Users/taku/GUILDA/simulate-baseline/baseline_s0.mat`(リポジトリの外、コミットしない)。基準のコードは `refactor/design-alignment` の `7bc4cd45`(`7bc4cd457b99f23e37b9f195f0e73a798c7f47f2`、MAT の `sct_meta.commit` にも記録)、R2026a。6 例とも `flag = 1`。
@@ -118,6 +119,15 @@
 - **S5 のテスト:** F3_edit_handling(「Solvers called directly」を `build_simulation_data` に)、F6, F29, F35, I51, I55, I64(`solve` の直接の呼び出しを `solve_direct` に)、F6 の `boundary_jumps`(`f_Mass` を直接評価)、ID の改名(F3, F29, F35, I56, I105, `is_stale`)。新規 F39(系統を `delete` した後も `solve` が `isequaln` の結果、データに handle の物体がない、外乱の位置と開放の行列、stale の ID、`Format="struct"` の形と値、`"zoh"` の区間の境界、`"spline"` の値)。
 - **S5 の確認:** `simulate_baseline(Mode="compare")` は 6 例すべて `isequaln`(最初の実装で一致。§8.3 の差の調査は不要)。small は 518 件(PASS 515 / KNOWN 1 / SKIP 1 / FAIL 1)で、FAIL は F34(`Format` の追加で `functionSignatures.json` と F34 の期待する引数の列が古い)。`GUILDA.update_keymap(Signature=true)` で再生成し、F34 を直して 6 件 PASS。medium は 1 回、696 件(PASS 694 / KNOWN 1 / SKIP 1、FAIL 0)。`test_levels.m` の F7 の名前の警告(`LayerGet_sys_RemovedArguments_...`)は S5 の前からあります。
 - **S5 の時間:** IEEE68 の地絡 `[0,10]`、5 回の中央値(R2026a)。変更前 1.28 s、変更後 `Format="GUILDAorigin"` 1.21 s、`Format="struct"` 0.64 s(`struct(net, false)` と出力 y の計算をしないため)。
+- **S5b:** `simulate` に `SampleTime`(`mustBeNonnegativeOrNaN`、新規 `@PowerNetwork/private/mustBeNonnegativeOrNaN.m`)、`StopOnOutOfStep`、`StopAngle`(`mustBePositive`)を加え、`DefaultTimeSimulation.json` に同じ 3 つ(NaN, false, 360)を加えました。`version` は 2 のまま(既定値と利用者の値を合成するので、キーの追加では利用者の設定を戻す必要がない)。設定の `SampleTime` が正でない・`StopAngle` が不正なときは NaN・360 にします。`simulation_blocks` は `sct_dae.sct_stop = struct([])` を置き、`StopOnOutOfStep` のとき `simulate` が `@PowerNetwork/private/stop_condition.m` で埋めます(`iv_angle`, `iv_angleComp`, `i_ref`, `i_refComp`, `r_limit` [rad] と、メッセージ用の `r_angle` [deg])。基準はスラック母線の `delta` を持つ最初の機器で、`iv_angle` から除きます。基準がないか比べる機器がないと `GUILDA:PowerNetwork:StopNoRotorAngle`(積分の前)。`SolverODE.solve` は区間ごとに `stop_event`(ローカル関数)で、`sct_stop` が空でなく、基準が解列中でなく、比べる機器が残るときだけ、進捗の事象と停止の事象 `r_limit - max|x(iv_r) - x(i_r)|`(`Direction` "descending")の 2 つの `odeEvent` にします。それ以外は従来と同じ事象の物体です。`sol.EventIndex` に 2 があれば `flag = 2`、`output.outOfStep = struct(Time, Unit, Reference, Angle)`(止まった時刻で基準から最も離れた機器)、残りの区間は解きません。`simulate` は `flag = 2` で `SimulationIncomplete` を出しません。`output` のフィールドの順は `outOfStep` を `message` の前に。`SampleTime > 0` は区間ごとに `solve(o, tv)`(`tv` = 0、`(t1, t2)` の中の `t0 + k·SampleTime`、`t2 - t1`。境界から `1e-9·SampleTime` 以内の格子は境界とみなす)。
+- **S5b で確かめたこと・仕様と違った点:**
+  - [事実、R2026a] `ode` の `solve(o, tv)` は質量行列のある DAE でも動きます。`tv` が 2 要素なら 2 点だけを返します(区間の中に格子がない短い区間も開始と終わりの 2 点)。**終端の事象で止まると、事象の後の `tv` の時刻は NaN で返り、事象の時刻は解に入りません。** `@SolverODE/private/phase_points.m` で NaN の列を除き、`EventTime`/`EventSolution` を最後に加えます(`solve(o, 0, tf)` では事象が最後の刻みとして入る)。`solve` の解はこの関数で struct(`Time`, `Solution`, `EventIndex`)にします(既定の経路では値は同じ)。
+  - `judge_out_of_step`: 事象の位置の角は `StopAngle` の前後に丸め誤差でずれるため、既定の `StopAngle = Threshold = 360` で止まった結果が "incomplete" になり得ました。`flag = 2` で `output.outOfStep.Reference` が判定の基準と同じで、`Angle >= Threshold` なら、その機器を止まった時刻で脱調とします。`StopAngle < Threshold` は従来どおり軌道で判定("incomplete")。
+  - `sct_stop` は仕様では `build_simulation_data` が作るとしていましたが、`build_simulation_data(s_scenario, time)` は設定を受けないので、`simulate` が作ります(`build_simulation_data` は空の `sct_stop` を返す。`solve` は `sct_stop` が空なら停止しない。`sct_options.StopOnOutOfStep` は読まない)。
+  - 定常の角の差がすでに `StopAngle` を超えている系統では、事象が正から 0 を横切らないので止まりません(既定の 360 では起きない)。
+  - `ResultODE.m` のヘルプの `flag` の説明(1, 0, -1)に 2 を加えるのは S7。
+- **S5b のテスト:** 新規 F40(IEEE9 の B007 の地絡 `[1, 1.5]` を `StopAngle=180` で: `flag = 2`、`outOfStep`、止まった時刻の角の差が 180 deg(1e-6 以内)、警告なし、止まる前の時刻まで停止なしの軌道と `isequaln`、判定の `"incomplete"`/`"out-of-step"`。既定の 360 で `"out-of-step"`。止まらない実行の `outOfStep` は空。設定からの `StopOnOutOfStep` と呼び出しの上書き。基準の解列中は止まらない。`StopNoRotorAngle`。`SampleTime=0.01` の間隔・格子・境界 2 回・刻みの計算との差 1e-2 以内・`Format="struct"` の `sol.t`・NaN と 0 は既定と `isequaln`・停止との組み合わせ)。F34 の simulate の引数の列。`test_levels.m` に F40 の 5 行(medium)を加えました。`functionSignatures.json` を再生成。
+- **S5b の確認:** `simulate_baseline(Mode="compare")` は 6 例すべて `isequaln`。small は 519 件(PASS 517 / KNOWN 1 / SKIP 1、FAIL 0)。medium は 1 回、702 件(PASS 700 / KNOWN 1 / SKIP 1、FAIL 0)。
 
 ## 1. 現状の構造: `SolverODE` が系統を読む箇所
 
