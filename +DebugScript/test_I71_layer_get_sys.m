@@ -29,7 +29,6 @@ DebugScript.helper.quiet(@() net.initialize);
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
 assert(DebugScript.helper.is_stale(net))
 assert_stale_error(@() gen.get_sys(), "GUILDA:PowerSystemModel:Stale")
-assert_stale_error(@() gen.get_sys("port", "I2V"), "GUILDA:PowerSystemModel:Stale")
 assert_stale_error(@() bus.get_sys(), "GUILDA:PowerSystemModel:Stale")
 % 制御器の get_sys は系統と自分のタグだけを見るので、機器の編集では止まらない
 avr.get_sys();

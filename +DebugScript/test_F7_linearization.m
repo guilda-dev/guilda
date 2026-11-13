@@ -103,8 +103,8 @@ assert(max(real(e)) < 1e-6, "不安定な固有値がある: " + max(real(e)))
 assert(sum(abs(e) < 1e-6) <= 1)
 
 
-%% Bus without an I-to-V form keeps its inputs
-% B007 は P=Q=0 の負荷で I2V 形式がない。Kron はネットワークと一緒に電圧を消去し、入力は残す (旧 Task9)
+%% Kron keeps the inputs of a zero-power load bus
+% B007 は P=Q=0 の負荷。Kron はネットワークと一緒に電圧を消去し、入力は残す (旧 Task9)
 res = net.get_sys();
 sys_k = res.get_ss("Kron");
 sv_u = res.tab_variable.Label(res.tab_variable.Kind == "u" & res.tab_variable.Bus == "B007");
@@ -151,45 +151,16 @@ assert(size(n9.get_sys("Method","Kron").A, 1) == n_x9)
 assert(same_eigs(e_kron, eig_finite(n9.get_sys("Method","DAE")), 1e-6))
 
 
-%% I2V port stops when D is singular
-% I2V は V2I の D の逆行列を使うので、D が特異なら NaN を返さずにエラーで止まる
-% 機器の無い母線 (build_9bus の B004)
+%% Bus models with a zero D
+% 機器の無い母線 (build_9bus の B004) と P=Q=0 の負荷 (IEEE14 の B007) も V2I のモデルを返し、網の線形化も動く
 n9 = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() n9.initialize);
-try
-    n9.a_Bus{4}.get_sys("port","I2V");
-    error("DebugScript:NoError", "機器の無い母線の I2V がエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerSystemModel:NoI2V", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, n9.a_Bus{4}.s_tag) && contains(ME.message, "V2I"))
-end
-% P=Q=0 の load-power (IEEE14 の B007): 母線と機器のどちらも止まる
 n14 = new_net();
 DebugScript.helper.quiet(@() n14.initialize);
 bus = n14.a_Bus{7};
 assert(numel(bus.a_Component) == 1 && norm(bus.get_sys().D(1:2,1:2)) == 0)
-try
-    bus.get_sys("port","I2V");
-    error("DebugScript:NoError", "P=Q=0 の負荷の母線の I2V がエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerSystemModel:NoI2V", DebugScript.helper.msg_id(ME))
-end
-try
-    bus.a_Component{1}.get_sys("port","I2V");
-    error("DebugScript:NoError", "P=Q=0 の負荷の I2V がエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerSystemModel:NoI2V", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, bus.a_Component{1}.s_tag))
-end
-% V2I は従来どおり使え、網の線形化もこれらの母線を含む系統で動く
 assert(isa(n9.a_Bus{4}.get_sys(), "ResultLIN") && isa(n9.a_Bus{4}.get_sys(Format="ss"), "ss"))
 assert(same_eigs(eig_finite(n14.get_sys("Method","DAE")), eig_finite(n14.get_sys("Method","Kron")), 1e-6))
-% D が正則なら I2V の D は V2I の D の逆行列
-for obj = {n14.a_Bus{1}, n14.a_Bus{1}.a_Component{1}}
-    D_V = obj{1}.get_sys().D(1:2,1:2);
-    D_I = obj{1}.get_sys("port","I2V").D(1:2,1:2);
-    assert(all(isfinite(D_I(:))) && norm(D_I*D_V - eye(2)) < 1e-10)
-end
 
 
 %% With local controllers
@@ -406,9 +377,6 @@ sb  = bus.get_sys();
 assert(isequal(string(sb.InputName),  sv_in))
 assert(isequal(string(sb.OutputName), [tg(bus, ["Ire";"Iim"]); sv_out(3:end)]))
 assert(isequal(string(sb.StateName), sv_x) && norm(sb.C - sc.C, 1) == 0 && norm(sb.D - sc.D, 1) == 0)
-sbI = bus.get_sys("Port", "I2V");
-assert(isequal(string(sbI.InputName),  [tg(bus, ["Ire";"Iim"]); sv_in(3:end)]))
-assert(isequal(string(sbI.OutputName), [sv_V; sv_out(3:end)]))
 
 % 制御器の無い機器も出力に状態を含めない
 c3 = net.a_Bus{3}.a_Component{1}.get_sys();
@@ -432,7 +400,7 @@ gen = net.a_Bus{1}.a_Component{1};
 avr = gen.add_local_controller("avr-ST1");
 pss = gen.add_local_controller("pss-PSS1");
 DebugScript.helper.quiet(@() net.initialize);
-c_sys = {avr.get_sys(Format="ss"), pss.get_sys(Format="ss"), gen.get_sys(Format="ss"), gen.get_sys("Port","I2V",Format="ss"), ...
+c_sys = {avr.get_sys(Format="ss"), pss.get_sys(Format="ss"), gen.get_sys(Format="ss"), ...
          net.a_Bus{3}.a_Component{1}.get_sys(Format="ss"), net.a_Bus{1}.get_sys(Format="ss")};
 for k = 1:numel(c_sys)
     s = c_sys{k};
@@ -467,17 +435,18 @@ for s_arg = ["tag","Controllers","full","con","rec","controllerPorts"]
     end
 end
 assert(~ismember("get_sys_alone", methods(gen)) && ~ismember("get_sys_alone", methods(avr)))
-% Port は機器と母線だけ。Method は網の縮約で、ほかの層では効かない
-assert(error_id(@() avr.get_sys(Port="V2I")) == "GUILDA:PowerSystemModel:PortNotApplicable")
-assert(error_id(@() net.get_sys(Port="V2I")) == "GUILDA:PowerSystemModel:PortNotApplicable")
+% Port はどの層のオプションでもない (機器と母線は V2I だけ)。Method は網の縮約で、ほかの層では効かない
+for k = 1:numel(c_obj)
+    assert(startsWith(error_id(@() c_obj{k}.get_sys(Port="V2I")), "MATLAB:"), class(c_obj{k}))
+end
 assert(isequal(gen.get_sys(Method="DAE").A, gen.get_sys().A))
 % 枝には線形モデルがない
 assert(error_id(@() net.a_Branch{1}.get_sys()) == "GUILDA:PowerSystemModel:NoLinearModel")
 
 % どの層も出力は [sys, flag, output] で、output.s_layer は層の種類
-c_call = {@() gen.get_sys(), @() gen.get_sys("Port","I2V"), @() net.a_Bus{1}.get_sys(), ...
-          @() net.a_Bus{1}.get_sys("Port","I2V"), @() avr.get_sys(), @() agc.get_sys(), @() net.get_sys()};
-sv_layer = ["Component","Component","Bus","Bus","LocalController","GlobalController","PowerNetwork"];
+c_call = {@() gen.get_sys(), @() net.a_Bus{1}.get_sys(), ...
+          @() avr.get_sys(), @() agc.get_sys(), @() net.get_sys()};
+sv_layer = ["Component","Bus","LocalController","GlobalController","PowerNetwork"];
 for k = 1:numel(c_call)
     [s, flag, output] = c_call{k}();
     assert(isa(s, "ResultLIN") && flag && output.s_layer == sv_layer(k) && output.result == s, "call %d", k)

@@ -6,9 +6,10 @@ function tab = linearization_reference_check(sv_case)
 %
 % 基準値は接続器 SolverLIN に置き換える前のコードで求めたもの
 % (+DebugScript/archive/make_linearization_reference.m)。同じ系統・同じ点で、網 (rm_*、
-% Kron、DAE)、機器 (LC 付き V2I・I2V、機器単体)、母線 (V2I・I2V)、LC、GC のモデルを
-% 求め、状態・入力・出力を名前で対応させて比べる。名前の変化 (機器と LC の電圧の入力は
-% 母線の Label、GC の入出力は uc・yc の Label) は対応表で吸収する。
+% Kron、DAE)、機器 (LC 付き V2I、機器単体)、母線 (V2I)、LC、GC のモデルを求め、状態・
+% 入力・出力を名前で対応させて比べる。基準値にある電流を入力とするポートのモデルは使わない
+% (ポートは V2I だけ)。名前の変化 (機器と LC の電圧の入力は母線の Label、GC の入出力は
+% uc・yc の Label) は対応表で吸収する。
 % 列: Case, Point ("eq" | "shift"), Part, Diff (相対差の最大値: |新 - 旧| / max(1, |旧| の最大))
     arguments (Input)
         sv_case (1,:) string = string.empty(1,0)   % 比べる系統 (既定: すべて)
@@ -62,7 +63,7 @@ function tab = linearization_reference_check(sv_case)
         [~, c_idxBus] = net.get_variable_map();
         p = r.rv_point;
         n_lin = numel(p);
-        dc = 0;  dcI = 0;  dcA = 0;  db = 0;  dbI = 0;  dl = 0;  dg = 0;
+        dc = 0;  dcA = 0;  db = 0;  dl = 0;  dg = 0;
         q = 0;
         for i = 1:numel(net.a_Bus)
             bus = net.a_Bus{i};
@@ -73,7 +74,6 @@ function tab = linearization_reference_check(sv_case)
                 c_pt = {pb};
             end
             db = max(db, model_diff(bus.get_sys(c_pt{:}, Format="struct"), sb.V2I, false));
-            dbI = max(dbI, port_i2v(@() bus.get_sys(c_pt{:}, Port="I2V", Format="struct"), sb.I2V, @(N) N));
             [~, c_idx] = bus.get_variable_map();
             for j = 1:numel(bus.a_Component)
                 comp = bus.a_Component{j};
@@ -87,14 +87,12 @@ function tab = linearization_reference_check(sv_case)
                 end
                 f_ren = @(N) rename_v(N, bus, comp);
                 dc  = max(dc, model_diff(f_ren(comp.get_sys(c_pt{:}, Format="struct")), sc.V2I, false));
-                dcI = max(dcI, port_i2v(@() comp.get_sys(c_pt{:}, Port="I2V", Format="struct"), sc.I2V, f_ren));
                 if e.net.l_eq
                     dcA = max(dcA, model_diff(f_ren(alone(comp)), sc.alone, false));
                 end
             end
         end
-        rows = [rows; {e.name, s_pt, "bus V2I", db}; {e.name, s_pt, "bus I2V", dbI}; ...
-                {e.name, s_pt, "comp V2I", dc}; {e.name, s_pt, "comp I2V", dcI}]; %#ok<AGROW>
+        rows = [rows; {e.name, s_pt, "bus V2I", db}; {e.name, s_pt, "comp V2I", dc}]; %#ok<AGROW>
         if e.net.l_eq
             rows(end+1,:) = {e.name, s_pt, "comp alone", dcA}; %#ok<AGROW>
             for q = 1:numel(e.lc)
@@ -159,21 +157,6 @@ function N = rename_v(N, bus, owner)
     for s = ["InputName","OutputName"]
         [lv, iv] = ismember(N.(s), sv_new);
         N.(s)(lv) = sv_old(iv(lv));
-    end
-end
-
-
-function d = port_i2v(f, O, f_ren)
-% I2V のモデルの差。旧がエラーなら新も同じ種類のエラー (ID の末尾 NoI2V) であること
-    if isfield(O, "error")
-        try
-            f();
-            d = Inf;
-        catch ME
-            d = double(~endsWith(DebugScript.helper.msg_id(ME), "NoI2V"));
-        end
-    else
-        d = model_diff(f_ren(f()), O, false);
     end
 end
 

@@ -3,8 +3,6 @@
     <message>
         <entry key="UnknownParameterGroup">{0} has no parameter group ''{1}''; the columns of its tab_parameter are {2}.</entry>
         <entry key="NoLinearModel">A {0} has no linear model (''{1}''): get_sys is defined for PowerNetwork, Bus, Component, LocalController and GlobalController.</entry>
-        <entry key="PortNotApplicable">Port is an option of Component.get_sys and Bus.get_sys only, not of a {0}.</entry>
-        <entry key="NoI2V">{0} has no I2V form: the currents do not determine the bus voltage (dI/dV is singular). Use Port="V2I".</entry>
         <entry key="Stale">get_sys of {0} stopped: the model is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
         <entry key="InputEdited">get_sys of {0} stopped: inputs of components of ''{1}'' were edited ({2}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
         <entry key="GroundFault">The voltage of {0} is zero at the point, as in a ground fault: the admittance matrix does not include the fault, and get_ss("DAE") needs Coordinate="Vre&amp;Vim" there.</entry>

@@ -235,7 +235,7 @@ classdef Component < PowerSystemModel
         sct_block = get_linear_block(obj, x, V, u)
     end
     methods(Access=protected)
-        sct_port = get_linear_port(obj, s_port)
+        sct_port = get_linear_port(obj)
     end
 
     methods(Access={?Bus})

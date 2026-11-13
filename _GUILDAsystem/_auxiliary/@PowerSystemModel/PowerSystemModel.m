@@ -26,7 +26,7 @@ classdef PowerSystemModel < LayerPackage
         [sys, flag, output] = get_sys(obj, point, opt)
     end
     methods (Access=protected)
-        sct_port = get_linear_port(obj, s_port)
+        sct_port = get_linear_port(obj)
     end
 
     methods

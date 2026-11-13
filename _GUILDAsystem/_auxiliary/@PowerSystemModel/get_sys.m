@@ -11,8 +11,7 @@ function [sys, flag, output] = get_sys(obj, point, opt)
 % | Layer | Inputs | Outputs | Bus voltages |
 % |---|---|---|---|
 % | PowerNetwork | inputs u of the components | outputs y and yc | algebraic: 0 = Y v - I of the components, reduced by Method |
-% | Bus, Component (Port "V2I") | V, u, uc | I, y, yc | inputs |
-% | Bus, Component (Port "I2V") | I, u, uc | V, y, yc | algebraic, eliminated |
+% | Bus, Component | V, u, uc | I, y, yc | inputs |
 % | LocalController | V of its bus, its inputs | its outputs | inputs |
 % | GlobalController | V of all buses, its inputs | its outputs | inputs |
 %
@@ -61,7 +60,6 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     arguments (Input)
         obj
         point = []                    % Point: [] (the equilibrium), a vector in the order of get_variable_map(), {sim, t} or {sim, t, Side}.
-        opt.Port (1,1) string {mustBeMember(opt.Port, ["V2I","I2V"])}   % Ports of a Component or Bus: "V2I" (V to I) or "I2V". Default: "V2I".
         opt.Method (1,1) string {mustBeMember(opt.Method, ["Kron","DAE"])}   % Form of the model of the network: "Kron" (eliminate the bus voltages) or "DAE". Default: GUILDA.setting.
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])}   % Bus variables of "DAE". Default: GUILDA.setting.
         opt.PlotFcn                   % Live display: "none" (draw the eigenvalue map with result.plot_eigenvalue()). Default: GUILDA.setting.
@@ -76,13 +74,6 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     end
     t0 = tic;
     SolverLIN.check_point(point);
-    l_port = isa(obj, "Component") || isa(obj, "Bus");
-    if isfield(opt, "Port") && ~l_port
-        error(msg("GUILDA:PowerSystemModel:PortNotApplicable", class(obj)))
-    end
-    if ~isfield(opt, "Port")
-        opt.Port = "V2I";
-    end
     sct_cfg = GUILDA.config("Linearization");
     for s = ["Method","Coordinate","PlotFcn"]
         if ~isfield(opt, s)
@@ -100,7 +91,7 @@ function [sys, flag, output] = get_sys(obj, point, opt)
 
     % The blocks at the point, and the currents of the components
     c_block = blocks(obj, a_obj, tab, tab_c, rv_point);
-    sct_port = obj.get_linear_port(opt.Port);
+    sct_port = obj.get_linear_port();
     a_comp = a_obj(cellfun(@(o) isa(o, "Component"), a_obj));
     sct_port.tab_current = current_table(a_comp);
     if isa(obj, "PowerNetwork")
@@ -121,15 +112,10 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     end
     if output.s_issue == "NotFinite"
         output.message = output.message + " Some Jacobian entries are not finite.";
-    elseif output.s_issue == "SingularAvv"
-        if isa(obj, "PowerNetwork")
-            n_x = output.n_x;
-            output.message = output.message + sprintf(" Avv is singular (rcond = %g): the current balance does not determine %s.", ...
-                output.rcond_Avv, list_labels(singular_voltages(sct_sys.A(n_x+1:end, n_x+1:end), sct_port.sv_algebraic)));
-        else
-            % I2V of a component or bus: the current does not determine the voltage
-            error(msg("GUILDA:PowerSystemModel:NoI2V", char(s_what)))
-        end
+    elseif output.s_issue == "SingularAvv"   % only the network has algebraic voltages
+        n_x = output.n_x;
+        output.message = output.message + sprintf(" Avv is singular (rcond = %g): the current balance does not determine %s.", ...
+            output.rcond_Avv, list_labels(singular_voltages(sct_sys.A(n_x+1:end, n_x+1:end), sct_port.sv_algebraic)));
     end
     flag = output.s_issue == "";
     output.sv_faultBus = strings(0,1);
@@ -151,9 +137,6 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     output.s_layer = s_layer;
 
     sct_options = struct("Method", opt.Method, "Coordinate", opt.Coordinate, "PlotFcn", opt.PlotFcn, "Point", {point});
-    if l_port
-        sct_options.Port = opt.Port;
-    end
     c_channel = cell(1,0);
     for s = ["Input","Output"]
         if isfield(opt, s)
@@ -202,7 +185,7 @@ function [net, a_obj, tab, tab_c] = layer_maps(obj)
         tab_c = empty_connections();
         a_obj = {obj};
     else
-        obj.get_linear_port("V2I");     % NoLinearModel
+        obj.get_linear_port();     % NoLinearModel
     end
 end
 

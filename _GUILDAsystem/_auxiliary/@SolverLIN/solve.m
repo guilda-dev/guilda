@@ -16,9 +16,9 @@ function [sct_sys, output] = solve(obj, c_block, tab, tab_connection, sct_port) 
 % - The inputs and outputs of the blocks are eliminated: u_b = K y_b + Sx x + Sv v + P w
 %   and y_b = C x + D u_b give (I - D K) y_b = ... An I - D K that is singular stops with
 %   GUILDA:SolverLIN:AlgebraicLoop.
-% - Each bus of sct_port.sv_algebraic adds the current balance 0 = Y v - sum(I) (+ the
-%   external current of the bus, for the port "I2V"), where sum(I) are the outputs
-%   [Ire; Iim] of the blocks at that bus (sct_port.tab_current) and Y = sct_port.cm_Y.
+% - Each bus of sct_port.sv_algebraic adds the current balance 0 = Y v - sum(I), where
+%   sum(I) are the outputs [Ire; Iim] of the blocks at that bus (sct_port.tab_current)
+%   and Y = sct_port.cm_Y.
 % - The outputs are sct_port.sv_output: outputs or states of the blocks, bus voltages,
 %   or bus currents (Y v for an algebraic bus, otherwise the sum of the currents of its
 %   blocks).
@@ -121,7 +121,7 @@ function [sct_sys, output] = solve(obj, c_block, tab, tab_connection, sct_port) 
     Axv = B*(K*Dv + Sv);
     Bxw = B*(K*Dw + P);
 
-    % Current balance of the algebraic buses: 0 = Y v - sum(I) + I_ext
+    % Current balance of the algebraic buses: 0 = Y v - sum(I)
     tab_bus = sct_port.tab_bus;
     tab_I   = sct_port.tab_current;
     Avx = zeros(n_v, n_x);
@@ -138,10 +138,6 @@ function [sct_sys, output] = solve(obj, c_block, tab, tab_connection, sct_port) 
                 Avx(r,:) = Avx(r,:) - sum(Cy(iv_y,:), 1);
                 Avv(r,:) = Avv(r,:) - sum(Dv(iv_y,:), 1);
                 Bvw(r,:) = Bvw(r,:) - sum(Dw(iv_y,:), 1);
-                j = find(sv_w == tab_bus.(s_part)(tab_bus.Bus == s_bus), 1);
-                if ~isempty(j)
-                    Bvw(r,j) = Bvw(r,j) + 1;
-                end
             end
         end
     end

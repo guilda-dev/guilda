@@ -27,12 +27,11 @@ classdef ResultLIN < ResultBase
 % "Component", "Bus", "LocalController" or "GlobalController") holds the port model of the
 % layer in A ... OutputName (see PowerSystemModel.get_sys), the point rv_point and the
 % blocks rm_Axx, rm_Axv (the voltage inputs), rm_Bx (the other inputs of tab_variable)
-% and rm_E; with Port "I2V" only rm_E. get_ss returns that model (the bus voltage of the
-% port "I2V" eliminated), and Method and Coordinate do not apply.
+% and rm_E. get_ss returns that model, and Method and Coordinate do not apply.
 %
-% - `tab_variable` has one row per variable with Index, Kind, Role, Owner, Name, Label and
-%   Bus: the leading rows x, Vre, Vim, u of the variable map of the layer (for a
-%   controller: its x, the voltages and its uc), the order of rv_point.
+% - `tab_variable` has one row per variable with Index, Kind, Role, Owner, Name, Label, Bus
+%   and Equilibrium: the leading rows x, Vre, Vim, u of the variable map of the layer (for
+%   a controller: its x, the voltages and its uc), the order of rv_point.
 % - `sct_model` holds the connected model (field sct_sys: the descriptor model over
 %   [x; v] with its outputs, from SolverLIN.solve) and, for the network, the admittance
 %   matrix, the bus voltages at the point and the names of the bus currents: used by the
@@ -109,13 +108,9 @@ classdef ResultLIN < ResultBase
             ix  = 1:n_x;
             iv  = n_x+1:size(sct_sys.A,1);
             if sct_sys.n_v > 0
-                if isfield(options, "Port") && options.Port == "I2V"
-                    obj.rm_E = sct_sys.E(ix,ix);
-                else
-                    obj.rm_Axx = sct_sys.A(ix,ix);  obj.rm_Axv = sct_sys.A(ix,iv);  obj.rm_Bx = sct_sys.B(ix,:);
-                    obj.rm_Avx = sct_sys.A(iv,ix);  obj.rm_Avv = sct_sys.A(iv,iv);  obj.rm_Bv = sct_sys.B(iv,:);
-                    obj.rm_E   = sct_sys.E(ix,ix);
-                end
+                obj.rm_Axx = sct_sys.A(ix,ix);  obj.rm_Axv = sct_sys.A(ix,iv);  obj.rm_Bx = sct_sys.B(ix,:);
+                obj.rm_Avx = sct_sys.A(iv,ix);  obj.rm_Avv = sct_sys.A(iv,iv);  obj.rm_Bv = sct_sys.B(iv,:);
+                obj.rm_E   = sct_sys.E(ix,ix);
             else
                 % a port model: the voltage inputs and the other inputs of tab_variable
                 lv_V = ismember(sct_sys.InputName, tab_variable.Label(tab_variable.Kind == "Vre" | tab_variable.Kind == "Vim"));

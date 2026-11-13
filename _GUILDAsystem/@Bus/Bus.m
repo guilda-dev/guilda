@@ -122,7 +122,7 @@ classdef Bus < PowerSystemModel
         tab_PFcondition = get_pf_condition(obj)
     end
     methods(Access=protected)
-        sct_port = get_linear_port(obj, s_port)
+        sct_port = get_linear_port(obj)
         sct_page = gui_content(obj)
     end
 
