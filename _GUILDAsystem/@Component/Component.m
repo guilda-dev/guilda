@@ -228,6 +228,10 @@ classdef Component < PowerSystemModel
         set_input(obj, rv_u)
 
     end
+    methods(Static)
+        % Drawing (overridden by the models with an own node)
+        [cv_E, rv_P, rv_Iq, cv_I] = get_spring_node(rm_x, rm_V, rm_I, rm_u, rr_param)
+    end
     methods(Hidden)
         % Debugger
         flag = validate(obj)
