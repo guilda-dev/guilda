@@ -75,7 +75,7 @@ function [result, flag, output] = calculate_optimal_powerflow(obj, opt)
         opt.MaxIteration (1,1) double {mustBePositiveIntegerOrNaN} = GUILDA.config("OptimalPowerFlow", "MaxIteration") % MaxIterations of the solver; NaN for its default.
         opt.Verbose (1,1) logical = GUILDA.config("OptimalPowerFlow", "Verbose") % Print the progress of the solver.
         opt.WarmStart (1,1) logical = GUILDA.config("OptimalPowerFlow", "WarmStart") % Start "AC OPF" from the last solved "AC OPF" of this network.
-        opt.PlotFcn {mustBePlotFcn} = GUILDA.config("OptimalPowerFlow", "PlotFcn") % Live display during the calculation (fmincon only).
+        opt.PlotFcn {tools.check_plotfcn(opt.PlotFcn, "calculate_optimal_powerflow", ["fval","constrviolation","fvalconstr","firstorderopt","stepsize","funccount","x"])} = GUILDA.config("OptimalPowerFlow", "PlotFcn") % Live display during the calculation (fmincon only).
         opt.Cost {mustBeHandleOrEmpty} = [] % User cost @(v, p) added to the objective; [] for none.
         opt.Constraint {mustBeHandleOrEmpty} = [] % User constraints @(v, p) returning struct(name, constraint, ...); [] for none.
         opt.DefaultCost (1,1) logical = true % Add the cost of tab_parameter.OPF of every component.
@@ -89,9 +89,37 @@ function [result, flag, output] = calculate_optimal_powerflow(obj, opt)
         output   % Solver details; output.message describes the outcome.
     end
 
-    sct_options = solver_options(opt);
+    % Settings of the solver: the OptimalPowerFlow section of GUILDA.setting, overridden by
+    % the options of the call
+    sct_config  = GUILDA.config("OptimalPowerFlow");
+    sct_options = struct();
+    for s_name = string(fieldnames(sct_config)).'
+        sct_options.(s_name) = sct_config.(s_name).Value;
+    end
+    for s_name = ["Method","Solver","Tolerance","MaxIteration","Verbose","WarmStart","Cost","Constraint","DefaultCost","ReferenceBus"]
+        sct_options.(s_name) = opt.(s_name);
+    end
+    for s_alg = ["LinprogAlgorithm","QuadprogAlgorithm","FminconAlgorithm"]
+        sct_options.(s_alg) = string(sct_options.(s_alg));
+    end
+    sct_options.PlotFcn = tools.check_plotfcn(opt.PlotFcn, "calculate_optimal_powerflow", ...
+        ["fval","constrviolation","fvalconstr","firstorderopt","stepsize","funccount","x"]);
+
+    % Data of the problem: the tables of the network, its base (p.base of Cost and
+    % Constraint) and the reference bus ("auto": the slack bus, else the first bus)
     sct_OPF = obj.get_opf_condition(Display=false);
-    [sct_options.base, sct_options.ReferenceBus] = opf_setting(obj, opt.ReferenceBus);
+    sct_options.base = table2struct(obj.tab_parameter.base);
+    if opt.ReferenceBus == "auto"
+        i_ref = tools.slack_bus_index(obj);
+        if isempty(i_ref); i_ref = 1; end
+        if isempty(obj.a_Bus)
+            sct_options.ReferenceBus = "none";
+        else
+            sct_options.ReferenceBus = string(obj.a_Bus{i_ref});
+        end
+    end
+
+    % Problem and initial point given by the user
     sct_input = struct();
     for s_name = intersect(["Problem","InitialPoint"], string(fieldnames(opt)).', "stable")
         sct_input.(s_name) = opt.(s_name);
@@ -102,53 +130,4 @@ function [result, flag, output] = calculate_optimal_powerflow(obj, opt)
     sct_solver = struct("solver", string(class(obj.solver_OPF)), "options", sct_options, ...
         "flag", flag, "output", output, "elapsed", toc(t0));
     result = ResultOPF(struct(obj, false), sct_solution, sct_solver);
-end
-
-
-function sct = solver_options(opt)
-% Settings handed to the solver: the OptimalPowerFlow section of GUILDA.setting with the
-% options of the call
-    sct_cfg = GUILDA.config("OptimalPowerFlow");
-    sct = struct();
-    for s_name = string(fieldnames(sct_cfg)).'
-        sct.(s_name) = sct_cfg.(s_name).Value;
-    end
-    for s_name = ["Method","Solver","Tolerance","MaxIteration","Verbose","WarmStart","Cost","Constraint","DefaultCost","ReferenceBus"]
-        sct.(s_name) = opt.(s_name);
-    end
-    for s_alg = ["LinprogAlgorithm","QuadprogAlgorithm","FminconAlgorithm"]
-        sct.(s_alg) = string(sct.(s_alg));
-    end
-    sct.PlotFcn = tools.check_plotfcn(opt.PlotFcn, "calculate_optimal_powerflow", plot_keys());
-end
-
-
-function sv_key = plot_keys()
-% Display keys of PlotFcn: key k is the plot function optimplot<k> of fmincon, in the order
-% of the PlotFcn options of GUILDA.setting
-    sv_key = ["fval","constrviolation","fvalconstr","firstorderopt","stepsize","funccount","x"];
-end
-
-
-function mustBePlotFcn(x)
-% "none", display keys of fmincon or a function handle (tools.check_plotfcn); a local
-% function because a validator in the arguments block takes literal arguments only
-    tools.check_plotfcn(x, "calculate_optimal_powerflow", plot_keys());
-end
-
-
-function mustBeHandleOrEmpty(f)
-% A function handle or [] (none)
-    if ~(isempty(f) || isa(f, "function_handle"))
-        error(msg("GUILDA:PowerNetwork:InvalidOpfHandle"))
-    end
-end
-
-
-function mustBePositiveIntegerOrNaN(r)
-% NaN (the default of the solver) or a positive integer
-    if ~isnan(r)
-        mustBePositive(r)
-        mustBeInteger(r)
-    end
 end

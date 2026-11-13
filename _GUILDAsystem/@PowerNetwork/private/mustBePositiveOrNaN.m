@@ -1,5 +1,5 @@
 function mustBePositiveOrNaN(x)
-% Validate a step option of net.simulate (MaxStep, InitialStep): positive, or NaN for the solver default.
+% Validate a positive option (MaxStep, InitialStep of net.simulate; Tolerance of the OPF): positive, or NaN for the solver default.
     arguments (Input)
         x   % Value to check (a real scalar, by the arguments block).
     end
