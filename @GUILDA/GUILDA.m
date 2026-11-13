@@ -50,7 +50,7 @@ classdef GUILDA < handle
 
             GUILDApath = fullfile(obj.pwd,"@GUILDA","config");
             has_desktop = usejava('desktop');   % false in -batch / -nodisplay
-            [cf_all, sv_reset] = get_config();
+            [cf_all, sv_reset, sm_invalid] = get_config();
             cf         = cf_all.EnvStartup;
             set_config(cf_all);
             % disp GUILDA LOGO
@@ -66,6 +66,9 @@ classdef GUILDA < handle
             % user settings reset by a new version of their defaults (show_msg needs the path)
             for s_reset = sv_reset'
                 show_msg("info", "GUILDA:GUILDA:ConfigReset", s_reset)
+            end
+            for k = 1:size(sm_invalid, 1)
+                show_msg("info", "GUILDA:GUILDA:ConfigValueReset", sm_invalid(k,1), sm_invalid(k,2), sm_invalid(k,3))
             end
             % check required Toolbox
             if cf.CheckRequirement.Value

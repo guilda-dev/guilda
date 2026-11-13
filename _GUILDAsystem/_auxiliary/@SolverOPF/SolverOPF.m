@@ -4,8 +4,10 @@ classdef SolverOPF < auxiliary
 % net.solver_OPF holds one. It stores no settings: the settings of each run are the
 % OptimalPowerFlow section of GUILDA.setting (GUILDA.config("OptimalPowerFlow")), with the
 % Name-Value options of the call applied to that call only (the arguments block of
-% PowerNetwork.calculate_optimal_powerflow); Cost, Constraint, DefaultCost and
-% ReferenceBus are options of the call only. The solver keeps only the warm start.
+% PowerNetwork.calculate_optimal_powerflow), which passes its options as they are;
+% optimoption reads the settings without an option (<Solver><option>) from GUILDA.config.
+% Cost, Constraint, DefaultCost and ReferenceBus are options of the call only. The solver
+% keeps only the warm start.
 % It never reads the network: net.calculate_optimal_powerflow (and net.build_opf_problem)
 % collect the data of the buses, components and branches from tab_parameter as three
 % tables (tags as row names), resolve ReferenceBus "auto" to a bus tag and pass the base

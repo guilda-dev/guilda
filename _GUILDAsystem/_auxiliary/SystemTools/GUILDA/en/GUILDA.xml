@@ -3,6 +3,7 @@
     <message>
         <entry key="NoDesktopTutorial">no MATLAB desktop, skipped opening the tutorial (&gt;&gt; GUILDA.tutorial)</entry>
         <entry key="ConfigReset">the settings of {0} were reset to the defaults of this GUILDA version (the earlier values of the user are not kept; &gt;&gt; GUILDA.setting)</entry>
+        <entry key="ConfigValueReset">the value of setting {1} of {0} in the user file is invalid (expected {2}) and was reset to the default (&gt;&gt; GUILDA.setting)</entry>
         <entry key="UnknownSettingCategory">unknown settings category "{0}"; the categories are {1}</entry>
         <entry key="UnknownSettingName">unknown setting "{0}" in category {1}; the settings are {2}</entry>
         <entry key="SettingNameValue">GUILDA.setting("{0}", Name=Value, ...) needs pairs of a setting name and its value</entry>

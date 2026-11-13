@@ -1,7 +1,7 @@
 function [result,flag,output] = solve(obj, net, sct_options)
 % Trace the PV curve with the given settings.
 %
-% Runs the continuation power flow of net with the effective settings sct_options and
+% Runs the continuation power flow of net with the options sct_options of the call and
 % returns the traced path as a ResultCPF. The solver is only read: nothing is written
 % back into it. The CPF working data of the models (bus.iv_CPFV, comp.iv_CPFX,
 % comp.f_PQ2Bus) is rebuilt for this run. Called by net.calculate_continuation_powerflow;
@@ -13,7 +13,7 @@ function [result,flag,output] = solve(obj, net, sct_options)
     arguments (Input)
         obj % Solver (net.solver_CPF).
         net % Network initialized by net.initialize.
-        sct_options (1,1) struct % Effective settings: the ContinuationPowerFlow section of GUILDA.setting and LoadBus, with the options of the call (built by net.calculate_continuation_powerflow).
+        sct_options (1,1) struct % Name-Value options of net.calculate_continuation_powerflow (defaults from GUILDA.setting and LoadBus of the solver).
     end
     arguments (Output)
         result % lambda and bus voltages along the path, and the nose point.

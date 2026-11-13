@@ -12,26 +12,31 @@
     "Tolerance":{
         "Value": 1e-4,
         "Type": "double",
+        "Valid": "v >= 1e-15 && v <= 1e-3",
         "Description": "Relative error tolerance, 'RelativeTolerance' of the ode object (1e-15 <= tol <= 1e-3)"
     },
     "AbsoluteTolerance":{
         "Value": 1e-6,
         "Type": "double",
+        "Valid": "v >= 1e-15 && v <= 1e-3",
         "Description": "Absolute error tolerance, 'AbsoluteTolerance' of the ode object (1e-15 <= tol <= 1e-3)"
     },
     "MaxStep":{
         "Value": NaN,
         "Type": "double",
+        "Valid": "v > 0 || isnan(v)",
         "Description": "[s] Largest step of the solver; NaN for the solver default"
     },
     "InitialStep":{
         "Value": NaN,
         "Type": "double",
+        "Valid": "v > 0 || isnan(v)",
         "Description": "[s] First step of each phase; NaN for the solver default"
     },
     "SampleTime":{
         "Value": NaN,
         "Type": "double",
+        "Valid": "v >= 0 || isnan(v)",
         "Description": "[s] Interval of the recorded times on a uniform grid from the start time; the start and end of each phase are also recorded. NaN or 0 records the steps of the solver"
     },
     "StopOnOutOfStep":{
@@ -42,6 +47,7 @@
     "StopAngle":{
         "Value": 360,
         "Type": "double",
+        "Valid": "v > 0",
         "Description": "[deg] Threshold of StopOnOutOfStep: largest allowed absolute rotor angle from the reference"
     },
     "SeparateComplexParts":{
@@ -52,6 +58,7 @@
     "Progress":{
         "Value": "dialog",
         "Type": "select",
+        "FromLogical": ["none", "dialog"],
         "options":[
             "none",
             "disp",
@@ -62,7 +69,8 @@
     "TimeLimit":{
         "Value": Infinity,
         "Type": "double",
-        "Description": "[s] Limit of the computation time of the whole run. When exceeded, the simulation stops and returns the result up to the time reached (flag = 0). A value that is not positive means no limit."
+        "Valid": "v > 0",
+        "Description": "[s] Limit of the computation time of the whole run. When exceeded, the simulation stops and returns the result up to the time reached (flag = 0). Inf: no limit (a value that is not positive is reset to Inf)."
     },
     "Verbose":{
         "Value": false,

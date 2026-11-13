@@ -27,8 +27,11 @@ function [result, flag, output] = calculate_optimal_powerflow(obj, opt)
 % The network assembles the data of the problem (the tables of net.get_opf_condition,
 % the base and the reference bus) and net.solver_OPF builds
 % and solves it from these data only; the ResultOPF is built from a snapshot of the
-% network (struct(net, false)) and the solution. res.options holds the settings of the
-% run, with ReferenceBus as the bus tag ("auto" resolved) and base (baseMVA, Hz).
+% network (struct(net, false)) and the solution. res.options holds the Name-Value options
+% of the run (Problem and InitialPoint excepted), with ReferenceBus as the bus tag ("auto"
+% resolved) and base (baseMVA, Hz); the settings without an option (the algorithm and
+% the step tolerances of each solver, <Solver><option>) are read by SolverOPF from
+% GUILDA.setting.
 %
 % Name-Value options:
 %
@@ -75,7 +78,7 @@ function [result, flag, output] = calculate_optimal_powerflow(obj, opt)
         opt.MaxIteration (1,1) double {mustBePositiveIntegerOrNaN} = GUILDA.config("OptimalPowerFlow", "MaxIteration") % MaxIterations of the solver; NaN for its default.
         opt.Verbose (1,1) logical = GUILDA.config("OptimalPowerFlow", "Verbose") % Print the progress of the solver.
         opt.WarmStart (1,1) logical = GUILDA.config("OptimalPowerFlow", "WarmStart") % Start "AC OPF" from the last solved "AC OPF" of this network.
-        opt.PlotFcn {tools.check_plotfcn(opt.PlotFcn, "calculate_optimal_powerflow", ["fval","constrviolation","fvalconstr","firstorderopt","stepsize","funccount","x"])} = GUILDA.config("OptimalPowerFlow", "PlotFcn") % Live display during the calculation (fmincon only).
+        opt.PlotFcn = GUILDA.config("OptimalPowerFlow", "PlotFcn") % Live display during the calculation (fmincon only; checked by tools.check_plotfcn).
         opt.Cost {mustBeHandleOrEmpty} = [] % User cost @(v, p) added to the objective; [] for none.
         opt.Constraint {mustBeHandleOrEmpty} = [] % User constraints @(v, p) returning struct(name, constraint, ...); [] for none.
         opt.DefaultCost (1,1) logical = true % Add the cost of tab_parameter.OPF of every component.
@@ -89,45 +92,30 @@ function [result, flag, output] = calculate_optimal_powerflow(obj, opt)
         output   % Solver details; output.message describes the outcome.
     end
 
-    % Settings of the solver: the OptimalPowerFlow section of GUILDA.setting, overridden by
-    % the options of the call
-    sct_config  = GUILDA.config("OptimalPowerFlow");
-    sct_options = struct();
-    for s_name = string(fieldnames(sct_config)).'
-        sct_options.(s_name) = sct_config.(s_name).Value;
-    end
-    for s_name = ["Method","Solver","Tolerance","MaxIteration","Verbose","WarmStart","Cost","Constraint","DefaultCost","ReferenceBus"]
-        sct_options.(s_name) = opt.(s_name);
-    end
-    for s_alg = ["LinprogAlgorithm","QuadprogAlgorithm","FminconAlgorithm"]
-        sct_options.(s_alg) = string(sct_options.(s_alg));
-    end
-    sct_options.PlotFcn = tools.check_plotfcn(opt.PlotFcn, "calculate_optimal_powerflow", ...
+    % The options of the call (with the defaults of GUILDA.setting) go to the solver as they
+    % are; the problem and initial point given by the user go apart from them
+    sct_input = rmfield(opt, setdiff(fieldnames(opt), ["Problem","InitialPoint"]));
+    opt = rmfield(opt, fieldnames(sct_input));
+    opt.PlotFcn = tools.check_plotfcn(opt.PlotFcn, "calculate_optimal_powerflow", ...
         ["fval","constrviolation","fvalconstr","firstorderopt","stepsize","funccount","x"]);
 
     % Data of the problem: the tables of the network, its base (p.base of Cost and
     % Constraint) and the reference bus ("auto": the slack bus, else the first bus)
     sct_OPF = obj.get_opf_condition(Display=false);
-    sct_options.base = table2struct(obj.tab_parameter.base);
+    opt.base = table2struct(obj.tab_parameter.base);
     if opt.ReferenceBus == "auto"
         i_ref = find(cellfun(@(b) b.l_isSlack, obj.a_Bus), 1);   % the slack bus, else the first bus
         if isempty(i_ref); i_ref = 1; end
         if isempty(obj.a_Bus)
-            sct_options.ReferenceBus = "none";
+            opt.ReferenceBus = "none";
         else
-            sct_options.ReferenceBus = string(obj.a_Bus{i_ref});
+            opt.ReferenceBus = string(obj.a_Bus{i_ref});
         end
     end
 
-    % Problem and initial point given by the user
-    sct_input = struct();
-    for s_name = intersect(["Problem","InitialPoint"], string(fieldnames(opt)).', "stable")
-        sct_input.(s_name) = opt.(s_name);
-    end
-
     t0 = tic;
-    [sct_solution, flag, output] = obj.solver_OPF.solve(sct_OPF.Bus, sct_OPF.Component, sct_OPF.Branch, sct_options, sct_input);
-    sct_solver = struct("solver", string(class(obj.solver_OPF)), "options", sct_options, ...
+    [sct_solution, flag, output] = obj.solver_OPF.solve(sct_OPF.Bus, sct_OPF.Component, sct_OPF.Branch, opt, sct_input);
+    sct_solver = struct("solver", string(class(obj.solver_OPF)), "options", opt, ...
         "flag", flag, "output", output, "elapsed", toc(t0));
     result = ResultOPF(struct(obj, false), sct_solution, sct_solver);
 end

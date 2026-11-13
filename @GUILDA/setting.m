@@ -4,13 +4,15 @@ function setting(s_category, varargin)
 % Without inputs, opens the settings window (GUI). With a category and Name-Value
 % arguments, changes those settings without opening the window. Each value is checked
 % against the type of the setting ("double", "logical", "string", or "select" with its
-% options); an unknown category or name, or an invalid value, stops with an error and
-% changes nothing. The change is saved in @GUILDA/user, as with Apply in the window, so it
+% options) and its condition, and stored in the class of the type (string, logical,
+% double), the same check GUILDA.config applies when it reads the settings files; an
+% unknown category or name, or an invalid value, stops with an error and changes nothing. The change is saved in @GUILDA/user, as with Apply in the window, so it
 % stays after MATLAB restarts, and the next GUILDA.config call and analysis use it.
 %
 % A new version of GUILDA may reset the settings of a category to their defaults (INFO
 % at startup): the user settings of a category are kept only while the version of its
-% default file stays the same.
+% default file stays the same. A value of a user file that fails the check above (e.g.
+% written by hand) is reset to its default when the settings are read (INFO).
 %
 % <@Examples>
 % ```matlab
@@ -243,7 +245,7 @@ function set_by_command(s_category, c_nv)
                 strjoin(string(fieldnames(sct)), ", ")))
         end
         s_name = char(s_name);
-        [val, l_ok, s_expect] = check_value(sct.(s_name), c_nv{k+1});
+        [val, l_ok, s_expect] = check_setting(sct.(s_name), c_nv{k+1});
         if ~l_ok
             error(msg("GUILDA:GUILDA:InvalidSettingValue", s_category, s_name, s_expect))
         end
@@ -253,39 +255,3 @@ function set_by_command(s_category, c_nv)
     set_config(env);
 end
 
-
-function [val, l_ok, s_expect] = check_value(sct_set, val)
-    % Check a new value against the Type (and options) of the setting; convert it to the stored class
-    arguments (Input)
-        sct_set (1,1) struct   % Setting: fields Value, Type, Description (and options).
-        val                    % New value.
-    end
-    arguments (Output)
-        val       % Value in the stored class.
-        l_ok      % true when the value is valid.
-        s_expect  % Description of the accepted values (for the error message).
-    end
-    switch sct_set.Type
-        case "double"
-            s_expect = "a real numeric scalar";
-            l_ok = (isnumeric(val) || islogical(val)) && isscalar(val) && isreal(val);
-            if l_ok, val = double(val); end
-        case "logical"
-            s_expect = "true or false";
-            l_ok = (islogical(val) || isnumeric(val) && ismember(val, [0 1])) && isscalar(val);
-            if l_ok, val = logical(val); end
-        case "select"
-            sv_opt   = string(sct_set.options);
-            s_expect = "one of " + strjoin("""" + sv_opt(:)' + """", ", ");
-            l_ok = (ischar(val) && (isrow(val) || isempty(val)) || isstring(val) && isscalar(val)) ...
-                   && ismember(string(val), sv_opt);
-            if l_ok, val = string(val); end
-        case "string"
-            s_expect = "text (a string array, a character vector or a cell array of character vectors)";
-            l_ok = isstring(val) && ~any(ismissing(val)) || ischar(val) && (isrow(val) || isempty(val)) || iscellstr(val);
-            if l_ok, val = reshape(string(val), 1, []); end
-        otherwise
-            s_expect = "a value of type " + sct_set.Type;
-            l_ok = false;
-    end
-end

@@ -15,11 +15,13 @@
     "Tolerance":{
         "Value": 1e-8,
         "Type": "double",
+        "Valid": "v > 0",
         "Description": "[pu] Largest P/Q mismatch of a converged solution (every method)"
     },
     "MaxIteration":{
         "Value": NaN,
         "Type": "double",
+        "Valid": "isnan(v) || v >= 0 && mod(v,1) == 0",
         "Description": "Maximum number of iterations. NaN: automatic (newton 50, gradient 1e6, levenberg-marquardt 100, fsolve 400)"
     },
     "NewtonStepSize":{

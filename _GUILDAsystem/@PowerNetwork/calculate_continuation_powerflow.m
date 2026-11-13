@@ -38,16 +38,16 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, opt)
 % <@Group> CPF
     arguments (Input)
         obj
-        opt.LoadBus {mustBeText} % Tags of the buses whose loads are scaled by (1 + lambda); omitted: net.solver_CPF.LoadBus.
-        opt.MaxIteration (1,1) double {mustBePositive, mustBeInteger} % Maximum number of predictor-corrector steps; omitted: GUILDA.setting.
-        opt.Tolerance (1,1) double {mustBePositive} % Convergence tolerance of the corrector; omitted: GUILDA.setting.
-        opt.StepSize (1,1) double {mustBePositive} % Step size of the predictor; omitted: GUILDA.setting.
-        opt.ArcLength (1,1) double {mustBePositive} % Arc length of the corrector; omitted: GUILDA.setting.
-        opt.InitialLambda (1,1) double % lambda at the starting point; omitted: GUILDA.setting.
-        opt.UseInternalState (1,1) logical % Solve with the internal states of the generators; omitted: GUILDA.setting.
-        opt.Verbose (1,1) logical % Print lambda at each step; omitted: GUILDA.setting.
-        opt.Limits % Operating limits along the path: "Q", "V", "S", "all" or "none" (checked by SolverCPF.solve); omitted: GUILDA.setting.
-        opt.PlotFcn % Live display during the calculation: "pvcurve", a function handle or "none" (checked by tools.check_plotfcn); omitted: GUILDA.setting.
+        opt.LoadBus {mustBeText} = obj.solver_CPF.LoadBus % Tags of the buses whose loads are scaled by (1 + lambda).
+        opt.MaxIteration (1,1) double {mustBePositive, mustBeInteger} = GUILDA.config("ContinuationPowerFlow", "MaxIteration") % Maximum number of predictor-corrector steps.
+        opt.Tolerance (1,1) double {mustBePositive} = GUILDA.config("ContinuationPowerFlow", "Tolerance") % Convergence tolerance of the corrector.
+        opt.StepSize (1,1) double {mustBePositive} = GUILDA.config("ContinuationPowerFlow", "StepSize") % Step size of the predictor.
+        opt.ArcLength (1,1) double {mustBePositive} = GUILDA.config("ContinuationPowerFlow", "ArcLength") % Arc length of the corrector.
+        opt.InitialLambda (1,1) double = GUILDA.config("ContinuationPowerFlow", "InitialLambda") % lambda at the starting point.
+        opt.UseInternalState (1,1) logical = GUILDA.config("ContinuationPowerFlow", "UseInternalState") % Solve with the internal states of the generators.
+        opt.Verbose (1,1) logical = GUILDA.config("ContinuationPowerFlow", "Verbose") % Print lambda at each step.
+        opt.Limits = GUILDA.config("ContinuationPowerFlow", "Limits") % Operating limits along the path: "Q", "V", "S", "all" or "none" (checked by SolverCPF.solve).
+        opt.PlotFcn = GUILDA.config("ContinuationPowerFlow", "PlotFcn") % Live display during the calculation: "pvcurve", a function handle or "none" (checked by tools.check_plotfcn).
         opt.Export {mustBeA(opt.Export, ["logical","string","char"])} = false % Call result.export after the calculation: true or a file name.
     end
     arguments (Output)
@@ -60,7 +60,14 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, opt)
         opt.Export = string(opt.Export);
     end
     mustBeScalarOrEmpty(opt.Export);
-    sct_options = solver_options(obj.solver_CPF, opt);
+    % The options of the call (with the defaults of GUILDA.setting and net.solver_CPF) go to
+    % the solver as they are; text as a string row
+    sct_options = rmfield(opt, "Export");
+    sct_options.LoadBus = reshape(string(opt.LoadBus), 1, []);
+    if isstring(opt.Limits) || ischar(opt.Limits) || iscellstr(opt.Limits)
+        sct_options.Limits = reshape(string(opt.Limits), 1, []);   % other values: SolverCPF.solve stops
+    end
+    sct_options.PlotFcn = tools.check_plotfcn(opt.PlotFcn, "calculate_continuation_powerflow", "pvcurve");
 
     [result, flag, output] = obj.solver_CPF.solve(obj, sct_options);
 
@@ -69,29 +76,5 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, opt)
     elseif opt.Export
         result.export();
     end
-end
-
-
-function sct = solver_options(solver, opt)
-% Settings handed to the solver: the ContinuationPowerFlow section of GUILDA.setting and
-% the condition LoadBus of the solver, with the options given in this call
-    sct_cfg = GUILDA.config("ContinuationPowerFlow");
-    sct = struct();
-    for s_name = string(fieldnames(sct_cfg)).'
-        sct.(s_name) = sct_cfg.(s_name).Value;
-    end
-    sct.LoadBus = solver.LoadBus;
-    for s_name = string(fieldnames(opt)).'
-        if s_name ~= "Export"
-            sct.(s_name) = opt.(s_name);
-        end
-    end
-    sct.LoadBus = reshape(string(sct.LoadBus), 1, []);
-    if isstring(sct.Limits) || ischar(sct.Limits) || iscellstr(sct.Limits)
-        sct.Limits = reshape(string(sct.Limits), 1, []);   % other values: SolverCPF.solve stops
-    end
-    sct.UseInternalState = logical(sct.UseInternalState);
-    sct.Verbose = logical(sct.Verbose);
-    sct.PlotFcn = tools.check_plotfcn(sct.PlotFcn, "calculate_continuation_powerflow", "pvcurve");
 end
 
