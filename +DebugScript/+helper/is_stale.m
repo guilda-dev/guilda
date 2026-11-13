@@ -1,5 +1,5 @@
 function l = is_stale(net)
-% 系統のどこかが古いか (解析が GUILDA:SolverODE:Stale などで止まるか)
+% 系統のどこかが古いか (解析が GUILDA:PowerNetwork:SimulateStale などで止まるか)
 %
 %   l = DebugScript.helper.is_stale(net)
     arguments (Input)

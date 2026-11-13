@@ -150,10 +150,11 @@
       {"name":"TimeLimit","kind":"namevalue","type":["double"],"purpose":"[s] Wall-clock limit of the whole run; Inf for none. Default: GUILDA.setting."},
       {"name":"Progress","kind":"namevalue","purpose":"\"dialog\", \"disp\" or \"none\" (true: \"dialog\", false: \"none\"). Default: GUILDA.setting."},
       {"name":"Verbose","kind":"namevalue","type":["logical"],"purpose":"Print the phases and the outcome. Default: GUILDA.setting."},
-      {"name":"PlotFcn","kind":"namevalue","purpose":"Live display during the run: \"none\" (draw the result with result.plot_trajectory()). Default: GUILDA.setting."}
+      {"name":"PlotFcn","kind":"namevalue","purpose":"Live display during the run: \"none\" (draw the result with result.plot_trajectory()). Default: GUILDA.setting."},
+      {"name":"Format","kind":"namevalue","type":["string","choices=cellstr([\"GUILDAorigin\",\"struct\"])"],"purpose":"Form of the first output. Default: \"GUILDAorigin\"."}
     ],
     "outputs": [
-      {"name":"result","purpose":"Trajectories of the buses and components (ResultODE; result.odeResults)."},
+      {"name":"result","purpose":"Trajectories: ResultODE (Format \"GUILDAorigin\"; result.odeResults) or a struct that mirrors the model hierarchy, with tables (Format \"struct\")."},
       {"name":"flag","purpose":"1 completed, 0 stopped by TimeLimit, -1 stopped by the solver."},
       {"name":"output","purpose":"Details: message, tEnd, phases, nPhases, nPhasesDone, isSparse, exception."}
     ]

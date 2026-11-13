@@ -113,5 +113,15 @@ end
 function [flag, output] = run_with_delay(net, tspan, c_events, t_delay, t_limit)
     sct_options = DebugScript.helper.ode_options("Progress", "none", "TimeLimit", t_limit);
     sct_options.PhaseProbe = @(o) pause(t_delay);
-    [~, flag, output] = net.solver_ODE.solve(net, tspan, c_events, sct_options);
+    [~, flag, output] = DebugScript.helper.solve_direct(net, one_scenario(net, c_events), tspan, sct_options);
+end
+
+
+function s_tag = one_scenario(net, c_events)
+% シナリオのセルを 1 つのシナリオのタグにする (2 つ以上は DebugScript.helper.combine でまとめる)
+    sc = c_events{1};
+    if numel(c_events) > 1
+        sc = DebugScript.helper.combine(net, c_events{:});
+    end
+    s_tag = sc.s_tag;
 end

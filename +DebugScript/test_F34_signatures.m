@@ -46,7 +46,7 @@ if isstruct(c_in)
 end
 sv_in = string(cellfun(@(a) a.name, c_in, 'UniformOutput', false));
 assert(isequal(sv_in(:)', ["obj","s_scenario","Time","Solver","Tolerance","AbsoluteTolerance","MaxStep","InitialStep", ...
-                           "SeparateComplexParts","TimeLimit","Progress","Verbose","PlotFcn"]), join(sv_in, ", "))
+                           "SeparateComplexParts","TimeLimit","Progress","Verbose","PlotFcn","Format"]), join(sv_in, ", "))
 assert(contains(jsonencode(c_in{2}.type), "choices=cellstr(string(obj.a_Scenario))"))
 
 

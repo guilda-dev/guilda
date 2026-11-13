@@ -22,7 +22,7 @@ classdef LayerPackage < handle
 %   ("<tag of the edited layer>: <log>", "<container tag>/<owner tag>: <log>" for a
 %   parameter) to its own fields for the edits that make them stale.
 % - Each analysis reads the stale tags it needs (the network, and the components and
-%   controllers it uses) and stops with its own error (e.g. GUILDA:SolverODE:Stale),
+%   controllers it uses) and stops with its own error (e.g. GUILDA:PowerNetwork:SimulateStale),
 %   naming up to three different messages; it rebuilds nothing.
 % - `sct_stale` has public GetAccess (Hidden) because the DebugScript tests, which are
 %   scripts, read it.

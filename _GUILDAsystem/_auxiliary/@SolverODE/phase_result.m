@@ -1,9 +1,9 @@
 function sct_out = phase_result(ctx, ph, sct_sol)
-% Trajectory of one phase for ResultODE: the variables x, V, u, uc in the order of the
-% variable map, and the bus currents; the states of the tripped units are NaN.
+% Trajectory of one phase: the variables x, V, u, uc in the order of the variable map, and
+% the bus currents; the states of the tripped components and global controllers are NaN.
     arguments (Input)
         ctx      % Context of the run (Ymat of the phase).
-        ph       % Data of the phase (an element of the output of Scenario.compile).
+        ph       % Data of the phase (an element of sct_event).
         sct_sol  % Solution of the phase (fields Time and Solution, full state vector).
     end
     arguments (Output)
@@ -12,15 +12,12 @@ function sct_out = phase_result(ctx, ph, sct_sol)
     xsol = sct_sol.Solution;
 
     % States of the tripped components and global controllers (not of local controllers)
-    sv_trip = reshape(string(ph.sv_trip), [], 1);
-    if ~isempty(sv_trip)
-        c_unit = [ctx.c_comp; ctx.c_gc];
-        lv = cellfun(@(b) ismember(b.s_tag, sv_trip), c_unit);
-        iv = tools.vcellfun(@(b) b.iv_x, c_unit(lv));
+    c_unit = [ctx.c_comp(ph.iv_tripComp); ctx.c_gc(ph.iv_tripGC)];
+    if ~isempty(c_unit)
+        iv = tools.vcellfun(@(b) b.iv_x, c_unit);
         xsol(:, iv) = NaN;
     end
 
     Isol = ctx.Ymat * xsol(:, ctx.iv_V).';
-    iv_var = union(ctx.iv_lin, ctx.iv_in);   % x, V, u (iv_lin) and uc, ascending = map order
-    sct_out = struct('t', sct_sol.Time, 'x', xsol(:, iv_var), 'i', Isol.');
+    sct_out = struct('t', sct_sol.Time, 'x', xsol(:, ctx.iv_var), 'i', Isol.');
 end

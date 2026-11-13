@@ -3,12 +3,15 @@ classdef SolverODE < auxiliary
 %
 % net.solver_ODE holds one. It holds no settings: net.simulate combines the TimeSimulation
 % section of GUILDA.setting with the Name-Value options of the call and passes them to
-% solve; neither the solver nor the settings file is changed. The network, the event time
-% table and the trajectories of a run are local to solve, and the result is returned as a
-% ResultODE. The DAE of the network is integrated phase by phase: a phase is a time
-% interval in which the set of active disturbances (Scenario) does not change. Each phase
-% is solved with the MATLAB ode object (Solver, Tolerance, AbsoluteTolerance, MaxStep,
-% InitialStep, SeparateComplexParts).
+% solve; neither the solver nor the settings file is changed. The solver is purely
+% numerical: net.build_simulation_data gathers the data of a run (the blocks with their
+% function handles, the variable and connection maps, the admittance, the equilibrium, the
+% phases with the disturbances as positions, the initial value) and solve reads only that
+% data, never the network or its models. It returns the raw trajectories, from which
+% net.simulate makes a ResultODE or the struct of Format="struct". The DAE of the network
+% is integrated phase by phase: a phase is a time interval in which the set of active
+% disturbances (Scenario) does not change. Each phase is solved with the MATLAB ode
+% object (Solver, Tolerance, AbsoluteTolerance, MaxStep, InitialStep, SeparateComplexParts).
 %
 % - Tolerance and AbsoluteTolerance are the RelativeTolerance and AbsoluteTolerance of ode
 %   (RelTol and AbsTol of odeset).
@@ -44,14 +47,14 @@ classdef SolverODE < auxiliary
             end
         end
 
-        [result, flag, output] = solve(obj, net, time, c_events, sct_options)
+        [sct_sol, flag, output] = solve(obj, sct_dae, sct_event, rv_x0, sct_options)
     end
 
     methods (Static, Access=private)
-        sct = build_index(net)
+        sct = build_index(sct_dae)
         [EM, RM, lv_FBorTC, x0, M0] = initial_condition(ctx, ph, x0, M0)
         sct_out = phase_result(ctx, ph, sct_sol)
-        ctx = set_admittance(ctx, sv_open, l_force)
+        ctx = set_admittance(ctx, iv_open, l_force)
         o = set_equations(o, ctx, RM, EM, lg, Mass)
         g = solve_differential(f, dMd, lv_dif, lv_eqD)
         l = is_false_index_error(ctx, me)

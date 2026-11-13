@@ -1,5 +1,5 @@
 function [result, flag, output] = simulate(obj, s_scenario, opt)
-% Simulate one scenario of the network over time and return a ResultODE.
+% Simulate one scenario of the network over time and return a ResultODE (or a struct).
 %
 % Time simulation of the network from its equilibrium: the DAE of the buses, components
 % and controllers is integrated over time, with the disturbances of the scenario
@@ -20,6 +20,14 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
 % tells it, whether or not flag is requested. To write the result to a file, call
 % result.export(...). The verdict is not computed here: call result.judge_out_of_step().
 %
+% With Format="struct", result is a struct that mirrors the model hierarchy, for repeated
+% runs: result.t (the times, shared by every table), result.a_Bus{i}.V, .I, .P, .Q,
+% result.a_Bus{i}.a_Component{j}.x, .u, .I (the current the component injects),
+% .a_LocalController{k}.x, .u (nested as in the model), result.a_GlobalController{k}.x, .u
+% (one column <input>_<unit tag> per controlled unit). Each is a table with one variable
+% per name, without a Time column; each element has s_tag. The outputs y are not computed
+% (use result.rm_output of a ResultODE).
+%
 % <@Examples>
 % ```matlab
 % net.initialize();
@@ -39,6 +47,13 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
 % res.export("fault.csv");
 % ```
 %
+% Repeated runs without a ResultODE:
+%
+% ```matlab
+% sol = net.simulate("fault", Format="struct");
+% plot(sol.t, sol.a_Bus{1}.a_Component{1}.x.omega)
+% ```
+%
 % See also Scenario, ResultODE, SolverODE, PowerNetwork.add_scenario, PowerNetwork.initialize, GUILDA.setting
 %
 % <@Group> Simulation
@@ -56,21 +71,36 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
         opt.Progress {mustBeProgress}   % "dialog", "disp" or "none" (true: "dialog", false: "none"). Default: GUILDA.setting.
         opt.Verbose (1,1) logical   % Print the phases and the outcome. Default: GUILDA.setting.
         opt.PlotFcn {mustBePlotFcn(opt.PlotFcn, "simulate")}   % Live display during the run: "none" (draw the result with result.plot_trajectory()). Default: GUILDA.setting.
+        opt.Format (1,1) string {mustBeMember(opt.Format, ["GUILDAorigin","struct"])} = "GUILDAorigin"   % Form of the first output.
     end
     arguments (Output)
-        result   % Trajectories of the buses and components (ResultODE; result.odeResults).
+        result   % Trajectories: ResultODE (Format "GUILDAorigin"; result.odeResults) or a struct that mirrors the model hierarchy, with tables (Format "struct").
         flag     % 1 completed, 0 stopped by TimeLimit, -1 stopped by the solver.
         output   % Details: message, tEnd, phases, nPhases, nPhasesDone, isSparse, exception.
     end
 
+    t0 = tic;
     sc = obj.a_Scenario{string(cellfun(@(s) s.s_tag, obj.a_Scenario, 'UniformOutput', false)) == s_scenario};
     time = sc.Time;
     if isfield(opt, "Time")
         time = opt.Time;
     end
-    sct_options = simulate_options(rmfield(opt, intersect("Time", string(fieldnames(opt)))));
+    sct_options = simulate_options(rmfield(opt, intersect(["Time","Format"], string(fieldnames(opt)))));
 
-    [result, flag, output] = obj.solver_ODE.solve(obj, time, {sc}, sct_options);
+    [sct_dae, sct_event, rv_x0, tab_phase] = obj.build_simulation_data(s_scenario, time);
+    if sct_options.Verbose
+        print_phases(tab_phase);
+    end
+    [sct_sol, flag, output] = obj.solver_ODE.solve(sct_dae, sct_event, rv_x0, sct_options);
+    output.phases = tab_phase;
+    output = orderfields(output, ["tEnd", "nPhases", "nPhasesDone", "phases", "isSparse", "exception", "message"]);
+
+    if opt.Format == "struct"
+        result = struct_result(sct_sol, sct_dae, sct_event, tab_phase, s_scenario);
+    else
+        result = ResultODE(sct_sol, sct_dae, struct(obj, false), struct("solver", obj.solver_ODE, ...
+                           "options", sct_options, "flag", flag, "output", output, "elapsed", t0));
+    end
 
     if flag ~= 1
         show_msg("warning", "GUILDA:PowerNetwork:SimulationIncomplete", string(flag), output.message);
