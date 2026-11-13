@@ -1,15 +1,15 @@
-function info(obj, opt)
+function disp_summary(obj, opt)
 % Display a summary of the buses, branches and components of the network.
 %
 % Each option switches a part of the printout on or off.
 %
 % <@Examples>
 % ```matlab
-% net.info()
-% net.info(parameter=false, equilibrium=false)
+% net.disp_summary()
+% net.disp_summary(parameter=false, equilibrium=false)
 % ```
 %
-% See also PowerNetwork.draw_diagram
+% See also PowerNetwork.plot_diagram
 %
 % <@Group> Queries and display
     arguments (Input)

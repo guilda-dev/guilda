@@ -1,10 +1,10 @@
-function G = draw_spring_model(obj,mode)
+function G = plot_spring_model(obj,mode)
 % Draw the network as an interactive mass-spring graph.
 %
 % Nodes are buses and edges are branches; hovering shows the branch admittance and
 % the bus data for the chosen mode.
 %
-% See also PowerNetwork.draw_diagram, GraphMassSpring
+% See also PowerNetwork.plot_diagram, GraphMassSpring
 %
 % <@Group> Queries and display
     arguments (Input)

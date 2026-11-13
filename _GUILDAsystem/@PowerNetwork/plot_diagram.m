@@ -1,9 +1,9 @@
-function G = draw_diagram(obj,ax)
+function G = plot_diagram(obj,ax)
 % Draw the network diagram of buses, branches and components.
 %
 % <@Examples>
 % ```matlab
-% G = net.draw_diagram();
+% G = net.plot_diagram();
 % ```
 %
 % See also DrawerNetDiagram
