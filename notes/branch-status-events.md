@@ -80,7 +80,7 @@
 | `branch.two_winding_transformer` | `ym = [c + y/tap², -y/tap; -y/tap, y]`, `E = diag(1, e^{jφ})`, `ym·E` | 送電端の母線側のシャント |
 
 - `Branch` の抽象メソッドは `Ymat = get_admittance_matrix(obj)` で、`tab_parameter.dynamics`(R, X, C, tap, phase)だけを読みます。回線数のパラメータはありません。
-- `get_admittance_matrix()` は引数なしで、`PowerNetwork.get_admittance_matrix`、`Branch.struct`(`cm_Y`)、`cv_Iequilibrium`、`get_opf_condition`、潮流計算・OPF・連続潮流計算・線形化(`get_linear_port`)、`DrawerNetDiagram`、`tools.network_to_mpc` から呼ばれます。これらは変えません(既定の `"close"`)。
+- `get_admittance_matrix()` は引数なしで、`PowerNetwork.get_admittance_matrix`、`Branch.struct`(`cm_Y`)、`cv_Iequilibrium`、`get_opf_condition`、潮流計算・OPF・連続潮流計算・線形化(`get_sys` の局所関数 `port`)、`DrawerNetDiagram`、`tools.network_to_mpc` から呼ばれます。これらは変えません(既定の `"close"`)。
 - `PowerNetwork.get_admittance_matrix()` は引数なしで、`a_Branch` の順に各ブランチの `get_admittance_matrix()` を足し、最後に母線のシャントを足した表(行と列が母線のタグ)を返します。
 - IEEJ の系統は回線を別のブランチにしています: `IEEJ_EAST10` と `IEEJ_WEST10` は 1 回線が 1 ブランチ(`EL(2k-1)`, `EL(2k)`、`LINE20_1`, `LINE20_2`)、`IEEJ_WEST30` は 1 枚のカードの n 回線を 1 ブランチ(`R/n`, `X/n`, `C = YC·n`)にしています。`two_winding_transformer` の `phase` は同梱の系統ではすべて 0 です。
 
