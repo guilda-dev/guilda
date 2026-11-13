@@ -12,9 +12,9 @@ classdef SolverLIN < auxiliary
 % - `Method` is the reduction of the network: "Kron" (eliminate the bus voltages from the
 %   DAE) or "DAE" (keep the voltages as algebraic states, descriptor form with a
 %   singular E).
-% - `Point` (given in a call only, not a setting) is [] for the equilibrium (set by
-%   net.initialize, the default); a vector of the values in the order of the variables of
-%   the layer (point_vector); or {sim, t}: the state of the simulation result sim at time t
+% - The point (the first argument of get_sys, not a setting) is [] for the equilibrium
+%   (set by net.initialize, the default); a vector of the values in the order of the
+%   leading rows of layer.get_variable_map() (point_vector); or {sim, t}: the state of the simulation result sim at time t
 %   (sim.get_point(t); at a phase boundary the value after the event, or
 %   {sim, t, "before"} for the value before it). It sets the variables only: the
 %   admittance matrix stays the one of the model, also at a time inside a fault. The model
@@ -50,7 +50,7 @@ classdef SolverLIN < auxiliary
     end
 
     methods (Static, Hidden)
-        [rv_point, l_equilibrium] = point_vector(layer, Point)
-        check_point(Point)
+        [rv_point, l_equilibrium] = point_vector(layer, point)
+        check_point(point)
     end
 end

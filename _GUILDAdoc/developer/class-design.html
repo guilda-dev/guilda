@@ -420,7 +420,7 @@
     <ul>
       <li><span lang="en">The <code>Label</code> column of the map equals the state and input names of <code>get_sys</code>: find a variable by its label, not by its position.</span><span lang="ja">マップの <code>Label</code> 列 = <code>get_sys</code> の状態名・入力名です。変数は位置ではなくラベルで検索します</span></li>
       <li><span lang="en">The bus variables of <code>"DAE"</code> have their own numbered names (such as <code>theta1</code>).</span><span lang="ja"><code>"DAE"</code> の母線変数は独自の番号付きの名前（<code>theta1</code> など）です</span></li>
-      <li><span lang="en"><code>net.get_sys(Point=x)</code> linearizes at any state <code>x</code> given in this order, or at a time of a simulation result (<code>Point={sim, t}</code>).</span><span lang="ja"><code>net.get_sys(Point=x)</code> は、この順序で与えた任意の状態 <code>x</code>、またはシミュレーション結果のある時刻（<code>Point={sim, t}</code>）で近似線形化します</span></li>
+      <li><span lang="en"><code>net.get_sys(x)</code> linearizes at any state <code>x</code> given in this order, or at a time of a simulation result (<code>net.get_sys({sim, t})</code>).</span><span lang="ja"><code>net.get_sys(x)</code> は、この順序で与えた任意の状態 <code>x</code>、またはシミュレーション結果のある時刻（<code>Point={sim, t}</code>）で近似線形化します</span></li>
     </ul>
 
     <!-- ============================== OPTIONAL ============================== -->

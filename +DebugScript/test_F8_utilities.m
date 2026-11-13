@@ -399,7 +399,7 @@ c_layer = {gen, @(n) n.a_Bus{1}, @(n) gen(n).a_LocalController{1}, lqr, @(n) n.a
 for k = 1:numel(c_layer)
     assert(same_ss(c_layer{k}(s.net).get_sys(), c_layer{k}(net).get_sys()), "layer %d", k)
 end
-assert(isequal(s.net.get_sys("Point", {s.sim, 0.5}).rm_Axx, net.get_sys("Point", {sim, 0.5}).rm_Axx))
+assert(isequal(s.net.get_sys({s.sim, 0.5}).rm_Axx, net.get_sys({sim, 0.5}).rm_Axx))
 
 % 読み込んだ系統でも、Hz の編集は K を作り直し、動特性の編集は各層で initialize を促す
 K = lqr(s.net).K;

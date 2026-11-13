@@ -1,4 +1,4 @@
-function [sys, flag, output] = get_sys(obj, opt)
+function [sys, flag, output] = get_sys(obj, point, opt)
 % Linearize the layer and return its linear model.
 %
 % One method for every layer with a linear model: PowerNetwork, Bus, Component (with
@@ -21,20 +21,20 @@ function [sys, flag, output] = get_sys(obj, opt)
 % component is the component tag with Ire, Iim; that of a bus the bus tag. An input is
 % the sum of its sources in the connection map plus the external input of that name.
 %
-% Point gives the point: [] (the equilibrium set by net.initialize, the default), a
-% vector of the variables of the layer in the order of its variable map (rows x, Vre, Vim,
-% u; for a controller its x, the voltages V and its inputs uc), or {sim, t} (or
-% {sim, t, "before"}) for the state of a simulation result at time t (PowerNetwork, Bus
-% and Component). The inputs of the controllers at the point are the sums of their
-% sources (outputs and states of what they observe, outputs of nested controllers; an
-% input without a source keeps its equilibrium). The point sets the variables only: the
+% point, the first argument, gives the point: [] (the equilibrium set by net.initialize,
+% the default), a vector of the variables of the layer in the order of the leading rows of
+% obj.get_variable_map() (x, Vre, Vim, then u; for a controller x, Vre, Vim, then uc),
+% or {sim, t} (or {sim, t, "before"}) for the state of a simulation result at time t
+% (PowerNetwork, Bus and Component). The inputs of the controllers at the point are the
+% sums of their sources (outputs and states of what they observe, outputs of nested
+% controllers; an input without a source keeps its equilibrium). The point sets the variables only: the
 % admittance matrix stays the one of the model, also inside a fault (reported with an
 % INFO message and output.sv_faultBus).
 %
 % The layer stops with GUILDA:PowerSystemModel:Stale when net.initialize() is needed: an
-% edited dynamics always, an edited network, power flow or equilibrium when Point is the
+% edited dynamics always, an edited network, power flow or equilibrium when the point is the
 % equilibrium; with GUILDA:PowerSystemModel:InputEdited when the inputs were edited.
-% A Point with NaN or Inf stops with GUILDA:SolverLIN:PointNotFinite, and a model that is
+% A point with NaN or Inf stops with GUILDA:SolverLIN:PointNotFinite, and a model that is
 % not finite at the point with GUILDA:SolverLIN:JacobianNotFinite.
 %
 % Format chooses the form of sys: "GUILDAorigin" (default) is the ResultLIN of the
@@ -51,7 +51,8 @@ function [sys, flag, output] = get_sys(obj, opt)
 % sct = net.get_sys(Method="DAE", Format="struct");
 % resV = net.get_sys(Output="V");               % bus voltages as outputs
 % sys = net.a_Bus{1}.a_Component{1}.get_sys(Format="ss");   % component, V to I
-% res2 = net.get_sys(Point={sim, 1.5});         % at a time of a simulation result
+% res2 = net.get_sys({sim, 1.5});               % at a time of a simulation result
+% res3 = net.get_sys(res.rv_point);             % at a vector in the order of net.get_variable_map()
 % ```
 %
 % See also ResultLIN, SolverLIN, PowerNetwork.get_variable_map
@@ -59,7 +60,7 @@ function [sys, flag, output] = get_sys(obj, opt)
 % <@Group> Linearization
     arguments (Input)
         obj
-        opt.Point                     % Point: [], a vector in the order of the variable map, or {sim, t}. Default: [] (the equilibrium).
+        point = []                    % Point: [] (the equilibrium), a vector in the order of get_variable_map(), {sim, t} or {sim, t, Side}.
         opt.Port (1,1) string {mustBeMember(opt.Port, ["V2I","I2V"])}   % Ports of a Component or Bus: "V2I" (V to I) or "I2V". Default: "V2I".
         opt.Method (1,1) string {mustBeMember(opt.Method, ["Kron","DAE"])}   % Form of the model of the network: "Kron" (eliminate the bus voltages) or "DAE". Default: GUILDA.setting.
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])}   % Bus variables of "DAE". Default: GUILDA.setting.
@@ -74,10 +75,7 @@ function [sys, flag, output] = get_sys(obj, opt)
         output   % message, s_issue ("", "NotFinite" or "SingularAvv"), l_equilibrium, n_x, n_v, n_u, rcond_Avv, sv_faultBus, s_layer; result (the ResultLIN).
     end
     t0 = tic;
-    if ~isfield(opt, "Point")
-        opt.Point = [];
-    end
-    SolverLIN.check_point(opt.Point);
+    SolverLIN.check_point(point);
     l_port = isa(obj, "Component") || isa(obj, "Bus");
     if isfield(opt, "Port") && ~l_port
         error(msg("GUILDA:PowerSystemModel:PortNotApplicable", class(obj)))
@@ -92,12 +90,12 @@ function [sys, flag, output] = get_sys(obj, opt)
         end
     end
     tools.check_plotfcn(opt.PlotFcn, "get_sys");
-    l_eq = isempty(opt.Point) && ~iscell(opt.Point);
+    l_eq = isempty(point) && ~iscell(point);
 
     % The layer: its network, objects (blocks in the order of the variable map) and maps
     [net, a_obj, tab, tab_c] = layer_maps(obj);
     check_stale(obj, net, a_obj, l_eq);
-    rv_point = SolverLIN.point_vector(obj, opt.Point);
+    rv_point = SolverLIN.point_vector(obj, point);
     n_lin = numel(rv_point);
 
     % The blocks at the point, and the currents of the components
@@ -152,7 +150,7 @@ function [sys, flag, output] = get_sys(obj, opt)
     output.l_equilibrium = l_eq;
     output.s_layer = s_layer;
 
-    sct_options = struct("Method", opt.Method, "Coordinate", opt.Coordinate, "PlotFcn", opt.PlotFcn, "Point", {opt.Point});
+    sct_options = struct("Method", opt.Method, "Coordinate", opt.Coordinate, "PlotFcn", opt.PlotFcn, "Point", {point});
     if l_port
         sct_options.Port = opt.Port;
     end

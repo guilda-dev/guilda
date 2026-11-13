@@ -36,7 +36,7 @@ function tab = linearization_reference_check(sv_case)
         if e.net.l_eq
             r = net.get_sys(Format="GUILDAorigin");
         else
-            r = net.get_sys(Point=e.point, Format="GUILDAorigin");
+            r = net.get_sys(e.point, Format="GUILDAorigin");
         end
         tab_v = r.tab_variable;
         assert(isequal(tab_v.Label(tab_v.Kind == "x"), e.net.sv_x) && isequal(tab_v.Label(tab_v.Kind == "u"), e.net.sv_u), ...
@@ -68,12 +68,12 @@ function tab = linearization_reference_check(sv_case)
             bus = net.a_Bus{i};
             pb = p(c_idxBus{i}(c_idxBus{i} <= n_lin));
             sb = e.bus{i};
-            c_pt = {};
+            c_pt = {[]};
             if ~e.net.l_eq
-                c_pt = {"Point", pb};
+                c_pt = {pb};
             end
             db = max(db, model_diff(bus.get_sys(c_pt{:}, Format="struct"), sb.V2I, false));
-            dbI = max(dbI, port_i2v(@() bus.get_sys("port", "I2V", c_pt{:}, Format="struct"), sb.I2V, @(N) N));
+            dbI = max(dbI, port_i2v(@() bus.get_sys(c_pt{:}, Port="I2V", Format="struct"), sb.I2V, @(N) N));
             [~, c_idx] = bus.get_variable_map();
             for j = 1:numel(bus.a_Component)
                 comp = bus.a_Component{j};
@@ -81,13 +81,13 @@ function tab = linearization_reference_check(sv_case)
                 sc = e.comp{q};
                 assert(sc.tag == string(comp.s_tag))
                 pc = pb(c_idx{j}(c_idx{j} <= numel(pb)));
-                c_pt = {};
+                c_pt = {[]};
                 if ~e.net.l_eq
-                    c_pt = {"Point", pc};
+                    c_pt = {pc};
                 end
                 f_ren = @(N) rename_v(N, bus, comp);
                 dc  = max(dc, model_diff(f_ren(comp.get_sys(c_pt{:}, Format="struct")), sc.V2I, false));
-                dcI = max(dcI, port_i2v(@() comp.get_sys("port", "I2V", c_pt{:}, Format="struct"), sc.I2V, f_ren));
+                dcI = max(dcI, port_i2v(@() comp.get_sys(c_pt{:}, Port="I2V", Format="struct"), sc.I2V, f_ren));
                 if e.net.l_eq
                     dcA = max(dcA, model_diff(f_ren(alone(comp)), sc.alone, false));
                 end

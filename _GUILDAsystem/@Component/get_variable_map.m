@@ -11,7 +11,7 @@ function [tab, tab_connection] = get_variable_map(obj, s_form)
 %   5. y: outputs of the component (signals)
 %   6. yc: outputs of its local controllers (signals)
 % The rows of the kinds x, Vre, Vim and u come first: they are the order of the Point
-% vector of comp.get_sys(Point=...). Index counts from 1 here.
+% vector of comp.get_sys(...). Index counts from 1 here.
 % tab_connection lists the connections inside the component: the outputs of the local
 % controllers into the inputs of the same name of their parent ("local"), the outputs and
 % states of the component into the inputs of the controllers that observe them

@@ -9,7 +9,7 @@ function [tab, c_idx, tab_connection] = get_variable_map(obj, s_form)
 %   4. uc: inputs of the local controllers of each component
 %   5. y, 6. yc: outputs of each component and of its local controllers (signals)
 % The rows of the kinds x, Vre, Vim and u come first: they are the order of the Point
-% vector of bus.get_sys(Point=...). Index counts from 1 here. tab_connection lists the
+% vector of bus.get_sys(...). Index counts from 1 here. tab_connection lists the
 % connections inside the components (Component.get_variable_map), with the indices of
 % this map. get_variable_map("rows") is the form used inside the map: see
 % PowerNetwork.get_variable_map.
