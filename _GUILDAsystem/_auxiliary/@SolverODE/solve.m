@@ -35,7 +35,7 @@ function [sct_sol, flag, output] = solve(obj, sct_dae, sct_event, rv_x0, sct_opt
         sct_dae     (1,1) struct % Blocks, maps, admittance and equilibrium of the network (build_simulation_data).
         sct_event   (:,1) struct % One element per phase, the disturbances as positions (build_simulation_data).
         rv_x0       (:,1) double % Initial value of the variable rows of sct_dae.tab_variable.
-        sct_options (1,1) struct % Effective settings (net.simulate: GUILDA.setting and the options of the call).
+        sct_options (1,1) struct % Name-Value options of net.simulate (defaults from GUILDA.setting; Progress as its mode, PlotFcn checked).
     end
     arguments (Output)
         sct_sol (1,1) struct % Raw trajectories: rv_t, rm_variable, rm_I, rv_phase.

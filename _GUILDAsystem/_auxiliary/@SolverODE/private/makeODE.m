@@ -3,7 +3,7 @@ function o = makeODE(sct_options)
 % a field of sct_options is set, in the property order of ode; then MaxStep and InitialStep
 % go into the SolverOptions of the Solver when they are not NaN (NaN: the solver default).
     arguments (Input)
-        sct_options  (1,1) struct  % Effective settings (net.simulate).
+        sct_options  (1,1) struct  % Name-Value options of net.simulate (defaults from GUILDA.setting).
     end
     arguments (Output)
         o                          % MATLAB ode object with the settings.
