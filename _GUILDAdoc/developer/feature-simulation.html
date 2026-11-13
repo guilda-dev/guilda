@@ -44,8 +44,8 @@
   <main>
     <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Time Simulation Feature Design</span><span lang="ja">時間応答シミュレーション機能の設計</span></h1>
-    <p class="page-lead" lang="en"><code>net.simulate</code> integrates the differential-algebraic equations (DAE) of the network over time from the equilibrium of <code>net.initialize</code>, under the disturbances of the given scenarios (<code>Scenario</code>). This page follows one call: public method → <code>SolverODE</code> → <code>ResultODE</code>.</p>
-    <p class="page-lead" lang="ja"><code>net.simulate</code> は、<code>net.initialize</code> で求めた平衡点から始めて、シナリオ (<code>Scenario</code>) で与えた外乱のもとでネットワークの微分代数方程式 (DAE) を時間積分します。このページでは、1 回の呼び出しが公開メソッドから <code>SolverODE</code>、<code>ResultODE</code> へと進む流れを説明します。</p>
+    <p class="page-lead" lang="en"><code>net.simulate</code> integrates the differential-algebraic equations (DAE) of the network over time from the equilibrium of <code>net.initialize</code>, under the disturbances of one scenario (<code>Scenario</code>) chosen by its tag. This page follows one call: public method → data of the run → <code>SolverODE</code> → <code>ResultODE</code>.</p>
+    <p class="page-lead" lang="ja"><code>net.simulate</code> は、<code>net.initialize</code> で求めた平衡点から始めて、タグで選んだ 1 つのシナリオ (<code>Scenario</code>) の外乱のもとでネットワークの微分代数方程式 (DAE) を時間積分します。このページでは、1 回の呼び出しが公開メソッドから実行のデータ、<code>SolverODE</code>、<code>ResultODE</code> へと進む流れを説明します。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#entry"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></a>
@@ -64,84 +64,76 @@
     <ul lang="en">
       <li>One phase: one call of the MATLAB <code>ode</code> object on the DAE of the network in that phase (faulted buses and tripped units removed, opened branches left out of the admittance matrix).</li>
       <li>Start of the next phase: the state at the end of a phase, after the changes of the next phase.</li>
+      <li><code>PowerNetwork</code> gathers the data of the run; <code>SolverODE</code> reads only that data, never the network or its models.</li>
     </ul>
     <p lang="ja">時間区間は<strong>フェーズ</strong>に分けて扱います。フェーズとは、有効な外乱の組み合わせが変わらない区間のことです。</p>
     <ul lang="ja">
       <li>各フェーズでは、そのフェーズのネットワークの DAE を MATLAB の <code>ode</code> オブジェクトで 1 回解きます。このネットワークからは地絡した母線とトリップした機器を除き、開放したブランチもアドミタンス行列から除きます。</li>
       <li>次のフェーズは、前のフェーズが終わった時点の状態に、次のフェーズで起きる変化を加えた値から始めます。</li>
+      <li>実行に要るデータは <code>PowerNetwork</code> が集めます。<code>SolverODE</code> はそのデータだけを読み、ネットワークやモデルは読みません。</li>
     </ul>
-<pre class="sim-sig"><code>[result, flag, output] = net.simulate(time, sc1, sc2, ..., Name, Value)
-[result, flag, output] = net.simulate(sc, Name, Value)
-sc = Scenario(tag, Time=…, Options=…, Judge=…, Description=…)
-sc.add_fault(bus, [t_start, t_end])            % also add_trip, add_open_branch, add_offset, add_input
-net.add_scenario(sc)
-verdict = sc.judge(result)</code></pre>
+<pre class="sim-sig"><code>sc = net.add_scenario(tag, Time=[t0, tend], Description=…)
+sc.add_fault(bus, [t_start, t_end])     % also add_trip, add_open_branch, add_offset, add_input, add_disturbance
+[result, flag, output] = net.simulate(tag, Name=Value)
+sol = net.simulate(tag, Format="struct")
+verdict = result.judge_out_of_step(Reference=…, Threshold=…)
+result.export(filename)
+net.remove_scenario(tag)</code></pre>
     <ul>
-      <li lang="en"><code>time</code>: <code>[t0, tend]</code> in seconds with finite <code>t0 &lt; tend</code>, <code>[]</code>, or left out (<code>net.simulate(sc, ...)</code>). Without a time:
-        <ul>
-          <li>the <code>Time</code> of the scenarios;</li>
-          <li>else <code>[0, 30·ceil(tmax/10)]</code>, <code>tmax</code> = latest disturbance time (10 s more when that equals <code>tmax</code>);</li>
-          <li>without disturbances, <code>[0, 10]</code>.</li>
-        </ul></li>
-      <li lang="ja"><code>time</code> には、秒単位の <code>[t0, tend]</code>（有限の値で <code>t0 &lt; tend</code>）か <code>[]</code> を渡すか、省略します（<code>net.simulate(sc, ...)</code>）。省略したときは次のように決めます。
-        <ul>
-          <li>シナリオに <code>Time</code> があれば、それを使います。</li>
-          <li>なければ <code>[0, 30·ceil(tmax/10)]</code> とします。<code>tmax</code> は外乱の中で最も遅い時刻で、こうして決めた終了時刻が <code>tmax</code> と等しくなる場合は、さらに 10 s 延ばします。</li>
-          <li>外乱がなければ <code>[0, 10]</code> とします。</li>
-        </ul></li>
-      <li lang="en">Scenarios: the leading <code>Scenario</code> arguments, each added to this network (<code>net.add_scenario</code>).
-        <ul>
-          <li>None: the response without disturbance. Several: disturbances combined.</li>
-          <li>After the first non-<code>Scenario</code> argument: Name-Value options.</li>
-          <li>Different <code>Time</code>, or different values of one stored option: error, unless the call gives the time or the option.</li>
-          <li>Verdict: not an output; call <code>sc.judge(result)</code> (default <code>Scenario.out_of_step</code>).</li>
-        </ul></li>
-      <li lang="ja">シナリオは、先頭に並べる <code>Scenario</code> 引数です。どれも、あらかじめ <code>net.add_scenario</code> でこのネットワークに加えておきます。
-        <ul>
-          <li>シナリオがなければ、外乱のない応答を計算します。複数あれば、外乱を合わせて扱います。</li>
-          <li><code>Scenario</code> でない最初の引数から後ろは、Name-Value オプションとして読みます。</li>
-          <li>シナリオごとに <code>Time</code> や保存したオプションの値が違うとエラーになります。ただし、呼び出しで時間やそのオプションを指定した場合は除きます。</li>
-          <li>判定結果は出力に含みません。<code>sc.judge(result)</code> を呼び出して求めます（既定では <code>Scenario.out_of_step</code>）。</li>
-        </ul></li>
+      <li lang="en"><code>tag</code>: the tag of one scenario of this network (<code>net.add_scenario</code>). Exactly one scenario per run. A tag that is not one stops with <code>GUILDA:PowerNetwork:ScenarioNotFound</code>, which lists up to 10 tags of the network. A run without disturbance uses a scenario without disturbances.</li>
+      <li lang="ja"><code>tag</code> には、このネットワークのシナリオ（<code>net.add_scenario</code>）のタグを 1 つ渡します。1 回の実行で使うシナリオは 1 つです。ネットワークにないタグは <code>GUILDA:PowerNetwork:ScenarioNotFound</code> で止まり、ネットワークのタグを最大 10 個示します。外乱のない応答は、外乱のないシナリオで計算します。</li>
+      <li lang="en">Time: <code>sc.Time</code> (<code>[0, 10]</code> unless set), or the <code>Time</code> option, which replaces it for this call only. The disturbances do not change the time.</li>
+      <li lang="ja">時間は <code>sc.Time</code>（指定しなければ <code>[0, 10]</code>）です。<code>Time</code> オプションを指定すると、その呼び出しの間だけ置き換わります。外乱の時刻によって時間が変わることはありません。</li>
+      <li lang="en">Verdict and file: not part of the call. Call <code>result.judge_out_of_step()</code> and <code>result.export(filename)</code> on the result.</li>
+      <li lang="ja">判定とファイルへの書き出しは、呼び出しには含みません。結果に対して <code>result.judge_out_of_step()</code> と <code>result.export(filename)</code> を呼び出します。</li>
     </ul>
 
     <h3><span lang="en">Name-Value options and defaults</span><span lang="ja">Name-Value オプションと既定値</span></h3>
     <ul lang="en">
-      <li>Defaults: the TimeSimulation section of <code>GUILDA.setting</code>, read at each run from <code>GUILDA.config("TimeSimulation")</code> (<code>@GUILDA/config/DefaultTimeSimulation.json</code>, overridden by a file of the same name in <code>@GUILDA/user/</code>). <code>net.solver_ODE</code> (a <code>SolverODE</code>) holds no settings.</li>
-      <li>Precedence, for this call only: Name-Value option of the call &gt; stored <code>Options</code> of the scenarios &gt; <code>GUILDA.setting</code> (<code>scenario_settings</code>, <code>SolverODE.OptionMap</code>, <code>tools.resolve_options</code>). The settings file is not changed.</li>
+      <li>Defaults: the TimeSimulation section of <code>GUILDA.setting</code>, read at each run from <code>GUILDA.config("TimeSimulation")</code> (<code>@GUILDA/config/DefaultTimeSimulation.json</code>, overridden by a file of the same name in <code>@GUILDA/user/</code>). <code>GUILDA.setting("TimeSimulation", Name=Value)</code> changes them for every later run.</li>
+      <li>A Name-Value option of the call replaces one setting for this call only (local function <code>simulate_options</code> of <code>simulate.m</code>). The settings file, the scenario and <code>net.solver_ODE</code> are not changed; neither the scenario nor the solver holds settings.</li>
+      <li>The options are checked by the <code>arguments</code> block of <code>simulate</code>: a name that is not an option stops with the error of MATLAB.</li>
       <li>Shared rules: <a href="api-design.html#rules">API Design</a>.</li>
     </ul>
     <ul lang="ja">
-      <li>既定値は <code>GUILDA.setting</code> の TimeSimulation セクションにあり、実行のたびに <code>GUILDA.config("TimeSimulation")</code> で読み込みます。元の値は <code>@GUILDA/config/DefaultTimeSimulation.json</code> にあり、<code>@GUILDA/user/</code> に同名のファイルを置くと上書きできます。<code>net.solver_ODE</code> (<code>SolverODE</code>) は設定を持ちません。</li>
-      <li>値は、呼び出しの Name-Value オプション、シナリオに保存した <code>Options</code>、<code>GUILDA.setting</code> の順に優先します（<code>scenario_settings</code>、<code>SolverODE.OptionMap</code>、<code>tools.resolve_options</code>）。この優先はその呼び出しの間だけで、設定ファイルは変わりません。</li>
+      <li>既定値は <code>GUILDA.setting</code> の TimeSimulation セクションにあり、実行のたびに <code>GUILDA.config("TimeSimulation")</code> で読み込みます。元の値は <code>@GUILDA/config/DefaultTimeSimulation.json</code> にあり、<code>@GUILDA/user/</code> に同名のファイルを置くと上書きできます。<code>GUILDA.setting("TimeSimulation", Name=Value)</code> で変えると、その後のすべての実行に効きます。</li>
+      <li>呼び出しの Name-Value オプションは、その呼び出しの間だけ設定の値を置き換えます（<code>simulate.m</code> のローカル関数 <code>simulate_options</code>）。設定ファイル、シナリオ、<code>net.solver_ODE</code> は変わりません。シナリオもソルバーも設定を持ちません。</li>
+      <li>オプションは <code>simulate</code> の <code>arguments</code> ブロックで検査します。オプションにない名前は、MATLAB のエラーで止まります。</li>
       <li>共通の規則は<a href="api-design.html#rules">API 設計</a>にまとめています。</li>
     </ul>
     <table class="dg-table sim-opts">
       <thead><tr><th><span lang="en">Option</span><span lang="ja">オプション</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Default</span><span lang="ja">既定値</span></th></tr></thead>
       <tbody>
-        <tr><td><code>Solver</code></td><td><span lang="en">Solver of the <code>ode</code> object; the singular mass matrix needs a DAE solver.</span><span lang="ja"><code>ode</code> オブジェクトで使うソルバーです。質量行列が特異なので、DAE を扱えるソルバーが必要です。</span></td><td><code>"ode15s"</code><small>config</small></td></tr>
-        <tr><td><code>SolverOptions</code></td><td><span lang="en">Options of the solver (e.g. <code>MaxStep</code>); class must match <code>Solver</code>. Given only in a call or in the <code>Options</code> of a scenario; when empty, the <code>ode</code> object uses the options of its <code>Solver</code>.</span><span lang="ja">ソルバーのオプション（<code>MaxStep</code> など）です。クラスは <code>Solver</code> に合わせます。呼び出しかシナリオの <code>Options</code> でだけ指定できます。空のときは、<code>ode</code> オブジェクトが <code>Solver</code> の既定のオプションを使います。</span></td><td><code>[]</code><small>call</small></td></tr>
+        <tr><td><code>Time</code></td><td><span lang="en">[s] <code>[t0, tend]</code> of this call (finite, <code>t0 &lt; tend</code>). Not a setting.</span><span lang="ja">[s] この呼び出しの <code>[t0, tend]</code> です（有限の値で <code>t0 &lt; tend</code>）。設定には含みません。</span></td><td><code>sc.Time</code><small>scenario</small></td></tr>
+        <tr><td><code>Solver</code></td><td><span lang="en">Solver of the <code>ode</code> object, <code>"ode15s"</code> or <code>"ode23t"</code>; the singular mass matrix needs a DAE solver.</span><span lang="ja"><code>ode</code> オブジェクトで使うソルバーで、<code>"ode15s"</code> か <code>"ode23t"</code> です。質量行列が特異なので、DAE を扱えるソルバーが必要です。</span></td><td><code>"ode15s"</code><small>config</small></td></tr>
         <tr><td><code>Tolerance</code></td><td><span lang="en">Relative tolerance (<code>RelativeTolerance</code> of the <code>ode</code> object), 1e-15 to 1e-3.</span><span lang="ja">相対許容誤差で、<code>ode</code> オブジェクトの <code>RelativeTolerance</code> に渡します。1e-15〜1e-3 の範囲で指定します。</span></td><td><code>1e-4</code><small>config</small></td></tr>
         <tr><td><code>AbsoluteTolerance</code></td><td><span lang="en">Absolute tolerance, 1e-15 to 1e-3.</span><span lang="ja">絶対許容誤差です。1e-15〜1e-3 の範囲で指定します。</span></td><td><code>1e-6</code><small>config</small></td></tr>
+        <tr><td><code>MaxStep</code></td><td><span lang="en">[s] Largest step of the solver, set in <code>o.SolverOptions</code>; <code>NaN</code> keeps the default of the solver.</span><span lang="ja">[s] ソルバーの最大の刻み幅で、<code>o.SolverOptions</code> に設定します。<code>NaN</code> ならソルバーの既定値のままです。</span></td><td><code>NaN</code><small>config</small></td></tr>
+        <tr><td><code>InitialStep</code></td><td><span lang="en">[s] First step of each phase, set in <code>o.SolverOptions</code>; <code>NaN</code> keeps the default of the solver.</span><span lang="ja">[s] 各フェーズの最初の刻み幅で、<code>o.SolverOptions</code> に設定します。<code>NaN</code> ならソルバーの既定値のままです。</span></td><td><code>NaN</code><small>config</small></td></tr>
         <tr><td><code>SeparateComplexParts</code></td><td><span lang="en">Property of the <code>ode</code> object; logical, given as <code>"on"</code> (true) / <code>"off"</code> (false).</span><span lang="ja"><code>ode</code> オブジェクトのプロパティです。logical で指定し、true なら <code>"on"</code>、false なら <code>"off"</code> として渡します。</span></td><td><code>false</code><small>config</small></td></tr>
+        <tr><td><code>SampleTime</code></td><td><span lang="en">[s] Recorded times <code>t0 + k·SampleTime</code>, with the start and end of each phase (SIM-14); the steps of the solver do not change. <code>NaN</code> or <code>0</code>: the steps of the solver.</span><span lang="ja">[s] 記録する時刻を <code>t0 + k·SampleTime</code> と各フェーズの始めと終わりにします（SIM-14）。ソルバーの刻み幅は変わりません。<code>NaN</code> か <code>0</code> なら、ソルバーの刻みの時刻を記録します。</span></td><td><code>NaN</code><small>config</small></td></tr>
+        <tr><td><code>StopOnOutOfStep</code></td><td><span lang="en">Stop the run when the rotor angle <code>delta</code> of a generator from that of the generator of the slack bus exceeds <code>StopAngle</code> (<code>flag = 2</code>, SIM-06, SIM-17).</span><span lang="ja">発電機の回転子角 <code>delta</code> とスラック母線の発電機の回転子角の差が <code>StopAngle</code> を超えたら、実行を止めます（<code>flag = 2</code>。SIM-06、SIM-17）。</span></td><td><code>false</code><small>config</small></td></tr>
+        <tr><td><code>StopAngle</code></td><td><span lang="en">[deg] Threshold of <code>StopOnOutOfStep</code> (positive, no wrapping). An invalid setting means 360.</span><span lang="ja">[deg] <code>StopOnOutOfStep</code> のしきい値です（正の値。角度は折り返しません）。設定の値が不正なら 360 とみなします。</span></td><td><code>360</code><small>config</small></td></tr>
         <tr><td><code>TimeLimit</code></td><td><span lang="en">[s] Wall-clock limit of the whole run; <code>Inf</code> for none. A non-positive config value means <code>Inf</code>.</span><span lang="ja">[s] 実行全体にかける計算時間（実時間）の上限です。<code>Inf</code> なら制限しません。config の値が正でなければ <code>Inf</code> とみなします。</span></td><td><code>Inf</code><small>config</small></td></tr>
         <tr><td><code>Progress</code></td><td><span lang="en"><code>"dialog"</code>, <code>"disp"</code> or <code>"none"</code>; <code>true</code> / <code>false</code> mean <code>"dialog"</code> / <code>"none"</code>.</span><span lang="ja"><code>"dialog"</code>、<code>"disp"</code>、<code>"none"</code> から選びます。<code>true</code> は <code>"dialog"</code>、<code>false</code> は <code>"none"</code> と同じです。</span></td><td><code>"dialog"</code><small>config</small></td></tr>
         <tr><td><code>Verbose</code></td><td><span lang="en">Print the phase table before and <code>output.message</code> after the integration.</span><span lang="ja">積分の前にフェーズ表を、終わった後に <code>output.message</code> を表示します。</span></td><td><code>false</code><small>config</small></td></tr>
         <tr><td><code>PlotFcn</code></td><td><span lang="en">Live display during the run; only <code>"none"</code> is available (other values: <code>GUILDA:check_plotfcn:InDevelopment</code>). The figure after the run: <code>result.plot_trajectory()</code>.</span><span lang="ja">実行中の経過をライブで表示する設定です。今のところ使えるのは <code>"none"</code> だけで、ほかの値は <code>GUILDA:check_plotfcn:InDevelopment</code> になります。実行後の図は <code>result.plot_trajectory()</code> で描きます。</span></td><td><code>"none"</code><small>config</small></td></tr>
-        <tr><td><code>Export</code></td><td><span lang="en">Calls <code>result.export</code>: <code>true</code> for a time-stamped CSV name, or a file name (.csv, .txt, .xlsx, .xls, .mat, checked before the integration). Call option only, not a setting.</span><span lang="ja"><code>result.export</code> を呼び出します。<code>true</code> なら日時付きの CSV 名で、文字列ならそのファイル名で書き出します（.csv、.txt、.xlsx、.xls、.mat。積分の前に拡張子を検査します）。呼び出しのときだけ使うオプションで、設定には含みません。</span></td><td><code>false</code></td></tr>
+        <tr><td><code>Format</code></td><td><span lang="en">Form of the first output: <code>"GUILDAorigin"</code> (a <code>ResultODE</code>) or <code>"struct"</code> (a struct that mirrors the model hierarchy, see <a href="#data">Data produced</a>). Not a setting.</span><span lang="ja">第 1 出力の形です。<code>"GUILDAorigin"</code> なら <code>ResultODE</code>、<code>"struct"</code> ならモデルの階層をなぞる struct を返します（<a href="#data">生成されるデータ</a>を参照）。設定には含みません。</span></td><td><code>"GUILDAorigin"</code><small>call</small></td></tr>
       </tbody>
     </table>
 
     <h3><span lang="en">Disturbances given as a <code>Scenario</code></span><span lang="ja"><code>Scenario</code> で与える外乱</span></h3>
-    <p lang="en">A scenario holds a list of disturbances (<code>sc.tab_disturbance</code>), each with its own time span and tag.</p>
+    <p lang="en">A scenario is a child of one network: <code>net.add_scenario(tag)</code> creates it (<code>net.a_Scenario</code>, <code>sc.a_PowerNetwork</code>), <code>net.remove_scenario(tag)</code> deletes it, and <code>net.add_scenario(tag, From=sc)</code> copies another one. It holds the simulation time <code>Time</code>, a <code>Description</code> and a list of disturbances (<code>sc.tab_disturbance</code>), each with its own time span and tag. It holds data only: no function handles and no settings of the solver.</p>
     <ul lang="en">
-      <li>Tag: the column of the disturbance in the phase table. Unique in the scenario and in one run; not <code>t1</code>, <code>t2</code>, <code>Properties</code>, <code>Row</code>, <code>Variables</code>, empty, or <code>NoAction</code> followed by digits. Defaults of the <code>add_*</code> methods: <code>fault&lt;n&gt;</code>, <code>open&lt;n&gt;</code>, ...</li>
+      <li>Tag of the scenario: shares the name space of the buses, branches and global controllers of the network; a tag in use gets a number suffix.</li>
+      <li>Tag of a disturbance: the column of the disturbance in the phase table. Unique in the scenario; not <code>t1</code>, <code>t2</code>, <code>Properties</code>, <code>Row</code>, <code>Variables</code>, empty, or <code>NoAction</code> followed by digits. Defaults of the <code>add_*</code> methods: <code>fault&lt;n&gt;</code>, <code>open&lt;n&gt;</code>, ...</li>
       <li>Buses, branches and units: named by tag; checked against the network when added and again in SIM-04.</li>
       <li><code>sc.add_disturbance(tag, Name=Value)</code>: takes the fields below; several kinds can be combined in one disturbance.</li>
     </ul>
-    <p lang="ja">シナリオは外乱の一覧 (<code>sc.tab_disturbance</code>) を持ちます。外乱にはそれぞれ時間区間とタグがあります。</p>
+    <p lang="ja">シナリオは 1 つのネットワークの子です。<code>net.add_scenario(tag)</code> で作り（<code>net.a_Scenario</code>、<code>sc.a_PowerNetwork</code>）、<code>net.remove_scenario(tag)</code> で削除します。<code>net.add_scenario(tag, From=sc)</code> は別のシナリオを写します。シナリオは、シミュレーションの時間 <code>Time</code>、説明 <code>Description</code>、外乱の一覧 (<code>sc.tab_disturbance</code>) を持ちます。外乱にはそれぞれ時間区間とタグがあります。シナリオが持つのはデータだけで、関数ハンドルやソルバーの設定は持ちません。</p>
     <ul lang="ja">
-      <li>タグは、フェーズ表で外乱の列名になります。シナリオの中でも、1 回の実行の中でも重複できません。<code>t1</code>、<code>t2</code>、<code>Properties</code>、<code>Row</code>、<code>Variables</code>、空文字、<code>NoAction</code> に数字を付けたものは使えません。<code>add_*</code> メソッドは <code>fault&lt;n&gt;</code>、<code>open&lt;n&gt;</code> のようなタグを自動で付けます。</li>
+      <li>シナリオのタグは、ネットワークの母線、ブランチ、グローバル制御器と同じ名前空間を使います。使用中のタグには番号が付きます。</li>
+      <li>外乱のタグは、フェーズ表で外乱の列名になります。シナリオの中で重複できません。<code>t1</code>、<code>t2</code>、<code>Properties</code>、<code>Row</code>、<code>Variables</code>、空文字、<code>NoAction</code> に数字を付けたものは使えません。<code>add_*</code> メソッドは <code>fault&lt;n&gt;</code>、<code>open&lt;n&gt;</code> のようなタグを自動で付けます。</li>
       <li>母線、ブランチ、機器はタグで指定します。外乱を加えるときと SIM-04 で、ネットワークと照らし合わせます。</li>
       <li><code>sc.add_disturbance(tag, Name=Value)</code> は次のフィールドを受け取ります。1 つの外乱に複数の種類をまとめることもできます。</li>
     </ul>
@@ -153,138 +145,143 @@ verdict = sc.judge(result)</code></pre>
         <tr><td><code>TripUnit</code> <small>add_trip</small></td><td><span lang="en">Components or global controllers disconnected: a component's states and inputs are removed and it injects no current; a global controller gives no output.</span><span lang="ja">機器またはグローバル制御器を切り離します。機器は状態と入力を取り除き、電流を注入しなくなります。グローバル制御器は出力を止めます。</span></td></tr>
         <tr><td><code>OpenBranch</code> <small>add_open_branch</small></td><td><span lang="en">Branches left out of the bus admittance matrix; reconnected at <code>t_end</code> (a <code>t_end</code> at or after the end of the simulation keeps them open). A part of the network without any component is an error; a part with components is simulated as an island.</span><span lang="ja">ブランチを母線アドミタンス行列から外し、<code>t_end</code> でつなぎ直します。<code>t_end</code> がシミュレーションの終わり以降なら、開いたままです。切り離した部分に機器が 1 つもなければエラーになります。機器を含む部分は、単独の系統としてそのままシミュレーションします。</span></td></tr>
         <tr><td><code>OffsetUnit</code>, <code>OffsetState</code>, <code>OffsetValue</code> <small>add_offset</small></td><td><span lang="en">Added once to the named states of the component at <code>t_start</code> (the phase in which the disturbance starts).</span><span lang="ja"><code>t_start</code>（外乱が始まるフェーズ）で 1 回だけ、機器の指定した状態に値を足します。</span></td></tr>
-        <tr><td><code>InputUnit</code>, <code>InputName</code>, <code>InputValue</code> <small>add_input</small></td><td><span lang="en">Added to the named inputs of the component: a number, or a function <code>f(t)</code> of the time since <code>t_start</code>. Inputs of several disturbances on the same input are summed.</span><span lang="ja">機器の指定した入力に値を足します。値は数値か、<code>t_start</code> からの経過時間を引数に取る関数 <code>f(t)</code> です。同じ入力に複数の外乱がかかるときは合計します。</span></td></tr>
+        <tr><td><code>InputUnit</code>, <code>InputName</code>, <code>InputValue</code>, <code>InputMethod</code> <small>add_input</small></td><td><span lang="en">Added to the named inputs of the component: a constant (one number per name, or one for all), or a time series <code>[t, v_1, ..., v_n]</code> (or a table with <code>Time</code> and the input names), <code>t</code> from <code>t_start</code>, starting at 0 and increasing. <code>InputMethod</code> interpolates the series: <code>"zoh"</code>, <code>"foh"</code> (linear, the default) or <code>"spline"</code>; after the last point the last value is kept. Each point after the first of a <code>"zoh"</code> series is a phase boundary. Inputs of several disturbances on the same input are summed.</span><span lang="ja">機器の指定した入力に値を足します。値は定数（名前ごとに 1 つ、またはすべてに 1 つ）か、時系列 <code>[t, v_1, ..., v_n]</code>（または <code>Time</code> と入力名を変数に持つ table）です。<code>t</code> は <code>t_start</code> からの時刻で、0 から始まって増加します。時系列は <code>InputMethod</code> で補間します。<code>"zoh"</code>、<code>"foh"</code>（線形、既定）、<code>"spline"</code> から選び、最後の点の後は最後の値を保ちます。<code>"zoh"</code> の時系列では、2 点目以降の各点がフェーズの境目になります。同じ入力に複数の外乱がかかるときは合計します。</span></td></tr>
       </tbody>
     </table>
     <ul lang="en">
       <li>Scenarios are not model data: adding, removing or editing them makes nothing stale.</li>
-      <li><code>Scenario.import_csv</code>, <code>Scenario.export_csv</code>: several scenarios, one row per disturbance.</li>
+      <li>Files: <code>net.export</code> writes each scenario to <code>scenario/&lt;tag&gt;.json</code> and <code>PowerNetwork.import</code> adds them back (see <a href="feature-data-io.html#scenario-json">Data IO: scenario files</a>).</li>
     </ul>
     <ul lang="ja">
       <li>シナリオはモデルのデータではありません。加えても、消しても、編集しても、古くなる層はありません。</li>
-      <li><code>Scenario.import_csv</code> と <code>Scenario.export_csv</code> は、複数のシナリオを外乱 1 つにつき 1 行の形で読み書きします。</li>
+      <li>ファイルには、<code>net.export</code> が各シナリオを <code>scenario/&lt;tag&gt;.json</code> に書き出し、<code>PowerNetwork.import</code> がそれを読んで加えます（<a href="feature-data-io.html#scenario-json">データ入出力: シナリオのファイル</a>を参照）。</li>
     </ul>
 
     <h3><span lang="en">Preconditions for the call</span><span lang="ja">呼び出しの前提条件</span></h3>
     <ul>
       <li lang="en"><code>net.initialize()</code> has run, with no edit since that makes a layer stale, a network <code>Hz</code> edit included (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>). <code>initialize</code> builds the function handles <code>f_*</code>.</li>
       <li lang="ja"><code>net.initialize()</code> を実行してあり、その後に層を古くする編集をしていないことが前提です。ネットワークの <code>Hz</code> の編集もこれに含みます（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照）。関数ハンドル <code>f_*</code> は <code>initialize</code> が作ります。</li>
-      <li lang="en">Every scenario belongs to this network and the tags of its disturbances exist in it now, and every unit a global controller controls is on this network.</li>
-      <li lang="ja">どのシナリオもこのネットワークのもので、外乱に書いたタグが今のネットワークに存在していなければなりません。グローバル制御器が制御する機器も、すべてこのネットワーク上にある必要があります。</li>
-      <li lang="en">The mass matrices of all components and controllers are constant (<code>tools.read_mass</code>).</li>
-      <li lang="ja">すべての機器と制御器で、質量行列が定数でなければなりません（<code>tools.read_mass</code>）。</li>
+      <li lang="en">The tags in the disturbances of the scenario exist in the network now.</li>
+      <li lang="ja">シナリオの外乱に書いたタグが、今のネットワークに存在していなければなりません。</li>
+      <li lang="en">The mass matrices of all components and controllers are constant: <code>f_Mass([],[],[],[])</code> returns a matrix of the block size (SIM-07).</li>
+      <li lang="ja">すべての機器と制御器で、質量行列が定数でなければなりません。<code>f_Mass([],[],[],[])</code> がブロックの大きさの行列を返す必要があります（SIM-07）。</li>
     </ul>
 
     <!-- ============================== SEQUENCE ============================== -->
     <h2 id="sequence"><span lang="en">Call sequence between classes</span><span lang="ja">クラス間の呼び出し順</span></h2>
-    <p lang="en">Numbers: the IDs of the <a href="#steps">steps</a>. SIM-08 to SIM-18 repeat for each phase. Dashed arrows: returns.</p>
-    <p lang="ja">番号は<a href="#steps">ステップ</a>の ID です。SIM-08〜SIM-18 はフェーズごとに繰り返します。破線の矢印は戻り値を表します。</p>
+    <p lang="en">Numbers: the IDs of the <a href="#steps">steps</a>. SIM-09 to SIM-19 repeat for each phase. Dashed arrows: returns.</p>
+    <p lang="ja">番号は<a href="#steps">ステップ</a>の ID です。SIM-09〜SIM-19 はフェーズごとに繰り返します。破線の矢印は戻り値を表します。</p>
     <figure class="dg-figure" aria-labelledby="sim-seq-title">
-      <svg class="dg-svg dg-sv dg-only-wide sim-seq" viewBox="0 0 1000 790" role="img" aria-labelledby="sim-seq-title">
-        <title id="sim-seq-title" lang="en">Sequence of net.simulate: PowerNetwork, SolverODE, Scenario, ProgressODE, the MATLAB ode object, the components and controllers, and ResultODE</title>
-        <title lang="ja">net.simulate のシーケンス: PowerNetwork、SolverODE、Scenario、ProgressODE、MATLAB の ode オブジェクト、機器と制御器、ResultODE</title>
+      <svg class="dg-svg dg-sv dg-only-wide sim-seq" viewBox="0 0 1000 810" role="img" aria-labelledby="sim-seq-title">
+        <title id="sim-seq-title" lang="en">Sequence of net.simulate: PowerNetwork gathers the data of the run with Scenario.compile, SolverODE integrates it phase by phase with ProgressODE, the MATLAB ode object and the f_* handles of the blocks, and PowerNetwork builds ResultODE</title>
+        <title lang="ja">net.simulate のシーケンス: PowerNetwork が Scenario.compile を使って実行のデータを集め、SolverODE が ProgressODE、MATLAB の ode オブジェクト、ブロックの f_* ハンドルを使ってフェーズごとに積分し、PowerNetwork が ResultODE を作る</title>
         <defs>
           <marker id="sim-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
           <marker id="sim-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head is-muted" d="M0 0L10 5L0 10z"/></marker>
         </defs>
         <!-- phase loop frame -->
-        <rect class="dg-sv-box is-muted" x="232" y="320" width="760" height="350" rx="6"/>
-        <text class="is-k" x="240" y="336" lang="en">LOOP · EACH PHASE</text>
-        <text class="is-k" x="240" y="336" lang="ja">ループ · フェーズごと</text>
+        <rect class="dg-sv-box is-muted" x="362" y="330" width="630" height="368" rx="6"/>
+        <text class="is-k" x="370" y="346" lang="en">LOOP · EACH PHASE</text>
+        <text class="is-k" x="370" y="346" lang="ja">ループ · フェーズごと</text>
         <!-- lifelines -->
         <g>
-          <path class="dg-sv-line is-muted" d="M50 52V780M170 52V780M300 52V780M430 52V780M555 52V780M670 52V780M800 52V780M935 52V780"/>
+          <path class="dg-sv-line is-muted" d="M50 52V800M170 52V800M300 52V800M430 52V800M555 52V800M670 52V800M800 52V800M935 52V800"/>
           <rect class="dg-sv-box is-solid" x="4" y="12" width="92" height="40" rx="6"/>
           <text class="is-b is-inv" x="50" y="37" text-anchor="middle" lang="en">caller</text>
           <text class="is-b is-inv" x="50" y="37" text-anchor="middle" lang="ja">呼び出し側</text>
           <rect class="dg-sv-box" x="108" y="12" width="124" height="40" rx="6"/>
           <text class="dg-mono is-b" x="170" y="37" text-anchor="middle">PowerNetwork</text>
           <rect class="dg-sv-box" x="244" y="12" width="112" height="40" rx="6"/>
-          <text class="dg-mono is-b" x="300" y="37" text-anchor="middle">SolverODE</text>
+          <text class="dg-mono is-b" x="300" y="37" text-anchor="middle">Scenario</text>
           <rect class="dg-sv-box" x="374" y="12" width="112" height="40" rx="6"/>
-          <text class="dg-mono is-b" x="430" y="37" text-anchor="middle">Scenario</text>
+          <text class="dg-mono is-b" x="430" y="37" text-anchor="middle">SolverODE</text>
           <rect class="dg-sv-box" x="497" y="12" width="116" height="40" rx="6"/>
           <text class="dg-mono is-b" x="555" y="37" text-anchor="middle">ProgressODE</text>
           <rect class="dg-sv-box is-soft" x="624" y="12" width="92" height="40" rx="6"/>
           <text class="dg-mono is-b" x="670" y="31" text-anchor="middle">ode</text>
           <text class="is-sm is-muted" x="670" y="46" text-anchor="middle">MATLAB</text>
           <rect class="dg-sv-box" x="728" y="12" width="144" height="40" rx="6"/>
-          <text class="dg-mono is-b" x="800" y="31" text-anchor="middle">Component</text>
-          <text class="is-sm is-muted" x="800" y="46" text-anchor="middle" lang="en">+ controllers</text>
-          <text class="is-sm is-muted" x="800" y="46" text-anchor="middle" lang="ja">+ 制御器</text>
+          <text class="dg-mono is-b" x="800" y="31" text-anchor="middle">f_* handles</text>
+          <text class="is-sm is-muted" x="800" y="46" text-anchor="middle" lang="en">blocks of sct_dae</text>
+          <text class="is-sm is-muted" x="800" y="46" text-anchor="middle" lang="ja">sct_dae のブロック</text>
           <rect class="dg-sv-box is-ok" x="884" y="12" width="104" height="40" rx="6"/>
           <text class="dg-mono is-b" x="935" y="37" text-anchor="middle">ResultODE</text>
         </g>
         <!-- arrows -->
         <g class="dg-mono">
           <path class="dg-sv-line" d="M50 90H168" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="56" y="84"><tspan style="fill:var(--dg-accent)">01</tspan> simulate(time, sc…, NV)</text>
-          <path class="dg-sv-line" d="M170 120H298" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="176" y="114"><tspan style="fill:var(--dg-accent)">02</tspan> get_options(nv)</text>
-          <path class="dg-sv-line" d="M170 150H298" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="176" y="144"><tspan style="fill:var(--dg-accent)">03</tspan> solve(net, time, c_events, sct_options)</text>
-          <path class="dg-sv-line" d="M300 210H428" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="306" y="204"><tspan style="fill:var(--dg-accent)">04</tspan> compile(c_events, net, time) → phases</text>
-          <path class="dg-sv-line" d="M300 240H798" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="306" y="234"><tspan style="fill:var(--dg-accent)">05</tspan> build_index: variable map, connection map → ctx</text>
-          <path class="dg-sv-line" d="M300 270H172" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="176" y="264"><tspan style="fill:var(--dg-accent)">06</tspan> get_admittance_matrix → set_admittance</text>
-          <path class="dg-sv-line" d="M300 300H553" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="306" y="294"><tspan style="fill:var(--dg-accent)">07</tspan> ProgressODE(Progress, [ts,te], TimeLimit)</text>
-          <path class="dg-sv-line" d="M300 360H798" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="306" y="354"><tspan style="fill:var(--dg-accent)">08</tspan> set_phase: trips, faults, input events → ctx</text>
-          <path class="dg-sv-line" d="M300 378h26v14h-24" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="334" y="389"><tspan style="fill:var(--dg-accent)">09</tspan> set_admittance (OpenBranch)</text>
-          <path class="dg-sv-line" d="M300 410h26v14h-24" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="334" y="421"><tspan style="fill:var(--dg-accent)">10</tspan> initial_condition → EM, RM, lv_FBorTC, x0, Mass</text>
-          <path class="dg-sv-line" d="M300 454h26v14h-24" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="334" y="465"><tspan style="fill:var(--dg-accent)">11</tspan> set_equations</text>
-          <path class="dg-sv-line" d="M300 482h26v14h-24" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="334" y="493"><tspan style="fill:var(--dg-accent)">12</tspan> CalculateInitialCondition</text>
-          <path class="dg-sv-line" d="M300 520H668" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="306" y="514"><tspan style="fill:var(--dg-accent)">13</tspan> solve(o, 0, t2 − t1)</text>
-          <path class="dg-sv-line" d="M670 550H798" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="676" y="544"><tspan style="fill:var(--dg-accent)">14</tspan> ODEFcn → f_dx, f_I, f_Y</text>
-          <path class="dg-sv-line" d="M670 580H798" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="676" y="574"><tspan style="fill:var(--dg-accent)">15</tspan> Jacobian → f_Jacobi*</text>
-          <path class="dg-sv-line" d="M670 610H557" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="562" y="604"><tspan style="fill:var(--dg-accent)">16</tspan> OutputFcn, Events</text>
-          <path class="dg-sv-line" d="M300 626h26v14h-24" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="334" y="637"><tspan style="fill:var(--dg-accent)">17</tspan> phase_result</text>
-          <path class="dg-sv-line" d="M300 660H798" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="306" y="654"><tspan style="fill:var(--dg-accent)">18</tspan> getNextPhase: get_equilibrium (reconnected generators)</text>
-          <path class="dg-sv-line" d="M300 700H933" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="306" y="694"><tspan style="fill:var(--dg-accent)">19</tspan> ResultODE(net, obj, sct_options, flag, output, t0, c_phase)</text>
-          <path class="dg-sv-line is-muted" d="M170 762H52" marker-end="url(#sim-ah-m)"/>
-          <text class="is-sm" x="56" y="756"><tspan style="fill:var(--dg-accent)">21</tspan> [result, flag, output]</text>
+          <text class="is-sm" x="56" y="84"><tspan style="fill:var(--dg-accent)">01</tspan> simulate(tag, NV)</text>
+          <path class="dg-sv-line" d="M170 108h26v14h-24" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="204" y="119"><tspan style="fill:var(--dg-accent)">02</tspan> build_simulation_data(tag, time): check_simulation</text>
+          <path class="dg-sv-line" d="M170 140h26v14h-24" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="204" y="151"><tspan style="fill:var(--dg-accent)">03</tspan> simulation_blocks → sct_dae</text>
+          <path class="dg-sv-line" d="M170 190H298" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="176" y="184"><tspan style="fill:var(--dg-accent)">04</tspan> compile(sct_dae, time) → tab_phase, sct_event; check_islands</text>
+          <path class="dg-sv-line" d="M170 208h26v14h-24" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="204" y="219"><tspan style="fill:var(--dg-accent)">05</tspan> rv_x0</text>
+          <path class="dg-sv-line" d="M170 240h26v14h-24" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="204" y="251"><tspan style="fill:var(--dg-accent)">06</tspan> stop_condition → sct_dae.sct_stop; print_phases</text>
+          <path class="dg-sv-line" d="M170 290H428" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="176" y="284"><tspan style="fill:var(--dg-accent)">07</tspan> solve(sct_dae, sct_event, rv_x0, sct_options): build_index</text>
+          <path class="dg-sv-line" d="M430 316H553" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="436" y="310"><tspan style="fill:var(--dg-accent)">08</tspan> makeODE, ProgressODE</text>
+          <path class="dg-sv-line" d="M430 362h26v14h-24" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="464" y="373"><tspan style="fill:var(--dg-accent)">09</tspan> set_phase: trips, faults, input events → ctx</text>
+          <path class="dg-sv-line" d="M430 392h26v14h-24" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="464" y="403"><tspan style="fill:var(--dg-accent)">10</tspan> set_admittance (OpenBranch)</text>
+          <path class="dg-sv-line" d="M430 422h26v14h-24" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="464" y="433"><tspan style="fill:var(--dg-accent)">11</tspan> initial_condition, stop_event</text>
+          <path class="dg-sv-line" d="M430 452h26v14h-24" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="464" y="463"><tspan style="fill:var(--dg-accent)">12</tspan> set_equations</text>
+          <path class="dg-sv-line" d="M430 482h26v14h-24" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="464" y="493"><tspan style="fill:var(--dg-accent)">13</tspan> CalculateInitialCondition</text>
+          <path class="dg-sv-line" d="M430 530H668" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="436" y="524"><tspan style="fill:var(--dg-accent)">14</tspan> solve(o, 0, t2 − t1) | solve(o, tv)</text>
+          <path class="dg-sv-line" d="M670 560H798" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="676" y="554"><tspan style="fill:var(--dg-accent)">15</tspan> ODEFcn → f_dx, f_I, f_Y</text>
+          <path class="dg-sv-line" d="M670 590H798" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="676" y="584"><tspan style="fill:var(--dg-accent)">16</tspan> Jacobian → f_Jacobi*</text>
+          <path class="dg-sv-line" d="M670 620H557" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="562" y="614"><tspan style="fill:var(--dg-accent)">17</tspan> OutputFcn, Events</text>
+          <path class="dg-sv-line" d="M430 636h26v14h-24" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="464" y="647"><tspan style="fill:var(--dg-accent)">18</tspan> phase_result</text>
+          <path class="dg-sv-line" d="M430 680H798" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="436" y="674"><tspan style="fill:var(--dg-accent)">19</tspan> getNextPhase: f_reconnect (generators)</text>
+          <path class="dg-sv-line is-muted" d="M430 724H172" marker-end="url(#sim-ah-m)"/>
+          <text class="is-sm" x="176" y="718"><tspan style="fill:var(--dg-accent)">20</tspan> [sct_sol, flag, output]</text>
+          <path class="dg-sv-line" d="M170 754H933" marker-end="url(#sim-ah)"/>
+          <text class="is-sm" x="176" y="748"><tspan style="fill:var(--dg-accent)">21</tspan> ResultODE(sct_sol, sct_dae, struct(net, false), sct_solver) | struct_result</text>
+          <path class="dg-sv-line is-muted" d="M170 786H52" marker-end="url(#sim-ah-m)"/>
+          <text class="is-sm" x="56" y="780"><tspan style="fill:var(--dg-accent)">21</tspan> [result, flag, output]</text>
         </g>
       </svg>
       <div class="dg-only-narrow">
         <ol class="sim-seq-list">
           <li><span class="sim-id">SIM-01</span> <span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.simulate</code></li>
-          <li><span class="sim-id">SIM-02</span> <code>PowerNetwork</code> → <code>SolverODE.get_options</code></li>
-          <li><span class="sim-id">SIM-03</span> <code>PowerNetwork</code> → <code>SolverODE.solve</code></li>
-          <li><span class="sim-id">SIM-04</span> <code>SolverODE</code> → <code>Scenario.compile</code>, <code>check_islands</code></li>
-          <li><span class="sim-id">SIM-05</span> <code>SolverODE.build_index</code> → <code>PowerNetwork.get_variable_map</code></li>
-          <li><span class="sim-id">SIM-06</span> <code>SolverODE</code> → <code>PowerNetwork.get_admittance_matrix</code>, <code>SolverODE.set_admittance</code></li>
-          <li><span class="sim-id">SIM-07</span> <code>SolverODE</code> → <code>ProgressODE</code></li>
-          <li class="sim-loop"><span class="sim-id">SIM-08</span> <code>SolverODE.solve</code> → <code>set_phase</code></li>
-          <li class="sim-loop"><span class="sim-id">SIM-09</span> <code>SolverODE.set_admittance</code></li>
-          <li class="sim-loop"><span class="sim-id">SIM-10</span> <code>SolverODE.initial_condition</code></li>
-          <li class="sim-loop"><span class="sim-id">SIM-11</span> <code>SolverODE.set_equations</code></li>
-          <li class="sim-loop"><span class="sim-id">SIM-12</span> <code>SolverODE</code> → <code>CalculateInitialCondition</code></li>
-          <li class="sim-loop"><span class="sim-id">SIM-13</span> <code>SolverODE</code> → <code>ode.solve</code></li>
-          <li class="sim-loop"><span class="sim-id">SIM-14</span> <code>ode</code> → <code>getODEFunction</code> → <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code></li>
-          <li class="sim-loop"><span class="sim-id">SIM-15</span> <code>ode</code> → <code>getODEJacobian</code> → <code>f_Jacobi*</code></li>
-          <li class="sim-loop"><span class="sim-id">SIM-16</span> <code>ode</code> → <code>ProgressODE.OutputFcn</code>, <code>Events</code></li>
-          <li class="sim-loop"><span class="sim-id">SIM-17</span> <code>SolverODE.phase_result</code></li>
-          <li class="sim-loop"><span class="sim-id">SIM-18</span> <code>SolverODE.getNextPhase</code> → <code>Component.get_equilibrium</code></li>
-          <li><span class="sim-id">SIM-19</span> <code>SolverODE</code> → <code>ResultODE</code></li>
-          <li><span class="sim-id">SIM-21</span> <code>PowerNetwork.simulate</code> → <span lang="en">caller</span><span lang="ja">呼び出し側</span></li>
+          <li><span class="sim-id">SIM-02</span> <code>PowerNetwork.simulate</code> → <code>build_simulation_data</code>, <code>check_simulation</code></li>
+          <li><span class="sim-id">SIM-03</span> <code>build_simulation_data</code> → <code>simulation_blocks</code> → <code>PowerNetwork.get_variable_map</code></li>
+          <li><span class="sim-id">SIM-04</span> <code>build_simulation_data</code> → <code>Scenario.compile</code>, <code>check_islands</code></li>
+          <li><span class="sim-id">SIM-05</span> <code>build_simulation_data</code>: <code>rv_x0</code></li>
+          <li><span class="sim-id">SIM-06</span> <code>PowerNetwork.simulate</code> → <code>stop_condition</code>, <code>print_phases</code></li>
+          <li><span class="sim-id">SIM-07</span> <code>PowerNetwork</code> → <code>SolverODE.solve</code> → <code>SolverODE.build_index</code></li>
+          <li><span class="sim-id">SIM-08</span> <code>SolverODE</code> → <code>makeODE</code>, <code>ProgressODE</code></li>
+          <li class="sim-loop"><span class="sim-id">SIM-09</span> <code>SolverODE.solve</code> → <code>set_phase</code></li>
+          <li class="sim-loop"><span class="sim-id">SIM-10</span> <code>SolverODE.set_admittance</code></li>
+          <li class="sim-loop"><span class="sim-id">SIM-11</span> <code>SolverODE.initial_condition</code>, <code>stop_event</code></li>
+          <li class="sim-loop"><span class="sim-id">SIM-12</span> <code>SolverODE.set_equations</code></li>
+          <li class="sim-loop"><span class="sim-id">SIM-13</span> <code>SolverODE</code> → <code>CalculateInitialCondition</code></li>
+          <li class="sim-loop"><span class="sim-id">SIM-14</span> <code>SolverODE</code> → <code>ode.solve</code>, <code>phase_points</code></li>
+          <li class="sim-loop"><span class="sim-id">SIM-15</span> <code>ode</code> → <code>getODEFunction</code> → <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code></li>
+          <li class="sim-loop"><span class="sim-id">SIM-16</span> <code>ode</code> → <code>getODEJacobian</code> → <code>f_Jacobi*</code></li>
+          <li class="sim-loop"><span class="sim-id">SIM-17</span> <code>ode</code> → <code>ProgressODE.OutputFcn</code>, <code>Events</code></li>
+          <li class="sim-loop"><span class="sim-id">SIM-18</span> <code>SolverODE.phase_result</code></li>
+          <li class="sim-loop"><span class="sim-id">SIM-19</span> <code>SolverODE.getNextPhase</code> → <code>f_reconnect</code></li>
+          <li><span class="sim-id">SIM-20</span> <code>SolverODE.solve</code> → <code>PowerNetwork.simulate</code></li>
+          <li><span class="sim-id">SIM-21</span> <code>PowerNetwork.simulate</code> → <code>ResultODE</code> | <code>struct_result</code> → <span lang="en">caller</span><span lang="ja">呼び出し側</span></li>
         </ol>
       </div>
-      <figcaption lang="en">One run of <code>net.simulate</code>. The <code>ode</code> object calls SIM-14 to SIM-16 many times per phase; SIM-12 also calls the right-hand side and Jacobian of SIM-14 and SIM-15.</figcaption>
-      <figcaption lang="ja"><code>net.simulate</code> を 1 回実行したときの流れです。<code>ode</code> オブジェクトは、フェーズごとに SIM-14〜SIM-16 を何度も呼び出します。SIM-12 も、SIM-14 の右辺と SIM-15 のヤコビアンを呼び出します。</figcaption>
+      <figcaption lang="en">One run of <code>net.simulate</code>. SIM-02 to SIM-05 run in the Hidden method <code>net.build_simulation_data</code>. The <code>ode</code> object calls SIM-15 to SIM-17 many times per phase; SIM-13 also calls the right-hand side and Jacobian of SIM-15 and SIM-16.</figcaption>
+      <figcaption lang="ja"><code>net.simulate</code> を 1 回実行したときの流れです。SIM-02〜SIM-05 は Hidden のメソッド <code>net.build_simulation_data</code> の中で行います。<code>ode</code> オブジェクトは、フェーズごとに SIM-15〜SIM-17 を何度も呼び出します。SIM-13 も、SIM-15 の右辺と SIM-16 のヤコビアンを呼び出します。</figcaption>
     </figure>
 
     <!-- ============================== STEPS ============================== -->
@@ -299,187 +296,216 @@ verdict = sc.judge(result)</code></pre>
     </ul>
     <ol class="fs-steps">
       <li class="fs-step" id="SIM-01">
-        <p class="fs-head"><b class="fs-id">SIM-01</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.simulate</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-01</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.simulate(tag, Name=Value)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>Accepts a scenario in place of <code>time</code> (<code>net.simulate(sc, ...)</code>); checks <code>time</code> (<code>check_time</code>).</li>
-              <li>Splits the leading scenarios from the options (<code>split_events</code>).</li>
-              <li>Takes the stored <code>Time</code> and <code>Options</code> of the scenarios where the call gives none (<code>scenario_settings</code>).</li>
-              <li>Takes <code>Export</code> out (<code>take_call_options</code>) and checks its extension (<code>check_export</code>).</li>
+              <li>The <code>arguments</code> block checks the tag (<code>mustBeScenarioOf</code>: <code>GUILDA:PowerNetwork:ScenarioNotFound</code>), <code>Time</code> (<code>mustBeSimulationTime</code>) and each option.</li>
+              <li>Selects the scenario by its tag; the time is <code>sc.Time</code>, or the <code>Time</code> option.</li>
+              <li>Builds the settings of the run (<code>simulate_options</code>): the values of <code>GUILDA.config("TimeSimulation")</code>, invalid ones replaced (<code>TimeLimit</code> → <code>Inf</code>; <code>MaxStep</code>, <code>InitialStep</code>, <code>SampleTime</code> → <code>NaN</code>; <code>StopAngle</code> → 360), then the options of the call; <code>Progress</code> to its mode, <code>PlotFcn</code> through <code>tools.check_plotfcn</code>.</li>
             </ul><ul lang="ja">
-              <li><code>time</code> の位置にシナリオが来た場合も受け付けます（<code>net.simulate(sc, ...)</code>）。<code>time</code> は <code>check_time</code> で検査します。</li>
-              <li>先頭に並んだシナリオと、オプションを分けます（<code>split_events</code>）。</li>
-              <li>呼び出しで指定していない時間とオプションは、シナリオの <code>Time</code> と <code>Options</code> から取ります（<code>scenario_settings</code>）。</li>
-              <li><code>Export</code> を取り出し（<code>take_call_options</code>）、拡張子を検査します（<code>check_export</code>）。</li>
+              <li><code>arguments</code> ブロックで、タグ（<code>mustBeScenarioOf</code>。<code>GUILDA:PowerNetwork:ScenarioNotFound</code>）、<code>Time</code>（<code>mustBeSimulationTime</code>）と各オプションを検査します。</li>
+              <li>タグでシナリオを選びます。時間は <code>sc.Time</code> か、<code>Time</code> オプションです。</li>
+              <li>実行の設定を作ります（<code>simulate_options</code>）。<code>GUILDA.config("TimeSimulation")</code> の値を取り、不正な値を置き換え（<code>TimeLimit</code> は <code>Inf</code>、<code>MaxStep</code>・<code>InitialStep</code>・<code>SampleTime</code> は <code>NaN</code>、<code>StopAngle</code> は 360）、その上に呼び出しのオプションを重ねます。<code>Progress</code> は表示の種類に直し、<code>PlotFcn</code> は <code>tools.check_plotfcn</code> で検査します。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>time</code>, <code>varargin</code>, <code>sc.Time</code>, <code>sc.Options</code></dd>
+          <dd><code>tag</code>, <code>opt</code>, <code>net.a_Scenario</code>, <code>sc.Time</code>, <code>GUILDA.config("TimeSimulation")</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>c_events</code> (<span lang="en">cell of <code>Scenario</code></span><span lang="ja"><code>Scenario</code> のセル</span>), <code>time</code>, <code>c_nv</code>, <code>opt.export</code></dd>
+          <dd><code>time</code>, <code>sct_options</code>: <code>Solver</code>, <code>Tolerance</code>, <code>AbsoluteTolerance</code>, <code>MaxStep</code>, <code>InitialStep</code>, <code>SampleTime</code>, <code>StopOnOutOfStep</code>, <code>StopAngle</code>, <code>SeparateComplexParts</code>, <code>Progress</code>, <code>TimeLimit</code>, <code>Verbose</code>, <code>PlotFcn</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="SIM-02">
-        <p class="fs-head"><b class="fs-id">SIM-02</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <code>SolverODE.get_options</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-02</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <code>PowerNetwork.build_simulation_data(tag, time)</code> → <code>check_simulation</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Applies the Name-Value overrides to the TimeSimulation section of <code>GUILDA.setting</code> (<code>tools.resolve_options</code> with <code>OptionMap</code>), then checks the values (<code>validate_options</code>; <code>PlotFcn</code>: <code>tools.check_plotfcn</code>). Solver and settings file unchanged.</span><span lang="ja"><code>GUILDA.setting</code> の TimeSimulation セクションの値を、Name-Value で指定した値で上書きします（<code>OptionMap</code> を使った <code>tools.resolve_options</code>）。そのうえで値を検査します（<code>validate_options</code>。<code>PlotFcn</code> は <code>tools.check_plotfcn</code> で検査）。ソルバーと設定ファイルはそのままです。</span></dd>
+          <dd><ul lang="en">
+              <li><code>build_simulation_data</code> (Hidden; for tests and debugging) runs SIM-02 to SIM-05 and returns the data of the run. The time is required, so that only <code>simulate</code> decides it.</li>
+              <li>Edited inputs (<code>initialize(Method="FixedInput")</code>): stops with <code>GUILDA:PowerNetwork:SimulateInputEdited</code>.</li>
+              <li>Collects the stale tags (<code>sct_stale</code>): <code>powerflow</code> and <code>odefcn</code> of the network, <code>equilibrium</code> and <code>odefcn</code> of each component, local controller and global controller. When any is not empty, stops with <code>GUILDA:PowerNetwork:SimulateStale</code>, naming up to three different messages, and asks for <code>net.initialize()</code>. Rebuilds nothing.</li>
+            </ul><ul lang="ja">
+              <li><code>build_simulation_data</code>（Hidden。テストとデバッグ用）は SIM-02〜SIM-05 を行い、実行のデータを返します。時間は必須の引数で、時間を決めるのは <code>simulate</code> だけです。</li>
+              <li>入力が編集されていれば（<code>initialize(Method="FixedInput")</code>）、<code>GUILDA:PowerNetwork:SimulateInputEdited</code> で止めます。</li>
+              <li>使う層の stale タグ（<code>sct_stale</code>）を集めます。対象はネットワークの <code>powerflow</code> と <code>odefcn</code>、各機器、ローカル制御器、グローバル制御器の <code>equilibrium</code> と <code>odefcn</code> です。空でないタグがあれば、異なるメッセージを 3 件まで示して <code>GUILDA:PowerNetwork:SimulateStale</code> で止め、<code>net.initialize()</code> の実行を促します。ここで作り直すことはしません。</li>
+            </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>GUILDA.config("TimeSimulation")</code>, <code>c_nv</code></dd>
+          <dd><code>net.sct_stale</code>, <code>sct_stale</code> <span lang="en">of each component and controller</span><span lang="ja">（各機器と制御器）</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>sct_options</code>: <code>Solver</code>, <code>Tolerance</code>, <code>AbsoluteTolerance</code>, <code>SeparateComplexParts</code>, <code>Progress</code>, <code>TimeLimit</code>, <code>Verbose</code>, <code>PlotFcn</code>, <code>SolverOptions</code></dd>
+          <dd><span lang="en">nothing (error when a check fails)</span><span lang="ja">なし（検査に通らなければエラー）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="SIM-03">
-        <p class="fs-head"><b class="fs-id">SIM-03</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <code>SolverODE.solve</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-03</b> <span class="fs-call"><code>build_simulation_data</code> → <code>simulation_blocks</code> → <code>PowerNetwork.get_variable_map</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Runs SIM-04 to SIM-19; starts the elapsed-time clock (<code>tic</code>). Writes nothing to the models: the data of the run and of each phase are kept in the run context <code>ctx</code>.</span><span lang="ja">SIM-04〜SIM-19 を実行します。最初に経過時間の計測（<code>tic</code>）を始めます。モデルには何も書き込まず、実行全体とフェーズごとのデータは、実行の文脈 <code>ctx</code> に置きます。</span></dd>
+          <dd><ul lang="en">
+              <li>Takes the variable map and the connection map.</li>
+              <li>One block per component (bus order, then <code>a_Component</code> order), per local controller (depth first, the order of the map) and per global controller: its rows in the map (<code>iv_x</code>, <code>iv_u</code>, <code>iv_y</code>), its position (<code>i_bus</code>, <code>i_comp</code>, <code>iv_lc</code>, <code>i_parent</code>), its tag and its <code>f_*</code> handles (closures of <code>set_odefcn</code> with the parameters bound by value). A generator also gets <code>f_reconnect = @(V) get_equilibrium(V, 0, 0, 0)</code>, the only handle that calls a method of the model.</li>
+              <li>The equilibrium of the variable rows and of the bus currents; the admittance matrix with all branches closed and the 2×2 matrix of each branch at its buses.</li>
+              <li>An output of a global controller that drives no input: stops with <code>GUILDA:PowerNetwork:GconNoTarget</code>.</li>
+              <li><code>sct_stop</code> is empty here (SIM-06 fills it).</li>
+            </ul><ul lang="ja">
+              <li>変数マップと接続マップを取り出します。</li>
+              <li>機器（母線の順、続いて <code>a_Component</code> の順）、ローカル制御器（深さ優先。マップの順）、グローバル制御器ごとに 1 つのブロックを作ります。ブロックは、マップの行（<code>iv_x</code>、<code>iv_u</code>、<code>iv_y</code>）、位置（<code>i_bus</code>、<code>i_comp</code>、<code>iv_lc</code>、<code>i_parent</code>）、タグ、<code>f_*</code> ハンドル（<code>set_odefcn</code> がパラメータを値で閉じ込めて作ったクロージャ）を持ちます。発電機には <code>f_reconnect = @(V) get_equilibrium(V, 0, 0, 0)</code> も持たせます。モデルのメソッドを呼ぶハンドルはこれだけです。</li>
+              <li>変数の行と母線電流の平衡点、すべてのブランチを閉じたアドミタンス行列、各ブランチの両端の母線での 2×2 の行列を集めます。</li>
+              <li>入力を動かさないグローバル制御器の出力があれば、<code>GUILDA:PowerNetwork:GconNoTarget</code> で止めます。</li>
+              <li>ここでは <code>sct_stop</code> は空です（SIM-06 で埋めます）。</li>
+            </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>net</code>, <code>time</code>, <code>c_events</code>, <code>sct_options</code></dd>
+          <dd><code>net.get_variable_map()</code> (<code>tab</code>, <code>tab_connection</code>), <code>a_Bus</code>, <code>a_Branch</code>, <code>a_Component</code>, <code>a_LocalController</code>, <code>a_GlobalController</code>, <code>controlledUnits</code>, <code>f_*</code>, <code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, <code>c_Vequilibrium</code>, <code>c_Iequilibrium</code>, <code>get_admittance_matrix</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>[result, flag, output]</code></dd>
+          <dd><code>sct_dae</code>: <code>tab_variable</code>, <code>tab_connection</code>, <code>cm_Y</code>, <code>im_branchBus</code>, <code>c_branchY</code>, <code>rv_equilibrium</code>, <code>rv_Iequilibrium</code>, <code>c_comp</code>, <code>c_lc</code>, <code>c_gc</code>, <code>sv_bus</code>, <code>sv_branch</code>, <code>sv_comp</code>, <code>sv_lc</code>, <code>sv_gc</code>, <code>sct_stop</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="SIM-04">
-        <p class="fs-head"><b class="fs-id">SIM-04</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>Scenario.compile</code>, <code>check_islands</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-04</b> <span class="fs-call"><code>build_simulation_data</code> → <code>Scenario.compile(sct_dae, time)</code>, <code>check_islands</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>Checks that each scenario belongs to this network, and its disturbances against the network as it is now (<code>validate</code>).</li>
-              <li>Combines the disturbances of all the scenarios (tags unique in the run); without disturbances, adds one empty one (<code>"NoAction"</code> at <code>t0</code>).</li>
-              <li>Warns for disturbances outside <code>time</code>; cuts the span at every disturbance time (<code>getTimeSpan</code>) and marks the active disturbances of each phase. A phase without an active disturbance gets its own <code>NoAction&lt;k&gt;</code>.</li>
-              <li>Builds once what each phase applies: the faulted buses, tripped units, opened branches; per component, the state offset of the disturbances that start in the phase (all active ones in the first phase) and one input function of the phase time, shifted so that each disturbance function receives the time since its own <code>t_start</code>.</li>
-              <li><code>check_islands</code>: stops if the opened branches of a phase leave buses without any component.</li>
+              <li>Checks the disturbances against the network as it is now (<code>validate</code>). Without disturbances, adds one empty one (<code>"NoAction"</code> at <code>t0</code>).</li>
+              <li>Warns for disturbances outside <code>time</code>; cuts the span at every disturbance time and at each point after the first of a <code>"zoh"</code> input series, and marks the active disturbances of each phase. A phase without an active disturbance gets its own <code>NoAction&lt;k&gt;</code>.</li>
+              <li>Matches the tags once and gives what each phase applies as positions in <code>sct_dae</code>: the tripped components and global controllers, the faulted buses, the open branches, the state offsets of the disturbances that start in the phase (all active ones in the first phase), and one row per active input: its rows of <code>tab_variable</code>, the times from the start of the phase, the values and the interpolation (a constant and a <code>"zoh"</code> series: one point, the value of the phase).</li>
+              <li><code>check_islands</code>: stops with <code>GUILDA:PowerNetwork:OpenBranchIsland</code> if the open branches of a phase leave buses without any component.</li>
             </ul><ul lang="ja">
-              <li>各シナリオがこのネットワークのものか、その外乱が今のネットワークと合っているかを検査します（<code>validate</code>）。</li>
-              <li>すべてのシナリオの外乱を 1 つにまとめます。タグは実行の中で重複できません。外乱が 1 つもなければ、<code>t0</code> に空の外乱 <code>"NoAction"</code> を 1 つ加えます。</li>
-              <li><code>time</code> の範囲外にある外乱があれば警告します。外乱の時刻で区間を区切り（<code>getTimeSpan</code>）、フェーズごとに有効な外乱に印を付けます。有効な外乱がないフェーズには、専用の <code>NoAction&lt;k&gt;</code> を割り当てます。</li>
-              <li>各フェーズで適用する内容を、最初に一度だけまとめて作ります。地絡する母線、トリップする機器、開くブランチに加えて、機器ごとの状態オフセットと入力関数です。状態オフセットはそのフェーズで始まる外乱から作ります（最初のフェーズでは有効な外乱すべてから作ります）。入力関数はフェーズ内の時刻を引数に取る関数 1 つにまとめ、各外乱の関数にはその外乱の <code>t_start</code> からの経過時間が渡るようにずらします。</li>
-              <li><code>check_islands</code> は、あるフェーズでブランチを開いた結果、機器のない母線が切り離される場合に処理を止めます。</li>
+              <li>外乱を今のネットワークと照らし合わせます（<code>validate</code>）。外乱が 1 つもなければ、<code>t0</code> に空の外乱 <code>"NoAction"</code> を 1 つ加えます。</li>
+              <li><code>time</code> の範囲外にある外乱があれば警告します。外乱の時刻と、<code>"zoh"</code> の入力の時系列の 2 点目以降の時刻で区間を区切り、フェーズごとに有効な外乱に印を付けます。有効な外乱がないフェーズには、専用の <code>NoAction&lt;k&gt;</code> を割り当てます。</li>
+              <li>タグをここで一度だけ照合し、各フェーズで適用する内容を <code>sct_dae</code> の中の位置で表します。トリップする機器とグローバル制御器、地絡する母線、開くブランチ、そのフェーズで始まる外乱の状態オフセット（最初のフェーズでは有効な外乱すべて）、有効な入力ごとの 1 行です。入力の行は、<code>tab_variable</code> の行、フェーズの始めからの時刻、値、補間の方法を持ちます（定数と <code>"zoh"</code> の時系列は、そのフェーズの値を 1 点で持ちます）。</li>
+              <li><code>check_islands</code> は、あるフェーズでブランチを開いた結果、機器のない母線が切り離される場合に <code>GUILDA:PowerNetwork:OpenBranchIsland</code> で処理を止めます。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>sc.tab_disturbance</code> (<code>TimeSpan</code>, <code>FaultBus</code>, <code>TripUnit</code>, <code>OpenBranch</code>, <code>Offset*</code>, <code>Input*</code>), <code>sc.a_PowerNetwork</code>; <span lang="en">bus, branch and component tags</span><span lang="ja">母線・ブランチ・機器のタグ</span>, <code>sv_x</code>, <code>sv_u</code></dd>
+          <dd><code>sc.tab_disturbance</code> (<code>TimeSpan</code>, <code>FaultBus</code>, <code>TripUnit</code>, <code>OpenBranch</code>, <code>Offset*</code>, <code>Input*</code>), <code>sct_dae</code> (<code>tab_variable</code>, <code>sv_bus</code>, <code>sv_branch</code>, <code>sv_comp</code>, <code>sv_gc</code>), <code>time</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>tab_phase</code> (<span lang="en">table, one row per phase: <code>t1</code>, <code>t2</code> [s], one logical column per disturbance</span><span lang="ja">表。フェーズごとに 1 行: <code>t1</code>, <code>t2</code> [s] と、外乱ごとの論理値の列</span>), <code>sct_phase</code> (<span lang="en">per phase</span><span lang="ja">フェーズごと</span>: <code>t1</code>, <code>t2</code>, <code>sr_event</code>, <code>sv_fault</code>, <code>sv_trip</code>, <code>sv_open</code>, <code>c_Xoffset</code>, <code>c_Uoffset</code>)</dd>
+          <dd><code>tab_phase</code> (<span lang="en">table, one row per phase: <code>t1</code>, <code>t2</code> [s], one logical column per disturbance</span><span lang="ja">表。フェーズごとに 1 行: <code>t1</code>, <code>t2</code> [s] と、外乱ごとの論理値の列</span>), <code>sct_event</code> (<span lang="en">per phase</span><span lang="ja">フェーズごと</span>: <code>t1</code>, <code>t2</code>, <code>iv_tripComp</code>, <code>iv_tripGC</code>, <code>iv_faultBus</code>, <code>iv_openBranch</code>, <code>iv_offset</code>, <code>rv_offset</code>, <code>c_input</code> (<code>{iv_row, rv_t, rm_v, s_method}</code>), <code>sr_event</code>)</dd>
         </dl>
       </li>
       <li class="fs-step" id="SIM-05">
-        <p class="fs-head"><b class="fs-id">SIM-05</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>SolverODE.build_index</code> → <code>PowerNetwork.get_variable_map</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-05</b> <span class="fs-call"><code>build_simulation_data</code>: <span lang="en">initial value</span><span lang="ja">初期値</span> <code>rv_x0</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><ul lang="en">
-              <li>Checks that no input was edited (<code>GUILDA:SolverODE:InputEdited</code>).</li>
-              <li>Collects the stale tags (<code>sct_stale</code>) it reads: <code>powerflow</code> and <code>odefcn</code> of the network, <code>equilibrium</code> and <code>odefcn</code> of each component, local controller and global controller. When any is not empty, stops with <code>GUILDA:SolverODE:Stale</code>, naming up to three different messages, and asks for <code>net.initialize()</code>. Rebuilds nothing.</li>
-              <li>Numbers the DAE vector <code>z = [x; V; I; u; uc]</code> from the variable map: its variable rows in map order, with the bus currents <code>I</code> (not in the map) after <code>V</code>. Records the positions of each block (component, local controller, global controller) and the owner tag of each element of <code>z</code>.</li>
-              <li>Numbers the signal vector <code>s</code>: the rows <code>y</code>, <code>yc</code> of the map. A component computes its outputs only when a connection reads them.</li>
-              <li>Builds the inputs from the connection map: <code>S_sig</code> (inputs × signals), <code>S_var</code> (inputs × <code>z</code>, observed states), <code>rv_e</code> (equilibrium of the inputs with an <code>"equilibrium"</code> connection).</li>
-              <li>Builds the equilibrium vector <code>rv_z0</code> and the mass matrix <code>rm_M</code> (blocks from <code>tools.read_mass</code>).</li>
-              <li>An output of a global controller without a target: stops with <code>GUILDA:SolverODE:GconNoTarget</code>.</li>
-            </ul><ul lang="ja">
-              <li>入力が編集されていないか（<code>GUILDA:SolverODE:InputEdited</code>）を確かめます。</li>
-              <li>使う層の stale タグ（<code>sct_stale</code>）を集めます。対象はネットワークの <code>powerflow</code> と <code>odefcn</code>、各機器、ローカル制御器、グローバル制御器の <code>equilibrium</code> と <code>odefcn</code> です。空でないタグがあれば、異なるメッセージを 3 件まで示して <code>GUILDA:SolverODE:Stale</code> で止め、<code>net.initialize()</code> の実行を促します。ここで作り直すことはしません。</li>
-              <li>変数マップをもとに、DAE ベクトル <code>z = [x; V; I; u; uc]</code> の各要素に番号を振ります。変数の行はマップの順に並べ、マップにない母線電流 <code>I</code> は <code>V</code> の後に置きます。あわせて、各ブロック（機器、ローカル制御器、グローバル制御器）の位置と、<code>z</code> の各要素を持つオブジェクトのタグを記録します。</li>
-              <li>信号ベクトル <code>s</code> にも番号を振ります。対象はマップの <code>y</code> と <code>yc</code> の行です。機器の出力は、接続がそれを読む場合にだけ計算します。</li>
-              <li>接続マップから、入力を決める行列とベクトルを作ります。<code>S_sig</code> は入力 × 信号、<code>S_var</code> は入力 × <code>z</code> で観測する状態を表し、<code>rv_e</code> は <code>"equilibrium"</code> でつながる入力の平衡点です。</li>
-              <li>平衡点のベクトル <code>rv_z0</code> と質量行列 <code>rm_M</code> を作ります。各ブロックの質量行列は <code>tools.read_mass</code> で読みます。</li>
-              <li>接続先のないグローバル制御器の出力があれば、<code>GUILDA:SolverODE:GconNoTarget</code> で止めます。</li>
-            </ul></dd>
+          <dd><span lang="en">The equilibrium of the variable rows plus the state offsets and the input values at <code>t = 0</code> of the first phase (evaluated as the solver does). The offsets of <code>sct_event(1)</code> are then emptied, so that they are not added twice.</span><span lang="ja">変数の行の平衡点に、最初のフェーズの状態オフセットと <code>t = 0</code> の入力の値（ソルバーと同じ方法で評価）を加えます。その後 <code>sct_event(1)</code> のオフセットを空にし、二重に加わらないようにします。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>net.get_variable_map()</code> (<code>tab</code>, <code>tab_connection</code>), <code>a_Bus</code>, <code>a_Component</code>, <code>a_LocalController</code>, <code>a_GlobalController</code>, <code>controlledUnits</code>, <code>f_*</code>, <code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, <code>c_Vequilibrium</code>, <code>c_Iequilibrium</code>, <code>sct_stale</code></dd>
+          <dd><code>sct_dae.rv_equilibrium</code>, <code>sct_event(1)</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>ctx</code> <span lang="en">only</span><span lang="ja">のみ</span>: <code>n_z</code>, <code>n_s</code>, <code>iv_V</code>, <code>iv_I</code>, <code>iv_in</code>, <code>iv_lin</code>, <code>c_comp</code>, <code>c_lc</code>, <code>c_gc</code>, <code>S_sig</code>, <code>S_var</code>, <code>rv_e</code>, <code>rv_z0</code>, <code>rm_M</code> (<code>n_z × n_z</code>, <span lang="en">sparse</span><span lang="ja">疎行列</span>), <code>sv_owner</code></dd>
+          <dd><code>rv_x0</code> (<span lang="en">variable rows of <code>tab_variable</code></span><span lang="ja"><code>tab_variable</code> の変数の行</span>), <code>sct_event(1).iv_offset</code>, <code>rv_offset</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="SIM-06">
-        <p class="fs-head"><b class="fs-id">SIM-06</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>PowerNetwork.get_admittance_matrix</code>, <code>SolverODE.set_admittance</code></span></p>
-        <dl class="fs-body">
-          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Completes the context of the run: the complex admittance matrix with all branches closed and its real form.</span><span lang="ja">実行の文脈に、すべてのブランチを閉じた状態の複素アドミタンス行列と、その実数形式を加えて仕上げます。</span></dd>
-          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en">branches and bus shunts</span><span lang="ja">ブランチと母線のシャント</span></dd>
-          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>ctx.net</code>, <code>ctx.Ybus</code>, <code>ctx.Ymat</code> (<code>n_v × n_v</code>, <span lang="en">sparse</span><span lang="ja">疎行列</span>, pu), <code>ctx.absYmat</code>, <code>ctx.sv_open</code>, <code>ctx.l_sparse = true</code></dd>
-        </dl>
-      </li>
-      <li class="fs-step" id="SIM-07">
-        <p class="fs-head"><b class="fs-id">SIM-07</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>makeODE</code>, <code>ProgressODE</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-06</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <code>stop_condition</code>, <code>print_phases</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>Creates the MATLAB <code>ode</code> object with every field of <code>sct_options</code> that is a public property of <code>ode</code>.</li>
-              <li>Creates the progress display and time keeper of the run; sets its <code>OutputFcn</code> and an <code>odeEvent</code> that stops the solver on the <code>ode</code> object.</li>
-              <li>With <code>Verbose</code>, prints the phase table.</li>
+              <li>With <code>StopOnOutOfStep</code>: the compared units are the components with the state <code>delta</code>; the reference is the first of them on a slack bus (as the default of <code>judge_out_of_step</code>) and is left out of the compared units. No reference, or no other unit: stops with <code>GUILDA:PowerNetwork:StopNoRotorAngle</code> before the integration.</li>
+              <li>With <code>Verbose</code>: prints the phase table.</li>
             </ul><ul lang="ja">
-              <li>MATLAB の <code>ode</code> オブジェクトを作り、<code>sct_options</code> のうち <code>ode</code> の公開プロパティに当たるものをすべて設定します。</li>
-              <li>進捗の表示と計算時間の管理を受け持つ <code>ProgressODE</code> を作ります。その <code>OutputFcn</code> と、ソルバーを止めるための <code>odeEvent</code> を <code>ode</code> オブジェクトに設定します。</li>
+              <li><code>StopOnOutOfStep</code> が true なら、状態 <code>delta</code> を持つ機器を比べる対象にします。基準はそのうちスラック母線にある最初の機器で（<code>judge_out_of_step</code> の既定と同じ）、比べる対象からは除きます。基準がないか、ほかに比べる機器がなければ、積分の前に <code>GUILDA:PowerNetwork:StopNoRotorAngle</code> で止めます。</li>
               <li><code>Verbose</code> が true なら、フェーズ表を表示します。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>sct_options</code>, <code>tab_phase</code></dd>
+          <dd><code>sct_options.StopOnOutOfStep</code>, <code>StopAngle</code>, <code>Verbose</code>, <code>sct_dae.tab_variable</code>, <code>Bus.l_isSlack</code>, <code>tab_phase</code></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>sct_dae.sct_stop</code>: <code>iv_angle</code>, <code>iv_angleComp</code>, <code>i_ref</code>, <code>i_refComp</code>, <code>r_limit</code> [rad], <code>r_angle</code> [deg]</dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="SIM-07">
+        <p class="fs-head"><b class="fs-id">SIM-07</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <code>SolverODE.solve(sct_dae, sct_event, rv_x0, sct_options)</code> → <code>SolverODE.build_index(sct_dae)</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+              <li><code>solve</code> runs SIM-07 to SIM-20 on the data only: no network, bus, branch, component, controller or scenario. The data of the run and of each phase are kept in the run context <code>ctx</code>.</li>
+              <li>Numbers the DAE vector <code>z = [x; V; I; u; uc]</code>: the variable rows of <code>tab_variable</code> in map order, with the bus currents <code>I</code> (not in the map) after <code>V</code>; the positions of each block in <code>z</code>.</li>
+              <li>Numbers the signal vector <code>s</code>: the rows <code>y</code>, <code>yc</code> of the map. A component computes its outputs only when a connection reads them.</li>
+              <li>Builds the inputs from the connection map: <code>S_sig</code> (inputs × signals), <code>S_var</code> (inputs × <code>z</code>, observed states), <code>rv_e</code> (equilibrium of the inputs with an <code>"equilibrium"</code> connection), and the inputs of global controllers that observe a component (cut while it is tripped).</li>
+              <li>Builds the equilibrium vector <code>rv_z0</code> and the mass matrix <code>rm_M</code> from <code>f_Mass([],[],[],[])</code> of each block; one that is not a constant matrix of the block size stops with <code>GUILDA:SolverODE:MassNotConstant</code>.</li>
+              <li>Puts <code>rv_x0</code> into <code>z</code> and builds the real admittance matrix with all branches closed (<code>set_admittance</code>).</li>
+            </ul><ul lang="ja">
+              <li><code>solve</code> は SIM-07〜SIM-20 をデータだけで行います。ネットワーク、母線、ブランチ、機器、制御器、シナリオは読みません。実行全体とフェーズごとのデータは、実行の文脈 <code>ctx</code> に置きます。</li>
+              <li>DAE ベクトル <code>z = [x; V; I; u; uc]</code> の各要素に番号を振ります。<code>tab_variable</code> の変数の行をマップの順に並べ、マップにない母線電流 <code>I</code> は <code>V</code> の後に置きます。各ブロックの <code>z</code> での位置も求めます。</li>
+              <li>信号ベクトル <code>s</code> にも番号を振ります。対象はマップの <code>y</code> と <code>yc</code> の行です。機器の出力は、接続がそれを読む場合にだけ計算します。</li>
+              <li>接続マップから、入力を決める行列とベクトルを作ります。<code>S_sig</code> は入力 × 信号、<code>S_var</code> は入力 × <code>z</code> で観測する状態を表し、<code>rv_e</code> は <code>"equilibrium"</code> でつながる入力の平衡点です。機器を観測するグローバル制御器の入力も記録します（機器のトリップ中は 0 にします）。</li>
+              <li>平衡点のベクトル <code>rv_z0</code> と、各ブロックの <code>f_Mass([],[],[],[])</code> から質量行列 <code>rm_M</code> を作ります。ブロックの大きさの定数行列でなければ <code>GUILDA:SolverODE:MassNotConstant</code> で止めます。</li>
+              <li><code>rv_x0</code> を <code>z</code> に入れ、すべてのブランチを閉じた実数のアドミタンス行列を作ります（<code>set_admittance</code>）。</li>
+            </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><code>sct_dae</code>, <code>rv_x0</code></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>ctx</code> <span lang="en">only</span><span lang="ja">のみ</span>: <code>n_z</code>, <code>n_s</code>, <code>iv_V</code>, <code>iv_I</code>, <code>iv_in</code>, <code>iv_var</code>, <code>c_comp</code>, <code>c_lc</code>, <code>c_gc</code>, <code>S_sig0</code>, <code>S_var0</code>, <code>rv_e</code>, <code>rv_z0</code>, <code>rm_M</code> (<code>n_z × n_z</code>, <span lang="en">sparse</span><span lang="ja">疎行列</span>), <code>rv_x0</code>, <code>Ymat</code> (<code>n_v × n_v</code>, pu), <code>absYmat</code>, <code>l_sparse = true</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="SIM-08">
+        <p class="fs-head"><b class="fs-id">SIM-08</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>makeODE</code>, <code>ProgressODE</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+              <li>Creates the MATLAB <code>ode</code> object with every field of <code>sct_options</code> that is a public property of <code>ode</code> (<code>Tolerance</code> as <code>RelativeTolerance</code>); <code>MaxStep</code> and <code>InitialStep</code> go into <code>o.SolverOptions</code> when they are not <code>NaN</code>.</li>
+              <li>Creates the progress display and time keeper of the run; sets its <code>OutputFcn</code> and an <code>odeEvent</code> that stops the solver.</li>
+            </ul><ul lang="ja">
+              <li>MATLAB の <code>ode</code> オブジェクトを作り、<code>sct_options</code> のうち <code>ode</code> の公開プロパティに当たるものをすべて設定します（<code>Tolerance</code> は <code>RelativeTolerance</code> として）。<code>MaxStep</code> と <code>InitialStep</code> は、<code>NaN</code> でなければ <code>o.SolverOptions</code> に設定します。</li>
+              <li>進捗の表示と計算時間の管理を受け持つ <code>ProgressODE</code> を作ります。その <code>OutputFcn</code> と、ソルバーを止めるための <code>odeEvent</code> を <code>ode</code> オブジェクトに設定します。</li>
+            </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><code>sct_options</code>, <code>sct_event(1).t1</code>, <code>sct_event(end).t2</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>o</code> (<code>ode</code>), <code>options</code> (<code>odeset</code>: <code>RelTol</code>, <code>AbsTol</code>), <code>odeProg</code></dd>
         </dl>
       </li>
-      <li class="fs-step sim-loop" id="SIM-08">
-        <p class="fs-head"><b class="fs-id">SIM-08</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>set_phase</code></span></p>
-        <dl class="fs-body">
-          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><ul lang="en">
-              <li>Sets the state of the phase in <code>ctx</code>: the components and global controllers that are on (not in <code>TripUnit</code> of an active disturbance) and the faulted buses.</li>
-              <li>Zeroes the inputs of the global controllers that observe a tripped component (their rows of <code>S_sig</code> and <code>S_var</code>).</li>
-              <li>Takes the input events of the phase, built by SIM-04, as functions on the input rows of <code>z</code>.</li>
-              <li>The models are not changed.</li>
-            </ul><ul lang="ja">
-              <li>フェーズの状態を <code>ctx</code> に設定します。接続している機器とグローバル制御器（有効な外乱の <code>TripUnit</code> に含まれないもの）と、地絡している母線です。</li>
-              <li>トリップした機器を観測しているグローバル制御器では、その入力を 0 にします（<code>S_sig</code> と <code>S_var</code> の該当する行）。</li>
-              <li>SIM-04 で作ったフェーズの入力イベントを、<code>z</code> の入力の行に対する関数として取り出します。</li>
-              <li>モデルには手を加えません。</li>
-            </ul></dd>
-          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>ph.sv_trip</code>, <code>ph.sv_fault</code>, <code>ph.c_Uoffset</code>, <code>ctx.S_sig0</code>, <code>ctx.S_var0</code></dd>
-          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>ctx.lv_compOn</code>, <code>ctx.lv_gcOn</code>, <code>ctx.lv_fault</code>, <code>ctx.S_sig</code>, <code>ctx.S_var</code>, <code>ctx.c_offset</code></dd>
-        </dl>
-      </li>
       <li class="fs-step sim-loop" id="SIM-09">
-        <p class="fs-head"><b class="fs-id">SIM-09</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>SolverODE.set_admittance</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-09</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>set_phase</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>Leaves the branches opened in this phase out of the admittance matrix (<code>Ybus</code> minus the matrix of each opened branch).</li>
-              <li>Rebuilds the matrix only when the set of opened branches changes, so a branch is reconnected at the phase after its <code>t_end</code>.</li>
+              <li>Sets the state of the phase in <code>ctx</code>: the components and global controllers that are on and the faulted buses.</li>
+              <li>Zeroes the inputs of the global controllers that observe a tripped component (their rows of <code>S_sig</code> and <code>S_var</code>).</li>
+              <li>Makes the input events of the phase functions of the time from the start of the phase: a constant, or one <code>griddedInterpolant</code> per input row (<code>"foh"</code>: linear, <code>"spline"</code>; the end values outside the points).</li>
             </ul><ul lang="ja">
-              <li>このフェーズで開くブランチを、アドミタンス行列から外します。<code>Ybus</code> から、開くブランチの行列を引きます。</li>
-              <li>行列を作り直すのは、開くブランチの組み合わせが変わったときだけです。ブランチがつながり直るのは、<code>t_end</code> より後のフェーズからです。</li>
+              <li>フェーズの状態を <code>ctx</code> に設定します。接続している機器とグローバル制御器と、地絡している母線です。</li>
+              <li>トリップした機器を観測しているグローバル制御器では、その入力を 0 にします（<code>S_sig</code> と <code>S_var</code> の該当する行）。</li>
+              <li>フェーズの入力イベントを、フェーズの始めからの時刻の関数にします。定数か、入力の行ごとの <code>griddedInterpolant</code>（<code>"foh"</code> は線形、<code>"spline"</code>。点の外側は端の値）です。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>ph.sv_open</code>, <code>ctx.Ybus</code>, <code>Branch.get_admittance_matrix</code></dd>
+          <dd><code>ph.iv_tripComp</code>, <code>ph.iv_tripGC</code>, <code>ph.iv_faultBus</code>, <code>ph.c_input</code>, <code>ctx.S_sig0</code>, <code>ctx.S_var0</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>ctx.Ymat</code>, <code>ctx.absYmat</code>, <code>ctx.sv_open</code></dd>
+          <dd><code>ctx.lv_compOn</code>, <code>ctx.lv_gcOn</code>, <code>ctx.lv_fault</code>, <code>ctx.S_sig</code>, <code>ctx.S_var</code>, <code>ctx.c_input</code>, <code>ctx.iv_inputAll</code></dd>
         </dl>
       </li>
       <li class="fs-step sim-loop" id="SIM-10">
-        <p class="fs-head"><b class="fs-id">SIM-10</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>SolverODE.initial_condition(ctx, ph, x0, M0)</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-10</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>SolverODE.set_admittance(ctx, iv_open, false)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>Builds the selection matrices that remove the elements of <code>z</code> owned by the faulted buses (<code>V</code> and <code>I</code>, 4 each) and the tripped units (states and inputs), from <code>ctx.sv_owner</code>.</li>
-              <li>Mass matrix: first phase, <code>ctx.rm_M</code>; later phases, the one carried over; reduced to the phase.</li>
-              <li>Start value: first phase, <code>ctx.rv_z0</code> plus the state offsets and the input events at <code>t = 0</code>; later phases, the value carried over plus the state offsets of this phase.</li>
+              <li>Leaves the branches opened in this phase out of the admittance matrix: the 2×2 matrix of each is subtracted at its buses from <code>cm_Y</code>.</li>
+              <li>Rebuilds the matrix only when the set of opened branches changes, so a branch is reconnected at the phase after its <code>t_end</code>.</li>
             </ul><ul lang="ja">
-              <li><code>ctx.sv_owner</code> をもとに、選択行列を作ります。この行列は、地絡した母線の要素（<code>V</code> と <code>I</code> が 4 個ずつ）と、トリップした機器の要素（状態と入力）を <code>z</code> から除きます。</li>
-              <li>質量行列は、最初のフェーズでは <code>ctx.rm_M</code> を、その後のフェーズでは前のフェーズから引き継いだものを使い、フェーズに合わせて縮めます。</li>
-              <li>初期値は、最初のフェーズでは <code>ctx.rv_z0</code> に状態オフセットと <code>t = 0</code> の入力イベントを加えた値です。その後のフェーズでは、引き継いだ値にこのフェーズの状態オフセットを加えた値です。</li>
+              <li>このフェーズで開くブランチを、アドミタンス行列から外します。各ブランチの 2×2 の行列を、両端の母線の位置で <code>cm_Y</code> から引きます。</li>
+              <li>行列を作り直すのは、開くブランチの組み合わせが変わったときだけです。ブランチがつながり直るのは、<code>t_end</code> より後のフェーズからです。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>ph.sv_fault</code>, <code>ph.sv_trip</code>, <code>ph.c_Xoffset</code>, <code>ph.c_Uoffset(0)</code>, <code>ctx.sv_owner</code>, <code>ctx.rv_z0</code>, <code>ctx.rm_M</code>, <code>ctx.c_comp</code></dd>
+          <dd><code>ph.iv_openBranch</code>, <code>ctx.cm_Y</code>, <code>ctx.im_branchBus</code>, <code>ctx.c_branchY</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>EM</code> (<code>n_z × n_red</code>), <code>RM = EM'</code>, <code>lv_FBorTC</code> (<code>n_z × 1</code>), <code>x0</code> (<code>n_red × 1</code>), <code>Mass</code> (<code>n_red × n_red</code>, sparse)</dd>
+          <dd><code>ctx.Ymat</code>, <code>ctx.absYmat</code>, <code>ctx.iv_open</code></dd>
         </dl>
       </li>
       <li class="fs-step sim-loop" id="SIM-11">
-        <p class="fs-head"><b class="fs-id">SIM-11</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>SolverODE.set_equations</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-11</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>SolverODE.initial_condition(ctx, ph, x0, M0)</code>, <code>stop_event</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+              <li>Builds the selection matrices that remove the elements of <code>z</code> of the faulted buses (<code>V</code> and <code>I</code>, 2 each per bus) and the tripped units (states and inputs).</li>
+              <li>Mass matrix: first phase, <code>ctx.rm_M</code>; later phases, the one carried over; reduced to the phase.</li>
+              <li>Start value: first phase, <code>ctx.rv_x0</code> (SIM-05); later phases, the value carried over plus the state offsets of this phase.</li>
+              <li><code>stop_event</code>: with a <code>sct_stop</code>, a reference that is on and some compared unit that is on, the event definition holds two events: the progress event and <code>r_limit − max|x(iv_r) − x(i_r)|</code> (direction descending). Otherwise only the progress event.</li>
+            </ul><ul lang="ja">
+              <li>選択行列を作ります。この行列は、地絡した母線の要素（<code>V</code> と <code>I</code>。母線ごとに 2 個ずつ）と、トリップした機器の要素（状態と入力）を <code>z</code> から除きます。</li>
+              <li>質量行列は、最初のフェーズでは <code>ctx.rm_M</code> を、その後のフェーズでは前のフェーズから引き継いだものを使い、フェーズに合わせて縮めます。</li>
+              <li>初期値は、最初のフェーズでは <code>ctx.rv_x0</code>（SIM-05）です。その後のフェーズでは、引き継いだ値にこのフェーズの状態オフセットを加えた値です。</li>
+              <li><code>stop_event</code> は、<code>sct_stop</code> があり、基準が接続中で、比べる機器が 1 つでも接続中なら、進捗の事象と <code>r_limit − max|x(iv_r) − x(i_r)|</code>（向きは減少）の 2 つの事象を設定します。そうでなければ進捗の事象だけです。</li>
+            </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><code>ph.iv_faultBus</code>, <code>ph.iv_tripComp</code>, <code>ph.iv_tripGC</code>, <code>ph.iv_offset</code>, <code>ph.rv_offset</code>, <code>ctx.rv_x0</code>, <code>ctx.rm_M</code>, <code>sct_dae.sct_stop</code></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>EM</code> (<code>n_z × n_red</code>), <code>RM = EM'</code>, <code>lv_FBorTC</code> (<code>n_z × 1</code>), <code>x0</code> (<code>n_red × 1</code>), <code>Mass</code> (<code>n_red × n_red</code>, sparse), <code>o.EventDefinition</code>, <code>sct_watch</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step sim-loop" id="SIM-12">
+        <p class="fs-head"><b class="fs-id">SIM-12</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>SolverODE.set_equations</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Sets the right-hand side (<code>getODEFunction</code>), the Jacobian (<code>getODEJacobian</code>) and the mass matrix on the <code>ode</code> object. A mass matrix that is not diagonal is made the identity on the differential variables by solving its block (<code>solve_differential</code>).</span><span lang="ja"><code>ode</code> オブジェクトに、右辺（<code>getODEFunction</code>）、ヤコビアン（<code>getODEJacobian</code>）、質量行列を設定します。質量行列が対角でない場合は、そのブロックについて解いて、微分変数に対する部分を単位行列にします（<code>solve_differential</code>）。</span></dd>
@@ -489,8 +515,8 @@ verdict = sc.judge(result)</code></pre>
           <dd><code>o.ODEFcn</code>, <code>o.Jacobian</code>, <code>o.MassMatrix</code></dd>
         </dl>
       </li>
-      <li class="fs-step sim-loop" id="SIM-12">
-        <p class="fs-head"><b class="fs-id">SIM-12</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>CalculateInitialCondition</code></span></p>
+      <li class="fs-step sim-loop" id="SIM-13">
+        <p class="fs-head"><b class="fs-id">SIM-13</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>CalculateInitialCondition</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Consistent initial condition:</span><ul lang="en">
@@ -510,27 +536,29 @@ verdict = sc.judge(result)</code></pre>
           <dd><code>x0_ic</code>, <code>xp0_ic</code> (<code>n_red × 1</code>), <code>l_failed</code>, <code>s_why</code></dd>
         </dl>
       </li>
-      <li class="fs-step sim-loop" id="SIM-13">
-        <p class="fs-head"><b class="fs-id">SIM-13</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>ode.solve(o, 0, t2 − t1)</code></span></p>
+      <li class="fs-step sim-loop" id="SIM-14">
+        <p class="fs-head"><b class="fs-id">SIM-14</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>ode.solve</code>, <code>phase_points</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>Integrates the phase in local time from 0.</li>
+              <li>Integrates the phase in local time from 0: <code>solve(o, 0, t2 − t1)</code>, or with <code>SampleTime &gt; 0</code> <code>solve(o, tv)</code> with <code>tv</code> = 0, the times <code>t0 + k·SampleTime</code> inside <code>(t1, t2)</code> and <code>t2 − t1</code> (a grid time within <code>1e-9·SampleTime</code> of a boundary is the boundary).</li>
+              <li><code>phase_points</code> makes the solution a struct (<code>Time</code>, <code>Solution</code>, <code>EventIndex</code>): after a terminal event the times of <code>tv</code> are NaN and are removed, and the event time and solution are added at the end.</li>
               <li>Sparse matrices rejected by the index check of the solver (<code>IndexGTOne</code>): solves this phase and the following ones again with dense matrices (<code>use_dense</code>).</li>
               <li>Checks that the solver did not move the differential variables at the start.</li>
             </ul><ul lang="ja">
-              <li>各フェーズは、0 から始まる局所時間で積分します。</li>
+              <li>各フェーズは、0 から始まる局所時間で積分します。通常は <code>solve(o, 0, t2 − t1)</code> です。<code>SampleTime &gt; 0</code> なら <code>solve(o, tv)</code> で、<code>tv</code> は 0、<code>(t1, t2)</code> の中の時刻 <code>t0 + k·SampleTime</code>、<code>t2 − t1</code> です（境目から <code>1e-9·SampleTime</code> 以内の格子の時刻は境目とみなします）。</li>
+              <li><code>phase_points</code> は解を struct（<code>Time</code>、<code>Solution</code>、<code>EventIndex</code>）にします。終端の事象で止まると <code>tv</code> の後ろの時刻は NaN になるので取り除き、事象の時刻と解を最後に加えます。</li>
               <li>ソルバーの指数チェック（<code>IndexGTOne</code>）で疎行列が受け付けられなかったときは、そのフェーズ以降を密行列で計算し直します（<code>use_dense</code>）。</li>
               <li>積分を始めるときに、ソルバーが微分変数を動かしていないかを確かめます。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>o</code>, <code>x0_ic</code>, <code>xp0_ic</code></dd>
+          <dd><code>o</code>, <code>x0_ic</code>, <code>xp0_ic</code>, <code>sct_options.SampleTime</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>sol.Time</code> (<code>1 × n_t</code>, s), <code>sol.Solution</code> (<code>n_red × n_t</code>); <code>ctx.l_sparse</code></dd>
+          <dd><code>sol.Time</code> (<code>1 × n_t</code>, s), <code>sol.Solution</code> (<code>n_red × n_t</code>), <code>sol.EventIndex</code>; <code>ctx.l_sparse</code></dd>
         </dl>
       </li>
-      <li class="fs-step sim-loop" id="SIM-14">
-        <p class="fs-head"><b class="fs-id">SIM-14</b> <span class="fs-call"><code>ode</code> → <code>SolverODE.getODEFunction</code> → <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code></span></p>
+      <li class="fs-step sim-loop" id="SIM-15">
+        <p class="fs-head"><b class="fs-id">SIM-15</b> <span class="fs-call"><code>ode</code> → <code>SolverODE.getODEFunction</code> → <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Residual of the DAE, block by block; each block reads only its own part of <code>z</code>.</span><ul lang="en">
@@ -547,112 +575,138 @@ verdict = sc.judge(result)</code></pre>
               <li>母線の行は <code>Ib − ΣI = 0</code> と <code>Ib − Y·V = 0</code> です。丸め誤差より小さい項は 0 にします。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>t</code>, <code>x</code>, <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>ctx.c_comp</code>, <code>ctx.c_lc</code>, <code>ctx.c_gc</code>, <code>ctx.lv_compOn</code>, <code>ctx.lv_gcOn</code>, <code>ctx.rv_e</code>, <code>ctx.c_offset</code>, <code>ctx.S_sig</code>, <code>ctx.S_var</code>, <code>ctx.Ymat</code></dd>
+          <dd><code>t</code>, <code>x</code>, <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code> <span lang="en">of the blocks</span><span lang="ja">（ブロックのもの）</span>, <code>ctx.c_comp</code>, <code>ctx.c_lc</code>, <code>ctx.c_gc</code>, <code>ctx.lv_compOn</code>, <code>ctx.lv_gcOn</code>, <code>ctx.rv_e</code>, <code>ctx.c_input</code>, <code>ctx.S_sig</code>, <code>ctx.S_var</code>, <code>ctx.Ymat</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>odeX</code> (<code>n_red × 1</code>)</dd>
         </dl>
       </li>
-      <li class="fs-step sim-loop" id="SIM-15">
-        <p class="fs-head"><b class="fs-id">SIM-15</b> <span class="fs-call"><code>ode</code> → <code>SolverODE.getODEJacobian</code></span></p>
+      <li class="fs-step sim-loop" id="SIM-16">
+        <p class="fs-head"><b class="fs-id">SIM-16</b> <span class="fs-call"><code>ode</code> → <code>SolverODE.getODEJacobian</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Analytic Jacobian of SIM-14, in the same order: <code>[Axx, Bxv, Bxu]</code> in the state rows of each block; <code>−[Cix, Div, Diu]</code> in the rows of the bus of each component; the signal Jacobian <code>Js</code> (<code>[Cyx, Dyv]</code> of a component, <code>[Cyx, Dyv, Dyu]</code> of a controller) in the input rows as <code>I − S_var − S_sig·Js</code>; <code>−Y</code> and identity entries for the bus rows. Sparse while <code>ctx.l_sparse</code>.</span><span lang="ja">SIM-14 と同じ並びで、ヤコビアンを解析的に求めます。各ブロックの状態の行には <code>[Axx, Bxv, Bxu]</code>、各機器の母線の行には <code>−[Cix, Div, Diu]</code> を入れます。入力の行には、信号のヤコビアン <code>Js</code>（機器は <code>[Cyx, Dyv]</code>、制御器は <code>[Cyx, Dyv, Dyu]</code>）を使って <code>I − S_var − S_sig·Js</code> を入れます。母線の行には <code>−Y</code> と単位行列の要素を入れます。<code>ctx.l_sparse</code> が true のあいだは疎行列で作ります。</span></dd>
+          <dd><span lang="en">Analytic Jacobian of SIM-15, in the same order: <code>[Axx, Bxv, Bxu]</code> in the state rows of each block; <code>−[Cix, Div, Diu]</code> in the rows of the bus of each component; the signal Jacobian <code>Js</code> (<code>[Cyx, Dyv]</code> of a component, <code>[Cyx, Dyv, Dyu]</code> of a controller) in the input rows as <code>I − S_var − S_sig·Js</code>; <code>−Y</code> and identity entries for the bus rows. Sparse while <code>ctx.l_sparse</code>.</span><span lang="ja">SIM-15 と同じ並びで、ヤコビアンを解析的に求めます。各ブロックの状態の行には <code>[Axx, Bxv, Bxu]</code>、各機器の母線の行には <code>−[Cix, Div, Diu]</code> を入れます。入力の行には、信号のヤコビアン <code>Js</code>（機器は <code>[Cyx, Dyv]</code>、制御器は <code>[Cyx, Dyv, Dyu]</code>）を使って <code>I − S_var − S_sig·Js</code> を入れます。母線の行には <code>−Y</code> と単位行列の要素を入れます。<code>ctx.l_sparse</code> が true のあいだは疎行列で作ります。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>f_JacobiDx</code>, <code>f_JacobiI</code>, <code>f_JacobiY</code>, <code>ctx.lv_compOn</code>, <code>ctx.lv_gcOn</code>, <code>ctx.S_sig</code>, <code>ctx.S_var</code>, <code>ctx.Ymat</code></dd>
+          <dd><code>f_JacobiDx</code>, <code>f_JacobiI</code>, <code>f_JacobiY</code> <span lang="en">of the blocks</span><span lang="ja">（ブロックのもの）</span>, <code>ctx.lv_compOn</code>, <code>ctx.lv_gcOn</code>, <code>ctx.S_sig</code>, <code>ctx.S_var</code>, <code>ctx.Ymat</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>odeJac</code> (<code>n_red × n_red</code>)</dd>
         </dl>
       </li>
-      <li class="fs-step sim-loop" id="SIM-16">
-        <p class="fs-head"><b class="fs-id">SIM-16</b> <span class="fs-call"><code>ode</code> → <code>ProgressODE.OutputFcn</code>, <code>ProgressODE.Events</code></span></p>
+      <li class="fs-step sim-loop" id="SIM-17">
+        <p class="fs-head"><b class="fs-id">SIM-17</b> <span class="fs-call"><code>ode</code> → <code>ProgressODE.OutputFcn</code>, <span lang="en">events</span><span lang="ja">事象</span></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Updates the waitbar or text bar at each step. Wall-clock time of the run reaching <code>TimeLimit</code>: sets <code>ToBeContinue = false</code>; the event function then stops the solver.</span><span lang="ja">ステップごとに進捗バーを更新します。実行にかかった実時間が <code>TimeLimit</code> に達すると <code>ToBeContinue = false</code> にし、イベント関数がソルバーを止めます。</span></dd>
+          <dd><ul lang="en">
+              <li>Updates the waitbar or text bar at each step. Wall-clock time of the run reaching <code>TimeLimit</code>: sets <code>ToBeContinue = false</code>; the progress event then stops the solver.</li>
+              <li>The stop event of SIM-11 (event index 2) stops the solver when the largest absolute angle from the reference reaches <code>StopAngle</code>.</li>
+            </ul><ul lang="ja">
+              <li>ステップごとに進捗バーを更新します。実行にかかった実時間が <code>TimeLimit</code> に達すると <code>ToBeContinue = false</code> にし、進捗の事象がソルバーを止めます。</li>
+              <li>SIM-11 の停止の事象（事象の番号 2）は、基準からの角の絶対値の最大が <code>StopAngle</code> に達したときにソルバーを止めます。</li>
+            </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>timeoffset</code>, <code>timelimit</code>, <code>start_time</code></dd>
+          <dd><code>timeoffset</code>, <code>timelimit</code>, <code>start_time</code>, <code>x</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>ToBeContinue</code>, <code>message</code></dd>
         </dl>
       </li>
-      <li class="fs-step sim-loop" id="SIM-17">
-        <p class="fs-head"><b class="fs-id">SIM-17</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>SolverODE.phase_result</code></span></p>
+      <li class="fs-step sim-loop" id="SIM-18">
+        <p class="fs-head"><b class="fs-id">SIM-18</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>SolverODE.phase_result</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>Expands the phase solution to the full DAE vector <code>z</code> (<code>EM · sol.Solution</code>), keeps the rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code> in map order (<code>ctx.iv_lin</code>) and shifts the time by <code>t1</code>.</li>
+              <li>Expands the phase solution to the full DAE vector <code>z</code> (<code>EM · sol.Solution</code>), keeps all the variable rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code>, <code>uc</code> in map order (<code>ctx.iv_var</code>) and shifts the time by <code>t1</code>.</li>
               <li>Sets the states of tripped components and global controllers to <code>NaN</code>; computes the bus currents <code>Y·V</code> with the admittance matrix of the phase.</li>
-              <li>Solver stopped before <code>t2</code>: the loop ends here.</li>
+              <li>Stop event (event index 2): <code>flag = 2</code> and <code>output.outOfStep</code> with the unit farthest from the reference at the stop; the loop ends. Solver stopped before <code>t2</code> otherwise: <code>flag = 0</code> (<code>TimeLimit</code>) or <code>-1</code>; the loop ends.</li>
             </ul><ul lang="ja">
-              <li>フェーズの解を全体の DAE ベクトル <code>z</code> の大きさに戻し（<code>EM · sol.Solution</code>）、<code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> の行をマップの順に取り出します（<code>ctx.iv_lin</code>）。時刻には <code>t1</code> を足します。</li>
+              <li>フェーズの解を全体の DAE ベクトル <code>z</code> の大きさに戻し（<code>EM · sol.Solution</code>）、変数の行 <code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code>、<code>uc</code> をすべてマップの順に取り出します（<code>ctx.iv_var</code>）。時刻には <code>t1</code> を足します。</li>
               <li>トリップした機器とグローバル制御器の状態は <code>NaN</code> にします。母線電流 <code>Y·V</code> は、そのフェーズのアドミタンス行列で計算します。</li>
-              <li>ソルバーが <code>t2</code> より前で止まったときは、ここでループを抜けます。</li>
+              <li>停止の事象（事象の番号 2）で止まったときは、<code>flag = 2</code> とし、止まった時刻で基準から最も離れた機器を <code>output.outOfStep</code> に入れて、ループを抜けます。それ以外でソルバーが <code>t2</code> より前で止まったときは、<code>flag = 0</code>（<code>TimeLimit</code>）か <code>-1</code> として、ループを抜けます。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>sol</code>, <code>ctx.iv_lin</code>, <code>ctx.iv_V</code>, <code>ctx.Ymat</code>, <code>ph.sv_trip</code></dd>
+          <dd><code>sol</code>, <code>ctx.iv_var</code>, <code>ctx.iv_V</code>, <code>ctx.Ymat</code>, <code>ph.iv_tripComp</code>, <code>ph.iv_tripGC</code>, <code>sct_watch</code>, <code>odeProg.ToBeContinue</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>c_phase{tp}</code>: <code>t</code> (<code>n_t × 1</code>, s), <code>x</code> (<code>n_t × (n_x + n_v + n_u)</code>), <code>i</code> (<code>n_t × n_v</code>, pu)</dd>
+          <dd><code>c_phase{tp}</code>: <code>t</code> (<code>n_t × 1</code>, s), <code>x</code> (<code>n_t × (n_x + n_v + n_u + n_uc)</code>), <code>i</code> (<code>n_t × n_v</code>, pu); <code>flag</code>, <code>sct_out</code></dd>
         </dl>
       </li>
-      <li class="fs-step sim-loop" id="SIM-18">
-        <p class="fs-head"><b class="fs-id">SIM-18</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>SolverODE.getNextPhase</code></span></p>
+      <li class="fs-step sim-loop" id="SIM-19">
+        <p class="fs-head"><b class="fs-id">SIM-19</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>SolverODE.getNextPhase</code> → <code>f_reconnect</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Start of the next phase: expands the last state and the mass matrix to full size. Restart values:</span><ul lang="en">
-              <li>a generator tripped in this phase: <code>get_equilibrium</code> for its present bus voltage with <code>I = P = Q = 0</code>; its controllers: their equilibrium;</li>
-              <li>a faulted bus: its equilibrium voltage and current (a start value for SIM-12);</li>
+              <li>a generator tripped in this phase: <code>f_reconnect(V)</code> of its block (its <code>get_equilibrium</code> for its present bus voltage with <code>I = P = Q = 0</code>); its local controllers: their equilibrium. A tripped component without <code>f_reconnect</code> keeps its values at the trip;</li>
+              <li>a faulted bus: its equilibrium voltage and current (a start value for SIM-13);</li>
               <li>a tripped global controller: its equilibrium.</li>
             </ul><span lang="ja">次のフェーズの初期値を作ります。最後の状態と質量行列を全体の大きさに戻し、再開時の値を次のように決めます。</span><ul lang="ja">
-              <li>このフェーズでトリップした発電機は、今の母線電圧と <code>I = P = Q = 0</code> で <code>get_equilibrium</code> を呼んで値を決めます。その制御器は平衡点に戻します。</li>
-              <li>地絡した母線は、平衡点の電圧と電流に戻します（SIM-12 の初期推定値として使います）。</li>
+              <li>このフェーズでトリップした発電機は、ブロックの <code>f_reconnect(V)</code>（今の母線電圧と <code>I = P = Q = 0</code> での <code>get_equilibrium</code>）で値を決めます。そのローカル制御器は平衡点に戻します。<code>f_reconnect</code> のない機器は、トリップしたときの値のままです。</li>
+              <li>地絡した母線は、平衡点の電圧と電流に戻します（SIM-13 の初期推定値として使います）。</li>
               <li>トリップしたグローバル制御器は、平衡点に戻します。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>sol.Solution(:, end)</code>, <code>ctx.lv_compOn</code>, <code>ctx.lv_gcOn</code>, <code>ctx.lv_fault</code>, <code>ctx.rv_z0</code>, <code>ctx.rm_M</code>, <code>get_equilibrium</code></dd>
+          <dd><code>sol.Solution(:, end)</code>, <code>ctx.lv_compOn</code>, <code>ctx.lv_gcOn</code>, <code>ctx.lv_fault</code>, <code>ctx.rv_z0</code>, <code>f_reconnect</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>x0</code> (<code>n_z × 1</code>), <code>Mass</code> (<code>n_z × n_z</code>)</dd>
         </dl>
       </li>
-      <li class="fs-step" id="SIM-19">
-        <p class="fs-head"><b class="fs-id">SIM-19</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>ResultODE</code></span></p>
+      <li class="fs-step" id="SIM-20">
+        <p class="fs-head"><b class="fs-id">SIM-20</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>PowerNetwork.simulate</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Sets <code>flag</code> and <code>output</code>, then creates the result: stacks the phases, whose columns are already the rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code> of <code>net.get_variable_map()</code> (<code>tab_variable</code>), and builds the columns of each bus for <code>odeResults</code> (<code>simulator_columns</code>, which checks the labels).</span><span lang="ja"><code>flag</code> と <code>output</code> を決めて、結果を作ります。フェーズの結果を縦につなぎます。列はすでに <code>net.get_variable_map()</code> の <code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> の行、つまり <code>tab_variable</code> の順に並んでいます。<code>odeResults</code> のために、ラベルを照合して母線ごとの列を取り出します（<code>simulator_columns</code>）。</span></dd>
+          <dd><span lang="en">Sets <code>output</code> (with <code>message</code> for the flag; printed with <code>Verbose</code>) and stacks the phases into the raw trajectories.</span><span lang="ja"><code>output</code> を作り（<code>message</code> はフラグに応じた文。<code>Verbose</code> なら表示します）、フェーズの結果を縦につないで生の軌道にします。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>c_phase</code>, <code>net.get_variable_map()</code></dd>
+          <dd><code>c_phase</code>, <code>flag</code>, <code>me_stop</code>, <code>sct_out</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>result</code> (<code>ResultODE</code>), <code>flag</code>, <code>output</code></dd>
+          <dd><code>sct_sol</code>: <code>rv_t</code>, <code>rm_variable</code> (<span lang="en">variable rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code>, <code>uc</code></span><span lang="ja">変数の行 <code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code>、<code>uc</code></span>), <code>rm_I</code>, <code>rv_phase</code>; <code>flag</code>; <code>output</code>: <code>tEnd</code>, <code>nPhases</code>, <code>nPhasesDone</code>, <code>isSparse</code>, <code>exception</code>, <code>outOfStep</code>, <code>message</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="SIM-21">
-        <p class="fs-head"><b class="fs-id">SIM-21</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <span lang="en">caller</span><span lang="ja">呼び出し側</span></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-21</b> <span class="fs-call"><code>PowerNetwork.simulate</code> → <code>ResultODE</code> | <code>struct_result</code> → <span lang="en">caller</span><span lang="ja">呼び出し側</span></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Warns when <code>flag ≠ 1</code>; calls <code>result.export</code> when asked.</span><span lang="ja"><code>flag ≠ 1</code> なら警告を出します。指定があれば <code>result.export</code> を呼び出します。</span></dd>
+          <dd><ul lang="en">
+              <li>Adds <code>output.phases</code> (the phase table) and orders the fields of <code>output</code>.</li>
+              <li><code>Format="GUILDAorigin"</code>: <code>ResultODE(sct_sol, sct_dae, struct(net, false), sct_solver)</code> keeps the rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code>, computes the outputs <code>y</code>, <code>yc</code> with the <code>f_Y</code> of the blocks and builds the columns of each bus for <code>odeResults</code> (<code>simulator_columns</code>). <code>Format="struct"</code>: <code>struct_result</code> (no <code>struct(net, false)</code>, no outputs).</li>
+              <li>Warns with <code>GUILDA:PowerNetwork:SimulationIncomplete</code> when <code>flag</code> is neither 1 nor 2.</li>
+            </ul><ul lang="ja">
+              <li><code>output.phases</code>（フェーズ表）を加え、<code>output</code> のフィールドの順を整えます。</li>
+              <li><code>Format="GUILDAorigin"</code> なら <code>ResultODE(sct_sol, sct_dae, struct(net, false), sct_solver)</code> を作ります。<code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> の行を残し、出力 <code>y</code>、<code>yc</code> をブロックの <code>f_Y</code> で計算し、<code>odeResults</code> のための母線ごとの列を作ります（<code>simulator_columns</code>）。<code>Format="struct"</code> なら <code>struct_result</code> で struct を作ります（<code>struct(net, false)</code> も出力の計算もしません）。</li>
+              <li><code>flag</code> が 1 でも 2 でもなければ、警告 <code>GUILDA:PowerNetwork:SimulationIncomplete</code> を出します。</li>
+            </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>flag</code>, <code>output.message</code>, <code>opt.export</code></dd>
+          <dd><code>sct_sol</code>, <code>sct_dae</code>, <code>sct_event</code>, <code>tab_phase</code>, <code>struct(net, false)</code>, <code>sct_options</code>, <code>flag</code>, <code>output</code>, <code>opt.Format</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>[result, flag, output]</code>; <span lang="en">file when asked</span><span lang="ja">指定したときはファイル</span></dd>
+          <dd><code>[result, flag, output]</code></dd>
         </dl>
       </li>
     </ol>
 
     <!-- ============================== DATA ============================== -->
     <h2 id="data"><span lang="en">Data the feature produces</span><span lang="ja">この機能が生成するデータ</span></h2>
+    <h3><span lang="en">Data of a run passed to <code>SolverODE.solve</code></span><span lang="ja"><code>SolverODE.solve</code> に渡す実行のデータ</span></h3>
+    <ul lang="en">
+      <li><code>[sct_dae, sct_event, rv_x0, tab_phase] = net.build_simulation_data(tag, time)</code> (Hidden): the blocks, maps, admittance and equilibrium (SIM-03), the phases with the disturbances as positions (SIM-04) and the initial value (SIM-05).</li>
+      <li><code>[sct_sol, flag, output] = net.solver_ODE.solve(sct_dae, sct_event, rv_x0, sct_options)</code> reads only these and the settings. The data holds no handle objects of the network: the result of <code>solve</code> is the same after <code>delete(net)</code>.</li>
+      <li>For tests and advanced use; <code>simulate</code> calls both.</li>
+    </ul>
+    <ul lang="ja">
+      <li><code>[sct_dae, sct_event, rv_x0, tab_phase] = net.build_simulation_data(tag, time)</code>（Hidden）は、ブロック・マップ・アドミタンス・平衡点（SIM-03）、外乱を位置で表したフェーズ（SIM-04）、初期値（SIM-05）を返します。</li>
+      <li><code>[sct_sol, flag, output] = net.solver_ODE.solve(sct_dae, sct_event, rv_x0, sct_options)</code> は、これらと設定だけを読みます。データはネットワークの handle オブジェクトを含まないので、<code>delete(net)</code> の後でも <code>solve</code> の結果は同じです。</li>
+      <li>テストと高度な使い方のためのもので、<code>simulate</code> はこの 2 つを続けて呼びます。</li>
+    </ul>
+
     <h3><span lang="en">DAE vector during a run</span><span lang="ja">実行中の DAE ベクトル</span></h3>
     <ul lang="en">
-      <li><code>z = [x; V; I; u; uc]</code> of length <code>n_z</code>, numbered by SIM-05: the variables of <code>net.get_variable_map()</code> in map order, with the bus currents <code>I</code> (not in the map) after the voltages.</li>
+      <li><code>z = [x; V; I; u; uc]</code> of length <code>n_z</code>, numbered by SIM-07: the variables of <code>sct_dae.tab_variable</code> in map order, with the bus currents <code>I</code> (not in the map) after the voltages.</li>
       <li>The outputs <code>y</code>, <code>yc</code> are not variables: each evaluation computes them into the signal vector <code>s</code>, and the connection map gives the inputs from them.</li>
       <li>In a phase: faulted buses and tripped units removed, leaving <code>n_red</code> variables. An opened branch changes only the admittance matrix.</li>
     </ul>
     <ul lang="ja">
-      <li><code>z = [x; V; I; u; uc]</code> は、SIM-05 で番号を振った長さ <code>n_z</code> のベクトルです。<code>net.get_variable_map()</code> の変数をマップの順に並べ、マップにない母線電流 <code>I</code> を電圧の後に置きます。</li>
+      <li><code>z = [x; V; I; u; uc]</code> は、SIM-07 で番号を振った長さ <code>n_z</code> のベクトルです。<code>sct_dae.tab_variable</code> の変数をマップの順に並べ、マップにない母線電流 <code>I</code> を電圧の後に置きます。</li>
       <li>出力 <code>y</code> と <code>yc</code> は変数に含めません。評価のたびに信号ベクトル <code>s</code> に計算し、接続マップがそこから入力を決めます。</li>
       <li>各フェーズでは、地絡した母線とトリップした機器を除いた <code>n_red</code> 個の変数を解きます。開いたブランチは、アドミタンス行列を変えるだけです。</li>
     </ul>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Block</span><span lang="ja">ブロック</span></th><th><span lang="en">Contents</span><span lang="ja">内容</span></th><th><span lang="en">Mass matrix</span><span lang="ja">質量行列</span></th></tr></thead>
       <tbody>
-        <tr><td>1. <code>x</code></td><td><span lang="en">For each bus, for each component: its states, then those of its local controllers depth first (AVR or <code>"local"</code> controller, PSS, governor); then the states of each global controller.</span><span lang="ja">母線ごと、機器ごとに、まず機器の状態を、続いてローカル制御器の状態を深さ優先で並べます（AVR または <code>"local"</code> の制御器、PSS、ガバナ）。その後に各グローバル制御器の状態が続きます。</span></td><td><code>fcn_Mass</code></td></tr>
+        <tr><td>1. <code>x</code></td><td><span lang="en">For each bus, for each component: its states, then those of its local controllers depth first (AVR or <code>"local"</code> controller, PSS, governor); then the states of each global controller.</span><span lang="ja">母線ごと、機器ごとに、まず機器の状態を、続いてローカル制御器の状態を深さ優先で並べます（AVR または <code>"local"</code> の制御器、PSS、ガバナ）。その後に各グローバル制御器の状態が続きます。</span></td><td><code>f_Mass</code></td></tr>
         <tr><td>2. <code>V</code>, <code>I</code></td><td><code>Vre, Vim</code> <span lang="en">of each bus, then</span><span lang="ja">(母線ごと)、続いて</span> <code>Ire, Iim</code> <span lang="en">of each bus [pu].</span><span lang="ja">(母線ごと、[pu]) です。</span></td><td>0</td></tr>
         <tr><td>3. <code>u</code>, <code>uc</code></td><td><span lang="en">Component inputs; then controller inputs: local controllers per bus and component depth first, then each global controller, one set of <code>sv_u</code> per controlled unit.</span><span lang="ja">まず機器の入力、続いて制御器の入力を並べます。制御器の入力は、ローカル制御器を母線ごと、機器ごとに深さ優先で並べ、その後に各グローバル制御器の入力を並べます（制御対象ごとに <code>sv_u</code> を 1 組）。</span></td><td>0</td></tr>
       </tbody>
@@ -660,85 +714,117 @@ verdict = sc.judge(result)</code></pre>
 
     <h3><span lang="en">Returned result object <code>ResultODE</code></span><span lang="ja">返される結果オブジェクト <code>ResultODE</code></span></h3>
     <ul lang="en">
-      <li>Subclass of <code>ResultBase</code> (see <a href="api-design.html#rules">API Design</a>).</li>
-      <li>Trajectory stored once, in the order of <code>net.get_variable_map()</code> (see <a href="class-design.html#variables">Class Design: Order of state and input variables</a>). Only the rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code> (the leading rows of the map). Not stored: the controller inputs <code>uc</code>, the signals, the bus current variables of <code>z</code>.</li>
+      <li>Subclass of <code>ResultBase</code> (see <a href="api-design.html#rules">API Design</a>). Built from data only: the trajectories of the solver, the variable map and the output functions of the blocks, a struct snapshot of the network (<code>sct_network = struct(net, false)</code>) and the solver information.</li>
+      <li>Keeps no reference to the network: its methods work after the network is edited or deleted.</li>
+      <li>Trajectory stored once, in the order of <code>net.get_variable_map()</code> (see <a href="class-design.html#variables">Class Design: Order of state and input variables</a>). Variables: only the rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code> (the leading rows of the map); the outputs <code>y</code>, <code>yc</code> separately. Not stored: the controller inputs <code>uc</code>, the bus current variables of <code>z</code>.</li>
       <li>Nothing written back to the buses or components.</li>
     </ul>
     <ul lang="ja">
-      <li><code>ResultBase</code> のサブクラスです（<a href="api-design.html#rules">API 設計</a>を参照）。</li>
-      <li>軌道は <code>net.get_variable_map()</code> の順に、重複なく 1 回だけ保存します（<a href="class-design.html#variables">クラス設計: 状態・入力変数の順序</a>を参照）。保存するのは <code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> の行（マップの先頭部分）だけです。制御器の入力 <code>uc</code>、信号、<code>z</code> の母線電流変数は保存しません。</li>
+      <li><code>ResultBase</code> のサブクラスです（<a href="api-design.html#rules">API 設計</a>を参照）。データだけから作ります。ソルバーの軌道、変数マップ、ブロックの出力関数、ネットワークの struct のスナップショット（<code>sct_network = struct(net, false)</code>）、ソルバーの情報です。</li>
+      <li>ネットワークへの参照は持ちません。ネットワークを編集・削除した後でも、メソッドはそのまま動きます。</li>
+      <li>軌道は <code>net.get_variable_map()</code> の順に、重複なく 1 回だけ保存します（<a href="class-design.html#variables">クラス設計: 状態・入力変数の順序</a>を参照）。変数は <code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> の行（マップの先頭部分）だけで、出力 <code>y</code>、<code>yc</code> は別に持ちます。制御器の入力 <code>uc</code> と <code>z</code> の母線電流変数は保存しません。</li>
       <li>母線や機器には何も書き戻しません。</li>
     </ul>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Size, unit</span><span lang="ja">サイズ・単位</span></th><th><span lang="en">Contents</span><span lang="ja">内容</span></th></tr></thead>
       <tbody>
-        <tr><td><code>rv_t</code></td><td><code>n_t × 1</code>, s</td><td><span lang="en">Output times, ascending. A phase boundary appears twice: end of one phase, start of the next.</span><span lang="ja">出力の時刻です（昇順）。フェーズの境目の時刻は、前のフェーズの終わりと次のフェーズの始めとして 2 回現れます。</span></td></tr>
+        <tr><td><code>rv_t</code></td><td><code>n_t × 1</code>, s</td><td><span lang="en">Output times, ascending: the solver steps, or with <code>SampleTime</code> the grid and the phase boundaries. A phase boundary appears twice: end of one phase, start of the next.</span><span lang="ja">出力の時刻です（昇順）。ソルバーの刻みの時刻か、<code>SampleTime</code> を指定したときは格子の時刻とフェーズの境目です。フェーズの境目の時刻は、前のフェーズの終わりと次のフェーズの始めとして 2 回現れます。</span></td></tr>
         <tr><td><code>tab_variable</code></td><td><code>(n_x + n_v + n_u) × 7</code></td><td><span lang="en">Leading rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code> of the variable map at the time of the run: <code>Index</code>, <code>Kind</code>, <code>Role</code>, <code>Owner</code>, <code>Name</code>, <code>Label</code>, <code>Bus</code>.</span><span lang="ja">実行時の変数マップのうち、先頭の <code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> の行です。列は <code>Index</code>, <code>Kind</code>, <code>Role</code>, <code>Owner</code>, <code>Name</code>, <code>Label</code>, <code>Bus</code> です。</span></td></tr>
         <tr><td><code>rm_variable</code></td><td><code>n_t × (n_x + n_v + n_u)</code></td><td><span lang="en">All variables; column <code>m</code> is row <code>m</code> of <code>tab_variable</code>. States of a tripped unit are <code>NaN</code> while it is tripped. <code>u</code> is the input applied to the component.</span><span lang="ja">すべての変数の時系列です。列 <code>m</code> が <code>tab_variable</code> の行 <code>m</code> に当たります。トリップ中の機器の状態は <code>NaN</code> です。<code>u</code> には機器に加わる入力が入ります。</span></td></tr>
         <tr><td><code>rm_I</code></td><td><code>n_t × n_v</code>, pu</td><td><span lang="en">Bus current injections <code>Y·V</code>: <code>Ireal, Iimag</code> of each bus.</span><span lang="ja">母線への注入電流 <code>Y·V</code> です。母線ごとに <code>Ireal, Iimag</code> の 2 列があります。</span></td></tr>
+        <tr><td><code>tab_output</code>, <code>rm_output</code></td><td><code>n_out × 7</code>, <code>n_t × n_out</code></td><td><span lang="en">Rows <code>y</code> and <code>yc</code> of the variable map and their trajectories, computed by the constructor with the <code>f_Y</code> of the blocks (time from the start of the phase, as the solver). <code>NaN</code> while the unit is tripped.</span><span lang="ja">変数マップの <code>y</code> と <code>yc</code> の行と、その時系列です。コンストラクタがブロックの <code>f_Y</code> で計算します（時刻はソルバーと同じくフェーズの始めから）。トリップ中は <code>NaN</code> です。</span></td></tr>
         <tr><td><code>sv_bus</code>, <code>c_component</code></td><td><code>n_bus × 1</code></td><td><span lang="en">Bus tags, and the component tags of each bus.</span><span lang="ja">母線のタグと、母線ごとの機器のタグです。</span></td></tr>
-        <tr><td><code>odeResults</code></td><td>struct</td><td><span lang="en">Dependent view built on first access: <code>t</code>, <code>Bus(i).V</code> (<code>Vreal</code>, <code>Vimag</code>), <code>Bus(i).I</code>, <code>Bus(i).PQ</code> (<code>P</code>, <code>Q</code>), <code>Bus(i).Component(j).X</code> and <code>.U</code> (tables named by <code>sv_x</code>, <code>sv_u</code>). Controller states are only in <code>rm_variable</code>.</span><span lang="ja">初めて参照したときに作る依存ビューです。<code>t</code>, <code>Bus(i).V</code> (<code>Vreal</code>, <code>Vimag</code>), <code>Bus(i).I</code>, <code>Bus(i).PQ</code> (<code>P</code>, <code>Q</code>), <code>Bus(i).Component(j).X</code> と <code>.U</code>（<code>sv_x</code>, <code>sv_u</code> を列名とする表）を持ちます。制御器の状態は <code>rm_variable</code> にしかありません。</span></td></tr>
+        <tr><td><code>sct_network</code></td><td>struct</td><td><span lang="en">Snapshot of the network at the run: <code>struct(net, false)</code> (slack buses and inertia <code>M</code> for <code>judge_out_of_step</code>).</span><span lang="ja">実行時のネットワークのスナップショット <code>struct(net, false)</code> です（<code>judge_out_of_step</code> がスラック母線と慣性 <code>M</code> を読みます）。</span></td></tr>
+        <tr><td><code>odeResults</code></td><td>struct</td><td><span lang="en">Dependent view built on first access: <code>t</code>, <code>Bus(i).V</code> (<code>Vreal</code>, <code>Vimag</code>), <code>Bus(i).I</code>, <code>Bus(i).PQ</code> (<code>P</code>, <code>Q</code>), <code>Bus(i).Component(j).X</code>, <code>.U</code> and <code>.Y</code> (tables named by <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>). Controller states and outputs are only in <code>rm_variable</code> and <code>rm_output</code>.</span><span lang="ja">初めて参照したときに作る依存ビューです。<code>t</code>, <code>Bus(i).V</code> (<code>Vreal</code>, <code>Vimag</code>), <code>Bus(i).I</code>, <code>Bus(i).PQ</code> (<code>P</code>, <code>Q</code>), <code>Bus(i).Component(j).X</code>、<code>.U</code>、<code>.Y</code>（<code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code> を列名とする表）を持ちます。制御器の状態と出力は <code>rm_variable</code> と <code>rm_output</code> にしかありません。</span></td></tr>
         <tr><td><span lang="en">from</span><span lang="ja">継承:</span> <code>ResultBase</code></td><td></td><td><code>flag</code>, <code>output</code>, <code>options</code> (= <code>sct_options</code>), <code>s_solver = "SolverODE"</code>, <code>r_elapsed</code> [s], <code>s_network</code>, <code>l_success</code> (<code>flag &gt; 0</code>)</td></tr>
       </tbody>
     </table>
     <ul lang="en">
       <li><code>get_point(t, tab_map, Side=…)</code>: the variables at a time (linear interpolation; <code>"after"</code> or <code>"before"</code> at a phase boundary); input of <code>net.get_sys(Point={sim, t})</code>.</li>
-      <li><code>plot_trajectory(Quantity=…, Bus=…)</code>, <code>export(filename)</code>.</li>
+      <li><code>plot_trajectory(Quantity=…, Bus=…)</code>; <code>export(filename)</code>: all trajectories as a table (.csv, .txt, .xlsx, .xls) or a MAT-file.</li>
+      <li><code>judge_out_of_step(Reference=…, Threshold=…)</code>: <code>"stable"</code>, <code>"out-of-step"</code> or <code>"incomplete"</code> from the rotor angles <code>delta</code> relative to the generator of the slack bus (<code>"slack"</code>, the default), the center of inertia (<code>"COI"</code>) or a unit; <code>Threshold</code> 360 deg. A run with <code>flag ≠ 1</code> and no unit out of step is <code>"incomplete"</code>; a run stopped with <code>flag = 2</code> from the same reference at <code>StopAngle ≥ Threshold</code> is <code>"out-of-step"</code> for the unit of <code>output.outOfStep</code>.</li>
     </ul>
     <ul lang="ja">
       <li><code>get_point(t, tab_map, Side=…)</code> は、ある時刻の変数の値を線形補間で返します。フェーズの境目では <code>"after"</code> か <code>"before"</code> を選びます。返した値は <code>net.get_sys(Point={sim, t})</code> にそのまま渡せます。</li>
-      <li><code>plot_trajectory(Quantity=…, Bus=…)</code>、<code>export(filename)</code></li>
+      <li><code>plot_trajectory(Quantity=…, Bus=…)</code> は軌道を描きます。<code>export(filename)</code> は、すべての軌道を表（.csv、.txt、.xlsx、.xls）か MAT ファイルに書き出します。</li>
+      <li><code>judge_out_of_step(Reference=…, Threshold=…)</code> は、回転子角 <code>delta</code> から <code>"stable"</code>、<code>"out-of-step"</code>、<code>"incomplete"</code> を判定します。基準はスラック母線の発電機（<code>"slack"</code>、既定）、慣性中心（<code>"COI"</code>）、または機器のタグで、<code>Threshold</code> は 360 deg です。<code>flag ≠ 1</code> で脱調した機器がなければ <code>"incomplete"</code> です。同じ基準で <code>StopAngle ≥ Threshold</code> として <code>flag = 2</code> で止まった実行は、<code>output.outOfStep</code> の機器を脱調とします。</li>
     </ul>
-    <p lang="en"><code>output</code>: <code>message</code>, <code>tEnd</code> [s], <code>nPhases</code>, <code>nPhasesDone</code> (a phase cut short is not counted), <code>phases</code> (the phase table), <code>isSparse</code> (false after a fallback to dense matrices), <code>exception</code>.</p>
-    <p lang="ja"><code>output</code> には、<code>message</code>、<code>tEnd</code> [s]、<code>nPhases</code>、<code>nPhasesDone</code>（途中で止まったフェーズは数えません）、<code>phases</code>（フェーズ表）、<code>isSparse</code>（密行列に切り替えたら false）、<code>exception</code> が入ります。</p>
+    <p lang="en"><code>output</code>: <code>tEnd</code> [s], <code>nPhases</code>, <code>nPhasesDone</code> (a phase cut short is not counted), <code>phases</code> (the phase table), <code>isSparse</code> (false after a fallback to dense matrices), <code>exception</code>, <code>outOfStep</code> (<code>Time</code>, <code>Unit</code>, <code>Reference</code>, <code>Angle</code> [deg] with <code>flag = 2</code>; empty otherwise), <code>message</code>.</p>
+    <p lang="ja"><code>output</code> には、<code>tEnd</code> [s]、<code>nPhases</code>、<code>nPhasesDone</code>（途中で止まったフェーズは数えません）、<code>phases</code>（フェーズ表）、<code>isSparse</code>（密行列に切り替えたら false）、<code>exception</code>、<code>outOfStep</code>（<code>flag = 2</code> のとき <code>Time</code>、<code>Unit</code>、<code>Reference</code>、<code>Angle</code> [deg]。それ以外は空）、<code>message</code> が入ります。</p>
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
       <p lang="en">Example: <code>network.IEEE14bus</code> (5 generators, 9 loads, no controllers), a scenario with one fault at <code>B008</code> for <code>[1, 1.05]</code> s, over <code>[0, 5]</code> s: 3 phases, <code>n_x = 30</code>, <code>n_v = 28</code>, <code>n_u = 34</code>; <code>rm_variable</code> is <code>n_t × 92</code>, <code>rm_I</code> is <code>n_t × 28</code>; <code>n_z = 30 + 2·28 + 34 = 120</code>. <code>network.IEEE68bus</code> (with AVR and PSS): 382 columns (144 + 136 + 102).</p>
       <p lang="ja">例として、<code>network.IEEE14bus</code>（発電機 5、負荷 9、制御器なし）で、<code>B008</code> に <code>[1, 1.05]</code> s の地絡を 1 つ持つシナリオを <code>[0, 5]</code> s で実行するとします。フェーズは 3 つで、<code>n_x = 30</code>、<code>n_v = 28</code>、<code>n_u = 34</code> になります。<code>rm_variable</code> は <code>n_t × 92</code>、<code>rm_I</code> は <code>n_t × 28</code> で、<code>n_z = 30 + 2·28 + 34 = 120</code> です。<code>network.IEEE68bus</code>（AVR と PSS 付き）では、列数は 382 (144 + 136 + 102) です。</p>
     </div>
+
+    <h3 id="format-struct"><span lang="en">First output with <code>Format="struct"</code></span><span lang="ja"><code>Format="struct"</code> の第 1 出力</span></h3>
+    <ul lang="en">
+      <li>A struct that mirrors the model hierarchy, for repeated runs: no <code>ResultODE</code>, no snapshot of the network, no outputs <code>y</code> (use <code>rm_output</code> of a <code>ResultODE</code>).</li>
+      <li>Every table has one variable per name and no <code>Time</code> column; <code>sol.t</code> is the time of every row. Each element has <code>s_tag</code>.</li>
+      <li>The states and inputs of a tripped component or global controller are <code>NaN</code>; the current of a tripped component is 0.</li>
+    </ul>
+    <ul lang="ja">
+      <li>繰り返し実行のための、モデルの階層をなぞる struct です。<code>ResultODE</code> もネットワークのスナップショットも作らず、出力 <code>y</code> も計算しません（出力は <code>ResultODE</code> の <code>rm_output</code> を使います）。</li>
+      <li>どの表も名前ごとに 1 つの変数を持ち、<code>Time</code> の列はありません。<code>sol.t</code> がすべての行の時刻です。各要素は <code>s_tag</code> を持ちます。</li>
+      <li>トリップ中の機器とグローバル制御器の状態と入力は <code>NaN</code> です。トリップ中の機器の電流は 0 です。</li>
+    </ul>
+    <table class="dg-table">
+      <thead><tr><th><span lang="en">Field</span><span lang="ja">フィールド</span></th><th><span lang="en">Contents</span><span lang="ja">内容</span></th></tr></thead>
+      <tbody>
+        <tr><td><code>sol.t</code>, <code>sol.s_tag</code>, <code>sol.phase</code>, <code>sol.tab_variable</code></td><td><span lang="en">Times [s] (column), tag of the scenario, phase table (<code>output.phases</code>), the variable rows of the map (<code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code>, <code>uc</code>).</span><span lang="ja">時刻 [s]（列ベクトル）、シナリオのタグ、フェーズ表（<code>output.phases</code>）、マップの変数の行（<code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code>、<code>uc</code>）です。</span></td></tr>
+        <tr><td><code>sol.a_Bus{i}</code></td><td><code>V</code> (<code>Vre</code>, <code>Vim</code>), <code>I</code> (<code>Ire</code>, <code>Iim</code>: <span lang="en">current injected into the network</span><span lang="ja">ネットワークへの注入電流</span>), <code>P</code>, <code>Q</code> (<code>P + jQ = V·conj(I)</code>), <code>a_Component</code></td></tr>
+        <tr><td><code>sol.a_Bus{i}.a_Component{j}</code></td><td><code>x</code>, <code>u</code>, <code>I</code> (<span lang="en">the current the component injects, <code>f_I</code> at each time</span><span lang="ja">機器が注入する電流。各時刻で <code>f_I</code> を評価</span>), <code>a_LocalController</code></td></tr>
+        <tr><td><code>….a_LocalController{k}</code></td><td><code>x</code>, <code>u</code> (<span lang="en">its inputs <code>uc</code></span><span lang="ja">入力 <code>uc</code></span>), <code>a_LocalController</code> <span lang="en">(nested as in the model)</span><span lang="ja">（モデルと同じ入れ子）</span></td></tr>
+        <tr><td><code>sol.a_GlobalController{k}</code></td><td><code>x</code>, <code>u</code> (<span lang="en">one column <code>&lt;input&gt;_&lt;unit tag&gt;</code> per controlled unit</span><span lang="ja">制御対象ごとに列 <code>&lt;入力&gt;_&lt;機器のタグ&gt;</code></span>)</td></tr>
+      </tbody>
+    </table>
 
     <!-- ============================== SIDE EFFECTS ============================== -->
     <h2 id="side-effects"><span lang="en">Side effects on the model and caches</span><span lang="ja">モデルへの副作用とキャッシュ</span></h2>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Object</span><span lang="ja">対象のオブジェクト</span></th><th><span lang="en">Behaviour</span><span lang="ja">振る舞い</span></th></tr></thead>
       <tbody>
-        <tr><td><code>f_*</code> <span lang="en">handles</span><span lang="ja">ハンドル</span></td><td><span lang="en">Read only; built by <code>net.initialize()</code>.</span><span lang="ja">読むだけです。作るのは <code>net.initialize()</code> です。</span></td></tr>
+        <tr><td><code>f_*</code> <span lang="en">handles</span><span lang="ja">ハンドル</span></td><td><span lang="en">Read only; built by <code>net.initialize()</code>. Copied into the blocks of <code>sct_dae</code> (SIM-03).</span><span lang="ja">読むだけです。作るのは <code>net.initialize()</code> で、<code>sct_dae</code> のブロックに写します（SIM-03）。</span></td></tr>
         <tr><td><span lang="en">Equilibrium, stale state</span><span lang="ja">平衡点、stale 状態</span></td><td><span lang="en">Read only. <code>sct_stale</code> and the equilibrium values are not changed.</span><span lang="ja">読むだけです。<code>sct_stale</code> も平衡点の値も変えません。</span></td></tr>
-        <tr><td><code>net.solver_ODE</code></td><td><span lang="en">Holds no settings; options of the call are not stored.</span><span lang="ja">設定を持たず、呼び出しのオプションも保存しません。</span></td></tr>
-        <tr><td><span lang="en">Simulator indices</span><span lang="ja">シミュレータの添字</span></td><td><span lang="en">Not stored on the models: the positions in <code>z</code> and <code>s</code> and the connection matrices are built by SIM-05 from the variable map and the connection map and live in the run context <code>ctx</code>; every run builds them again.</span><span lang="ja">モデルには保存しません。<code>z</code> と <code>s</code> の位置や接続行列は、SIM-05 が変数マップと接続マップから作り、実行の文脈 <code>ctx</code> に置きます。実行のたびに作り直します。</span></td></tr>
-        <tr><td><span lang="en">Disturbance state</span><span lang="ja">外乱の状態</span></td><td><span lang="en">Trips, faults and input events of a phase live in <code>ctx</code> (SIM-08); the models are not changed, so nothing is restored after the run or after an error. Opened branches are only left out of the admittance matrix of the run (<code>ctx</code>); the branches themselves are not changed.</span><span lang="ja">フェーズごとのトリップ、地絡、入力イベントは <code>ctx</code> に置きます（SIM-08）。モデルを変えないので、実行が終わっても、エラーで止まっても、元に戻す必要はありません。開いたブランチは実行中のアドミタンス行列（<code>ctx</code>）から外すだけで、ブランチ自体には手を加えません。</span></td></tr>
+        <tr><td><code>net.solver_ODE</code>, <code>GUILDA.setting</code></td><td><span lang="en">The solver holds no settings; the options of the call are not stored, and the settings file is not changed.</span><span lang="ja">ソルバーは設定を持たず、呼び出しのオプションも保存しません。設定ファイルも変えません。</span></td></tr>
+        <tr><td><span lang="en">Simulator indices</span><span lang="ja">シミュレータの添字</span></td><td><span lang="en">Not stored on the models: the positions in <code>z</code> and <code>s</code> and the connection matrices are built by SIM-07 from <code>sct_dae</code> and live in the run context <code>ctx</code>; every run builds them again.</span><span lang="ja">モデルには保存しません。<code>z</code> と <code>s</code> の位置や接続行列は、SIM-07 が <code>sct_dae</code> から作り、実行の文脈 <code>ctx</code> に置きます。実行のたびに作り直します。</span></td></tr>
+        <tr><td><span lang="en">Disturbance state</span><span lang="ja">外乱の状態</span></td><td><span lang="en">Trips, faults and input events of a phase live in <code>ctx</code> (SIM-09); the models are not changed, so nothing is restored after the run or after an error. Opened branches are only left out of the admittance matrix of the run (<code>ctx</code>); the branches themselves are not changed.</span><span lang="ja">フェーズごとのトリップ、地絡、入力イベントは <code>ctx</code> に置きます（SIM-09）。モデルを変えないので、実行が終わっても、エラーで止まっても、元に戻す必要はありません。開いたブランチは実行中のアドミタンス行列（<code>ctx</code>）から外すだけで、ブランチ自体には手を加えません。</span></td></tr>
         <tr><td><span lang="en">Routing</span><span lang="ja">接続</span></td><td><span lang="en">Read from the connection map of <code>net.get_variable_map()</code>; <code>simulate</code> prints nothing about it (the INFO messages come from <code>add_global_controller</code>, <code>add_local_controller</code>, <code>remove_local_controller</code>).</span><span lang="ja">接続は <code>net.get_variable_map()</code> の接続マップから読みます。<code>simulate</code> は接続について何も表示しません。INFO を表示するのは <code>add_global_controller</code>、<code>add_local_controller</code>、<code>remove_local_controller</code> です。</span></td></tr>
-        <tr><td><code>Scenario</code></td><td><span lang="en">Read only: the disturbances, <code>Time</code> and <code>Options</code> are not changed, and the verdict is computed later by <code>sc.judge(result)</code>.</span><span lang="ja">読むだけです。外乱、<code>Time</code>、<code>Options</code> は変えません。判定はあとで <code>sc.judge(result)</code> が求めます。</span></td></tr>
-        <tr><td><code>ResultODE</code></td><td><span lang="en">Holds a reference to the network (<code>a_PowerNetwork</code>) and its own copy of the variable map. A later edit of the network does not change the result; the next <code>simulate</code> after an edit that makes a layer stale stops in SIM-05 until <code>net.initialize()</code> runs.</span><span lang="ja">ネットワークへの参照 (<code>a_PowerNetwork</code>) と、変数マップの写しを持ちます。あとでネットワークを編集しても、結果は変わりません。層を古くする編集をした後は、<code>net.initialize()</code> を実行するまで <code>simulate</code> が SIM-05 で止まります。</span></td></tr>
+        <tr><td><code>Scenario</code></td><td><span lang="en">Read only: the disturbances, <code>Time</code> and <code>Description</code> are not changed; the <code>Time</code> option applies to the call only.</span><span lang="ja">読むだけです。外乱、<code>Time</code>、<code>Description</code> は変えません。<code>Time</code> オプションはその呼び出しにだけ効きます。</span></td></tr>
+        <tr><td><code>ResultODE</code></td><td><span lang="en">Holds no reference to the network, only the snapshot <code>sct_network</code> and its own copy of the variable map. A later edit or <code>delete(net)</code> does not change the result; the next <code>simulate</code> after an edit that makes a layer stale stops in SIM-02 until <code>net.initialize()</code> runs.</span><span lang="ja">ネットワークへの参照は持たず、スナップショット <code>sct_network</code> と変数マップの写しだけを持ちます。あとでネットワークを編集・削除（<code>delete(net)</code>）しても、結果は変わりません。層を古くする編集をした後は、<code>net.initialize()</code> を実行するまで <code>simulate</code> が SIM-02 で止まります。</span></td></tr>
       </tbody>
     </table>
 
     <!-- ============================== FAILURES ============================== -->
     <h2 id="failures"><span lang="en">Failure behavior and result flags</span><span lang="ja">失敗時の動作と結果フラグ</span></h2>
     <ul lang="en">
-      <li><code>flag</code>: <code>1</code> run reached <code>tend</code>; <code>0</code> stopped by <code>TimeLimit</code>; <code>-1</code> solver stopped early or a phase could not be solved.</li>
+      <li><code>flag</code>: <code>1</code> run reached <code>tend</code>; <code>2</code> stopped by <code>StopOnOutOfStep</code>; <code>0</code> stopped by <code>TimeLimit</code>; <code>-1</code> solver stopped early or a phase could not be solved.</li>
+      <li>With <code>2</code>: trajectories up to the stop (<code>output.tEnd</code>), the stop in <code>output.outOfStep</code>, no warning.</li>
       <li>With <code>0</code> or <code>-1</code>: trajectories up to <code>output.tEnd</code> (no time points when the first phase failed); reason in <code>output.message</code>; warning <code>GUILDA:PowerNetwork:SimulationIncomplete</code> whether or not <code>flag</code> is requested.</li>
       <li>Errors that are not numerical failures stop the call.</li>
     </ul>
     <ul lang="ja">
-      <li><code>flag</code> は、<code>tend</code> まで進めば <code>1</code>、<code>TimeLimit</code> で止まれば <code>0</code>、ソルバーが途中で止まったかフェーズが解けなければ <code>-1</code> です。</li>
+      <li><code>flag</code> は、<code>tend</code> まで進めば <code>1</code>、<code>StopOnOutOfStep</code> で止まれば <code>2</code>、<code>TimeLimit</code> で止まれば <code>0</code>、ソルバーが途中で止まったかフェーズが解けなければ <code>-1</code> です。</li>
+      <li><code>2</code> のときは、止まった時刻（<code>output.tEnd</code>）までの軌道を返し、停止の内容を <code>output.outOfStep</code> に入れます。警告は出しません。</li>
       <li><code>0</code> や <code>-1</code> のときは、<code>output.tEnd</code> までの軌道を返し、理由を <code>output.message</code> に入れます。最初のフェーズで失敗したときは時刻が空になります。<code>flag</code> を受け取っていてもいなくても、警告 <code>GUILDA:PowerNetwork:SimulationIncomplete</code> を出します。</li>
       <li>数値計算の失敗ではないエラーは、その場で呼び出しを止めます。</li>
     </ul>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Situation</span><span lang="ja">状況</span></th><th><span lang="en">What the caller sees</span><span lang="ja">呼び出し側に見えるもの</span></th></tr></thead>
       <tbody>
-        <tr><td><span lang="en">Wall-clock time reached <code>TimeLimit</code> (SIM-16)</span><span lang="ja">実時間が <code>TimeLimit</code> に達した (SIM-16)</span></td><td><code>flag = 0</code></td></tr>
+        <tr><td><span lang="en">Rotor angle from the reference reached <code>StopAngle</code> (SIM-17)</span><span lang="ja">基準からの回転子角が <code>StopAngle</code> に達した (SIM-17)</span></td><td><code>flag = 2</code>; <code>output.outOfStep</code></td></tr>
+        <tr><td><span lang="en">Wall-clock time reached <code>TimeLimit</code> (SIM-17)</span><span lang="ja">実時間が <code>TimeLimit</code> に達した (SIM-17)</span></td><td><code>flag = 0</code></td></tr>
         <tr><td><span lang="en">Solver stopped before <code>t2</code> (step size too small, ...)</span><span lang="ja">ソルバーが <code>t2</code> の前に止まった (刻み幅が小さすぎる等)</span></td><td><code>flag = -1</code>; <span lang="en">the solver's last warning is in <code>output.message</code></span><span lang="ja">ソルバーの最後の警告が <code>output.message</code> に入ります。</span></td></tr>
-        <tr><td><span lang="en">Algebraic equations not solvable at the start of a phase (SIM-12), e.g. a constant-power load during a nearby fault</span><span lang="ja">フェーズの開始時に代数方程式が解けない (SIM-12)。近くで地絡が起きている定電力負荷などで起こります。</span></td><td><code>flag = -1</code>; <code>output.exception</code>: <code>GUILDA:SolverODE:InitialConditionFailed</code>, <span lang="en">cause</span><span lang="ja">原因</span> <code>GUILDA:SolverODE:AlgebraicNotSolved</code></td></tr>
+        <tr><td><span lang="en">Algebraic equations not solvable at the start of a phase (SIM-13), e.g. a constant-power load during a nearby fault</span><span lang="ja">フェーズの開始時に代数方程式が解けない (SIM-13)。近くで地絡が起きている定電力負荷などで起こります。</span></td><td><code>flag = -1</code>; <code>output.exception</code>: <code>GUILDA:SolverODE:InitialConditionFailed</code>, <span lang="en">cause</span><span lang="ja">原因</span> <code>GUILDA:SolverODE:AlgebraicNotSolved</code></td></tr>
         <tr><td><span lang="en">Solver moved the differential variables at the start</span><span lang="ja">開始時にソルバーが微分変数を動かした</span></td><td><code>flag = -1</code>; <code>GUILDA:SolverODE:InitialConditionFailed</code></td></tr>
         <tr><td><span lang="en">Solver rejected the initial condition (<code>NeedBetterY0</code>)</span><span lang="ja">ソルバーが初期値を受け付けない (<code>NeedBetterY0</code>)</span></td><td><code>flag = -1</code>; <code>GUILDA:SolverODE:UnfeasibleDAE</code></td></tr>
         <tr><td><span lang="en">Other numerical failures of the solver (index &gt; 1 with dense matrices, <code>decic</code> convergence, all-zero mass matrix)</span><span lang="ja">その他のソルバーの数値的失敗 (密行列でも指数 &gt; 1、<code>decic</code> の収束失敗、すべて 0 の質量行列)</span></td><td><code>flag = -1</code>; <code>GUILDA:SolverODE:PhaseFailed</code></td></tr>
-        <tr><td><span lang="en">Error in an input function or a model during a phase</span><span lang="ja">フェーズ中の入力関数やモデルのエラー</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverODE:PhaseFailed</code>, <span lang="en">original as cause</span><span lang="ja">元のエラーを cause に持ちます。</span></td></tr>
-        <tr><td><span lang="en">Invalid call (SIM-01)</span><span lang="ja">不正な呼び出し (SIM-01)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:PowerNetwork:SimulateTime</code>, <code>SimulateArguments</code>, <code>SimulateExport</code>, <code>ScenarioTimeConflict</code>, <code>ScenarioOptionConflict</code>, <code>GUILDA:resolve_options:UnknownName</code></td></tr>
-        <tr><td><span lang="en">Equilibrium missing or stale (SIM-05)</span><span lang="ja">平衡点がない、または古い (SIM-05)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverODE:Stale</code></td></tr>
-        <tr><td><span lang="en">Invalid scenario (SIM-04; most checks also run when a disturbance or the scenario is added)</span><span lang="ja">不正なシナリオ (SIM-04。多くの検査は外乱やシナリオの追加時にも実施)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:Scenario:</code><code>ScenarioArray</code>, <code>OtherNetwork</code>, <code>DuplicateRunTag</code>, <code>InvalidTimeSpan</code>, <code>ZeroLengthTimeSpan</code>, <code>UnknownFaultBus</code>, <code>UnknownOpenBranch</code>, <code>UnknownTripUnit</code>, <code>UnknownOffsetUnit</code>, <code>UnknownOffsetState</code>, <code>UnknownInputUnit</code>, <code>UnknownInputName</code>, <code>ValueCountMismatch</code>, <code>InvalidNargin</code>, <code>InvalidInputType</code>; <span lang="en">when adding</span><span lang="ja">追加時</span> <code>ReservedTag</code>, <code>DuplicateTag</code>. <span lang="en">Warning</span><span lang="ja">警告</span> <code>OutsideTimeSpan</code>.</td></tr>
-        <tr><td><span lang="en">Opened branches leave buses without any component (SIM-04)</span><span lang="ja">開放ブランチによって機器のない母線が切り離される (SIM-04)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverODE:OpenBranchIsland</code> <span lang="en">before the integration. An island with components but without a generator (e.g. a constant-power load) usually gives <code>flag = -1</code>.</span><span lang="ja">（積分の前に止まります）。機器はあるが発電機がない単独系統（定電力負荷など）は、多くの場合 <code>flag = -1</code> になります。</span></td></tr>
-        <tr><td><span lang="en">Model structure</span><span lang="ja">モデルの構造</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:SolverODE:InputEdited</code>, <code>GconNoTarget</code>, <code>GUILDA:read_mass:NotConstant</code> (SIM-05), <code>GUILDA:ResultODE:VariableMap</code> (SIM-19)</td></tr>
+        <tr><td><span lang="en">Error in a model during a phase</span><span lang="ja">フェーズ中のモデルのエラー</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverODE:PhaseFailed</code>, <span lang="en">original as cause</span><span lang="ja">元のエラーを cause に持ちます。</span></td></tr>
+        <tr><td><span lang="en">Invalid call (SIM-01)</span><span lang="ja">不正な呼び出し (SIM-01)</span></td><td><span lang="en">Error of the <code>arguments</code> block: unknown option name or invalid value, <code>GUILDA:PowerNetwork:ScenarioNotFound</code>, <code>GUILDA:mustBeSimulationTime:InvalidTime</code>, <code>GUILDA:check_plotfcn:InDevelopment</code></span><span lang="ja"><code>arguments</code> ブロックのエラー（オプションにない名前や不正な値）、<code>GUILDA:PowerNetwork:ScenarioNotFound</code>、<code>GUILDA:mustBeSimulationTime:InvalidTime</code>、<code>GUILDA:check_plotfcn:InDevelopment</code></span></td></tr>
+        <tr><td><span lang="en">Equilibrium missing or stale, inputs edited (SIM-02)</span><span lang="ja">平衡点がない・古い、入力が編集された (SIM-02)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:PowerNetwork:SimulateStale</code>, <code>SimulateInputEdited</code></td></tr>
+        <tr><td><span lang="en">Invalid scenario (SIM-04; most checks also run when a disturbance is added)</span><span lang="ja">不正なシナリオ (SIM-04。多くの検査は外乱の追加時にも実施)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:Scenario:</code><code>InvalidTimeSpan</code>, <code>ZeroLengthTimeSpan</code>, <code>UnknownFaultBus</code>, <code>UnknownOpenBranch</code>, <code>UnknownTripUnit</code>, <code>UnknownOffsetUnit</code>, <code>UnknownOffsetState</code>, <code>UnknownInputUnit</code>, <code>UnknownInputName</code>, <code>ValueCountMismatch</code>, <code>InvalidInputSeries</code>, <code>MethodWithoutSeries</code>; <span lang="en">when adding</span><span lang="ja">追加時</span> <code>ReservedTag</code>, <code>DuplicateTag</code>. <span lang="en">Warning</span><span lang="ja">警告</span> <code>OutsideTimeSpan</code>.</td></tr>
+        <tr><td><span lang="en">Opened branches leave buses without any component (SIM-04)</span><span lang="ja">開放ブランチによって機器のない母線が切り離される (SIM-04)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:PowerNetwork:OpenBranchIsland</code> <span lang="en">before the integration. An island with components but without a generator (e.g. a constant-power load) usually gives <code>flag = -1</code>.</span><span lang="ja">（積分の前に止まります）。機器はあるが発電機がない単独系統（定電力負荷など）は、多くの場合 <code>flag = -1</code> になります。</span></td></tr>
+        <tr><td><span lang="en"><code>StopOnOutOfStep</code> without a generator on the slack bus or without another unit with <code>delta</code> (SIM-06)</span><span lang="ja">スラック母線に発電機がない、またはほかに <code>delta</code> を持つ機器がない状態での <code>StopOnOutOfStep</code> (SIM-06)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:PowerNetwork:StopNoRotorAngle</code></td></tr>
+        <tr><td><span lang="en">Model structure</span><span lang="ja">モデルの構造</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:PowerNetwork:GconNoTarget</code> (SIM-03), <code>GUILDA:SolverODE:MassNotConstant</code> (SIM-07)</td></tr>
       </tbody>
     </table>
     <ul lang="en">
@@ -759,19 +845,19 @@ verdict = sc.judge(result)</code></pre>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Model</span><span lang="ja">モデル</span></th><th><span lang="en">Used by the simulation</span><span lang="ja">シミュレーションが使うもの</span></th></tr></thead>
       <tbody>
-        <tr><td><code>Component</code></td><td><span lang="en"><code>fcn_dx</code>, <code>fcn_I</code>, <code>fcn_Y</code> (SIM-14); a constant <code>fcn_Mass</code> (SIM-05); <code>Jacobi_dx</code>, <code>Jacobi_I</code>, <code>Jacobi_Y</code> (SIM-15, numerical differentiation without them, which is slower). <code>sv_x</code> and <code>sv_u</code> are the names used by <code>OffsetState</code> and <code>InputName</code>. A subclass of <code>component.generator.abstract</code> restarts after a trip through <code>get_equilibrium(V, 0, 0, 0)</code> (SIM-18).</span><span lang="ja"><code>fcn_dx</code>、<code>fcn_I</code>、<code>fcn_Y</code> (SIM-14)、定数の <code>fcn_Mass</code> (SIM-05)、<code>Jacobi_dx</code>、<code>Jacobi_I</code>、<code>Jacobi_Y</code> (SIM-15) を使います。ヤコビアンがなければ数値微分で求めるので、遅くなります。<code>sv_x</code> と <code>sv_u</code> の名前は、<code>OffsetState</code> と <code>InputName</code> で指定するときに使います。<code>component.generator.abstract</code> のサブクラスは、トリップの後 <code>get_equilibrium(V, 0, 0, 0)</code> で再開します (SIM-18)。</span></td></tr>
+        <tr><td><code>Component</code></td><td><span lang="en"><code>fcn_dx</code>, <code>fcn_I</code>, <code>fcn_Y</code> (SIM-15); a constant <code>fcn_Mass</code> (SIM-07); <code>Jacobi_dx</code>, <code>Jacobi_I</code>, <code>Jacobi_Y</code> (SIM-16, numerical differentiation without them, which is slower). <code>sv_x</code> and <code>sv_u</code> are the names used by <code>OffsetState</code> and <code>InputName</code>. A subclass of <code>component.generator.abstract</code> restarts after a trip through <code>get_equilibrium(V, 0, 0, 0)</code> (<code>f_reconnect</code>, SIM-19).</span><span lang="ja"><code>fcn_dx</code>、<code>fcn_I</code>、<code>fcn_Y</code> (SIM-15)、定数の <code>fcn_Mass</code> (SIM-07)、<code>Jacobi_dx</code>、<code>Jacobi_I</code>、<code>Jacobi_Y</code> (SIM-16) を使います。ヤコビアンがなければ数値微分で求めるので、遅くなります。<code>sv_x</code> と <code>sv_u</code> の名前は、<code>OffsetState</code> と <code>InputName</code> で指定するときに使います。<code>component.generator.abstract</code> のサブクラスは、トリップの後 <code>get_equilibrium(V, 0, 0, 0)</code> で再開します（<code>f_reconnect</code>、SIM-19）。</span></td></tr>
         <tr><td><code>LocalController</code></td><td><span lang="en"><code>fcn_dx</code>, <code>fcn_y</code>, a constant <code>fcn_Mass</code>, <code>Jacobi_dx</code>, <code>Jacobi_Y</code>. Its inputs <code>sv_u</code> are read by name: an output of a nested controller, then an output of the component, then a state ("local", "observe"); its outputs <code>sv_y</code> drive the inputs of the same name. A component has two slots: the AVR or <code>"local"</code> controller, which can hold one more (a PSS under the AVR), and a governor; the two drive different inputs (<code>GUILDA:Component:ControllerOutputOverlap</code>).</span><span lang="ja"><code>fcn_dx</code>、<code>fcn_y</code>、定数の <code>fcn_Mass</code>、<code>Jacobi_dx</code>、<code>Jacobi_Y</code> を使います。入力 <code>sv_u</code> は名前で参照し、入れ子の制御器の出力、機器の出力、状態の順に探します（"local"、"observe"）。出力 <code>sv_y</code> は、同じ名前の入力を動かします。機器には制御器の枠が 2 つあります。1 つは AVR または <code>"local"</code> の制御器で、その下にもう 1 つ（AVR の下の PSS など）を持てます。もう 1 つはガバナです。2 つが同じ入力を動かすことはできません（<code>GUILDA:Component:ControllerOutputOverlap</code>）。</span></td></tr>
         <tr><td><code>GlobalController</code></td><td><span lang="en"><code>fcn_dx</code>, <code>fcn_y</code>, <code>Jacobi_dx</code>, <code>Jacobi_Y</code>, a constant <code>fcn_Mass</code>; <code>sv_u</code> names outputs or states, <code>sv_y</code> names inputs of every controlled unit. Routing by name in the connection map (<code>"observe"</code>, <code>"global"</code>): an output drives every local controller of the unit with an input of that name, otherwise the component input; an input is the sum of its sources.</span><span lang="ja"><code>fcn_dx</code>、<code>fcn_y</code>、<code>Jacobi_dx</code>、<code>Jacobi_Y</code>、定数の <code>fcn_Mass</code> を使います。<code>sv_u</code> には各制御対象の出力か状態の名前を、<code>sv_y</code> には制御対象の入力の名前を書きます。接続は接続マップ（<code>"observe"</code>、<code>"global"</code>）が名前で決めます。出力は、同じ名前の入力を持つ制御対象のローカル制御器すべてにつながり、そうした制御器がなければ機器の入力につながります。入力には、接続元の値の和が入ります。</span></td></tr>
         <tr><td><span lang="en">New disturbance kind</span><span lang="ja">新しい種類の外乱</span></td><td><ul lang="en">
-            <li>Add the field to <code>Scenario</code> (<code>sv_field</code>, the empty record, an <code>add_*</code> method).</li>
-            <li>Check it in <code>validate_disturbance</code>; collect it per phase in <code>Scenario.compile</code>.</li>
-            <li>Apply it in <code>SolverODE.solve</code> (as <code>set_admittance</code> does for <code>OpenBranch</code>; variables removed through <code>lv_FBorTC</code> in <code>initial_condition</code>) and in <code>getNextPhase</code> (restart values).</li>
-            <li>Keep its per-phase state in <code>ctx</code> (as <code>set_phase</code> in <code>solve.m</code> does); never write to the models. Add its column to <code>Scenario.import_csv</code> / <code>export_csv</code>.</li>
+            <li>Add the field to <code>Scenario</code> (<code>sr_field</code>, the empty record, an <code>add_*</code> method).</li>
+            <li>Check it in <code>validate_disturbance</code>; give it per phase as positions in <code>sct_dae</code> in <code>Scenario.compile</code> (a new field of <code>sct_event</code>).</li>
+            <li>Apply it in <code>SolverODE.solve</code> from the positions only (as <code>set_admittance</code> does for <code>OpenBranch</code>; variables removed through <code>lv_FBorTC</code> in <code>initial_condition</code>) and in <code>getNextPhase</code> (restart values); any data from the models goes into <code>sct_dae</code> through <code>simulation_blocks</code>.</li>
+            <li>Keep its per-phase state in <code>ctx</code> (as <code>set_phase</code> in <code>solve.m</code> does); never write to the models. Add it to the scenario file (<code>to_json_struct</code>, <code>read_scenarios</code>).</li>
           </ul><ul lang="ja">
-            <li><code>Scenario</code> にフィールドを加えます（<code>sv_field</code>、空のレコード、<code>add_*</code> メソッド）。</li>
-            <li><code>validate_disturbance</code> で検査し、<code>Scenario.compile</code> でフェーズごとに集めます。</li>
-            <li><code>SolverODE.solve</code> と <code>getNextPhase</code>（再開時の値）に処理を加えます。<code>SolverODE.solve</code> では、<code>OpenBranch</code> に対する <code>set_admittance</code> のように扱い、変数を除く場合は <code>initial_condition</code> の <code>lv_FBorTC</code> を使います。</li>
-            <li>フェーズごとの状態は、<code>solve.m</code> の <code>set_phase</code> と同じように <code>ctx</code> に置き、モデルには書き込みません。<code>Scenario.import_csv</code> / <code>export_csv</code> にも列を加えます。</li>
+            <li><code>Scenario</code> にフィールドを加えます（<code>sr_field</code>、空のレコード、<code>add_*</code> メソッド）。</li>
+            <li><code>validate_disturbance</code> で検査し、<code>Scenario.compile</code> でフェーズごとに <code>sct_dae</code> の中の位置として渡します（<code>sct_event</code> の新しいフィールド）。</li>
+            <li><code>SolverODE.solve</code> と <code>getNextPhase</code>（再開時の値）に、位置だけを使う処理を加えます。<code>SolverODE.solve</code> では、<code>OpenBranch</code> に対する <code>set_admittance</code> のように扱い、変数を除く場合は <code>initial_condition</code> の <code>lv_FBorTC</code> を使います。モデルから要るデータは、<code>simulation_blocks</code> で <code>sct_dae</code> に入れます。</li>
+            <li>フェーズごとの状態は、<code>solve.m</code> の <code>set_phase</code> と同じように <code>ctx</code> に置き、モデルには書き込みません。シナリオのファイル（<code>to_json_struct</code>、<code>read_scenarios</code>）にも加えます。</li>
           </ul></td></tr>
       </tbody>
     </table>

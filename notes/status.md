@@ -84,7 +84,7 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **`AVR_DC1` の界磁電圧の上下限:** `Vfld_max`(既定 `Inf`)と `Vfld_min`(既定 `-Inf`)。上下限では `Vfld` を止めるワインドアップなしの制限です。既定では軌道も `get_sys` も以前とビット単位で同じです(`8b225d2`、F28)。
 - **調速機の枠と IEEJ の調速機:** 機器に `"avr"` / `"local"` の連鎖と並ぶ `"governor"` を付けられます。出力は重なってはならず(`GUILDA:Component:ControllerOutputOverlap`)、順序は連鎖、次に調速機です(`70a59ac`)。`controller.governor.IEEJ_LPT1`, `IEEJ_LPT3`, `IEEJ_LPT4`(`9733ecc`、F30)。[model-building-improvements.md](model-building-improvements.md) の Q12 の決定です。
 - **ブランチ開放:** `OpenBranch`(`1d98226`、F29)。区間ごとに Y を作り直します。現在は `sc.add_open_branch` です。
-- **`Scenario`(`ODEevent` の置き換え):** 系統が所有するシナリオに外乱、`Time`, `Options`, `Description`, `Judge`(既定 `Scenario.out_of_step`)を持ちます。`Scenario.compile` が区間のデータを 1 回だけ作ります(EV5)。CSV の読み書きもあります。`ODEevent(tag, net, ...)` は `_GUILDAsystem/_VersionSupport/ODEevent.m` で動き、`GUILDA:Deprecated:ODEevent` を警告します(`e543585`, `a116725`, `b870e43`, `ce78de1`、F31)。移行は [v4-migration.md](v4-migration.md) 1.18 です。
+- **`Scenario`(`ODEevent` の置き換え):** 系統の子のシナリオが外乱、`Time`, `Description` を持ちます。`Scenario.compile` が区間のデータを 1 回だけ作ります(EV5)(`e543585`, `a116725`, `b870e43`, `ce78de1`、F31)。その後の再設計(タグで選ぶ `simulate`、`Options`・`Judge`・CSV・`ODEevent` の互換の削除)は下の「simulate の再設計」にあります。移行は [v4-migration.md](v4-migration.md) 1.11, 1.18 です。
 - **区間の開始の初期条件:** 微分状態を固定して代数変数だけを解きます。警告 `InitialConditionRelaxed` と緩めた再計算はなくなりました(`8bd906c`、統合は `bf7512b`)。
 - **`_GUILDAverification/`:** 同梱ネットワークと文献の比較の置き場所(パスに入れない)。ネットワークごとに `README.md`、シナリオの CSV、報告書の判定の CSV、比較関数があります(`_GUILDAdoc/developer/folder-structure.html`)。
 
@@ -200,6 +200,17 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **テスト(MATLAB R2026a):** small 520 件、PASS 518 / KNOWN 1 / FAIL 0 / SKIP 1。medium 689 件、PASS 687 / KNOWN 1 / FAIL 0 / SKIP 1、694 s。large は未実行(F7・F8 の 3 件は基準でも失敗)。
 - **未対応:** チュートリアル(`.mlx`)は書き換えていません。テストのデータファイルの置き場所は配置の規則にありません。
 
+## simulate の再設計(S0–S7、2026-11-13)
+
+仕様と手順ごとの記録は [simulate-redesign.md](simulate-redesign.md)(§0.6、§7)にあります。S0–S6 は `refactor/design-alignment` に統合済み(S6 の統合は `d77ac229`)、S7(文書)は `docs/simulate-redesign-s7` です(未統合、未 push)。
+
+- `net.simulate(tag, Name=Value)` はシナリオ 1 つをタグで選び、設定は `GUILDA.setting` の TimeSimulation、呼び出しの Name-Value はその呼び出しだけです。新しいオプションは `MaxStep`, `InitialStep`, `SampleTime`, `StopOnOutOfStep`, `StopAngle`(`flag = 2`)、`Format="struct"` です。`SolverOptions`, `Export`, `Scenario.Options`, `Judge` は削除しました。
+- `SolverODE.solve(sct_dae, sct_event, rv_x0, sct_options)` は Hidden の `net.build_simulation_data` が作るデータだけを読みます。`ResultODE` はデータから作り、系統を参照しません。判定は `result.judge_out_of_step`。
+- `PowerNetwork.import_csv` / `export_csv` は `import` / `export` に改名し、シナリオは `scenario/<tag>.json` に保存します。
+- 軌道は S0 の基準(`simulate_baseline` の 6 例)と各手順で `isequaln` です。
+- **S7 のテスト(MATLAB R2026a):** small 527 件(PASS 525 / KNOWN 1 / FAIL 0 / SKIP 1、450 s)。`GUILDA.doc` は 74 クラス、警告 3(`component.generator.abstract` の `set_avr` / `set_pss` / `set_governor`、既知)、エラー 0。旧名(`import_csv`, `export_csv`, `SolverOptions`, `Scenario(`, `simulate([`, `read_mass`, `sc.judge`, `Export=`)は `_GUILDAdoc` に残っていない(`o.SolverOptions` は MATLAB の `ode` のプロパティ)。ページの図は目視していない。
+- **未対応:** チュートリアル(`.mlx`)は旧 API のままです(#113 の保留)。`notes/simulate-review-measurements.m` は基準 `951800e` の API の測定の記録で、現在のコードでは動きません(冒頭に再現の方法を記載)。
+
 ## 未決事項
 
 状態は `a9afe24` のコードと履歴で確認しました(`301b5d0` までの統合はコードを変えていません)(下で日付や基準を別に示した項目を除く)。
@@ -235,15 +246,6 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **先送り:** 多期間 OPF です。設計上の問いは opf-requirements.md にあります。
 - 記録: AC OPF の開始点は、フラットスタート、または同じ系統で最後に解けた AC OPF の母線電圧(`WarmStart`、既定 false)です。母線の `V0` / `Varg0` は廃止しました。潮流解からの開始点は以前に測定して採用しませんでした(反復が減らず、9 母線 43 → 43、IEEE14 59 → 72)。前回の AC OPF の解からの開始も、内点法では反復が減るとは限りません(IEEE14 17 → 22、IEEE68 80 → 55)。このため既定は false です([powerflow-options.md](powerflow-options.md) の Q3)。
 
-### `Scenario` の未確認の既定
-
-`Scenario` の実装者が既定として選び、保守者がまだ確認していない点です(v4-migration.md 1.18)。
-
-- `ODEevent` の互換で、同じ系統に同じタグの `ODEevent` を作り直すと、前のものを置き換えます(系統から外れて実行できなくなります)。
-- 互換の返り値は `Scenario` で、`ev.TimeSpan` などの旧プロパティはありません(`ev.tab_disturbance` の列として読むだけ)。
-- `sc.simulate` はありません。実行は `net.simulate(sc)` です。
-- 判定(`sc.judge`)は `net.simulate` の `output` に入りません。
-
 ### 解析結果と編集
 
 - **未実装:** 結果は、解析の後に系統が編集されたかを記録しません。`tab_editLog` は `initialize` で消えるので、刻印には使えません。提案は [get-sys-improvements.md](get-sys-improvements.md) の ED5 です。
@@ -273,7 +275,7 @@ matlab -batch "DebugScript.run_all('Level','small')"
 
 [v4-migration.md](v4-migration.md) 1.15 が参照する数値の記録です。古いスクリプトの結果と比べるときに使います。各行の値は記載のコミットの時点の計算で、`faa2d13` では再計算していません。F8 のテストは現在の母線電圧、OPF コスト、最も遅い固有値を固定しています。
 
-- **CSV のタップ:** `PowerNetwork.import_csv` は `tap` / `phase` 列を読み、`Tap` / `Phase` も受け付けます。両方あると `GUILDA:import_csv:DuplicateColumns` です。以前は読み込んだタップがすべて 1 でした(IEEE14 の 4-7, 4-9, 5-6 など)。
+- **CSV のタップ:** `PowerNetwork.import` は `tap` / `phase` 列を読み、`Tap` / `Phase` も受け付けます。両方あると `GUILDA:import:DuplicateColumns` です。以前は読み込んだタップがすべて 1 でした(IEEE14 の 4-7, 4-9, 5-6 など)。
 - **`IEEE14bus` は MATPOWER `case14` に一致します**(100 MVA)。`C` は case14 の b の半分、負荷の Q は −Qd、母線の `Vmin` / `Vmax` は 0.94 / 1.06、発電機の上下限、コストは `HP = c2·100²`、`fP = c1·100`、負荷のコストは 0 です。Ybus は case14 と 1e-14 で一致し、潮流の発電機 Q は `runpf(case14)` の値(−16.55, 43.56, 25.08, 12.73, 17.62 MVAr)、AC / DC OPF は 8081.53 / 7642.59 $/hr です。
 - **意図して残した点:** すべての発電機(母線 3, 6, 8 の調相機を含む)は 1 組の動特性の `gen-park` です。母線 7 の負荷は 0 です。ブランチ 7-9 は `pi` 線路です(case14 でタップ 1)。
 - **`IEEE14bus` の修正前との差**(`63bc5a0` のコードで計算): 母線電圧は最大 0.052 pu(母線 14)、角度は 0.82°、スラックの P は 232.86 → 232.39 MW です。発電機母線の無効電力は (−34.3, −8.7, −13.9, −12.0, 3.1) → (−16.6, 30.9, 6.1, 5.2, 17.6) MVAr です。ELD / DC OPF の配分は各 51.8 MW(コスト 2.66)→ 221.0 / 38.0 / 0 / 0 / 0 MW(7642.59 $/hr)、AC OPF のコストは 2.68 → 8081.52 $/hr です。最も遅いモードは −0.535 → −0.540、最小の減衰比は 0.037 → 0.035 です。母線 8 は潮流で 1.09 pu となり `Vmax` 1.06 を超えますが、case14 と同じです(潮流は上下限を課しません)。

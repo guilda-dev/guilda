@@ -144,11 +144,11 @@
     <p lang="ja">非推奨のオプション <code>methods</code> とその値は、<code>v3_initialize_args</code> が警告を出して変換します。</p>
     <ul lang="en">
       <li><code>initialize</code> changes the model: one of the few analysis methods that do (see <a href="api-design.html#side-effects">API Design, rule 6</a>)</li>
-      <li>Called when a network is built: by the shipped network classes and by <code>PowerNetwork.import_csv</code> / <code>import_matpower</code> (option <code>Initialize=true</code>, the default)</li>
+      <li>Called when a network is built: by the shipped network classes and by <code>PowerNetwork.import</code> / <code>import_matpower</code> (option <code>Initialize=true</code>, the default)</li>
     </ul>
     <ul lang="ja">
       <li><code>initialize</code> はモデルを書き換えます。解析メソッドとしては数少ない例です（<a href="api-design.html#side-effects">API 設計のルール 6</a>を参照）。</li>
-      <li>同梱のネットワーククラスと <code>PowerNetwork.import_csv</code> / <code>import_matpower</code> も、ネットワークを作るときに呼び出します（オプション <code>Initialize=true</code>、既定）。</li>
+      <li>同梱のネットワーククラスと <code>PowerNetwork.import</code> / <code>import_matpower</code> も、ネットワークを作るときに呼び出します（オプション <code>Initialize=true</code>、既定）。</li>
     </ul>
 
     <!-- ============================== SEQUENCE ============================== -->
@@ -598,7 +598,7 @@
         <ul>
           <li>each layer marks its own stale tags (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>)</li>
           <li>nothing re-runs <code>initialize</code> automatically</li>
-          <li><code>simulate</code>, <code>get_sys</code> (every layer), and the continuation power flow stop with their stale errors (<code>GUILDA:SolverODE:Stale</code>, <code>GUILDA:PowerSystemModel:Stale</code>, <code>GUILDA:SolverCPF:Stale</code>)</li>
+          <li><code>simulate</code>, <code>get_sys</code> (every layer), and the continuation power flow stop with their stale errors (<code>GUILDA:PowerNetwork:SimulateStale</code>, <code>GUILDA:PowerSystemModel:Stale</code>, <code>GUILDA:SolverCPF:Stale</code>)</li>
           <li>after edits of dynamics parameters only: <code>initialize()</code> does not solve the power flow; it keeps <code>V</code> and <code>I</code> and recomputes the states and inputs of the edited models</li>
         </ul>
       </li>
@@ -625,7 +625,7 @@
         <ul>
           <li>各層が自分の stale タグに印を付けます（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照）。</li>
           <li><code>initialize</code> が自動で再実行されることはありません。</li>
-          <li><code>simulate</code>、<code>get_sys</code>（全層）、連続潮流計算はそれぞれの stale のエラー（<code>GUILDA:SolverODE:Stale</code>、<code>GUILDA:PowerSystemModel:Stale</code>、<code>GUILDA:SolverCPF:Stale</code>）で停止します。</li>
+          <li><code>simulate</code>、<code>get_sys</code>（全層）、連続潮流計算はそれぞれの stale のエラー（<code>GUILDA:PowerNetwork:SimulateStale</code>、<code>GUILDA:PowerSystemModel:Stale</code>、<code>GUILDA:SolverCPF:Stale</code>）で停止します。</li>
           <li>動特性パラメータだけを編集した後の <code>initialize()</code> は、潮流計算を解きません。<code>V</code> と <code>I</code> はそのままにして、編集したモデルの状態と入力だけを計算し直します。</li>
         </ul>
       </li>
@@ -719,10 +719,10 @@
           <dt><span lang="en">State of the network after the failure</span><span lang="ja">失敗後のネットワークの状態</span></dt>
           <dd><ul lang="en">
             <li>the equilibrium is written in part; <code>net.sct_stale.powerflow</code> gets "the last initialize stopped before it finished", so the next <code>initialize</code> solves the power flow again</li>
-            <li>later analyses stop with their stale errors (e.g. <code>GUILDA:SolverODE:Stale</code>) naming that message</li>
+            <li>later analyses stop with their stale errors (e.g. <code>GUILDA:PowerNetwork:SimulateStale</code>) naming that message</li>
           </ul><ul lang="ja">
             <li>平衡点は途中まで書き込まれた状態です。<code>net.sct_stale.powerflow</code> に "the last initialize stopped before it finished" を追加するので、次の <code>initialize</code> は潮流計算から解き直します。</li>
-            <li>それ以降の解析は、このメッセージを含む stale のエラー（例: <code>GUILDA:SolverODE:Stale</code>）で停止します。</li>
+            <li>それ以降の解析は、このメッセージを含む stale のエラー（例: <code>GUILDA:PowerNetwork:SimulateStale</code>）で停止します。</li>
           </ul></dd>
         </dl>
       </li>
