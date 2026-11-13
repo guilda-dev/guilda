@@ -33,7 +33,7 @@ function varargout = disp_violation(obj, opt)
             continue
         end
         sv(end+1,1) = s_class + " (" + height(tab_c) + ")"; %#ok<AGROW>
-        sv(end+1,1) = table_text(tab_c); %#ok<AGROW>
+        sv(end+1,1) = string(formattedDisplayText(tab_c, "SuppressMarkup", true)); %#ok<AGROW>
     end
     if isempty(sv)
         sv = "No violated operating limits" + " (" + join(opt.Class, ", ") + ").";

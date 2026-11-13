@@ -95,7 +95,13 @@ classdef ResultODE < ResultBase
             arguments (Output)
                 obj % The result object.
             end
-            sct_solver = solver_info(sct_solver);
+            sct_default = struct("solver", "SolverODE", "options", struct(), "flag", false, ...
+                "output", struct(), "elapsed", NaN);
+            for s_name = string(fieldnames(sct_default)).'
+                if ~isfield(sct_solver, s_name)
+                    sct_solver.(s_name) = sct_default.(s_name);      % missing field: its default
+                end
+            end
             obj@ResultBase([], sct_solver.solver, sct_solver.options, sct_solver.flag, sct_solver.output, sct_solver.elapsed);
             if isfield(sct_network, "s_tag")
                 obj.s_network = string(sct_network.s_tag);
