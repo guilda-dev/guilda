@@ -97,12 +97,12 @@
         <tr>
           <td><code>Format</code></td>
           <td lang="en" data-label="Values and default"><ul>
-            <li>Not an option of <code>initialize</code>: with every <code>Method</code>, <code>take_method</code> stops with <code>GUILDA:PowerNetwork:InitializeFormat</code>, so it is never passed to <code>calculate_powerflow</code></li>
+            <li>Not an option of <code>initialize</code>: with every <code>Method</code>, <code>initialize</code> stops with <code>GUILDA:PowerNetwork:InitializeFormat</code>, so it is never passed to <code>calculate_powerflow</code></li>
             <li>The first output is always the n_bus × 4 complex array that <code>initialize</code> writes with <code>Bus.set_equilibrium</code>: columns <code>V</code>, <code>I</code> (phasors), <code>P</code>, <code>Q</code> (real) [pu], rows in <code>net.a_Bus</code> order</li>
             <li>A result object comes from <code>calculate_powerflow</code> (<code>ResultPF</code>) or <code>calculate_optimal_powerflow</code> (<code>ResultOPF</code>)</li>
           </ul></td>
           <td lang="ja" data-label="値と既定値"><ul>
-            <li><code>initialize</code> のオプションではありません。どの <code>Method</code> でも <code>take_method</code> が <code>GUILDA:PowerNetwork:InitializeFormat</code> で止めるので、<code>calculate_powerflow</code> へは渡りません。</li>
+            <li><code>initialize</code> のオプションではありません。どの <code>Method</code> でも <code>initialize</code> が <code>GUILDA:PowerNetwork:InitializeFormat</code> で止めるので、<code>calculate_powerflow</code> へは渡りません。</li>
             <li>最初の出力は常に、<code>initialize</code> が <code>Bus.set_equilibrium</code> で書き込む n_bus × 4 の複素数の配列です。列は <code>V</code>、<code>I</code>（フェーザ）、<code>P</code>、<code>Q</code>（実数）[pu]、行は <code>net.a_Bus</code> の順です。</li>
             <li>結果のオブジェクトは <code>calculate_powerflow</code>（<code>ResultPF</code>）または <code>calculate_optimal_powerflow</code>（<code>ResultOPF</code>）で得ます。</li>
           </ul></td>
@@ -140,8 +140,8 @@
       <li>機器を持つ母線が 1 つ以上必要です（スラック母線が未設定なら潮流計算が選びます）。</li>
       <li><code>Method="equilibrium"</code> では、<code>net.sct_stale.powerflow</code> が空でなければなりません。つまり、先に <code>initialize</code> が成功していて、その後に潮流を変える編集をしていない状態です。</li>
     </ul>
-    <p lang="en">The deprecated option <code>methods</code> and its values are converted by <code>v3_initialize_args</code> with a warning.</p>
-    <p lang="ja">非推奨のオプション <code>methods</code> とその値は、<code>v3_initialize_args</code> が警告を出して変換します。</p>
+    <p lang="en">The option <code>methods</code> and the values <code>"powerflow calculation"</code>, <code>"optimal powerflow"</code> and <code>"calculate from Xequilibrium"</code> are not accepted: <code>methods</code> goes to the analysis as an unknown name, and an old value stops with <code>GUILDA:PowerNetwork:InitializeMethod</code>.</p>
+    <p lang="ja">オプション <code>methods</code> と、値 <code>"powerflow calculation"</code>、<code>"optimal powerflow"</code>、<code>"calculate from Xequilibrium"</code> は受け付けません。<code>methods</code> は未知の名前として解析に渡り、これらの値は <code>GUILDA:PowerNetwork:InitializeMethod</code> で止まります。</p>
     <ul lang="en">
       <li><code>initialize</code> changes the model: one of the few analysis methods that do (see <a href="api-design.html#side-effects">API Design, rule 6</a>)</li>
       <li>Called when a network is built: by the shipped network classes and by <code>PowerNetwork.import</code> / <code>import_matpower</code> (option <code>Initialize=true</code>, the default)</li>
@@ -191,7 +191,7 @@
         <text class="is-muted dg-mono" x="321" y="190">result.tab_bus</text>
         <!-- 04 -->
         <path class="dg-sv-line" d="M185 212h26v14h-22" marker-end="url(#init-ah)"/>
-        <text x="218" y="223"><tspan class="init-num">04</tspan> <tspan class="dg-mono">opf_point</tspan></text>
+        <text x="218" y="223"><tspan class="init-num">04</tspan> <tspan class="dg-mono">OPF point</tspan></text>
         <!-- 05 -->
         <path class="dg-sv-line" d="M185 262H581" marker-end="url(#init-ah)"/>
         <text x="330" y="256"><tspan class="init-num">05</tspan> <tspan class="dg-mono">set_equilibrium(V, I, P, Q)</tspan></text>
@@ -236,14 +236,12 @@
     <p lang="ja">ここに挙げる非公開の関数は、<code>_GUILDAsystem/@PowerNetwork/initialize.m</code> または <code>@Bus/set_equilibrium.m</code> のローカル関数です。<code>distribute_power</code> は <code>_GUILDAsystem/+tools/distribute_power.m</code> にあり、<code>@SolverPF/private/violation_table.m</code> からも使われます。</p>
     <ol class="fs-steps">
       <li class="fs-step" id="INIT-01">
-        <p class="fs-head"><b class="fs-id">INIT-01</b> <span class="fs-call">user → <code>PowerNetwork.initialize</code><small><code>v3_initialize_args</code>, <code>take_method</code></small></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-01</b> <span class="fs-call">user → <code>PowerNetwork.initialize</code><small><span lang="en">step 1 of the body</span><span lang="ja">本体の手順 1</span></small></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Converts the deprecated option <code>methods</code></li>
             <li>Separates <code>Method</code> from the options of the analysis</li>
           </ul><ul lang="ja">
-            <li>非推奨のオプション <code>methods</code> を変換します。</li>
             <li><code>Method</code> と解析へ渡すオプションを分離します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -270,15 +268,15 @@
         </dl>
       </li>
       <li class="fs-step" id="INIT-03a">
-        <p class="fs-head"><b class="fs-id">INIT-03a</b> <span class="fs-call"><code>initialize</code> → <code>solve_powerflow</code> → <code>PowerNetwork.calculate_powerflow</code><small>→ <code>SolverPF.solve</code></small></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-03a</b> <span class="fs-call"><code>initialize</code> → <code>PowerNetwork.calculate_powerflow</code><small>→ <code>SolverPF.solve</code></small></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li><code>Method="powerflow"</code> (default), when INIT-02 decides to solve: solves the power flow (see <a href="feature-power-flow.html">Power Flow</a>)</li>
-            <li>On failure, if no bus was a slack bus before the call: <code>release_slack</code> clears the slack bus it selected</li>
+            <li>On failure, if no bus was a slack bus before the call: the <code>catch</code> of the solve clears the slack bus that was selected (the same for <code>"FixedInput"</code>)</li>
           </ul><ul lang="ja">
             <li><code>Method="powerflow"</code>（既定）で、INIT-02 が求解が必要と判断したときは潮流計算を解きます（<a href="feature-power-flow.html">潮流計算</a>を参照）。</li>
-            <li>失敗したときは、呼び出し前にスラック母線がなかった場合に限り、<code>release_slack</code> が今回選ばれたスラック母線を解除します。</li>
+            <li>失敗したときは、呼び出し前にスラック母線がなかった場合に限り、求解の <code>catch</code> が今回選ばれたスラック母線を解除します（<code>"FixedInput"</code> も同じです）。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>GUILDA.config("PowerFlowCalculation")</code>, <code>net.solver_PF</code> (warm start), <code>c_nv</code>, <code>Bus.l_isSlack</code>, <code>tab_parameter.powerflow</code></span><span lang="ja"><code>GUILDA.config("PowerFlowCalculation")</code>、<code>net.solver_PF</code>（ウォームスタート）、<code>c_nv</code>、<code>Bus.l_isSlack</code>、<code>tab_parameter.powerflow</code></span></dd>
@@ -287,7 +285,7 @@
         </dl>
       </li>
       <li class="fs-step" id="INIT-03b">
-        <p class="fs-head"><b class="fs-id">INIT-03b</b> <span class="fs-call"><code>initialize</code> → <code>solve_opf</code> → <code>PowerNetwork.calculate_optimal_powerflow</code><small>→ <code>SolverOPF.solve</code></small></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-03b</b> <span class="fs-call"><code>initialize</code> → <code>PowerNetwork.calculate_optimal_powerflow</code><small>→ <code>SolverOPF.solve</code></small></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -327,7 +325,7 @@
         </dl>
       </li>
       <li class="fs-step" id="INIT-04">
-        <p class="fs-head"><b class="fs-id">INIT-04</b> <span class="fs-call"><code>initialize</code> → <code>opf_point</code></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-04</b> <span class="fs-call"><code>initialize</code><small><span lang="en">after the solve, <code>s_method == "OPF"</code></span><span lang="ja">求解の後、<code>s_method == "OPF"</code></span></small></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -346,7 +344,7 @@
         </dl>
       </li>
       <li class="fs-step" id="INIT-05">
-        <p class="fs-head"><b class="fs-id">INIT-05</b> <span class="fs-call"><code>write_powerflow</code> → <code>Bus.set_equilibrium(c_V, c_I, r_P, r_Q, rm_PQ=c_PQ{i})</code></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-05</b> <span class="fs-call"><code>initialize</code> → <code>Bus.set_equilibrium(c_V, c_I, r_P, r_Q, rm_PQ=c_PQ{i})</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -481,7 +479,7 @@
         </dl>
       </li>
       <li class="fs-step" id="INIT-12">
-        <p class="fs-head"><b class="fs-id">INIT-12</b> <span class="fs-call"><code>initialize</code> → <code>large_model_residuals</code><small>→ <code>model_residuals</code>, <code>component_residuals</code>, <code>controller_residuals</code>, <code>global_controller_residual</code>, <code>check_point_size</code>, <code>model_value</code></small></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-12</b> <span class="fs-call"><code>initialize</code> → <code>model_residuals</code><small>→ <code>component_residuals</code>, <code>nested_outputs</code>, <code>controller_residuals</code>, <code>global_controller_residual</code>, <code>residual_row</code>, <code>check_point_size</code>, <code>model_value</code></small></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">

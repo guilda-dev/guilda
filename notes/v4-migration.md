@@ -1018,7 +1018,7 @@ there.
 | v3 | v4 |
 |----|----|
 | `[flag, tab, output] = net.initialize()` | `[rm_pf, flag, output] = net.initialize()`; `tab = net.calculate_powerflow().tab_bus` |
-| `net.initialize("methods", "powerflow calculation")` | `net.initialize(Method="powerflow")` (default) |
+| `net.initialize("methods", "powerflow calculation")` | `net.initialize(Method="powerflow")` (default)。旧形式はエラー |
 | `net.initialize("methods", "optimal powerflow")` | `net.initialize(Method="OPF")` |
 | `net.initialize("methods", "calculate from Xequilibrium")` | `net.initialize(Method="equilibrium")` |
 | – | `comp.set_input(u)`, then `net.initialize(Method="FixedInput")` (the equilibrium with the inputs held) |
@@ -1099,14 +1099,7 @@ there.
   components and none has `Q = NaN`. `net.initialize` still runs: the first
   component of the bus takes the remaining power, so a load can generate power.
   If a custom component should balance the network, set `Q = nan` on it.
-- Deprecated, still working:
-
-  | Old form | Warning ID |
-  |----------|------------|
-  | option `"methods"` | `GUILDA:Deprecated:InitializeMethods` |
-  | old values `"powerflow calculation"`, `"optimal powerflow"`, `"calculate from Xequilibrium"` (with `methods` or `Method`) | `GUILDA:Deprecated:InitializeMethodValue` |
-
-  The old output order cannot be detected and is not converted.
+- **v3 の形式は使えません(2026-11-13)。** オプション `"methods"` は未知の名前として解析のエラー(`MATLAB:TooManyInputs` など)になり、旧い値 `"powerflow calculation"`・`"optimal powerflow"`・`"calculate from Xequilibrium"` は `GUILDA:PowerNetwork:InitializeMethod` で止まります。警告付きの変換(`v3_initialize_args`)は削除しました。旧い出力の順序は検出できず、変換しません。
 
 ### 1.18 シナリオ(`ODEevent` → `Scenario`)
 
@@ -1444,8 +1437,6 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | `SolverCPF(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | error |
 | `SolverLIN(net, NonUnit, Name, Value)` | `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` | error |
 | `comp.get_sys(x, V, u)`、`con.get_sys(x, V, u)`、`gc.get_sys(x, V, u)` | `GUILDA:Deprecated:GetSysPositionalPoint` | 警告。`v3_get_sys_point` が `Point` にする。`bus`・`net` の位置引数は `GUILDA:v3_get_sys_point:Positional` のエラー |
-| `initialize("methods", m)` | `GUILDA:Deprecated:InitializeMethods` | warning; becomes `Method=m` |
-| `initialize` values `"powerflow calculation"` / `"optimal powerflow"` / `"calculate from Xequilibrium"` | `GUILDA:Deprecated:InitializeMethodValue` | warning; become `"powerflow"` / `"OPF"` / `"equilibrium"` |
 | `CsvNetHandler.import(path, net, Initialize=tf)` | `GUILDA:Deprecated:CsvNetHandlerImport` | warning; calls `PowerNetwork.import` |
 | `CsvNetHandler.export(net, ModelName, savepath=d)` | `GUILDA:Deprecated:CsvNetHandlerExport` | warning; calls `net.export(fullfile(d, "@"+ModelName))` |
 
@@ -1464,7 +1455,6 @@ lists all of them:
 |------|------|------|
 | `@PowerNetwork/add_bus.m` | `opt.baseMVA` argument | accepts the old option |
 | `@PowerNetwork/add_bus.m` | `v3_bus_baseMVA(obj, opt)` | warns and removes the option |
-| `@PowerNetwork/initialize.m` | `v3_initialize_args(varargin)` | `methods` option and old values |
 | `_auxiliary/@SolverCPF/SolverCPF.m` | `v3_cpf_constructor(varargin)` | rejects v3 constructor arguments |
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `v3_linearizer_constructor(varargin)` | rejects v3 constructor arguments |
 | `_auxiliary/@PowerSystemModel/get_sys.m` | `x`, `V`, `u` arguments (3 lines) | 位置引数の点を受け付ける |
@@ -1494,7 +1484,6 @@ settings (an untagged line, needed by the `get_config` hook).
 | `v3_cpf_constructor.m` | error for `SolverCPF(net, ...)` |
 | `v3_linearizer_constructor.m` | error for `SolverLIN(net, ...)` |
 | `v3_get_sys_point.m` | `get_sys(x, V, u)` の位置引数の点を `Point` にする |
-| `v3_initialize_args.m` | `initialize` option `methods` and old method values |
 
 ### Adding a compat form (stages 2 and 3)
 

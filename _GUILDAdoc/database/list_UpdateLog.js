@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Old initialize options removed",
+    "date": "2026-11-13",
+    "type": "feature",
+    "content": "net.initialize no longer accepts the option methods or the values \"powerflow calculation\", \"optimal powerflow\" and \"calculate from Xequilibrium\", which used to work with a warning. Use Method=\"powerflow\", \"OPF\" or \"equilibrium\". Scripts that still use the old forms now stop with an error."
+  },
+  {
     "title": "Simulate a scenario by its tag",
     "date": "2026-11-13",
     "type": "feature",
