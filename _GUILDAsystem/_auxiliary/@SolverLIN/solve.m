@@ -78,18 +78,18 @@ function [sct_sys, output] = solve(obj, c_block, tab, tab_connection, sct_port) 
     n_l = numel(sv_in);
     n_y = numel(sv_out);
     % the owner of each block, and so of its states and outputs
-    sv_blk = strings(numel(c_block),1);
+    sv_xOwner = strings(0,1);
+    sv_yOwner = strings(0,1);
     for k = 1:numel(c_block)
+        s_blk = "";
         if isfield(c_block{k}, "s_tag")
-            sv_blk(k) = string(c_block{k}.s_tag);
+            s_blk = string(c_block{k}.s_tag);
         elseif isfield(c_block{k}, "Owner")
-            sv_blk(k) = string(c_block{k}.Owner);
+            s_blk = string(c_block{k}.Owner);
         end
+        sv_xOwner = [sv_xOwner; repmat(s_blk, numel(c_block{k}.StateName), 1)]; %#ok<AGROW>
+        sv_yOwner = [sv_yOwner; repmat(s_blk, numel(c_block{k}.OutputName), 1)]; %#ok<AGROW>
     end
-    sv_xOwner = sv_blk(repelem(1:numel(c_block), tools.vcellfun(@(S) numel(S.StateName), c_block)));
-    sv_yOwner = sv_blk(repelem(1:numel(c_block), tools.vcellfun(@(S) numel(S.OutputName), c_block)));
-    sv_xOwner = reshape(sv_xOwner, [], 1);
-    sv_yOwner = reshape(sv_yOwner, [], 1);
     A = reshape(A, n_x, n_x);   B = reshape(B, n_x, n_l);
     C = reshape(C, n_y, n_x);   D = reshape(D, n_y, n_l);   E = reshape(E, n_x, n_x);
 
