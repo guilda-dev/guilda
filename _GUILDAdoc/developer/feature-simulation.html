@@ -91,13 +91,13 @@ net.remove_scenario(tag)</code></pre>
     <h3><span lang="en">Name-Value options and defaults</span><span lang="ja">Name-Value オプションと既定値</span></h3>
     <ul lang="en">
       <li>Defaults: the TimeSimulation section of <code>GUILDA.setting</code>, read at each run from <code>GUILDA.config("TimeSimulation")</code> (<code>@GUILDA/config/DefaultTimeSimulation.json</code>, overridden by a file of the same name in <code>@GUILDA/user/</code>). <code>GUILDA.setting("TimeSimulation", Name=Value)</code> changes them for every later run.</li>
-      <li>A Name-Value option of the call replaces one setting for this call only (local function <code>simulate_options</code> of <code>simulate.m</code>). The settings file, the scenario and <code>net.solver_ODE</code> are not changed; neither the scenario nor the solver holds settings.</li>
+      <li>The settings are the defaults of the Name-Value options in the <code>arguments</code> block of <code>simulate.m</code> (<code>GUILDA.config("TimeSimulation", Name)</code>, checked and converted when <code>GUILDA.config</code> reads them); an option given in the call replaces one setting for this call only, and the options go to <code>net.solver_ODE.solve</code> as they are. The settings file, the scenario and <code>net.solver_ODE</code> are not changed; neither the scenario nor the solver holds settings.</li>
       <li>The options are checked by the <code>arguments</code> block of <code>simulate</code>: a name that is not an option stops with the error of MATLAB.</li>
       <li>Shared rules: <a href="api-design.html#rules">API Design</a>.</li>
     </ul>
     <ul lang="ja">
       <li>既定値は <code>GUILDA.setting</code> の TimeSimulation セクションにあり、実行のたびに <code>GUILDA.config("TimeSimulation")</code> で読み込みます。元の値は <code>@GUILDA/config/DefaultTimeSimulation.json</code> にあり、<code>@GUILDA/user/</code> に同名のファイルを置くと上書きできます。<code>GUILDA.setting("TimeSimulation", Name=Value)</code> で変えると、その後のすべての実行に効きます。</li>
-      <li>呼び出しの Name-Value オプションは、その呼び出しの間だけ設定の値を置き換えます（<code>simulate.m</code> のローカル関数 <code>simulate_options</code>）。設定ファイル、シナリオ、<code>net.solver_ODE</code> は変わりません。シナリオもソルバーも設定を持ちません。</li>
+      <li>設定は <code>simulate.m</code> の <code>arguments</code> ブロックで Name-Value オプションの既定値になります（<code>GUILDA.config("TimeSimulation", Name)</code>。値は <code>GUILDA.config</code> が読み込むときに検査・変換済みです）。呼び出しで指定したオプションは、その呼び出しの間だけ設定の値を置き換え、オプションはそのまま <code>net.solver_ODE.solve</code> に渡します。設定ファイル、シナリオ、<code>net.solver_ODE</code> は変わりません。シナリオもソルバーも設定を持ちません。</li>
       <li>オプションは <code>simulate</code> の <code>arguments</code> ブロックで検査します。オプションにない名前は、MATLAB のエラーで止まります。</li>
       <li>共通の規則は<a href="api-design.html#rules">API 設計</a>にまとめています。</li>
     </ul>
@@ -302,11 +302,11 @@ net.remove_scenario(tag)</code></pre>
           <dd><ul lang="en">
               <li>The <code>arguments</code> block checks the tag (<code>simulateFcn_mustBeScenarioOf</code>: <code>GUILDA:PowerNetwork:ScenarioNotFound</code>), <code>Time</code> (<code>mustBeSimulationTime</code>) and each option.</li>
               <li>Selects the scenario by its tag; the time is <code>sc.Time</code>, or the <code>Time</code> option.</li>
-              <li>Builds the settings of the run (<code>simulate_options</code>): the values of <code>GUILDA.config("TimeSimulation")</code>, invalid ones replaced (<code>TimeLimit</code> → <code>Inf</code>; <code>MaxStep</code>, <code>InitialStep</code>, <code>SampleTime</code> → <code>NaN</code>; <code>StopAngle</code> → 360), then the options of the call; <code>Progress</code> to its mode, <code>PlotFcn</code> through <code>tools.check_plotfcn</code>.</li>
+              <li>The options of the call, with the defaults of <code>GUILDA.config("TimeSimulation")</code> (invalid settings were reset to their defaults when <code>GUILDA.config</code> read them), are the settings of the run, without <code>Time</code> and <code>Format</code>; <code>Progress</code> <code>true</code>/<code>false</code> of the call becomes its mode, and <code>PlotFcn</code> is checked once by <code>tools.check_plotfcn</code>.</li>
             </ul><ul lang="ja">
               <li><code>arguments</code> ブロックで、タグ（<code>simulateFcn_mustBeScenarioOf</code>。<code>GUILDA:PowerNetwork:ScenarioNotFound</code>）、<code>Time</code>（<code>mustBeSimulationTime</code>）と各オプションを検査します。</li>
               <li>タグでシナリオを選びます。時間は <code>sc.Time</code> か、<code>Time</code> オプションです。</li>
-              <li>実行の設定を作ります（<code>simulate_options</code>）。<code>GUILDA.config("TimeSimulation")</code> の値を取り、不正な値を置き換え（<code>TimeLimit</code> は <code>Inf</code>、<code>MaxStep</code>・<code>InitialStep</code>・<code>SampleTime</code> は <code>NaN</code>、<code>StopAngle</code> は 360）、その上に呼び出しのオプションを重ねます。<code>Progress</code> は表示の種類に直し、<code>PlotFcn</code> は <code>tools.check_plotfcn</code> で検査します。</li>
+              <li>呼び出しのオプション（既定値は <code>GUILDA.config("TimeSimulation")</code>。不正な設定は <code>GUILDA.config</code> が読み込むときに既定値に戻しています）から <code>Time</code> と <code>Format</code> を除いたものが、実行の設定です。呼び出しの <code>Progress</code> の <code>true</code>/<code>false</code> は表示の種類に直し、<code>PlotFcn</code> は <code>tools.check_plotfcn</code> で 1 回だけ検査します。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>tag</code>, <code>opt</code>, <code>net.a_Scenario</code>, <code>sc.Time</code>, <code>GUILDA.config("TimeSimulation")</code></dd>

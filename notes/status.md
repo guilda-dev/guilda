@@ -232,7 +232,11 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - **テスト(MATLAB R2026a):** 最後の small は 554 件、PASS 551 / KNOWN 1 / FAIL 1 / SKIP 1(582 s)でした。
   - FAIL は F34(`functionSignatures.json` が古い)で、基準のブランチから続いています。原因は IEEJ の `Circuit` オプションで、この作業とは関係ありません。
   - medium は 745 件、PASS 741 / KNOWN 1 / FAIL 2 / SKIP 1(1231 s)でした。F34 のほかに F4 が 1 件失敗しました。lsqlin が選ばれると `LsqlinAlgorithm` の設定が無いことが原因で、`28dd711d` で直しました。F4 は単独の実行で PASS 38 / SKIP 1 です。
-- **未対応(別のセッションの担当):** `simulate` の `simulate_options`、`calculate_powerflow` の `solver_options`、`get_sys` の `string()` は、設定を読み込むときの正規化によって冗長になりました。いずれも壊れはしません。
+- **simulate(`refactor/simulate-option-handling`、未 push):** ローカル関数 `simulate_options` を削除しました。`arguments` ブロックの既定値を `GUILDA.config("TimeSimulation", Name)` とし、`Time` と `Format` を除いたオプションをそのまま `SolverODE.solve` と `ResultODE` の `options` に渡します。
+  - 呼び出しの値: `arguments` ブロックの検証関数が検査します(`MaxStep=0` などはエラー、`SampleTime=0` は有効)。呼び出しの `Progress` の true/false だけを `"dialog"`/`"none"` に直し、`PlotFcn` は `tools.check_plotfcn` で 1 回だけ検査します(OPF と同じ)。
+  - 設定の `SampleTime` の 0 は、以前は NaN に直していましたが、そのまま 0 になります(どちらもソルバーの刻みを記録)。
+  - `DebugScript.helper.ode_options` の不正値の置き換えと型の変換も削除しました。
+- **未対応(別のセッションの担当):** `calculate_powerflow` の `solver_options`、`get_sys` の `string()` は、設定を読み込むときの正規化によって冗長になりました。いずれも壊れはしません。
 
 ## 未決事項
 

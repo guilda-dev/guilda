@@ -9,10 +9,11 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
 % which lists the tags. A run without disturbance uses a scenario without disturbances.
 %
 % The time is the Time of the scenario ([0, 10] unless set), or the Time option of the
-% call. The settings are the TimeSimulation section of GUILDA.setting; a Name-Value option
-% of the call replaces one setting for this call only (the settings file and the scenario
-% are not changed). A name that is not an option stops with the error of the MATLAB
-% arguments block.
+% call. The settings are the TimeSimulation section of GUILDA.setting, the defaults of the
+% Name-Value options; an option given in the call replaces one setting for this call only
+% (the settings file and the scenario are not changed). The options go to net.solver_ODE as
+% they are (Progress true/false as "dialog"/"none"). A name that is not an option stops
+% with the error of the MATLAB arguments block.
 % It stops with an error naming the remedy when the network is not initialized or was
 % edited after net.initialize. flag is 1 when the simulation reached the end time, 0 when
 % it stopped by TimeLimit and -1 when the solver stopped early; then result holds the
@@ -74,19 +75,19 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
         obj
         s_scenario (1,1) string {simulateFcn_mustBeScenarioOf(obj, s_scenario)}   % Tag of the scenario to run (net.add_scenario).
         opt.Time (1,2) double {mustBeSimulationTime}   % [s] Simulation time [t0, tend] of this call. Default: the Time of the scenario.
-        opt.Solver (1,1) string {mustBeMember(opt.Solver, ["ode15s","ode23t"])}   % Solver of the MATLAB ode object. Default: GUILDA.setting.
-        opt.Tolerance (1,1) double {mustBeInRange(opt.Tolerance, 1e-15, 1e-3)}   % Relative error tolerance. Default: GUILDA.setting.
-        opt.AbsoluteTolerance (1,1) double {mustBeInRange(opt.AbsoluteTolerance, 1e-15, 1e-3)}   % Absolute error tolerance. Default: GUILDA.setting.
-        opt.MaxStep (1,1) double {mustBePositiveOrNaN}   % [s] Largest step of the solver; NaN for the solver default. Default: GUILDA.setting.
-        opt.InitialStep (1,1) double {mustBePositiveOrNaN}   % [s] First step of each phase; NaN for the solver default. Default: GUILDA.setting.
-        opt.SeparateComplexParts (1,1) logical   % SeparateComplexParts of the ode object (true: "on", false: "off"). Default: GUILDA.setting.
-        opt.SampleTime (1,1) double {simulateFcn_mustBeNonnegativeOrNaN}   % [s] Interval of the recorded times from the start time (with the start and end of each phase); NaN or 0 for the solver steps. Default: GUILDA.setting.
-        opt.StopOnOutOfStep (1,1) logical   % Stop the run when a rotor angle from the generator of the slack bus exceeds StopAngle (flag 2). Default: GUILDA.setting.
-        opt.StopAngle (1,1) double {mustBePositive}   % [deg] Threshold of StopOnOutOfStep. Default: GUILDA.setting.
-        opt.TimeLimit (1,1) double {mustBePositive}   % [s] Wall-clock limit of the whole run; Inf for none. Default: GUILDA.setting.
-        opt.Progress {simulateFcn_mustBeProgress}   % "dialog", "disp" or "none" (true: "dialog", false: "none"). Default: GUILDA.setting.
-        opt.Verbose (1,1) logical   % Print the phases and the outcome. Default: GUILDA.setting.
-        opt.PlotFcn {tools.check_plotfcn(opt.PlotFcn, "simulate")}   % Live display during the run: "none" (draw the result with result.plot_trajectory()). Default: GUILDA.setting.
+        opt.Solver (1,1) string {mustBeMember(opt.Solver, ["ode15s","ode23t"])} = GUILDA.config("TimeSimulation", "Solver")   % Solver of the MATLAB ode object.
+        opt.Tolerance (1,1) double {mustBeInRange(opt.Tolerance, 1e-15, 1e-3)} = GUILDA.config("TimeSimulation", "Tolerance")   % Relative error tolerance.
+        opt.AbsoluteTolerance (1,1) double {mustBeInRange(opt.AbsoluteTolerance, 1e-15, 1e-3)} = GUILDA.config("TimeSimulation", "AbsoluteTolerance")   % Absolute error tolerance.
+        opt.MaxStep (1,1) double {mustBePositiveOrNaN} = GUILDA.config("TimeSimulation", "MaxStep")   % [s] Largest step of the solver; NaN for the solver default.
+        opt.InitialStep (1,1) double {mustBePositiveOrNaN} = GUILDA.config("TimeSimulation", "InitialStep")   % [s] First step of each phase; NaN for the solver default.
+        opt.SeparateComplexParts (1,1) logical = GUILDA.config("TimeSimulation", "SeparateComplexParts")   % SeparateComplexParts of the ode object (true: "on", false: "off").
+        opt.SampleTime (1,1) double {simulateFcn_mustBeNonnegativeOrNaN} = GUILDA.config("TimeSimulation", "SampleTime")   % [s] Interval of the recorded times from the start time (with the start and end of each phase); NaN or 0 for the solver steps.
+        opt.StopOnOutOfStep (1,1) logical = GUILDA.config("TimeSimulation", "StopOnOutOfStep")   % Stop the run when a rotor angle from the generator of the slack bus exceeds StopAngle (flag 2).
+        opt.StopAngle (1,1) double {mustBePositive} = GUILDA.config("TimeSimulation", "StopAngle")   % [deg] Threshold of StopOnOutOfStep.
+        opt.TimeLimit (1,1) double {mustBePositive} = GUILDA.config("TimeSimulation", "TimeLimit")   % [s] Wall-clock limit of the whole run; Inf for none.
+        opt.Progress {simulateFcn_mustBeProgress} = GUILDA.config("TimeSimulation", "Progress")   % "dialog", "disp" or "none" (true: "dialog", false: "none").
+        opt.Verbose (1,1) logical = GUILDA.config("TimeSimulation", "Verbose")   % Print the phases and the outcome.
+        opt.PlotFcn = GUILDA.config("TimeSimulation", "PlotFcn")   % Live display during the run: "none" (checked by tools.check_plotfcn; draw the result with result.plot_trajectory()).
         opt.Format (1,1) string {mustBeMember(opt.Format, ["GUILDAorigin","struct"])} = "GUILDAorigin"   % Form of the first output.
     end
     arguments (Output)
@@ -101,7 +102,14 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
     if isfield(opt, "Time")
         time = opt.Time;
     end
-    sct_options = simulate_options(rmfield(opt, intersect(["Time","Format"], string(fieldnames(opt)))));
+    % The options of the call (with the defaults of GUILDA.setting) go to the solver as they
+    % are; Progress true/false of the call as its mode, PlotFcn checked once
+    sct_options = rmfield(opt, intersect(["Time","Format"], string(fieldnames(opt))));
+    if islogical(opt.Progress) || isnumeric(opt.Progress)
+        sv_mode = ["none", "dialog"];
+        sct_options.Progress = sv_mode(1 + logical(opt.Progress));
+    end
+    sct_options.PlotFcn = tools.check_plotfcn(opt.PlotFcn, "simulate");
 
     [sct_dae, sct_event, rv_x0, tab_phase] = obj.build_simulation_data(s_scenario, time);
     if sct_options.StopOnOutOfStep
@@ -126,49 +134,3 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
     end
 end
 
-
-function sct_options = simulate_options(sct_call)
-% Settings of one run: the TimeSimulation section of GUILDA.setting, replaced by the options of the call
-    arguments (Input)
-        sct_call (1,1) struct   % Name-Value options given in the call (no Time).
-    end
-    arguments (Output)
-        sct_options (1,1) struct   % One field per setting of the section.
-    end
-    sct_options = struct();
-    sct_cfg = GUILDA.config("TimeSimulation");
-    for s_name = string(fieldnames(sct_cfg)).'
-        sct_options.(s_name) = sct_cfg.(s_name).Value;
-    end
-    if ~(isnumeric(sct_options.TimeLimit) && isscalar(sct_options.TimeLimit) && sct_options.TimeLimit > 0)
-        sct_options.TimeLimit = Inf;      % 0, empty or invalid setting: no limit
-    end
-    for s_name = ["MaxStep", "InitialStep", "SampleTime"]
-        v = sct_options.(s_name);
-        if ~(isnumeric(v) && isscalar(v) && v > 0)
-            sct_options.(s_name) = NaN;   % NaN, 0, empty or invalid setting: the solver default (steps)
-        end
-    end
-    v = sct_options.StopAngle;
-    if ~(isnumeric(v) && isscalar(v) && v > 0)
-        sct_options.StopAngle = 360;      % empty or invalid setting
-    end
-    for s_name = string(fieldnames(sct_call)).'
-        sct_options.(s_name) = sct_call.(s_name);      % this call only
-    end
-    sct_options.Solver   = string(sct_options.Solver);
-    v = sct_options.Progress;      % true -> "dialog", false -> "none"
-    if islogical(v) || isnumeric(v)
-        if v
-            sct_options.Progress = "dialog";
-        else
-            sct_options.Progress = "none";
-        end
-    else
-        sct_options.Progress = string(v);
-    end
-    sct_options.Verbose  = logical(sct_options.Verbose);
-    sct_options.SeparateComplexParts = logical(sct_options.SeparateComplexParts);
-    sct_options.StopOnOutOfStep = logical(sct_options.StopOnOutOfStep);
-    sct_options.PlotFcn  = tools.check_plotfcn(sct_options.PlotFcn, "simulate");
-end

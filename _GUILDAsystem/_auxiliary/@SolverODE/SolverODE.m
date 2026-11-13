@@ -1,8 +1,8 @@
 classdef SolverODE < auxiliary
 % Solver of the time simulation (net.simulate).
 %
-% net.solver_ODE holds one. It holds no settings: net.simulate combines the TimeSimulation
-% section of GUILDA.setting with the Name-Value options of the call and passes them to
+% net.solver_ODE holds one. It holds no settings: net.simulate passes its Name-Value
+% options, whose defaults are the TimeSimulation section of GUILDA.setting, as they are to
 % solve; neither the solver nor the settings file is changed. The solver is purely
 % numerical: net.build_simulation_data gathers the data of a run (the blocks with their
 % function handles, the variable and connection maps, the admittance, the equilibrium, the
