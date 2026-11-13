@@ -2,8 +2,12 @@
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
         <entry key="InvalidColorLimits">ColorLimits must be a finite 1x2 numeric array.</entry>
-        <entry key="NoPowerflowSource">Either pass a PowerNetwork class to `net` or define `Vbus` and `Ibus` options.</entry>
         <entry key="MidPointsBranch">The number of elements in MidX and MidY differs. (branch{0})</entry>
         <entry key="MidPointsComponent">The number of elements in MidX and MidY differs. (component{0})</entry>
+        <entry key="NoNetworkSnapshot">The network data of the diagram must be a snapshot struct(net, false) with the fields a_Bus and a_Branch.</entry>
+        <entry key="NoBranchAdmittance">The branch ''{0}'' of the network snapshot has no field cm_Y (its admittance matrix). Make the snapshot with struct(net, false).</entry>
+        <entry key="MissingStateField">The state of the diagram has no field {0}.</entry>
+        <entry key="StateSize">The field {0} of the state of the diagram must be {1}; it is {2}.</entry>
+        <entry key="ParentNotAxes">Parent of the diagram must be an axes; it is a {0}.</entry>
     </message>
 </rsccat>

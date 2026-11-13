@@ -90,8 +90,8 @@ function draw_graph_network(obj)
         to_max      = sct_nodelim(idx(2)).max;
         to_min      = sct_nodelim(idx(2)).min;
         
-        edge_MidX   = str2mat(edge_para.MidXaxis); 
-        edge_MidY   = str2mat(edge_para.MidYaxis); 
+        edge_MidX   = parse_points(edge_para.MidXaxis); 
+        edge_MidY   = parse_points(edge_para.MidYaxis); 
         edge_marker = edge_para.Marker;
 
         if numel(edge_MidX) ~= numel(edge_MidY)
@@ -131,8 +131,8 @@ function draw_graph_network(obj)
         comp_xyz(end+1, :)   = comp_pos;
         comp_handles(i_comp) = plot_node(ax, comp_pos, comp_marker, node_radius*0.75, [0.15 0.15 0.15], node_data);
 
-        edge_MidX = str2mat(tab_compi.graph.MidXaxis);
-        edge_MidY = str2mat(tab_compi.graph.MidYaxis);
+        edge_MidX = parse_points(tab_compi.graph.MidXaxis);
+        edge_MidY = parse_points(tab_compi.graph.MidYaxis);
         comp_edge_radius = edge_base_radius * 3;
 
         bus_min = sct_nodelim(i_compbus).min;
@@ -195,7 +195,7 @@ function draw_graph_network(obj)
     ax.ZColor  = "none";
     % grid(    ax, 'on');
     obj.GridSpacing = obj.GridSpacing;
-    zticks(0)
+    zticks(ax, 0)
     % arrayfun(@(x) plot(x*[1,1],[0,0.005],'k-',"LineWidth",1), 0:0.1:1)
     % arrayfun(@(y) plot([0,0.005],y*[1,1],'k-',"LineWidth",1), 0:0.1:1)
     % arrayfun(@(x) plot(x*[1,1],[0.995,1],'k-',"LineWidth",1), 0:0.1:1)
@@ -290,15 +290,19 @@ function rv_order = get_node_height(obj, mode)
 end
 
 
-function out = str2mat(in)
-    if isempty(in)
-        out = [];
-    else
-        out = str2num(in); %#ok
-        if isnan(out)
-            out = [];
-        end
+function rv = parse_points(s)
+% Coordinates of a list such as "[0.23,0.36]" (MidXaxis, MidYaxis); [] when none
+    s = string(s);
+    if ismissing(s) || strtrim(s) == ""
+        rv = [];
+        return
     end
+    sv = split(strtrim(erase(s, ["[", "]"])), [",", ";", " "]);
+    rv = str2double(sv(sv ~= ""));
+    if isempty(rv) || any(isnan(rv))
+        rv = [];
+    end
+    rv = reshape(rv, 1, []);
 end
 
 
@@ -333,17 +337,4 @@ function txt = customhover(src, event_obj, ax, drawer, hObj)
             end
         end
     end
-end
-
-
-function P_near = find_nearest_point(P0, xall, yall)
-    x_min = min(xall);
-    x_max = max(xall);
-    y_min = min(yall);
-    y_max = max(yall);
-
-    near_x = max(x_min, min(P0(1), x_max));
-    near_y = max(y_min, min(P0(2), y_max));
-    
-    P_near = [near_x, near_y];
 end

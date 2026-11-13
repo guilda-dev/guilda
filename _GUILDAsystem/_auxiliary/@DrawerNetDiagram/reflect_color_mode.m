@@ -1,8 +1,18 @@
 function reflect_color_mode(obj)
+% Color the branches and links by ColorMode. "user" applies the color values that are set
+% (BusColorData, ComponentColorData, BranchColorData, LinkColorData) again.
     arguments (Input)
         obj
     end
     color_mode = obj.ColorMode;
+
+    if color_mode == "user"
+        obj.BusColorData       = obj.BusColorData;
+        obj.ComponentColorData = obj.ComponentColorData;
+        obj.BranchColorData    = obj.BranchColorData;
+        obj.LinkColorData      = obj.LinkColorData;
+        return
+    end
 
     n_edge   = obj.n_branch;
     n_comp   = obj.n_component;

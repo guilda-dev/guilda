@@ -1,49 +1,31 @@
-function set_powerflow(obj, net, opt)
-% Set the bus voltages and component currents shown by the diagram.
+function set_powerflow(obj, cv_Vbus, cv_Icomp)
+% Set the bus voltages and component currents shown, and update the drawing.
 %
-% Uses Vbus and Icomp when both are given with one value per bus and per component;
-% otherwise reads the equilibrium of net. Then the bus, component and branch powers are
-% computed and the drawing is updated.
+% The current injection of each bus is the sum of the currents of its components. The
+% powers of the buses and components, and the end voltages, currents and powers of the
+% branches follow from them.
     arguments (Input)
         obj
-        net      = [] % Network whose equilibrium is shown when Vbus or Icomp is not given.
-        opt.Vbus  (:,1) double = []; % [pu] Bus voltage phasors, one per bus.
-        opt.Icomp (:,1) double = []; % [pu] Component current phasors, one per component.
+        cv_Vbus  (:,1) double % [pu] Bus voltage phasors, one per bus.
+        cv_Icomp (:,1) double % [pu] Current phasors injected by the components, one per component.
     end
-
-    cv_Vb = opt.Vbus;
-    cv_Ic = opt.Icomp;
-
-    l_valid_Vbus  = isnumeric(cv_Vb) && numel(cv_Vb)==obj.n_bus;
-    l_valid_Icomp = isnumeric(cv_Ic) && numel(cv_Ic)==obj.n_component;
-    
-    if ~l_valid_Vbus || ~l_valid_Icomp
-        if isa(net,"PowerNetwork")
-            get_Icomp = @(bus) tools.vcellfun(@(c) c.c_Iequilibrium, bus.a_Component);
-            cv_Ic = tools.vcellfun(@(b) get_Icomp(b), net.a_Bus);
-            cv_Vb = net.cv_Vequilibrium;
-        else
-            error(msg("GUILDA:DrawerNetDiagram:NoPowerflowSource"))
-        end
-    end
-
-    obj.cv_Vbus = cv_Vb;
-    obj.cv_Ibus = obj.cm_Ymat * cv_Vb;
-    cv_Sbus     = cv_Vb .* conj(obj.cv_Ibus);
+    obj.cv_Vbus = cv_Vbus;
+    obj.cv_Ibus = accumarray(obj.tab_component.bus, cv_Icomp, [obj.n_bus, 1]);
+    cv_Sbus     = cv_Vbus .* conj(obj.cv_Ibus);
     obj.rv_Pbus = real(cv_Sbus);
     obj.rv_Qbus = imag(cv_Sbus);
 
-    obj.cv_Vcomp = cv_Vb(obj.tab_component.bus);
-    obj.cv_Icomp = cv_Ic;
-    cv_Scomp     = obj.cv_Vcomp .* conj(cv_Ic);
+    obj.cv_Vcomp = cv_Vbus(obj.tab_component.bus);
+    obj.cv_Icomp = cv_Icomp;
+    cv_Scomp     = obj.cv_Vcomp .* conj(cv_Icomp);
     obj.rv_Pcomp = real(cv_Scomp);
     obj.rv_Qcomp = imag(cv_Scomp);
 
-    obj.cm_Vbranch = reshape(obj.cm_Vbus2Vbranch * obj.cv_Vbus, 2, []);
-    obj.cm_Ibranch = reshape(obj.cm_Vbus2Ibranch * obj.cv_Vbus, 2, []);
-    cm_Sbranch = obj.cm_Vbranch .* conj(obj.cm_Ibranch);
+    obj.cm_Vbranch = reshape(obj.cm_Vbus2Vbranch * cv_Vbus, 2, []);
+    obj.cm_Ibranch = reshape(obj.cm_Vbus2Ibranch * cv_Vbus, 2, []);
+    cm_Sbranch     = obj.cm_Vbranch .* conj(obj.cm_Ibranch);
     obj.rm_Pbranch = real(cm_Sbranch);
     obj.rm_Qbranch = imag(cm_Sbranch);
 
-    obj.rehash
+    obj.rehash();
 end
