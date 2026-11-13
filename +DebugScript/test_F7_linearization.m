@@ -221,15 +221,9 @@ assert(all(contains(sv_K(1:n_gc), net.a_GlobalController{1}.s_tag)), strjoin(sv_
 assert(isequal(sv_D(1:n_gc), sv_K(1:n_gc)))
 
 
-%% SolverLIN constructor of v3 names the remedy
-% v3 の SolverLIN(net, NonUnit, ...) は削除: 解法は既定値だけを持つ (net.solver_LIN)
-try
-    SolverLIN(net, [], "Method", "Kron");
-    error("DebugScript:NoError", "SolverLIN(net, ...) がエラーにならない")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "net.get_sys"))
-end
+%% SolverLIN takes no arguments
+% v3 の SolverLIN(net, NonUnit, ...) は削除: 引数は MATLAB の引数の数のエラー
+assert(error_id(@() SolverLIN(net)) == "MATLAB:TooManyInputs", error_id(@() SolverLIN(net)))
 assert(isa(SolverLIN(), "SolverLIN"))
 assert(isa(net.solver_LIN, "SolverLIN"))
 
@@ -489,15 +483,6 @@ res = gen.get_sys();
 assert(isa(res, "ResultLIN") && res.output.l_equilibrium)
 assert(isequal(res.tab_variable, tab(1:height(res.tab_variable),:)) && isequal(res.rv_point, SolverLIN.point_vector(gen, [])))
 assert(isequal(res.rm_Axx, res.A) && isequal(res.rm_Axv, res.B(:,1:2)) && isequal(res.rm_Bx, res.B(:,2+(1:nu))))
-
-% v3 の位置引数の点は 1 回だけ警告して Point にする (制御器も与えた点で線形化する)
-clear Deprecated
-lastwarn("");
-r1 = gen.get_sys(x, V, u);
-assert(string(DebugScript.helper.msg_id()) == "GUILDA:Deprecated:GetSysPositionalPoint")
-assert(isequal(r1.rv_point, res.rv_point) && norm(r1.A - res.A, 1) < 1e-10 * norm(res.A, 1) && ~r1.output.l_equilibrium)
-assert(error_id(@() gen.get_sys(x, V, u, Point=res.rv_point)) == "GUILDA:PowerSystemModel:PointAndPositional")
-assert(error_id(@() net.a_Bus{1}.get_sys(x)) == "GUILDA:v3_get_sys_point:Positional")
 
 
 %% Linearization matches v3 get_sys matrices for every algorithm

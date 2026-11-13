@@ -36,19 +36,14 @@ classdef SolverLIN < auxiliary
 % See also ResultLIN, PowerSystemModel.get_sys
 
     methods
-        function obj = SolverLIN(varargin)
+        function obj = SolverLIN()
         % Create a linearization connector.
         %
         % A network creates its own (net.solver_LIN); net.reset_solver() replaces it with a
-        % new one. The v3 form SolverLIN(net, NonUnit, Algorithm=...) is removed: any
-        % argument stops with GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor (use net.get_sys).
-            arguments (Input, Repeating)
-                varargin  % Arguments of the removed v3 form (any of them stops with an error).
-            end
+        % new one. It takes no arguments.
             arguments (Output)
                 obj  % Linearization connector.
             end
-            v3_linearizer_constructor(varargin);        % COMPAT(v3)
         end
 
         [sct_sys, output] = solve(obj, c_block, tab, tab_connection, sct_port)

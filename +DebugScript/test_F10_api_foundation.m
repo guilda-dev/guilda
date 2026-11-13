@@ -210,9 +210,9 @@ assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "build_opf_prob
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "initialize.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverCPF", "SolverCPF.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "simulate.m")) == 0, join(sv_hook, ", "))
-assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "SolverLIN.m")) == 1, join(sv_hook, ", "))
-assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@PowerSystemModel", "get_sys.m")) == 4, join(sv_hook, ", "))
-assert(numel(sv_hook) == 9, join(sv_hook, ", "))
+assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "SolverLIN.m")) == 0, join(sv_hook, ", "))
+assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@PowerSystemModel", "get_sys.m")) == 0, join(sv_hook, ", "))
+assert(numel(sv_hook) == 4, join(sv_hook, ", "))
 
 
 % ---- local functions ----

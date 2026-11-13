@@ -822,7 +822,7 @@ Option names:
 | `[sys, lin] = net.get_sys(NonUnit=n, Algorithm=a)` | `[res, flag, output] = net.get_sys(Method=a)`(`a` は `"Kron"` か `"DAE"`)。`res` は `ResultLIN` |
 | `lin = odeLinearizer(net, n, Algorithm=a); sys = lin.get_sys` | `res = net.get_sys(); sys = res.get_ss(a)` |
 | `lin.Kxx`, `lin.Kxv`, `lin.Kvx`, `lin.Kvv`, `lin.get_DAE` | `res.rm_Axx`, `rm_Axv`, `rm_Bx`, `rm_Avx`, `rm_Avv`, `rm_Bv`, `rm_E`(縮約前の DAE。並びは `res.tab_variable`) |
-| `comp.get_sys(x, V, u)` | `comp.get_sys(Point=p)`(`p` は `comp.get_variable_map()` の x, Vre, Vim, u の順)。位置引数は `GUILDA:Deprecated:GetSysPositionalPoint` で 1 回警告して `Point` にする |
+| `comp.get_sys(x, V, u)` | `comp.get_sys(Point=p)`(`p` は `comp.get_variable_map()` の x, Vre, Vim, u の順) |
 | `comp.get_sys(false)` / `Controllers=false` | `comp.get_linear_block(x, V, u)`(機器単体のブロック) |
 | – | `net.get_sys(Point=x)` または `Point={sim, t}`: 平衡点以外での線形化 |
 | – | `net.get_variable_map()`、`bus.get_variable_map()`、`comp.get_variable_map()`(信号と接続表も) |
@@ -860,7 +860,7 @@ Option names:
   | `bus.get_sys`(`Port="V2I"`) | `[V; 全機器の u; 全制御器の uc]` | 機器と制御器の `x` | `[I(母線のタグ); 全 y; 全 yc]` |
 
   `Port="I2V"` は電流と電圧を入れ替えます。状態は出力にならず、すべての名前は一意です。所有者の状態と同じ名前の出力は `Y_<name>` です。外部入力は、その入力の源の和に足されます。グローバル制御器の入出力は自分の `uc`・`yc` で、どこを観測しどこへ返すかは接続表にあります。
-- 削除: `SolverLIN(net, NonUnit, Name, Value)` は `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor`(エラー)で止まります。`SolverLIN()` は引数を取りません。`SolverLIN.OptionMap` と `get_options` はありません。
+- 削除: `SolverLIN()` は引数を取りません。`SolverLIN(net, NonUnit, Name, Value)` は MATLAB の引数の数のエラーです。`SolverLIN.OptionMap` と `get_options` はありません。
 
 - **行列で線形化し、`Format` で形を選びます。** どの層の `get_sys` も Control System Toolbox なしで線形化し、`Format` で返す形を選びます。
 
@@ -1424,14 +1424,12 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | `net.add_bus(..., "baseMVA", x)` with x ≠ system base | `GUILDA:Deprecated:BusBaseMVAMismatch` | warning; ignored, system base used |
 | `Continuation_Power_Flow(net, opt)` | `GUILDA:Deprecated:ContinuationPowerFlowFunction` | warning; returns a `ContinuationPowerFlowV3` (v3 properties, `solve`, `CPF_Result`) |
 | `SolverCPF(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | error |
-| `SolverLIN(net, NonUnit, Name, Value)` | `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` | error |
-| `comp.get_sys(x, V, u)`、`con.get_sys(x, V, u)`、`gc.get_sys(x, V, u)` | `GUILDA:Deprecated:GetSysPositionalPoint` | 警告。`v3_get_sys_point` が `Point` にする。`bus`・`net` の位置引数は `GUILDA:v3_get_sys_point:Positional` のエラー |
 | `initialize("methods", m)` | `GUILDA:Deprecated:InitializeMethods` | warning; becomes `Method=m` |
 | `initialize` values `"powerflow calculation"` / `"optimal powerflow"` / `"calculate from Xequilibrium"` | `GUILDA:Deprecated:InitializeMethodValue` | warning; become `"powerflow"` / `"OPF"` / `"equilibrium"` |
 | `CsvNetHandler.import(path, net, Initialize=tf)` | `GUILDA:Deprecated:CsvNetHandlerImport` | warning; calls `PowerNetwork.import_csv` |
 | `CsvNetHandler.export(net, ModelName, savepath=d)` | `GUILDA:Deprecated:CsvNetHandlerExport` | warning; calls `net.export_csv(fullfile(d, "@"+ModelName))` |
 
-Not kept: the v3 options `Algorithm` and `NonUnit` of `get_sys` and `solver_LIN.NonUnit` (validation errors; Issue #121), the v3 second output `lin` of `get_sys`, the v3 meaning of the
+Not kept: the v3 options `Algorithm` and `NonUnit` of `get_sys` and `solver_LIN.NonUnit` (validation errors; Issue #121), the v3 constructor arguments of `SolverLIN` (MATLAB's too-many-arguments error) and the v3 positional point `get_sys(x, V, u)` (the first positional argument of `get_sys` is now the point; 2026-11-13), the v3 second output `lin` of `get_sys`, the v3 meaning of the
 second output of `simulate`, the v3 output order of `initialize` (see the
 box at the top), and the v3 positional mode and `export` / `filename` options of
 `calculate_powerflow` (2026-11-12).
@@ -1448,15 +1446,12 @@ lists all of them:
 | `@PowerNetwork/add_bus.m` | `v3_bus_baseMVA(obj, opt)` | warns and removes the option |
 | `@PowerNetwork/initialize.m` | `v3_initialize_args(varargin)` | `methods` option and old values |
 | `_auxiliary/@SolverCPF/SolverCPF.m` | `v3_cpf_constructor(varargin)` | rejects v3 constructor arguments |
-| `_auxiliary/@SolverLIN/SolverLIN.m` | `v3_linearizer_constructor(varargin)` | rejects v3 constructor arguments |
-| `_auxiliary/@PowerSystemModel/get_sys.m` | `x`, `V`, `u` arguments (3 lines) | 位置引数の点を受け付ける |
-| `_auxiliary/@PowerSystemModel/get_sys.m` | `v3_get_sys_point(obj, x, V, u)` | 警告して `Point` にする |
 
 `DebugScript.test_F10_api_foundation` checks this list and that core code
 does not call `Deprecated` outside a hook line. Update both when a hook is
 added.
 
-フックは Issue #121 の時点で 9 行で、上の表の行数と一致します(`grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA` で数えました。ファイルごとの行数は F10 のテストが検査します)。
+フックは 2026-11-13 の時点で 4 行で、上の表の行数と一致します(`grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA` で数えました。ファイルごとの行数は F10 のテストが検査します)。
 `Continuation_Power_Flow` and `CsvNetHandler` are old names; they live
 entirely in `_VersionSupport/` and need no hook. CSV import ignores a bus
 `baseMVA` column simply by not reading it (no compat code).
@@ -1474,8 +1469,6 @@ settings (an untagged line, needed by the `get_config` hook).
 | `ContinuationPowerFlowV3.m` | v3 CPF object: `CPF*` properties, `solve`, `CPF_Result` |
 | `@CsvNetHandler/` | old CSV import / export, wrappers of `import_csv` / `export_csv` |
 | `v3_cpf_constructor.m` | error for `SolverCPF(net, ...)` |
-| `v3_linearizer_constructor.m` | error for `SolverLIN(net, ...)` |
-| `v3_get_sys_point.m` | `get_sys(x, V, u)` の位置引数の点を `Point` にする |
 | `v3_initialize_args.m` | `initialize` option `methods` and old method values |
 
 ### Adding a compat form (stages 2 and 3)

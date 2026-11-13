@@ -1,4 +1,4 @@
-function [sys, flag, output] = get_sys(obj, x, V, u, opt)
+function [sys, flag, output] = get_sys(obj, opt)
 % Linearize the layer and return its linear model.
 %
 % One method for every layer with a linear model: PowerNetwork, Bus, Component (with
@@ -29,8 +29,7 @@ function [sys, flag, output] = get_sys(obj, x, V, u, opt)
 % sources (outputs and states of what they observe, outputs of nested controllers; an
 % input without a source keeps its equilibrium). The point sets the variables only: the
 % admittance matrix stays the one of the model, also inside a fault (reported with an
-% INFO message and output.sv_faultBus). The v3 form get_sys(x, V, u) of a component or
-% controller warns once and is converted to Point (v3_get_sys_point).
+% INFO message and output.sv_faultBus).
 %
 % The layer stops with GUILDA:PowerSystemModel:Stale when net.initialize() is needed: an
 % edited dynamics always, an edited network, power flow or equilibrium when Point is the
@@ -60,9 +59,6 @@ function [sys, flag, output] = get_sys(obj, x, V, u, opt)
 % <@Group> Linearization
     arguments (Input)
         obj
-        x (:,1) {mustBeNumeric, mustBeReal} = zeros(0,1)   % COMPAT(v3) States of a component or controller (use Point).
-        V (:,1) {mustBeNumeric, mustBeReal} = zeros(0,1)   % COMPAT(v3) [pu] Bus voltage (use Point).
-        u (:,1) {mustBeNumeric, mustBeReal} = zeros(0,1)   % COMPAT(v3) Inputs (use Point).
         opt.Point                     % Point: [], a vector in the order of the variable map, or {sim, t}. Default: [] (the equilibrium).
         opt.Port (1,1) string {mustBeMember(opt.Port, ["V2I","I2V"])}   % Ports of a Component or Bus: "V2I" (V to I) or "I2V". Default: "V2I".
         opt.Method (1,1) string {mustBeMember(opt.Method, ["Kron","DAE"])}   % Form of the model of the network: "Kron" (eliminate the bus voltages) or "DAE". Default: GUILDA.setting.
@@ -78,12 +74,6 @@ function [sys, flag, output] = get_sys(obj, x, V, u, opt)
         output   % message, s_issue ("", "NotFinite" or "SingularAvv"), l_equilibrium, n_x, n_v, n_u, rcond_Avv, sv_faultBus, s_layer; result (the ResultLIN).
     end
     t0 = tic;
-    if nargin > 1
-        if isfield(opt, "Point")
-            error(msg("GUILDA:PowerSystemModel:PointAndPositional"))
-        end
-        opt.Point = v3_get_sys_point(obj, double(x), double(V), double(u));   % COMPAT(v3)
-    end
     if ~isfield(opt, "Point")
         opt.Point = [];
     end

@@ -23,7 +23,7 @@ classdef PowerSystemModel < LayerPackage
 
     methods
         Hz = get_Hz(obj)
-        [sys, flag, output] = get_sys(obj, x, V, u, opt)
+        [sys, flag, output] = get_sys(obj, opt)
     end
     methods (Access=protected)
         sct_port = get_linear_port(obj, s_port)
