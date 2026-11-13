@@ -195,7 +195,7 @@ classdef DrawerNetDiagram < auxiliary
         function set.LabelFontSize(obj, font_size)
             obj.LabelFontSize = font_size;
             if validate(obj); return; end
-            h_label = [obj.sct_plt.NodeLabel; obj.sct_plt.CompLabel];       %#ok<MCSUP>
+            h_label = [obj.sct_plt.NodeLabel(:); obj.sct_plt.CompLabel(:)];       %#ok<MCSUP>
             for i = 1:numel(h_label)
                 if isgraphics(h_label(i))
                     h_label(i).FontSize = font_size;

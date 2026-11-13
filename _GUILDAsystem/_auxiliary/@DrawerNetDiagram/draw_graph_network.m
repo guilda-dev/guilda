@@ -292,12 +292,17 @@ end
 
 function rv = parse_points(s)
 % Coordinates of a list such as "[0.23,0.36]" (MidXaxis, MidYaxis); [] when none
+    if isnumeric(s)
+        rv = reshape(s(~isnan(s)), 1, []);
+        return
+    end
     s = string(s);
-    if ismissing(s) || strtrim(s) == ""
+    s = strtrim(join(s(~ismissing(s)), " "));
+    if isempty(s) || ismissing(s) || s == ""
         rv = [];
         return
     end
-    sv = split(strtrim(erase(s, ["[", "]"])), [",", ";", " "]);
+    sv = split(erase(s, ["[", "]"]), [",", ";", " "]);
     rv = str2double(sv(sv ~= ""));
     if isempty(rv) || any(isnan(rv))
         rv = [];

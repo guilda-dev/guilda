@@ -122,6 +122,9 @@ function tab = test_levels()
     "test_F43_spring_model/SimulationResultAnimatesWithEveryOutputTime", "medium"
     "test_F43_spring_model/OwnNodeOfAClassicalGeneratorEqualsVfieldE_jdelta", "medium"
     "test_F43_spring_model/TrippedUnitIsNaNAndThePictureStillDraws", "medium"
+    % ---- F44_net_diagram ---------------------------------------------------------------------------
+    "test_F44_net_diagram/DiagramDoesNotChangeTheModel", "medium"
+    "test_F44_net_diagram/EachModeValueWorks", "medium"
     % ---- F37_disp_connection ---------------------------------------------------------------------
     % ネットワークはファイル内で共有 (shared_net): 最初に走るテストが Tutorial10bus と IEEE14bus を作る
     "test_F37_disp_connection/ItRunsOnTutorial10busAndIEEE14busWith0And1Outputs", "medium"
