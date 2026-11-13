@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Spring-mass pictures of the network and of the results",
+    "date": "2026-11-13",
+    "type": "feature",
+    "content": "net.plot_spring_model(Dimension=2) draws the equilibrium of the network as a spring-mass picture: the nodes are the voltage phasors of the buses and the internal voltages of the generators, the springs are the branches and the machine reactances, and arrow pairs show the active power P and the reactive-current magnitude Iq. Dimension=3 puts the nodes on the surface z = log|V|. It needs an initialized network (\"Run net.initialize() first\" otherwise). result.plot_spring_model(...) of a time simulation holds every output time, so G.animate() plays it and G.export_video(\"swing.mp4\") writes a video; that of a power flow shows the buses only. The old argument mode of net.plot_spring_model is removed. The graph parameters of buses and components have two new columns, MarkerSize and Color, that set the size and color of the nodes; CSV files write them, and older CSV files without them still load."
+  },
+  {
     "title": "The power flow no longer sets the slack bus",
     "date": "2026-11-13",
     "type": "feature",

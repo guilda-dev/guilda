@@ -40,7 +40,11 @@ classdef (Abstract) GraphSpringBase < auxiliary
 % G.ArrowScaleP = 0.5;
 % ```
 %
-% See also GraphSpring2D, GraphSpring3D
+% The data of a network or of an analysis result is assembled by
+% PowerNetwork.plot_spring_model (the equilibrium), ResultODE.plot_spring_model (all
+% output times, for animate and export_video) and ResultPF.plot_spring_model (the buses).
+%
+% See also GraphSpring2D, GraphSpring3D, PowerNetwork.plot_spring_model, ResultODE.plot_spring_model, ResultPF.plot_spring_model
 
     properties % Appearance
         RotationScale (1,1) double = 1                        % Share of the common rotation of the buses that is shown: 1 the actual rotation, 0 none.
