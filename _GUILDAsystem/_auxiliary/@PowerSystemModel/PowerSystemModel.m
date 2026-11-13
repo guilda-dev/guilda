@@ -25,9 +25,6 @@ classdef PowerSystemModel < LayerPackage
         Hz = get_Hz(obj)
         [sys, flag, output] = get_sys(obj, point, opt)
     end
-    methods (Access=protected)
-        sct_port = get_linear_port(obj)
-    end
 
     methods
         function tp = get.tab_parameter(obj)
