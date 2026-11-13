@@ -272,9 +272,8 @@ net.a_Bus{2}.add_component("load-power");
 
 % Or start from a packaged network and analyse it
 net = network.IEEE14bus;
-sc = Scenario("fault");  sc.add_fault("B008", [3, 3.1]);
-net.add_scenario(sc);
-sol = net.simulate([0, 50], sc);      % time response
+sc = net.add_scenario("fault", Time=[0, 50]);  sc.add_fault("B008", [3, 3.1]);
+sol = net.simulate("fault");          % time response
 sys = net.get_sys();                  % linearized model</code></pre>
       </section>
 
@@ -533,16 +532,15 @@ powerflow = net.calculate_powerflow();
 net.initialize();</code></pre>
 
       <h2 id="tutorial-simulation"><span lang="en">3. Run a Time-Domain Simulation</span><span lang="ja">3. 時間応答シミュレーションの実行</span></h2>
-      <p lang="en">Disturbances go in a <code>Scenario</code>: timed state offsets, input changes, bus faults, unit trips and branch openings. Add the scenario to the network, then simulate it.</p>
-      <p lang="ja">外乱は <code>Scenario</code> に書きます。状態のオフセット、入力の変化、母線の地絡、機器の解列、ブランチの開放を、それぞれ時刻を指定して加えられます。シナリオをネットワークに追加してから、シミュレーションを実行します。</p>
+      <p lang="en">Disturbances go in a <code>Scenario</code>: timed state offsets, input changes, bus faults, unit trips and branch openings. Create the scenario on the network with a tag, then simulate it by that tag.</p>
+      <p lang="ja">外乱は <code>Scenario</code> に書きます。状態のオフセット、入力の変化、母線の地絡、機器の解列、ブランチの開放を、それぞれ時刻を指定して加えられます。シナリオはタグを付けてネットワークに作り、そのタグを指定してシミュレーションを実行します。</p>
 <pre><code>net = network.IEEE14bus;
-sc = Scenario("fault", Time=[0, 50]);
+sc = net.add_scenario("fault", Time=[0, 50]);
 sc.add_fault("B008", [3, 3.1]);           % ground fault from 3 s to 3.1 s
 sc.add_open_branch("EL013", [3.1, 50]);   % then a line opened until the end
-net.add_scenario(sc);
 
-sol = net.simulate(sc);                   % the Time of the scenario
-verdict = sc.judge(sol);                  % "stable", "out-of-step" or "incomplete"
+sol = net.simulate("fault");              % the Time of the scenario
+verdict = sol.judge_out_of_step();        % "stable", "out-of-step" or "incomplete"
 xsol = sol.odeResults;
 
 figure;
@@ -566,10 +564,9 @@ gen.add_local_controller("avr-ST1");
 gen.add_local_controller("pss-PSS1");
 net.initialize();
 
-sc = Scenario("fault");
+sc = net.add_scenario("fault", Time=[0, 50]);
 sc.add_fault("B008", [3, 3.01]);
-net.add_scenario(sc);
-sol = net.simulate([0, 50], sc);</code></pre>
+sol = net.simulate("fault");</code></pre>
 
       <hr style="margin: 50px 0; border: 0; border-top: 1px solid var(--line);">
       
