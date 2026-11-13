@@ -130,7 +130,8 @@ end
 
 
 function mustBePlotFcn(x)
-% "none", display keys of fmincon or a function handle (tools.check_plotfcn)
+% "none", display keys of fmincon or a function handle (tools.check_plotfcn); a local
+% function because a validator in the arguments block takes literal arguments only
     tools.check_plotfcn(x, "calculate_optimal_powerflow", plot_keys());
 end
 
@@ -139,14 +140,6 @@ function mustBeHandleOrEmpty(f)
 % A function handle or [] (none)
     if ~(isempty(f) || isa(f, "function_handle"))
         error(msg("GUILDA:PowerNetwork:InvalidOpfHandle"))
-    end
-end
-
-
-function mustBePositiveOrNaN(r)
-% NaN (the default of the solver) or a positive value
-    if ~isnan(r)
-        mustBePositive(r)
     end
 end
 
