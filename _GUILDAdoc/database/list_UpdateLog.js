@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Network display methods follow disp_ and plot_",
+    "date": "2026-11-13",
+    "type": "feature",
+    "content": "The display and drawing methods of PowerNetwork are renamed to the verbs of the rest of the API: net.info is now net.disp_summary, net.draw_diagram is now net.plot_diagram, and net.draw_spring_model is now net.plot_spring_model. Options, outputs and behaviour are unchanged. The old names are removed, so scripts that call them need updating."
+  },
+  {
     "title": "Simulate a scenario by its tag",
     "date": "2026-11-13",
     "type": "feature",
