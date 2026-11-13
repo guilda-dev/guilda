@@ -93,12 +93,11 @@ net.solver_CPF.LoadBus = sr_load;
 c_cfg = DebugScript.helper.user_config("ContinuationPowerFlow", struct("MaxIteration", 2));
 res = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow());
 assert(isequal(res.options.LoadBus, sr_load) && numel(res.rv_lambda) == 3)
-% 省略したオプションはすべて設定の値になる (LoadBus は net.solver_CPF の値)
+% 省略したオプションはすべて設定の値になる (LoadBus は net.solver_CPF の値)。
+% オプションの無い設定 (Corrector*、Increment) は SolverCPF.solve が GUILDA.config から読む
 sct_cfg = GUILDA.config("ContinuationPowerFlow");
-for s_name = string(fieldnames(sct_cfg)).'
-    if s_name ~= "PlotFcn"
-        assert(isequal(res.options.(s_name), sct_cfg.(s_name).Value), s_name)
-    end
+for s_name = ["InitialLambda","MaxIteration","StepSize","ArcLength","Tolerance","Limits","UseInternalState","Verbose","PlotFcn"]
+    assert(isequal(res.options.(s_name), sct_cfg.(s_name).Value), s_name)
 end
 % 呼び出しのオプションは設定と系統の条件より優先する (この呼び出しだけ)
 res = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(MaxIteration=3, LoadBus="B014"));

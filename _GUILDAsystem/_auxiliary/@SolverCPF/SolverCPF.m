@@ -8,7 +8,9 @@ classdef SolverCPF < auxiliary
 % (GUILDA.config("ContinuationPowerFlow")); the solver keeps only the condition of its
 % network, LoadBus (kept between runs). Name-Value options of
 % net.calculate_continuation_powerflow override both for that call only; neither the
-% solver nor the settings file is changed. Results are returned as a ResultCPF.
+% solver nor the settings file is changed: the call passes its options as they are, and
+% the settings without an option (CorrectorMaxIteration, CorrectorStepSize, Increment) are
+% read from GUILDA.config where solve uses them. Results are returned as a ResultCPF.
 %
 % - The power the components of the `LoadBus` buses draw is multiplied by (1 + lambda).
 % - `StepSize` multiplies the tangent at the first step and the secant from the previous
