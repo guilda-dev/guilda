@@ -516,6 +516,12 @@ s_tag = add_trip(obj, unit, time)
 - D1 の `feature-data-io.html`, `feature-model-building.html` は E1・B1 の後、`feature-simulation.html` は E2 の後です。
 - `@PowerNetwork/private` の `simulateFcn_*` への改名は別のサブセッションの作業で、E2 はその統合の後に始めます。
 
+### 7.1 B1 の実装の状況
+
+- ブランチ `feature/branch-status` で実装しました(§2.1-2.5 のとおり)。`functionSignatures.json` は変えていません(B1 と E1 の統合の後に `GUILDA.update_keymap(Signature=true)` で 1 回再生成します)。
+- テスト: 新規 F41(small)、F16 の `circuit` の列、F22 のブランチの状態の約束。F41 はすべて small なので `test_levels.m` の行は加えていません。
+- 結果(2026-11-13): small 543 件 PASS 540 / KNOWN 1 / FAIL 1 / SKIP 1、medium 731 件 PASS 728 / KNOWN 1 / FAIL 1 / SKIP 1。FAIL は F34(`functionSignatures.json` が古い)だけで、再生成で解消する見込みです。`simulate_baseline(Mode="compare")` は 6 例とも `isequaln` です。
+
 ## 8. テスト計画
 
 ### 8.1 新規 F41: ブランチの状態(B1、small)
