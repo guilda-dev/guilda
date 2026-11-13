@@ -797,5 +797,5 @@ simulate flag=1 drift=0.00e+00 | fault flag=1 | get_sys flag=1 n_x=5 maxRe=3.69e
 
 - `AVR_DC1`、`two_axis`、`park` での新しい制御器の組み合わせ。
 - `I` に依存する機器の、`simulate` の結果の正しさ。
-- 上で動いた例の GUI 関連(`draw_diagram` など)と、`replace_component` での新しいキー。
+- 上で動いた例の GUI 関連(`plot_diagram` など)と、`replace_component` での新しいキー。
 - `F1`, `F7` 以外のテストに新しいクラスが与える影響。

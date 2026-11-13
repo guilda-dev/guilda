@@ -444,6 +444,6 @@ end
 
 - 実際の MATPOWER ケースファイル(`case14` など)の取り込みと、`network.IEEE14bus` との数値比較
 - `.mlx` の全セルの実行。旧 API の確認は、該当する呼び出しを個別に実行したものです
-- GUI 経由の操作(`GUILDA.newclass`、`draw_diagram`)
+- GUI 経由の操作(`GUILDA.newclass`、`plot_diagram`)
 - `+DebugScript` がリリースに含まれるか(問題 25 の影響範囲)。リリース用スクリプトに `DebugScript` の記述は見つかりませんでした
 - `Method="OPF"` の残差の原因(`notes/get-sys-workflow.md`, `notes/simulate-review-workflow.md` の結論を引用し、再分析はしていません)

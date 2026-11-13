@@ -1147,7 +1147,7 @@ there.
 | `get_sys` の `output.str_issue` | `output.s_issue` |
 | `comp.sct_edit.str_odefcn`(モデル作者向け) | `comp.sct_stale.odefcn`(古い理由のメッセージ。空なら最新。1.3 と 2.「`set_odefcn` は廃止」を参照) |
 
-- `net.info` と `struct(obj)` の表や構造体の列名、フィールド名も `s_tag`、`s_bustype` になります。
+- `net.disp_summary` と `struct(obj)` の表や構造体の列名、フィールド名も `s_tag`、`s_bustype` になります。
 - 名前の対応表は [naming-struct-string.md](naming-struct-string.md) にあります。
 
 ### 1.20 パラメータは `tab_parameter` で読み書き(`para_*` の廃止)
@@ -1273,6 +1273,16 @@ of its parent, so the labels stay unique within a network.
 - **作成。** 機器・ブランチ・ローカル制御器・グローバル制御器は、キーで作るメソッド(`add_component`、`replace_component`、`add_branch`、`add_local_controller`、`add_global_controller`)の中でしか作れません。具体クラスのコンストラクタを直接呼ぶと `MATLAB:class:MethodRestricted` で止まります(例: `controller.avr.AVR_ST1("1")`、`component.generator.park("1", nan, opt)`、`branch.pi("1", opt)`)。以前は制御器、発電機、ブランチのコンストラクタは公開でした。
 - **削除。** 外した物体は `delete` されます(1.4)。外した制御器を別の機器に付け直したり、外した機器を読んだりしていたスクリプトは、キーで新しく作ってください。`replace_component` の `Controllers="drop"`(既定)で残らなかったローカル制御器も削除されます。
 - **親のない物体の扱いの廃止。** 親のない物体がなくなったため、それを前提にした動作もなくなりました: 系統にない層の `get_sys` が古いハンドルを作り直す動作、`comp.c_Vequilibrium` / `con.c_Vequilibrium` が `[]` を返す動作、`gc.get_sys` の系統外の名前付け、`get_Hz` の `GUILDA.config("Model","Hz")` への切り替え。エラー ID `GUILDA:Component:InputNotConnected`、`GUILDA:LocalController:ValidateNotAttached`、`GUILDA:local_LQR:NotOnComponent`、`GUILDA:PowerNetwork:GconOtherNetwork`、`GUILDA:SolverODE:ForeignControlledUnit` はなくなりました(起きえない状況の検査)。
+
+### 1.25 系統の表示と図のメソッド名(`disp_*` / `plot_*`)
+
+`PowerNetwork` の表示と図のメソッドは、ほかの API と同じ動詞に揃えました。文字で表示するものは `disp_*`(`disp_connection`、`ResultPF.disp_summary` と同じ)、図を描くものは `plot_*`(`ResultPF.plot_voltage`、`ResultODE.plot_trajectory` と同じ)です。オプション、出力、動作は変わりません。互換の別名はないため、古い名前を呼ぶスクリプトは書き換えてください。
+
+| 旧 | 新 |
+|---|---|
+| `net.info(...)` | `net.disp_summary(...)` |
+| `net.draw_diagram(ax)` | `net.plot_diagram(ax)` |
+| `net.draw_spring_model(mode)` | `net.plot_spring_model(mode)` |
 
 ## 2. Changes so far — model authors
 

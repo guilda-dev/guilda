@@ -202,7 +202,7 @@
       <thead><tr><th><span lang="en">Effect on the model</span><span lang="ja">モデルへの影響</span></th><th><span lang="en">Verbs</span><span lang="ja">動詞</span></th></tr></thead>
       <tbody>
         <tr><td><span class="dev-status"><span lang="en">May modify</span><span lang="ja">変更してよい</span></span></td><td data-label="Verbs" data-label-ja="動詞"><span class="dg-badge is-err">add_</span><span class="dg-badge is-err">remove_</span><span class="dg-badge is-err">replace_</span><span class="dg-badge is-err">set_</span><span class="dg-badge is-err">initialize</span></td></tr>
-        <tr><td><span class="dev-status is-ok"><span lang="en">Must not change values</span><span lang="ja">値を変えてはならない</span></span></td><td data-label="Verbs" data-label-ja="動詞"><span class="dg-badge is-ok">calculate_</span><span class="dg-badge is-ok">optimize_</span><span class="dg-badge is-ok">simulate</span><span class="dg-badge is-ok">get_</span><span class="dg-badge is-ok">draw_</span><span class="dg-badge is-ok">export_</span></td></tr>
+        <tr><td><span class="dev-status is-ok"><span lang="en">Must not change values</span><span lang="ja">値を変えてはならない</span></span></td><td data-label="Verbs" data-label-ja="動詞"><span class="dg-badge is-ok">calculate_</span><span class="dg-badge is-ok">optimize_</span><span class="dg-badge is-ok">simulate</span><span class="dg-badge is-ok">get_</span><span class="dg-badge is-ok">disp_</span><span class="dg-badge is-ok">plot_</span><span class="dg-badge is-ok">export_</span></td></tr>
       </tbody>
     </table>
     <p lang="en">The only exceptions: internal analysis caches and per-run working data.</p>
@@ -329,7 +329,7 @@
       <div class="dg-row">
         <span class="dg-row-head"><span lang="en">Getters and drawing</span><span lang="ja">値の取得と描画</span></span>
         <div>
-          <div class="ad-call"><code>net.get_admittance_matrix()</code><br><code>net.get_variable_map()</code><br><code>net.draw_diagram(ax)</code></div>
+          <div class="ad-call"><code>net.get_admittance_matrix()</code><br><code>net.get_variable_map()</code><br><code>net.plot_diagram(ax)</code></div>
           <ul class="ad-facts">
             <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <span lang="en">A standard MATLAB type (rule 3)</span><span lang="ja">MATLAB の標準の型（ルール 3）</span></li>
             <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span></li>
