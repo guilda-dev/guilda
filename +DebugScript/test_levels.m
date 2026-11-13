@@ -21,8 +21,9 @@ function tab = test_levels()
     "test_F15_build_checks/AllBuilt_inNetworksStillBuild", "large"
     % ---- F16_csv_io ------------------------------------------------------------------------------
     "test_F16_csv_io/BuildingTheBuilt_inNetworksDoesNotWarn", "large"
-    "test_F16_csv_io/export_csvNamesTheLocalControllersItDoesNotWrite", "medium"
+    "test_F16_csv_io/exportNamesTheLocalControllersItDoesNotWrite", "medium"
     "test_F16_csv_io/BusTagsSurviveARoundTrip", "medium"
+    "test_F16_csv_io/ScenariosSurviveARoundTripAndGiveTheSameSimulation", "medium"
     % ---- F19_model_constructor -------------------------------------------------------------------
     "test_F19_model_constructor/Built_inNetworksAndTheBundledCSVDataDoNotWarnAboutQ", "large"
     % ---- F1_model_building -----------------------------------------------------------------------
@@ -84,7 +85,7 @@ function tab = test_levels()
     "test_F30_governor/remove_local_controllerRemovesOneSlotAndLeavesTheOther", "medium"
     "test_F30_governor/AGovernorAndALocalControllerCannotDriveTheSameInput", "medium"
     "test_F30_governor/replace_componentWithControllers__keep_MovesBothSlots", "medium"
-    "test_F30_governor/export_csvNamesTheGovernorItDoesNotWrite", "medium"
+    "test_F30_governor/exportNamesTheGovernorItDoesNotWrite", "medium"
     % ---- F31_scenario ----------------------------------------------------------------------------
     "test_F31_scenario/AFaultThenAPermanentOpeningEqualsTheGeneralForm", "large"
     "test_F31_scenario/StoredTime_TheTimeAndTheSettingsOfTheCallWinForThatCall", "medium"

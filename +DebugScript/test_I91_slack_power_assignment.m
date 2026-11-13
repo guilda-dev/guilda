@@ -23,8 +23,8 @@ assert(norm(tab1{["load","gen"],["P","Q"]} - tab2{["load","gen"],["P","Q"]}) < 1
 %% A CSV round trip keeps the operating point
 net = slack_network(["load", "gen"]);
 [s_dir, c] = temp_folder();
-s_path = DebugScript.helper.quiet(@() net.export_csv(fullfile(s_dir, "Net")));
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path));
+s_path = DebugScript.helper.quiet(@() net.export(fullfile(s_dir, "Net")));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path));
 DebugScript.helper.quiet(@() net2.initialize);
 tab1 = component_power(net);
 tab2 = component_power(net2);

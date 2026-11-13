@@ -5,9 +5,9 @@ classdef CsvNetHandler < auxiliary
 % or GUILDA:Deprecated:CsvNetHandlerExport:
 %
 % - `CsvNetHandler.import(path, net, Initialize=tf)` calls
-%   `PowerNetwork.import_csv(path, Network=net, Initialize=tf)`
+%   `PowerNetwork.import(path, Network=net, Initialize=tf)`
 % - `CsvNetHandler.export(net, ModelName, savepath=d)` calls
-%   `net.export_csv(fullfile(d, "@"+ModelName))`
+%   `net.export(fullfile(d, "@"+ModelName))`
 %
 % <@Examples>
 % ```matlab
@@ -15,9 +15,9 @@ classdef CsvNetHandler < auxiliary
 % ```
 %
 % <@Deprecated>
-% Use PowerNetwork.import_csv and net.export_csv instead.
+% Use PowerNetwork.import and net.export instead.
 %
-% See also PowerNetwork.import_csv, PowerNetwork.export_csv
+% See also PowerNetwork.import, PowerNetwork.export
 
     methods(Static)
         net  = import(path, net, opt)

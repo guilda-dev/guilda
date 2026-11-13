@@ -18,8 +18,8 @@ are not copied here.
 
 ## Files
 
-- `table4_5_scenarios.csv`: the 26 cases (13 per section) as scenarios in the format of
-  `Scenario.export_csv` (one row per disturbance). The tag is `<section>_<case>`
+- `table4_5_scenarios.csv`: the 26 cases (13 per section) as scenarios, one row per
+  disturbance. The tag is `<section>_<case>`
   (`peak_A` ... `night_G8`); `Description` is the case of the report; `Time` is [0, 20] s.
 - `table4_5_report.csv`: the verdict of the report for each scenario tag: `Verdict`
   (`out-of-step`, `stable` or `growing`), `TimeOutOfStep` [s] and `OutOfStepGen` for the

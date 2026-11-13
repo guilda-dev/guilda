@@ -108,12 +108,12 @@ s_dir = tempname;  mkdir(s_dir);
 c = onCleanup(@() rmdir(s_dir, "s"));
 
 % フォルダ名が @ で始まるとクラスファイルも書き出す
-s_path = net.export_csv(fullfile(s_dir, "@RoundTrip14"));
+s_path = net.export(fullfile(s_dir, "@RoundTrip14"));
 assert(all(isfolder(fullfile(s_path, ["network","bus","branch","component"]))))
 assert(isfile(fullfile(s_path, "RoundTrip14.m")))
-assert(contains(fileread(fullfile(s_path, "RoundTrip14.m")), "PowerNetwork.import_csv(s_dirpath, Network=obj)"))
+assert(contains(fileread(fullfile(s_path, "RoundTrip14.m")), "PowerNetwork.import(s_dirpath, Network=obj)"))
 
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path));
 assert(isa(net2, "PowerNetwork") && string(net2.s_tag) == "RoundTrip14")
 assert(numel(net2.a_Bus) == numel(net.a_Bus) && numel(net2.a_Branch) == numel(net.a_Branch))
 n_comp = @(n) sum(cellfun(@(b) numel(b.a_Component), n.a_Bus));
@@ -134,21 +134,21 @@ tab_bus = readtable(fullfile(s_path, "bus", "parameter.csv"));
 assert(~ismember("baseMVA", string(tab_bus.Properties.VariableNames)))
 tab_bus.baseMVA = repmat(50, height(tab_bus), 1);
 writetable(tab_bus, fullfile(s_path, "bus", "parameter.csv"));
-net3 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path));
+net3 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path));
 assert(norm(net3.cv_Vequilibrium - net.cv_Vequilibrium) < 1e-8)
 assert(~ismember("baseMVA", string(net3.a_Bus{1}.tab_parameter.operation.Properties.VariableNames)))
 assert(net3.tab_parameter.base.baseMVA == 100 && net3.tab_parameter.base.Hz == GUILDA.config("Model","Hz"))
 
 % 同じフォルダへの再出力は Overwrite 指定が必要
-assert(error_id(@() net.export_csv(s_path)) == "GUILDA:export_csv:FolderExists")
+assert(error_id(@() net.export(s_path)) == "GUILDA:export:FolderExists")
 % Overwrite は前回の機器フォルダを消してから書き出す (古い機器が残らない)
 mkdir(fullfile(s_path, "component", "gen-classical"));
-net.export_csv(s_path, Overwrite=true);
+net.export(s_path, Overwrite=true);
 assert(~isfolder(fullfile(s_path, "component", "gen-classical")))
 % @ で始まらないフォルダにはクラスファイルを書かない
-s_plain = net.export_csv(fullfile(s_dir, "Plain14"));
+s_plain = net.export(fullfile(s_dir, "Plain14"));
 assert(isempty(dir(fullfile(s_plain, "*.m"))))
-assert(error_id(@() PowerNetwork.import_csv(fullfile(s_dir, "NoSuchFolder"))) == "GUILDA:import_csv:NotFound")
+assert(error_id(@() PowerNetwork.import(fullfile(s_dir, "NoSuchFolder"))) == "GUILDA:import:NotFound")
 
 
 %% CSV round trip keeps Hz baseMVA and the slack bus
@@ -163,29 +163,29 @@ net.tab_parameter.base.baseMVA = 250;
 DebugScript.helper.quiet(@() set_slack(net.a_Bus{2}));
 s_dir = tempname;  mkdir(s_dir);
 c = onCleanup(@() rmdir(s_dir, "s"));
-s_path   = net.export_csv(fullfile(s_dir, "Base2Bus"));
+s_path   = net.export(fullfile(s_dir, "Base2Bus"));
 tab_net  = readtable(fullfile(s_path, "network", "parameter.csv"));
 assert(isequal(string(tab_net.Properties.VariableNames), ["Hz","baseMVA"]) && height(tab_net) == 1)
 assert(tab_net.Hz == 50 && tab_net.baseMVA == 250)
 
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
 assert(net2.tab_parameter.base.Hz == 50 && net2.tab_parameter.base.baseMVA == 250)
 assert(net2.a_Bus{2}.l_isSlack && ~net2.a_Bus{1}.l_isSlack)
 assert(net2.a_Bus{1}.a_Component{1}.get_Hz() == 50)
 
 % network/parameter.csv の無い古いフォルダ・値が NaN の列は既定値 (GUILDA.config の Hz, 100 MVA)
 writetable(table(nan, 300, 'VariableNames', ["Hz","baseMVA"]), fullfile(s_path, "network", "parameter.csv"));
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
 assert(net2.tab_parameter.base.Hz == GUILDA.config("Model","Hz") && net2.tab_parameter.base.baseMVA == 300)
 rmdir(fullfile(s_path, "network"), "s");
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
 assert(net2.tab_parameter.base.Hz == GUILDA.config("Model","Hz") && net2.tab_parameter.base.baseMVA == 100)
 
 % Network= で既存の系統へ追加できる (母線番号は CSV の行番号)
 net3 = PowerNetwork("Host");
 net3.add_bus();
 net3.a_Bus{1}.add_component("load-power");
-out  = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Network=net3, Initialize=false));
+out  = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Network=net3, Initialize=false));
 assert(out == net3 && numel(net3.a_Bus) == 3 && numel(net3.a_Branch) == 1)
 assert(isequal(string(net3.a_Branch{1}.a_Bus(:)).', string(net3.a_Bus(2:3)).'))
 
@@ -199,25 +199,25 @@ net.a_Bus{1}.add_component("gen-park");
 net.a_Bus{2}.add_component("load-power", "P",-0.5, "Q",-0.1);
 s_dir = tempname;  mkdir(s_dir);
 c = onCleanup(@() rmdir(s_dir, "s"));
-s_path   = net.export_csv(fullfile(s_dir, "@Tap2Bus"));
+s_path   = net.export(fullfile(s_dir, "@Tap2Bus"));
 s_csv    = fullfile(s_path, "branch", "parameter.csv");
 tab_bra  = readtable(s_csv);
 assert(all(ismember(["tap","phase"], string(tab_bra.Properties.VariableNames))))
 
 get_tp = @(n) n.a_Branch{1}.tab_parameter.dynamics{1,["tap","phase"]};
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
 assert(max(abs(get_tp(net2) - [0.95, 5/180*pi])) < 1e-12)
 assert(norm(net2.get_admittance_matrix.Variables - net.get_admittance_matrix.Variables, "fro") < 1e-12)
 
 % 列名 Tap/Phase でも読める
 writetable(renamevars(tab_bra, ["tap","phase"], ["Tap","Phase"]), s_csv);
-net3 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
+net3 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
 assert(max(abs(get_tp(net3) - [0.95, 5/180*pi])) < 1e-12)
 
 % 両方の綴りがあるとエラー
 tab_bra.Tap = tab_bra.tap;
 writetable(tab_bra, s_csv);
-assert(error_id(@() PowerNetwork.import_csv(s_path, Initialize=false)) == "GUILDA:import_csv:DuplicateColumns")
+assert(error_id(@() PowerNetwork.import(s_path, Initialize=false)) == "GUILDA:import:DuplicateColumns")
 
 % 同梱の IEEE14bus の変圧器タップが読み込まれる
 net = DebugScript.helper.quiet(@() network.IEEE14bus);
@@ -241,7 +241,7 @@ assert(s_path == fullfile(s_dir, "@Old14") && isfile(fullfile(s_path, "Old14.m")
 assert(contains(fileread(fullfile(s_path, "Old14.m")), "ver = 3"))
 assert(isfile(fullfile(s_path, "network", "parameter.csv")))
 % 既存フォルダは Overwrite が必要
-assert(error_id(@() CsvNetHandler.export(net, "Old14", "savepath", s_dir)) == "GUILDA:export_csv:FolderExists")
+assert(error_id(@() CsvNetHandler.export(net, "Old14", "savepath", s_dir)) == "GUILDA:export:FolderExists")
 
 lastwarn("");
 net2 = DebugScript.helper.quiet(@() CsvNetHandler.import(s_path));
@@ -473,8 +473,8 @@ mpc_off = mpc14;
 mpc_off.branch(16, 11) = 0;
 net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc_off, Initialize=false));
 assert(numel(net.a_Branch) == 19)
-s_path = net.export_csv(fullfile(s_dir, "Csv14"));
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
+s_path = net.export(fullfile(s_dir, "Csv14"));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
 mpc2 = tools.network_to_mpc(net2);
 i_col = setdiff(1:size(mpc14.bus,2), [8 9]);              % VM/VA は平衡点の電圧なので比べない
 assert(max(abs(mpc2.bus(:,i_col) - mpc14.bus(:,i_col)), [], "all") < 1e-12 && max(abs(mpc2.gen - mpc14.gen), [], "all") < 1e-12)

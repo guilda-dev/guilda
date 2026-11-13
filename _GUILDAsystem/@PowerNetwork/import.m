@@ -1,13 +1,14 @@
-function net = import_csv(path, opt)
-% Build a network from a CSV model folder.
+function net = import(path, opt)
+% Build a network and its scenarios from a model folder.
 %
-% Builds a PowerNetwork from a CSV model folder (the layout written by net.export_csv):
+% Builds a PowerNetwork from a model folder (the layout written by net.export):
 %   <path>/network/parameter.csv        Hz, baseMVA of the network (optional)
 %   <path>/bus/parameter.csv            one row per bus (V, Varg required)
 %   <path>/branch/parameter.csv         one row per branch (Type, From, To required)
 %   <path>/component/<key>/main.csv     one row per component of type <key> (Bus, P, Q required)
 %   <path>/component/<key>/dynamics.csv parameters referenced by the column ParameterID
 %   <path>/component/<key>/opf.csv      OPF settings referenced by the column OpfID
+%   <path>/scenario/<tag>.json          one scenario per file (optional)
 % Buses are numbered by their row; From, To and Bus refer to these numbers.
 % A missing network/parameter.csv (folders written before v4) or a missing or NaN value
 % keeps the defaults Hz = GUILDA.config("Model","Hz") and baseMVA = 100.
@@ -19,31 +20,36 @@ function net = import_csv(path, opt)
 % With Network=obj the buses are added to the existing network obj instead of a new
 % one; this is how the network classes such as network.IEEE14bus load their folder in
 % their constructor.
-% Every table is read and checked before the network changes: a wrong file, column or row
-% number leaves obj unchanged. An unknown column gives the warning
-% GUILDA:import_csv:UnknownColumn and is ignored (a memo column does not stop the import);
+% The scenarios are added after the components, in the order of the file names, by
+% net.add_scenario(<file name>) with the Time, Description and disturbances of the file
+% (see net.export); a tag in use gets a number suffix. A file that is not a scenario file
+% stops with GUILDA:PowerNetwork:ScenarioJson; unknown fields give the warning
+% GUILDA:PowerNetwork:UnknownScenarioField and are ignored.
+% Every table and scenario file is read and checked before the network changes: a wrong
+% file, column or row number leaves obj unchanged. An unknown column gives the warning
+% GUILDA:import:UnknownColumn and is ignored (a memo column does not stop the import);
 % the columns of dynamics.csv depend on the component class and are not checked. A later
-% failure, such as an unknown model key or a failing power flow, can leave obj partly
-% built, so build it again after an error.
+% failure, such as an unknown model key, a disturbance whose tag is not in the network or
+% a failing power flow, can leave obj partly built, so build it again after an error.
 %
 % <@Examples>
 % ```matlab
-% path = net.export_csv(fullfile(tempdir, "MyNet"));
-% net2 = PowerNetwork.import_csv(path);
+% path = net.export(fullfile(tempdir, "MyNet"));
+% net2 = PowerNetwork.import(path);
 % net2.tab_parameter.base      % Hz and baseMVA of net
 % ```
 %
 % ```matlab
 % % in the constructor of a network class next to its CSV folders
-% PowerNetwork.import_csv(fileparts(mfilename("fullpath")), Network=obj);
+% PowerNetwork.import(fileparts(mfilename("fullpath")), Network=obj);
 % ```
 %
-% See also PowerNetwork.export_csv, PowerNetwork.import_matpower
+% See also PowerNetwork.export, PowerNetwork.import_matpower
 %
 % <@Group> Data IO
 
     arguments (Input)
-        path               (1,1) string   % Model folder (e.g. the folder written by net.export_csv).
+        path               (1,1) string   % Model folder (e.g. the folder written by net.export).
         opt.Initialize     (1,1) logical = true   % Run net.initialize() after building the network.
         opt.Network                      = []   % Existing network to add the buses, branches and components to (it is returned). Its Hz and baseMVA are overwritten by network/parameter.csv when the file gives them. Default: a new PowerNetwork tagged with the folder name (without a leading @).
     end
@@ -51,7 +57,7 @@ function net = import_csv(path, opt)
         net   % The built network.
     end
     if ~isfolder(path)
-        error(msg("GUILDA:import_csv:NotFound", path));
+        error(msg("GUILDA:import:NotFound", path));
     end
     if isempty(opt.Network)
         [~, s_name] = fileparts(strip(path, "right", filesep));
@@ -60,7 +66,7 @@ function net = import_csv(path, opt)
         net = PowerNetwork(s_name);
     else
         if ~isa(opt.Network, "PowerNetwork") || ~isscalar(opt.Network)
-            error(msg("GUILDA:import_csv:InvalidNetwork", class(opt.Network)));
+            error(msg("GUILDA:import:InvalidNetwork", class(opt.Network)));
         end
         net = opt.Network;
     end
@@ -82,7 +88,7 @@ function net = import_csv(path, opt)
     sr_BusOpt  = check_cols(tab_bus, sr_BusReq, sr_BusOpt, "bus/parameter.csv", ["FullTag", "Slack", "baseMVA", "V0", "Varg0"]);
     sr_removed = intersect(["V0", "Varg0"], string(tab_bus.Properties.VariableNames), "stable");
     if ~isempty(sr_removed)
-        show_msg("info", "GUILDA:import_csv:RemovedColumn", "bus/parameter.csv", strjoin(sr_removed, ", "));
+        show_msg("info", "GUILDA:import:RemovedColumn", "bus/parameter.csv", strjoin(sr_removed, ", "));
     end
     sv_BusTag  = read_full_tag(fullfile(path, "bus", "parameter.csv"));
     n_Bus      = size(tab_bus,1);
@@ -104,6 +110,9 @@ function net = import_csv(path, opt)
                       "OPFcost_fP", "OPFcost_fQ", ...
                       "OPFcost_startup", "OPFcost_shutdown"];
     c_Comp = read_components(path, n_Bus, sr_CompOPF);
+
+    % Scenarios
+    sa_scenario = read_scenarios(path);
 
 % Network (Hz, baseMVA)
     tp = net.tab_parameter;
@@ -204,6 +213,12 @@ function net = import_csv(path, opt)
         end
     end
 
+% Add scenarios (their disturbances are checked against the components)
+    for i_sc = 1:numel(sa_scenario)
+        sc = net.add_scenario(sa_scenario(i_sc).s_tag);
+        sc.add_from_json_struct(sa_scenario(i_sc).sct);
+    end
+
     if opt.Initialize
         net.initialize;
     end
@@ -218,7 +233,7 @@ function c_Comp = read_components(path, n_Bus, sr_CompOPF)
     s_CompPath   = fullfile(path, "component");
     c_Comp       = {};
     if ~isfolder(s_CompPath)
-        show_msg("warning", "GUILDA:import_csv:NoComponentFolder", s_CompPath);
+        show_msg("warning", "GUILDA:import:NoComponentFolder", s_CompPath);
         return
     end
     sct_CompDir = dir(s_CompPath);
@@ -239,7 +254,7 @@ function c_Comp = read_components(path, n_Bus, sr_CompOPF)
             tab_dyn = read_csv(path, s_rel + "dynamics.csv");
             % The other columns depend on the component class
             assert(ismember("ParameterID", string(tab_dyn.Properties.VariableNames)), ...
-                "GUILDA:import_csv:MissingColumns", ...
+                "GUILDA:import:MissingColumns", ...
                 "Missing required columns in %s: ParameterID", s_rel + "dynamics.csv");
             check_ids(tab_main, tab_dyn, "ParameterID", s_main, s_rel + "dynamics.csv");
         end
@@ -261,7 +276,7 @@ end
 function tab = read_csv(path, relpath)
     s_file = fullfile(path, relpath);
     if ~isfile(s_file)
-        error(msg("GUILDA:import_csv:MissingFile", s_file, relpath));
+        error(msg("GUILDA:import:MissingFile", s_file, relpath));
     end
     tab = readtable(s_file, "TextType", "string");
 end
@@ -274,7 +289,7 @@ function check_bus_rows(tab, cols, n_Bus, relpath)
         r_val = double(val);
         i_row = find(isnan(r_val) | r_val < 1 | r_val > n_Bus | r_val ~= fix(r_val), 1);
         if ~isempty(i_row)
-            error(msg("GUILDA:import_csv:BusRow", relpath, string(i_row), s_col, value_text(val(i_row)), string(n_Bus), string(n_Bus)));
+            error(msg("GUILDA:import:BusRow", relpath, string(i_row), s_col, value_text(val(i_row)), string(n_Bus), string(n_Bus)));
         end
     end
 end
@@ -283,7 +298,7 @@ end
 function check_ids(tab_main, tab_ref, s_col, relpath, relref)
     i_row = find(~ismember(string(tab_main.(s_col)), string(tab_ref.(s_col))), 1);
     if ~isempty(i_row)
-        error(msg("GUILDA:import_csv:UnknownID", relpath, string(i_row), s_col, value_text(tab_main.(s_col)(i_row)), relref));
+        error(msg("GUILDA:import:UnknownID", relpath, string(i_row), s_col, value_text(tab_main.(s_col)(i_row)), relref));
     end
 end
 
@@ -327,7 +342,7 @@ function tab = rename_cols(tab, old_cols, new_cols, relpath)
             continue
         end
         assert(~ismember(new_cols(i), names), ...
-            "GUILDA:import_csv:DuplicateColumns", ...
+            "GUILDA:import:DuplicateColumns", ...
             "Both %s and %s are given in %s", old_cols(i), new_cols(i), relpath);
         tab = renamevars(tab, old_cols(i), new_cols(i));
     end
@@ -346,7 +361,7 @@ function optional_cols = check_cols(tab, required_cols, optional_cols, relpath, 
     names   = string(tab.Properties.VariableNames);
     missing = required_cols(~ismember(required_cols, names));
     assert(isempty(missing), ...
-        "GUILDA:import_csv:MissingColumns", ...
+        "GUILDA:import:MissingColumns", ...
         "Missing required columns in %s: %s", relpath, strjoin(missing, ", "));
     known = [required_cols, optional_cols, other_cols];
     lv_unknown = ~ismember(names, known);
@@ -356,7 +371,7 @@ function optional_cols = check_cols(tab, required_cols, optional_cols, relpath, 
         if ~isempty(tab.Properties.VariableDescriptions)
             sr_written = string(tab.Properties.VariableDescriptions);
         end
-        show_msg("warning", "GUILDA:import_csv:UnknownColumn", relpath, strjoin(sr_written(lv_unknown), ", "), strjoin(known, ", "));
+        show_msg("warning", "GUILDA:import:UnknownColumn", relpath, strjoin(sr_written(lv_unknown), ", "), strjoin(known, ", "));
     end
     if ~isempty(optional_cols)
         optional_cols = optional_cols(ismember(optional_cols, names));

@@ -136,11 +136,6 @@ classdef (Sealed = true) Scenario < LayerPackage
         remove_disturbance(obj, tag)
     end
 
-    methods (Static)
-        c_scenario = import_csv(path, opt)
-        path = export_csv(path, scenarios, opt)
-    end
-
     methods (Access=protected)
         log_edit(obj, log, tag)
         sct_page = gui_content(obj)
@@ -152,6 +147,8 @@ classdef (Sealed = true) Scenario < LayerPackage
 
     methods (Access={?PowerNetwork})
         [tab_phase, sct_event] = compile(obj, sct_dae, time)
+        sct = to_json_struct(obj)       % Content of scenario/<tag>.json (net.export).
+        add_from_json_struct(obj, sct)  % Time, Description and disturbances from scenario/<tag>.json (PowerNetwork.import).
     end
 
     methods (Access=private)
@@ -161,12 +158,6 @@ classdef (Sealed = true) Scenario < LayerPackage
     methods (Static, Access=private)
         d = record(tab, k)
         d = blank(tag, time)
-        tab = empty_table()
-        check(d, s_scenario, net)
-        % The four above: helpers shared with the method files (compile, import_csv, export_csv)
-    end
-
-    methods (Access={?Scenario})
-        s_tag = add_checked(obj, d)
+        % The two above: helpers shared with the method files (compile, to_json_struct)
     end
 end

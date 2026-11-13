@@ -1,31 +1,38 @@
-function path = export_csv(obj, path, opt)
-% Write the network to a CSV model folder.
+function path = export(obj, path, opt)
+% Write the network and its scenarios to a model folder.
 %
-% Writes the network to a CSV model folder that PowerNetwork.import_csv reads back:
+% Writes the network to a model folder that PowerNetwork.import reads back:
 %   <path>/network/parameter.csv        Hz, baseMVA (net.tab_parameter.base)
 %   <path>/bus/parameter.csv            one row per bus, in the order of net.a_Bus
 %   <path>/branch/parameter.csv         one row per branch; From/To are bus row numbers
 %   <path>/component/<key>/main.csv     one row per component of type <key>
 %   <path>/component/<key>/dynamics.csv distinct parameter rows (column ParameterID)
 %   <path>/component/<key>/opf.csv      distinct OPF rows (column OpfID)
+%   <path>/scenario/<tag>.json          one file per scenario of net.a_Scenario (none
+%                                       without scenarios)
 % The bus column Slack is 1 for the slack bus. The column FullTag of the bus, branch and
 % component tables holds the full tag; the bus column Tag holds its prefix (the tag
-% without its trailing digits). Equilibria and controllers are not saved;
+% without its trailing digits). A scenario file holds Format ("GUILDAscenario"), version,
+% Description, Time and Disturbances: one object per disturbance with the names of the
+% add_disturbance options (Tag, TimeSpan, FaultBus, ..., InputMethod), empty ones left out;
+% a time-series InputValue is an object with Time and Value (one array per point).
+% Equilibria and controllers are not saved;
 % the warning GUILDA:PowerNetwork:ControllersNotSaved lists the controllers left out.
 % When the folder name starts with "@" (e.g. "@MyNet"), a class file MyNet.m is also
 % written, so that the folder is a network class (net = MyNet()) when its parent folder
 % is on the MATLAB path.
 % An existing folder is an error unless Overwrite=true, which first deletes the network,
-% bus, branch and component subfolders and the class file written by an earlier export.
+% bus, branch, component and scenario subfolders and the class file written by an earlier
+% export.
 %
 % <@Examples>
 % ```matlab
 % net  = network.IEEE14bus;
-% path = net.export_csv(fullfile(tempdir, "@MyIEEE14"), Overwrite=true);
-% net2 = PowerNetwork.import_csv(path);
+% path = net.export(fullfile(tempdir, "@MyIEEE14"), Overwrite=true);
+% net2 = PowerNetwork.import(path);
 % ```
 %
-% See also PowerNetwork.import_csv
+% See also PowerNetwork.import
 %
 % <@Group> Data IO
 
@@ -45,16 +52,16 @@ function path = export_csv(obj, path, opt)
     end
     s_class = strip(s_folder, "left", "@");
     if opt.ClassFile && ~isvarname(s_class)
-        error(msg("GUILDA:export_csv:InvalidClassName", s_class));
+        error(msg("GUILDA:export:InvalidClassName", s_class));
     end
     if s_parent ~= "" && ~isfolder(s_parent)
-        error(msg("GUILDA:export_csv:NoParentFolder", s_parent));
+        error(msg("GUILDA:export:NoParentFolder", s_parent));
     end
     if isfolder(path)
         if ~opt.Overwrite
-            error(msg("GUILDA:export_csv:FolderExists", path));
+            error(msg("GUILDA:export:FolderExists", path));
         end
-        for s_sub = ["network", "bus", "branch", "component"]
+        for s_sub = ["network", "bus", "branch", "component", "scenario"]
             if isfolder(fullfile(path, s_sub))
                 rmdir(fullfile(path, s_sub), "s");
             end
@@ -89,6 +96,8 @@ function path = export_csv(obj, path, opt)
         writetable(tab_dyn,  fullfile(s_path_comp, "dynamics.csv"));
         writetable(tab_opf,  fullfile(s_path_comp, "opf.csv"));
     end
+
+    write_scenarios(obj, path);
 
     % Class file
     if opt.ClassFile
@@ -220,7 +229,7 @@ function [tab_opt, tab_para, tab_opf] = component_table(a_Comp, sv_Bus)
 end
 
 function s_code = class_file(s_class, net)
-    s_template   = fullfile(fileparts(mfilename("fullpath")), "private", "export_csv_class.txt");
+    s_template   = fullfile(fileparts(mfilename("fullpath")), "private", "export_class.txt");
     s_code       = string(fileread(s_template));
 
     a_comp   = tools.vcellfun(@(bus) bus.a_Component, net.a_Bus);

@@ -68,7 +68,7 @@ classdef IEEE68bus < PowerNetwork
             end
             s_filepath   = mfilename("fullpath");
             s_dirpath    = fileparts(s_filepath);
-            PowerNetwork.import_csv(s_dirpath, Network=obj, Initialize=false);
+            PowerNetwork.import(s_dirpath, Network=obj, Initialize=false);
             if opt.LocalController
                 add_avr_pss(obj, s_dirpath);
             end

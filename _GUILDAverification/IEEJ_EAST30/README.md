@@ -27,7 +27,7 @@ time and its generator group are printed for information but do not count.
 
 ## Files
 
-- `table4_9_scenarios.csv`: the 55 cases as scenarios (`Scenario.export_csv` format),
+- `table4_9_scenarios.csv`: the 55 cases as scenarios (one row per disturbance),
   one scenario per case, tagged `<section>-<n>cct-<card>` (e.g. `peak-2cct-3104`),
   with `Time` [0, 21] s and a `Description`. Each has two disturbances: `fault`, a
   ground fault on the `NF` bus of the line card from 1 s to 1.07 s, and `open`, the
@@ -47,7 +47,7 @@ nodes 3001 to 3022; G18 (bus `B3010`, `B3010SG1`) is the slack.
 ## Sequence and criterion
 
 For each section, `compare_table4_9` builds `network.IEEJ_EAST30(Section=..., Governor=...)`,
-imports the scenarios into it with `Scenario.import_csv(..., Network=net)`, and for each
+adds the scenarios to it with its local function `add_csv_scenarios`, and for each
 case runs `net.simulate(sc.s_tag, Progress="none", TimeLimit=300)` over [0, 21] s and judges the
 result with `result.judge_out_of_step(Reference="B3010SG1", Threshold=360)`:
 

@@ -71,7 +71,7 @@ classdef Ishizaki6Bus < PowerNetwork
             copyfile(fullfile(new_path,'component'),fullfile(s_tmp,'component'));
             writetable(tab_branch,fullfile(s_tmp,'branch','parameter.csv'));
 
-            PowerNetwork.import_csv(s_tmp, Network=obj);
+            PowerNetwork.import(s_tmp, Network=obj);
         end
     end
 end

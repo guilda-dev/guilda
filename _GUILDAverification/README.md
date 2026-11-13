@@ -12,8 +12,8 @@ One subfolder per bundled network, named after its class (for example `IEEJ_WEST
 - `README.md`: the literature reference, what is compared, the disturbance sequence, the
   criterion, the modelling differences from the reference, how to run the comparison,
   and the latest measured agreement as a dated record (base commit and date).
-- The cases as Scenario CSV files (`Scenario.export_csv` format, read with
-  `Scenario.import_csv`), and the published verdicts or values in a separate CSV keyed by
+- The cases as scenario CSV files (one row per disturbance, read by a local function of
+  the comparison that calls `net.add_scenario` and `add_disturbance`), and the published verdicts or values in a separate CSV keyed by
   the scenario tag.
 - A comparison function (`compare_<table>.m`) that builds the network, imports the
   scenarios, simulates and judges each, and prints and returns the published result next

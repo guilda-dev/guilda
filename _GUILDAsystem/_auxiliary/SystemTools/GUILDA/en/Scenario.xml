@@ -17,15 +17,5 @@
         <entry key="DuplicateTag">Scenario "{1}" already has a disturbance with the tag "{0}". Give each disturbance its own tag.</entry>
         <entry key="ReservedTag">The disturbance tag "{0}" of scenario "{1}" is reserved for the phase table. Use another tag; t1, t2, Properties, Row, Variables, an empty tag, and NoAction followed by digits are not available.</entry>
         <entry key="DisturbanceNotFound">Scenario "{1}" has no disturbance with the tag {0}.</entry>
-        <entry key="CsvNotFound">The scenario file "{0}" does not exist.</entry>
-        <entry key="CsvMissingColumn">The scenario file "{0}" has no column Scenario. The columns are Scenario, Description, ScenarioTimeStart, ScenarioTimeEnd, Tag, TimeStart, TimeEnd, FaultBus, TripUnit, OpenBranch, OffsetUnit, OffsetState, OffsetValue, InputUnit, InputName, InputValue.</entry>
-        <entry key="CsvUnknownColumn">The scenario file "{0}" has the unknown column(s) {1}; they are ignored.</entry>
-        <entry key="CsvConflict">Scenario "{0}" of "{1}": the rows give different values of {2}. Give it on one row, or the same value on every row of the scenario.</entry>
-        <entry key="CsvInvalidValue">Row {0} of "{1}": {2} = "{3}" is not a number or a list of numbers separated by ";".</entry>
-        <entry key="CsvFileExists">The file "{0}" already exists. Give Overwrite=true to replace it.</entry>
-        <entry key="CsvFunctionHandle">Disturbance "{0}" of scenario "{1}": an InputValue is a function handle, which a CSV file cannot hold. Use numbers, or keep the scenario in a MAT-file.</entry>
-        <entry key="CsvNotScenario">Scenario.export_csv takes a Scenario or a cell of Scenario objects (e.g. net.a_Scenario).</entry>
-        <entry key="CsvNotSaved">Scenario "{0}": {1} cannot be written to a CSV file and is not saved.</entry>
-        <entry key="CsvInvalidNetwork">Network must be a PowerNetwork, not a {0}.</entry>
     </message>
 </rsccat>

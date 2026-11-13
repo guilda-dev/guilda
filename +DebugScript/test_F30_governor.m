@@ -298,11 +298,11 @@ sol = DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbanc
 assert(sol.flag == 1 && DebugScript.helper.max_state_drift(sol) < 1e-9)
 
 
-%% export_csv names the governor it does not write
+%% export names the governor it does not write
 [net, comp, ~, ~, gov] = build_full("after");
 s_dir = tempname;  mkdir(s_dir);  c = onCleanup(@() rmdir(s_dir, "s"));
 lastwarn("", "");
-DebugScript.helper.quiet(@() net.export_csv(fullfile(s_dir, "Net3")));
+DebugScript.helper.quiet(@() net.export(fullfile(s_dir, "Net3")));
 [str, id] = lastwarn();
 assert(string(DebugScript.helper.msg_id(str, id)) == "GUILDA:PowerNetwork:ControllersNotSaved")
 assert(contains(str, comp.s_tag + "/" + gov.s_tag), str)

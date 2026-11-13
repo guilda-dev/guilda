@@ -95,7 +95,7 @@ classdef IEEE14bus_NoTap < PowerNetwork
             end
             s_filepath   = mfilename("fullpath");
             s_dirpath    = fileparts(s_filepath);
-            PowerNetwork.import_csv(s_dirpath, Network=obj);
+            PowerNetwork.import(s_dirpath, Network=obj);
         end
     end
 end
