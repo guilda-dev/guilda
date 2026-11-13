@@ -3,6 +3,7 @@
 % 組み込みモデルは FAIL 0、不正モデルは該当する検査が FAIL になることを確認する。
 % モデルの一覧は GUILDA.dictionary から作る (helper.model_classes)。新しいクラスは追加する
 % だけで対象になり、add_component(key) や con(tag) で作れないと失敗して知らせる。
+% ブランチは get_admittance_matrix(Status=, Point=) の約束 (Branch の抽象メソッド) も確かめる。
 %
 % 実行: runtests("DebugScript.test_F22_model_contract")  または  DebugScript.run_all("Features","F22")
 
@@ -160,6 +161,12 @@ for k = 1:height(tab)
     assert(class(bra) == tab.Class(k) && bra.key == tab.Key(k), tab.Key(k))
     Y = bra.get_admittance_matrix();
     assert(isequal(size(Y), [2,2]) && all(isfinite(Y), "all"), tab.Key(k))
+    % 状態の約束 (Status, Point): "close" は引数なしと同じ、開放は回線の割合、地絡は対角
+    assert(isequal(bra.get_admittance_matrix(Status="close", Point=0.3), Y), tab.Key(k))
+    assert(isequal(bra.get_admittance_matrix(Status="6open"), zeros(2)), tab.Key(k))
+    assert(isequal(bra.get_admittance_matrix(Status="3open"), Y/2), tab.Key(k) + ": 既定は 2 回線")
+    Yf = bra.get_admittance_matrix(Status="6LG", Point=0.3);
+    assert(isequal(size(Yf), [2,2]) && all(isfinite(Yf), "all") && isdiag(Yf), tab.Key(k))
     DebugScript.helper.quiet(@() net.initialize);
     assert(abs(net.a_Bus{2}.c_Vequilibrium) > 0.5, tab.Key(k))
 end

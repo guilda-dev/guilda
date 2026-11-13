@@ -203,6 +203,28 @@ assert(~any(contains(sv_log, "<<-Add--- B")), "自動のタグを経由しない
 assert(~any(contains(sv_log, "rename")), "改名は何も古くしない")
 
 
+%% The branch column circuit survives a round trip and defaults to 2
+% export は dynamics の表をそのまま書くので circuit の列が付く。import は circuit と Circuit を
+% 受け付け、列がなければ add_branch の既定の 2 回線にする (ブランチの状態 B1)
+net = tag_network();
+net.add_branch("pi", [1, 3], X=0.2, Circuit=1);
+net.a_Branch{2}.tab_parameter.dynamics.circuit = 3;
+[net2, c] = round_trip(net); %#ok<ASGLU>
+assert(isequal(cellfun(@(b) b.tab_parameter.dynamics.circuit, net2.a_Branch), [2; 3; 1]))
+
+[s_path, c] = csv_folder(); %#ok<ASGLU>
+s_file = fullfile(s_path, "branch", "parameter.csv");
+tab = readtable(s_file, "TextType", "string");
+assert(ismember("circuit", string(tab.Properties.VariableNames)), "export は circuit の列を書く")
+tab.circuit(:) = [1; 3];
+writetable(renamevars(tab, "circuit", "Circuit"), s_file);
+[net2, ~, id] = import_with_warning(s_path);
+assert(id == "" && isequal(cellfun(@(b) b.tab_parameter.dynamics.circuit, net2.a_Branch), [1; 3]), "Circuit の列名も読む")
+writetable(removevars(tab, "circuit"), s_file);
+[net2, ~, id] = import_with_warning(s_path);
+assert(id == "" && isequal(cellfun(@(b) b.tab_parameter.dynamics.circuit, net2.a_Branch), [2; 2]), "列がなければ 2 回線")
+
+
 %% An unknown column warns with the file and column, and does not stop the import
 [s_path, c] = csv_folder(); %#ok<ASGLU>
 s_file = fullfile(s_path, "bus", "parameter.csv");

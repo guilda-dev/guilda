@@ -9,6 +9,7 @@
         <entry key="NoSlackCandidate">No bus of ''{0}'' has a component, so the power flow cannot select a slack bus.&#xA;Add a generator to a bus with bus.add_component(...). A bus with a component that has Q = NaN is selected first.</entry>
         <entry key="BusNotFound">No bus with the tag ''{0}'' was found in ''{1}''.</entry> 
         <entry key="BranchNotFound">No branch with the tag ''{0}'' was found in ''{1}''.&#xA;List the tags of the network with string(net.a_Branch).</entry>
+        <entry key="InvalidBranchStatus">Invalid BranchStatus for net.get_admittance_matrix of ''{0}'': {1}.&#xA;BranchStatus is a table with the columns Target (a branch tag of string(net.a_Branch)), Status (fault: "3LG", "6LG", "none"; parallel: "3open", "6open", "close") and Point (fault position, 0 &lt; Point &lt; 1, for "3LG" and "6LG"). A branch takes at most one fault row and one parallel row.</entry>
         <entry key="BranchBusIndex">Bus index {0} is out of range: ''{1}'' has {2} buses.&#xA;Add the buses first with net.add_bus(), or give the end buses as indices of net.a_Bus or as bus tags.</entry>
         <entry key="BranchSelfLoop">Both ends of the branch are bus ''{0}''. A branch must connect two different buses.&#xA;For a shunt at the bus, use net.add_bus(Gshunt=G, Bshunt=B) instead of a branch.</entry>
         <entry key="BranchZeroImpedance">The branch between ''{0}'' and ''{1}'' has R = X = 0, so its admittance is infinite.&#xA;Give a nonzero R or X, or merge the two buses into one.</entry>

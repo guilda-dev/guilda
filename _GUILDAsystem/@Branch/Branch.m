@@ -4,13 +4,34 @@ classdef Branch < PowerSystemModel
 % The network sums the matrices of its branches into the bus admittance matrix used by the
 % power flow, the OPF and the simulation.
 %
-% - Owns R, X, C, tap, phase (`tab_parameter.dynamics`), its operating limits
+% - Owns R, X, C, tap, phase, circuit (`tab_parameter.dynamics`), its operating limits
 %   (`tab_parameter.operation`: Smax, Imax, Pmax, Qmax, Vargmax) and drawing data, and
 %   decides how they form an admittance matrix (the subclass contract
 %   `get_admittance_matrix`).
 % - Parameters (`tab_parameter`) are per unit on the system base, set by add_branch (R, X,
-%   C, Tap, Phase and the limits) or by writing the table. An edit of dynamics makes the
-%   power flow of the network stale; operation and graph make nothing stale.
+%   C, Tap, Phase, Circuit and the limits) or by writing the table. An edit of dynamics
+%   makes the power flow of the network stale; operation and graph make nothing stale.
+% - R, X and C are the values of all circuits together; `circuit` (default 2) is the number
+%   of parallel circuits. One circuit has n*R, n*X and C/n, so its closed matrix is the
+%   closed matrix of the branch divided by n. Only the states that act on one circuit
+%   ("3LG", "3open") depend on `circuit`.
+% - get_admittance_matrix(Status=, Point=) gives the matrix of the branch in one of five
+%   states: "close" (default, the normal matrix), "3LG" (one circuit grounded at Point),
+%   "6LG" (all circuits grounded at Point), "3open" (one circuit open) and "6open" (all
+%   circuits open: the zero matrix). Point is the fault position along the branch, from 0
+%   (from end) to 1 (to end), with 0 < Point < 1; only "3LG" and "6LG" use it and the other
+%   states ignore it. A fault at an end is a bus fault (Scenario.add_fault on the bus).
+%   Faults are bolted (no fault resistance). A branch with one circuit has no "3LG" or
+%   "3open" (error GUILDA:Branch:SingleCircuit). The faulted circuit is split at Point into
+%   two sections of the same form as the branch (pi into two pi sections, T into two T
+%   sections) with the series impedance and the shunt in proportion to their lengths; the
+%   shunt at the fault point is shorted to ground. A transformer has its ideal transformer
+%   (tap and phase) at the from end, and Point is the position on the series part after it
+%   (the series impedance of a two-winding transformer, the pi line of a pi transformer).
+%   Common simulators place a transformer fault on a terminal bus and only open a
+%   transformer; GUILDA also accepts the fault states for transformers.
+% - PowerNetwork.get_admittance_matrix(BranchStatus=) sums these matrices for a table of
+%   branch states (the network matrix of a fault or an open branch).
 % - Refers to its two end buses (`a_Bus`, from and to), but is not their parent and does
 %   not own their voltages. The end voltages and currents it shows are derived from the
 %   buses. The order of `a_Bus` is the row and column order of the 2x2 matrix.
@@ -31,12 +52,14 @@ classdef Branch < PowerSystemModel
 % ```matlab
 % net = network.IEEE9bus();
 % br  = net.a_Branch{1};               % or net.add_branch("pi", [1,2], R=0.01, X=0.085)
-% br.tab_parameter.dynamics            % R, X, C, tap, phase
+% br.tab_parameter.dynamics            % R, X, C, tap, phase, circuit
 % Y   = br.get_admittance_matrix();    % 2x2 admittance matrix
+% Yo  = br.get_admittance_matrix(Status="3open");             % one of the 2 circuits open
+% Yf  = br.get_admittance_matrix(Status="3LG", Point=0.3);    % one circuit grounded at 30 %
 % br.tab_parameter.operation.Smax = Inf;   % no apparent-power limit
 % ```
 %
-% See also PowerNetwork.add_branch, branch.pi, Bus
+% See also PowerNetwork.add_branch, PowerNetwork.get_admittance_matrix, branch.pi, Bus
 
 %% Abstract Properties
     properties(Abstract, Constant) % Subclass contract
@@ -61,12 +84,20 @@ classdef Branch < PowerSystemModel
 
 %% Abstract Methods
     methods(Abstract)
-        % Return the 2x2 admittance matrix of the branch.
+        % Return the 2x2 admittance matrix of the branch in a state.
         %
         % The matrix maps the voltages of the end buses [V_from; V_to] to the currents
         % injected into the branch at those ends, in per unit. It reads tab_parameter.dynamics and
         % must not read or change anything else.
-        Ymat = get_admittance_matrix(obj)
+        %
+        % Name-Value: Status ("close" (default), "3LG", "6LG", "3open", "6open") and Point
+        % (0 < Point < 1 from the from end; used only by "3LG" and "6LG", ignored by the
+        % others). A call without arguments returns the "close" matrix. "6open" is the zero
+        % matrix, "3open" is (n-1)/n times the "close" matrix (n = circuit), "3LG" adds the
+        % grounded circuit to it and "6LG" is n times the grounded circuit. Errors:
+        % GUILDA:Branch:InvalidPoint (Point missing or outside (0,1) for a fault) and
+        % GUILDA:Branch:SingleCircuit ("3LG" or "3open" with circuit = 1).
+        Ymat = get_admittance_matrix(obj, opt)
     end
 
 %% Constructor
@@ -83,7 +114,7 @@ classdef Branch < PowerSystemModel
             obj.s_tag = obj.header+index;
             
             % tab_parameter columns:
-            % - dynamics: R, X [pu]: series impedance; C [pu]: shunt susceptance (meaning set by the subclass); tap: off-nominal ratio; phase [rad]
+            % - dynamics: R, X [pu]: series impedance; C [pu]: shunt susceptance (meaning set by the subclass); tap: off-nominal ratio; phase [rad]; circuit: number of parallel circuits (R, X, C are for all of them)
             % - operation: operating limits at both ends: Smax, Imax, Pmax, Qmax [pu] (default Inf); Vargmax [rad]: end-bus angle difference (default pi/2); Inf or NaN: no limit
             % - graph: MidXaxis, MidYaxis: intermediate points of the line in the diagram; Marker: line style
 
@@ -96,7 +127,8 @@ classdef Branch < PowerSystemModel
                     "X", opt.X, ...
                     "C", opt.C, ...
                   "tap", opt.Tap, ...
-                "phase", opt.Phase));
+                "phase", opt.Phase, ...
+              "circuit", opt.Circuit));
             a_Po = Parameter(obj, "operation", struct( ...
                    "Smax", opt.Smax, ...
                    "Imax", opt.Imax, ...

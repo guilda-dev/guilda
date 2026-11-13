@@ -5,6 +5,11 @@ function bra = add_branch(obj, Key, from_to, opt)
 % branch tag is the class header followed by a three-digit number. The addition is
 % a "Topology" edit, which makes the power flow stale.
 %
+% R, X and C are the values of all circuits of the branch together. `Circuit` (default 2)
+% is the number of parallel circuits: it does not change the closed admittance matrix and
+% is used by the states that act on one circuit, Branch.get_admittance_matrix(Status="3LG")
+% and (Status="3open").
+%
 % The end buses must exist and differ, and R and X must not both be 0; otherwise the
 % network stays unchanged and an error explains the fix.
 %
@@ -12,6 +17,7 @@ function bra = add_branch(obj, Key, from_to, opt)
 % ```matlab
 % net.add_branch("pi", [1,2], R=0.01, X=0.085, C=0.088);
 % net.add_branch("pi_transformer", ["B004","B007"], X=0.2091, Tap=0.978);
+% net.add_branch("pi", [2,3], R=0.02, X=0.17, Circuit=1);   % a single-circuit line
 % ```
 %
 % See also PowerNetwork.remove_branch, PowerNetwork.add_bus, Branch
@@ -24,6 +30,7 @@ function bra = add_branch(obj, Key, from_to, opt)
         opt.C        (1,1) double = 0;   % [pu] Shunt susceptance at each end (half of the line charging).
         opt.Tap      (1,1) double = 1;   % Off-nominal tap ratio (1 for a line).
         opt.Phase    (1,1) double = 0 /180*pi;   % [rad] Phase shift of the transformer.
+        opt.Circuit  (1,1) double {mustBeInteger, mustBePositive} = 2;   % Number of parallel circuits; R, X and C are for all of them together (one circuit: Circuit*R, Circuit*X, C/Circuit).
         opt.Smax     (1,1) double = inf;   % [pu] Limit of the apparent power at both ends (Inf: none).
         opt.Imax     (1,1) double = inf;   % [pu] Limit of the current at both ends (Inf: none).
         opt.Pmax     (1,1) double = inf;   % [pu] Limit of the active power at both ends (Inf: none).
