@@ -586,3 +586,13 @@ s_tag = add_trip(obj, unit, time)
 - 決めたこと(仕様にない細部): `add_events` と `add_record` は `add_scenario(From=)` から呼ぶため `Access={?PowerNetwork, ?Scenario}`(公開ではない)。行の形の誤り(対象ごとに 2 行でない、終了の Status が `none`/`close` でない、機器に `3open`/`6open` など)は新しい ID `GUILDA:Scenario:InvalidEventRows`。`SingleCircuit` は `Scenario.xml` に置いただけで、検査は E2(回線数は B1)。オフセットと入力を持たない `add_disturbance` は区間の目印として、1 つの時刻なら `tab_offset`、期間なら `tab_input` に 1 行を入れる(F6 の「何もしないイベント」)。オフセットだけの `add_disturbance` に `[t1 t2]` を与えたときは `t1` だけを残す。JSON の `version` が 2 でないものと、同じタグのオフセットと入力の開始時刻が違うものは `ScenarioJson`。`PowerNetwork.xml` の `ScenarioJson` の本文の「version 1」を「version 2」にした(1 行)。
 - テスト: small 535 件(PASS 533 / KNOWN 1 / SKIP 1)、medium 723 件(F6 の Verbose の列名を直した後 FAIL 0)。`simulate_baseline(Mode="compare")`: 6 例すべて `isequaln`(`phases` は列名を §3.6 の対応で読み替え)。
 - `_GUILDAverification/IEEJ_EAST10/compare_table4_3(Sections="peak")`(調速機あり): 14 of 21 で README の記録(2026-11-04)と同じ。
+
+## 実装の状況(N1)
+
+ブランチ `feature/ieej-circuit-count`(基準 `4b0a198d`)。§9 Q13 に従い、IEEJ の 4 系統の `branch/parameter.csv`(peak, night)に `circuit` の列(`phase` の後)を加え、クラスのヘルプに書きました。
+
+- EAST10(線路 78、変圧器 22)、WEST10(線路 32、変圧器 10): すべて 1。線路は 1 回線が 1 ブランチ。変圧器のバンク数はデータにないので 1 [Q13]。
+- EAST30(Q13 にない): すべて 1。クラスのヘルプのとおり、T カードの 2 回線はそれぞれ 1 ブランチ、X カードは全て 1 バンク [事実: ヘルプ]。
+- WEST30: 線路はカードの n(2 回線 36、1 回線 63)、変圧器 30 は 1(ヘルプ「All have one bank」)。カードの原データはリポジトリにないため、n は CSV の `C/X` から求めた [推定、根拠は次]: 報告書 4.5 節 (2) で抵抗とアドミタンスは TACSR 810 mm²・4 導体の比で置き換えられており、1 回線の `YC/X` は一定(約 0.484)。CSV は `X/n`, `YC·n` なので `C/X = n²·0.484` となり、値は 0.483〜0.487 と 1.932〜1.938 にきれいに分かれる。表 4.13 の 6 例(`_GUILDAverification/IEEJ_WEST30/table4_13_report.csv` の `Circuits`: EL010, EL042, EL061, EL079 が 1、EL027, EL089 が 2)とすべて一致。
+- `"close"` の行列は変わらない: 8 断面で `get_admittance_matrix()` と潮流計算の母線電圧が変更前と `isequal`。`compare_table4_3(Sections="peak")` は変更前後で表が `isequaln`(14 of 21)。
+- テスト: F19 に節「IEEJ network data give each branch its number of circuits」(small、CSV を読む)。
