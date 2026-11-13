@@ -86,7 +86,7 @@
 | S2 | 済(2026-11-12) | `10c5e5ff`, `99d3e179`(`refactor/simulate-redesign-s2`、`22565858` で統合) |
 | S3 | 済(2026-11-12) | `4434b396`, `c931880d`, `fac24132`(`refactor/simulate-redesign-s3`) |
 | S4 | 済(2026-11-13) | `03f727f7`, `505d411f`, `b82731df`(`refactor/simulate-redesign-s4`) |
-| S5 | 済(2026-11-13) | `refactor/simulate-redesign-s5`(下記) |
+| S5 | 済(2026-11-13) | `0c74a92a`(`refactor/simulate-redesign-s5`) |
 | S5b-S7 | 未着手 | |
 
 - **S0:** `+DebugScript/+helper/simulate_baseline.m` を加えました。§8.3 の 6 例(IEEE68 の地絡 `[0,10]`、IEEE68 `LocalController=false` の外乱なし、IEEE14 AVR+PSS の母線 3 の発電機の解列、IEEE14 の 3 番目のブランチの開放、IEEE9 のオフセットと一定値の入力、F18 の構成の AGC 付き IEEE14 の GC の解列と観測機器の解列。いずれも `[0,5]`、IEEE68 の地絡だけ `[0,10]`)を計算し、`rv_t`, `rm_variable`, `rm_I`, `output.phases`, `flag` を `Mode="record"` で保存、`Mode="compare"` で `isequaln` で比べ、違えば例ごとに差の最大値を示します。タグは系統から読みます。API に触れるのはローカル関数 `new_scenario` と `run_case` だけで、S2-S6 はこの 2 つの数行を書き換えます。
@@ -116,6 +116,8 @@
   - 補助: `@PowerNetwork/private/all_controllers.m`(`check_simulation` が使う)、テストの `DebugScript.helper.solve_direct`(`build_simulation_data` と `solve` を続けて呼ぶ)。公開メンバーの追加は `build_simulation_data`(Hidden)と `simulate` の `Format` だけです。
   - 文書(S7): `model-implementation.html` の `GUILDA:read_mass:NotConstant`、`feature-simulation.html` の `tools.read_mass` と `build_index(net)` の説明、`LayerPackage.m` 以外のエラー ID の記述。
 - **S5 のテスト:** F3_edit_handling(「Solvers called directly」を `build_simulation_data` に)、F6, F29, F35, I51, I55, I64(`solve` の直接の呼び出しを `solve_direct` に)、F6 の `boundary_jumps`(`f_Mass` を直接評価)、ID の改名(F3, F29, F35, I56, I105, `is_stale`)。新規 F39(系統を `delete` した後も `solve` が `isequaln` の結果、データに handle の物体がない、外乱の位置と開放の行列、stale の ID、`Format="struct"` の形と値、`"zoh"` の区間の境界、`"spline"` の値)。
+- **S5 の確認:** `simulate_baseline(Mode="compare")` は 6 例すべて `isequaln`(最初の実装で一致。§8.3 の差の調査は不要)。small は 518 件(PASS 515 / KNOWN 1 / SKIP 1 / FAIL 1)で、FAIL は F34(`Format` の追加で `functionSignatures.json` と F34 の期待する引数の列が古い)。`GUILDA.update_keymap(Signature=true)` で再生成し、F34 を直して 6 件 PASS。medium は 1 回、696 件(PASS 694 / KNOWN 1 / SKIP 1、FAIL 0)。`test_levels.m` の F7 の名前の警告(`LayerGet_sys_RemovedArguments_...`)は S5 の前からあります。
+- **S5 の時間:** IEEE68 の地絡 `[0,10]`、5 回の中央値(R2026a)。変更前 1.28 s、変更後 `Format="GUILDAorigin"` 1.21 s、`Format="struct"` 0.64 s(`struct(net, false)` と出力 y の計算をしないため)。
 
 ## 1. 現状の構造: `SolverODE` が系統を読む箇所
 
