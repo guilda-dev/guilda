@@ -86,7 +86,7 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
         opt.TimeLimit (1,1) double {mustBePositive}   % [s] Wall-clock limit of the whole run; Inf for none. Default: GUILDA.setting.
         opt.Progress {mustBeProgress}   % "dialog", "disp" or "none" (true: "dialog", false: "none"). Default: GUILDA.setting.
         opt.Verbose (1,1) logical   % Print the phases and the outcome. Default: GUILDA.setting.
-        opt.PlotFcn {mustBePlotFcn(opt.PlotFcn, "simulate")}   % Live display during the run: "none" (draw the result with result.plot_trajectory()). Default: GUILDA.setting.
+        opt.PlotFcn {tools.check_plotfcn(opt.PlotFcn, "simulate")}   % Live display during the run: "none" (draw the result with result.plot_trajectory()). Default: GUILDA.setting.
         opt.Format (1,1) string {mustBeMember(opt.Format, ["GUILDAorigin","struct"])} = "GUILDAorigin"   % Form of the first output.
     end
     arguments (Output)
@@ -157,7 +157,16 @@ function sct_options = simulate_options(sct_call)
         sct_options.(s_name) = sct_call.(s_name);      % this call only
     end
     sct_options.Solver   = string(sct_options.Solver);
-    sct_options.Progress = progress_mode(sct_options.Progress);
+    v = sct_options.Progress;      % true -> "dialog", false -> "none"
+    if islogical(v) || isnumeric(v)
+        if v
+            sct_options.Progress = "dialog";
+        else
+            sct_options.Progress = "none";
+        end
+    else
+        sct_options.Progress = string(v);
+    end
     sct_options.Verbose  = logical(sct_options.Verbose);
     sct_options.SeparateComplexParts = logical(sct_options.SeparateComplexParts);
     sct_options.StopOnOutOfStep = logical(sct_options.StopOnOutOfStep);
