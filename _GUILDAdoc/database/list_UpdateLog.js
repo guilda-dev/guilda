@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Current of each component in time simulation results",
+    "date": "2026-11-13",
+    "type": "feature",
+    "content": "The result of net.simulate has a new property rm_Icomponent: the current each component injects into its bus (Ireal, Iimag of each component, bus by bus, positive into the bus), evaluated with the current function of the component at every output time and NaN while the component is tripped. The currents of the components of a bus add up to the bus current rm_I within the tolerance of the solver, except at a faulted bus during the fault. odeResults.Bus(i).Component(j).I gives the same values as a table [Ireal, Iimag], and result.export writes them in the columns <component>_Ireal and <component>_Iimag."
+  },
+  {
     "title": "Spring-mass pictures of the network and of the results",
     "date": "2026-11-13",
     "type": "feature",

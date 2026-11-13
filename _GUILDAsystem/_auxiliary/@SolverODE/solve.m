@@ -16,7 +16,9 @@ function [sct_sol, flag, output] = solve(obj, sct_dae, sct_event, rv_x0, sct_opt
 %
 % sct_sol holds the raw trajectories: rv_t (the times; a phase boundary appears twice),
 % rm_variable (the variable rows x, Vre, Vim, u, uc of sct_dae.tab_variable; the states of
-% a tripped unit are NaN), rm_I (Ire, Iim of each bus) and rv_phase (the phase of each time).
+% a tripped unit are NaN), rm_I (Ire, Iim of each bus), rm_Icomponent (Ire, Iim of each
+% component in the order of sct_dae.c_comp, its f_I at each time; NaN while it is tripped)
+% and rv_phase (the phase of each time).
 % The times are the steps of the solver, or with sct_options.SampleTime > 0 the times
 % t0 + k*SampleTime with the start and end of each phase (values of the solver at those
 % times, solve(o, tv)). When sct_dae.sct_stop is not empty (net.simulate with
@@ -38,7 +40,7 @@ function [sct_sol, flag, output] = solve(obj, sct_dae, sct_event, rv_x0, sct_opt
         sct_options (1,1) struct % Effective settings (net.simulate: GUILDA.setting and the options of the call).
     end
     arguments (Output)
-        sct_sol (1,1) struct % Raw trajectories: rv_t, rm_variable, rm_I, rv_phase.
+        sct_sol (1,1) struct % Raw trajectories: rv_t, rm_variable, rm_I, rm_Icomponent, rv_phase.
         flag    (1,1) double % 1 completed, 2 stopped by the stop condition (sct_dae.sct_stop), 0 stopped by TimeLimit, -1 stopped by the solver.
         output  (1,1) struct % Details: message, tEnd, nPhases, nPhasesDone, isSparse (false when the run fell back to dense matrices), exception (MException of a phase that could not be solved, with the original as cause; otherwise empty), outOfStep (Time, Unit, Reference, Angle of the stop; empty struct otherwise).
     end
@@ -269,6 +271,7 @@ function [sct_sol, flag, output] = solve(obj, sct_dae, sct_event, rv_x0, sct_opt
     sct_sol.rv_t        = cell2mat([{zeros(0,1)}; cellfun(@(T) T.t, sol, 'UniformOutput', false)]);
     sct_sol.rm_variable = cell2mat([{zeros(0,n_var)}; cellfun(@(T) T.x, sol, 'UniformOutput', false)]);
     sct_sol.rm_I        = cell2mat([{zeros(0,2*ctx.n_bus)}; cellfun(@(T) T.i, sol, 'UniformOutput', false)]);
+    sct_sol.rm_Icomponent = cell2mat([{zeros(0,2*numel(ctx.c_comp))}; cellfun(@(T) T.ic, sol, 'UniformOutput', false)]);
     sct_sol.rv_phase    = repelem((1:numel(sol)).', cellfun(@(T) numel(T.t), sol));
 end
 
