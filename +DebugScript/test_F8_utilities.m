@@ -388,8 +388,8 @@ save(s_mat, "net", "res", "sim");
 s = load(s_mat);
 same_ss = @(a, b) isequal(a.A, b.A) && isequal(a.B, b.B) && isequal(a.C, b.C) && isequal(a.D, b.D) && isequal(a.E, b.E) && ...
                   isequal(a.StateName, b.StateName) && isequal(a.InputName, b.InputName) && isequal(a.OutputName, b.OutputName);
-for alg = ["Kron", "DAE"]
-    assert(same_ss(s.net.get_sys("Method", alg), net.get_sys("Method", alg)), alg + ": 読み込んだ系統")
+for alg = ["ODE","DAE"]
+    assert(same_ss(s.net.get_sys("Type", alg), net.get_sys("Type", alg)), alg + ": 読み込んだ系統")
     assert(same_ss(s.res.get_ss(alg), res.get_ss(alg)), alg + ": 読み込んだ結果")
 end
 % 各層の get_sys も同じ。読み込んだ結果の点でも線形化できる
@@ -568,7 +568,7 @@ assert(max(abs(res.tab_bus.V - V_ref)) < 1e-6)
 res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
 assert(abs(res.r_cost - 8079.9528) < 1e-2)
 DebugScript.helper.quiet(@() net.initialize);
-e = eig(net.get_sys("Method","Kron").A);
+e = eig(net.get_sys("Type", "ODE").A);
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.5297416)) < 1e-6)
 
@@ -665,7 +665,7 @@ assert(max(abs(rad2deg(tab.Varg) - deg_lit)) < 0.05)
 assert(abs(tab.P(1) - 0.716) < 1e-3)
 
 DebugScript.helper.quiet(@() net.initialize);
-e = DebugScript.helper.finite_eigs(net.get_sys("Method","Kron"));
+e = DebugScript.helper.finite_eigs(net.get_sys("Type", "ODE"));
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.0069046)) < 1e-6)     % AVR・PSS 付きで安定
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
@@ -695,7 +695,7 @@ assert(abs(tab.P(16) - 33.7953168) < 1e-6 && abs(sum(tab.P) - 1.6683168) < 1e-6)
 assert(abs(min(tab.V) - 0.8366601) < 1e-6 && abs(rad2deg(tab.Varg(39)) - (-39.290156)) < 1e-5)
 
 DebugScript.helper.quiet(@() net.initialize);
-e = DebugScript.helper.finite_eigs(net.get_sys("Method","Kron"));
+e = DebugScript.helper.finite_eigs(net.get_sys("Type", "ODE"));
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.0051275)) < 1e-6)     % AVR・PSS 付きで安定
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.2,0.25], "FaultBus", "B030");

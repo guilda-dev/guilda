@@ -3,15 +3,17 @@ classdef SolverLIN < auxiliary
 %
 % get_sys (PowerSystemModel.get_sys) collects the linear blocks of the model objects of a
 % layer (get_linear_block) and its port (get_linear_port); solve connects them along the
-% variable map and returns the descriptor model, from which get_sys makes a ResultLIN.
-% The connector reads only its arguments: no network and no model object. It holds no
-% settings: the defaults of the options of get_sys (Method, Coordinate, PlotFcn) are the
-% Linearization section of GUILDA.setting (GUILDA.config("Linearization")), and an option
-% of a call overrides them for that call only.
+% variable map and returns the connected descriptor model (the DAE), from which get_sys
+% makes a ResultLIN. reduce eliminates the algebraic variables of a DAE (the bus voltages
+% of the network): the model of Type "ODE". The connector reads only its arguments: no
+% network and no model object. It holds no settings: the defaults of the options of
+% get_sys (Type, Coordinate, PlotFcn) are the Linearization section of GUILDA.setting
+% (GUILDA.config("Linearization")), and an option of a call overrides them for that call
+% only.
 %
-% - `Method` is the reduction of the network: "Kron" (eliminate the bus voltages from the
-%   DAE) or "DAE" (keep the voltages as algebraic states, descriptor form with a
-%   singular E).
+% - `Type` is the model of the network: "ODE" (the DAE with the bus voltages eliminated,
+%   SolverLIN.reduce) or "DAE" (the connected model, with the voltages as algebraic
+%   variables and a singular E).
 % - The point (the first argument of get_sys, not a setting) is [] for the equilibrium
 %   (set by net.initialize, the default); a vector of the values in the order of the
 %   leading rows of layer.get_variable_map() (point_vector); or {sim, t}: the state of the simulation result sim at time t
@@ -19,9 +21,9 @@ classdef SolverLIN < auxiliary
 %   {sim, t, "before"} for the value before it). It sets the variables only: the
 %   admittance matrix stays the one of the model, also at a time inside a fault. The model
 %   is not changed.
-% - `Coordinate` sets the bus variables of get_ss("DAE") and get_sys with Method "DAE":
-%   "theta&rho" (angle and log magnitude), "theta&V" (angle and magnitude) or "Vre&Vim"
-%   (real and imaginary parts). "Kron" does not use it.
+% - `Coordinate` sets the bus variables of the DAE (get_ss("DAE") and get_sys with Type
+%   "DAE"): "theta&rho" (angle and log magnitude), "theta&V" (angle and magnitude) or
+%   "Vre&Vim" (real and imaginary parts). "ODE" does not use it.
 % - `PlotFcn` (live display) is "none" only (tools.check_plotfcn);
 %   result.plot_eigenvalue() draws the eigenvalue map.
 %
@@ -29,8 +31,8 @@ classdef SolverLIN < auxiliary
 % ```matlab
 % net = network.IEEE14bus();
 % net.initialize();
-% res = net.get_sys();                 % Method of GUILDA.setting ("Kron")
-% res = net.get_sys(Method="DAE");     % this call only
+% res = net.get_sys();                 % Type of GUILDA.setting ("ODE")
+% res = net.get_sys(Type="DAE");       % this call only
 % ```
 %
 % See also ResultLIN, PowerSystemModel.get_sys
@@ -47,6 +49,10 @@ classdef SolverLIN < auxiliary
         end
 
         [sct_sys, output] = solve(obj, c_block, tab, tab_connection, sct_port)
+    end
+
+    methods (Static)
+        sct_ode = reduce(sct_dae, iv_algebraic)
     end
 
     methods (Static, Hidden)

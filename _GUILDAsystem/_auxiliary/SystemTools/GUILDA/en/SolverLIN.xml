@@ -9,6 +9,7 @@
         <entry key="PointNotFinite">The point is not finite at {0}. In the point '{'sim, t'}', the states of a tripped unit are NaN during the trip.</entry>
         <entry key="VariableMap">The linear blocks name {0}, which is not a row of the variable map of the layer; report this as a bug.</entry>
         <entry key="JacobianNotFinite">The Jacobian of {0} is not finite at the point, so it cannot be linearized there. Check the voltage and states of the point.</entry>
+        <entry key="SingularAvv">The algebraic part of the model is singular (rcond = {0}): the algebraic equations do not determine {1}, so they cannot be eliminated. Keep them with Type "DAE".</entry>
         <entry key="AlgebraicLoop">The linear blocks form an algebraic loop: an output depends on itself through the connections (I - D K is singular), so the model cannot be connected.</entry>
     </message>
 </rsccat>

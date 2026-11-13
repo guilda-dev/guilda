@@ -1,17 +1,19 @@
-function sys = get_ss(obj, Method, opt)
-% Get a reduced linear model (Kron / DAE).
+function sys = get_ss(obj, Type, opt)
+% Get the linear model of a Type (ODE / DAE).
 %
 % Returns the linear model of the result (E dx/dt = A x + B u, y = C x + D u). Format
 % chooses its form: "ss" (default) is a descriptor state-space model (dss) with
 % StateName, InputName and OutputName and needs the Control System Toolbox; "struct" is
 % a struct with the fields A, B, C, D, E, StateName, InputName, OutputName (string
-% columns) and needs no toolbox. For the network, "Kron" and "DAE" put the states of the
-% global controllers first, then the components (as in v3). Use StateName to find a state.
+% columns) and needs no toolbox. For the network, "ODE" and "DAE" put the states of the
+% global controllers first, then the components. Use StateName to find a state.
 %
-% - "Kron": the bus voltages are eliminated from the DAE. States: all states.
-%   Inputs: the inputs u. Outputs: the states, in their order, without output names.
-% - "DAE": not reduced: the bus voltages are kept as algebraic states (E is singular), in
-%   the coordinates given by Coordinate. Outputs: the dynamic states.
+% - "DAE": the connected model of the result: the bus voltages are algebraic variables
+%   (E is zero on their rows and columns), in the bus variables given by Coordinate, and
+%   their equations are the current balance of each bus. Outputs: the dynamic states.
+% - "ODE": the DAE with the bus voltages eliminated (SolverLIN.reduce). States: the
+%   dynamic states. Inputs: the inputs u. Outputs: the states, in their order, without
+%   output names. Coordinate does not apply.
 %
 % Input and Output select the channels of the model; without them the channels are the
 % ones above. The states and their order do not change. Output takes these kinds and
@@ -33,26 +35,26 @@ function sys = get_ss(obj, Method, opt)
 %
 % For a result of comp.get_sys, bus.get_sys, con.get_sys or gc.get_sys, get_ss returns the
 % port model (voltages in, currents and outputs out); Input and Output take names of its
-% inputs and outputs, and Method and Coordinate do not apply.
+% inputs and outputs, and Type and Coordinate do not apply.
 %
 % A result with flag false (output.s_issue) stops with an error that repeats output.message:
-% GUILDA:ResultLIN:NotFinite for every algorithm, and GUILDA:ResultLIN:SingularAvv
-% for "Kron", which eliminates the bus voltages. "DAE" keeps them and still works.
+% GUILDA:ResultLIN:NotFinite for every Type, and GUILDA:ResultLIN:SingularAvv for "ODE",
+% which eliminates the bus voltages. "DAE" keeps them and still works.
 %
 % <@Examples>
 % ```matlab
 % res = net.get_sys();
-% sysK = res.get_ss("Kron");                    % ss (Control System Toolbox)
+% sysO = res.get_ss("ODE");                     % ss (Control System Toolbox)
 % sysD = res.get_ss("DAE");
-% eig(sysK.A, sysK.E)
-% sysV = res.get_ss("Kron", Output="V");        % bus voltages as outputs
-% sct  = res.get_ss("Kron", Format="struct");   % matrices and names, no toolbox
+% eig(sysO.A, sysO.E)
+% sysV = res.get_ss("ODE", Output="V");         % bus voltages as outputs
+% sct  = res.get_ss("ODE", Format="struct");    % matrices and names, no toolbox
 % ```
 %
-% See also PowerSystemModel.get_sys, ResultLIN.plot_eigenvalue
+% See also PowerSystemModel.get_sys, SolverLIN.reduce, ResultLIN.Type, ResultLIN.plot_eigenvalue
     arguments (Input)
         obj
-        Method (1,1) string {mustBeMember(Method, ["Kron","DAE"])} = default_algorithm(obj) % Form of the model.
+        Type (1,1) string {mustBeMember(Type, ["ODE","DAE"])} = default_type(obj) % Model: "ODE" (the bus voltages eliminated) or "DAE" (the connected model). Default: the Type of the result.
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = default_coordinate(obj) % Bus variables of "DAE": angle and log magnitude (rho), angle and magnitude, or real and imaginary parts. Default: options.Coordinate of the result.
         opt.Input (1,:) string % Inputs of the model: "u" or Labels. Default: all inputs.
         opt.Output (1,:) string % Outputs of the model: "x", "V", "I", "y" or names. Default: as described for each algorithm.
@@ -79,20 +81,27 @@ function sys = get_ss(obj, Method, opt)
     end
     if obj.output.s_issue == "NotFinite"
         error(msg("GUILDA:ResultLIN:NotFinite", obj.output.message))
-    elseif obj.output.s_issue == "SingularAvv" && Method ~= "DAE"
-        error(msg("GUILDA:ResultLIN:SingularAvv", obj.output.message, Method))
+    elseif obj.output.s_issue == "SingularAvv" && Type ~= "DAE"
+        error(msg("GUILDA:ResultLIN:SingularAvv", obj.output.message, Type))
     end
-    switch Method
-        case "Kron"
-            sys = via_kron(obj);
-        case "DAE"
-            sys = via_dae(obj, opt.Coordinate);
+    % The DAE; "ODE" eliminates its voltages, which do not need the polar coordinates
+    s_coordinate = opt.Coordinate;
+    if Type == "ODE"
+        s_coordinate = "Vre&Vim";
     end
+    sys = via_dae(obj, s_coordinate);
     if isfield(opt, "Output")
-        sys = select_output(obj, sys, Method, opt.Coordinate, opt.Output);
+        sys = select_output(obj, sys, s_coordinate, opt.Output);
     end
     if isfield(opt, "Input")
         sys = input_by_index(sys, input_index(sys, opt.Input));
+    end
+    if Type == "ODE"
+        n_x = nnz(obj.tab_variable.Kind == "x");
+        sys = SolverLIN.reduce(sys, n_x+1:numel(sys.StateName));
+        if ~isfield(opt, "Output")
+            sys.OutputName = strings(n_x,1);   % the states, without output names
+        end
     end
     sys = to_format(sys, opt.Format);
 end
@@ -145,10 +154,10 @@ function tf = is_network(obj)
 end
 
 
-function str = default_algorithm(obj)
-    str = "Kron";
-    if isfield(obj.options, "Method")
-        str = obj.options.Method;
+function str = default_type(obj)
+    str = "ODE";
+    if isfield(obj.options, "Type")
+        str = obj.options.Type;
     end
 end
 
@@ -160,37 +169,12 @@ function str = default_coordinate(obj)
 end
 
 function [p, sv_x, sv_u] = legacy_order(obj)
-% State order of Kron and DAE: global controllers first, then the components (as in v3)
+% State order of ODE and DAE: global controllers first, then the components
     tab   = obj.tab_variable;
     tab_x = tab(tab.Kind == "x", :);
     p     = [find(tab_x.Bus == ""); find(tab_x.Bus ~= "")];
     sv_x  = tab_x.Label(p);
     sv_u  = tab.Label(tab.Kind == "u");
-end
-
-
-function sys = via_kron(obj)
-    [p, sv_x, sv_u] = legacy_order(obj);
-
-    Ax_dae = obj.rm_Axx(p,p);
-    Bv_dae = obj.rm_Axv(p,:);
-    Bu_dae = obj.rm_Bx(p,:);
-    Cx_dae = -obj.rm_Avx(:,p);
-    Du_dae = -obj.rm_Bv;
-    Dv_dae = -obj.rm_Avv;
-    E_ode  = obj.rm_E(p,p);
-
-    mat_v2x = Bv_dae / Dv_dae;
-
-    n_x = size(Ax_dae,1);
-    n_u = size(Bu_dae,2);
-
-    Ax_ode = Ax_dae - mat_v2x * Cx_dae;
-    Bx_ode = Bu_dae - mat_v2x * Du_dae;
-    Cx_ode = eye(n_x);
-    Dx_ode = zeros(n_x,n_u);
-
-    sys = model(Ax_ode, Bx_ode, Cx_ode, Dx_ode, E_ode, sv_x, sv_u, strings(n_x,1));   % no output names
 end
 
 
@@ -272,9 +256,9 @@ function [filt_o, filt_i, sv_busvar] = coordinate_filter(Vc_st, s_coordinate)
 end
 
 
-function sys = select_output(obj, sys, Method, s_coordinate, sv_select)
-% Replaces the outputs of the model by the selected ones: y = Cx x + Cv v + Du u of the
-% unreduced DAE, written with the states and inputs of the model
+function sys = select_output(obj, sys, s_coordinate, sv_select)
+% Replaces the outputs of the DAE by the selected ones: y = Cx x + Cv v + Du u of the
+% connected model, written with the states and inputs of the DAE
     tab  = obj.tab_variable;
     sv_x = tab.Label(tab.Kind == "x");
     sv_v = tab.Label(tab.Kind == "Vre" | tab.Kind == "Vim");
@@ -312,17 +296,10 @@ function sys = select_output(obj, sys, Method, s_coordinate, sv_select)
     Cv = Cv(iv_all,:);
     Du = Du(iv_all,:);
 
-    if Method == "DAE"
-        [~, filt_i] = coordinate_filter(obj.sct_model.cv_V, s_coordinate);
-        p = legacy_order(obj);
-        C = [Cx(:,p), Cv(:,[1:2:n_v, 2:2:n_v]) * filt_i];
-        D = Du;
-    else
-        % The voltages are eliminated
-        [~, iv_x] = ismember(sys.StateName, sv_x);
-        C = Cx(:,iv_x) - Cv * (obj.rm_Avv \ obj.rm_Avx(:,iv_x));
-        D = Du - Cv * (obj.rm_Avv \ obj.rm_Bv);
-    end
+    [~, filt_i] = coordinate_filter(obj.sct_model.cv_V, s_coordinate);
+    p = legacy_order(obj);
+    C = [Cx(:,p), Cv(:,[1:2:n_v, 2:2:n_v]) * filt_i];
+    D = Du;
     [~, iv_u] = ismember(sys.InputName, sv_u);
 
     sys.C = C;

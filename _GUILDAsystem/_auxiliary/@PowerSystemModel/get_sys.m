@@ -10,7 +10,7 @@ function [sys, flag, output] = get_sys(obj, point, opt)
 %
 % | Layer | Inputs | Outputs | Bus voltages |
 % |---|---|---|---|
-% | PowerNetwork | inputs u of the components | outputs y and yc | algebraic: 0 = Y v - I of the components, reduced by Method |
+% | PowerNetwork | inputs u of the components | outputs y and yc | algebraic: 0 = Y v - I of the components, eliminated for Type "ODE" |
 % | Bus, Component | V, u, uc | I, y, yc | inputs |
 % | LocalController | V of its bus, its inputs | its outputs | inputs |
 % | GlobalController | V of all buses, its inputs | its outputs | inputs |
@@ -38,16 +38,21 @@ function [sys, flag, output] = get_sys(obj, point, opt)
 %
 % Format chooses the form of sys: "GUILDAorigin" (default) is the ResultLIN of the
 % linearization, also when flag is false; its properties A, B, C, D, E, StateName,
-% InputName and OutputName hold the model of Method with the selected Input and Output.
-% "struct" is a struct with these eight fields and "ss" a descriptor state-space model
-% (dss, Control System Toolbox): they stop with the error of ResultLIN.get_ss when flag
-% is false (except "DAE" with a singular Avv).
+% InputName and OutputName hold the model of its Type (the Type of the call) with the
+% selected Input and Output. "struct" is a struct with these eight fields and "ss" a
+% descriptor state-space model (dss, Control System Toolbox): they stop with the error of
+% ResultLIN.get_ss when flag is false (except "DAE" with a singular Avv).
+%
+% Type chooses the model of the network: "DAE" is the connected model, with the bus
+% voltages as algebraic variables (E is singular on their rows), in the bus variables of
+% Coordinate; "ODE" is the model with the bus voltages eliminated (SolverLIN.reduce).
+% The result keeps the DAE, so res.Type switches between them later.
 %
 % <@Examples>
 % ```matlab
-% res = net.get_sys();                          % ResultLIN of the network (Method of GUILDA.setting)
+% res = net.get_sys();                          % ResultLIN of the network (Type of GUILDA.setting)
 % eig(res.A, res.E)
-% sct = net.get_sys(Method="DAE", Format="struct");
+% sct = net.get_sys(Type="DAE", Format="struct");
 % resV = net.get_sys(Output="V");               % bus voltages as outputs
 % sys = net.a_Bus{1}.a_Component{1}.get_sys(Format="ss");   % component, V to I
 % res2 = net.get_sys({sim, 1.5});               % at a time of a simulation result
@@ -60,7 +65,7 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     arguments (Input)
         obj
         point = []                    % Point: [] (the equilibrium), a vector in the order of get_variable_map(), {sim, t} or {sim, t, Side}.
-        opt.Method (1,1) string {mustBeMember(opt.Method, ["Kron","DAE"])}   % Form of the model of the network: "Kron" (eliminate the bus voltages) or "DAE". Default: GUILDA.setting.
+        opt.Type (1,1) string {mustBeMember(opt.Type, ["ODE","DAE"])}   % Model of the network: "ODE" (the bus voltages eliminated) or "DAE" (the connected model). Default: GUILDA.setting.
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])}   % Bus variables of "DAE". Default: GUILDA.setting.
         opt.PlotFcn                   % Live display: "none" (draw the eigenvalue map with result.plot_eigenvalue()). Default: GUILDA.setting.
         opt.Input (1,:) string        % Inputs of the model: "u" or Labels (see ResultLIN.get_ss). Default: all inputs.
@@ -75,7 +80,7 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     t0 = tic;
     SolverLIN.check_point(point);
     sct_cfg = GUILDA.config("Linearization");
-    for s = ["Method","Coordinate","PlotFcn"]
+    for s = ["Type","Coordinate","PlotFcn"]
         if ~isfield(opt, s)
             opt.(s) = string(sct_cfg.(s).Value);
         end
@@ -136,7 +141,7 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     output.l_equilibrium = l_eq;
     output.s_layer = s_layer;
 
-    sct_options = struct("Method", opt.Method, "Coordinate", opt.Coordinate, "PlotFcn", opt.PlotFcn, "Point", {point});
+    sct_options = struct("Type", opt.Type, "Coordinate", opt.Coordinate, "PlotFcn", opt.PlotFcn, "Point", {point});
     c_channel = cell(1,0);
     for s = ["Input","Output"]
         if isfield(opt, s)
@@ -149,10 +154,10 @@ function [sys, flag, output] = get_sys(obj, point, opt)
     if opt.Format == "GUILDAorigin"
         sys = result;
         if flag && ~isempty(c_channel)
-            result.get_ss(opt.Method, c_channel{:}, Format="struct");   % stops with the reason, if any
+            result.get_ss(opt.Type, c_channel{:}, Format="struct");   % stops with the reason, if any
         end
     else
-        sys = result.get_ss(opt.Method, c_channel{:}, Format=opt.Format);
+        sys = result.get_ss(opt.Type, c_channel{:}, Format=opt.Format);
     end
     output.result = result;
 end

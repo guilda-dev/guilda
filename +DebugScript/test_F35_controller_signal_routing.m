@@ -168,7 +168,7 @@ assert(abs(F(zpos(net, gc, "x"))) > 1e-5, "母線 1 の電圧が GC に届かな
 
 
 %% The linear model agrees with the Jacobian of the simulation
-% net.get_sys (Kron, DAE) の有限な固有値は、simulate の DAE の Jacobian の有限な固有値と同じ
+% net.get_sys (ODE, DAE) の有限な固有値は、simulate の DAE の Jacobian の有限な固有値と同じ
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 gen.add_local_controller("avr-ST1");
 gen.add_local_controller("gov-LPT1", parameter=struct(PLM=5));
@@ -181,7 +181,7 @@ gc = DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-thr
 DebugScript.helper.quiet(@() net.initialize);
 res = net.get_sys();
 e_sim = probe(net, @(o) finite_eigs_ode(o));
-for s_method = ["Kron","DAE"]
+for s_method = ["ODE","DAE"]
     e_lin = DebugScript.helper.finite_eigs(res.get_ss(s_method, Format="struct"));
     assert(DebugScript.helper.same_eigs(e_lin, e_sim, 1e-6), "%s: %s / %s", s_method, mat2str(e_lin,4), mat2str(e_sim,4))
 end
@@ -198,7 +198,7 @@ assert(isequal(sort(tab_g.Target), sort([gen.a_LocalController{2}.attach_tag("om
 
 
 %% A global controller reads the voltage of a bus without components
-% B004 は機器のない母線。GC は B004 の電圧を読む。固有値は Kron、DAE、simulate で同じ
+% B004 は機器のない母線。GC は B004 の電圧を読む。固有値は ODE、DAE、simulate で同じ
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 net.add_bus();
 net.add_branch("pi",[3,4], "R",0.010, "X",0.050);
@@ -213,23 +213,23 @@ gc = DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-vb4
 DebugScript.helper.quiet(@() net.initialize);
 res = net.get_sys();
 e_sim = probe(net, @(o) finite_eigs_ode(o));
-for s_method = ["Kron","DAE"]
+for s_method = ["ODE","DAE"]
     e_lin = DebugScript.helper.finite_eigs(res.get_ss(s_method, Format="struct"));
     assert(DebugScript.helper.same_eigs(e_lin, e_sim, 1e-6), "%s: %s / %s", s_method, mat2str(e_lin,4), mat2str(e_sim,4))
 end
-sysK = res.get_ss("Kron", Format="struct");
+sysK = res.get_ss("ODE", Format="struct");
 % B004 の電圧が GC に届いている: gV = 0 の GC とは固有値が違う
 net.remove_global_controller(gc.s_tag);
 DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-vb4", {gen}, ...
                                                        parameter=struct(alpha=0.2, beta=3, gV=0, V0=V0)));
 DebugScript.helper.quiet(@() net.initialize);
-e_0 = DebugScript.helper.finite_eigs(net.get_sys(Method="Kron", Format="struct"));
+e_0 = DebugScript.helper.finite_eigs(net.get_sys(Type="ODE", Format="struct"));
 assert(~DebugScript.helper.same_eigs(e_0, DebugScript.helper.finite_eigs(sysK), 1e-6), "B004 の電圧が GC に届かない")
 
 
 %% A global controller reads the output of a component without states
 % B004 の負荷 (DebugScript.helper.OutputLoadStub) は状態がなく、電流が V によらない (I-to-V の形がない)。
-% GC はこの負荷の出力 Vabs (= |V_4|) を読み、負荷の入力 Ire へ返す。固有値は Kron、DAE、simulate で同じ
+% GC はこの負荷の出力 Vabs (= |V_4|) を読み、負荷の入力 Ire へ返す。固有値は ODE、DAE、simulate で同じ
 c_ld = DebugScript.helper.register_stub("OutputLoadStub", "component.load.test_output_load");
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 bus4 = net.add_bus();
@@ -245,17 +245,17 @@ gc = DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-ly"
 DebugScript.helper.quiet(@() net.initialize);
 res = net.get_sys();
 e_sim = probe(net, @(o) finite_eigs_ode(o));
-for s_method = ["Kron","DAE"]
+for s_method = ["ODE","DAE"]
     e_lin = DebugScript.helper.finite_eigs(res.get_ss(s_method, Format="struct"));
     assert(DebugScript.helper.same_eigs(e_lin, e_sim, 1e-6), "%s: %s / %s", s_method, mat2str(e_lin,4), mat2str(e_sim,4))
 end
-sysK = res.get_ss("Kron", Format="struct");
+sysK = res.get_ss("ODE", Format="struct");
 % 負荷の出力が GC に届いている: beta = 0 の GC とは固有値が違う
 net.remove_global_controller(gc.s_tag);
 DebugScript.helper.quiet(@() net.add_global_controller("test-routing-gc-ly", {ld}, ...
                                                        parameter=struct(alpha=0.5, beta=0, gV=0)));
 DebugScript.helper.quiet(@() net.initialize);
-e_0 = DebugScript.helper.finite_eigs(net.get_sys(Method="Kron", Format="struct"));
+e_0 = DebugScript.helper.finite_eigs(net.get_sys(Type="ODE", Format="struct"));
 assert(~DebugScript.helper.same_eigs(e_0, DebugScript.helper.finite_eigs(sysK), 1e-6), "B004 の負荷の出力が GC に届かない")
 
 

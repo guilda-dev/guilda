@@ -6,7 +6,7 @@ function tab = linearization_reference_check(sv_case)
 %
 % 基準値は接続器 SolverLIN に置き換える前のコードで求めたもの
 % (+DebugScript/archive/make_linearization_reference.m)。同じ系統・同じ点で、網 (rm_*、
-% Kron、DAE)、機器 (LC 付き V2I、機器単体)、母線 (V2I)、LC、GC のモデルを求め、状態・
+% ODE、DAE)、機器 (LC 付き V2I、機器単体)、母線 (V2I)、LC、GC のモデルを求め、状態・
 % 入力・出力を名前で対応させて比べる。基準値にある電流を入力とするポートのモデルは使わない
 % (ポートは V2I だけ)。名前の変化 (機器と LC の電圧の入力は母線の Label、GC の入出力は
 % uc・yc の Label) は対応表で吸収する。
@@ -49,13 +49,13 @@ function tab = linearization_reference_check(sv_case)
         rows(end+1,:) = {e.name, s_pt, "net rm_*", d}; %#ok<AGROW>
         d = max(rdiff(r.rv_point, e.point), 0);
         rows(end+1,:) = {e.name, s_pt, "net point", d}; %#ok<AGROW>
-        K = r.get_ss("Kron", Format="struct");
+        K = r.get_ss("ODE", Format="struct");
         if isfield(e.kron, "A")
-            rows(end+1,:) = {e.name, s_pt, "net Kron", model_diff(K, e.kron, false)}; %#ok<AGROW>
+            rows(end+1,:) = {e.name, s_pt, "net ODE", model_diff(K, e.kron, false)}; %#ok<AGROW>
         end
         ev = eig(K.A, K.E);
         ev = ev(isfinite(ev));
-        rows(end+1,:) = {e.name, s_pt, "net Kron eig", eig_diff(ev, e.kron.eig)}; %#ok<AGROW>
+        rows(end+1,:) = {e.name, s_pt, "net ODE eig", eig_diff(ev, e.kron.eig)}; %#ok<AGROW>
         D = r.get_ss("DAE", Coordinate="theta&rho", Format="struct");
         rows(end+1,:) = {e.name, s_pt, "net DAE", model_diff(D, e.dae, true)}; %#ok<AGROW>
 

@@ -143,7 +143,7 @@ classdef ResultLIN < ResultBase
             end
         end
 
-        sys = get_ss(obj, Method, opt)
+        sys = get_ss(obj, Type, opt)
         fig = plot_eigenvalue(obj, opt)
     end
 end
