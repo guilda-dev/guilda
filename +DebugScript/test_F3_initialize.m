@@ -417,6 +417,77 @@ assert(isempty(net.sct_stale.input) && isempty(net.sct_stale.powerflow) && isemp
 assert(DebugScript.helper.max_state_drift(DebugScript.helper.quiet(@() net.simulate(DebugScript.helper.no_disturbance(net), Time=[0 5]))) < 1e-6)
 
 
+%% calculate_fixed_input_powerflow gives every Format without changing the network
+% 公開メソッドは解を書かない。Format ごとの形、output.tab_component、initialize が書く点と一致
+net = network.IEEE9bus();
+DebugScript.helper.quiet(@() net.initialize);
+for i_bus = [5 6 8]
+    ld = net.a_Bus{i_bus}.a_Component{1};
+    ld.set_input(ld.rv_Uequilibrium/0.95);
+end
+[V0, I0, X0, log0, flag0] = snapshot(net);
+c_U0 = component_values(net, "rv_Uequilibrium");
+[res, flag, output] = DebugScript.helper.quiet(@() net.calculate_fixed_input_powerflow());
+assert(isa(res, "ResultPF") && flag == 1 && res.l_success && res.s_solver == "FixedInput" && res.options.Solver == "newton")
+assert(isequal(string(res.tab_bus.Properties.RowNames), string(net.a_Bus)) && height(res.tab_branch) == numel(net.a_Branch))
+assert(abs(res.tab_bus.Varg(1)) < 1e-12 && size(res.cm_Vhistory, 1) == numel(net.a_Bus) && numel(res.rv_step) == size(res.cm_Vhistory, 2))
+tab_c = output.tab_component;
+assert(isequal(string(tab_c.Properties.VariableNames), ["Bus","X","U","I"]) && height(tab_c) == 6)
+sv_bus = strings(0,1);
+sv_tag = strings(0,1);
+for i = 1:numel(net.a_Bus)
+    for k = 1:numel(net.a_Bus{i}.a_Component)
+        sv_bus(end+1,1) = string(net.a_Bus{i});                       %#ok<AGROW>
+        sv_tag(end+1,1) = string(net.a_Bus{i}.a_Component{k}.s_tag);  %#ok<AGROW>
+    end
+end
+assert(isequal(tab_c.Bus, sv_bus) && isequal(string(tab_c.Properties.RowNames), sv_tag))
+assert(isequal(tab_c.U(2:end), c_U0(2:end)) && tab_c.U{1}(1) < c_U0{1}(1) - 0.1)   % スラック発電機の Pm だけが解かれる
+assert_unchanged(net, V0, I0, X0, log0, flag0)
+assert(isequal(component_values(net, "rv_Uequilibrium"), c_U0))
+V   = DebugScript.helper.quiet(@() net.calculate_fixed_input_powerflow(Format="V"));
+mat = DebugScript.helper.quiet(@() net.calculate_fixed_input_powerflow(Format="powerflow(mat)"));
+tab = DebugScript.helper.quiet(@() net.calculate_fixed_input_powerflow(Format="powerflow(tab)"));
+assert(isequal(size(V), [9 1]) && isequal(size(mat), [9 4]) && ~isreal(mat) && isequal(string(tab.Properties.VariableNames), ["V","I","P","Q"]))
+assert(max(abs(V - res.tab_bus.Vphasor)) < 1e-12 && max(abs(mat - [res.tab_bus.Vphasor, res.tab_bus.Iphasor, res.tab_bus.P, res.tab_bus.Q]), [], "all") < 1e-12)
+assert(max(abs(tab{:,:} - mat), [], "all") < 1e-12 && isequal(string(tab.Properties.RowNames), string(net.a_Bus)))
+[~, iv_bus] = ismember(tab_c.Bus, string(net.a_Bus));
+assert(max(abs(mat(:,2) - accumarray(iv_bus, tab_c.I, [9 1]))) < 1e-12)   % 母線の電流 = 機器の電流の和
+assert_unchanged(net, V0, I0, X0, log0, flag0)
+% initialize(Method="FixedInput") は同じ点を書く
+pf = DebugScript.helper.quiet(@() net.initialize(Method="FixedInput"));
+assert(max(abs(pf - mat), [], "all") < 1e-12 && max(abs(net.cv_Vequilibrium - V)) < 1e-12)
+c_X = component_values(net, "rv_Xequilibrium");
+assert(max(abs(vertcat(c_X{:}) - vertcat(tab_c.X{:}))) < 1e-12)
+
+
+%% calculate_fixed_input_powerflow options override GUILDA.setting for one call
+% 省略した値は GUILDA.setting (PowerFlowCalculation)、指定はその呼び出しだけ。Solver の誤り
+net = network.IEEE9bus();
+DebugScript.helper.quiet(@() net.initialize);
+ld = net.a_Bus{5}.a_Component{1};
+ld.set_input(ld.rv_Uequilibrium/0.95);
+sct_before = GUILDA.config("PowerFlowCalculation");
+w = warning("off"); c_w = onCleanup(@() warning(w));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_fixed_input_powerflow(MaxIteration=1, Tolerance=1e-12));
+assert(flag == 0 && ~res.l_success && res.options.MaxIteration == 1 && res.options.Tolerance == 1e-12)
+s_log = evalc("[~, flag] = net.calculate_fixed_input_powerflow(Verbose=true, Format=""V"");");
+assert(flag == 1 && strlength(s_log) > strlength(evalc("net.calculate_fixed_input_powerflow(Format=""V"");")))
+c_cfg = DebugScript.helper.user_config("PowerFlowCalculation", struct("Tolerance", 1e-6, "MaxIteration", 20, "Solver", "dynamic"));
+res = DebugScript.helper.quiet(@() net.calculate_fixed_input_powerflow());
+assert(res.options.Tolerance == 1e-6 && res.options.MaxIteration == 20 && res.options.Solver == "newton" && res.l_success)
+res = DebugScript.helper.quiet(@() net.calculate_fixed_input_powerflow(Tolerance=1e-9, Solver="levenberg-marquardt"));
+assert(res.options.Tolerance == 1e-9 && res.options.Solver == "levenberg-marquardt" && res.l_success)
+clear c_cfg
+assert(isequaln(GUILDA.config("PowerFlowCalculation"), sct_before))
+for s = ["gradient","dynamic"]
+    assert(DebugScript.helper.msg_id(error_of(@() net.calculate_fixed_input_powerflow(Solver=s))) == "GUILDA:PowerNetwork:InitializeFixedInputSolver")
+end
+assert(DebugScript.helper.msg_id(error_of(@() net.calculate_fixed_input_powerflow(Solver="foo"))) == "MATLAB:validators:mustBeMember")
+assert(DebugScript.helper.msg_id(error_of(@() net.calculate_fixed_input_powerflow(Format="table"))) == "MATLAB:validators:mustBeMember")
+assert(DebugScript.helper.msg_id(error_of(@() net.calculate_fixed_input_powerflow(Method="FixedInput"))) == "MATLAB:TooManyInputs")
+
+
 %% FixedInput gives the same point with every solver
 % 他の Solver とフラットスタートの初期値も同じ点
 net = network.IEEE9bus();
@@ -478,7 +549,7 @@ assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="FixedInput"
 assert_unchanged(net, V0, I0, X0, log0, flag0)
 assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="FixedInput", Solver="gradient"))) == "GUILDA:PowerNetwork:InitializeFixedInputSolver")
 assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="FixedInput", Solver="foo"))) == "MATLAB:validators:mustBeMember")
-assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="FixedInput", Foo=1))) == "GUILDA:resolve_options:UnknownName")
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="FixedInput", Foo=1))) == "MATLAB:TooManyInputs")
 assert_unchanged(net, V0, I0, X0, log0, flag0)
 
 net = network.IEEE9bus();

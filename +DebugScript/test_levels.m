@@ -143,6 +143,7 @@ function tab = test_levels()
     "test_F3_initialize/FixedInputWithTheHeldInputsKeepsTheEquilibrium", "medium"
     "test_F3_initialize/set_inputMakesTheInputsStaleUntilFixedInput", "medium"
     "test_F3_initialize/FixedInputSolvesTheEquilibriumWithTheEditedInputs", "medium"
+    "test_F3_initialize/calculate_fixed_input_powerflowOptionsOverrideGUILDA_settingForOneCall", "medium"
     "test_F3_initialize/FixedInputGivesTheSamePointWithEverySolver", "large"
     "test_F3_initialize/FixedInputKeepsTheInputsUnderLocalControllers", "medium"
     "test_F3_initialize/FixedInputErrorsLeaveTheNetworkUnchanged", "medium"
