@@ -3,7 +3,7 @@ function [sct_solution, flag, output] = solve(obj, tab_bus, tab_component, tab_b
 %
 % Builds the optimal power flow problem with build_problem from the tables of the buses,
 % components and branches (collected by net.calculate_optimal_powerflow from tab_parameter)
-% for the effective settings sct_options, solves it and returns the solution as a struct;
+% for the options sct_options of the call, solves it and returns the solution as a struct;
 % no network object is read. The caller builds the ResultOPF. The solver keeps only the
 % bus voltages of a solved "AC OPF", with their bus tags, for the next warm start (see
 % SolverOPF). Called by net.calculate_optimal_powerflow; calling it directly is for
@@ -21,7 +21,7 @@ function [sct_solution, flag, output] = solve(obj, tab_bus, tab_component, tab_b
         tab_bus       table % Buses (see build_problem).
         tab_component table % Components (see build_problem).
         tab_branch    table % Branches (see build_problem).
-        sct_options (1,1) struct % Effective settings of the run (built by calculate_optimal_powerflow), with ReferenceBus as a bus tag or "none" and base (baseMVA, Hz).
+        sct_options (1,1) struct % Name-Value options of calculate_optimal_powerflow (defaults from GUILDA.setting), with ReferenceBus as a bus tag or "none" and base (baseMVA, Hz).
         sct_input (1,1) struct = struct() % Call-only options: Problem (optimproblem), InitialPoint (struct of initial values by variable name); either may be absent.
     end
     arguments (Output)
