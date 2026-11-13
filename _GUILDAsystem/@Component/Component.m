@@ -178,7 +178,7 @@ classdef Component < PowerSystemModel
             % - operation: operating limits and rating: Pmin, Pmax, Qmin, Qmax [pu]: output limits (-Inf/Inf: none), also used by the "Qmax" rule of set_equilibrium; baseMVA [MVA]: rating, to share Q on a bus and exported to MATPOWER (not the system base)
             % - powerflow: P, Q [pu]: injection settings of the power flow (negative for a load); Q = NaN makes the bus a PV bus
             % - OPF: P0, Q0 [pu]: OPF initial values; HP, fP, HQ, fQ: cost coefficients (default 1, 1, 0, 0; 0 for a load); startup, shutdown: reserved
-            % - graph: Xaxis, Yaxis, Marker, MidXaxis, MidYaxis: drawing data
+            % - graph: Xaxis, Yaxis, Marker, MidXaxis, MidYaxis: drawing data; MarkerSize: marker size (NaN: drawer default); Color: color name or "#RRGGBB" ("": drawer default)
             a_Pd = Parameter(obj,"dynamics");
             % Default cost (NaN): 0 for a load (a fixed load adds nothing to the cost), 1 otherwise
             r_cost0 = double(~isa(obj,"component.load.abstract"));
@@ -208,7 +208,9 @@ classdef Component < PowerSystemModel
                    "Yaxis", opt.Yaxis, ...
                   "Marker", opt.Marker, ...
                 "MidXaxis", opt.MidXaxis, ...
-                "MidYaxis", opt.MidYaxis));
+                "MidYaxis", opt.MidYaxis, ...
+              "MarkerSize", opt.MarkerSize, ...
+                   "Color", opt.Color));
             obj.a_Parameter = {a_Pd; a_Po; a_Pp; a_PO; a_Pg};
         end        
 
@@ -227,6 +229,10 @@ classdef Component < PowerSystemModel
         % Steady State
         set_input(obj, rv_u)
 
+    end
+    methods(Static)
+        % Drawing (overridden by the models with an own node)
+        [cv_E, rv_P, rv_Iq, cv_I] = get_spring_node(rm_x, rm_V, rm_I, rm_u, rr_param)
     end
     methods(Hidden)
         % Debugger

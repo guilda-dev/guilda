@@ -35,6 +35,8 @@ function bus = add_bus(obj, opt)
         opt.Xaxis             (1,1) double = nan;   % x coordinate in network diagrams (NaN = automatic layout).
         opt.Yaxis             (1,1) double = nan;   % y coordinate in network diagrams (NaN = automatic layout).
         opt.Marker            (1,1) string = "s";   % Marker of the bus in network diagrams.
+        opt.MarkerSize        (1,1) double = nan;   % Marker size in network drawings (NaN = drawer default).
+        opt.Color             (1,1) string = "";   % Color in network drawings: a MATLAB color name or "#RRGGBB" ("" = drawer default).
     end
     arguments (Output)
         bus   % Added Bus object.

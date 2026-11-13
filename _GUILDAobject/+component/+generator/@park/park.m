@@ -113,6 +113,7 @@ classdef park < component.generator.abstract
     end    
        
     methods (Static)        
+        [cv_E, rv_P, rv_Iq, cv_I] = get_spring_node(rm_x, rm_V, rm_I, rm_u, rr_param)
         [Axx,Bxv,Bxu] = Jacobi_dx(t,x,V,u,param,omega0);
         [Cyx,Dyv] = Jacobi_Y(t,x,V,param,omega0);
         [Cix,Div,Diu] = Jacobi_I(t,x,V,u,param,omega0);

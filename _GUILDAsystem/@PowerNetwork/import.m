@@ -81,7 +81,7 @@ function net = import(path, opt)
 
     % Bus
     sr_BusReq   = ["V", "Varg"];
-    sr_BusOpt   = ["Gshunt", "Bshunt", "Vmin", "Vmax", "baseKV", "Tag", "Xaxis","Yaxis","Marker"];
+    sr_BusOpt   = ["Gshunt", "Bshunt", "Vmin", "Vmax", "baseKV", "Tag", "Xaxis","Yaxis","Marker","MarkerSize","Color"];
     % (a "baseMVA" column is accepted and ignored: the system base is net.tab_parameter.base.baseMVA;
     % the removed initial values "V0", "Varg0" are ignored with an INFO message)
     tab_bus    = read_csv(path, "bus/parameter.csv");
@@ -90,6 +90,7 @@ function net = import(path, opt)
     if ~isempty(sr_removed)
         show_msg("info", "GUILDA:import:RemovedColumn", "bus/parameter.csv", strjoin(sr_removed, ", "));
     end
+    tab_bus    = empty_color(tab_bus);
     sv_BusTag  = read_full_tag(fullfile(path, "bus", "parameter.csv"));
     n_Bus      = size(tab_bus,1);
 
@@ -229,7 +230,7 @@ function c_Comp = read_components(path, n_Bus, sr_CompOPF)
     % Read and check the tables of every folder component/<key>; nothing is added yet
     sr_CompReq   = [ "Bus", "P", "Q"];
     sr_CompOpt   = [ "baseMVA", "Pmin", "Pmax", "Qmin", "Qmax", "ParameterID", "OpfID", ...
-                     "Xaxis","Yaxis","Marker","MidXaxis","MidYaxis"];
+                     "Xaxis","Yaxis","Marker","MidXaxis","MidYaxis","MarkerSize","Color"];
     s_CompPath   = fullfile(path, "component");
     c_Comp       = {};
     if ~isfolder(s_CompPath)
@@ -247,6 +248,7 @@ function c_Comp = read_components(path, n_Bus, sr_CompOPF)
 
         tab_main = read_csv(path, s_main);
         sr_opt   = check_cols(tab_main, sr_CompReq, sr_CompOpt, s_main, "FullTag");
+        tab_main = empty_color(tab_main);
         check_bus_rows(tab_main, "Bus", n_Bus, s_main);
 
         tab_dyn = [];
@@ -279,6 +281,19 @@ function tab = read_csv(path, relpath)
         error(msg("GUILDA:import:MissingFile", s_file, relpath));
     end
     tab = readtable(s_file, "TextType", "string");
+end
+
+
+function tab = empty_color(tab)
+    % An empty Color cell is the drawer default "" (readtable gives NaN for an all-empty column, <missing> for an empty cell)
+    if ~ismember("Color", string(tab.Properties.VariableNames))
+        return
+    end
+    if isnumeric(tab.Color)
+        tab.Color = strings(height(tab), 1);
+    else
+        tab.Color(ismissing(tab.Color)) = "";
+    end
 end
 
 
