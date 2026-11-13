@@ -113,6 +113,10 @@ classdef Branch < PowerSystemModel
     end
 
 %% Methods
+    methods
+        % OPF(optimal power-flow) condition
+        varargout = get_opf_condition(obj, opt)
+    end
     methods(Hidden)
         [out, sct_visited] = struct(obj, l_disp, s_header, sct_visited)
     end
