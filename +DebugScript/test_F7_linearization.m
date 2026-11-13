@@ -228,6 +228,53 @@ assert(isa(SolverLIN(), "SolverLIN"))
 assert(isa(net.solver_LIN, "SolverLIN"))
 
 
+%% Variable maps of the controllers and the Equilibrium column
+% 制御器の変数表は親の表の行 (x, 全 V / 母線の V, uc, yc) と同じ列・ラベル。Equilibrium は線形化の平衡点
+net = network.IEEE9bus();
+gen = net.a_Bus{1}.a_Component{1};
+avr = gen.add_local_controller("avr-ST1");
+pss = gen.add_local_controller("pss-PSS1");
+agc = net.add_global_controller("agc-PI", {gen, net.a_Bus{2}.a_Component{1}}, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
+assert(all(isnan(agc.get_variable_map().Equilibrium)) && all(isnan(avr.get_variable_map().Equilibrium)))
+assert(all(isnan(net.get_variable_map().Equilibrium)))   % 初期化前は列全体が NaN
+DebugScript.helper.quiet(@() net.initialize);
+tab_net = net.get_variable_map();
+assert(all(isfinite(tab_net.Equilibrium)))
+assert(isequal(tab_net.Equilibrium(tab_net.Kind == "x"), net.rv_Xequilibrium))
+assert(isequal(tab_net.Equilibrium(tab_net.Kind == "Vre") + 1j*tab_net.Equilibrium(tab_net.Kind == "Vim"), net.cv_Vequilibrium))
+c_con = {avr, pss, agc};
+c_parent = {gen.get_variable_map(), gen.get_variable_map(), tab_net};
+for k = 1:numel(c_con)
+    con = c_con{k};
+    tab = con.get_variable_map();
+    tp  = c_parent{k};
+    s   = string(con.s_tag);
+    iv  = [find(tp.Owner == s & tp.Kind == "x"); find(tp.Kind == "Vre" | tp.Kind == "Vim"); ...
+           find(tp.Owner == s & tp.Kind == "uc"); find(tp.Owner == s & tp.Kind == "yc")];
+    tq  = tp(iv,:);
+    tq.Index = (1:height(tq))';
+    assert(isequal(tab, tq), "%s: 親の表の行と違う", s)
+    res = con.get_sys();
+    assert(isequal(res.rv_point, tab.Equilibrium(tab.Role == "variable")) && isequal(res.tab_variable, tab(tab.Role == "variable",:)))
+    assert(isequal(con.get_sys(tab.Equilibrium(tab.Role == "variable")).A, res.A))
+end
+% 機器・母線・網の Equilibrium の先頭行は get_sys の平衡点
+for o = {gen, net.a_Bus{1}, net}
+    tab = o{1}.get_variable_map();
+    res = o{1}.get_sys();
+    assert(isequal(res.rv_point, tab.Equilibrium(1:numel(res.rv_point))))
+end
+% 出力の Equilibrium は出力関数の平衡点での値
+tab = gen.get_variable_map();
+V = [real(gen.c_Vequilibrium); imag(gen.c_Vequilibrium)];
+assert(isequal(tab.Equilibrium(tab.Kind == "y"), reshape(gen.f_Y(0, gen.rv_Xequilibrium, V), [], 1)))
+assert(isequal(tab.Equilibrium(tab.Kind == "yc" & tab.Owner == string(avr.s_tag)), ...
+       reshape(avr.f_Y(0, avr.rv_Xequilibrium, V, avr.rv_Uequilibrium), [], 1)))
+% 内部の rows 形式は Equilibrium を持たない (中身は変わらない)
+c_rows = net.get_variable_map("rows");
+assert(iscell(c_rows) && all(cellfun(@(m) size(m,2), c_rows) == 5))
+
+
 %% Analytic jacobians match numerical differentiation
 % get_sys と SolverODE が使う f_Jacobi* (Jacobi_dx / Jacobi_I / Jacobi_Y) が f_dx, f_I, f_Y の微分と一致する
 for key = DebugScript.helper.model_classes("Component").Key'

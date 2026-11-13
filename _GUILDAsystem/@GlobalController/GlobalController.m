@@ -189,6 +189,10 @@ classdef GlobalController < PowerSystemModel
         end
 
     end
+    methods
+        % Variable map (rows x, Vre, Vim, uc, yc and their equilibrium)
+        tab = get_variable_map(obj)
+    end
     methods (Hidden)
         % Linearization (get_sys connects the blocks)
         sct_block = get_linear_block(obj, x, V, u)

@@ -16,8 +16,8 @@ function [sys, flag, output] = get_sys(obj, point, opt)
 % | LocalController | V of its bus, its inputs | its outputs | inputs |
 % | GlobalController | V of all buses, its inputs | its outputs | inputs |
 %
-% The names are the Labels of the variable map (get_variable_map; for a controller, the
-% map of its component or network); the states follow its order. The current of a
+% The names are the Labels of the variable map of the layer (obj.get_variable_map); the
+% states follow its order. The current of a
 % component is the component tag with Ire, Iim; that of a bus the bus tag. An input is
 % the sum of its sources in the connection map plus the external input of that name.
 %
@@ -177,7 +177,8 @@ end
 
 function [net, a_obj, tab, tab_c] = layer_maps(obj)
 % Network of the layer, its model objects in the order of the variable map, the variable
-% map (rows x, Vre, Vim, u or uc first) and the connection map
+% map (rows x, Vre, Vim, u or uc first) and the connection map (none for a controller:
+% the sources of its inputs are not rows of its map)
     if isa(obj, "PowerNetwork")
         net = obj;
         [tab, ~, ~, tab_c] = obj.get_variable_map();
@@ -191,32 +192,18 @@ function [net, a_obj, tab, tab_c] = layer_maps(obj)
         [tab, tab_c] = obj.get_variable_map();
         a_obj = [{obj}; all_controllers(obj)];
     elseif isa(obj, "LocalController")
-        comp = obj.a_Component;
-        while isa(comp, "LocalController")
-            comp = comp.a_Component;
-        end
-        net = comp.a_Bus.a_PowerNetwork;
-        tab = controller_map(comp.get_variable_map(), string(obj.s_tag));
+        net = root_component(obj).a_Bus.a_PowerNetwork;
+        tab = obj.get_variable_map();
         tab_c = empty_connections();
         a_obj = {obj};
     elseif isa(obj, "GlobalController")
         net = obj.a_PowerNetwork;
-        tab = controller_map(net.get_variable_map(), string(obj.s_tag));
+        tab = obj.get_variable_map();
         tab_c = empty_connections();
         a_obj = {obj};
     else
         obj.get_linear_port("V2I");     % NoLinearModel
     end
-end
-
-
-function tab = controller_map(tab_parent, s_tag)
-% Rows of a controller: its x, the bus voltages (of the parent map), its uc and yc
-    lv_own = tab_parent.Owner == s_tag;
-    iv = [find(lv_own & tab_parent.Kind == "x"); find(tab_parent.Kind == "Vre" | tab_parent.Kind == "Vim"); ...
-          find(lv_own & tab_parent.Kind == "uc"); find(lv_own & tab_parent.Kind == "yc")];
-    tab = tab_parent(iv,:);
-    tab.Index = (1:height(tab))';
 end
 
 

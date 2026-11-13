@@ -216,6 +216,7 @@ function tab = test_levels()
     "test_F7_linearization/OutputAndInputSelectTheChannels", "large"
     "test_F7_linearization/LinearModelsOfEveryBundledNetworkMatchTheReferenceValues", "large"
     "test_F7_linearization/GetSysKron", "medium"
+    "test_F7_linearization/VariableMapsOfTheControllersAndTheEquilibriumColumn", "medium"
     "test_F7_linearization/BusWithoutAnI_to_VFormKeepsItsInputs", "medium"
     "test_F7_linearization/Zero_powerLoadsKeepTheirInputs", "medium"
     "test_F7_linearization/BusWithoutComponents", "medium"

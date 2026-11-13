@@ -2,7 +2,7 @@ function [tab, c_idxBus, c_idxGC, tab_connection] = get_variable_map(obj, s_form
 % Return the variable map (every variable and signal of the network) and the connection map.
 %
 % Variable map of the network: the single definition of the order of the variables and
-% signals of the network model, used by get_sys (ResultLIN blocks and Point), by
+% signals of the network model, used by get_sys (ResultLIN blocks and the point), by
 % net.simulate (the order of the DAE vector) and by the other analyses. The order is
 %   1. x: states. For each bus in a_Bus, for each component in a_Component, the states of
 %      the component and then of its local controllers (depth first: the AVR or "local"
@@ -19,7 +19,7 @@ function [tab, c_idxBus, c_idxGC, tab_connection] = get_variable_map(obj, s_form
 % Rows 1-4 are the variables of the DAE (Role "variable"); rows 5-6 are signals computed
 % from them at each evaluation (Role "signal"). The rows of the kinds x, Vre, Vim and u
 % come first and are the variables of the linearization (get_sys and its
-% Point); the controller inputs uc are eliminated there. The bus current of the simulation
+% point); the controller inputs uc are eliminated there. The bus current of the simulation
 % is not in the map: SolverODE places it after the voltages.
 % The map of a bus or a component (bus.get_variable_map, comp.get_variable_map) is the
 % restriction of this map to its rows, in the same relative order.
@@ -29,7 +29,11 @@ function [tab, c_idxBus, c_idxGC, tab_connection] = get_variable_map(obj, s_form
 % StateName / InputName / OutputName used by get_sys; an output with the name of a state of
 % its owner is "Y_" + name; a row of a global controller is labelled
 % gc.attach_tag(name + "_" + unit tag), as it has one per controlled unit),
-% Bus (tag of the bus the owner is attached to; "" for a global controller).
+% Bus (tag of the bus the owner is attached to; "" for a global controller),
+% Equilibrium (value at the equilibrium set by net.initialize: the stored rv_Xequilibrium,
+% c_Vequilibrium, rv_Uequilibrium of the owners, and the outputs y and yc evaluated there
+% by their output functions; NaN in every row before net.initialize). The Equilibrium of
+% the leading rows x, Vre, Vim, u is the point of net.get_sys([]).
 %
 % The connection map tab_connection is the only place where it is decided which signal
 % drives which input. One row per connection, in the order of the inputs they drive:
@@ -52,14 +56,16 @@ function [tab, c_idxBus, c_idxGC, tab_connection] = get_variable_map(obj, s_form
 % The tables are made once, at the end: the bus and component methods return their rows
 % with get_variable_map("rows"), the cell {sm_x; sm_V; sm_u; sm_uc; sm_y; sm_yc} of string
 % matrices with the columns Kind, Owner, Name, Label, Bus, and the connections as a string
-% matrix (Kind, kind and label of the source, kind and label of the target).
+% matrix (Kind, kind and label of the source, kind and label of the target). The rows form
+% has no Equilibrium; only the table form computes it.
 %
 % <@Examples>
 % ```matlab
 % [tab, ~, ~, tab_connection] = net.get_variable_map();
 % tab(tab.Kind == "x", ["Owner","Name"])
 % tab_connection(tab_connection.Kind == "global", :)
-% x0 = net.get_sys().rv_point;     % values of the rows x, Vre, Vim, u
+% x0 = tab.Equilibrium(ismember(tab.Kind, ["x","Vre","Vim","u"]));   % the point of the equilibrium
+% res = net.get_sys(x0);           % same as net.get_sys()
 % ```
 %
 % See also PowerSystemModel.get_sys, PowerNetwork.simulate, Bus.get_variable_map, Component.get_variable_map
@@ -70,7 +76,7 @@ function [tab, c_idxBus, c_idxGC, tab_connection] = get_variable_map(obj, s_form
         s_form (1,1) string {mustBeMember(s_form, ["table","rows"])} = "table" % "rows" (internal): return the rows without the tables.
     end
     arguments (Output)
-        tab              % One row per variable or signal: Index, Kind, Role, Owner, Name, Label, Bus.
+        tab              % One row per variable or signal: Index, Kind, Role, Owner, Name, Label, Bus, Equilibrium.
         c_idxBus         % c_idxBus{i}: rows of tab that form a_Bus{i}.get_variable_map(), in its order.
         c_idxGC          % c_idxGC{k}: rows of tab of a_GlobalController{k} (its x, uc, yc).
         tab_connection   % One row per connection: Index, Kind, Source, Target, SourceIndex, TargetIndex.
@@ -82,9 +88,10 @@ function [tab, c_idxBus, c_idxGC, tab_connection] = get_variable_map(obj, s_form
     n_kind = 6;
 
     c_bus  = cell(n_bus,1);
+    c_idxB = cell(n_bus,1);
     c_conn = cell(n_bus + n_gc,1);
     for i = 1:n_bus
-        [c_bus{i}, ~, c_conn{i}] = a_bus{i}.get_variable_map("rows");
+        [c_bus{i}, c_idxB{i}, c_conn{i}] = a_bus{i}.get_variable_map("rows");
     end
     c_gc = cell(n_gc,1);
     for k = 1:n_gc
@@ -120,6 +127,27 @@ function [tab, c_idxBus, c_idxGC, tab_connection] = get_variable_map(obj, s_form
         return
     end
     [tab, tab_connection] = make_tables(vertcat(c_rows{:}), sm_conn);
+
+    % Equilibrium: the bus voltages and the values of the maps of the components and
+    % global controllers; NaN everywhere when a part has none (before net.initialize)
+    rv_eq = nan(height(tab),1);
+    if ~any(obj.sct_stale.powerflow == obj.s_notInitialized)
+        rv_eq(iv_0(2) + (1:2*n_bus)) = tools.vcellfun(@(b) [real(b.c_Vequilibrium); imag(b.c_Vequilibrium)], a_bus);
+        for i = 1:n_bus
+            for j = 1:numel(c_idxB{i})
+                tab_j = a_bus{i}.a_Component{j}.get_variable_map();
+                rv_eq(c_idxBus{i}(c_idxB{i}{j})) = tab_j.Equilibrium;
+            end
+        end
+        for k = 1:n_gc
+            tab_k = a_gc{k}.get_variable_map();
+            rv_eq(c_idxGC{k}) = tab_k.Equilibrium(tab_k.Kind ~= "Vre" & tab_k.Kind ~= "Vim");
+        end
+        if any(isnan(rv_eq))
+            rv_eq(:) = NaN;
+        end
+    end
+    tab.Equilibrium = rv_eq;
 end
 
 
