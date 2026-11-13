@@ -8,21 +8,25 @@
     "MaxIteration":{
         "Value": 500,
         "Type": "double",
+        "Valid": "v > 0 && mod(v,1) == 0",
         "Description": "Maximum number of predictor-corrector steps"
     },
     "StepSize":{
         "Value": 0.5,
         "Type": "double",
+        "Valid": "v > 0",
         "Description": "Step size of the predictor"
     },
     "ArcLength":{
         "Value": 0.001,
         "Type": "double",
+        "Valid": "v > 0",
         "Description": "Arc length of the corrector"
     },
     "Tolerance":{
         "Value": 1e-5,
         "Type": "double",
+        "Valid": "v > 0",
         "Description": "Convergence tolerance of the Newton-Raphson corrector"
     },
     "CorrectorMaxIteration":{
