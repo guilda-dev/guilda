@@ -822,44 +822,44 @@ Option names:
 | `[sys, lin] = net.get_sys(NonUnit=n, Algorithm=a)` | `[res, flag, output] = net.get_sys(Method=a)`(`a` は `"Kron"` か `"DAE"`)。`res` は `ResultLIN` |
 | `lin = odeLinearizer(net, n, Algorithm=a); sys = lin.get_sys` | `res = net.get_sys(); sys = res.get_ss(a)` |
 | `lin.Kxx`, `lin.Kxv`, `lin.Kvx`, `lin.Kvv`, `lin.get_DAE` | `res.rm_Axx`, `rm_Axv`, `rm_Bx`, `rm_Avx`, `rm_Avv`, `rm_Bv`, `rm_E`(縮約前の DAE。並びは `res.tab_variable`) |
-| `comp.get_sys(x, V, u)` | `comp.get_sys(Point=p)`(`p` は `comp.get_variable_map()` の x, Vre, Vim, u の順) |
+| `comp.get_sys(x, V, u)` | `comp.get_sys(p)`(`p` は `comp.get_variable_map()` の先頭の x, Vre, Vim, u の行の順。`p = [x; V; u]` に制御器の状態も入れる) |
 | `comp.get_sys(false)` / `Controllers=false` | `comp.get_linear_block(x, V, u)`(機器単体のブロック) |
-| – | `net.get_sys(Point=x)` または `Point={sim, t}`: 平衡点以外での線形化 |
-| – | `net.get_variable_map()`、`bus.get_variable_map()`、`comp.get_variable_map()`(信号と接続表も) |
+| – | `net.get_sys(x)` または `net.get_sys({sim, t})`: 平衡点以外での線形化(点は最初の引数) |
+| – | `net.get_variable_map()`、`bus.get_variable_map()`、`comp.get_variable_map()`(信号と接続表も)、`con.get_variable_map()`、`gc.get_variable_map()`。`Equilibrium` 列は平衡点での値 |
 
 - **`Feedback` は廃止しました。** `Method` は `"Kron"` と `"DAE"` だけを受け付け、`GUILDA.setting` の既定値は `"Kron"` です。`Method="Feedback"` は arguments ブロックの検証のエラーです。`Feedback` が消していた状態(入力から届かない状態)は `"Kron"` では残ります。必要なら `get_ss` の結果を `minreal` などで縮約してください。ユーザーの設定ファイルに `"Feedback"` が保存されていると、`GUILDA.config` は既定値の `"Kron"` に変えて読みます(`Auto-change @Method (Feedback >> Kron)`)。
 - **`net.linearize` は削除しました。** `net.get_sys()`(`Format="GUILDAorigin"`、既定)が同じ `ResultLIN` を返します。`flag` が false でも結果を返し、`"struct"` と `"ss"` だけが `get_ss` のエラーで止まります(`"DAE"` で `Avv` が特異なときを除く)。
-- **オプション** は arguments ブロックです: `Point`、`Port`(`Component` と `Bus` だけ。ほかの層は `GUILDA:PowerSystemModel:PortNotApplicable`)、`Method`、`Coordinate`、`PlotFcn`、`Input`、`Output`、`Format`。`Method`、`Coordinate`、`PlotFcn` を省くと GUILDA.setting の Linearization の値を使います。名前は大文字小文字を区別せず部分一致なので、`"port"` は `Port` です。v3 の `Algorithm=`、`NonUnit=`、`solver_LIN.NonUnit`、`tag`、`Controllers`、`full`、`con` は削除しました(検証のエラー)。2 番目以降の出力は全層で `[sys, flag, output]` で、cellstr の名前の出力はありません。
+- **点は最初の引数**(`get_sys(point, Name=Value)`、既定 `[]` = 平衡点)です。v3 の位置引数の点 `get_sys(x, V, u)` は使えません(余分な引数のエラー)。
+- **オプション** は arguments ブロックです: `Method`、`Coordinate`、`PlotFcn`、`Input`、`Output`、`Format`。`Method`、`Coordinate`、`PlotFcn` を省くと GUILDA.setting の Linearization の値を使います。機器と母線のポートは V2I(電圧が入力、電流が出力)だけで、`Port` オプションはありません。v3 の `Algorithm=`、`NonUnit=`、`solver_LIN.NonUnit`、`tag`、`Controllers`、`full`、`con` は削除しました(検証のエラー)。2 番目以降の出力は全層で `[sys, flag, output]` で、cellstr の名前の出力はありません。
 - `res.get_ss(Method)` の行列と名前は v3 の `get_sys` と同じです(F7 で v3 のコードの写しと比べています)。`get_ss("DAE", Coordinate=...)` は母線変数を `"theta&rho"`(既定)、`"theta&V"`、`"Vre&Vim"` から選びます。
 - **DAE の `B` の符号**(黙った変更): 代数方程式の行の符号が逆になり、DAE の入力から状態までの伝達関数が Kron と同じになりました。
-- `flag` は、すべての要素が有限で `Avv` が正則なとき true です。`output` は `message`、`s_issue`、`l_equilibrium`、`n_x`、`n_v`、`n_u`、`rcond_Avv`、`sv_faultBus`、`s_layer`、`result` を持ちます。有限でない `Point` やモデルは `GUILDA:SolverLIN:PointNotFinite`、`JacobianNotFinite` で止まります。
+- `flag` は、すべての要素が有限で `Avv` が正則なとき true です。`output` は `message`、`s_issue`、`l_equilibrium`、`n_x`、`n_v`、`n_u`、`rcond_Avv`、`sv_faultBus`、`s_layer`、`result` を持ちます。有限でない点やモデルは `GUILDA:SolverLIN:PointNotFinite`、`JacobianNotFinite` で止まります。
 - `get_ss` の既定の出力(v3 と同じ): `"Kron"` は状態(出力名なし)、`"DAE"` は動的な状態です。`Input` と `Output` でほかのチャネルを選びます。`Output` の種類 `"y"` は変数表の `y` と `yc`(グローバル制御器の出力も含む)です。
 - `get_ss` の状態の並び(v3 と同じ): `"Kron"` と `"DAE"` はグローバル制御器の状態が先、次に機器です。状態は位置でなく `StateName` で探してください。
 - 機器のない母線(つなぎの母線など)も線形化できます。状態はなく、電流も流れません。
 - **チャネル名で添字できます。** `sys(出力名, 入力名)` は `sys(行, 列)` と同じ結果です。`InputGroup` と `OutputGroup` は空です。
-- **点での制御器の入力。** 点(`Point` でも位置引数でも)では、制御器の入力 `uc` を接続表の源の和(`"global"` を除き、`"equilibrium"` は平衡値)で求めるので、制御器も与えた点で線形化します。
-- **古さの検査(1.3)。** すべての層で `GUILDA:PowerSystemModel:Stale` と `InputEdited` です。動特性(ハンドル、周波数)の古さと入力の編集はどの点でも、潮流と平衡点の古さは `Point` が平衡点のときだけ検査します。
+- **点での制御器の入力。** 与えた点では、制御器の入力 `uc` を接続表の源の和(`"global"` を除き、`"equilibrium"` は平衡値)で求めるので、制御器も与えた点で線形化します。
+- **古さの検査(1.3)。** すべての層で `GUILDA:PowerSystemModel:Stale` と `InputEdited` です。動特性(ハンドル、周波数)の古さと入力の編集はどの点でも、潮流と平衡点の古さは点が平衡点のときだけ検査します。
 - **`net.rv_Xequilibrium`** は `get_variable_map` の状態の行の順で値を返します。`comp.rv_Xequilibrium_all` は AVR の下の PSS も含みます。
 - **解けないモデルのエラー。**
 
   | ID | 条件 | 対応 |
   |----|------|------|
-  | `GUILDA:PowerSystemModel:NoI2V` | `Port="I2V"` で電流が電圧を決めない(機器のない母線、`P = Q = 0` の負荷など) | `Port="V2I"` を使う |
   | `GUILDA:ResultLIN:SingularAvv` | Kron で `Avv` が正則でない(`rcond < 1e-14`)。`get_sys` は止まらず `flag = false`、`output.s_issue = "SingularAvv"` | `output.message` が示す母線電圧を確認する。`DAE` は計算できる |
   | `GUILDA:GlobalController:GlobalControllerPort` | 機器にグローバル制御器の入出力がない | 対象の機器を直す |
   | `GUILDA:SolverLIN:AlgebraicLoop` | ブロックの出力が接続を通して自分に戻る(`I - D K` が特異) | モデルの直達を見直す |
   | `GUILDA:PowerSystemModel:NoLinearModel` | `Branch` の `get_sys` | 網か母線の `get_sys` を使う |
-- `Point={sim, t}` は `sim.get_point(t)` を読み、ローカル制御器とグローバル制御器を含めて使えます。`Point={sim, t, "before"}` は相の境界でイベントの前の値です(既定は後)。制御器の層は `{sim, t}` を受け付けません(`GUILDA:SolverLIN:PointLayer`)。
+- 点 `{sim, t}` は `sim.get_point(t)` を読み、ローカル制御器とグローバル制御器を含めて使えます。`{sim, t, "before"}` は相の境界でイベントの前の値です(既定は後)。制御器の層は `{sim, t}` を受け付けません(`GUILDA:SolverLIN:PointLayer`)。
 - **層ごとの入出力**(名前は変数表の Label、並びは変数表の順):
 
   | 層 | 入力 | 状態 | 出力 |
   |----|------|------|------|
   | `con.get_sys` | `[母線の V; uc]` | `x` | `yc` |
   | `gc.get_sys` | `[全母線の V; uc]` | `x` | `yc` |
-  | `comp.get_sys`(`Port="V2I"`) | `[母線の V; u; uc]` | `[x; 制御器の x]` | `[I(機器のタグ); y; yc]` |
-  | `bus.get_sys`(`Port="V2I"`) | `[V; 全機器の u; 全制御器の uc]` | 機器と制御器の `x` | `[I(母線のタグ); 全 y; 全 yc]` |
+  | `comp.get_sys` | `[母線の V; u; uc]` | `[x; 制御器の x]` | `[I(機器のタグ); y; yc]` |
+  | `bus.get_sys` | `[V; 全機器の u; 全制御器の uc]` | 機器と制御器の `x` | `[I(母線のタグ); 全 y; 全 yc]` |
 
-  `Port="I2V"` は電流と電圧を入れ替えます。状態は出力にならず、すべての名前は一意です。所有者の状態と同じ名前の出力は `Y_<name>` です。外部入力は、その入力の源の和に足されます。グローバル制御器の入出力は自分の `uc`・`yc` で、どこを観測しどこへ返すかは接続表にあります。
+  状態は出力にならず、すべての名前は一意です。所有者の状態と同じ名前の出力は `Y_<name>` です。外部入力は、その入力の源の和に足されます。グローバル制御器の入出力は自分の `uc`・`yc` で、どこを観測しどこへ返すかは接続表にあります。
 - 削除: `SolverLIN()` は引数を取りません。`SolverLIN(net, NonUnit, Name, Value)` は MATLAB の引数の数のエラーです。`SolverLIN.OptionMap` と `get_options` はありません。
 
 - **行列で線形化し、`Format` で形を選びます。** どの層の `get_sys` も Control System Toolbox なしで線形化し、`Format` で返す形を選びます。

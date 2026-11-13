@@ -64,32 +64,44 @@
     <p lang="ja">ネットワークの結果は、点からの偏差で表した線形 DAE です。変数は <code>net.get_variable_map()</code> の先頭の行と同じく、<code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> の順に並びます (<a href="class-design.html#variables">クラス設計: 状態・入力変数の順序</a>を参照。制御器の入力 <code>uc</code> と信号 <code>y</code>、<code>yc</code> は接続で消去されるので、変数になりません)。<code>x</code> は状態、<code>v = [Vre1; Vim1; Vre2; …]</code> は母線電圧、<code>u</code> は機器の入力です。</p>
 <pre class="lin-sig"><code>E dx/dt = Axx x + Axv v + Bx u
       0 = Avx x + Avv v + Bv u      % current balance Y v − ΣI of each bus</code></pre>
-<pre class="lin-sig"><code>[sys, flag, output] = net.get_sys(Name=Value)                  % ResultLIN (Format="GUILDAorigin")
-[sys, flag, output] = bus.get_sys(…, Port="V2I"|"I2V")         % also comp.get_sys
-[sys, flag, output] = con.get_sys(…)                           % also gc.get_sys
+<pre class="lin-sig"><code>[sys, flag, output] = net.get_sys(point, Name=Value)           % ResultLIN (Format="GUILDAorigin")
+[sys, flag, output] = bus.get_sys(point, …)                    % also comp.get_sys
+[sys, flag, output] = con.get_sys(point, …)                    % also gc.get_sys
+tab = obj.get_variable_map()                                   % order and Equilibrium of point
 sys = result.get_ss(Method, Coordinate=…, Input=…, Output=…, Format="ss"|"struct")
 sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidden; also con, gc)</code></pre>
 
     <h3><span lang="en">Inputs and outputs of each layer</span><span lang="ja">各層の入力と出力</span></h3>
     <ul lang="en">
-      <li>Names: the <code>Label</code>s of the variable map (<code>get_variable_map</code>; for a controller, the map of its component or network), in the order of the map: all <code>u</code>, then all <code>uc</code>; all <code>y</code>, then all <code>yc</code>. The voltage of a component or local controller is named by the bus Labels (<code>Vre_&lt;bus&gt;</code>, <code>Vim_&lt;bus&gt;</code>); the current of a component carries the component tag, that of a bus the bus tag.</li>
+      <li>Names: the <code>Label</code>s of the variable map of the layer (<code>obj.get_variable_map()</code>; a controller has its own, with the labels of the map of its component or network), in the order of the map: all <code>u</code>, then all <code>uc</code>; all <code>y</code>, then all <code>yc</code>. The voltage of a component or local controller is named by the bus Labels (<code>Vre_&lt;bus&gt;</code>, <code>Vim_&lt;bus&gt;</code>); the current of a component carries the component tag, that of a bus the bus tag.</li>
       <li>The inputs and outputs of a global controller are its own <code>uc</code> and <code>yc</code> Labels; which signals they observe and which inputs they drive is in the connection map.</li>
     </ul>
     <ul lang="ja">
-      <li>名前は変数マップ (<code>get_variable_map</code>。制御器では、その機器またはネットワークのマップ) の <code>Label</code> で、マップの順に並びます。すべての <code>u</code> の後にすべての <code>uc</code>、すべての <code>y</code> の後にすべての <code>yc</code> です。機器とローカル制御器の電圧は母線の Label (<code>Vre_&lt;bus&gt;</code>、<code>Vim_&lt;bus&gt;</code>) で名付けます。機器の電流には機器のタグ、母線の電流には母線のタグが付きます。</li>
+      <li>名前は層の変数マップ (<code>obj.get_variable_map()</code>。制御器も、機器またはネットワークのマップと同じ Label を持つ自分のマップを持ちます) の <code>Label</code> で、マップの順に並びます。すべての <code>u</code> の後にすべての <code>uc</code>、すべての <code>y</code> の後にすべての <code>yc</code> です。機器とローカル制御器の電圧は母線の Label (<code>Vre_&lt;bus&gt;</code>、<code>Vim_&lt;bus&gt;</code>) で名付けます。機器の電流には機器のタグ、母線の電流には母線のタグが付きます。</li>
       <li>グローバル制御器の入力と出力は、自分の <code>uc</code> と <code>yc</code> の Label です。どの信号を観測し、どの入力を駆動するかは接続マップにあります。</li>
     </ul>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Layer</span><span lang="ja">層</span></th><th><span lang="en">Blocks</span><span lang="ja">集めるブロック</span></th><th><span lang="en">Inputs</span><span lang="ja">入力</span></th><th><span lang="en">Outputs</span><span lang="ja">出力</span></th><th><span lang="en">Bus voltages</span><span lang="ja">母線電圧</span></th></tr></thead>
       <tbody>
         <tr><td><code>PowerNetwork</code></td><td><span lang="en">all components with their local controllers, all global controllers</span><span lang="ja">全機器とそのローカル制御器、全グローバル制御器</span></td><td><code>u</code></td><td><code>y</code>, <code>yc</code></td><td><span lang="en">algebraic: <code>0 = Y v − ΣI</code>, reduced by <code>Method</code></span><span lang="ja">代数変数: <code>0 = Y v − ΣI</code>。<code>Method</code> で縮約します</span></td></tr>
-        <tr><td><code>Bus</code>, <code>Component</code> <small>Port="V2I"</small></td><td><span lang="en">the components (one, for a component) with their local controllers, depth first</span><span lang="ja">機器 (機器の層では 1 つ) とそのローカル制御器 (深さ優先)</span></td><td><code>V</code>, <code>u</code>, <code>uc</code></td><td><code>I</code>, <code>y</code>, <code>yc</code></td><td><span lang="en">inputs</span><span lang="ja">入力</span></td></tr>
-        <tr><td><code>Bus</code>, <code>Component</code> <small>Port="I2V"</small></td><td><span lang="en">the same</span><span lang="ja">同上</span></td><td><code>I</code>, <code>u</code>, <code>uc</code></td><td><code>V</code>, <code>y</code>, <code>yc</code></td><td><span lang="en">algebraic: <code>0 = I_ext − ΣI</code>, eliminated by <code>get_ss</code></span><span lang="ja">代数変数: <code>0 = I_ext − ΣI</code>。<code>get_ss</code> が消去します</span></td></tr>
+        <tr><td><code>Bus</code>, <code>Component</code></td><td><span lang="en">the components (one, for a component) with their local controllers, depth first</span><span lang="ja">機器 (機器の層では 1 つ) とそのローカル制御器 (深さ優先)</span></td><td><code>V</code>, <code>u</code>, <code>uc</code></td><td><code>I</code>, <code>y</code>, <code>yc</code></td><td><span lang="en">inputs</span><span lang="ja">入力</span></td></tr>
         <tr><td><code>LocalController</code></td><td><span lang="en">the controller alone</span><span lang="ja">制御器だけ</span></td><td><span lang="en"><code>V</code> of the bus of its component, its <code>uc</code></span><span lang="ja">その機器の母線の <code>V</code>、自分の <code>uc</code></span></td><td><span lang="en">its <code>yc</code></span><span lang="ja">自分の <code>yc</code></span></td><td><span lang="en">inputs</span><span lang="ja">入力</span></td></tr>
         <tr><td><code>GlobalController</code></td><td><span lang="en">the controller alone</span><span lang="ja">制御器だけ</span></td><td><span lang="en"><code>V</code> of all buses, its <code>uc</code></span><span lang="ja">全母線の <code>V</code>、自分の <code>uc</code></span></td><td><span lang="en">its <code>yc</code></span><span lang="ja">自分の <code>yc</code></span></td><td><span lang="en">inputs</span><span lang="ja">入力</span></td></tr>
         <tr><td><code>Branch</code></td><td colspan="4"><span lang="en">No linear model: <code>GUILDA:PowerSystemModel:NoLinearModel</code>.</span><span lang="ja">線形モデルはありません: <code>GUILDA:PowerSystemModel:NoLinearModel</code>。</span></td></tr>
       </tbody>
     </table>
+
+    <h3><span lang="en">The point</span><span lang="ja">点</span></h3>
+    <ul lang="en">
+      <li>The first argument <code>point</code> is <code>[]</code> for the equilibrium (the default); a vector of the variables of the layer in the order of the leading rows of <code>obj.get_variable_map()</code> (<code>x</code>, <code>Vre</code>, <code>Vim</code>, then <code>u</code>; for a controller <code>x</code>, <code>Vre</code>, <code>Vim</code>, then <code>uc</code>); or <code>{sim, t}</code> / <code>{sim, t, "before"}</code> for the state of a <code>ResultODE</code> at time <code>t</code> (network, bus and component only).</li>
+      <li>The column <code>Equilibrium</code> of the map holds these rows at the equilibrium, so <code>obj.get_sys(tab.Equilibrium(tab.Role == "variable"))</code> of a controller, or the leading rows for the other layers, gives the same model as <code>obj.get_sys()</code>.</li>
+      <li>The point sets the variables only: the admittance matrix stays that of the model, also inside a fault.</li>
+    </ul>
+    <ul lang="ja">
+      <li>最初の引数 <code>point</code> は、<code>[]</code> で平衡点 (既定)、<code>obj.get_variable_map()</code> の先頭の行の順 (<code>x</code>、<code>Vre</code>、<code>Vim</code>、続いて <code>u</code>。制御器では <code>x</code>、<code>Vre</code>、<code>Vim</code>、続いて <code>uc</code>) に並べた層の変数のベクトル、または <code>{sim, t}</code> / <code>{sim, t, "before"}</code> で <code>ResultODE</code> の時刻 <code>t</code> の状態を指定します (<code>{sim, t}</code> はネットワーク、母線、機器だけです)。</li>
+      <li>マップの <code>Equilibrium</code> 列は、これらの行の平衡点での値です。制御器の <code>obj.get_sys(tab.Equilibrium(tab.Role == "variable"))</code>、他の層ではその先頭の行を与えると、<code>obj.get_sys()</code> と同じモデルになります。</li>
+      <li>この指定で決まるのは変数の値だけです。地絡中の時刻を選んでも、アドミタンス行列はモデルのものを使います。</li>
+    </ul>
 
     <h3><span lang="en">Name-Value options and defaults</span><span lang="ja">Name-Value オプションと既定値</span></h3>
     <ul lang="en">
@@ -103,8 +115,6 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
     <table class="dg-table lin-opts">
       <thead><tr><th><span lang="en">Option</span><span lang="ja">オプション</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Default</span><span lang="ja">既定値</span></th></tr></thead>
       <tbody>
-        <tr><td><code>Point</code></td><td><span lang="en"><code>[]</code> for the equilibrium; a vector of the variables of the layer in the order of its variable map (for a controller: its <code>x</code>, the voltages, its <code>uc</code>); or <code>{sim, t}</code> / <code>{sim, t, "before"}</code> for the state of a <code>ResultODE</code> at time <code>t</code> (network, bus and component only). Sets the variables only: the admittance matrix stays that of the model, also inside a fault.</span><span lang="ja"><code>[]</code> で平衡点、層の変数マップの順に並べた変数のベクトル (制御器では自分の <code>x</code>、電圧、自分の <code>uc</code>)、または <code>{sim, t}</code> / <code>{sim, t, "before"}</code> で <code>ResultODE</code> の時刻 <code>t</code> の状態を指定します (<code>{sim, t}</code> はネットワーク、母線、機器だけです)。この指定で決まるのは変数の値だけで、地絡中の時刻を選んでもアドミタンス行列はモデルのものを使います。</span></td><td><code>[]</code><small><span lang="en">call only</span><span lang="ja">呼び出しのみ</span></small></td></tr>
-        <tr><td><code>Port</code></td><td><span lang="en">Component and bus only: <code>"V2I"</code> (voltage in, current out) or <code>"I2V"</code> (current in, voltage out). On another layer: <code>GUILDA:PowerSystemModel:PortNotApplicable</code>.</span><span lang="ja">機器と母線だけが受け付けます。<code>"V2I"</code> (電圧が入力、電流が出力) または <code>"I2V"</code> (電流が入力、電圧が出力) です。他の層で与えると <code>GUILDA:PowerSystemModel:PortNotApplicable</code> です。</span></td><td><code>"V2I"</code><small><span lang="en">call only</span><span lang="ja">呼び出しのみ</span></small></td></tr>
         <tr><td><code>Method</code></td><td><span lang="en">Reduction of the network: <code>"Kron"</code> (eliminate the bus voltages) or <code>"DAE"</code> (keep them as algebraic states). Also the default of <code>result.get_ss()</code>. The other layers accept it and ignore it.</span><span lang="ja">ネットワークの縮約の形で、<code>"Kron"</code> (母線電圧を消去) または <code>"DAE"</code> (代数状態として保持) から選びます。<code>result.get_ss()</code> の既定値にもなります。他の層は受け付けますが、使いません。</span></td><td><code>"Kron"</code></td></tr>
         <tr><td><code>Coordinate</code></td><td><span lang="en">Bus variables of <code>"DAE"</code>: <code>"theta&amp;rho"</code>, <code>"theta&amp;V"</code> or <code>"Vre&amp;Vim"</code>.</span><span lang="ja"><code>"DAE"</code> で母線変数をどう表すかを、<code>"theta&amp;rho"</code>、<code>"theta&amp;V"</code>、<code>"Vre&amp;Vim"</code> から選びます。</span></td><td><code>"theta&amp;rho"</code></td></tr>
         <tr><td><code>PlotFcn</code></td><td><span lang="en">Live display during the linearization; only <code>"none"</code> is available (other values: <code>GUILDA:check_plotfcn:InDevelopment</code>). The eigenvalue map after the run: <code>result.plot_eigenvalue()</code>.</span><span lang="ja">線形化の途中で表示する図の指定です。使えるのは <code>"none"</code> だけです (他の値は <code>GUILDA:check_plotfcn:InDevelopment</code>)。実行後に固有値マップを見るには <code>result.plot_eigenvalue()</code> を使います。</span></td><td><code>"none"</code></td></tr>
@@ -115,12 +125,12 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
 
     <h3><span lang="en">Preconditions for the call</span><span lang="ja">呼び出しの前提条件</span></h3>
     <ul>
-      <li lang="en"><code>net.initialize()</code> has run and builds the <code>f_*</code> handles. Since then, no edit of the inputs and no edit of a dynamics of the layer; at the equilibrium (<code>Point = []</code>) also no edit that makes the power flow or an equilibrium stale (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>).</li>
-      <li lang="ja"><code>net.initialize()</code> を実行済みでなければなりません (<code>f_*</code> ハンドルは <code>initialize</code> が作ります)。その後に入力や層の動特性を編集していないことが必要です。平衡点 (<code>Point = []</code>) では、潮流計算や平衡点を古くする編集もしていないことが必要です (<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照)。</li>
+      <li lang="en"><code>net.initialize()</code> has run and builds the <code>f_*</code> handles. Since then, no edit of the inputs and no edit of a dynamics of the layer; at the equilibrium (<code>point = []</code>) also no edit that makes the power flow or an equilibrium stale (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>).</li>
+      <li lang="ja"><code>net.initialize()</code> を実行済みでなければなりません (<code>f_*</code> ハンドルは <code>initialize</code> が作ります)。その後に入力や層の動特性を編集していないことが必要です。平衡点 (<code>point = []</code>) では、潮流計算や平衡点を古くする編集もしていないことが必要です (<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照)。</li>
       <li lang="en">No component equation depends on the current <code>I</code> (the ports of a component are <code>V</code> in, <code>I</code> out).</li>
       <li lang="ja">機器の式は電流 <code>I</code> に依存してはいけません (機器の端子は <code>V</code> が入力、<code>I</code> が出力です)。</li>
-      <li lang="en">A <code>Point</code> vector has one finite value per variable of the layer.</li>
-      <li lang="ja"><code>Point</code> のベクトルは、層の変数ごとに 1 つの有限な値を持たなければなりません。</li>
+      <li lang="en">A point vector has one finite value per variable of the layer.</li>
+      <li lang="ja">点のベクトルは、層の変数ごとに 1 つの有限な値を持たなければなりません。</li>
       <li lang="en">Every unit controlled by a global controller has outputs or states named as the controller inputs, and every controller output drives an input of the unit or of its local controllers.</li>
       <li lang="ja">グローバル制御器のすべての制御対象は、制御器の入力と同じ名前の出力または状態を持ち、制御器のすべての出力は制御対象またはそのローカル制御器の入力を駆動しなければなりません。</li>
     </ul>
@@ -165,13 +175,13 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
           <path class="dg-sv-line" d="M50 90H178" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="56" y="84"><tspan style="fill:var(--dg-accent)">01</tspan> get_sys(NV)</text>
           <path class="dg-sv-line" d="M180 108h26v14h-24" marker-end="url(#lin-ah)"/>
-          <text class="is-sm" x="214" y="120"><tspan style="fill:var(--dg-accent)">02</tspan> options: v3_get_sys_point, GUILDA.config</text>
+          <text class="is-sm" x="214" y="120"><tspan style="fill:var(--dg-accent)">02</tspan> point, options: GUILDA.config</text>
           <path class="dg-sv-line" d="M180 138h26v14h-24" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="214" y="150"><tspan style="fill:var(--dg-accent)">03</tspan> layer_maps: get_variable_map</text>
           <path class="dg-sv-line" d="M180 168h26v14h-24" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="214" y="180"><tspan style="fill:var(--dg-accent)">04</tspan> check_stale (sct_stale)</text>
           <path class="dg-sv-line" d="M180 210H728" marker-end="url(#lin-ah)"/>
-          <text class="is-sm" x="186" y="204"><tspan style="fill:var(--dg-accent)">05</tspan> point_vector(layer, Point)</text>
+          <text class="is-sm" x="186" y="204"><tspan style="fill:var(--dg-accent)">05</tspan> point_vector(layer, point)</text>
           <path class="dg-sv-line" d="M180 226h26v14h-24" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="214" y="238"><tspan style="fill:var(--dg-accent)">06</tspan> uc at the point (f_Y)</text>
           <path class="dg-sv-line" d="M180 296H328" marker-end="url(#lin-ah)"/>
@@ -181,7 +191,7 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
           <path class="dg-sv-line" d="M180 348H583" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="461" y="342"><tspan style="fill:var(--dg-accent)">09</tspan> get_linear_block(x, V, uc)</text>
           <path class="dg-sv-line" d="M180 378h26v14h-24" marker-end="url(#lin-ah)"/>
-          <text class="is-sm" x="214" y="390"><tspan style="fill:var(--dg-accent)">10</tspan> get_linear_port(Port), tab_current</text>
+          <text class="is-sm" x="214" y="390"><tspan style="fill:var(--dg-accent)">10</tspan> get_linear_port(), tab_current</text>
           <path class="dg-sv-line" d="M180 420H728" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="186" y="414"><tspan style="fill:var(--dg-accent)">11</tspan> solve(c_block, tab, tab_connection, sct_port)</text>
           <path class="dg-sv-line is-muted" d="M730 450H182" marker-end="url(#lin-ah-m)"/>
@@ -201,7 +211,7 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
       <div class="dg-only-narrow">
         <ol class="lin-seq-list">
           <li><span class="lin-id">LIN-01</span> <span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerSystemModel.get_sys</code></li>
-          <li><span class="lin-id">LIN-02</span> <code>get_sys</code>: <span lang="en">options</span><span lang="ja">オプション</span> (<code>v3_get_sys_point</code>, <code>GUILDA.config</code>)</li>
+          <li><span class="lin-id">LIN-02</span> <code>get_sys</code>: <span lang="en">point and options</span><span lang="ja">点とオプション</span> (<code>GUILDA.config</code>)</li>
           <li><span class="lin-id">LIN-03</span> <code>get_sys</code> → <code>get_variable_map</code> (<code>layer_maps</code>)</li>
           <li><span class="lin-id">LIN-04</span> <code>get_sys</code>: <code>check_stale</code></li>
           <li><span class="lin-id">LIN-05</span> <code>get_sys</code> → <code>SolverLIN.point_vector</code></li>
@@ -227,12 +237,12 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
     <h2 id="steps"><span lang="en">Processing steps in detail</span><span lang="ja">処理ステップの詳細</span></h2>
     <ul lang="en">
       <li>Each step: one requirement of the feature. Steps marked on the left repeat for each model object of the layer.</li>
-      <li><code>n_x</code>, <code>n_v</code>, <code>n_u</code>: numbers of states, algebraic bus voltage variables (2 × number of buses for the network, 2 for port <code>"I2V"</code>, else 0) and external inputs of the model.</li>
+      <li><code>n_x</code>, <code>n_v</code>, <code>n_u</code>: numbers of states, algebraic bus voltage variables (2 × number of buses for the network, else 0) and external inputs of the model.</li>
       <li>All steps up to LIN-15 are in <code>_GUILDAsystem/_auxiliary/@PowerSystemModel/get_sys.m</code> and its local functions, except the methods named in the step.</li>
     </ul>
     <ul lang="ja">
       <li>ステップ 1 つに、この機能の要件を 1 つずつ書いています。左に印のあるステップは、層のモデルオブジェクトごとに繰り返します。</li>
-      <li><code>n_x</code>、<code>n_v</code>、<code>n_u</code> は、それぞれモデルの状態、代数変数の母線電圧 (ネットワークでは 2 × 母線数、ポート <code>"I2V"</code> では 2、それ以外は 0)、外部入力の数です。</li>
+      <li><code>n_x</code>、<code>n_v</code>、<code>n_u</code> は、それぞれモデルの状態、代数変数の母線電圧 (ネットワークでは 2 × 母線数、それ以外は 0)、外部入力の数です。</li>
       <li>LIN-15 までのステップは、ステップに書いたメソッドを除き、<code>_GUILDAsystem/_auxiliary/@PowerSystemModel/get_sys.m</code> とその局所関数にあります。</li>
     </ul>
     <ol class="fs-steps">
@@ -248,22 +258,20 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
         </dl>
       </li>
       <li class="fs-step" id="LIN-02">
-        <p class="fs-head"><b class="fs-id">LIN-02</b> <span class="fs-call"><code>get_sys</code>: <span lang="en">options</span><span lang="ja">オプション</span></span><small>→ <code>v3_get_sys_point</code>, <code>SolverLIN.check_point</code>, <code>GUILDA.config</code>, <code>tools.check_plotfcn</code></small></p>
+        <p class="fs-head"><b class="fs-id">LIN-02</b> <span class="fs-call"><code>get_sys</code>: <span lang="en">point and options</span><span lang="ja">点とオプション</span></span><small>→ <code>SolverLIN.check_point</code>, <code>GUILDA.config</code>, <code>tools.check_plotfcn</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>Compatibility: a positional point <code>get_sys(x, V, u)</code> of a component, local controller or global controller warns once (<code>GUILDA:Deprecated:GetSysPositionalPoint</code>) and becomes <code>Point</code> (<code>_GUILDAsystem/_VersionSupport/v3_get_sys_point.m</code>; a component gets the states of its local controllers at their equilibrium, an empty argument its equilibrium value). With <code>Point</code> as well: <code>GUILDA:PowerSystemModel:PointAndPositional</code>; on a bus or the network: <code>GUILDA:v3_get_sys_point:Positional</code>.</li>
-              <li>Checks the form of <code>Point</code> (<code>check_point</code>); <code>Port</code> on a layer other than a component or bus stops with <code>GUILDA:PowerSystemModel:PortNotApplicable</code>, else defaults to <code>"V2I"</code>.</li>
+              <li>Checks the form of the point, the first argument (<code>check_point</code>).</li>
               <li>Fills <code>Method</code>, <code>Coordinate</code> and <code>PlotFcn</code> that the call did not give from <code>GUILDA.config("Linearization")</code>; checks <code>PlotFcn</code>.</li>
             </ul><ul lang="ja">
-              <li>互換: 機器、ローカル制御器、グローバル制御器の位置引数の点 <code>get_sys(x, V, u)</code> は、1 回だけ警告を出し (<code>GUILDA:Deprecated:GetSysPositionalPoint</code>)、<code>Point</code> に変換します (<code>_GUILDAsystem/_VersionSupport/v3_get_sys_point.m</code>。機器ではローカル制御器の状態を平衡値にし、空の引数は平衡値で埋めます)。<code>Point</code> も与えると <code>GUILDA:PowerSystemModel:PointAndPositional</code>、母線とネットワークでは <code>GUILDA:v3_get_sys_point:Positional</code> です。</li>
-              <li><code>Point</code> の形を検査します (<code>check_point</code>)。機器と母線以外で <code>Port</code> を与えると <code>GUILDA:PowerSystemModel:PortNotApplicable</code> で停止します。与えなければ <code>"V2I"</code> です。</li>
+              <li>最初の引数である点の形を検査します (<code>check_point</code>)。</li>
               <li>呼び出しで与えなかった <code>Method</code>、<code>Coordinate</code>、<code>PlotFcn</code> を <code>GUILDA.config("Linearization")</code> から補い、<code>PlotFcn</code> を検査します。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>opt</code>, <code>GUILDA.config("Linearization")</code>; <span lang="en">equilibrium (positional form)</span><span lang="ja">平衡点 (位置引数の場合)</span></dd>
+          <dd><code>point</code>, <code>opt</code>, <code>GUILDA.config("Linearization")</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>opt</code>: <code>Point</code>, <code>Port</code>, <code>Method</code>, <code>Coordinate</code>, <code>PlotFcn</code>; <code>l_eq</code></dd>
+          <dd><code>opt</code>: <code>Method</code>, <code>Coordinate</code>, <code>PlotFcn</code>; <code>l_eq</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="LIN-03">
@@ -271,12 +279,12 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Gets the network of the layer, its model objects in the order of the variable map (components with their local controllers depth first, bus by bus; then the global controllers), the variable map <code>tab</code> and the connection map <code>tab_c</code>:</span><ul lang="en">
-              <li>network, bus, component: their own <code>get_variable_map</code>;</li>
-              <li>local or global controller: the rows of the map of its component or network (its <code>x</code>, all bus voltages of that map, its <code>uc</code> and <code>yc</code>), no connections.</li>
+              <li>every layer: its own <code>get_variable_map</code> (a controller: its <code>x</code>, the voltages of the bus of its component or of all buses, its <code>uc</code> and <code>yc</code>, with the Labels of the map of its component or network);</li>
+              <li>local or global controller: no connections (the sources of its inputs are not rows of its map).</li>
               <li>Another layer (<code>Branch</code>): <code>get_linear_port</code> stops with <code>GUILDA:PowerSystemModel:NoLinearModel</code>.</li>
             </ul><span lang="ja">層のネットワーク、変数マップの順のモデルオブジェクト (母線ごとに、機器とそのローカル制御器を深さ優先で並べ、最後にグローバル制御器)、変数マップ <code>tab</code>、接続マップ <code>tab_c</code> を求めます。</span><ul lang="ja">
-              <li>ネットワーク、母線、機器: 自分の <code>get_variable_map</code> を使います。</li>
-              <li>ローカル制御器とグローバル制御器: その機器またはネットワークのマップから自分の行 (自分の <code>x</code>、そのマップの全母線電圧、自分の <code>uc</code> と <code>yc</code>) を選びます。接続はありません。</li>
+              <li>どの層も自分の <code>get_variable_map</code> を使います (制御器では、自分の <code>x</code>、その機器の母線または全母線の電圧、自分の <code>uc</code> と <code>yc</code>。Label は機器またはネットワークのマップと同じです)。</li>
+              <li>ローカル制御器とグローバル制御器: 接続はありません (入力の源は自分のマップの行ではありません)。</li>
               <li>それ以外の層 (<code>Branch</code>): <code>get_linear_port</code> が <code>GUILDA:PowerSystemModel:NoLinearModel</code> で停止します。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -303,12 +311,12 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
         </dl>
       </li>
       <li class="fs-step" id="LIN-05">
-        <p class="fs-head"><b class="fs-id">LIN-05</b> <span class="fs-call"><code>get_sys</code> → <code>SolverLIN.point_vector(layer, Point)</code></span></p>
+        <p class="fs-head"><b class="fs-id">LIN-05</b> <span class="fs-call"><code>get_sys</code> → <code>SolverLIN.point_vector(layer, point)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Values of the variables of the layer at the point: the equilibrium (<code>[]</code>), the given vector (length checked), or <code>sim.get_point(t, tab_map, Side=…)</code> (network, bus, component; a controller stops with <code>GUILDA:SolverLIN:PointLayer</code>). Order: rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code> of the map; for a controller its <code>x</code>, the voltages (of the bus of its component, or of all buses) and its <code>uc</code>. A value that is not finite stops with <code>GUILDA:SolverLIN:PointNotFinite</code>.</span><span lang="ja">点における層の変数の値を求めます。値は平衡点 (<code>[]</code>)、与えたベクトル (長さを検査します)、<code>sim.get_point(t, tab_map, Side=…)</code> の結果のいずれかです (最後はネットワーク、母線、機器だけで、制御器では <code>GUILDA:SolverLIN:PointLayer</code> で停止します)。並びはマップの <code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> の行で、制御器では自分の <code>x</code>、電圧 (その機器の母線、または全母線)、自分の <code>uc</code> です。有限でない値があれば <code>GUILDA:SolverLIN:PointNotFinite</code> で停止します。</span></dd>
+          <dd><span lang="en">Values of the variables of the layer at the point: the equilibrium (<code>[]</code>, the column <code>Equilibrium</code> of <code>layer.get_variable_map()</code>), the given vector (length checked), or <code>sim.get_point(t, tab_map, Side=…)</code> (network, bus, component; a controller stops with <code>GUILDA:SolverLIN:PointLayer</code>). Order: the leading rows <code>x</code>, <code>Vre</code>, <code>Vim</code>, <code>u</code> of the map of the layer; for a controller (its own map) its <code>x</code>, the voltages (of the bus of its component, or of all buses) and its <code>uc</code>. A value that is not finite stops with <code>GUILDA:SolverLIN:PointNotFinite</code>.</span><span lang="ja">点における層の変数の値を求めます。値は平衡点 (<code>[]</code>。<code>layer.get_variable_map()</code> の <code>Equilibrium</code> 列)、与えたベクトル (長さを検査します)、<code>sim.get_point(t, tab_map, Side=…)</code> の結果のいずれかです (最後はネットワーク、母線、機器だけで、制御器では <code>GUILDA:SolverLIN:PointLayer</code> で停止します)。並びは層のマップの先頭の <code>x</code>、<code>Vre</code>、<code>Vim</code>、<code>u</code> の行で、制御器 (自分のマップ) では自分の <code>x</code>、電圧 (その機器の母線、または全母線)、自分の <code>uc</code> です。有限でない値があれば <code>GUILDA:SolverLIN:PointNotFinite</code> で停止します。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>Point</code>, <code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, <code>c_Vequilibrium</code>; <code>ResultODE.get_point</code></dd>
+          <dd><code>point</code>, <code>get_variable_map</code> (<code>Label</code>, <code>Equilibrium</code>); <code>ResultODE.get_point</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>rv_point</code></dd>
         </dl>
@@ -374,14 +382,14 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
         </dl>
       </li>
       <li class="fs-step" id="LIN-10">
-        <p class="fs-head"><b class="fs-id">LIN-10</b> <span class="fs-call"><code>get_sys</code> → <code>get_linear_port(Port)</code></span><small><span lang="en">protected; overridden by</span><span lang="ja">protected。上書きするクラス:</span> <code>Component</code>, <code>Bus</code>, <code>PowerNetwork</code>, <code>LocalController</code>, <code>GlobalController</code></small></p>
+        <p class="fs-head"><b class="fs-id">LIN-10</b> <span class="fs-call"><code>get_sys</code> → <code>get_linear_port()</code></span><small><span lang="en">protected; overridden by</span><span lang="ja">protected。上書きするクラス:</span> <code>Component</code>, <code>Bus</code>, <code>PowerNetwork</code>, <code>LocalController</code>, <code>GlobalController</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Inputs and outputs of the layer (see <a href="#entry">the table of the layers</a>), then <code>get_sys</code> adds <code>tab_current</code>: the current outputs of the components with their bus (local function <code>current_table</code>). The default in <code>PowerSystemModel</code> stops with <code>GUILDA:PowerSystemModel:NoLinearModel</code>.</span><span lang="ja">層の入力と出力を決めます (<a href="#entry">各層の表</a>を参照)。続いて <code>get_sys</code> が <code>tab_current</code> (機器の電流の出力とその母線の対応。局所関数 <code>current_table</code>) を加えます。<code>PowerSystemModel</code> の既定の実装は <code>GUILDA:PowerSystemModel:NoLinearModel</code> で停止します。</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>get_variable_map</code>; <span lang="en">network:</span><span lang="ja">ネットワーク:</span> <code>get_admittance_matrix</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>sct_port</code>: <code>sv_input</code>, <code>sv_output</code>, <code>sv_algebraic</code>, <code>cm_Y</code> (<span lang="en">network: the admittance matrix of the model, no fault; port <code>"I2V"</code>: 0</span><span lang="ja">ネットワーク: モデルのアドミタンス行列 (地絡なし)。ポート <code>"I2V"</code>: 0</span>), <code>tab_bus</code> (<code>Bus</code>, <code>Vre</code>, <code>Vim</code>, <code>Ire</code>, <code>Iim</code>), <code>tab_current</code> (<code>Label</code>, <code>Bus</code>, <code>Name</code>)</dd>
+          <dd><code>sct_port</code>: <code>sv_input</code>, <code>sv_output</code>, <code>sv_algebraic</code>, <code>cm_Y</code> (<span lang="en">network: the admittance matrix of the model, no fault; other layers: empty</span><span lang="ja">ネットワーク: モデルのアドミタンス行列 (地絡なし)。他の層: 空</span>), <code>tab_bus</code> (<code>Bus</code>, <code>Vre</code>, <code>Vim</code>, <code>Ire</code>, <code>Iim</code>), <code>tab_current</code> (<code>Label</code>, <code>Bus</code>, <code>Name</code>)</dd>
         </dl>
       </li>
       <li class="fs-step" id="LIN-11">
@@ -393,7 +401,7 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
               <li>Places the blocks side by side (<code>blkdiag</code>); states in the order of the blocks = the rows <code>x</code> of the map.</li>
               <li>Each block input <code>u_b</code> is the sum of its sources in the connection map (an output <code>y</code>/<code>yc</code> or a state <code>x</code>; <code>"equilibrium"</code> rows add nothing, as the values are deviations) plus the external input of that name in <code>sv_input</code>; a bus voltage input is the algebraic variable when it is in <code>sv_algebraic</code>, else an external input: <code>u_b = K y_b + Sx x + Sv v + P w</code>. A name not in the map stops with <code>GUILDA:SolverLIN:VariableMap</code>.</li>
               <li>Eliminates the block signals: <code>(I − D K) y_b = (C + D Sx) x + D Sv v + D P w</code>; a singular <code>I − D K</code> stops with <code>GUILDA:SolverLIN:AlgebraicLoop</code>.</li>
-              <li>Adds, for each bus of <code>sv_algebraic</code>, the current balance <code>0 = Y v − ΣI</code> (+ <code>I_ext</code> for port <code>"I2V"</code>) as algebraic rows with <code>E = 0</code>; <code>ΣI</code>: the current outputs of the blocks at that bus (<code>tab_current</code>).</li>
+              <li>Adds, for each bus of <code>sv_algebraic</code>, the current balance <code>0 = Y v − ΣI</code> as algebraic rows with <code>E = 0</code>; <code>ΣI</code>: the current outputs of the blocks at that bus (<code>tab_current</code>).</li>
               <li>Outputs <code>sv_output</code>: block outputs or states, bus voltages, or bus currents (<code>Y v</code> for an algebraic bus, else the sum of the block currents).</li>
               <li>Issue: <code>"NotFinite"</code> when the connected model has a non-finite entry, else <code>"SingularAvv"</code> when <code>rcond(Avv) &lt; 1e-14</code>.</li>
             </ul><span lang="ja">数値だけの接続器です。引数だけを読み、ネットワークもモデルオブジェクトも読みません。</span><ul lang="ja">
@@ -401,7 +409,7 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
               <li>ブロックを対角に並べます (<code>blkdiag</code>)。状態の並びはブロックの順で、マップの <code>x</code> の行と同じです。</li>
               <li>ブロックの各入力 <code>u_b</code> は、接続マップでのその源 (出力 <code>y</code>/<code>yc</code> または状態 <code>x</code>。値は偏差なので <code>"equilibrium"</code> の行は何も足しません) の和に、<code>sv_input</code> にある同名の外部入力を足したものです。母線電圧の入力は、<code>sv_algebraic</code> にあれば代数変数、なければ外部入力です: <code>u_b = K y_b + Sx x + Sv v + P w</code>。マップにない名前は <code>GUILDA:SolverLIN:VariableMap</code> で停止します。</li>
               <li>ブロックの信号を消去します: <code>(I − D K) y_b = (C + D Sx) x + D Sv v + D P w</code>。<code>I − D K</code> が特異なら <code>GUILDA:SolverLIN:AlgebraicLoop</code> で停止します。</li>
-              <li><code>sv_algebraic</code> の母線ごとに、電流の収支 <code>0 = Y v − ΣI</code> (ポート <code>"I2V"</code> では + <code>I_ext</code>) を <code>E = 0</code> の代数の行として加えます。<code>ΣI</code> は、その母線にあるブロックの電流の出力の和です (<code>tab_current</code>)。</li>
+              <li><code>sv_algebraic</code> の母線ごとに、電流の収支 <code>0 = Y v − ΣI</code> を <code>E = 0</code> の代数の行として加えます。<code>ΣI</code> は、その母線にあるブロックの電流の出力の和です (<code>tab_current</code>)。</li>
               <li>出力 <code>sv_output</code> は、ブロックの出力または状態、母線電圧、母線電流 (代数変数の母線では <code>Y v</code>、それ以外はブロックの電流の和) です。</li>
               <li>問題の判定: 接続したモデルに非有限の要素があれば <code>"NotFinite"</code>、それ以外で <code>rcond(Avv) &lt; 1e-14</code> なら <code>"SingularAvv"</code> です。</li>
             </ul></dd>
@@ -427,15 +435,15 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li><code>output.message</code> names the layer and the point; for <code>"SingularAvv"</code> of the network it names the undetermined voltages (<code>singular_voltages</code>). A component or bus with port <code>"I2V"</code> and a singular <code>Avv</code> (a bus without components) stops with <code>GUILDA:PowerSystemModel:NoI2V</code>.</li>
+              <li><code>output.message</code> names the layer and the point; for <code>"SingularAvv"</code> of the network it names the undetermined voltages (<code>singular_voltages</code>). Only the network has algebraic voltages.</li>
               <li><code>flag = (s_issue == "")</code>.</li>
               <li>Network: adds <code>cm_Y</code>, <code>cv_V</code> (bus voltages at the point) and <code>sv_I</code> (bus current names) to <code>sct_sys</code>; buses with <code>|V| &lt; 1e-8</code> go to <code>output.sv_faultBus</code> and are reported as INFO (<code>GUILDA:PowerSystemModel:GroundFault</code>) without changing <code>flag</code>.</li>
-              <li>Collects the effective options (<code>Method</code>, <code>Coordinate</code>, <code>PlotFcn</code>, <code>Point</code>; <code>Port</code> for a component or bus; <code>Input</code>, <code>Output</code> when given).</li>
+              <li>Collects the effective options (<code>Method</code>, <code>Coordinate</code>, <code>PlotFcn</code>, <code>Point</code> (the point given in the call); <code>Input</code>, <code>Output</code> when given).</li>
             </ul><ul lang="ja">
-              <li><code>output.message</code> に層と点を書きます。ネットワークの <code>"SingularAvv"</code> では、定まらない電圧を示します (<code>singular_voltages</code>)。ポート <code>"I2V"</code> の機器や母線で <code>Avv</code> が特異な場合 (機器のない母線) は、<code>GUILDA:PowerSystemModel:NoI2V</code> で停止します。</li>
+              <li><code>output.message</code> に層と点を書きます。ネットワークの <code>"SingularAvv"</code> では、定まらない電圧を示します (<code>singular_voltages</code>)。代数変数の電圧を持つのはネットワークだけです。</li>
               <li><code>flag = (s_issue == "")</code> です。</li>
               <li>ネットワーク: <code>sct_sys</code> に <code>cm_Y</code>、<code>cv_V</code> (点での母線電圧)、<code>sv_I</code> (母線電流の名前) を加えます。<code>|V| &lt; 1e-8</code> の母線は <code>output.sv_faultBus</code> に入れ、<code>flag</code> を変えずに INFO (<code>GUILDA:PowerSystemModel:GroundFault</code>) で知らせます。</li>
-              <li>実際に使ったオプション (<code>Method</code>、<code>Coordinate</code>、<code>PlotFcn</code>、<code>Point</code>。機器と母線では <code>Port</code>。与えた場合は <code>Input</code>、<code>Output</code>) をまとめます。</li>
+              <li>実際に使ったオプション (<code>Method</code>、<code>Coordinate</code>、<code>PlotFcn</code>、<code>Point</code> (呼び出しで与えた点)。与えた場合は <code>Input</code>、<code>Output</code>) をまとめます。</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>output.s_issue</code>, <code>sct_port</code>, <code>rv_point</code></dd>
@@ -473,14 +481,14 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
               <li>Network, <code>via_kron</code>: eliminates <code>v</code> from <code>rm_*</code> (<code>A = Axx − Axv·Avv⁻¹·Avx</code>); states with the global controllers first (<code>legacy_order</code>).</li>
               <li>Network, <code>via_dae</code>: keeps <code>v</code> in the chosen coordinates (<code>coordinate_filter</code>), same state order.</li>
               <li>Network: <code>select_output</code>, <code>input_index</code> apply <code>Output</code> and <code>Input</code>.</li>
-              <li>Other layers, <code>port_model</code>: the connected model <code>sct_model.sct_sys</code> with the algebraic voltage of port <code>"I2V"</code> eliminated as in Kron; <code>Method</code> and <code>Coordinate</code> do not apply; <code>Input</code> and <code>Output</code> select by name.</li>
+              <li>Other layers: the connected model <code>sct_model.sct_sys</code> (voltages in, no algebraic variables); <code>Method</code> and <code>Coordinate</code> do not apply; <code>Input</code> and <code>Output</code> select by name.</li>
               <li><code>to_format</code>: <code>Format="ss"</code> builds a <code>dss</code> with the names (Control System Toolbox).</li>
               <li>Stops for <code>"NotFinite"</code>, and for <code>"SingularAvv"</code> except with <code>"DAE"</code>.</li>
             </ul><span lang="ja">保存したモデルを行列演算で縮約します。モデルは構造体で保持します。</span><ul lang="ja">
               <li>ネットワーク、<code>via_kron</code>: <code>rm_*</code> から <code>v</code> を消去します (<code>A = Axx − Axv·Avv⁻¹·Avx</code>)。状態はグローバル制御器が先です (<code>legacy_order</code>)。</li>
               <li>ネットワーク、<code>via_dae</code>: <code>v</code> を指定した座標で保持します (<code>coordinate_filter</code>)。状態の並びは同じです。</li>
               <li>ネットワーク: <code>select_output</code>、<code>input_index</code> が <code>Output</code> と <code>Input</code> を適用します。</li>
-              <li>他の層、<code>port_model</code>: 接続したモデル <code>sct_model.sct_sys</code> を返します。ポート <code>"I2V"</code> の代数変数の電圧は Kron と同じく消去します。<code>Method</code> と <code>Coordinate</code> は使いません。<code>Input</code> と <code>Output</code> は名前で選択します。</li>
+              <li>他の層: 接続したモデル <code>sct_model.sct_sys</code> を返します (電圧が入力で、代数変数はありません)。<code>Method</code> と <code>Coordinate</code> は使いません。<code>Input</code> と <code>Output</code> は名前で選択します。</li>
               <li><code>to_format</code>: <code>Format="ss"</code> のとき名前付きの <code>dss</code> を作成します (Control System Toolbox)。</li>
               <li><code>"NotFinite"</code>、および <code>"DAE"</code> 以外での <code>"SingularAvv"</code> では停止します。</li>
             </ul></dd>
@@ -527,13 +535,13 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
         <tr><td><code>rm_Avx</code>, <code>rm_Avv</code>, <code>rm_Bv</code></td><td><code>n_v × n_x</code>, <code>n_v × n_v</code>, <code>n_v × n_u</code></td><td><span lang="en">Network only: Jacobians of the current balance <code>Y v − ΣI</code>; <code>rm_Avv</code> is <code>Y</code> minus the voltage terms of the component currents.</span><span lang="ja">ネットワークだけ: 電流の収支 <code>Y v − ΣI</code> のヤコビアンです。<code>rm_Avv</code> は <code>Y</code> から機器の電流の電圧の項を引いたものです。</span></td></tr>
         <tr><td><code>A</code>, <code>B</code>, <code>C</code>, <code>D</code>, <code>E</code>, <code>StateName</code>, <code>InputName</code>, <code>OutputName</code></td><td><span lang="en">as the model</span><span lang="ja">モデルによる</span></td><td><span lang="en">Model of <code>get_ss(options.Method)</code> with <code>options.Input</code>, <code>options.Output</code> (<code>E dx/dt = A x + B u</code>, <code>y = C x + D u</code>), names as string columns; empty when <code>get_ss</code> stops. No toolbox needed.</span><span lang="ja"><code>options.Input</code>、<code>options.Output</code> を使う <code>get_ss(options.Method)</code> のモデルです (<code>E dx/dt = A x + B u</code>、<code>y = C x + D u</code>)。名前は string の列です。<code>get_ss</code> が停止する場合は空です。Toolbox は不要です。</span></td></tr>
         <tr><td><code>sct_model</code> <small>Hidden</small></td><td>struct</td><td><span lang="en">For <code>get_ss</code>: <code>sct_sys</code>, the connected model of LIN-12 (states <code>[x; v]</code>, the outputs of the port); for the network also <code>cm_Y</code>, <code>cv_V</code>, <code>sv_I</code>, used by the coordinates of <code>"DAE"</code> and by <code>Output</code>.</span><span lang="ja"><code>get_ss</code> 用のデータです。LIN-12 の接続したモデル <code>sct_sys</code> (状態は <code>[x; v]</code>、出力はポートの出力) を持ちます。ネットワークでは <code>cm_Y</code>、<code>cv_V</code>、<code>sv_I</code> も持ち、<code>"DAE"</code> の座標と <code>Output</code> が使います。</span></td></tr>
-        <tr><td><span lang="en">from</span><span lang="ja">継承:</span> <code>ResultBase</code></td><td></td><td><code>flag</code> (logical), <code>output</code>, <code>options</code> (<code>Method</code>, <code>Coordinate</code>, <code>PlotFcn</code>, <code>Point</code>; <code>Port</code>; <code>Input</code>, <code>Output</code>), <code>s_solver = "SolverLIN"</code>, <code>r_elapsed</code> [s], <code>s_network</code>, <code>l_success</code></td></tr>
+        <tr><td><span lang="en">from</span><span lang="ja">継承:</span> <code>ResultBase</code></td><td></td><td><code>flag</code> (logical), <code>output</code>, <code>options</code> (<code>Method</code>, <code>Coordinate</code>, <code>PlotFcn</code>, <code>Point</code>; <code>Input</code>, <code>Output</code>), <code>s_solver = "SolverLIN"</code>, <code>r_elapsed</code> [s], <code>s_network</code>, <code>l_success</code></td></tr>
       </tbody>
     </table>
     <p lang="en"><code>output</code>: <code>message</code>, <code>s_issue</code> (<code>""</code>, <code>"NotFinite"</code>, <code>"SingularAvv"</code>), <code>rcond_Avv</code>, <code>n_x</code>, <code>n_v</code>, <code>n_u</code> (external inputs), <code>sv_faultBus</code>, <code>l_equilibrium</code>, <code>s_layer</code> (<code>"PowerNetwork"</code>, <code>"Bus"</code>, <code>"Component"</code>, <code>"LocalController"</code> or <code>"GlobalController"</code>), <code>result</code> (the <code>ResultLIN</code>).</p>
     <p lang="ja"><code>output</code> のフィールドは <code>message</code>、<code>s_issue</code> (<code>""</code>、<code>"NotFinite"</code>、<code>"SingularAvv"</code>)、<code>rcond_Avv</code>、<code>n_x</code>、<code>n_v</code>、<code>n_u</code> (外部入力の数)、<code>sv_faultBus</code>、<code>l_equilibrium</code>、<code>s_layer</code> (<code>"PowerNetwork"</code>、<code>"Bus"</code>、<code>"Component"</code>、<code>"LocalController"</code>、<code>"GlobalController"</code>)、<code>result</code> (<code>ResultLIN</code>) です。</p>
-    <p lang="en">Result of another layer (<code>s_layer</code> not <code>"PowerNetwork"</code>): <code>A</code> … <code>OutputName</code> hold the port model; <code>rm_Axx</code>, <code>rm_Axv</code>, <code>rm_Bx</code>, <code>rm_E</code> are the parts of the connected model (port <code>"I2V"</code>: <code>rm_E</code> only); <code>rm_Avx</code>, <code>rm_Avv</code>, <code>rm_Bv</code> stay empty.</p>
-    <p lang="ja">他の層の結果 (<code>s_layer</code> が <code>"PowerNetwork"</code> 以外) では、<code>A</code> … <code>OutputName</code> がポートのモデルを持ちます。<code>rm_Axx</code>、<code>rm_Axv</code>、<code>rm_Bx</code>、<code>rm_E</code> は接続したモデルの部分です (ポート <code>"I2V"</code> では <code>rm_E</code> だけ)。<code>rm_Avx</code>、<code>rm_Avv</code>、<code>rm_Bv</code> は空のままです。</p>
+    <p lang="en">Result of another layer (<code>s_layer</code> not <code>"PowerNetwork"</code>): <code>A</code> … <code>OutputName</code> hold the port model; <code>rm_Axx</code>, <code>rm_Axv</code>, <code>rm_Bx</code>, <code>rm_E</code> are the parts of the connected model; <code>rm_Avx</code>, <code>rm_Avv</code>, <code>rm_Bv</code> stay empty.</p>
+    <p lang="ja">他の層の結果 (<code>s_layer</code> が <code>"PowerNetwork"</code> 以外) では、<code>A</code> … <code>OutputName</code> がポートのモデルを持ちます。<code>rm_Axx</code>、<code>rm_Axv</code>、<code>rm_Bx</code>、<code>rm_E</code> は接続したモデルの部分です。<code>rm_Avx</code>、<code>rm_Avv</code>、<code>rm_Bv</code> は空のままです。</p>
 
     <h3><span lang="en">Models of <code>get_ss</code></span><span lang="ja"><code>get_ss</code> のモデル</span></h3>
     <ul lang="en">
@@ -549,7 +557,7 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
       <tbody>
         <tr><td><span lang="en">network,</span><span lang="ja">ネットワーク、</span> <code>"Kron"</code></td><td><span lang="en">all <code>n_x</code></span><span lang="ja"><code>n_x</code> 個すべて</span></td><td><span lang="en">the states, without output names</span><span lang="ja">状態 (出力名なし)</span></td><td><code>n_x × n_x</code>, <code>n_x × n_u</code>, <code>n_x × n_x</code>, <code>n_x × n_u</code></td></tr>
         <tr><td><span lang="en">network,</span><span lang="ja">ネットワーク、</span> <code>"DAE"</code></td><td><span lang="en"><code>n_x + n_v</code>: the states, then <code>theta1…</code>, <code>rho1…</code> (or <code>V</code>, <code>Vre</code>/<code>Vim</code>); <code>E</code> singular</span><span lang="ja"><code>n_x + n_v</code>: 状態、続いて <code>theta1…</code>、<code>rho1…</code> (または <code>V</code>、<code>Vre</code>/<code>Vim</code>) です。<code>E</code> は特異です。</span></td><td><span lang="en">the dynamic states</span><span lang="ja">動的な状態</span></td><td><code>(n_x+n_v)²</code>, <code>(n_x+n_v) × n_u</code>, <code>n_x × (n_x+n_v)</code>, <code>n_x × n_u</code></td></tr>
-        <tr><td><span lang="en">other layers</span><span lang="ja">他の層</span></td><td><span lang="en">the states of its blocks (the bus voltage of port <code>"I2V"</code> eliminated)</span><span lang="ja">ブロックの状態 (ポート <code>"I2V"</code> の母線電圧は消去)</span></td><td><span lang="en">the outputs of the port</span><span lang="ja">ポートの出力</span></td><td><span lang="en">states × inputs / outputs of the port</span><span lang="ja">状態 × ポートの入力 / 出力</span></td></tr>
+        <tr><td><span lang="en">other layers</span><span lang="ja">他の層</span></td><td><span lang="en">the states of its blocks</span><span lang="ja">ブロックの状態</span></td><td><span lang="en">the outputs of the port</span><span lang="ja">ポートの出力</span></td><td><span lang="en">states × inputs / outputs of the port</span><span lang="ja">状態 × ポートの入力 / 出力</span></td></tr>
       </tbody>
     </table>
     <ul lang="en">
@@ -571,7 +579,7 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
       <thead><tr><th><span lang="en">Object</span><span lang="ja">対象のオブジェクト</span></th><th><span lang="en">Behaviour</span><span lang="ja">振る舞い</span></th></tr></thead>
       <tbody>
         <tr><td><code>f_*</code> <span lang="en">handles</span><span lang="ja">ハンドル</span></td><td><span lang="en">Read only; built by <code>net.initialize()</code> (LIN-04 only checks the stale tags).</span><span lang="ja">参照のみです。<code>net.initialize()</code> が作成します（LIN-04 は stale タグを確認するだけです）。</span></td></tr>
-        <tr><td><span lang="en">Network, equilibrium, stale state</span><span lang="ja">ネットワーク、平衡点、stale 状態</span></td><td><span lang="en">Read only. A <code>Point</code> is used for this call only and is not written to the models.</span><span lang="ja">参照のみです。<code>Point</code> はこの呼び出しのみで使用し、モデルには書き込みません。</span></td></tr>
+        <tr><td><span lang="en">Network, equilibrium, stale state</span><span lang="ja">ネットワーク、平衡点、stale 状態</span></td><td><span lang="en">Read only. The point is used for this call only and is not written to the models.</span><span lang="ja">参照のみです。点はこの呼び出しのみで使用し、モデルには書き込みません。</span></td></tr>
         <tr><td><code>net.solver_LIN</code></td><td><span lang="en">Read only (network only); options of the call are not stored.</span><span lang="ja">参照のみです (ネットワークだけが使います)。呼び出しのオプションは保存しません。</span></td></tr>
         <tr><td><span lang="en">Command Window</span><span lang="ja">コマンドウィンドウ</span></td><td><span lang="en">An <code>INFO:</code> line when a bus voltage is zero at the point (unless <code>Message.ShowInfo</code> is false); a warning, once, for a positional point.</span><span lang="ja">点で母線電圧が 0 なら <code>INFO:</code> の行を表示します（<code>Message.ShowInfo</code> が false なら表示しません）。位置引数の点では警告を 1 回だけ表示します。</span></td></tr>
         <tr><td><code>ResultLIN</code></td><td><span lang="en">Holds a reference to the network and its own copies of the map, the point and the connected model; <code>get_ss</code> works from these, so a later edit of the network does not change it. The next <code>get_sys</code> after an edit that makes the layer stale stops in LIN-04.</span><span lang="ja">ネットワークへの参照と、変数マップ・点・接続したモデルの写しを保持します。<code>get_ss</code> はこれらから計算するため、後でネットワークを編集しても変わりません。層を古くする編集の後の <code>get_sys</code> は LIN-04 で停止します。</span></td></tr>
@@ -592,7 +600,7 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
       <thead><tr><th><span lang="en">Situation</span><span lang="ja">状況</span></th><th><span lang="en">What the caller sees</span><span lang="ja">呼び出し側に見えるもの</span></th></tr></thead>
       <tbody>
         <tr><td><span lang="en">Invalid option name or value (LIN-01)</span><span lang="ja">不正なオプションの名前や値 (LIN-01)</span></td><td><span lang="en">MATLAB error of the <code>arguments</code> block</span><span lang="ja"><code>arguments</code> ブロックの MATLAB のエラー</span></td></tr>
-        <tr><td><span lang="en">Option for the wrong layer, positional point (LIN-02)</span><span lang="ja">層に合わないオプション、位置引数の点 (LIN-02)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:PowerSystemModel:PortNotApplicable</code>, <code>PointAndPositional</code>, <code>GUILDA:v3_get_sys_point:Positional</code>, <code>GUILDA:check_plotfcn:InDevelopment</code>; <span lang="en">warning</span><span lang="ja">警告</span> <code>GUILDA:Deprecated:GetSysPositionalPoint</code></td></tr>
+        <tr><td><span lang="en">Unknown option, extra positional argument, live display (LIN-02)</span><span lang="ja">未知のオプション、余分な位置引数、途中表示 (LIN-02)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <span lang="en">the MATLAB error of the <code>arguments</code> block</span><span lang="ja"><code>arguments</code> ブロックの MATLAB のエラー</span>, <code>GUILDA:check_plotfcn:InDevelopment</code></td></tr>
         <tr><td><span lang="en">Layer without a linear model (LIN-03, LIN-10)</span><span lang="ja">線形モデルのない層 (LIN-03, LIN-10)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:PowerSystemModel:NoLinearModel</code></td></tr>
         <tr><td><span lang="en">Equilibrium missing or stale, inputs edited (LIN-04)</span><span lang="ja">平衡点がない、または古い。入力を編集した (LIN-04)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:PowerSystemModel:Stale</code>, <code>GUILDA:PowerSystemModel:InputEdited</code></td></tr>
         <tr><td><span lang="en">Invalid point (LIN-02, LIN-05)</span><span lang="ja">不正な点 (LIN-02, LIN-05)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:SolverLIN:PointType</code>, <code>PointSize</code>, <code>PointSimType</code>, <code>PointSimSize</code>, <code>PointLayer</code>, <code>PointNotFinite</code>; <code>GUILDA:ResultODE:PointTime</code></td></tr>
@@ -600,7 +608,6 @@ sct_block = comp.get_linear_block(x, V, u)                     % one block (Hidd
         <tr><td><span lang="en">Model not finite at the point, unknown name, algebraic loop (LIN-11)</span><span lang="ja">点でモデルが有限でない、未知の名前、代数ループ (LIN-11)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:SolverLIN:JacobianNotFinite</code>, <code>VariableMap</code>, <code>AlgebraicLoop</code></td></tr>
         <tr><td><span lang="en">Non-finite entry of the connected model (LIN-11)</span><span lang="ja">接続したモデルに非有限の要素 (LIN-11)</span></td><td><code>flag = false</code>, <code>s_issue = "NotFinite"</code>; <code>get_ss</code>: <code>GUILDA:ResultLIN:NotFinite</code></td></tr>
         <tr><td><span lang="en">Singular <code>Avv</code> of the network (LIN-11)</span><span lang="ja">ネットワークの <code>Avv</code> が特異 (LIN-11)</span></td><td><code>flag = false</code>, <code>s_issue = "SingularAvv"</code>; <code>get_ss("Kron")</code>: <code>GUILDA:ResultLIN:SingularAvv</code></td></tr>
-        <tr><td><span lang="en">Port <code>"I2V"</code> with a singular <code>Avv</code> (LIN-13)</span><span lang="ja">ポート <code>"I2V"</code> で <code>Avv</code> が特異 (LIN-13)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:PowerSystemModel:NoI2V</code></td></tr>
         <tr><td><span lang="en">Zero bus voltage at the point (LIN-13)</span><span lang="ja">点で母線電圧が 0 (LIN-13)</span></td><td><span lang="en"><code>flag</code> unchanged; INFO <code>GUILDA:PowerSystemModel:GroundFault</code>, <code>output.message</code>, <code>output.sv_faultBus</code></span><span lang="ja"><code>flag</code> は変わりません。INFO <code>GUILDA:PowerSystemModel:GroundFault</code>、<code>output.message</code>、<code>output.sv_faultBus</code></span></td></tr>
         <tr><td><span lang="en"><code>Input</code>, <code>Output</code> names (LIN-15, LIN-16)</span><span lang="ja"><code>Input</code>、<code>Output</code> の名前 (LIN-15, LIN-16)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:ResultLIN:UnknownInput</code>, <code>UnknownOutput</code></td></tr>
         <tr><td><span lang="en"><code>Format="ss"</code> without the Control System Toolbox</span><span lang="ja">Control System Toolbox なしで <code>Format="ss"</code></span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:require_toolbox:Unavailable</code></td></tr>

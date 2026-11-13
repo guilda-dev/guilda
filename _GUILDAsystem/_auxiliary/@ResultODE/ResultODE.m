@@ -21,8 +21,9 @@ classdef ResultODE < ResultBase
 % Excel) or as a MAT-file. judge_out_of_step judges the rotor angles (stable, out of step).
 %
 % - `tab_variable` has one row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"),
-%   Role, Owner, Name, Label and Bus: the leading rows of net.get_variable_map() (its
-%   rows uc, y and yc, the controller inputs and the signals, are not variables here).
+%   Role, Owner, Name, Label, Bus and Equilibrium: the leading rows of
+%   net.get_variable_map() (its rows uc, y and yc, the controller inputs and the signals,
+%   are not variables here).
 % - In `rm_variable` the states of a tripped unit are NaN while it is tripped. The inputs u
 %   are the inputs applied to the components (steady value, outputs of the controllers and
 %   event inputs).

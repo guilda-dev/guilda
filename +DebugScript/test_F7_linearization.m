@@ -1,14 +1,14 @@
 % F7 近似線形化 (get_sys / SolverLIN / ResultLIN / get_variable_map / get_hessian)
 %
 % 平衡点 (または指定した点) まわりの線形モデルを求める。
-%   res = net.get_sys("Method", ..., "Point", 点);   % ResultLIN (どの層も同じ get_sys)
+%   res = net.get_sys(点, "Method", ...);   % ResultLIN (どの層も同じ get_sys)
 %   sys = res.get_ss("Kron" | "DAE");               % ss (Format="struct" で構造体)
 %   res = net.get_sys("Output", ["V","I","y"], "Input", 入力名);   % 入出力の選択 (既定は不変)
 %   tab = net.get_variable_map();                 % 変数の順 (res.rm_Axx などの行と列)
 % モデルは記述子形式 (E dx = A x + B u)。ResultLIN の A, B, C, D, E と名前、構造体、ss のどれでも同じ。
 % 2 方式の有限固有値が一致すること、IEEE14 の平衡点が安定であること、v3 の行列と同じであること、
 % 接続器に置き換える前の線形モデル (基準値) と一致すること、
-% Point (平衡点 / ベクトル / {シミュレーション結果, 時刻}) と Hessian の契約を確認する。
+% 点 (平衡点 / ベクトル / {シミュレーション結果, 時刻}) と Hessian の契約を確認する。
 %
 % 実行: runtests("DebugScript.test_F7_linearization")  または  DebugScript.run_all("Features","F7")
 
@@ -437,7 +437,7 @@ end
 assert(~ismember("get_sys_alone", methods(gen)) && ~ismember("get_sys_alone", methods(avr)))
 % Port はどの層のオプションでもない (機器と母線は V2I だけ)。Method は網の縮約で、ほかの層では効かない
 for k = 1:numel(c_obj)
-    assert(startsWith(error_id(@() c_obj{k}.get_sys(Port="V2I")), "MATLAB:"), class(c_obj{k}))
+    assert(startsWith(error_id(@() c_obj{k}.get_sys("Port", "V2I")), "MATLAB:"), class(c_obj{k}))
 end
 assert(isequal(gen.get_sys(Method="DAE").A, gen.get_sys().A))
 % 枝には線形モデルがない
@@ -752,7 +752,7 @@ end
 
 
 %% Point from a simulation result and a time
-% Point={sim, t}: 時刻 t の機器の状態・入力と母線電圧 (ResultODE の値) で線形化する
+% get_sys({sim, t}): 時刻 t の機器の状態・入力と母線電圧 (ResultODE の値) で線形化する
 net = new_net();
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
@@ -796,7 +796,7 @@ try
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:PointTime", DebugScript.helper.msg_id(ME))
 end
-% Point={sim, t, Side}: 第 3 要素は sim.get_point の Side
+% get_sys({sim, t, Side}): 第 3 要素は sim.get_point の Side
 assert(isequal(net.get_sys({sim, t, "before"}).rv_point, res.rv_point))
 try
     net.get_sys({sim, t, "middle"});
