@@ -1,11 +1,13 @@
 function simulateFcn_check_islands(sct_dae, sct_event, tab_phase)
-% Each set of open branches must leave every bus connected to a component: nothing sets
-% the voltages of a part of the network without components (with no shunt either, the
-% DAE is singular). Checked for all phases before the integration starts; stops with
-% GUILDA:PowerNetwork:OpenBranchIsland.
+% The branches that no longer join their buses in a phase must leave every bus connected
+% to a component: nothing sets the voltages of a part of the network without components
+% (with no shunt either, the DAE is singular). A branch no longer joins its buses when it
+% is opened with "6open", or has all circuits grounded ("6LG", with or without "3open")
+% (tab_branch of the phase). Checked for all phases before the integration starts; stops
+% with GUILDA:PowerNetwork:OpenBranchIsland.
     arguments (Input)
         sct_dae   (1,1) struct  % Data of the run (im_branchBus, c_comp, sv_bus, sv_branch).
-        sct_event (:,1) struct  % Phases of the run (iv_openBranch).
+        sct_event (:,1) struct  % Phases of the run (tab_branch).
         tab_phase table         % output.phases (t1, t2 of each phase).
     end
     n_bus   = numel(sct_dae.sv_bus);
@@ -13,7 +15,8 @@ function simulateFcn_check_islands(sct_dae, sct_event, tab_phase)
     lv_comp(cellfun(@(b) b.i_bus, sct_dae.c_comp)) = true;
     im_bus  = sct_dae.im_branchBus;
     for tp = 1:numel(sct_event)
-        iv_open = sct_event(tp).iv_openBranch;
+        tab_br  = sct_event(tp).tab_branch;
+        iv_open = find(ismember(sct_dae.sv_branch, tab_br.Target(ismember(tab_br.Status, ["6open","6LG"]))));
         if isempty(iv_open)
             continue
         end

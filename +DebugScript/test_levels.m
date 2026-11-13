@@ -113,6 +113,17 @@ function tab = test_levels()
     "test_F40_stop_and_sample_time/StopOnOutOfStepFromGUILDA_setting", "medium"
     "test_F40_stop_and_sample_time/TheReferenceTrippedDoesNotStop", "medium"
     "test_F40_stop_and_sample_time/SampleTimeRecordsAUniformGridAndThePhaseBoundaries", "medium"
+    % ---- F42_branch_events -------------------------------------------------------------------------
+    "test_F42_branch_events/test6openIsTheOldOpenBranchAndTheRebuiltYMatchesTheSubtraction", "medium"
+    "test_F42_branch_events/test3openOfTwoCircuitsHalvesTheBranch", "medium"
+    "test_F42_branch_events/A3LGNearTheToEndIsCloseToAFaultOfThatBus", "medium"
+    "test_F42_branch_events/CombinedBranchStatesShareOneMatrixPerSet", "medium"
+    "test_F42_branch_events/AnEndAtOrAfterTendAddsNoBoundary", "medium"
+    "test_F42_branch_events/ABranchGroundedOnAllCircuitsThatCutsOffAPartWithoutComponentsIsAnError", "medium"
+    "test_F42_branch_events/ABranchOfOneCircuitHasNo3LGAndNo3open", "medium"
+    "test_F42_branch_events/ATrippedSourceGivesTheEquilibriumOfTheInput", "medium"
+    "test_F42_branch_events/ATrippedLocalControllerIsNaNAndRestartsFromItsEquilibrium", "medium"
+    "test_F42_branch_events/ATrippedPSSGivesItsEquilibriumOutput0ToTheAVR", "medium"
     % ---- F42_graph_spring --------------------------------------------------------------------------
     "test_F42_graph_spring/BothPicturesAreBuiltFromTheDataWithTheDefaultsOfTheScripts", "medium"
     "test_F42_graph_spring/set_timeDrawsTheNearestSampleAtTheExpectedCoordinates", "medium"

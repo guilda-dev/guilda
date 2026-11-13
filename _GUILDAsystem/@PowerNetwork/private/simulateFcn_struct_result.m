@@ -7,7 +7,7 @@ function sol = simulateFcn_struct_result(sct_sol, sct_dae, sct_event, tab_phase,
 % injects, f_I evaluated at each time; 0 while tripped); each local controller x and u
 % (its inputs uc), nested as in the model; each global controller x and u (one column
 % <input>_<unit tag> per controlled unit). The states and inputs of a tripped component
-% or global controller are NaN. The outputs y are not computed.
+% or local or global controller are NaN. The outputs y are not computed.
     arguments (Input)
         sct_sol    (1,1) struct  % Trajectories of SolverODE.solve (rv_t, rm_variable, rm_I, rv_phase).
         sct_dae    (1,1) struct  % Data of the run (build_simulation_data).
@@ -29,11 +29,13 @@ function sol = simulateFcn_struct_result(sct_sol, sct_dae, sct_event, tab_phase,
     n_comp = numel(sct_dae.c_comp);
     n_gc   = numel(sct_dae.c_gc);
     lm_compOff = false(n_t, n_comp);
+    lm_lcOff   = false(n_t, numel(sct_dae.c_lc));
     lm_gcOff   = false(n_t, n_gc);
     rv_tp = zeros(n_t, 1);
     for p = 1:numel(sct_event)
         lv_p = rv_phase == p;
         lm_compOff(lv_p, sct_event(p).iv_tripComp) = true;
+        lm_lcOff(lv_p, sct_event(p).iv_tripLC)     = true;
         lm_gcOff(lv_p, sct_event(p).iv_tripGC)     = true;
         rv_tp(lv_p) = rv_t(lv_p) - sct_event(p).t1;
     end
@@ -80,7 +82,7 @@ function sol = simulateFcn_struct_result(sct_sol, sct_dae, sct_event, tab_phase,
         sc.x = block_table(Xb, tab.Name(b.iv_x), n_t);
         sc.u = block_table(Ub, tab.Name(b.iv_u), n_t);
         sc.I = array2table(Ib, "VariableNames", ["Ire","Iim"]);
-        sc.a_LocalController = local_controllers(sct_dae, b.iv_lc, 0, X, tab, n_t);
+        sc.a_LocalController = local_controllers(sct_dae, b.iv_lc, 0, X, lm_lcOff, tab, n_t);
         sol.a_Bus{b.i_bus}.a_Component{end+1,1} = sc;
     end
 
@@ -101,14 +103,15 @@ function sol = simulateFcn_struct_result(sct_sol, sct_dae, sct_event, tab_phase,
 end
 
 
-function c_lc = local_controllers(sct_dae, iv_lc, i_parent, X, tab, n_t)
+function c_lc = local_controllers(sct_dae, iv_lc, i_parent, X, lm_off, tab, n_t)
 % The local controllers among iv_lc whose parent is i_parent (0: the component), each with
-% its own local controllers
+% its own local controllers; the inputs of a tripped one are NaN (its states are NaN in X)
     arguments (Input)
         sct_dae  (1,1) struct
         iv_lc    (:,1) double  % Local controllers of the component (positions in c_lc).
         i_parent (1,1) double  % Parent (position in c_lc; 0: the component).
         X        double        % rm_variable.
+        lm_off   logical       % True while tripped: one row per time, one column per local controller.
         tab      table         % Variable map.
         n_t      (1,1) double  % Number of times.
     end
@@ -124,8 +127,10 @@ function c_lc = local_controllers(sct_dae, iv_lc, i_parent, X, tab, n_t)
         sl = struct();
         sl.s_tag = b.s_tag;
         sl.x = block_table(X(:, b.iv_x), tab.Name(b.iv_x), n_t);
-        sl.u = block_table(X(:, b.iv_u), tab.Name(b.iv_u), n_t);
-        sl.a_LocalController = local_controllers(sct_dae, iv_lc, k, X, tab, n_t);
+        Ub = X(:, b.iv_u);
+        Ub(lm_off(:, k), :) = NaN;
+        sl.u = block_table(Ub, tab.Name(b.iv_u), n_t);
+        sl.a_LocalController = local_controllers(sct_dae, iv_lc, k, X, lm_off, tab, n_t);
         c_lc{end+1,1} = sl; %#ok<AGROW>
     end
 end

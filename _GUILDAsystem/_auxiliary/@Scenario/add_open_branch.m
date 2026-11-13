@@ -6,7 +6,8 @@ function s_tag = add_open_branch(obj, branch, time, opt)
 % after the end of the simulation keeps them open. Two rows per branch are added to
 % tab_event with one new tag Parallel<n>: (t_start, Status) and (t_end, "close").
 % remove_disturbance(tag) removes them. Two parallel events of one branch may touch but
-% not overlap. "3open" cannot be simulated yet (GUILDA:Scenario:NotYetSupported).
+% not overlap. "3open" needs a branch of two or more circuits
+% (GUILDA:Scenario:SingleCircuit).
 %
 % <@Examples>
 % ```matlab

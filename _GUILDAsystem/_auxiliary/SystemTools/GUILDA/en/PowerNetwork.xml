@@ -56,7 +56,7 @@
         <entry key="SpringModelStale">net.plot_spring_model stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
         <entry key="SimulateInputEdited">net.simulate stopped: inputs of components of ''{0}'' were edited ({1}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
         <entry key="GconNoTarget">The global controller ''{0}'' drives the input ''{1}'' of ''{2}'', but neither the component nor its local controllers have this input now.&#xA;Attach a local controller with this input, or remove the global controller with net.remove_global_controller(TAG).</entry>
-        <entry key="OpenBranchIsland">Phase {0} (t = [{1}, {2}] s): the open branches {3} leave the buses {4} connected to no component, so their voltages are undetermined. Open branches so that every bus stays connected to a component, or remove those buses from the network.</entry>
+        <entry key="OpenBranchIsland">Phase {0} (t = [{1}, {2}] s): the branches {3}, open or with all circuits grounded ("6LG"), leave the buses {4} connected to no component, so their voltages are undetermined. Open or ground branches so that every bus stays connected to a component, or remove those buses from the network.</entry>
         <entry key="StopNoRotorAngle">net.simulate(StopOnOutOfStep=true) compares the rotor angle delta of each generator with that of the generator of the slack bus, but ''{0}'' has no generator with delta on the slack bus ({1}) or no other one to compare (components with delta: {2}).&#xA;Run without StopOnOutOfStep, or add generators.</entry>
     </message>
 </rsccat>

@@ -1,27 +1,22 @@
-function ctx = set_admittance(ctx, iv_open, l_force)
-% ctx.Ymat (real 2n x 2n, I = Y*V) and ctx.absYmat with the branches iv_open left out of
-% the bus admittance matrix: the 2x2 matrix of each is subtracted at its buses. Rebuilt
-% only when the set changes.
+function ctx = set_admittance(ctx, i_Y, l_force)
+% ctx.Ymat (real 2n x 2n, I = Y*V) and ctx.absYmat from the admittance matrix c_Y{i_Y} of
+% the run (build_simulation_data made one per set of branch states). Rebuilt only when
+% i_Y changes.
     arguments (Input)
-        ctx                     % Context of the run (cm_Y, im_branchBus, c_branchY).
-        iv_open  (:,1) double   % Positions of the open branches (ascending).
-        l_force  (1,1) logical  % True to rebuild even when the set is unchanged.
+        ctx                     % Context of the run (c_Y, i_Y).
+        i_Y      (1,1) double   % Position of the matrix of the phase in ctx.c_Y.
+        l_force  (1,1) logical  % True to rebuild even when i_Y is unchanged.
     end
     arguments (Output)
-        ctx  % Context with Ymat, absYmat and iv_open updated.
+        ctx  % Context with Ymat, absYmat and i_Y updated.
     end
-    if ~l_force && isequal(iv_open, ctx.iv_open)
+    if ~l_force && i_Y == ctx.i_Y
         return
     end
-    Yc = ctx.cm_Y;
-    for k = reshape(iv_open, 1, [])
-        iv = ctx.im_branchBus(k,:);
-        Yc(iv,iv) = Yc(iv,iv) - ctx.c_branchY{k};
-    end
-    ctx.Ymat = tools.complex2matrix(Yc);
+    ctx.Ymat = tools.complex2matrix(ctx.c_Y{i_Y});
     if ctx.l_sparse
         ctx.Ymat = sparse(ctx.Ymat);
     end
     ctx.absYmat = abs(ctx.Ymat);      % scale of the terms of I = Y*V (see getODEFunction)
-    ctx.iv_open = iv_open;
+    ctx.i_Y = i_Y;
 end

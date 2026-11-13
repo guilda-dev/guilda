@@ -6,7 +6,10 @@ function sct = build_index(sct_dae)
 % of each bus, not in the map) after the voltages. The outputs y and yc are not variables:
 % each evaluation computes them into the signal vector s (the rows y, yc of the map). The
 % inputs are given by the connection map: res = z_in - (e + S_sig*s + S_var*z), where e
-% holds the equilibrium of the inputs without another source. Only the data is read: the
+% holds the equilibrium of the inputs without another source. For each connection the
+% block of its source is kept (sct_conn), so that set_phase in solve leaves out the
+% connections of a tripped source: an input whose main source ("observe" or "local") is
+% tripped takes its equilibrium, as an input without a source. Only the data is read: the
 % blocks give their rows in the map and their function handles. The mass matrix of each
 % block is f_Mass([],[],[],[]); one that is not a constant matrix of its size stops with
 % GUILDA:SolverODE:MassNotConstant. Called by solve.
@@ -89,40 +92,40 @@ function sct = build_index(sct_dae)
     end
     sct.rm_M = M;
 
-    % Connections: e (equilibrium), S_sig (signal sources), S_var (state sources).
-    % An input of a global controller that observes a component reads 0 while the
-    % component is tripped (iv_gateIn: the input, iv_gateComp: the component)
+    % Connections: e (equilibrium), S_sig (signal sources), S_var (state sources)
     iv_tgt = tab_c.TargetIndex - n_xV;
     lv_eq  = tab_c.Kind == "equilibrium";
     rv_in0 = rv_z0(iv_in);
-    sct.rv_e = zeros(n_in,1);
-    sct.rv_e(iv_tgt(lv_eq)) = rv_in0(iv_tgt(lv_eq));
+    sct.rv_e0 = zeros(n_in,1);
+    sct.rv_e0(iv_tgt(lv_eq)) = rv_in0(iv_tgt(lv_eq));
     lv_sig = ~lv_eq & tab.Role(max(tab_c.SourceIndex,1)) == "signal";
     lv_st  = ~lv_eq & ~lv_sig;
-    sct.S_sig = sparse(iv_tgt(lv_sig), iv_s(tab_c.SourceIndex(lv_sig)), 1, n_in, n_s);
-    sct.S_var = sparse(iv_tgt(lv_st), iv_z(tab_c.SourceIndex(lv_st)), 1, n_in, n_z);
+    sct.S_sig0 = sparse(iv_tgt(lv_sig), iv_s(tab_c.SourceIndex(lv_sig)), 1, n_in, n_s);
+    sct.S_var0 = sparse(iv_tgt(lv_st), iv_z(tab_c.SourceIndex(lv_st)), 1, n_in, n_z);
 
-    % Block of each row of the map: component (iv_rowComp) or global controller (iv_rowGC)
-    iv_rowComp = zeros(height(tab),1);
-    for j = 1:numel(sct_dae.c_comp)
-        b = sct_dae.c_comp{j};
-        iv_rowComp([b.iv_x; b.iv_u; b.iv_y]) = j;
+    % Source block of each connection (set_phase cuts those of tripped blocks): the block
+    % that owns each row of the map, as a component, a local or a global controller
+    c_owner = {sct_dae.c_comp, zeros(height(tab),1); sct_dae.c_lc, zeros(height(tab),1); ...
+               sct_dae.c_gc, zeros(height(tab),1)};
+    for p = 1:size(c_owner,1)
+        for k = 1:numel(c_owner{p,1})
+            b = c_owner{p,1}{k};
+            c_owner{p,2}([b.iv_x; b.iv_u; b.iv_y]) = k;
+        end
     end
-    lv_rowGC = false(height(tab),1);
-    for k = 1:numel(sct_dae.c_gc)
-        lv_rowGC(sct_dae.c_gc{k}.iv_u) = true;
-    end
-    lv_gate = tab_c.Kind == "observe" & tab.Kind(tab_c.TargetIndex) == "uc" & lv_rowGC(tab_c.TargetIndex);
-    sct.iv_gateComp = iv_rowComp(tab_c.SourceIndex(lv_gate));
-    sct.iv_gateIn   = iv_tgt(lv_gate);
-    lv_gate = sct.iv_gateComp > 0;            % a source that is not a component is never cut
-    sct.iv_gateComp = sct.iv_gateComp(lv_gate);
-    sct.iv_gateIn   = sct.iv_gateIn(lv_gate);
-    sct.S_sig0 = sct.S_sig;           % without the trips of a phase (set_phase in solve)
-    sct.S_var0 = sct.S_var;
+    lv_conn = ~lv_eq;
+    iv_src  = tab_c.SourceIndex(lv_conn);
+    sct.sct_conn = struct("iv_in", iv_tgt(lv_conn), ...                   % input (position in iv_in)
+                          "lv_sig", lv_sig(lv_conn), ...                  % in S_sig (else S_var)
+                          "lv_main", tab_c.Kind(lv_conn) ~= "global", ... % "observe" or "local"
+                          "iv_comp", c_owner{1,2}(iv_src), "iv_lc", c_owner{2,2}(iv_src), ...
+                          "iv_gc", c_owner{3,2}(iv_src));
+    sct.sct_conn.iv_src = zeros(nnz(lv_conn), 1);                        % column in S_sig or S_var
+    sct.sct_conn.iv_src(sct.sct_conn.lv_sig)  = iv_s(iv_src(sct.sct_conn.lv_sig));
+    sct.sct_conn.iv_src(~sct.sct_conn.lv_sig) = iv_z(iv_src(~sct.sct_conn.lv_sig));
 
     % The outputs of a component are computed only when a connection reads them
-    lv_read = full(any(sct.S_sig ~= 0, 1)).';
+    lv_read = full(any(sct.S_sig0 ~= 0, 1)).';
     for j = 1:numel(sct.c_comp)
         sct.c_comp{j}.l_y = any(lv_read(sct.c_comp{j}.iv_s));
     end

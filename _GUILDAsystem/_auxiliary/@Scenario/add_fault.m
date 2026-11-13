@@ -8,8 +8,8 @@ function s_tag = add_fault(obj, target, time, opt)
 %
 % Two rows per target are added to tab_event with one new tag Fault<n>: (t_start, Status,
 % Point) and (t_end, "none", Point). Bus rows have Point NaN. remove_disturbance(tag)
-% removes them. Two faults of one target may touch but not overlap. Branch faults cannot be
-% simulated yet (GUILDA:Scenario:NotYetSupported).
+% removes them. Two faults of one target may touch but not overlap. "3LG" needs a branch of
+% two or more circuits (GUILDA:Scenario:SingleCircuit).
 %
 % <@Examples>
 % ```matlab

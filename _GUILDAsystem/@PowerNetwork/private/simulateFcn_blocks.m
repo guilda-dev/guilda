@@ -13,7 +13,7 @@ function sct_dae = simulateFcn_blocks(net)
         net  % Network of the run (checked by simulateFcn_check).
     end
     arguments (Output)
-        sct_dae (1,1) struct  % tab_variable, tab_connection, cm_Y, im_branchBus, c_branchY, rv_equilibrium, rv_Iequilibrium, c_comp, c_lc, c_gc, sv_bus, sv_branch, sv_comp, sv_lc, sv_gc, sct_stop (empty: simulate sets it for StopOnOutOfStep).
+        sct_dae (1,1) struct  % tab_variable, tab_connection, cm_Y, im_branchBus, rv_equilibrium, rv_Iequilibrium, c_comp, c_lc, c_gc, sv_bus, sv_branch, sv_comp, sv_lc, sv_gc, sct_stop (empty: simulate sets it for StopOnOutOfStep).
     end
     [tab, ~, ~, tab_c] = net.get_variable_map();
     a_bus = net.a_Bus;
@@ -26,15 +26,14 @@ function sct_dae = simulateFcn_blocks(net)
     sct_dae.tab_variable   = tab;
     sct_dae.tab_connection = tab_c;
 
-    % Admittance: all branches closed, and the matrix of each branch at its buses
+    % Admittance with all branches closed, and the buses of each branch (the matrices of
+    % the branch states of the phases: build_simulation_data)
     sct_dae.sv_bus    = string(a_bus(:));
     sct_dae.sv_branch = string(a_br(:));
     sct_dae.cm_Y      = net.get_admittance_matrix().Variables;
     sct_dae.im_branchBus = zeros(numel(a_br), 2);
-    sct_dae.c_branchY    = cell(numel(a_br), 1);
     for k = 1:numel(a_br)
         [~, sct_dae.im_branchBus(k,:)] = ismember(string(a_br{k}.a_Bus), sct_dae.sv_bus);
-        sct_dae.c_branchY{k} = a_br{k}.get_admittance_matrix();
     end
 
     % Equilibrium of the variable rows and of the bus currents

@@ -4,8 +4,8 @@ function s_tag = add_trip(obj, unit, time)
 % A tripped unit is disconnected (its states are NaN in the result) and reconnected at
 % t_end. Two rows per unit are added to tab_event with one new tag Parallel<n>: (t_start,
 % "open") and (t_end, "close"). remove_disturbance(tag) removes them. Two parallel events
-% of one unit may touch but not overlap. Trips of local controllers cannot be simulated
-% yet (GUILDA:Scenario:NotYetSupported).
+% of one unit may touch but not overlap. An input whose source is tripped takes its
+% equilibrium value (see the Scenario help).
 %
 % <@Examples>
 % ```matlab

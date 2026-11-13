@@ -22,10 +22,11 @@ expect_event_error(net, "UnknownParallelTarget", "NOPE", "TimeSpan", [1,2], "Tri
 expect_event_error(net, "UnknownParallelTarget", "EL999", "TimeSpan", [1,2], "OpenBranch", "EL999");
 
 
-%% A trip accepts a local controller (simulated from step E2 on)
+%% A trip accepts a local controller
 avr = net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
-expect_event_error(net, "NotYetSupported", avr.s_tag, "TimeSpan", [1,1.2], "TripUnit", avr.s_tag);
+[~, flag] = net.simulate(DebugScript.helper.scenario("ev", net, "TimeSpan", [1,1.2], "TripUnit", avr.s_tag).s_tag, Time=[0,2]);
+assert(flag == 1)
 
 
 %% TripUnit accepts components and global controllers

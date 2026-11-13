@@ -54,7 +54,7 @@ classdef SolverODE < auxiliary
         sct = build_index(sct_dae)
         [EM, RM, lv_FBorTC, x0, M0] = initial_condition(ctx, ph, x0, M0)
         sct_out = phase_result(ctx, ph, sct_sol)
-        ctx = set_admittance(ctx, iv_open, l_force)
+        ctx = set_admittance(ctx, i_Y, l_force)
         o = set_equations(o, ctx, RM, EM, lg, Mass)
         g = solve_differential(f, dMd, lv_dif, lv_eqD)
         l = is_false_index_error(ctx, me)

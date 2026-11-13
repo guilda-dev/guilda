@@ -105,9 +105,10 @@ assert(error_id(@() sc.add_open_branch("EL003", [1.02,2.5], Status="3open")) == 
 assert(flag == 1 && isequal(out.phases.t1.', [0, 1, 1.05, 1.1]))
 assert(isequal(out.phases.Fault001.', [false, true, false, false]) && isequal(out.phases.Fault002.', [false, false, true, false]))
 assert(isequal(out.phases.Parallel001.', [false, true, false, false]))
-% 故障と並列は独立: 同じブランチの地絡と開放の重なりは許す (ブランチの地絡はまだ計算できない)
+% 故障と並列は独立: 同じブランチの地絡と開放の重なりは許す (開放中の地絡は開放と同じ行列)
 s_tag = sc.add_fault("EL003", [1.02,1.03], Status="6LG", Point=0.5);
-assert(error_id(@() net.simulate(sc.s_tag)) == "GUILDA:Scenario:NotYetSupported")
+[~, flag, out] = DebugScript.helper.quiet(@() net.simulate(sc.s_tag));
+assert(flag == 1 && isequal(out.phases.t1.', [0, 1, 1.02, 1.03, 1.05, 1.1]))
 sc.remove_disturbance(s_tag);
 
 
@@ -134,15 +135,16 @@ end
 assert(error_id(@() sc.add_fault(["B008";"EL005"], [1,2])) == "GUILDA:Scenario:MixedFaultTarget")
 assert(error_id(@() sc.add_fault("B999", [1,2])) == "GUILDA:Scenario:UnknownFaultTarget")
 assert(error_id(@() sc.add_open_branch("EL005", [1,2], Status="2open")) ~= "")
-% 1 回線の開放とローカル制御器の解列は加えられる (計算はまだできない)
+% 1 回線の開放とローカル制御器の解列も加えられ、シミュレーションのデータになる (計算は F42)
 s_o = sc.add_open_branch("EL005", [1,2], Status="3open");
 assert(isequal(sc.tab_event.Status(sc.tab_event.Tag == s_o), ["3open";"close"]))
 s_t = sc.add_trip(s_lc, [1,2]);
 assert(isequal(sc.tab_event.Target(sc.tab_event.Tag == s_t), [s_lc; s_lc]))
-assert(error_id(@() net.simulate(sc.s_tag)) == "GUILDA:Scenario:NotYetSupported")
+[~, e] = net.build_simulation_data(sc.s_tag, sc.Time);
+assert(height(e(2).tab_branch) == 3 && isscalar(e(2).iv_tripLC))
 sc.remove_disturbance([s_f, "Fault002", s_o]);
-ME = caught(@() net.simulate(sc.s_tag));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:Scenario:NotYetSupported" && contains(ME.message, s_lc), ME.message)
+[~, flag] = DebugScript.helper.quiet(@() net.simulate(sc.s_tag));
+assert(flag == 1)
 sc.remove_disturbance(s_t);
 assert(height(sc.tab_event) == 0)
 
