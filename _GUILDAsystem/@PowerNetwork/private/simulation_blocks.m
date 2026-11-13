@@ -13,7 +13,7 @@ function sct_dae = simulation_blocks(net)
         net  % Network of the run (checked by check_simulation).
     end
     arguments (Output)
-        sct_dae (1,1) struct  % tab_variable, tab_connection, cm_Y, im_branchBus, c_branchY, rv_equilibrium, rv_Iequilibrium, c_comp, c_lc, c_gc, sv_bus, sv_branch, sv_comp, sv_lc, sv_gc.
+        sct_dae (1,1) struct  % tab_variable, tab_connection, cm_Y, im_branchBus, c_branchY, rv_equilibrium, rv_Iequilibrium, c_comp, c_lc, c_gc, sv_bus, sv_branch, sv_comp, sv_lc, sv_gc, sct_stop (empty: simulate sets it for StopOnOutOfStep).
     end
     [tab, ~, ~, tab_c] = net.get_variable_map();
     a_bus = net.a_Bus;
@@ -128,6 +128,7 @@ function sct_dae = simulation_blocks(net)
     for s_f = ["sv_comp", "sv_lc", "sv_gc"]
         sct_dae.(s_f) = reshape(sct_dae.(s_f), [], 1);
     end
+    sct_dae.sct_stop = struct([]);            % no stop condition (see stop_condition)
 end
 
 

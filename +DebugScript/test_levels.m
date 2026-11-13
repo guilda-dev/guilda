@@ -106,6 +106,12 @@ function tab = test_levels()
     "test_F39_simulation_data/solveReadsOnlyTheData", "medium"
     "test_F39_simulation_data/DisturbancesArePositions", "medium"
     "test_F39_simulation_data/FormatStructMirrorsTheModelHierarchy", "medium"
+    % ---- F40_stop_and_sample_time -------------------------------------------------------------------
+    "test_F40_stop_and_sample_time/StopOnOutOfStep", "medium"
+    "test_F40_stop_and_sample_time/DefaultStopAngleAndARunThatDoesNotStop", "medium"
+    "test_F40_stop_and_sample_time/StopOnOutOfStepFromGUILDA_setting", "medium"
+    "test_F40_stop_and_sample_time/TheReferenceTrippedDoesNotStop", "medium"
+    "test_F40_stop_and_sample_time/SampleTimeRecordsAUniformGridAndThePhaseBoundaries", "medium"
     % ---- F37_disp_connection ---------------------------------------------------------------------
     % ネットワークはファイル内で共有 (shared_net): 最初に走るテストが Tutorial10bus と IEEE14bus を作る
     "test_F37_disp_connection/ItRunsOnTutorial10busAndIEEE14busWith0And1Outputs", "medium"

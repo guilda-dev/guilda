@@ -20,6 +20,16 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
 % tells it, whether or not flag is requested. To write the result to a file, call
 % result.export(...). The verdict is not computed here: call result.judge_out_of_step().
 %
+% With StopOnOutOfStep=true the run stops when the absolute rotor angle delta of a
+% generator from that of the generator of the slack bus exceeds StopAngle [deg]: flag is
+% 2, the trajectories end at that time (output.tEnd), output.outOfStep holds Time, Unit,
+% Reference and Angle, and no warning is given (output.outOfStep is empty otherwise). A
+% tripped generator is not compared, and while the reference is tripped the run does not
+% stop. A network without such generators stops with GUILDA:PowerNetwork:StopNoRotorAngle.
+% With SampleTime > 0 the times of the result are t0 + k*SampleTime and the start and end
+% of each phase (a boundary appears twice), with the values of the solver at those times;
+% the steps of the solver do not change (use MaxStep). NaN or 0 records the solver steps.
+%
 % With Format="struct", result is a struct that mirrors the model hierarchy, for repeated
 % runs: result.t (the times, shared by every table), result.a_Bus{i}.V, .I, .P, .Q,
 % result.a_Bus{i}.a_Component{j}.x, .u, .I (the current the component injects),
@@ -43,6 +53,9 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
 % ```matlab
 % res = net.simulate("fault", Time=[0, 20]);                   % sc.Time is not changed
 % res = net.simulate("fault", Tolerance=1e-6, MaxStep=0.01);   % this call only
+% res = net.simulate("fault", SampleTime=0.01);                % t = 0, 0.01, 0.02, ...
+% [res, flag, output] = net.simulate("fault", StopOnOutOfStep=true, StopAngle=180);
+% output.outOfStep                                             % when flag == 2
 % GUILDA.setting("TimeSimulation", Tolerance=1e-6)             % every later run
 % res.export("fault.csv");
 % ```
@@ -67,6 +80,9 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
         opt.MaxStep (1,1) double {mustBePositiveOrNaN}   % [s] Largest step of the solver; NaN for the solver default. Default: GUILDA.setting.
         opt.InitialStep (1,1) double {mustBePositiveOrNaN}   % [s] First step of each phase; NaN for the solver default. Default: GUILDA.setting.
         opt.SeparateComplexParts (1,1) logical   % SeparateComplexParts of the ode object (true: "on", false: "off"). Default: GUILDA.setting.
+        opt.SampleTime (1,1) double {mustBeNonnegativeOrNaN}   % [s] Interval of the recorded times from the start time (with the start and end of each phase); NaN or 0 for the solver steps. Default: GUILDA.setting.
+        opt.StopOnOutOfStep (1,1) logical   % Stop the run when a rotor angle from the generator of the slack bus exceeds StopAngle (flag 2). Default: GUILDA.setting.
+        opt.StopAngle (1,1) double {mustBePositive}   % [deg] Threshold of StopOnOutOfStep. Default: GUILDA.setting.
         opt.TimeLimit (1,1) double {mustBePositive}   % [s] Wall-clock limit of the whole run; Inf for none. Default: GUILDA.setting.
         opt.Progress {mustBeProgress}   % "dialog", "disp" or "none" (true: "dialog", false: "none"). Default: GUILDA.setting.
         opt.Verbose (1,1) logical   % Print the phases and the outcome. Default: GUILDA.setting.
@@ -75,8 +91,8 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
     end
     arguments (Output)
         result   % Trajectories: ResultODE (Format "GUILDAorigin"; result.odeResults) or a struct that mirrors the model hierarchy, with tables (Format "struct").
-        flag     % 1 completed, 0 stopped by TimeLimit, -1 stopped by the solver.
-        output   % Details: message, tEnd, phases, nPhases, nPhasesDone, isSparse, exception.
+        flag     % 1 completed, 2 stopped by StopOnOutOfStep, 0 stopped by TimeLimit, -1 stopped by the solver.
+        output   % Details: message, tEnd, phases, nPhases, nPhasesDone, isSparse, exception, outOfStep.
     end
 
     t0 = tic;
@@ -88,12 +104,15 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
     sct_options = simulate_options(rmfield(opt, intersect(["Time","Format"], string(fieldnames(opt)))));
 
     [sct_dae, sct_event, rv_x0, tab_phase] = obj.build_simulation_data(s_scenario, time);
+    if sct_options.StopOnOutOfStep
+        sct_dae.sct_stop = stop_condition(obj, sct_dae, sct_options.StopAngle);
+    end
     if sct_options.Verbose
         print_phases(tab_phase);
     end
     [sct_sol, flag, output] = obj.solver_ODE.solve(sct_dae, sct_event, rv_x0, sct_options);
     output.phases = tab_phase;
-    output = orderfields(output, ["tEnd", "nPhases", "nPhasesDone", "phases", "isSparse", "exception", "message"]);
+    output = orderfields(output, ["tEnd", "nPhases", "nPhasesDone", "phases", "isSparse", "exception", "outOfStep", "message"]);
 
     if opt.Format == "struct"
         result = struct_result(sct_sol, sct_dae, sct_event, tab_phase, s_scenario);
@@ -102,7 +121,7 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
                            "options", sct_options, "flag", flag, "output", output, "elapsed", t0));
     end
 
-    if flag ~= 1
+    if flag ~= 1 && flag ~= 2         % flag 2: the stop asked by StopOnOutOfStep
         show_msg("warning", "GUILDA:PowerNetwork:SimulationIncomplete", string(flag), output.message);
     end
 end
@@ -124,11 +143,15 @@ function sct_options = simulate_options(sct_call)
     if ~(isnumeric(sct_options.TimeLimit) && isscalar(sct_options.TimeLimit) && sct_options.TimeLimit > 0)
         sct_options.TimeLimit = Inf;      % 0, empty or invalid setting: no limit
     end
-    for s_name = ["MaxStep", "InitialStep"]
+    for s_name = ["MaxStep", "InitialStep", "SampleTime"]
         v = sct_options.(s_name);
         if ~(isnumeric(v) && isscalar(v) && v > 0)
-            sct_options.(s_name) = NaN;   % NaN, empty or invalid setting: the solver default
+            sct_options.(s_name) = NaN;   % NaN, 0, empty or invalid setting: the solver default (steps)
         end
+    end
+    v = sct_options.StopAngle;
+    if ~(isnumeric(v) && isscalar(v) && v > 0)
+        sct_options.StopAngle = 360;      % empty or invalid setting
     end
     for s_name = string(fieldnames(sct_call)).'
         sct_options.(s_name) = sct_call.(s_name);      % this call only
@@ -137,5 +160,6 @@ function sct_options = simulate_options(sct_call)
     sct_options.Progress = progress_mode(sct_options.Progress);
     sct_options.Verbose  = logical(sct_options.Verbose);
     sct_options.SeparateComplexParts = logical(sct_options.SeparateComplexParts);
+    sct_options.StopOnOutOfStep = logical(sct_options.StopOnOutOfStep);
     sct_options.PlotFcn  = tools.check_plotfcn(sct_options.PlotFcn, "simulate");
 end
