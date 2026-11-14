@@ -335,17 +335,19 @@ b1.l_isSlack = true;</code></pre>
             <li><code>Branch</code> constructor: set the tag <code>header</code> + three digits, assert real R, X, C, create three <code>Parameter</code> objects</li>
             <li>Set <code>bra.a_Bus = {from; to}</code> and <code>bra.a_PowerNetwork = net</code> (writable only by <code>PowerNetwork</code>)</li>
             <li>Append to <code>a_Branch</code></li>
+            <li><code>Circuit</code> (default 2) is the number of parallel circuits. R, X and C are the values of all circuits together, so the closed admittance matrix does not depend on it; only the states that act on one circuit (<code>Branch.get_admittance_matrix(Status="3LG")</code>, <code>"3open"</code>) use it, and a branch with <code>Circuit=1</code> has neither</li>
           </ul><ul lang="ja">
             <li>変更前に検査します。<code>Key</code> を生成済みのキー一覧で検査し、<code>from_to</code>（<code>a_Bus</code> の番号またはタグ）を解決し、両端が同じもの・<code>R = X = 0</code> を拒否します。</li>
             <li>キーのクラスを作成します（<code>mkInst</code>）。</li>
             <li><code>Branch</code> のコンストラクタは、タグ <code>header</code> + 3 桁を設定し、R・X・C が実数であることを assert し、3 つの <code>Parameter</code> を作成します。</li>
             <li><code>bra.a_Bus = {from; to}</code> と <code>bra.a_PowerNetwork = net</code> を代入します（書き込めるのは <code>PowerNetwork</code> だけです）。</li>
             <li><code>a_Branch</code> に追加します。</li>
+            <li><code>Circuit</code>（既定 2）は並列の回線数です。R・X・C は全回線をまとめた値なので、閉じた状態のアドミタンス行列は回線数によりません。回線数を使うのは 1 回線に作用する状態（<code>Branch.get_admittance_matrix(Status="3LG")</code>、<code>"3open"</code>）だけで、<code>Circuit=1</code> のブランチにはこの 2 つの状態がありません。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en">options (defaults: R 0, X 1, C 0, Tap 1, Phase 0, Smax/Imax/Pmax/Qmax Inf, Vargmax π/2, Marker "-"), <code>a_Bus</code>, tags of <code>a_Branch</code></span><span lang="ja">オプション（既定値: R 0, X 1, C 0, Tap 1, Phase 0, Smax/Imax/Pmax/Qmax Inf, Vargmax π/2, Marker "-"）、<code>a_Bus</code>、<code>a_Branch</code> のタグ</span></dd>
+          <dd><span lang="en">options (defaults: R 0, X 1, C 0, Tap 1, Phase 0, Circuit 2, Smax/Imax/Pmax/Qmax Inf, Vargmax π/2, Marker "-"), <code>a_Bus</code>, tags of <code>a_Branch</code></span><span lang="ja">オプション（既定値: R 0, X 1, C 0, Tap 1, Phase 0, Circuit 2, Smax/Imax/Pmax/Qmax Inf, Vargmax π/2, Marker "-"）、<code>a_Bus</code>、<code>a_Branch</code> のタグ</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>br</code>; <code>tab_parameter.dynamics</code> (R, X, C, tap, phase), <code>tab_parameter.operation</code> (Smax, Imax, Pmax, Qmax, Vargmax), <code>tab_parameter.graph</code> (MidXaxis, MidYaxis, Marker); <code>br.a_Bus</code> (2×1 cell), <code>br.a_PowerNetwork</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+          <dd><code>br</code>; <code>tab_parameter.dynamics</code> (R, X, C, tap, phase, circuit), <code>tab_parameter.operation</code> (Smax, Imax, Pmax, Qmax, Vargmax), <code>tab_parameter.graph</code> (MidXaxis, MidYaxis, Marker); <code>br.a_Bus</code> (2×1 cell), <code>br.a_PowerNetwork</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-04">

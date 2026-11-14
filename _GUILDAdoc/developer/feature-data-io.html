@@ -327,14 +327,14 @@
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Reads <code>network/parameter.csv</code> (optional), <code>bus/parameter.csv</code> and <code>branch/parameter.csv</code></li>
-            <li>Maps the branch columns <code>tap</code>/<code>phase</code> to <code>Tap</code>/<code>Phase</code></li>
+            <li>Maps the branch columns <code>tap</code>/<code>phase</code>/<code>circuit</code> to <code>Tap</code>/<code>Phase</code>/<code>Circuit</code>; without a <code>circuit</code> column each branch has 2 circuits (the default of <code>add_branch</code>)</li>
             <li>Checks the required columns; warns about unknown columns</li>
             <li>Old bus columns <code>V0</code>, <code>Varg0</code>: ignored with the INFO message <code>GUILDA:import:RemovedColumn</code></li>
             <li>Checks that <code>From</code>/<code>To</code> are bus row numbers</li>
             <li>Reads <code>FullTag</code> as text</li>
           </ul><ul lang="ja">
             <li><code>network/parameter.csv</code>（任意）、<code>bus/parameter.csv</code>、<code>branch/parameter.csv</code> を読み込みます。</li>
-            <li>ブランチの列 <code>tap</code>/<code>phase</code> を <code>Tap</code>/<code>Phase</code> に対応付けます。</li>
+            <li>ブランチの列 <code>tap</code>/<code>phase</code>/<code>circuit</code> を <code>Tap</code>/<code>Phase</code>/<code>Circuit</code> に対応付けます。<code>circuit</code> の列がなければ、各ブランチの回線数は 2（<code>add_branch</code> の既定値）です。</li>
             <li>必須列を検査し、未知の列は警告します。</li>
             <li>母線の古い列 <code>V0</code> と <code>Varg0</code> は、INFO メッセージ <code>GUILDA:import:RemovedColumn</code> を出して読み飛ばします。</li>
             <li><code>From</code>/<code>To</code> が母線の行番号であることを確認します。</li>
@@ -355,13 +355,13 @@
             <li>Reads <code>dynamics.csv</code> when <code>main.csv</code> has <code>ParameterID</code>, <code>opf.csv</code> when it has <code>OpfID</code></li>
             <li>Checks the columns, the bus rows and that every ID exists in the referenced file</li>
             <li>Missing <code>component</code> folder: warning</li>
-            <li><code>read_scenarios</code>: reads every <code>scenario/*.json</code> in the order of the file names (no <code>scenario</code> folder: none) and checks <code>Format</code>, <code>version</code>, <code>Time</code>, <code>Description</code>, the shape of <code>Disturbances</code> and the <code>Tag</code> of each disturbance (<code>GUILDA:PowerNetwork:ScenarioJson</code>); unknown fields give the warning <code>GUILDA:PowerNetwork:UnknownScenarioField</code> and are removed</li>
+            <li><code>read_scenarios</code>: reads every <code>scenario/*.json</code> in the order of the file names (no <code>scenario</code> folder: none) and checks <code>Format</code>, <code>version</code> (2), <code>Time</code>, <code>Description</code>, the shape of <code>Event</code>, <code>Offset</code> and <code>Input</code> and their tags (<code>GUILDA:PowerNetwork:ScenarioJson</code>); unknown fields give the warning <code>GUILDA:PowerNetwork:UnknownScenarioField</code> and are removed</li>
           </ul><ul lang="ja">
             <li><code>component/&lt;key&gt;/</code> の各サブフォルダから <code>main.csv</code> を読み込みます。名前が <code>.</code> で始まるフォルダは飛ばします。</li>
             <li><code>main.csv</code> に <code>ParameterID</code> があれば <code>dynamics.csv</code>、<code>OpfID</code> があれば <code>opf.csv</code> を読み込みます。</li>
             <li>列、母線の行番号、各 ID が参照先のファイルにあることを検査します。</li>
             <li><code>component</code> フォルダがない場合は警告します。</li>
-            <li><code>read_scenarios</code> は、<code>scenario/*.json</code> をファイル名の順にすべて読みます（<code>scenario</code> フォルダがなければシナリオはありません）。<code>Format</code>、<code>version</code>、<code>Time</code>、<code>Description</code>、<code>Disturbances</code> の形、各外乱の <code>Tag</code> を検査します（<code>GUILDA:PowerNetwork:ScenarioJson</code>）。未知の項目は警告 <code>GUILDA:PowerNetwork:UnknownScenarioField</code> を出して取り除きます。</li>
+            <li><code>read_scenarios</code> は、<code>scenario/*.json</code> をファイル名の順にすべて読みます（<code>scenario</code> フォルダがなければシナリオはありません）。<code>Format</code>、<code>version</code>（2）、<code>Time</code>、<code>Description</code>、<code>Event</code>・<code>Offset</code>・<code>Input</code> の形とタグを検査します（<code>GUILDA:PowerNetwork:ScenarioJson</code>）。未知の項目は警告 <code>GUILDA:PowerNetwork:UnknownScenarioField</code> を出して取り除きます。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>component/&lt;key&gt;/main.csv</code>, <code>dynamics.csv</code>, <code>opf.csv</code>, <code>scenario/*.json</code></dd>
@@ -451,12 +451,12 @@
             <li>Runs after the components exist</li>
             <li>First bus row whose <code>Slack</code> is 1 (or the text <code>"1"</code> / <code>"true"</code>) becomes the slack bus</li>
             <li>Runs inside <code>evalc</code> so that the SetSlack message is not printed</li>
-            <li>Then, for each scenario file in the order of the file names: <code>net.add_scenario(&lt;file name&gt;)</code> (a tag in use gets a number suffix) and <code>sc.add_from_json_struct</code>, which sets <code>Time</code> and <code>Description</code> and adds each disturbance by <code>add_disturbance</code> with its fields as options, so it is checked against the components as when added by hand</li>
+            <li>Then, for each scenario file in the order of the file names: <code>net.add_scenario(&lt;file name&gt;)</code> (a tag in use gets a number suffix) and <code>sc.add_from_json_struct</code>, which sets <code>Time</code> and <code>Description</code>, adds the rows of <code>Event</code> with their tags to <code>tab_event</code> and the offsets and inputs to <code>tab_offset</code> and <code>tab_input</code>, so they are checked against the network as when added by hand</li>
           </ul><ul lang="ja">
             <li>機器の作成後に実行します。</li>
             <li><code>Slack</code> が 1（または文字列 <code>"1"</code> / <code>"true"</code>）である最初の母線の行を slack 母線に設定します。</li>
             <li>SetSlack のメッセージを表示しないよう、<code>evalc</code> の中で実行します。</li>
-            <li>続いて、シナリオのファイルごとにファイル名の順で <code>net.add_scenario(&lt;ファイル名&gt;)</code>（使用中のタグには番号が付きます）と <code>sc.add_from_json_struct</code> を呼びます。<code>add_from_json_struct</code> は <code>Time</code> と <code>Description</code> を設定し、各外乱を、その項目をオプションにした <code>add_disturbance</code> で加えます。そのため、手で加えたときと同じように機器と照らし合わせて検査します。</li>
+            <li>続いて、シナリオのファイルごとにファイル名の順で <code>net.add_scenario(&lt;ファイル名&gt;)</code>（使用中のタグには番号が付きます）と <code>sc.add_from_json_struct</code> を呼びます。<code>add_from_json_struct</code> は <code>Time</code> と <code>Description</code> を設定し、<code>Event</code> の行をそのタグのまま <code>tab_event</code> に、オフセットと入力を <code>tab_offset</code> と <code>tab_input</code> に加えます。そのため、手で加えたときと同じようにネットワークと照らし合わせて検査します。</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>tab_bus.Slack</code>, <span lang="en">the scenario files of IO-03</span><span lang="ja">IO-03 で読んだシナリオのファイル</span></dd>
@@ -747,7 +747,7 @@
       <tbody>
         <tr><td><code>network/parameter.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">network (optional file)</span><span lang="ja">ネットワーク（任意のファイル）</span></td><td data-label="Columns" data-label-ja="列"><code>Hz</code>, <code>baseMVA</code></td></tr>
         <tr><td><code>bus/parameter.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">bus</span><span lang="ja">母線</span></td><td data-label="Columns" data-label-ja="列"><code>V</code>*, <code>Varg</code>*, <code>Tag</code>, <code>FullTag</code>, <code>baseKV</code>, <code>Vmin</code>, <code>Vmax</code>, <code>Gshunt</code>, <code>Bshunt</code>, <code>Xaxis</code>, <code>Yaxis</code>, <code>Marker</code>, <code>Slack</code> <span lang="en">(a column <code>baseMVA</code> is accepted and ignored; old columns <code>V0</code>, <code>Varg0</code> are ignored with an INFO message)</span><span lang="ja">（列 <code>baseMVA</code> は受け付けて無視します。旧列 <code>V0</code>、<code>Varg0</code> は INFO メッセージを出して無視します）</span></td></tr>
-        <tr><td><code>branch/parameter.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">branch</span><span lang="ja">ブランチ</span></td><td data-label="Columns" data-label-ja="列"><code>Type</code>*, <code>From</code>*, <code>To</code>*, <code>FullTag</code>, <code>R</code>, <code>X</code>, <code>C</code>, <code>tap</code> | <code>Tap</code>, <code>phase</code> | <code>Phase</code>, <code>Smax</code>, <code>Imax</code>, <code>Pmax</code>, <code>Qmax</code>, <code>Vargmax</code>, <code>MidXaxis</code>, <code>MidYaxis</code>, <code>Marker</code></td></tr>
+        <tr><td><code>branch/parameter.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">branch</span><span lang="ja">ブランチ</span></td><td data-label="Columns" data-label-ja="列"><code>Type</code>*, <code>From</code>*, <code>To</code>*, <code>FullTag</code>, <code>R</code>, <code>X</code>, <code>C</code>, <code>tap</code> | <code>Tap</code>, <code>phase</code> | <code>Phase</code>, <code>circuit</code> | <code>Circuit</code>, <code>Smax</code>, <code>Imax</code>, <code>Pmax</code>, <code>Qmax</code>, <code>Vargmax</code>, <code>MidXaxis</code>, <code>MidYaxis</code>, <code>Marker</code></td></tr>
         <tr><td><code>component/&lt;key&gt;/main.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">component of type <code>&lt;key&gt;</code></span><span lang="ja">種類 <code>&lt;key&gt;</code> の機器</span></td><td data-label="Columns" data-label-ja="列"><code>Bus</code>*, <code>P</code>*, <code>Q</code>*, <code>FullTag</code>, <code>baseMVA</code>, <code>Pmin</code>, <code>Pmax</code>, <code>Qmin</code>, <code>Qmax</code>, <code>Xaxis</code>, <code>Yaxis</code>, <code>Marker</code>, <code>MidXaxis</code>, <code>MidYaxis</code>, <code>ParameterID</code>, <code>OpfID</code></td></tr>
         <tr><td><code>component/&lt;key&gt;/dynamics.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">distinct parameter set</span><span lang="ja">異なるパラメータの組</span></td><td data-label="Columns" data-label-ja="列"><code>ParameterID</code>*, <span lang="en">the <code>sv_para</code> of the class (not checked by the importer)</span><span lang="ja">クラスの <code>sv_para</code>（読み込み側では検査しません）</span></td></tr>
         <tr><td><code>component/&lt;key&gt;/opf.csv</code></td><td data-label="One row per" data-label-ja="1 行が表すもの"><span lang="en">distinct OPF setting</span><span lang="ja">異なる OPF 設定</span></td><td data-label="Columns" data-label-ja="列"><code>OpfID</code>*, <code>OPFinit_P0</code>*, <code>OPFinit_Q0</code>*, <code>OPFcost_HP</code>*, <code>OPFcost_HQ</code>*, <code>OPFcost_fP</code>*, <code>OPFcost_fQ</code>*, <code>OPFcost_startup</code>*, <code>OPFcost_shutdown</code>*</td></tr>
@@ -758,28 +758,34 @@
     <h3 id="scenario-json"><span lang="en">Scenario files</span><span lang="ja">シナリオのファイル</span></h3>
     <ul lang="en">
       <li>One JSON object per file <code>scenario/&lt;tag&gt;.json</code>; the tag of the scenario is the file name only (not written in the file)</li>
-      <li>Top level: <code>Format</code> (<code>"GUILDAscenario"</code>), <code>version</code> (1; a larger number is refused), <code>Description</code>, <code>Time</code> (<code>[t0, tend]</code>), <code>Disturbances</code></li>
-      <li>One object per disturbance, in the order of <code>tab_disturbance</code>, with the names of the <code>add_disturbance</code> options: <code>Tag</code>, <code>TimeSpan</code>, <code>FaultBus</code>, <code>TripUnit</code>, <code>OpenBranch</code>, <code>OffsetUnit</code>, <code>OffsetState</code>, <code>OffsetValue</code>, <code>InputUnit</code>, <code>InputName</code>, <code>InputValue</code>, <code>InputMethod</code>; empty fields left out</li>
-      <li><code>TimeSpan</code>: one number for an offset at one time, else two. Lists of tags and names are arrays even for one element</li>
+      <li>Top level: <code>Format</code> (<code>"GUILDAscenario"</code>), <code>version</code> (2; any other number is refused), <code>Description</code>, <code>Time</code> (<code>[t0, tend]</code>), <code>Event</code>, <code>Offset</code>, <code>Input</code></li>
+      <li><code>Event</code>, <code>Offset</code>, <code>Input</code>: one object per row of <code>tab_event</code>, <code>tab_offset</code> and <code>tab_input</code>, in the order of the table, with the column names as fields; an empty table is left out, and so are the empty fields of an offset or input</li>
+      <li><code>Event</code> rows: <code>Tag</code> (<code>Fault&lt;n&gt;</code> or <code>Parallel&lt;n&gt;</code>), <code>Target</code>, <code>Time</code>, <code>Status</code> are required; <code>Point</code> is <code>NaN</code> when missing and is read as <code>NaN</code> for a parallel row. The rows of one tag are added together and checked as when added by <code>add_fault</code>, <code>add_trip</code> or <code>add_open_branch</code></li>
+      <li><code>Offset</code> and <code>Input</code> rows: <code>Tag</code>, <code>TimeSpan</code> and the columns of the table. <code>TimeSpan</code>: one number for an offset, two for an input. An offset and an input with one tag (from <code>add_disturbance</code>) start at the same time. Lists of names are arrays even for one element</li>
       <li><code>InputValue</code>: an array of numbers for a constant; for a time series an object with <code>Time</code> (from <code>t_start</code>) and <code>Value</code> (one array per point), its interpolation in <code>InputMethod</code> (<code>"foh"</code> when left out)</li>
-      <li><code>Inf</code> and <code>NaN</code> are written as <code>Infinity</code> and <code>NaN</code> (not standard JSON; read back by <code>jsondecode</code>), so a <code>TimeSpan</code> that ends at <code>Inf</code> survives the round trip. Numbers are written with 17 digits, so the values do not change</li>
+      <li><code>Inf</code> and <code>NaN</code> are written as <code>Infinity</code> and <code>NaN</code> (not standard JSON; read back by <code>jsondecode</code>), so an end time at <code>Inf</code> and a <code>Point</code> of <code>NaN</code> survive the round trip. Numbers are written with 17 digits, so the values do not change</li>
     </ul>
     <ul lang="ja">
       <li>ファイル <code>scenario/&lt;tag&gt;.json</code> ごとに JSON のオブジェクトを 1 つ持ちます。シナリオのタグはファイル名だけで表し、ファイルの中には書きません。</li>
-      <li>最上位の項目は <code>Format</code>（<code>"GUILDAscenario"</code>）、<code>version</code>（1。より大きい数は読みません）、<code>Description</code>、<code>Time</code>（<code>[t0, tend]</code>）、<code>Disturbances</code> です。</li>
-      <li>外乱は <code>tab_disturbance</code> の順に 1 つずつオブジェクトにし、項目名は <code>add_disturbance</code> のオプションと同じ <code>Tag</code>、<code>TimeSpan</code>、<code>FaultBus</code>、<code>TripUnit</code>、<code>OpenBranch</code>、<code>OffsetUnit</code>、<code>OffsetState</code>、<code>OffsetValue</code>、<code>InputUnit</code>、<code>InputName</code>、<code>InputValue</code>、<code>InputMethod</code> です。空の項目は書きません。</li>
-      <li><code>TimeSpan</code> は、1 時刻のオフセットなら 1 つの数、それ以外は 2 つの数です。タグや名前の一覧は、要素が 1 つでも配列にします。</li>
+      <li>最上位の項目は <code>Format</code>（<code>"GUILDAscenario"</code>）、<code>version</code>（2。ほかの数は読みません）、<code>Description</code>、<code>Time</code>（<code>[t0, tend]</code>）、<code>Event</code>、<code>Offset</code>、<code>Input</code> です。</li>
+      <li><code>Event</code>、<code>Offset</code>、<code>Input</code> は、<code>tab_event</code>、<code>tab_offset</code>、<code>tab_input</code> の 1 行を 1 つのオブジェクトにし、表の順に並べた配列です。項目名は表の列名です。空の表は書きません。オフセットと入力の空の項目も書きません。</li>
+      <li><code>Event</code> の行では <code>Tag</code>（<code>Fault&lt;n&gt;</code> か <code>Parallel&lt;n&gt;</code>）、<code>Target</code>、<code>Time</code>、<code>Status</code> が必須です。<code>Point</code> は、なければ <code>NaN</code> とし、並列の行では <code>NaN</code> として読みます。1 つのタグの行はまとめて加え、<code>add_fault</code>、<code>add_trip</code>、<code>add_open_branch</code> で加えたときと同じ検査をします。</li>
+      <li><code>Offset</code> と <code>Input</code> の行は、<code>Tag</code>、<code>TimeSpan</code> と表の列を持ちます。<code>TimeSpan</code> は、オフセットなら 1 つの数、入力なら 2 つの数です。1 つのタグのオフセットと入力（<code>add_disturbance</code> で加えたもの）は同じ時刻に始まります。名前の一覧は、要素が 1 つでも配列にします。</li>
       <li><code>InputValue</code> は、定数なら数の配列です。時系列なら <code>Time</code>（<code>t_start</code> からの時刻）と <code>Value</code>（点ごとに 1 つの配列）を持つオブジェクトで、補間の方法は <code>InputMethod</code> に書きます（省くと <code>"foh"</code>）。</li>
-      <li><code>Inf</code> と <code>NaN</code> は <code>Infinity</code> と <code>NaN</code> と書きます（標準の JSON ではありませんが、<code>jsondecode</code> は読めます）。そのため、終わりが <code>Inf</code> の <code>TimeSpan</code> も往復で保たれます。数は 17 桁で書くので、値は変わりません。</li>
+      <li><code>Inf</code> と <code>NaN</code> は <code>Infinity</code> と <code>NaN</code> と書きます（標準の JSON ではありませんが、<code>jsondecode</code> は読めます）。そのため、<code>Inf</code> の終わりの時刻も <code>NaN</code> の <code>Point</code> も往復で保たれます。数は 17 桁で書くので、値は変わりません。</li>
     </ul>
 <pre class="fio-json"><code>{
   "Format": "GUILDAscenario",
-  "version": 1,
-  "Description": "fault B008, EL003 opened",
+  "version": 2,
+  "Description": "fault EL003, then one circuit opened",
   "Time": [0, 20],
-  "Disturbances": [
-    {"Tag": "fault1", "TimeSpan": [0.1, 0.17], "FaultBus": ["B008"]},
-    {"Tag": "open1", "TimeSpan": [0.17, Infinity], "OpenBranch": ["EL003"]},
+  "Event": [
+    {"Tag": "Fault001", "Target": "EL003", "Time": 0.1, "Status": "3LG", "Point": 0.3},
+    {"Tag": "Fault001", "Target": "EL003", "Time": 0.17, "Status": "none", "Point": 0.3},
+    {"Tag": "Parallel001", "Target": "EL003", "Time": 0.17, "Status": "3open", "Point": NaN},
+    {"Tag": "Parallel001", "Target": "EL003", "Time": 20, "Status": "close", "Point": NaN}
+  ],
+  "Input": [
     {"Tag": "input1", "TimeSpan": [1, 1.5], "InputUnit": "B002SG1", "InputName": ["Pmech"],
      "InputValue": {"Time": [0, 0.5], "Value": [[0], [0.005]]}, "InputMethod": "zoh"}
   ]
@@ -866,7 +872,7 @@
     <ul lang="en">
       <li>Importers build through <code>add_bus</code>, <code>add_branch</code>, <code>add_component</code> and <code>l_isSlack</code>: references, edit flags and handle states as in <a href="feature-model-building.html#side-effects">Model Building</a></li>
       <li>New network: nothing logged before <code>initialize</code></li>
-      <li>Scenarios added through <code>add_scenario</code> and <code>add_disturbance</code>; they make nothing stale</li>
+      <li>Scenarios added through <code>add_scenario</code> and their disturbances through the <code>add_*</code> methods of <code>Scenario</code>; they make nothing stale</li>
       <li><code>import(path, Network=obj)</code>: adds to <code>obj</code> without clearing it; overwrites its <code>Hz</code> and <code>baseMVA</code> when the file gives them</li>
       <li><code>export</code> and <code>network_to_mpc</code>: read the network only</li>
       <li><code>export</code> writes to disk; with <code>Overwrite=true</code> it deletes the five subfolders (<code>scenario</code> included) and the class file of an existing export (other files in the folder stay)</li>
@@ -876,7 +882,7 @@
     <ul lang="ja">
       <li>読み込みは <code>add_bus</code>・<code>add_branch</code>・<code>add_component</code>・<code>l_isSlack</code> で組み立てます。参照、編集フラグ、ハンドルの状態は<a href="feature-model-building.html#side-effects">モデル構築</a>と同じです。</li>
       <li>新しいネットワークには、<code>initialize</code> を実行するまで何も記録されません。</li>
-      <li>シナリオは <code>add_scenario</code> と <code>add_disturbance</code> で加えます。シナリオで古くなる層はありません。</li>
+      <li>シナリオは <code>add_scenario</code> で、その外乱は <code>Scenario</code> の <code>add_*</code> メソッドで加えます。シナリオで古くなる層はありません。</li>
       <li><code>import(path, Network=obj)</code> は、<code>obj</code> の中身を消さずに、そこへ追加します。<code>Hz</code> と <code>baseMVA</code> は、ファイルに値があれば上書きします。</li>
       <li><code>export</code> と <code>network_to_mpc</code> は、ネットワークを読み取るだけです。</li>
       <li><code>export</code> はディスクに書き込みます。<code>Overwrite=true</code> のときは、前に書き出した 5 つのサブフォルダ（<code>scenario</code> を含む）とクラスファイルを削除します。フォルダにあるそれ以外のファイルは残します。</li>
@@ -925,7 +931,7 @@
       </li>
       <li><b>Branch</b>
         <ul>
-          <li>The CSV row holds only <code>R</code>, <code>X</code>, <code>C</code>, <code>tap</code>, <code>phase</code> and the limits: a branch class with other parameters cannot be stored</li>
+          <li>The CSV row holds only <code>R</code>, <code>X</code>, <code>C</code>, <code>tap</code>, <code>phase</code>, <code>circuit</code> and the limits: a branch class with other parameters cannot be stored</li>
           <li><code>network_to_mpc</code> accepts a branch whose admittance matrix fits the MATPOWER branch model</li>
         </ul>
       </li>
@@ -936,7 +942,7 @@
         </ul>
       </li>
       <li><b>New column</b>: add it to the required or optional list in <code>import</code>, to the table of <code>export</code>, and to the <code>add_*</code> option it feeds</li>
-      <li><b>New disturbance field</b>: a field of <code>Scenario.sr_field</code> is read and written by name; give its JSON form in <code>Scenario.to_json_struct</code> and its conversion back in <code>add_from_json_struct</code></li>
+      <li><b>New disturbance field</b>: a field of <code>Scenario.sr_field</code> (<code>tab_offset</code>, <code>tab_input</code>) is read and written by name (a new column of <code>tab_event</code> also goes into the list of <code>Event</code> fields in <code>read_scenarios</code>); give its JSON form in <code>Scenario.to_json_struct</code> and its conversion back in <code>add_from_json_struct</code></li>
     </ul>
     <ul lang="ja">
       <li><b>機器</b>
@@ -949,7 +955,7 @@
       </li>
       <li><b>ブランチ</b>
         <ul>
-          <li>CSV の行は <code>R</code>・<code>X</code>・<code>C</code>・<code>tap</code>・<code>phase</code> と上下限だけです。他のパラメータを持つブランチのクラスは保存できません。</li>
+          <li>CSV の行は <code>R</code>・<code>X</code>・<code>C</code>・<code>tap</code>・<code>phase</code>・<code>circuit</code> と上下限だけです。他のパラメータを持つブランチのクラスは保存できません。</li>
           <li><code>network_to_mpc</code> は、アドミタンス行列が MATPOWER のブランチモデルに当てはまるブランチを受け付けます。</li>
         </ul>
       </li>
@@ -960,7 +966,7 @@
         </ul>
       </li>
       <li><b>新しい列</b>: 3 か所に追加します。<code>import</code> の必須列か任意列の一覧、<code>export</code> が作る table、その値を受け取る <code>add_*</code> のオプションです。</li>
-      <li><b>新しい外乱の項目</b>: <code>Scenario.sr_field</code> の項目は名前で読み書きします。JSON での形を <code>Scenario.to_json_struct</code> に、元に戻す変換を <code>add_from_json_struct</code> に書きます。</li>
+      <li><b>新しい外乱の項目</b>: <code>Scenario.sr_field</code> の項目（<code>tab_offset</code>、<code>tab_input</code>）は名前で読み書きします（<code>tab_event</code> に列を加えるときは、<code>read_scenarios</code> の <code>Event</code> の項目の一覧にも加えます）。JSON での形を <code>Scenario.to_json_struct</code> に、元に戻す変換を <code>add_from_json_struct</code> に書きます。</li>
     </ul>
     <p lang="en">Network classes: see <a href="model-implementation.html#other">Model Implementation: New branches and networks</a>.</p>
     <p lang="ja">ネットワーククラスについては、<a href="model-implementation.html#other">モデルの実装: 新しいブランチとネットワーク</a>を参照してください。</p>
