@@ -186,7 +186,7 @@ classdef PowerNetwork < PowerSystemModel
         % User Interface << Information >>
         disp_summary(obj, opt)
         varargout = disp_connection(obj, opt)
-        G = plot_diagram(obj,ax)
+        G = plot_diagram(obj, opt)
         G = plot_spring_model(obj, opt)
 
         % IO
@@ -204,7 +204,6 @@ classdef PowerNetwork < PowerSystemModel
     methods(Access=protected)
         % Edit handling: the one-slack-bus rule and the stale tag powerflow
         handle_edit(obj, a_layer, tag, log)
-        sct_port = get_linear_port(obj)
         sct_page = gui_content(obj)
     end
 

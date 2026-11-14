@@ -2,8 +2,8 @@ classdef SolverLIN < auxiliary
 % Connector of the linearization (get_sys of every layer).
 %
 % get_sys (PowerSystemModel.get_sys) collects the linear blocks of the model objects of a
-% layer (get_linear_block) and its port (get_linear_port); solve connects them along the
-% variable map and returns the connected descriptor model (the DAE), from which get_sys
+% layer (get_linear_matrix) and builds the port of the layer from its variable map; solve
+% connects them along the variable map and returns the connected descriptor model (the DAE), from which get_sys
 % makes a ResultLIN. reduce eliminates the algebraic variables of a DAE (the bus voltages
 % of the network): the model of Type "ODE". The connector reads only its arguments: no
 % network and no model object. It holds no settings: the defaults of the options of

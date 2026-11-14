@@ -203,6 +203,28 @@ assert(~any(contains(sv_log, "<<-Add--- B")), "自動のタグを経由しない
 assert(~any(contains(sv_log, "rename")), "改名は何も古くしない")
 
 
+%% The branch column circuit survives a round trip and defaults to 2
+% export は dynamics の表をそのまま書くので circuit の列が付く。import は circuit と Circuit を
+% 受け付け、列がなければ add_branch の既定の 2 回線にする (ブランチの状態 B1)
+net = tag_network();
+net.add_branch("pi", [1, 3], X=0.2, Circuit=1);
+net.a_Branch{2}.tab_parameter.dynamics.circuit = 3;
+[net2, c] = round_trip(net); %#ok<ASGLU>
+assert(isequal(cellfun(@(b) b.tab_parameter.dynamics.circuit, net2.a_Branch), [2; 3; 1]))
+
+[s_path, c] = csv_folder(); %#ok<ASGLU>
+s_file = fullfile(s_path, "branch", "parameter.csv");
+tab = readtable(s_file, "TextType", "string");
+assert(ismember("circuit", string(tab.Properties.VariableNames)), "export は circuit の列を書く")
+tab.circuit(:) = [1; 3];
+writetable(renamevars(tab, "circuit", "Circuit"), s_file);
+[net2, ~, id] = import_with_warning(s_path);
+assert(id == "" && isequal(cellfun(@(b) b.tab_parameter.dynamics.circuit, net2.a_Branch), [1; 3]), "Circuit の列名も読む")
+writetable(removevars(tab, "circuit"), s_file);
+[net2, ~, id] = import_with_warning(s_path);
+assert(id == "" && isequal(cellfun(@(b) b.tab_parameter.dynamics.circuit, net2.a_Branch), [2; 2]), "列がなければ 2 回線")
+
+
 %% An unknown column warns with the file and column, and does not stop the import
 [s_path, c] = csv_folder(); %#ok<ASGLU>
 s_file = fullfile(s_path, "bus", "parameter.csv");
@@ -306,6 +328,8 @@ assert(contains(ME.message, "main.csv row 1: ParameterID = NaN"), ME.message)
 %% A folder without component/ warns
 [s_path, c] = csv_folder(); %#ok<ASGLU>
 rmdir(fullfile(s_path, "component"), "s");
+s_bus = fullfile(s_path, "bus", "parameter.csv");                  % a slack bus needs a component
+writetable(removevars(readtable(s_bus, "TextType", "string"), "Slack"), s_bus);
 [net2, s_msg, id] = import_with_warning(s_path);
 assert(id == "GUILDA:import:NoComponentFolder")
 assert(contains(s_msg, "component"))
@@ -369,6 +393,7 @@ DebugScript.helper.quiet(@() net.initialize);
 sc = net.add_scenario("case1", Time=[0, 1], Description="fault, then two branches opened");
 sc.add_fault("B008", [0.10, 0.17]);
 sc.add_open_branch(["EL003"; "EL004"], [0.17, Inf]);
+sc.add_fault("EL005", [0.3, 0.4], Status="6LG", Point=0.25);        % Event の Point (NaN と数値) と Infinity の往復
 sc = net.add_scenario("steps", Time=[0, 1]);
 sc.add_offset("B001SG1", "delta", 0.1, 0);
 sc.add_input("B002SG1", ["Pmech"; "Vfield"], [0.05; 0.01], [0.2, 0.5]);
@@ -384,10 +409,12 @@ assert(isequal(string(net2.a_Scenario), ["case1"; "empty"; "steps"]), "ファイ
 for s_tag = string(net.a_Scenario).'
     sc1 = net.a_Scenario{string(net.a_Scenario) == s_tag};
     sc2 = net2.a_Scenario{string(net2.a_Scenario) == s_tag};
-    assert(isequaln(sc1.tab_disturbance, sc2.tab_disturbance), s_tag)
+    assert(isequaln(sc1.tab_event, sc2.tab_event) && isequaln(sc1.tab_offset, sc2.tab_offset) && isequaln(sc1.tab_input, sc2.tab_input), s_tag)
     assert(isequal(sc1.Time, sc2.Time) && sc1.Description == sc2.Description, s_tag)
     assert(sc2.a_PowerNetwork == net2)
 end
+net.a_Scenario{1}.remove_disturbance("Fault002");                  % ブランチの地絡はまだ計算できない
+net2.a_Scenario{1}.remove_disturbance("Fault002");
 for s_tag = ["case1", "steps"]
     r1 = DebugScript.helper.quiet(@() net.simulate(s_tag, Progress="none"));
     r2 = DebugScript.helper.quiet(@() net2.simulate(s_tag, Progress="none"));
@@ -415,11 +442,14 @@ assert(isequal(string({dir(fullfile(s_path, "scenario", "*.json")).name}), "new.
 
 
 %% A broken scenario file stops before the network changes
-c_bad = {"{not json", "[1, 2]", '{"Format": "other", "version": 1}', ...
-         '{"Format": "GUILDAscenario", "version": 2}', '{"Format": "GUILDAscenario"}', ...
-         '{"Format": "GUILDAscenario", "version": 1, "Time": [0, 1, 2]}', ...
-         '{"Format": "GUILDAscenario", "version": 1, "Disturbances": [{"TimeSpan": [0, 1]}]}', ...
-         '{"Format": "GUILDAscenario", "version": 1, "Disturbances": [1, 2]}'};
+c_bad = {"{not json", "[1, 2]", '{"Format": "other", "version": 2}', ...
+         '{"Format": "GUILDAscenario", "version": 3}', '{"Format": "GUILDAscenario"}', ...
+         '{"Format": "GUILDAscenario", "version": 1}', ...
+         '{"Format": "GUILDAscenario", "version": 2, "Time": [0, 1, 2]}', ...
+         '{"Format": "GUILDAscenario", "version": 2, "Offset": [{"TimeSpan": [0, 1]}]}', ...
+         '{"Format": "GUILDAscenario", "version": 2, "Input": [1, 2]}', ...
+         '{"Format": "GUILDAscenario", "version": 2, "Event": [{"Tag": "Fault001", "Target": "B001", "Time": 1}]}', ...
+         '{"Format": "GUILDAscenario", "version": 2, "Event": [{"Tag": "f", "Target": "B001", "Time": 1, "Status": "BG"}]}'};
 for k = 1:numel(c_bad)
     [s_path, c] = csv_folder(); %#ok<ASGLU>
     mkdir(fullfile(s_path, "scenario"));
@@ -435,22 +465,23 @@ end
 %% Unknown scenario fields warn and are ignored
 [s_path, c] = csv_folder(); %#ok<ASGLU>
 mkdir(fullfile(s_path, "scenario"));
-writelines(['{"Format": "GUILDAscenario", "version": 1, "Time": [0, 2], "Judge": "Scenario.out_of_step", ' ...
-           '"Disturbances": [{"Tag": "f", "TimeSpan": [0.1, 0.2], "FaultBus": ["B001"], "Note": "x"}]}'], ...
+writelines(['{"Format": "GUILDAscenario", "version": 2, "Time": [0, 2], "Judge": "Scenario.out_of_step", ' ...
+           '"Event": [{"Tag": "Fault001", "Target": "B001", "Time": 0.1, "Status": "BG", "Note": "x"}, ' ...
+           '{"Tag": "Fault001", "Target": "B001", "Time": 0.2, "Status": "none"}]}'], ...
            fullfile(s_path, "scenario", "old.json"));
 lastwarn("");
 s_log = evalc("net = PowerNetwork.import(s_path, Initialize=false);");
-assert(contains(s_log, "Judge") && contains(s_log, "Disturbances(1).Note"), s_log)
+assert(contains(s_log, "Judge") && contains(s_log, "Event(1).Note"), s_log)
 [s_msg, id] = lastwarn();
 assert(DebugScript.helper.msg_id(s_msg, id) == "GUILDA:PowerNetwork:UnknownScenarioField")
 sc = net.a_Scenario{1};
-assert(sc.s_tag == "old" && isequal(sc.Time, [0, 2]) && sc.tab_disturbance.FaultBus{1} == "B001")
+assert(sc.s_tag == "old" && isequal(sc.Time, [0, 2]) && isequal(sc.tab_event.Target, ["B001"; "B001"]))
 
 
 %% A disturbance whose tag is not in the network stops after the network is built
 [s_path, c] = csv_folder(); %#ok<ASGLU>
 mkdir(fullfile(s_path, "scenario"));
-writelines('{"Format": "GUILDAscenario", "version": 1, "Disturbances": [{"Tag": "f", "TimeSpan": [0.1, 0.2], "FaultBus": ["B099"]}]}', ...
+writelines('{"Format": "GUILDAscenario", "version": 2, "Event": [{"Tag": "Fault001", "Target": "B099", "Time": 0.1, "Status": "BG"}, {"Tag": "Fault001", "Target": "B099", "Time": 0.2, "Status": "none"}]}', ...
            fullfile(s_path, "scenario", "bad.json"));
 ME = import_error(s_path, PowerNetwork("Target"));
 assert(contains(ME.message, "B099"), ME.message)
@@ -503,6 +534,7 @@ function net = tag_network()
     net.a_Bus{1}.add_component("load-power", P=-0.1);
     net.a_Bus{1}.add_component("gen-park", P=0.1);
     net.a_Bus{3}.add_component("load-power", P=-0.1);
+    evalc("net.a_Bus{1}.l_isSlack = true;");
 end
 
 function [net2, c] = round_trip(net)

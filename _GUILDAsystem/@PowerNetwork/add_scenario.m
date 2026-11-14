@@ -6,8 +6,9 @@ function sc = add_scenario(obj, s_tag, opt)
 % number suffix (case1 -> case1002, as for the other layers) and the new tag is shown as
 % INFO; read it from sc.s_tag. Add the disturbances with the methods of the scenario.
 %
-% From=sc0 copies the disturbances, Time and Description of the scenario sc0 (of
-% this or another network); sc0 does not change. The disturbances are checked against this
+% From=sc0 copies the disturbances (tab_event, tab_offset and tab_input, with their tags),
+% Time and Description of the scenario sc0 (of this or another network); sc0 does not
+% change. The disturbances are checked against this
 % network: when a check fails, no scenario is created. To move a scenario, copy it and
 % remove the original: `net2.add_scenario(tag, From=sc); net1.remove_scenario(tag)`.
 %
@@ -43,21 +44,26 @@ function sc = add_scenario(obj, s_tag, opt)
             sc0 = opt.From;
             sc.Time        = sc0.Time;
             sc.Description = sc0.Description;
-            tab = sc0.tab_disturbance;
-            sv_var = string(tab.Properties.VariableNames(2:end));
-            for r = 1:height(tab)
-                c_nv = cell(1, 0);
-                for s_var = sv_var
-                    x = tab.(s_var)(r,:);
-                    if iscell(x)
-                        x = x{1};
-                    end
-                    if s_var == "InputMethod" && x == ""
+            sc.add_events(sc0.tab_event);
+            % Offsets and inputs: one record per tag (an offset and an input may share it)
+            sv_tag = unique([sc0.tab_offset.Tag; sc0.tab_input.Tag], "stable");
+            for s_tag = reshape(sv_tag, 1, [])
+                d = struct("Tag", s_tag);
+                for c_tab = {sc0.tab_offset, sc0.tab_input}
+                    tab = c_tab{1};
+                    r = find(tab.Tag == s_tag);
+                    if isempty(r)
                         continue
                     end
-                    c_nv = [c_nv, {s_var, x}]; %#ok<AGROW>
+                    for s_var = string(tab.Properties.VariableNames(2:end))
+                        x = tab.(s_var)(r,:);
+                        if iscell(x)
+                            x = x{1};
+                        end
+                        d.(s_var) = x;    % TimeSpan: the input's [t_start, t_end] over the offset's t_start
+                    end
                 end
-                sc.add_disturbance(tab.Tag(r), c_nv{:});
+                sc.add_record(d, "");
             end
         end
         for s_name = intersect(["Time", "Description"], string(fieldnames(opt)).')

@@ -1,6 +1,8 @@
 function s_tag = add_input(obj, unit, name, value, time, opt)
 % Add values to inputs of a component from t_start to t_end.
 %
+% One row is added to tab_input.
+%
 % The value is a constant or a time series:
 %
 % - Constant: one number per input, or one for all.
@@ -26,7 +28,7 @@ function s_tag = add_input(obj, unit, name, value, time, opt)
         value {mustBeA(value, ["double","table"])} % Constants (one per input or one for all), or a time series [t, v_1, ..., v_n] or table.
         time  (1,2) double % [s] [t_start, t_end] of the input.
         opt.Method (1,1) string {mustBeMember(opt.Method, ["zoh","foh","spline"])} % Interpolation of a time series: "zoh", "foh" or "spline". Default: "foh".
-        opt.Tag (1,1) string = "" % Tag of the disturbance; default input<n>.
+        opt.Tag (1,1) string = "" % Tag of the disturbance; default input<n> (not Fault or Parallel followed by digits).
     end
     arguments (Output)
         s_tag (1,1) string % Tag of the added disturbance.

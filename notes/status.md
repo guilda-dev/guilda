@@ -171,7 +171,7 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - `SolverPF.solve(cm_Y, tab_PFcondition, sct_options)` は系統を読みません。方程式のキャッシュはなく、母線タグが一致するときだけウォームスタートを使います。
 - `calculate_powerflow` に `Format` を追加しました(既定は `"GUILDAorigin"`)。`initialize` は `Format` を取らず、常に V・I・P・Q の n×4 の配列を返します(2026-11-13。渡すと `GUILDA:PowerNetwork:InitializeFormat`)。`format_powerflow`・`powerflow_matrix`・`powerflow_table` の補助ファイルは削除し、呼び出し元に直接書きました。`initialize` の v3 互換(`methods` と旧い値)を削除し、本文を手順の順に整理しました(2026-11-13、[powerflow-structure.md](powerflow-structure.md) の 6 節)。結果クラスの書き出しのメソッドは `export` です。`calculate_powerflow` の `Export` オプションは削除し、書き出しは `res.export` だけです。`"GUILDAorigin"` の `ResultPF` は `struct(net, false)` のスナップショットとアドミタンス行列から作り、系統のハンドルを持ちません。
 - 収束しないときの ID は `GUILDA:PowerNetwork:PowerflowNotConverged` です。
-- `PowerNetwork.get_pf_condition` を追加し、潮流計算と initialize はスラック母線を書かなくなりました(2026-11-13。[powerflow-structure.md](powerflow-structure.md) の 8 節)。
+- `PowerNetwork.get_pf_condition` を追加し、スラック母線の自動選択を廃止しました。未設定なら `GUILDA:PowerNetwork:NoSlackBus` です(2026-11-13。[powerflow-structure.md](powerflow-structure.md) の 8・9 節)。
 - `private/solve_fixed_input.m` を公開メソッド `calculate_fixed_input_powerflow` にしました(2026-11-13。`Format`、`output.tab_component`)。`initialize(Method="FixedInput")` はこれを呼びます([powerflow-structure.md](powerflow-structure.md) の 7 節)。
 - **テスト(MATLAB R2026a):** small はコードの手順ごと(`6ecc6903`、`847e5b76`、`335c9162`)に FAIL 0(`335c9162` は I69 の修正後に該当テストを再実行)。最後の small 513 件、PASS 511 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1。medium 688 件、PASS 686 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、545 s。追加の 3 手順(`96f131f9` Export の削除、`737c287d` 既定 Format、`254a2602` `Branch.struct`)も small を手順ごとに実行して 513 件中 FAIL 0、最後に medium 688 件、PASS 686 / KNOWN 1 / FAIL 0 / SKIP 1、525 s。その後の 2 手順(`eefdce1b` `export` への改名、n×4 の配列を使う `initialize`)も small を手順ごとに FAIL 0、最後に medium 688 件、PASS 686 / KNOWN 1 / FAIL 0 / SKIP 1、512 s。改名した `export` を使う large のテスト 5 件(F2・F4・F5・F6 の Plot/Export)は個別に実行して PASS。large は未実行。
 - 枝潮流は `Branch.struct` がスナップショットに加える `cm_Y` から求めます(案 C)。
@@ -198,7 +198,7 @@ matlab -batch "DebugScript.run_all('Level','small')"
 
 ブランチは `refactor/121-linearization-connector`(未 push)です。仕様と記録は [linearization-connector.md](linearization-connector.md) にあります。
 
-- `get_sys` は `PowerSystemModel` に 1 つだけで、各モデルオブジェクトは自分のブロック(`get_linear_block`)を、各層はポート(`get_linear_port`)を返し、`SolverLIN.solve` が変数表に沿ってつなぎます。
+- `get_sys` は `PowerSystemModel` に 1 つだけで、各モデルオブジェクトは自分のブロック(`get_linear_matrix`)を、`get_sys` が層のポートを変数マップから作り(局所関数 `port`)、`SolverLIN.solve` が変数表に沿ってつなぎます。
 - Feedback と `net.linearize` を削除しました。モデルの種類は `Type`(`"ODE"` が既定、`"DAE"`)で、`Method` と `"Kron"` は 2026-11-13 に `Type` に置き換えました。結果は DAE を持ち、`res.Type` で切り替え、`res.get_contribution` で要素ごとの寄与を返します(`linearization-connector.md` §13)。v3 の `Algorithm`・`NonUnit` は削除、位置引数の点は非推奨の警告で `Point` にします。
 - 線形モデルは置き換える前の基準値(`+DebugScript/+helper/linearization_reference.mat`)と 1.1e-14 で一致します。
 - **テスト(MATLAB R2026a):** small 520 件、PASS 518 / KNOWN 1 / FAIL 0 / SKIP 1。medium 689 件、PASS 687 / KNOWN 1 / FAIL 0 / SKIP 1、694 s。large は未実行(F7・F8 の 3 件は基準でも失敗)。
@@ -214,6 +214,29 @@ matlab -batch "DebugScript.run_all('Level','small')"
 - 軌道は S0 の基準(`simulate_baseline` の 6 例)と各手順で `isequaln` です。
 - **S7 のテスト(MATLAB R2026a):** small 527 件(PASS 525 / KNOWN 1 / FAIL 0 / SKIP 1、450 s)。`GUILDA.doc` は 74 クラス、警告 3(`component.generator.abstract` の `set_avr` / `set_pss` / `set_governor`、既知)、エラー 0。旧名(`import_csv`, `export_csv`, `SolverOptions`, `Scenario(`, `simulate([`, `read_mass`, `sc.judge`, `Export=`)は `_GUILDAdoc` に残っていない(`o.SolverOptions` は MATLAB の `ode` のプロパティ)。ページの図は目視していない。
 - **未対応:** チュートリアル(`.mlx`)は旧 API のままです(#113 の保留)。`notes/simulate-review-measurements.m` は基準 `951800e` の API の測定の記録で、現在のコードでは動きません(冒頭に再現の方法を記載)。
+
+## 設定の検査とオプションの受け渡し(2026-11-13)
+
+ブランチは `refactor/option-handling`(未 push)です。
+
+- **設定の検査:** 設定は `GUILDA.config` が読み込むときに 1 回だけ検査します。検査は `@GUILDA/private/check_setting.m` が行い、`get_config`(`merge_config`)と `GUILDA.setting` が共通に使います。
+  - 型: 値を `Type` のクラス(string の行、logical、double)に変換します。logical の 0/1、char、cell も受け付けます。
+  - 条件: 設定の定義に、省略できる条件 `Valid`(MATLAB の式。例 `"v > 0 || isnan(v)"`)と、select の `FromLogical` を加えました。
+  - 不正な値: 利用者のファイルの不正な値は既定値に戻し、ファイルを書き直したうえで INFO `GUILDA:GUILDA:ConfigValueReset`(新規)で知らせます。`GUILDA.setting` では従来どおり `InvalidSettingValue` のエラーです。
+  - `Valid` の条件: 各解析の Name-Value オプションの検証関数と同じ条件にしました。対象は OPF、CPF、潮流計算、TimeSimulation、Model の Hz です。TimeSimulation の Progress には `FromLogical` を付けました。
+- **OPF と CPF:** 設定のセクションの読み直し、型の変換、`solver_options` を削除しました。Name-Value オプション(既定値は `GUILDA.config`)を、そのままソルバーへ渡します。
+  - Name-Value オプションの無い設定は、使う位置で `GUILDA.config` から読みます。OPF の `<Solver><option>` は `SolverOPF.optimoption`、CPF の `Corrector*` と `Increment` は `SolverCPF.solve` が読みます。
+  - このため、これらの設定は `result.options` に入りません。
+  - OPF の `PlotFcn` の検査は 1 回にしました。`build_opf_problem` は変えていません。
+- **結果の一致:** IEEE14 の OPF(AC/DC/ELD、ReferenceBus="none"、quadprog、WarmStart、FminconAlgorithm="sqp")と CPF(4 通り)の結果が変更前と完全に一致しました。
+- **テスト(MATLAB R2026a):** 最後の small は 554 件、PASS 551 / KNOWN 1 / FAIL 1 / SKIP 1(582 s)でした。
+  - FAIL は F34(`functionSignatures.json` が古い)で、基準のブランチから続いています。原因は IEEJ の `Circuit` オプションで、この作業とは関係ありません。
+  - medium は 745 件、PASS 741 / KNOWN 1 / FAIL 2 / SKIP 1(1231 s)でした。F34 のほかに F4 が 1 件失敗しました。lsqlin が選ばれると `LsqlinAlgorithm` の設定が無いことが原因で、`28dd711d` で直しました。F4 は単独の実行で PASS 38 / SKIP 1 です。
+- **simulate(`refactor/simulate-option-handling`、未 push):** ローカル関数 `simulate_options` を削除しました。`arguments` ブロックの既定値を `GUILDA.config("TimeSimulation", Name)` とし、`Time` と `Format` を除いたオプションをそのまま `SolverODE.solve` と `ResultODE` の `options` に渡します。
+  - 呼び出しの値: `arguments` ブロックの検証関数が検査します(`MaxStep=0` などはエラー、`SampleTime=0` は有効)。呼び出しの `Progress` の true/false だけを `"dialog"`/`"none"` に直し、`PlotFcn` は `tools.check_plotfcn` で 1 回だけ検査します(OPF と同じ)。
+  - 設定の `SampleTime` の 0 は、以前は NaN に直していましたが、そのまま 0 になります(どちらもソルバーの刻みを記録)。
+  - `DebugScript.helper.ode_options` の不正値の置き換えと型の変換も削除しました。
+- **未対応(別のセッションの担当):** `calculate_powerflow` の `solver_options`、`get_sys` の `string()` は、設定を読み込むときの正規化によって冗長になりました。いずれも壊れはしません。
 
 ## 未決事項
 

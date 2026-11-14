@@ -6,9 +6,10 @@
         <entry key="SetGcon">Use the method to add or remove Global Controller classes from a_Bus.&#xA;&#xA; &lt; When adding a Global Controller class &gt;&#xA;  &gt;&gt; obj.add_bus(GlobalCon_INSTANCE,[ComponentTag])&#xA; &lt; When removing a Global Controller class &gt;&#xA;  &gt;&gt; obj.aremove_bus(GlobalCon_TAG)</entry> 
         <entry key="InvalidOpfHandle">Cost and Constraint of the optimal power flow must be function handles @(v, p) ... (or [] for none).</entry>
         <entry key="NoBus">''{0}'' has no buses, so the power flow has no slack bus.&#xA;Add buses with net.add_bus() and components with bus.add_component(...).</entry>
-        <entry key="NoSlackCandidate">No bus of ''{0}'' has a component, so the power flow cannot select a slack bus.&#xA;Add a generator to a bus with bus.add_component(...). A bus with a component that has Q = NaN is selected first.</entry>
+        <entry key="NoSlackBus">No slack bus is set in network ''{0}''. Set one before the power flow, e.g. net.a_Bus'{'1'}'.l_isSlack = true (usually a bus with a generator whose powerflow Q is NaN).</entry>
         <entry key="BusNotFound">No bus with the tag ''{0}'' was found in ''{1}''.</entry> 
         <entry key="BranchNotFound">No branch with the tag ''{0}'' was found in ''{1}''.&#xA;List the tags of the network with string(net.a_Branch).</entry>
+        <entry key="InvalidBranchStatus">Invalid BranchStatus for net.get_admittance_matrix of ''{0}'': {1}.&#xA;BranchStatus is a table with the columns Target (a branch tag of string(net.a_Branch)), Status (fault: "3LG", "6LG", "none"; parallel: "3open", "6open", "close") and Point (fault position, 0 &lt; Point &lt; 1, for "3LG" and "6LG"). A branch takes at most one fault row and one parallel row.</entry>
         <entry key="BranchBusIndex">Bus index {0} is out of range: ''{1}'' has {2} buses.&#xA;Add the buses first with net.add_bus(), or give the end buses as indices of net.a_Bus or as bus tags.</entry>
         <entry key="BranchSelfLoop">Both ends of the branch are bus ''{0}''. A branch must connect two different buses.&#xA;For a shunt at the bus, use net.add_bus(Gshunt=G, Bshunt=B) instead of a branch.</entry>
         <entry key="BranchZeroImpedance">The branch between ''{0}'' and ''{1}'' has R = X = 0, so its admittance is infinite.&#xA;Give a nonzero R or X, or merge the two buses into one.</entry>
@@ -43,19 +44,18 @@
         <entry key="InitializeFixedInputIsland">net.initialize(Method="FixedInput") stopped: ''{0}'' is split into {1} islands ({2}), and one slack generator balances one network.&#xA;Connect the islands or solve them as separate networks.</entry>
         <entry key="InitializeNoSlackGenerator">net.calculate_fixed_input_powerflow (also used by net.initialize(Method="FixedInput")) needs a generator on the slack bus ''{0}'': the Pmech of its first generator balances the power.&#xA;Set l_isSlack of a bus with a generator.</entry>
         <entry key="InitializeInputNotSet">net.calculate_fixed_input_powerflow (also used by net.initialize(Method="FixedInput")) needs the inputs of every component, but {0} holds none.&#xA;Set them with comp.set_input(u), or run net.initialize() first.</entry>
-        <entry key="ScenarioJson">Cannot read the scenario file {0}: {1}. Nothing was added to the network. Write it again with net.export, or fix the file (Format "GUILDAscenario", version 1).</entry>
+        <entry key="ScenarioJson">Cannot read the scenario file {0}: {1}. Nothing was added to the network. Write it again with net.export, or fix the file (Format "GUILDAscenario", version 2).</entry>
         <entry key="UnknownScenarioField">Ignored unknown fields in the scenario file {0}: {1}. Known fields: {2}.</entry>
         <entry key="ControllersNotSaved">export does not write controllers, so the CSV model of ''{0}'' does not include them.&#xA;Local ({1}): {2}&#xA;Global ({3}): {4}&#xA;Add them again after PowerNetwork.import.</entry>
         <entry key="SimulationIncomplete">net.simulate did not reach the end time (flag = {0}); the result holds the trajectories up to the time reached.&#xA;{1}</entry>
         <entry key="ScenarioNotFound">No scenario with the tag ''{0}'' was found in ''{1}''. {2}</entry>
-        <entry key="SlackSelected">Slack bus not found. Setting the bus ''{0}'' as the slack bus.</entry>
-        <entry key="SlackWithoutQnan">No component of slack bus ''{0}'' has Q = NaN, so ''{1}'' takes the remaining power in net.initialize, even if it is a load.&#xA;Add a generator to this bus, set l_isSlack = true on a bus that has one, or set Q = NaN on the component that should supply the power.</entry>
         <entry key="PowerflowNotConverged">{0}</entry>
         <entry key="SimulateStale">net.simulate stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
         <entry key="SpringModelStale">net.plot_spring_model stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
+        <entry key="DiagramStale">net.plot_diagram stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
         <entry key="SimulateInputEdited">net.simulate stopped: inputs of components of ''{0}'' were edited ({1}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
         <entry key="GconNoTarget">The global controller ''{0}'' drives the input ''{1}'' of ''{2}'', but neither the component nor its local controllers have this input now.&#xA;Attach a local controller with this input, or remove the global controller with net.remove_global_controller(TAG).</entry>
-        <entry key="OpenBranchIsland">Phase {0} (t = [{1}, {2}] s): the open branches {3} leave the buses {4} connected to no component, so their voltages are undetermined. Open branches so that every bus stays connected to a component, or remove those buses from the network.</entry>
+        <entry key="OpenBranchIsland">Phase {0} (t = [{1}, {2}] s): the branches {3}, open or with all circuits grounded ("6LG"), leave the buses {4} connected to no component, so their voltages are undetermined. Open or ground branches so that every bus stays connected to a component, or remove those buses from the network.</entry>
         <entry key="StopNoRotorAngle">net.simulate(StopOnOutOfStep=true) compares the rotor angle delta of each generator with that of the generator of the slack bus, but ''{0}'' has no generator with delta on the slack bus ({1}) or no other one to compare (components with delta: {2}).&#xA;Run without StopOnOutOfStep, or add generators.</entry>
     </message>
 </rsccat>

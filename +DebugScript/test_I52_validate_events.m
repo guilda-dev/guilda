@@ -11,20 +11,22 @@ DebugScript.helper.quiet(@() net.initialize);
 
 c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
 
-%% Unknown FaultBus
-expect_event_error(net, "UnknownFaultBus", "B999", "TimeSpan", [1,1.05], "FaultBus", "B999");
+%% Unknown fault target
+expect_event_error(net, "UnknownFaultTarget", "B999", "TimeSpan", [1,1.05], "FaultBus", "B999");
 % 正しいタグが混ざっていても、誤ったものだけを示す
-expect_event_error(net, "UnknownFaultBus", "B999", "TimeSpan", [1,1.05], "FaultBus", ["B008";"B999"]);
+expect_event_error(net, "UnknownFaultTarget", "B999", "TimeSpan", [1,1.05], "FaultBus", ["B008";"B999"]);
 
 
-%% Unknown TripUnit
-expect_event_error(net, "UnknownTripUnit", "NOPE", "TimeSpan", [1,2], "TripUnit", "NOPE");
+%% Unknown parallel target
+expect_event_error(net, "UnknownParallelTarget", "NOPE", "TimeSpan", [1,2], "TripUnit", "NOPE");
+expect_event_error(net, "UnknownParallelTarget", "EL999", "TimeSpan", [1,2], "OpenBranch", "EL999");
 
 
-%% TripUnit does not accept a local controller
+%% A trip accepts a local controller
 avr = net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
-expect_event_error(net, "UnknownTripUnit", avr.s_tag, "TimeSpan", [1,1.2], "TripUnit", avr.s_tag);
+[~, flag] = net.simulate(DebugScript.helper.scenario("ev", net, "TimeSpan", [1,1.2], "TripUnit", avr.s_tag).s_tag, Time=[0,2]);
+assert(flag == 1)
 
 
 %% TripUnit accepts components and global controllers
@@ -92,7 +94,7 @@ function expect_event_error(net, s_key, s_text, varargin)
     catch ME
         assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME) + ": " + ME.message)
         assert(all(contains(ME.message, s_text)), "原因が示されない: " + ME.message)
-        assert(contains(ME.message, '"ev"'), "外乱の名前が示されない: " + ME.message)
+        assert(any(contains(ME.message, ["""ev""", """Fault001""", """Parallel001"""])), "外乱の名前が示されない: " + ME.message)
         return
     end
     error("DebugScript:noError", "エラーにならない (期待: " + s_id + ")")

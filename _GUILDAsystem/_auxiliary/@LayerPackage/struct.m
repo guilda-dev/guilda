@@ -9,7 +9,7 @@ function [net, sct_visited] = struct(obj, l_disp, s_header, sct_visited)
         obj 
         l_disp     (1,1) logical   = true; % Print the properties that cannot be read or copied.
         s_header   (1,1) string    = "net"; % Path of this layer in the struct, used for messages and repeated objects.
-        sct_visited (1,1) struct   = struct("a_obj",{cell(0,1)}, "sv_path",strings(0,1)); % Layers already stored (a_obj) and their paths (sv_path), used by the recursion. The recursion adds the fields sv_tag and d_override (see private/snapshot).
+        sct_visited (1,1) {mustBeA(sct_visited,"struct")} = struct("a_obj",{cell(0,1)}, "sv_path",strings(0,1)); % Layers already stored (a_obj) and their paths (sv_path), used by the recursion. The recursion adds the fields sv_tag and d_override (see private/snapshot).
     end
     arguments (Output)
         net % Nested struct of the layer.

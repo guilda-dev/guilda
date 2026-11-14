@@ -3,9 +3,9 @@ function [sct_sys, output] = solve(obj, c_block, tab, tab_connection, sct_port) 
 %
 % The numerical connector of the linearization: get_sys of every layer
 % (PowerSystemModel.get_sys) collects the linear blocks of its model objects
-% (Component.get_linear_block, LocalController.get_linear_block,
-% GlobalController.get_linear_block) and its port (get_linear_port), and this method
-% connects them. It reads only its arguments: no network and no model object.
+% (Component.get_linear_matrix, LocalController.get_linear_matrix,
+% GlobalController.get_linear_matrix) and builds its port from the variable map (the
+% inputs, outputs and algebraic bus voltages of the layer), and this method connects them. It reads only its arguments: no network and no model object.
 %
 % - Each input of a block is the sum of its sources in tab_connection (the rows whose
 %   TargetIndex is the row of tab with the Label of the input): an output of a block

@@ -1,4 +1,4 @@
-function rm_PQ = distribute_power(bus, r_P, r_Q, s_rule, l_slack)
+function rm_PQ = distribute_power(bus, r_P, r_Q, s_rule)
 % Return P and Q of each component of a bus for the bus injection r_P + j r_Q.
 %
 % Each component starts from P, Q of its tab_parameter.powerflow. The slack bus gives the
@@ -8,8 +8,7 @@ function rm_PQ = distribute_power(bus, r_P, r_Q, s_rule, l_slack)
 % "baseMVA" in proportion to operation.baseMVA, "Qmax" in proportion to the range
 % operation.Qmax - Qmin, starting from Qmin ("baseMVA" when a Qmin or Qmax is infinite).
 % The bus can also be a bus struct of a network snapshot (struct(net, false)), as
-% ResultPF uses it. l_slack treats the bus as the slack bus (default: its l_isSlack), for
-% a slack bus that net.get_pf_condition selected without writing l_isSlack.
+% ResultPF uses it.
 %
 % <@Examples>
 % ```matlab
@@ -23,7 +22,6 @@ function rm_PQ = distribute_power(bus, r_P, r_Q, s_rule, l_slack)
         r_P   (1,1) double % [pu] Active power injection of the bus.
         r_Q   (1,1) double % [pu] Reactive power injection of the bus.
         s_rule (1,1) string {mustBeMember(s_rule,["baseMVA","Qmax"])} = "baseMVA" % Split of the remaining Q among the components with Q = NaN.
-        l_slack (1,1) logical = bus.l_isSlack % Give the remaining P (and Q) as at the slack bus.
     end
     arguments (Output)
         rm_PQ double       % [pu] [P Q] of each component, one row per component (bus.a_Component order); 0x2 without components.
@@ -38,7 +36,7 @@ function rm_PQ = distribute_power(bus, r_P, r_Q, s_rule, l_slack)
     rm_PQ  = [tab_PQ.P, tab_PQ.Q];
 
     % active power: the slack remainder
-    if l_slack
+    if bus.l_isSlack
         i_rest = find(isnan(rm_PQ(:,2)), 1);
         if isempty(i_rest)
             i_rest = 1;
@@ -49,7 +47,7 @@ function rm_PQ = distribute_power(bus, r_P, r_Q, s_rule, l_slack)
 
     % reactive power
     lv_Qnan = isnan(rm_PQ(:,2));
-    if l_slack && ~any(lv_Qnan)
+    if bus.l_isSlack && ~any(lv_Qnan)
         rm_PQ(1,2) = r_Q - sum(rm_PQ(2:end,2));   % like P: the power flow ignores its setting
     end
     r_Qrest = r_Q - sum(rm_PQ(~lv_Qnan,2));

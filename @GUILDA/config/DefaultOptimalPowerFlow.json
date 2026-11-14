@@ -61,11 +61,13 @@
     "MaxIteration":{
         "Value": NaN,
         "Type": "double",
+        "Valid": "isnan(v) || v > 0 && mod(v,1) == 0",
         "Description": "'MaxIterations' option of the solver (NaN: the default of the solver)"
     },
     "Tolerance":{
         "Value": NaN,
         "Type": "double",
+        "Valid": "v > 0 || isnan(v)",
         "Description": "'OptimalityTolerance' option of the solver (NaN: the default of the solver)"
     },
     "QuadprogStepTolerance":{

@@ -7,10 +7,15 @@ function [sct_dae, sct_event, rv_x0, tab_phase] = build_simulation_data(obj, s_s
 %   2. the variable map and the connection map (get_variable_map)
 %   3. the blocks of the components, local controllers and global controllers: their rows
 %      in the map and their f_* function handles (closures with the parameters bound by
-%      value), the equilibrium, the admittance matrix and the 2x2 matrix of each branch
+%      value), the equilibrium and the admittance matrix with all branches closed
 %   4. the phases of the scenario (Scenario.compile): the disturbances as positions
-%   5. the islands left by open branches
-%   6. the initial value rv_x0: the equilibrium with the offsets and inputs of the first
+%   5. the islands left by branches that no longer join their buses (opened, or all
+%      circuits grounded)
+%   6. the admittance matrices of the phases: one call of get_admittance_matrix(
+%      BranchStatus=tab_branch) for each distinct set of branch states of the phases,
+%      kept in sct_dae.c_Y (c_Y{1}: all branches closed, cm_Y); sct_event(k).i_Y is the
+%      position of the matrix of phase k in c_Y
+%   7. the initial value rv_x0: the equilibrium with the offsets and inputs of the first
 %      phase
 % The time is required, so that the time of a run is decided only by simulate (a test
 % passes sc.Time).
@@ -39,6 +44,20 @@ function [sct_dae, sct_event, rv_x0, tab_phase] = build_simulation_data(obj, s_s
     sc = obj.a_Scenario{string(cellfun(@(s) s.s_tag, obj.a_Scenario, 'UniformOutput', false)) == s_scenario};
     [tab_phase, sct_event] = sc.compile(sct_dae, time);
     simulateFcn_check_islands(sct_dae, sct_event, tab_phase);
+
+    % Admittance matrix of each distinct set of branch states (the closed network first)
+    c_state = {sct_event(1).tab_branch([], :)};
+    sct_dae.c_Y = {sct_dae.cm_Y};
+    for k = 1:numel(sct_event)
+        tab_k = sct_event(k).tab_branch;
+        i_Y = find(cellfun(@(t) isequaln(t, tab_k), c_state), 1);
+        if isempty(i_Y)
+            c_state{end+1} = tab_k; %#ok<AGROW>
+            sct_dae.c_Y{end+1,1} = obj.get_admittance_matrix(BranchStatus=tab_k).Variables;
+            i_Y = numel(c_state);
+        end
+        sct_event(k).i_Y = i_Y;
+    end
 
     % Initial value: the offsets and the inputs at t = 0 of the first phase
     rv_x0 = sct_dae.rv_equilibrium;

@@ -95,8 +95,8 @@ DebugScript.helper.quiet(@() net.initialize);
 fig = figure("Visible", "off");
 c   = onCleanup(@() close(fig));
 ax  = axes(fig);
-G   = DebugScript.helper.quiet(@() net.plot_diagram(ax));
-assert(isa(G, "DrawerNetDiagram"))
+G   = DebugScript.helper.quiet(@() net.plot_diagram(Parent=ax));
+assert(isa(G, "DrawerNetDiagram") && G.ax == ax)
 assert(~isempty(ax.Children))
 
 

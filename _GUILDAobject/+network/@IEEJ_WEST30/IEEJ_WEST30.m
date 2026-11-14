@@ -23,7 +23,10 @@ classdef IEEJ_WEST30 < PowerNetwork
 %   are buses 86 to 115. The bus tag keeps the node number, for example `B3010`.
 % - Lines are `pi` branches. A card gives `R`, `X` and `YC = Y/2` per circuit and the
 %   number of circuits `n`, so `R/n`, `X/n` and `C = YC*n`.
+%   The branch has `circuit = n` (column `circuit` of `branch/parameter.csv`): 36 lines
+%   have 2 circuits and 63 have 1.
 % - Transformers are `pi_transformer` branches with `R = 0`. All have one bank and tap 1.
+%   They have `circuit = 1`.
 % - The node value `YC` is the bus shunt `Bshunt`: positive for capacitors, negative
 %   for shunt reactors.
 % - Generators are gen-park models, with data on the machine MVA of each section, which

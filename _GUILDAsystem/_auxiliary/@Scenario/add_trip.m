@@ -1,18 +1,25 @@
-function s_tag = add_trip(obj, unit, time, opt)
-% Add a trip of components or global controllers from t_start to t_end.
+function s_tag = add_trip(obj, unit, time)
+% Add a trip of components, global controllers or local controllers from t_start to t_end.
 %
 % A tripped unit is disconnected (its states are NaN in the result) and reconnected at
-% t_end. A local controller cannot be tripped.
+% t_end. Two rows per unit are added to tab_event with one new tag Parallel<n>: (t_start,
+% "open") and (t_end, "close"). remove_disturbance(tag) removes them. Two parallel events
+% of one unit may touch but not overlap. An input whose source is tripped takes its
+% equilibrium value (see the Scenario help).
+%
+% <@Examples>
+% ```matlab
+% sc.add_trip("B003LPQ2", [1, 1.2]);      % Parallel001
+% ```
     arguments (Input)
         obj
-        unit (:,1) string % Tags of the components or global controllers.
+        unit (:,1) string % Tags of components, global controllers or local controllers.
         time (1,2) double % [s] [t_start, t_end] of the trip.
-        opt.Tag (1,1) string = "" % Tag of the disturbance; default trip<n>.
     end
     arguments (Output)
-        s_tag (1,1) string % Tag of the added disturbance.
+        s_tag (1,1) string % Tag of the added trip (Parallel<n>).
     end
-    d = blank_record(opt.Tag, time);
-    d.TripUnit = unit;
-    s_tag = obj.add_record(d, "trip");
+    tab = new_event_rows(obj.tab_event, "Parallel", unit, time, ["open", "close"], NaN);
+    obj.add_events(tab);
+    s_tag = tab.Tag(1);
 end

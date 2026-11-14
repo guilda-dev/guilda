@@ -46,7 +46,10 @@ sc.add_offset("B001SG1", ["delta","omega"], [0.01, 0.02], 1);
 ph = e(2);
 assert(d.sv_comp(ph.iv_tripComp) == "B003SG1" && d.sv_gc(ph.iv_tripGC) == net.a_GlobalController{1}.s_tag)
 assert(d.sv_bus(ph.iv_faultBus) == "B008")
-assert(isequal(d.sv_branch(ph.iv_openBranch), ["EL001";"EL003"]) && issorted(ph.iv_openBranch))
+% ブランチの状態は表 (ブランチの順)。行列は状態の組ごとに 1 つ (c_Y{1} はすべて閉じた行列)
+assert(isequal(ph.tab_branch.Target, ["EL001";"EL003"]) && all(ph.tab_branch.Status == "6open"))
+assert(isequal([e.i_Y], [1, 2, 1]) && numel(d.c_Y) == 2 && isequal(d.c_Y{1}, d.cm_Y))
+assert(~isfield(d, "c_branchY") && ~isfield(e, "iv_openBranch"))
 assert(isequal(d.tab_variable.Name(ph.iv_offset), ["delta";"omega"]) && isequal(ph.rv_offset, [0.01;0.02]))
 assert(all(d.tab_variable.Owner(ph.iv_offset) == "B001SG1"))
 % 第 1 区間のオフセットは初期値に入る
@@ -54,12 +57,9 @@ sc.add_offset("B001SG1", "delta", 0.03, 0, Tag="first");
 [d, e, x0] = net.build_simulation_data(sc.s_tag, sc.Time);
 i_d = find(d.tab_variable.Owner == "B001SG1" & d.tab_variable.Name == "delta");
 assert(isempty(e(1).iv_offset) && x0(i_d) == d.rv_equilibrium(i_d) + 0.03)
-% 開放したブランチの行列: 全ブランチを閉じた Y から引くと、そのブランチを除いた Y
-k = find(d.sv_branch == "EL003");
-iv = d.im_branchBus(k,:);
-Y = d.cm_Y;  Y(iv,iv) = Y(iv,iv) - d.c_branchY{k};
-net2 = avr_pss_agc();  net2.remove_branch("EL003");
-assert(max(abs(Y - net2.get_admittance_matrix().Variables), [], "all") < 1e-12)
+% 開放したブランチの行列は、そのブランチを除いた系統の Y
+net2 = avr_pss_agc();  net2.remove_branch("EL003");  net2.remove_branch("EL001");
+assert(max(abs(d.c_Y{2} - net2.get_admittance_matrix().Variables), [], "all") < 1e-12)
 
 
 %% Errors of the model checks keep the network IDs
@@ -155,7 +155,7 @@ sc.add_input("B002SG1", "Pmech", [0, 0.01; 0.5, 0.03; 1.5, -0.01], [1,3], Method
 [res, flag, output] = DebugScript.helper.quiet(@() net.simulate(sc.s_tag));
 assert(flag == 1)
 assert(isequal(output.phases.t1.', [0, 1, 1.5, 2.5, 3]), mat2str(output.phases.t1.'))
-assert(all(output.phases{2:4, sc.tab_disturbance.Tag}))
+assert(all(output.phases{2:4, sc.tab_input.Tag}))
 Pm = res.odeResults.Bus(2).Component(1).U.Pmech;
 rv_val = [0, 0.01, 0.03, -0.01, 0];
 for p = 1:5

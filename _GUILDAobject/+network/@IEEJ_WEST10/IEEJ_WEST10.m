@@ -28,6 +28,9 @@ classdef IEEJ_WEST10 < PowerNetwork
 %   same as with one branch of `R/2`, `X/2`, `2*C` per card (within 1e-14).
 % - Transformers are pi_transformer branches with the input `X` (0.14 pu on the machine
 %   rating), `R = 0`, `C = 0`, `tap = 1`, `phase = 0`.
+% - Every branch has `circuit = 1` (column `circuit` of `branch/parameter.csv`): a line
+%   branch is one circuit, and a transformer is taken as one bank (the data give no bank
+%   count).
 % - Generators have `P = PG`, `Q = NaN`, and the rating `baseMVA = GMVA` of the section.
 %   Reactances and `M` (7 s) are converted from the machine rating to the system base:
 %   `X*1000/GMVA`, `M*GMVA/1000`.

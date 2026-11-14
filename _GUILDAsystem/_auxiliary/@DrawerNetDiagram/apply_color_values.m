@@ -18,7 +18,7 @@ function apply_color_values(obj, h_list, rv_value)
 
     rm_color = ones(numel(rv_value), 3) * 0.2;
     lv_isval = ~isnan(rv_value);
-    rm_color(lv_isval,:) = map_values_to_colors(obj.ColorMap, obj.ColorLim, rv_value(lv_isval), sum(lv_isval));
+    rm_color(lv_isval,:) = map_values_to_colors(obj.Colormap, obj.ColorLimits, rv_value(lv_isval), sum(lv_isval));
     for i = 1:n_target
         set_graphics_color(h_list(i), rm_color(i, :));
     end
@@ -51,7 +51,7 @@ function rm_color = map_values_to_colors(rm_color, rr_clim, rv_value, n_target)
 
     rr_clim = double(rr_clim(:).');
     if numel(rr_clim) ~= 2 || any(~isfinite(rr_clim))
-        error(msg("GUILDA:DrawerNetDiagram:InvalidColorLim"));
+        error(msg("GUILDA:DrawerNetDiagram:InvalidColorLimits"));
     end
 
     if rr_clim(2) <= rr_clim(1)

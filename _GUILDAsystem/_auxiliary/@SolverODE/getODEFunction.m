@@ -48,9 +48,13 @@ function odeX = getODEFunction(ctx, t, x, RM, EM, lg)
         end
     end
 
-    % 2. Local controllers: from their own states, bus voltage and inputs
+    % 2. Local controllers: from their own states, bus voltage and inputs; a tripped one
+    %    gives no output (its states and inputs are removed by EM)
     c_lc = ctx.c_lc;
     for k = 1:numel(c_lc)
+        if ~ctx.lv_lcOn(k)
+            continue
+        end
         b  = c_lc{k};
         xk = x(b.iv_x);
         Vk = x(b.iv_V);

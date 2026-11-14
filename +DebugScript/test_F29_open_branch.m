@@ -94,13 +94,14 @@ spread = @(lv) max(max(omega(lv,:), [], 2) - min(omega(lv,:), [], 2));
 assert(spread(r.t > 9) < 0.5*spread(inwin(r.t, 1.07, 3)), "発電機の周波数の差が減衰しない")
 
 
-%% Overlapping openings use the union of the open branches
+%% Overlapping openings of different branches use the union of the open branches
+% 同じブランチの開放の重なりはエラー (GUILDA:Scenario:OverlappingEvents、F31)
 ev1 = DebugScript.helper.scenario("open1", net, "TimeSpan", [1,2], "OpenBranch", "EL003");
-ev2 = DebugScript.helper.scenario("open2", net, "TimeSpan", [1.5,2.5], "OpenBranch", ["EL005"; "EL003"]);
+ev2 = DebugScript.helper.scenario("open2", net, "TimeSpan", [1.5,2.5], "OpenBranch", "EL005");
 c_Y = phase_admittance(net, [0,3], {ev1, ev2});
 assert(numel(c_Y) == 5)
 c_ref = {full_admittance(net), admittance_without("EL003"), admittance_without(["EL003","EL005"]), ...
-         admittance_without(["EL003","EL005"]), full_admittance(net)};
+         admittance_without("EL005"), full_admittance(net)};
 for tp = 1:5
     assert(norm(full(c_Y{tp} - c_ref{tp}), 1) < 1e-12, "区間 " + tp)
 end
@@ -121,8 +122,8 @@ assert(flag == 1, output.message)
 
 %% Unknown branch tag stops with an error
 [s_id, s_msg] = call_error(@() DebugScript.helper.scenario("open", net, "TimeSpan", [1,2], "OpenBranch", ["EL003"; "EL999"]));
-assert(s_id == "GUILDA:Scenario:UnknownOpenBranch", s_id + ": " + s_msg)
-assert(contains(s_msg, '"open"') && contains(s_msg, "EL999") && ~contains(s_msg, "EL003,"), s_msg)
+assert(s_id == "GUILDA:Scenario:UnknownParallelTarget", s_id + ": " + s_msg)
+assert(contains(s_msg, '"Parallel001"') && contains(s_msg, "EL999") && ~contains(s_msg, "EL003,"), s_msg)
 
 
 %% Opening needs a duration
@@ -267,6 +268,7 @@ function net = ring(N)
         net.a_Bus{i}.a_Component{1}.add_local_controller("pss-PSS1");
     end
     
+    evalc("net.a_Bus{1}.l_isSlack = true;");
     DebugScript.helper.quiet(@() net.initialize);
 end
 

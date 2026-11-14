@@ -4,8 +4,8 @@ function [sys, flag, output] = get_sys(obj, point, opt)
 % One method for every layer with a linear model: PowerNetwork, Bus, Component (with
 % its local controllers), LocalController and GlobalController (Branch has none:
 % GUILDA:PowerSystemModel:NoLinearModel). Each model object gives its own linear block
-% (get_linear_block) and the layer its inputs and outputs (get_linear_port);
-% SolverLIN.solve connects the blocks along the variable map. The linearization needs no
+% (get_linear_matrix); get_sys takes the inputs and outputs of the layer (its port) from
+% the variable map, and SolverLIN.solve connects the blocks along it. The linearization needs no
 % toolbox, and the model is not changed.
 %
 % | Layer | Inputs | Outputs | Bus voltages |
@@ -96,12 +96,7 @@ function [sys, flag, output] = get_sys(obj, point, opt)
 
     % The blocks at the point, and the currents of the components
     c_block = blocks(obj, a_obj, tab, tab_c, rv_point);
-    sct_port = obj.get_linear_port();
-    a_comp = a_obj(cellfun(@(o) isa(o, "Component"), a_obj));
-    sct_port.tab_current = current_table(a_comp);
-    if isa(obj, "PowerNetwork")
-        sct_port.tab_stamp = admittance_stamps(obj);   % the parts of cm_Y: branches, bus shunts
-    end
+    sct_port = port(obj, tab, a_obj);
     if isa(obj, "PowerNetwork")
         solver = obj.solver_LIN;
     else
@@ -193,8 +188,66 @@ function [net, a_obj, tab, tab_c] = layer_maps(obj)
         tab = obj.get_variable_map();
         tab_c = empty_connections();
         a_obj = {obj};
+    else   % Branch and any other layer
+        error(msg("GUILDA:PowerSystemModel:NoLinearModel", class(obj), char(string(obj.s_tag))))
+    end
+end
+
+
+function sct_port = port(obj, tab, a_obj)
+% Inputs and outputs of the linear model of the layer (sct_port of SolverLIN.solve), from
+% its variable map tab:
+%
+% | Layer | sv_input | sv_output | sv_algebraic |
+% |---|---|---|---|
+% | PowerNetwork | u | y, yc | Vre, Vim (with cm_Y, the admittance matrix) |
+% | Bus, Component | V, u, uc | I of the layer, y, yc | none |
+% | LocalController, GlobalController | V, uc | yc | none |
+%
+% tab_bus has one row per bus of the layer (Bus, Vre, Vim, Ire, Iim); its currents are
+% those of the bus, or of the component for a component. tab_current holds the currents
+% of the components (current_table) and, for the network, tab_stamp the parts of cm_Y
+% (admittance_stamps).
+    lab  = @(s_kind) tab.Label(tab.Kind == s_kind);
+    sv_V = tab.Label(tab.Kind == "Vre" | tab.Kind == "Vim");
+    if isa(obj, "PowerNetwork")
+        a_bus = obj.a_Bus(:);
+    elseif isa(obj, "GlobalController")
+        a_bus = obj.a_PowerNetwork.a_Bus(:);
+    elseif isa(obj, "LocalController")
+        a_bus = {root_component(obj).a_Bus};
+    elseif isa(obj, "Component")
+        a_bus = {obj.a_Bus};
     else
-        obj.get_linear_port();     % NoLinearModel
+        a_bus = {obj};
+    end
+    if isa(obj, "Bus") || isa(obj, "Component")
+        sv_I = reshape(string(obj.attach_tag(["Ire";"Iim"])), [], 1);   % the current of the layer
+    else
+        sv_I = reshape(string(tools.vcellfun(@(b) reshape(string(b.attach_tag(["Ire";"Iim"])), [], 1), a_bus)), [], 1);
+    end
+    sv_tag  = reshape(string(tools.vcellfun(@(b) string(b.s_tag), a_bus)), [], 1);
+    tab_bus = table(sv_tag, sv_V(1:2:end), sv_V(2:2:end), sv_I(1:2:end), sv_I(2:2:end), ...
+                    VariableNames=["Bus","Vre","Vim","Ire","Iim"]);
+    sv_algebraic = strings(0,1);
+    cm_Y = zeros(0);
+    if isa(obj, "PowerNetwork")
+        sv_input  = lab("u");
+        sv_output = [lab("y"); lab("yc")];
+        sv_algebraic = sv_V;
+        cm_Y = obj.get_admittance_matrix.Variables;
+    elseif isa(obj, "Bus") || isa(obj, "Component")
+        sv_input  = [sv_V; lab("u"); lab("uc")];
+        sv_output = [sv_I; lab("y"); lab("yc")];
+    else
+        sv_input  = [sv_V; lab("uc")];
+        sv_output = lab("yc");
+    end
+    sct_port = struct("sv_input", sv_input, "sv_output", sv_output, "sv_algebraic", sv_algebraic, ...
+                      "cm_Y", cm_Y, "tab_bus", tab_bus);
+    sct_port.tab_current = current_table(a_obj(cellfun(@(o) isa(o, "Component"), a_obj)));
+    if isa(obj, "PowerNetwork")
+        sct_port.tab_stamp = admittance_stamps(obj);   % the parts of cm_Y: branches, bus shunts
     end
 end
 
@@ -242,7 +295,7 @@ function c_block = blocks(obj, a_obj, tab, tab_c, rv_point)
     val = [rv_point; zeros(height(tab) - n_lin, 1)];
     c_block = cell(numel(a_obj),1);
     if isa(obj, "LocalController") || isa(obj, "GlobalController")
-        S = obj.get_linear_block(val(tab.Kind == "x"), val(tab.Kind == "Vre" | tab.Kind == "Vim"), val(tab.Kind == "uc"));
+        S = obj.get_linear_matrix(val(tab.Kind == "x"), val(tab.Kind == "Vre" | tab.Kind == "Vim"), val(tab.Kind == "uc"));
         S.Owner = layer_text(obj);
         S.s_tag = string(obj.s_tag);
         c_block{1} = S;
@@ -282,11 +335,11 @@ function c_block = blocks(obj, a_obj, tab, tab_c, rv_point)
     for k = 1:numel(a_obj)
         o = a_obj{k};
         if isa(o, "Component")
-            S = o.get_linear_block(val(rows(o, "x")), V_of(o), val(rows(o, "u")));
+            S = o.get_linear_matrix(val(rows(o, "x")), V_of(o), val(rows(o, "u")));
         elseif isa(o, "LocalController")
-            S = o.get_linear_block(val(rows(o, "x")), V_of(root_component(o)), val(rows(o, "uc")));
+            S = o.get_linear_matrix(val(rows(o, "x")), V_of(root_component(o)), val(rows(o, "uc")));
         else
-            S = o.get_linear_block(val(rows(o, "x")), val(lv_V), val(rows(o, "uc")));
+            S = o.get_linear_matrix(val(rows(o, "x")), val(lv_V), val(rows(o, "uc")));
         end
         S.Owner = layer_text(o);
         S.s_tag = string(o.s_tag);

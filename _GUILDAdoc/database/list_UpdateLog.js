@@ -1,15 +1,27 @@
 const updateLogData = [
   {
+    "title": "The network diagram no longer changes the network",
+    "date": "2026-11-13",
+    "type": "feature",
+    "content": "net.plot_diagram(Parent=ax) draws the equilibrium from a snapshot of the network and no longer writes the positions of its automatic layout into the graph parameters of the buses; it needs an initialized network (\"Run net.initialize() first\" otherwise). Other Name-Value options set the properties of the diagram, for example net.plot_diagram(ColorMode=\"P\", BusHeightMode=\"V\"). result.plot_diagram() of a power flow draws the solution. The properties of DrawerNetDiagram are renamed: ColorLimits, Colormap, BranchWidthMode (\"Ysvd\"), BranchWidthScale, BranchWidthOffset, BusHeightMode (\"V\", \"angle\", \"Vimag\"), BusColorData, ComponentColorData, BranchColorData, LinkColorData, BranchDirection, LinkDirection, BusLabel, ComponentLabel, LabelMode (\"tag\", \"value\"), LabelFontSize, LabelFontWeight and GridSpacing; the ColorMode values are \"I\", \"P\", \"Q\", \"Loss\", \"none\" and \"user\". G.set_time(t) shows a sample, and set_network and set_powerflow are no longer public. The old names and the positional axes argument are removed, so scripts that use them need updating."
+  },
+  {
+    "title": "Current of each component in time simulation results",
+    "date": "2026-11-13",
+    "type": "feature",
+    "content": "The result of net.simulate has a new property rm_Icomponent: the current each component injects into its bus (Ireal, Iimag of each component, bus by bus, positive into the bus), evaluated with the current function of the component at every output time and NaN while the component is tripped. The currents of the components of a bus add up to the bus current rm_I within the tolerance of the solver, except at a faulted bus during the fault. odeResults.Bus(i).Component(j).I gives the same values as a table [Ireal, Iimag], and result.export writes them in the columns <component>_Ireal and <component>_Iimag."
+  },
+  {
     "title": "Spring-mass pictures of the network and of the results",
     "date": "2026-11-13",
     "type": "feature",
     "content": "net.plot_spring_model(Dimension=2) draws the equilibrium of the network as a spring-mass picture: the nodes are the voltage phasors of the buses and the internal voltages of the generators, the springs are the branches and the machine reactances, and arrow pairs show the active power P and the reactive-current magnitude Iq. Dimension=3 puts the nodes on the surface z = log|V|. It needs an initialized network (\"Run net.initialize() first\" otherwise). result.plot_spring_model(...) of a time simulation holds every output time, so G.animate() plays it and G.export_video(\"swing.mp4\") writes a video; that of a power flow shows the buses only. The old argument mode of net.plot_spring_model is removed. The graph parameters of buses and components have two new columns, MarkerSize and Color, that set the size and color of the nodes; CSV files write them, and older CSV files without them still load."
   },
   {
-    "title": "The power flow no longer sets the slack bus",
+    "title": "The slack bus is no longer selected automatically",
     "date": "2026-11-13",
     "type": "feature",
-    "content": "net.get_pf_condition() returns the data of the power flow, as net.get_opf_condition() does for the OPF: Bus (Type, Varg, V, P, Q of each bus) and Y (the admittance matrix as a table); it prints the Bus table unless Display=false. When no bus is the slack bus, net.calculate_powerflow, net.calculate_fixed_input_powerflow and net.initialize still use the bus they used before (the first bus with a component with Q = NaN, else the first bus with a component) and give the same solution, but they no longer set l_isSlack: the network keeps no slack bus. Scripts that read l_isSlack after a power flow to find the slack bus should read net.get_pf_condition(Display=false).Bus.Type instead. The warning when that bus has no component with Q = NaN now has the ID GUILDA:PowerNetwork:SlackWithoutQnan."
+    "content": "GUILDA no longer chooses a slack bus. Set it yourself before the power flow, e.g. net.a_Bus{1}.l_isSlack = true (usually a bus with a generator whose powerflow Q is NaN). Without one, net.calculate_powerflow, net.calculate_fixed_input_powerflow, net.initialize and the new net.get_pf_condition stop with GUILDA:PowerNetwork:NoSlackBus, whose message shows how to set it. net.get_pf_condition() returns the data of the power flow, as net.get_opf_condition() does for the OPF: Bus (Type, Varg, V, P, Q of each bus) and Y (the admittance matrix as a table); it prints the Bus table unless Display=false. The packaged networks and the networks read with PowerNetwork.import or import_matpower set their slack bus from their data. The OPF needs no slack bus: ReferenceBus=\"auto\" is the slack bus if one is set, else the first bus. Scripts that build a network without setting a slack bus need one line more."
   },
   {
     "title": "Power flow with the inputs held",

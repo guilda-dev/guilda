@@ -516,15 +516,14 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   `rv_step`; `Plot` draws the voltage profile, `Export` writes the bus or
   branch table (`.csv`, Excel) or the history (`.json`, GridSpring viewer).
 - Behavior: `Solver="dynamic"` no longer writes the JSON history by default
-  (v3 did). The network is not changed: when none is set, a slack bus is
-  selected for the calculation only (`net.get_pf_condition`), and `l_isSlack`
-  stays false (2026-11-13).
-- **Silent change: the automatic slack bus.** v3 always took the first bus. Now
-  it takes the first bus with a component with `Q = NaN`, otherwise the first
-  bus with a component (then `GUILDA:PowerNetwork:SlackWithoutQnan` warns). A network
-  whose first bus has such a component is unchanged. Any other network gets
-  another slack bus, so its results change; only the INFO message shows it. To
-  keep the old choice, set `net.a_Bus{1}.l_isSlack = true`.
+  (v3 did). The network is not changed.
+- **No automatic slack bus (2026-11-13).** v3 took the first bus when no slack
+  bus was set. Now GUILDA never selects one: set it with
+  `net.a_Bus{i}.l_isSlack = true` (usually a bus with a generator whose
+  powerflow Q is NaN). Without it, the power flow, `calculate_fixed_input_powerflow`
+  and `initialize` stop with `GUILDA:PowerNetwork:NoSlackBus`. To keep the v3
+  choice, set `net.a_Bus{1}.l_isSlack = true`. The OPF needs no slack bus
+  (`ReferenceBus="auto"`: the slack bus, else the first bus).
   `net.calculate_optimal_powerflow` and `tools.network_to_mpc` use the same bus as their
   reference when none is set, but do not set `l_isSlack`. They keep the first bus
   when no bus has a component. The angles of their results are then relative to
@@ -829,7 +828,7 @@ Option names:
 
 ### 1.12 Linearization
 
-`get_sys` は 1 つのメソッド(`PowerSystemModel.get_sys`)で、`PowerNetwork`、`Bus`、`Component`(ローカル制御器を含む)、`LocalController`、`GlobalController` のすべてで同じ引数を取ります(Issue #121)。各モデルオブジェクトは自分の線形ブロックだけを返し(`get_linear_block`)、`SolverLIN.solve` が変数表と接続表に沿ってつなぎます。`net.linearize` は削除しました。
+`get_sys` は 1 つのメソッド(`PowerSystemModel.get_sys`)で、`PowerNetwork`、`Bus`、`Component`(ローカル制御器を含む)、`LocalController`、`GlobalController` のすべてで同じ引数を取ります(Issue #121)。各モデルオブジェクトは自分の線形ブロックだけを返し(`get_linear_matrix`)、`SolverLIN.solve` が変数表と接続表に沿ってつなぎます。`net.linearize` は削除しました。
 
 | v3 | v4 |
 |----|----|
@@ -838,7 +837,7 @@ Option names:
 | – | `res.get_contribution(target)`: タグやクラスの要素の DAE への寄与 |
 | `lin.Kxx`, `lin.Kxv`, `lin.Kvx`, `lin.Kvv`, `lin.get_DAE` | `res.rm_Axx`, `rm_Axv`, `rm_Bx`, `rm_Avx`, `rm_Avv`, `rm_Bv`, `rm_E`(縮約前の DAE。並びは `res.tab_variable`) |
 | `comp.get_sys(x, V, u)` | `comp.get_sys(p)`(`p` は `comp.get_variable_map()` の先頭の x, Vre, Vim, u の行の順。`p = [x; V; u]` に制御器の状態も入れる) |
-| `comp.get_sys(false)` / `Controllers=false` | `comp.get_linear_block(x, V, u)`(機器単体のブロック) |
+| `comp.get_sys(false)` / `Controllers=false` | `comp.get_linear_matrix(x, V, u)`(機器単体のブロック) |
 | – | `net.get_sys(x)` または `net.get_sys({sim, t})`: 平衡点以外での線形化(点は最初の引数) |
 | – | `net.get_variable_map()`、`bus.get_variable_map()`、`comp.get_variable_map()`(信号と接続表も)、`con.get_variable_map()`、`gc.get_variable_map()`。`Equilibrium` 列は平衡点での値 |
 
@@ -1294,6 +1293,36 @@ of its parent, so the labels stay unique within a network.
 | なし | `res.plot_spring_model(Dimension=…)`(`ResultPF`: 母線だけ) |
 
 母線と機器の `graph` パラメータに `MarkerSize`(NaN: 既定)と `Color`("": 既定)の列が加わりました。CSV ファイルにもこの 2 列が書き出されます。2 列のない古い CSV は既定値で読み込みます。
+
+### 1.27 3D ネットワーク図(`DrawerNetDiagram`、`plot_diagram`)
+
+`net.plot_diagram` はモデルを変えません。図はスナップショット `struct(net, false)` と表示する状態だけから作ります。座標(`graph` の `Xaxis`・`Yaxis`)のない母線があるときの自動配置の座標は図の中だけに持ち、母線の `tab_parameter` へは書き込みません。初期化前の系統や、編集で古くなった系統では `GUILDA:PowerNetwork:DiagramStale`(「Run net.initialize() first」)で止まります。潮流計算の結果は `res.plot_diagram` で描きます。`DrawerNetDiagram` の公開の名前は規約に合わせて変えました。互換の別名はありません。
+
+| 旧 | 新 |
+|---|---|
+| `net.plot_diagram(ax)` | `net.plot_diagram(Parent=ax, <プロパティ>=…)` |
+| なし | `res.plot_diagram(Parent=ax, …)`(`ResultPF`) |
+| `DrawerNetDiagram(net, ax, …)` | `DrawerNetDiagram(struct(net,false), sct_state, Parent=ax, …)`(`sct_state`: `rv_t`、`cm_Vbus`、`cm_Icomp`) |
+| `G.set_network(net)`、`G.set_powerflow(...)` | なし(非公開)。時刻は `G.set_time(t)` |
+| `ColorLim` / `ColorMap` | `ColorLimits` / `Colormap` |
+| `ColorMode` の値 `"I (current)"`、`"P (active power)"`、`"Q (reactive power)"`、`"User defined"` | `"I"`、`"P"`、`"Q"`、`"user"`(`"none"`、`"Loss"` はそのまま) |
+| `EdgeWidthMode`(`"SvdMaxYmat"`) | `BranchWidthMode`(`"Ysvd"`。`"none"`、`"G"`、`"B"`、`"Y"` はそのまま) |
+| `EdgeWidthSclae` / `EdgeWidthOffset` | `BranchWidthScale` / `BranchWidthOffset` |
+| `NodeHeightMode`(`"Vmag"`、`"Varg"`、`"Vsin"`) | `BusHeightMode`(`"V"`、`"angle"`、`"Vimag"`。`"none"`、`"P"`、`"Q"` はそのまま) |
+| `NodeB_ColorVal` / `NodeC_ColorVal` | `BusColorData` / `ComponentColorData` |
+| `EdgeB2B_ColorVal` / `EdgeB2C_ColorVal` | `BranchColorData` / `LinkColorData`(リンク = 機器と母線を結ぶ線) |
+| `EdgeB2B_forward` / `EdgeB2C_forward` | `BranchDirection` / `LinkDirection` |
+| `NodeLabelB` / `NodeLabelC` | `BusLabel` / `ComponentLabel` |
+| `NodeLabelMode`(`"name"`、`"info"`) | `LabelMode`(`"tag"`、`"value"`) |
+| `NodeFontSize` / `NodeFontWeight` | `LabelFontSize` / `LabelFontWeight` |
+| `GridWidth` | `GridSpacing` |
+| `ax`(書き込み可)、`plt`、`flag_new` | `ax`(読み取り専用)。`sct_plt`、`l_redraw` は非公開 |
+
+`ColorMode="user"` では、設定した色の値(`BusColorData` など)が再描画や `set_time` の後も残ります。
+
+### 1.28 時間応答の機器ごとの電流(`ResultODE.rm_Icomponent`)
+
+`net.simulate` の結果 `ResultODE` に、各機器が母線へ注入する電流 `rm_Icomponent`(n_t × 2·機器数)が加わりました。列は `sv_bus` / `c_component` の順(母線ごと、母線内は機器の順)に `Ireal, Iimag` で、値は各機器の `f_I` を出力時刻で評価したもの(母線へ流れ込む向きが正)、解列中は `NaN` です。母線の機器電流の和はソルバーの許容誤差の範囲で `rm_I` と一致します(地絡中の地絡母線は地絡電流の分だけ違います)。`odeResults.Bus(i).Component(j).I`(表 `[Ireal, Iimag]`)で同じ値を読めます。`export` の表には `<機器>_Ireal`、`<機器>_Iimag` の列が加わります。
 
 ## 2. Changes so far — model authors
 

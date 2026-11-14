@@ -22,7 +22,6 @@ function w = build_layout(net, useInt, lv_PQ)
 
     a_Bus = net.a_Bus;
     n_Bus = numel(a_Bus);
-    i_slack = tools.slack_bus_index(net);   % also a slack bus that the power flow selected (l_isSlack not written)
     id_VX = 0;
 
     R = cell(1,n_Bus);
@@ -37,16 +36,14 @@ function w = build_layout(net, useInt, lv_PQ)
         n_Comp = numel(a_Comp);
 
         c_lvFree{i} = cellfun(@(c) isnan(c.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", c.a_Parameter)}.tab_parameter.Q), a_Comp(:));
+        tab_PF = i_Bus.get_pf_condition();
         rv_Veq = [abs(i_Bus.c_Vequilibrium);angle(i_Bus.c_Vequilibrium)];
 
         Ci = cell(n_Comp,1);
         Ri = cell(1,n_Comp);
         Ii = cell(n_Comp,1);
 
-        s_type = i_Bus.s_bustype;
-        if i == i_slack
-            s_type = "slack";
-        end
+        s_type = tab_PF{:,"Type"};
         if s_type == "PV" && lv_PQ(i)
             s_type = "PQ";
         end

@@ -32,4 +32,5 @@ function [net, comp] = build_3bus(key, opt)
         net.a_Bus{2}.add_component("gen-park", "P", 0.5, "Q", nan);
         comp = net.a_Bus{3}.add_component(key, "P",-1.0, "Q",-0.2, "parameter", opt.parameter);
     end
+    evalc("net.a_Bus{1}.l_isSlack = true;");     % スラック母線 (自動では選ばれない)。INFO は抑制
 end

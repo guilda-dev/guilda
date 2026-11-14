@@ -103,6 +103,22 @@ for i = 1:numel(c_net)
 end
 
 
+%% IEEJ network data give each branch its number of circuits
+% EAST10, EAST30, WEST10 は 1 回線が 1 ブランチ、変圧器は 1 バンク。WEST30 はカードの回線数 n
+% (表 4.13 の E, F の EL027, EL089 は 2 回線、A〜D は 1 回線。WEST30 の ELk は k 行目)。import は circuit の列を add_branch の Circuit にする (F16)
+for s_net = ["IEEJ_EAST10", "IEEJ_EAST30", "IEEJ_WEST10", "IEEJ_WEST30"]
+    for s_section = ["peak", "night"]
+        s_file = fullfile(fileparts(which("network." + s_net)), s_section, "branch", "parameter.csv");
+        tab = readtable(s_file, TextType="string");
+        if s_net == "IEEJ_WEST30"
+            assert(sum(tab.circuit == 2) == 36 && sum(tab.circuit == 1) == 93, s_file)
+            assert(all(tab.circuit([27, 89]) == 2) && all(tab.circuit([10, 42, 61, 79]) == 1), s_file)
+        else
+            assert(all(tab.circuit == 1), s_file)
+        end
+    end
+end
+
 %% A PSS under a local controller names the key of the parent
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{1}.a_Component{1};

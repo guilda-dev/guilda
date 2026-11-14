@@ -6,17 +6,19 @@ function [sct_sol, flag, output] = solve(obj, sct_dae, sct_event, rv_x0, sct_opt
 % the disturbances as positions (sct_event) and the initial value (rv_x0). solve reads
 % only these and the settings sct_options: no network, bus, branch, component,
 % controller or scenario. In each phase a tripped unit is masked (its states and inputs
-% are left out, a component injects no current, a global controller gives no output and
-% the inputs that observe a tripped component read 0), a faulted bus holds V = 0, and an
-% open branch has its 2x2 matrix subtracted from the admittance matrix. Called by
-% net.simulate; calling it directly is for advanced use:
+% are left out, a component injects no current, a controller gives no output), an input
+% whose source is tripped takes its equilibrium value (build_index), a faulted bus holds
+% V = 0, and the admittance matrix is the one of the branch states of the phase
+% (sct_dae.c_Y{i_Y}). Called by net.simulate; calling it directly is for advanced use:
 %
 %   [sct_dae, sct_event, rv_x0] = net.build_simulation_data(tag, time);
 %   [sct_sol, flag, output] = net.solver_ODE.solve(sct_dae, sct_event, rv_x0, sct_options);
 %
 % sct_sol holds the raw trajectories: rv_t (the times; a phase boundary appears twice),
 % rm_variable (the variable rows x, Vre, Vim, u, uc of sct_dae.tab_variable; the states of
-% a tripped unit are NaN), rm_I (Ire, Iim of each bus) and rv_phase (the phase of each time).
+% a tripped unit are NaN), rm_I (Ire, Iim of each bus), rm_Icomponent (Ire, Iim of each
+% component in the order of sct_dae.c_comp, its f_I at each time; NaN while it is tripped)
+% and rv_phase (the phase of each time).
 % The times are the steps of the solver, or with sct_options.SampleTime > 0 the times
 % t0 + k*SampleTime with the start and end of each phase (values of the solver at those
 % times, solve(o, tv)). When sct_dae.sct_stop is not empty (net.simulate with
@@ -35,10 +37,10 @@ function [sct_sol, flag, output] = solve(obj, sct_dae, sct_event, rv_x0, sct_opt
         sct_dae     (1,1) struct % Blocks, maps, admittance and equilibrium of the network (build_simulation_data).
         sct_event   (:,1) struct % One element per phase, the disturbances as positions (build_simulation_data).
         rv_x0       (:,1) double % Initial value of the variable rows of sct_dae.tab_variable.
-        sct_options (1,1) struct % Effective settings (net.simulate: GUILDA.setting and the options of the call).
+        sct_options (1,1) struct % Name-Value options of net.simulate (defaults from GUILDA.setting; Progress as its mode, PlotFcn checked).
     end
     arguments (Output)
-        sct_sol (1,1) struct % Raw trajectories: rv_t, rm_variable, rm_I, rv_phase.
+        sct_sol (1,1) struct % Raw trajectories: rv_t, rm_variable, rm_I, rm_Icomponent, rv_phase.
         flag    (1,1) double % 1 completed, 2 stopped by the stop condition (sct_dae.sct_stop), 0 stopped by TimeLimit, -1 stopped by the solver.
         output  (1,1) struct % Details: message, tEnd, nPhases, nPhasesDone, isSparse (false when the run fell back to dense matrices), exception (MException of a phase that could not be solved, with the original as cause; otherwise empty), outOfStep (Time, Unit, Reference, Angle of the stop; empty struct otherwise).
     end
@@ -46,11 +48,9 @@ function [sct_sol, flag, output] = solve(obj, sct_dae, sct_event, rv_x0, sct_opt
     ctx.rv_x0    = ctx.rv_z0;
     ctx.rv_x0(ctx.iv_var) = rv_x0;
     ctx.l_sparse = true;              % until the solver rejects the sparse matrices (see use_dense)
-    ctx.cm_Y     = sct_dae.cm_Y;      % complex, all branches closed
-    ctx.im_branchBus = sct_dae.im_branchBus;
-    ctx.c_branchY    = sct_dae.c_branchY;
-    ctx.iv_open  = zeros(0,1);        % open branches of ctx.Ymat (see set_admittance)
-    ctx          = SolverODE.set_admittance(ctx, zeros(0,1), true);
+    ctx.c_Y      = sct_dae.c_Y;       % complex, one per set of branch states (c_Y{1}: all closed)
+    ctx.i_Y      = 1;                 % matrix of ctx.Ymat (see set_admittance)
+    ctx          = SolverODE.set_admittance(ctx, 1, true);
 
     o = makeODE(sct_options);
     options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);
@@ -84,14 +84,14 @@ function [sct_sol, flag, output] = solve(obj, sct_dae, sct_event, rv_x0, sct_opt
         % Faults, trips, open branches, offsets and inputs of the phase (Scenario.compile)
         ph = sct_event(tp);
 
-        % Trips (a tripped global controller gives no output), faults and input events
+        % Trips (a tripped controller gives no output), faults and input events
         ctx = set_phase(ctx, ph);
 
         t1 = ph.t1;
         t2 = ph.t2;
 
-        % Y of the phase: without the branches opened in it (OpenBranch)
-        ctx = SolverODE.set_admittance(ctx, ph.iv_openBranch, false);
+        % Y of the branch states of the phase
+        ctx = SolverODE.set_admittance(ctx, ph.i_Y, false);
 
         [EM, RM, lv_FBorTC, x0, Mass] = SolverODE.initial_condition(ctx, ph, x0, Mass);
         [o.EventDefinition, sct_watch] = stop_event(ev_prog, odeProg, sct_stop, ctx, ph, lv_FBorTC);
@@ -271,32 +271,56 @@ function [sct_sol, flag, output] = solve(obj, sct_dae, sct_event, rv_x0, sct_opt
     sct_sol.rv_t        = cell2mat([{zeros(0,1)}; cellfun(@(T) T.t, sol, 'UniformOutput', false)]);
     sct_sol.rm_variable = cell2mat([{zeros(0,n_var)}; cellfun(@(T) T.x, sol, 'UniformOutput', false)]);
     sct_sol.rm_I        = cell2mat([{zeros(0,2*ctx.n_bus)}; cellfun(@(T) T.i, sol, 'UniformOutput', false)]);
+    sct_sol.rm_Icomponent = cell2mat([{zeros(0,2*numel(ctx.c_comp))}; cellfun(@(T) T.ic, sol, 'UniformOutput', false)]);
     sct_sol.rv_phase    = repelem((1:numel(sol)).', cellfun(@(T) numel(T.t), sol));
 end
 
 
 function ctx = set_phase(ctx, ph)
 % The trips, faults and input events of a phase in the context (positions of sct_event).
-% An input of a global controller that observes a tripped component reads 0. The input
-% events become functions of the time from the start of the phase: a constant, or one
-% interpolant per input row ("foh": linear, "spline"; the end values outside the points).
+% A connection whose source (component, local controller, global controller) is tripped
+% is left out, as if the source were not connected: an input whose main source ("observe"
+% or "local") is tripped takes its equilibrium value, and a "global" connection adds
+% nothing. The input events become functions of the time from the start of the phase: a
+% constant, or one interpolant per input row ("foh": linear, "spline"; the end values
+% outside the points).
     arguments (Input)
         ctx  % Context of the run.
         ph   % Data of the phase (an element of sct_event).
     end
     arguments (Output)
-        ctx  % Context with lv_compOn, lv_gcOn, lv_fault, S_sig, S_var, c_input, iv_inputAll.
+        ctx  % Context with lv_compOn, lv_lcOn, lv_gcOn, lv_fault, rv_e, S_sig, S_var, c_input, iv_inputAll.
     end
     ctx.lv_compOn = true(numel(ctx.c_comp), 1);
     ctx.lv_compOn(ph.iv_tripComp) = false;
+    ctx.lv_lcOn   = true(numel(ctx.c_lc), 1);
+    ctx.lv_lcOn(ph.iv_tripLC) = false;
     ctx.lv_gcOn   = true(numel(ctx.c_gc), 1);
     ctx.lv_gcOn(ph.iv_tripGC) = false;
     ctx.lv_fault  = false(ctx.n_bus, 1);
     ctx.lv_fault(ph.iv_faultBus) = true;
-    w = ones(numel(ctx.iv_in), 1);
-    w(ctx.iv_gateIn) = ctx.lv_compOn(ctx.iv_gateComp);
-    ctx.S_sig = w .* ctx.S_sig0;
-    ctx.S_var = w .* ctx.S_var0;
+
+    % Connections from tripped sources (the source block of each connection: build_index)
+    cn = ctx.sct_conn;
+    lv_cut = false(size(cn.iv_in));
+    for c_src = {cn.iv_comp, ctx.lv_compOn; cn.iv_lc, ctx.lv_lcOn; cn.iv_gc, ctx.lv_gcOn}.'
+        [iv_blk, lv_on] = c_src{:};
+        lv_has = iv_blk > 0;
+        lv_cut(lv_has) = lv_cut(lv_has) | ~lv_on(iv_blk(lv_has));
+    end
+    if any(lv_cut)
+        lv_sig = cn.lv_sig & ~lv_cut;
+        lv_var = ~cn.lv_sig & ~lv_cut;
+        ctx.S_sig = sparse(cn.iv_in(lv_sig), cn.iv_src(lv_sig), 1, numel(ctx.iv_in), ctx.n_s);
+        ctx.S_var = sparse(cn.iv_in(lv_var), cn.iv_src(lv_var), 1, numel(ctx.iv_in), ctx.n_z);
+        ctx.rv_e  = ctx.rv_e0;
+        iv_eq = cn.iv_in(lv_cut & cn.lv_main);
+        ctx.rv_e(iv_eq) = ctx.rv_z0(ctx.iv_in(iv_eq));
+    else
+        ctx.S_sig = ctx.S_sig0;
+        ctx.S_var = ctx.S_var0;
+        ctx.rv_e  = ctx.rv_e0;
+    end
 
     i0 = ctx.iv_in(1) - 1;           % the input events act on the rows of the inputs (iv_in)
     n_ev = size(ph.c_input, 1);

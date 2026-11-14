@@ -2,7 +2,7 @@ function s_tag = add_offset(obj, unit, state, value, time, opt)
 % Add an offset of the states of a component at one time.
 %
 % The values are added to the states at time (to the initial states when time is the
-% start of the simulation).
+% start of the simulation). One row is added to tab_offset.
 %
 % <@Examples>
 % ```matlab
@@ -14,7 +14,7 @@ function s_tag = add_offset(obj, unit, state, value, time, opt)
         state (:,1) string % Names of the states (e.g. "delta").
         value (:,1) double % Offsets, one per state or one for all.
         time  (1,1) double = 0 % [s] Time of the offset.
-        opt.Tag (1,1) string = "" % Tag of the disturbance; default offset<n>.
+        opt.Tag (1,1) string = "" % Tag of the disturbance; default offset<n> (not Fault or Parallel followed by digits).
     end
     arguments (Output)
         s_tag (1,1) string % Tag of the added disturbance.

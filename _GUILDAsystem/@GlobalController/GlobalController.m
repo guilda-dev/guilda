@@ -195,10 +195,9 @@ classdef GlobalController < PowerSystemModel
     end
     methods (Hidden)
         % Linearization (get_sys connects the blocks)
-        sct_block = get_linear_block(obj, x, V, u)
+        sct_block = get_linear_matrix(obj, x, V, u)
     end
     methods (Access=protected)
-        sct_port = get_linear_port(obj)
         set_odefcn(obj)
         handle_edit(obj, a_layer, tag, log)
         sct_page = gui_content(obj)

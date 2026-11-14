@@ -19,7 +19,7 @@ function [out, sct_visited] = struct(obj, l_disp, s_header, sct_visited)
         obj
         l_disp      (1,1) logical = true    % Print the properties that cannot be read or copied.
         s_header    (1,1) string  = "net"   % Path of this layer in the struct, used for messages and repeated objects.
-        sct_visited (1,1) struct  = struct("a_obj",{cell(0,1)}, "sv_path",strings(0,1))   % Layers already stored (a_obj) and their paths (sv_path), used by the recursion.
+        sct_visited (1,1) {mustBeA(sct_visited,"struct")} = struct("a_obj",{cell(0,1)}, "sv_path",strings(0,1))   % Layers already stored (a_obj) and their paths (sv_path), used by the recursion.
     end
     arguments (Output)
         out          % Nested struct of the branch with the field cm_Y, or its path when stored before.

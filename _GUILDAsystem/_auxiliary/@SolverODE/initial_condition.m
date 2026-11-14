@@ -1,6 +1,6 @@
 function [EM, RM, lv_FBorTC, x0, M0] = initial_condition(ctx, ph, x0, M0)
 % The reduction of the DAE vector for a phase (without the elements of the faulted buses
-% and tripped units) and the initial value and mass matrix of the phase. x0 and M0 are
+% and of the tripped components, local controllers and global controllers) and the initial value and mass matrix of the phase. x0 and M0 are
 % those at the end of the last phase ([] for the first one: x0 is then the initial value
 % of the run, ctx.rv_x0, which holds the offsets and inputs of the first phase). The state
 % offsets of the disturbances starting in a later phase are added to the states.
@@ -19,7 +19,7 @@ function [EM, RM, lv_FBorTC, x0, M0] = initial_condition(ctx, ph, x0, M0)
     end
     n = ctx.n_z;
     lv_FBorTC = false(n, 1);
-    for b = [ctx.c_comp(ph.iv_tripComp); ctx.c_gc(ph.iv_tripGC)].'
+    for b = [ctx.c_comp(ph.iv_tripComp); ctx.c_lc(ph.iv_tripLC); ctx.c_gc(ph.iv_tripGC)].'
         lv_FBorTC([b{1}.iv_x; b{1}.iv_u]) = true;
     end
     for i = reshape(ph.iv_faultBus, 1, [])

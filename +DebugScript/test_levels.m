@@ -58,7 +58,7 @@ function tab = test_levels()
     "test_F29_open_branch/YOfTheOpenPhaseIsTheYWithoutTheBranch", "medium"
     "test_F29_open_branch/BusCurrentsFollowTheYOfEachPhase", "medium"
     "test_F29_open_branch/PermanentOpeningAfterAFault", "medium"
-    "test_F29_open_branch/OverlappingOpeningsUseTheUnionOfTheOpenBranches", "medium"
+    "test_F29_open_branch/OverlappingOpeningsOfDifferentBranchesUseTheUnionOfTheOpenBranches", "medium"
     % ---- F2_powerflow ----------------------------------------------------------------------------
     "test_F2_powerflow/DynamicMethodReachesTheAlgebraicSolution", "large"
     "test_F2_powerflow/PlotAndExportOfTheResult", "large"
@@ -87,7 +87,7 @@ function tab = test_levels()
     "test_F30_governor/replace_componentWithControllers__keep_MovesBothSlots", "medium"
     "test_F30_governor/exportNamesTheGovernorItDoesNotWrite", "medium"
     % ---- F31_scenario ----------------------------------------------------------------------------
-    "test_F31_scenario/AFaultThenAPermanentOpeningEqualsTheGeneralForm", "large"
+    "test_F31_scenario/AFaultThenAPermanentOpening_TwoRowsPerTargetWithOneTag", "large"
     "test_F31_scenario/StoredTime_TheTimeAndTheSettingsOfTheCallWinForThatCall", "medium"
     "test_F31_scenario/ChildrenOfTheNetwork_Create_Rename_Copy_Remove", "medium"
     "test_F31_scenario/UnknownTagsAtAddAndAtRunTime", "medium"
@@ -113,6 +113,17 @@ function tab = test_levels()
     "test_F40_stop_and_sample_time/StopOnOutOfStepFromGUILDA_setting", "medium"
     "test_F40_stop_and_sample_time/TheReferenceTrippedDoesNotStop", "medium"
     "test_F40_stop_and_sample_time/SampleTimeRecordsAUniformGridAndThePhaseBoundaries", "medium"
+    % ---- F42_branch_events -------------------------------------------------------------------------
+    "test_F42_branch_events/test6openIsTheOldOpenBranchAndTheRebuiltYMatchesTheSubtraction", "medium"
+    "test_F42_branch_events/test3openOfTwoCircuitsHalvesTheBranch", "medium"
+    "test_F42_branch_events/A3LGNearTheToEndIsCloseToAFaultOfThatBus", "medium"
+    "test_F42_branch_events/CombinedBranchStatesShareOneMatrixPerSet", "medium"
+    "test_F42_branch_events/AnEndAtOrAfterTendAddsNoBoundary", "medium"
+    "test_F42_branch_events/ABranchGroundedOnAllCircuitsThatCutsOffAPartWithoutComponentsIsAnError", "medium"
+    "test_F42_branch_events/ABranchOfOneCircuitHasNo3LGAndNo3open", "medium"
+    "test_F42_branch_events/ATrippedSourceGivesTheEquilibriumOfTheInput", "medium"
+    "test_F42_branch_events/ATrippedLocalControllerIsNaNAndRestartsFromItsEquilibrium", "medium"
+    "test_F42_branch_events/ATrippedPSSGivesItsEquilibriumOutput0ToTheAVR", "medium"
     % ---- F42_graph_spring --------------------------------------------------------------------------
     "test_F42_graph_spring/BothPicturesAreBuiltFromTheDataWithTheDefaultsOfTheScripts", "medium"
     "test_F42_graph_spring/set_timeDrawsTheNearestSampleAtTheExpectedCoordinates", "medium"
@@ -122,6 +133,14 @@ function tab = test_levels()
     "test_F43_spring_model/SimulationResultAnimatesWithEveryOutputTime", "medium"
     "test_F43_spring_model/OwnNodeOfAClassicalGeneratorEqualsVfieldE_jdelta", "medium"
     "test_F43_spring_model/TrippedUnitIsNaNAndThePictureStillDraws", "medium"
+    % ---- F45_ode_component_current -----------------------------------------------------------------
+    "test_F45_ode_component_current/IEEE9bus_TheSumOfTheComponentCurrentsOfEachBusEqualsRm_I", "medium"
+    "test_F45_ode_component_current/AGenerator_sCurrentIsItsOwnF_IAtASample", "medium"
+    "test_F45_ode_component_current/TheViewField_TheExportAndTheOutputTimesOfSampleTime", "medium"
+    "test_F45_ode_component_current/AResultWithoutComponentCurrentsHasNaNColumns", "medium"
+    % ---- F44_net_diagram ---------------------------------------------------------------------------
+    "test_F44_net_diagram/DiagramDoesNotChangeTheModel", "medium"
+    "test_F44_net_diagram/EachModeValueWorks", "medium"
     % ---- F37_disp_connection ---------------------------------------------------------------------
     % ネットワークはファイル内で共有 (shared_net): 最初に走るテストが Tutorial10bus と IEEE14bus を作る
     "test_F37_disp_connection/ItRunsOnTutorial10busAndIEEE14busWith0And1Outputs", "medium"
@@ -337,9 +356,8 @@ function tab = test_levels()
     "test_I71_layer_get_sys/LayerGet_sysAfterADynamicsEditAsksForInitialize", "medium"
     "test_I71_layer_get_sys/LayerGet_sysAfterInitializeUsesTheEditedModel", "medium"
     "test_I71_layer_get_sys/CPFAfterADynamicsEditAsksForInitialize", "medium"
-    % ---- I90_auto_slack_selection ----------------------------------------------------------------
-    "test_I90_auto_slack_selection/ThePowerFlow_OPFAndNetwork_to_mpcUseTheSameBusWhenTheFirstBusHasNoQ_NaN", "large"
-    "test_I90_auto_slack_selection/TheBusThatIsSetStaysTheReferenceOfOPFAndNetwork_to_mpc", "medium"
+    % ---- I90_slack_bus_required -------------------------------------------------------------------
+    "test_I90_slack_bus_required/OPFAndNetwork_to_mpcUseTheSlackBus_ElseTheFirstBus", "medium"
     % ---- I91_slack_power_assignment --------------------------------------------------------------
     "test_I91_slack_power_assignment/ACSVRoundTripKeepsTheOperatingPoint", "medium"
     "test_I91_slack_power_assignment/Method__OPF_And_equilibrium_KeepThePowersTheyFix_WhateverTheOrder", "medium"

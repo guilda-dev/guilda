@@ -1,6 +1,7 @@
 function s = build_view(obj)
-% odeResults from rv_t, rm_variable, rm_I and rm_output (same layout as before the
-% trajectory was stored in variable-map order, with the outputs Y of each component)
+% odeResults from rv_t, rm_variable, rm_I, rm_Icomponent and rm_output (same layout as before
+% the trajectory was stored in variable-map order, with the outputs Y and the current I of
+% each component)
     s = struct();
     if isempty(obj.c_index)
         return
@@ -8,6 +9,8 @@ function s = build_view(obj)
     X = array2table(obj.rm_variable);
     I = array2table(obj.rm_I);
     Y = array2table(obj.rm_output);
+    Ic = array2table(obj.rm_Icomponent);
+    n_before = cumsum([0; cellfun(@numel, obj.c_component)]);   % components of the buses before bus i
     Vmap = obj.tab_variable.Name;
     Ymap = obj.tab_output.Name;
 
@@ -28,6 +31,10 @@ function s = build_view(obj)
             sol_c_idx = Y(:, idx.c_y{j});
             sol_c_idx.Properties.VariableNames = Ymap(idx.c_y{j});
             s.Bus(i).Component(j).Y = sol_c_idx;
+
+            sol_c_idx = Ic(:, 2*(n_before(i) + j) - 1 + (0:1));
+            sol_c_idx.Properties.VariableNames = ["Ireal","Iimag"];
+            s.Bus(i).Component(j).I = sol_c_idx;
         end
 
         sol_V_idx = X{:, idx.iv_V};

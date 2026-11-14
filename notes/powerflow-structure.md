@@ -96,24 +96,24 @@
 - **変わった動作:** `initialize(Method="FixedInput", Foo=1)` のような未知の名前は、`GUILDA:resolve_options:UnknownName` から MATLAB の arguments ブロックのエラー(`MATLAB:TooManyInputs`)になりました。ほかの Method と同じです。
 - **残した点:** `InitializeFixedInputSolver` などのメッセージの文面は「net.initialize(Method="FixedInput")」を主語にしたままです(`initialize` のメッセージを変えないため)。メソッドを直接呼んだときの文面を変えるかは未決定です。
 
-## 8. `get_pf_condition` とスラック母線を書かない潮流計算(ユーザーの決定、2026-11-13)
+## 8. `get_pf_condition`(ユーザーの決定、2026-11-13)
 
-- **新しいメソッド:** `net.get_pf_condition(Display=true)` は `get_opf_condition` と同じ形(arguments ブロック、Repeating の varargout、Display で表示)です。返すのは構造体 `sct_PFcondition` で、`Bus`(`Bus.get_pf_condition` を a_Bus の順に積んだ表。列は `Bus.get_pf_condition` と同じ Type, Varg, V, P, Q、行名は母線のタグ)と `Y`(`get_admittance_matrix` の table)です。Display=true では `Bus` だけを表示します。新しい公開メンバーはこれだけです。
-- **スラック母線は表の中だけで決めます:** スラック母線がないときは `tools.slack_bus_index` の母線を選び、INFO `SlackSelected` を出して、その行を `Bus.get_pf_condition` がスラック母線に返す行(V、Varg、P・Q は NaN)にします。`l_isSlack` は書きません。NoBus・NoSlackCandidate の検査もここに移しました。
-- **`calculate_powerflow`・`calculate_fixed_input_powerflow`:** どちらも `get_pf_condition(Display=false)` から Bus と Y を取ります。`select_slack_bus` とスラック母線の書き込みを削除しました。`initialize` はスラック母線の選択と解除をやめ、分断の検査とメッセージ ID は残しました。
-- **結果を変えないための修正(依存先):**
-  - `tools.distribute_power` に省略可能な引数 `l_slack`(既定は `bus.l_isSlack`)を加えました。`initialize`(Method="powerflow")は、選ばれたスラック母線の機器の電力を `distribute_power(..., "baseMVA", true)` で作って `Bus.set_equilibrium` の `rm_PQ` に渡します。これで平衡点は、スラック母線を指定したときと同じです(F3 で確認)。
-  - `ResultPF`(`calculate_powerflow`、`calculate_fixed_input_powerflow`)と `ResultODE`(`simulate`)のスナップショットは、計算に使ったスラック母線の `l_isSlack`・`s_bustype` を立てて保存します。`tab_violation` の機器の P と `judge_out_of_step` の基準の発電機が変わらないようにするためです。
-  - `stop_condition`(StopOnOutOfStep)、CPF の `build_layout`・`limit_set` は `tools.slack_bus_index` でスラック母線を決めます(CPF は `get_pf_condition` を呼ぶと手順ごとに INFO が出るため、`slack_bus_index` を直接使いました)。
-  - `PowerNetwork.get_opf_condition` の Bus の Type も、`tools.slack_bus_index` の母線を "slack" にします(INFO なし)。OPF の初期点(スラック母線の Varg)が、initialize 後に以前と同じになるようにするためです。
-  - `calculate_fixed_input_powerflow` の方程式のデータと初期点の機器の電力は、表のスラック母線を使います。
-- **変わった動作:**
-  - スラック母線を指定していない系統では、`calculate_powerflow`・`initialize` の後も `l_isSlack` は false のままです。そのため `s_bustype`(`disp_summary`、`plot_diagram` などの表示)では、その母線は PV のままです。`export` の Slack 列も false で、読み込み直すと同じ母線が選ばれます。
-  - 選んだ母線に Q = NaN の機器がないときの警告は、`GUILDA:Bus:SlackWithoutQnan` から `GUILDA:PowerNetwork:SlackWithoutQnan`(同じ文面)になりました。`msg` は呼び出し元のクラスの ID しか出せないためです。母線に `l_isSlack = true` を設定したときは従来どおり Bus の警告です。
-  - `l_isSlack` を書かないので、`set.l_isSlack` の INFO(`GUILDA:Bus:SetSlack`)と "Slack" の編集の記録も出ません。
-  - `PowerNetwork.get_opf_condition` は、スラック母線のない系統でも選ばれる母線を "slack" にします(以前は initialize 前なら PV)。
-  - FixedInput の直接呼び出しは、内部の潮流計算(初期点)でも `get_pf_condition` を通るので、スラック母線がないと INFO `SlackSelected` が 2 回出ます。
-  - initialize(Method="FixedInput") は、分断の検査の後に(メソッドの中で)スラック母線を選びます。分断されていて機器のない系統では、NoSlackCandidate より先に分断のエラーになります。
+- `net.get_pf_condition(Display=true)` は `get_opf_condition` と同じ形(arguments ブロック、Repeating の varargout、Display で表示)です。返すのは構造体 `sct_PFcondition` で、`Bus`(`Bus.get_pf_condition` を a_Bus の順に積んだ表。列は Type, Varg, V, P, Q、行名は母線のタグ)と `Y`(`get_admittance_matrix` の table)です。Display=true では `Bus` だけを表示します。`calculate_powerflow` と `calculate_fixed_input_powerflow` はここから Bus と Y を取ります。
+- 最初は「スラック母線を表の中だけで選び、`l_isSlack` は書かない」設計で実装しましたが(fefb9d82)、同じ日に 9 節の決定で置き換えました。
+
+## 9. スラック母線の自動選択の廃止(ユーザーの決定、2026-11-13)
+
+- **決定:** スラック母線は利用者が必ず設定します(`bus.l_isSlack = true`)。GUILDA は選びません。スラック母線が必要な解析で未設定なら、`get_pf_condition` が `GUILDA:PowerNetwork:NoSlackBus` で止まります。メッセージは設定の仕方を示します(例: `net.a_Bus{1}.l_isSlack = true`、ふつうは powerflow の Q が NaN の発電機の母線)。
+- **複数のスラック母線:** `handle_edit` が系統のスラック母線を高々 1 つに保つ(新しく設定すると他を外す)ので、0 か 1 です。この動作は変えていません。
+- **削除したもの:** `tools.slack_bus_index`、`get_pf_condition` の自動選択と INFO・警告、`calculate_powerflow`・`calculate_fixed_input_powerflow`・`initialize` に残っていたスラック母線の処理、`tools.distribute_power` の `l_slack` 引数、`ResultPF`・`ResultODE` のスナップショットに記録していたスラック母線、CPF(`build_layout`・`limit_set`)・`stop_condition`・`get_opf_condition` の `slack_bus_index`。XML の `NoSlackCandidate`・`SlackSelected`・`PowerNetwork:SlackWithoutQnan` を削除し、`NoSlackBus` を追加しました。`Bus:SlackWithoutQnan`(`l_isSlack` を設定したときの警告)は残します。
+- **OPF の `ReferenceBus="auto"`:** 「スラック母線が設定されていればその母線、なければ最初の母線」にしました(以前は `slack_bus_index` の母線、なければ最初の母線)。OPF はスラック母線を必要としないので `NoSlackBus` は出しません。`tools.network_to_mpc` の REF 母線も同じ規則です。スラック母線のない系統では、参照の母線が「Q = NaN の機器を持つ最初の母線」から「最初の母線」に変わることがあります。
+- **スラック母線を設定した呼び出し元:**
+  - `+network`: `IEEE14bus`・`IEEE14bus_NoTap`・`IEEE14bus_lossless`・`Ishizaki6Bus`・`TEST31bus`・`Txt3Bus` の `bus/parameter.csv` に `Slack` 列を加え、先頭の母線(以前の自動選択と同じ母線)を 1 にしました。ほかのネットワーク(`IEEE9bus`、`IEEE39Bus`、`IEEE68bus`、`IEEJ_*`、`Tutorial10bus`、`Tutorial3bus`)はすでに設定しています。
+  - テストの `build_9bus`・`build_3bus` は B001 を設定します。`build_smib`・`build_ieee14` はすでに設定済みです。
+  - `_GUILDAdoc` の例(`index.html` のチュートリアル、`model-implementation.html` の実行される例)に `l_isSlack = true` を加えました。
+  - `_GUILDAverification` のスクリプトは `IEEJ_*` を使うので変更はありません。
+  - `import`・`import_matpower` はデータからスラック母線を設定します(変更なし)。
+- **テスト:** `test_I90_auto_slack_selection.m` を `test_I90_slack_bus_required.m` に置き換えました(NoSlackBus とその文面、指定したスラック母線の使用、OPF と network_to_mpc の参照の母線)。8 節で加えた自動選択のテストは、NoSlackBus のテストに書き換えるか削除しました。
 
 ## テスト
 

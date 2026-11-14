@@ -4,7 +4,7 @@ function simulateFcn_check(net, s_id)
 %
 % Stops with GUILDA:PowerNetwork:SimulateInputEdited when inputs of components were edited
 % (initialize(Method="FixedInput")), and with GUILDA:PowerNetwork:SimulateStale naming up
-% to three reasons otherwise. Another caller that needs the equilibrium (plot_spring_model)
+% to three reasons otherwise. Another caller that needs the equilibrium (plot_spring_model, plot_diagram)
 % gives its own error id s_id: then edited inputs are one more stale reason.
     arguments (Input)
         net  % Network of the run.

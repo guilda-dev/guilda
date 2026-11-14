@@ -23,6 +23,9 @@ classdef IEEJ_EAST10 < PowerNetwork
 %   12 to 13 are EL013 to EL016). The bus voltages and angles are the same as with one
 %   branch of `r/2`, `x/2`, `2*y` per card (difference below 1e-14).
 % - A transformer card is a branch.pi_transformer with `tap = 1/t`, `t` being TAPR.
+% - Every branch has `circuit = 1` (column `circuit` of `branch/parameter.csv`): a line
+%   branch is one circuit, and a transformer is taken as one bank (the data give no bank
+%   count).
 % - Generators use the source PG and Vset; the PG of the slack bus and QG are not used.
 %   `baseMVA` is the rating of table 4.2.
 % - The generators are gen-park models. The source model LGT=4 has one damper in each

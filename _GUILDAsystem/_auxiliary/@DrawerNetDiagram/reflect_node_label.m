@@ -13,8 +13,8 @@ function reflect_node_label(obj)
     rv_Vmag = abs(obj.cv_Vbus);
 
     is_visible = false;
-    switch obj.NodeLabelMode
-        case "name"
+    switch obj.LabelMode
+        case "tag"
             is_visible = true;
             for i_bus = 1:n_bus
                 sv_bus(i_bus) = obj.sv_bus(i_bus);
@@ -22,7 +22,7 @@ function reflect_node_label(obj)
             for i_com = 1:n_com
                 sv_com(i_com) = obj.sv_component(i_com);
             end
-        case "info"
+        case "value"
             is_visible = true;
             for i_bus = 1:n_bus
                 sv_bus(i_bus) = obj.sv_bus(i_bus) + newline + ...
@@ -36,17 +36,17 @@ function reflect_node_label(obj)
             end
     end
 
-    obj.NodeLabelB = sv_bus;
-    obj.NodeLabelC = sv_com;
+    obj.BusLabel = sv_bus;
+    obj.ComponentLabel = sv_com;
 
-    for i =1:numel(obj.plt.NodeLabel)                              
-        if isgraphics(obj.plt.NodeLabel(i))                        
-            obj.plt.NodeLabel(i).Visible = is_visible;             
+    for i =1:numel(obj.sct_plt.NodeLabel)                              
+        if isgraphics(obj.sct_plt.NodeLabel(i))                        
+            obj.sct_plt.NodeLabel(i).Visible = is_visible;             
         end
     end
-    for i =1:numel(obj.plt.CompLabel)                              
-        if isgraphics(obj.plt.CompLabel(i))                        
-            obj.plt.CompLabel(i).Visible = is_visible;             
+    for i =1:numel(obj.sct_plt.CompLabel)                              
+        if isgraphics(obj.sct_plt.CompLabel(i))                        
+            obj.sct_plt.CompLabel(i).Visible = is_visible;             
         end
     end
 end

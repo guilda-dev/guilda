@@ -4,7 +4,8 @@ function s_file = export(obj, filename)
 % Writes the trajectories to a file. The format follows the extension of filename:
 % .csv, .txt, .xlsx, .xls write one table (column t, then <bus>_Vreal, <bus>_Vimag,
 % <bus>_Ireal, <bus>_Iimag, <bus>_P, <bus>_Q of each bus, <component>_<name> of each
-% state and input, one column per controller state named by the Label of tab_variable,
+% state and input and <component>_Ireal, <component>_Iimag of the current of each
+% component, one column per controller state named by the Label of tab_variable,
 % and one column per output named by the Label of tab_output); .mat saves odeResults,
 % rm_variable, tab_variable, rm_output, tab_output, options, flag and output, so the
 % controller states and outputs (in rm_variable and rm_output only) are kept. A relative filename is
@@ -50,7 +51,7 @@ function tab = wide_table(obj)
             if ~isfield(c, "X")             % a bus without components
                 continue
             end
-            tab = [tab, prefixed([c.X, c.U], obj.c_component{i}(j))]; %#ok<AGROW>
+            tab = [tab, prefixed([c.X, c.U, c.I], obj.c_component{i}(j))]; %#ok<AGROW>
         end
     end
     % The Label tells apart controllers with the same tag on different components

@@ -9,7 +9,7 @@ function prob = apply(prob, sct_options, tab_bus, tab_component, tab_branch, sct
 % and p.base (sct_options.base: baseMVA, Hz of the network).
     arguments (Input)
         prob                      % Problem being built.
-        sct_options (1,1) struct  % Effective settings: Method, Cost, Constraint, base.
+        sct_options (1,1) struct  % Options of the call: Method, Cost, Constraint, base.
         tab_bus       table       % Bus table of the problem.
         tab_component table       % Component table of the problem.
         tab_branch    table       % Branch table of the problem.

@@ -5,8 +5,9 @@ function sct_options = ode_options(varargin)
 %   [d, e, x0] = net.build_simulation_data(sc.s_tag, [0,1]);
 %   [sct_sol, flag, output] = net.solver_ODE.solve(d, e, x0, sct_options);   % or DebugScript.helper.solve_direct
 %
-% GUILDA.setting の TimeSimulation の値に Name-Value を重ねる (net.simulate の
-% ローカル関数 simulate_options と同じ規則。値の検査はしない)。
+% GUILDA.setting の TimeSimulation の値 (GUILDA.config が読み込むときに検査・変換済み) に
+% Name-Value を重ねる (net.simulate の arguments ブロックの既定値と同じ。値の検査はしない)。
+% 呼び出しの Progress の true/false は net.simulate と同じく "dialog"/"none" にする。
     arguments (Input, Repeating)
         varargin  % Name-Value (simulate のオプション名)
     end
@@ -18,25 +19,11 @@ function sct_options = ode_options(varargin)
     for s_name = string(fieldnames(sct_cfg)).'
         sct_options.(s_name) = sct_cfg.(s_name).Value;
     end
-    if ~(isnumeric(sct_options.TimeLimit) && isscalar(sct_options.TimeLimit) && sct_options.TimeLimit > 0)
-        sct_options.TimeLimit = Inf;
-    end
-    for s_name = ["MaxStep", "InitialStep"]
-        v = sct_options.(s_name);
-        if ~(isnumeric(v) && isscalar(v) && v > 0)
-            sct_options.(s_name) = NaN;
-        end
-    end
     for k = 1:2:numel(varargin)
         sct_options.(string(varargin{k})) = varargin{k+1};
     end
-    sct_options.Solver   = string(sct_options.Solver);
     if islogical(sct_options.Progress) || isnumeric(sct_options.Progress)
         sv_mode = ["none", "dialog"];
         sct_options.Progress = sv_mode(1 + logical(sct_options.Progress));
-    else
-        sct_options.Progress = string(sct_options.Progress);
     end
-    sct_options.Verbose  = logical(sct_options.Verbose);
-    sct_options.SeparateComplexParts = logical(sct_options.SeparateComplexParts);
 end

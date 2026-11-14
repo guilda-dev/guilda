@@ -80,7 +80,7 @@
 | `branch.two_winding_transformer` | `ym = [c + y/tap², -y/tap; -y/tap, y]`, `E = diag(1, e^{jφ})`, `ym·E` | 送電端の母線側のシャント |
 
 - `Branch` の抽象メソッドは `Ymat = get_admittance_matrix(obj)` で、`tab_parameter.dynamics`(R, X, C, tap, phase)だけを読みます。回線数のパラメータはありません。
-- `get_admittance_matrix()` は引数なしで、`PowerNetwork.get_admittance_matrix`、`Branch.struct`(`cm_Y`)、`cv_Iequilibrium`、`get_opf_condition`、潮流計算・OPF・連続潮流計算・線形化(`get_linear_port`)、`DrawerNetDiagram`、`tools.network_to_mpc` から呼ばれます。これらは変えません(既定の `"close"`)。
+- `get_admittance_matrix()` は引数なしで、`PowerNetwork.get_admittance_matrix`、`Branch.struct`(`cm_Y`)、`cv_Iequilibrium`、`get_opf_condition`、潮流計算・OPF・連続潮流計算・線形化(`get_sys` の局所関数 `port`)、`DrawerNetDiagram`、`tools.network_to_mpc` から呼ばれます。これらは変えません(既定の `"close"`)。
 - `PowerNetwork.get_admittance_matrix()` は引数なしで、`a_Branch` の順に各ブランチの `get_admittance_matrix()` を足し、最後に母線のシャントを足した表(行と列が母線のタグ)を返します。
 - IEEJ の系統は回線を別のブランチにしています: `IEEJ_EAST10` と `IEEJ_WEST10` は 1 回線が 1 ブランチ(`EL(2k-1)`, `EL(2k)`、`LINE20_1`, `LINE20_2`)、`IEEJ_WEST30` は 1 枚のカードの n 回線を 1 ブランチ(`R/n`, `X/n`, `C = YC·n`)にしています。`two_winding_transformer` の `phase` は同梱の系統ではすべて 0 です。
 
@@ -494,7 +494,7 @@ s_tag = add_trip(obj, unit, time)
 
 ### 6.3 `get_admittance_matrix` の引数なしの呼び出し(変えない)
 
-`PowerNetwork.get_admittance_matrix`(引数なし), `calculate_powerflow`, `initialize`, `get_linear_port`, `private/solve_fixed_input`, `private/simulateFcn_blocks`, `Branch.struct`, `Branch.get_opf_condition`, `Branch.cv_Iequilibrium`, `SolverPF`, `SolverCPF`(`solve`, `limit_set`), `ResultPF`, `MethodDynamic`, `DrawerNetDiagram/set_network`, `tools.network_to_mpc`。
+`PowerNetwork.get_admittance_matrix`(引数なし), `calculate_powerflow`, `initialize`, `get_sys`(局所関数 `port`), `private/solve_fixed_input`, `private/simulateFcn_blocks`, `Branch.struct`, `Branch.get_opf_condition`, `Branch.cv_Iequilibrium`, `SolverPF`, `SolverCPF`(`solve`, `limit_set`), `ResultPF`, `MethodDynamic`, `DrawerNetDiagram/set_network`, `tools.network_to_mpc`。
 
 ## 7. 実装の手順
 
@@ -515,6 +515,12 @@ s_tag = add_trip(obj, unit, time)
 - N1 は B1 の後、E1・E2 と並行できます(`+network` は他の手順が触らない。ヘルプの例の確認は E1 が読むだけ)。
 - D1 の `feature-data-io.html`, `feature-model-building.html` は E1・B1 の後、`feature-simulation.html` は E2 の後です。
 - `@PowerNetwork/private` の `simulateFcn_*` への改名は別のサブセッションの作業で、E2 はその統合の後に始めます。
+
+### 7.1 B1 の実装の状況
+
+- ブランチ `feature/branch-status` で実装しました(§2.1-2.5 のとおり)。`functionSignatures.json` は変えていません(B1 と E1 の統合の後に `GUILDA.update_keymap(Signature=true)` で 1 回再生成します)。
+- テスト: 新規 F41(small)、F16 の `circuit` の列、F22 のブランチの状態の約束。F41 はすべて small なので `test_levels.m` の行は加えていません。
+- 結果(2026-11-13): small 543 件 PASS 540 / KNOWN 1 / FAIL 1 / SKIP 1、medium 731 件 PASS 728 / KNOWN 1 / FAIL 1 / SKIP 1。FAIL は F34(`functionSignatures.json` が古い)だけで、再生成で解消する見込みです。`simulate_baseline(Mode="compare")` は 6 例とも `isequaln` です。
 
 ## 8. テスト計画
 
@@ -572,3 +578,38 @@ s_tag = add_trip(obj, unit, time)
 | Q13 | IEEJ の系統の回線数 | **N1 で設定**: EAST10・WEST10 の回線のブランチは `Circuit=1`、WEST30 はカードの n。変圧器は 1(バンク数が分かればその数) |
 | 行列 | シミュレーションの行列の作り方 | `PowerNetwork.get_admittance_matrix` に `BranchStatus`(列 `Target`, `Status`, `Point`、既定はすべて閉じた状態)。`build_simulation_data` は区間の状態の異なる組ごとに 1 回呼び、行列のセルと区間ごとの位置を `SolverODE` に渡す。ブランチごとのスタンプと別の補助関数は置かない。母線の故障はソルバーで V = 0 |
 | 名前 | simulate の private 関数 | `simulateFcn_<名前>`(§0.4) |
+
+## 実装の状況(E1)
+
+ブランチ `feature/scenario-event-table`(基準 `7f6154c5`)。§3 のシナリオの表と API を実装し、`compile` は新しい表から今と同じ `sct_event` を作ります。
+
+- 決めたこと(仕様にない細部): `add_events` と `add_record` は `add_scenario(From=)` から呼ぶため `Access={?PowerNetwork, ?Scenario}`(公開ではない)。行の形の誤り(対象ごとに 2 行でない、終了の Status が `none`/`close` でない、機器に `3open`/`6open` など)は新しい ID `GUILDA:Scenario:InvalidEventRows`。`SingleCircuit` は `Scenario.xml` に置いただけで、検査は E2(回線数は B1)。オフセットと入力を持たない `add_disturbance` は区間の目印として、1 つの時刻なら `tab_offset`、期間なら `tab_input` に 1 行を入れる(F6 の「何もしないイベント」)。オフセットだけの `add_disturbance` に `[t1 t2]` を与えたときは `t1` だけを残す。JSON の `version` が 2 でないものと、同じタグのオフセットと入力の開始時刻が違うものは `ScenarioJson`。`PowerNetwork.xml` の `ScenarioJson` の本文の「version 1」を「version 2」にした(1 行)。
+- テスト: small 535 件(PASS 533 / KNOWN 1 / SKIP 1)、medium 723 件(F6 の Verbose の列名を直した後 FAIL 0)。`simulate_baseline(Mode="compare")`: 6 例すべて `isequaln`(`phases` は列名を §3.6 の対応で読み替え)。
+- `_GUILDAverification/IEEJ_EAST10/compare_table4_3(Sections="peak")`(調速機あり): 14 of 21 で README の記録(2026-11-04)と同じ。
+
+## 実装の状況(N1)
+
+ブランチ `feature/ieej-circuit-count`(基準 `4b0a198d`)。§9 Q13 に従い、IEEJ の 4 系統の `branch/parameter.csv`(peak, night)に `circuit` の列(`phase` の後)を加え、クラスのヘルプに書きました。
+
+- EAST10(線路 78、変圧器 22)、WEST10(線路 32、変圧器 10): すべて 1。線路は 1 回線が 1 ブランチ。変圧器のバンク数はデータにないので 1 [Q13]。
+- EAST30(Q13 にない): すべて 1。クラスのヘルプのとおり、T カードの 2 回線はそれぞれ 1 ブランチ、X カードは全て 1 バンク [事実: ヘルプ]。
+- WEST30: 線路はカードの n(2 回線 36、1 回線 63)、変圧器 30 は 1(ヘルプ「All have one bank」)。カードの原データはリポジトリにないため、n は CSV の `C/X` から求めた [推定、根拠は次]: 報告書 4.5 節 (2) で抵抗とアドミタンスは TACSR 810 mm²・4 導体の比で置き換えられており、1 回線の `YC/X` は一定(約 0.484)。CSV は `X/n`, `YC·n` なので `C/X = n²·0.484` となり、値は 0.483〜0.487 と 1.932〜1.938 にきれいに分かれる。表 4.13 の 6 例(`_GUILDAverification/IEEJ_WEST30/table4_13_report.csv` の `Circuits`: EL010, EL042, EL061, EL079 が 1、EL027, EL089 が 2)とすべて一致。
+- `"close"` の行列は変わらない: 8 断面で `get_admittance_matrix()` と潮流計算の母線電圧が変更前と `isequal`。`compare_table4_3(Sections="peak")` は変更前後で表が `isequaln`(14 of 21)。
+- テスト: F19 に節「IEEJ network data give each branch its number of circuits」(small、CSV を読む)。
+
+## 実装の状況(E2)
+
+ブランチ `feature/simulate-branch-events`(基準 `4b0a198d`)。§4 のシミュレーションを実装し、`GUILDA:Scenario:NotYetSupported` を削除しました(`Scenario.xml` の項目も削除)。
+
+- **`compile`(§4.1):** `sct_event(k)` に `iv_tripLC` と `tab_branch`(既定でないブランチの状態の行、列 `Target`, `Status`, `Point`、ブランチの位置の順、同じブランチでは故障の行が先)を加え、`iv_openBranch` を削除しました。
+- **行列(§4.2):** `build_simulation_data` が `tab_branch` の異なる組(`isequaln`)ごとに `get_admittance_matrix(BranchStatus=tab_branch)` を 1 回呼び、`sct_dae.c_Y`(`c_Y{1}` は `simulateFcn_blocks` の `cm_Y` をそのまま使い、呼び出しは追加しない)と `sct_event(k).i_Y` を作ります。`c_branchY` は削除し、`cm_Y` と `im_branchBus` は残しました。`SolverODE.set_admittance(ctx, i_Y, l_force)` は `c_Y{i_Y}` に切り替えるだけです。
+- **島の検査:** `simulateFcn_check_islands` は `tab_branch` の `6open` か `6LG` の行(`6LG` は並列の状態によらず両端を結ばない)のブランチを開いたものとして検査します。`OpenBranchIsland` の本文を「開いた、または全回線を地絡した(`"6LG"`)ブランチ」にしました。
+- **解列した源の規則(§3.7, §4.3):** `SolverODE/build_index` は接続ごとの源のブロックを `ctx.sct_conn`(`iv_in`, `lv_sig`, `lv_main`, `iv_comp`, `iv_lc`, `iv_gc`, `iv_src`)に持ち、`iv_gateIn`, `iv_gateComp` を削除しました。`rv_e`, `S_sig`, `S_var` は `rv_e0`, `S_sig0`, `S_var0` から `solve` の `set_phase` が区間ごとに作ります: 源が解列した接続を外し、主な源(`observe`, `local`)が解列した入力の `rv_e` を平衡値 `rv_z0` にします。`global` の接続は外すだけです(今と同じ値)。外す接続がない区間は `S_sig0` などをそのまま使うので、計算は今と同じです。
+- **LC の解列(§3.7):** `set_phase` の `ctx.lv_lcOn`。`initial_condition` は解列中の LC の `iv_x`, `iv_u` を外し、`getODEFunction`/`getODEJacobian` は評価せず、`getNextPhase` は GC と同じく平衡点と質量行列から再開し、`phase_result` は状態を NaN に、`simulateFcn_struct_result` は `u` も NaN にします。再開の点では微分の状態が平衡値で、代数の状態(AVR ST1 の `Vtr` など)は区間の初期値の計算で解き直されます。`ResultODE` の出力は、状態が NaN のブロックを NaN にする今の処理で LC も NaN になります(変更なし)。
+- **回線数の検査:** `validate_events` に `GUILDA:Scenario:SingleCircuit`(1 回線のブランチの `3LG`/`3open`)を加えました。追加の時点と `compile` の `validate` の両方で効きます。
+- **ヘルプ:** `Scenario.m`(行列の作り方、解列した源の規則、LC の解列、界磁喪失は `add_input(gen, "Vfield", -Vfield0, ...)`)、`add_fault`, `add_trip`, `add_open_branch`, `compile`, `build_simulation_data`, `SolverODE/solve` など。
+- **仕様からの違い:** 新しいテストのファイル名は `test_F42_branch_events.m` です(`test_F42_graph_spring.m` が既にあり、F41 と同じく番号が重なります)。§8.2 の「3LG を p = 1e-6 で与えた軌道が送電端の母線の地絡と近い」は、IEEE14 の B002・B003 の近くの地絡が定電力負荷のため解けないので(母線の地絡 B002 も解けない)、変圧器 ET020(B007-B008)の受電端 B008(発電機だけ)で `Point = 1 - 1e-6` と比べました。状態の相対差は 7.95e-7(q = 1e-2, 1e-3, 1e-4 でも q に比例)。§8.2 の解列した源の確認は、組み込みの制御器が観測する量の平衡値がすべて 0(omega)で今の「0 を読む」と区別できないので、データの入力の平衡値だけを変えて `SolverODE.solve` で解き、解列中の入力がその値をとることを確かめました。
+- **テスト:** 新規 F42(10 件、medium)、F39(`c_Y`, `i_Y`, `tab_branch`)、F31 と I52(`NotYetSupported` を期待していた箇所)、`test_levels.m`。F29, F6, I62 は変更不要でした(許容差の比較か、`sct_event` の項目を読まない)。`iv_gateIn` を期待するテストはありませんでした。
+- **`simulate_baseline(Mode="compare")`:** `ieee68_fault`, `ieee68_nolc`, `ieee14_trip`, `ieee9_offset`, `agc_trip` は `isequaln`。`ieee14_trip` は解列する B003 の機器を観測する制御器がないので変わりません。`agc_trip` も変わりません: GC が観測する omega の平衡値は 0 なので、今の 0 と平衡値が同じ値です。`ieee14_open`(EL003 の `"6open"`)は `isequaln` ではありません: 行列の要素の最大差は 1.78e-15、最初に違う点は 1 s(開放の区間の始まり)、点の数は同じ 253 で時刻の最大差 4.1e-7、同じ区間の中で基準の時刻に補間した差の最大値は `rm_variable` 1.38e-8、`rm_I` 2.47e-8 で、`Tolerance`(1e-4)以下です。`simulate_baseline` は `ieee14_open` を許容差で、`agc_trip` を 2.5 s で区切って比べるようにしました(区切りの比較は今は使われない)。基準のファイルは更新していません。
+- `_GUILDAverification/IEEJ_EAST10/compare_table4_3(Sections="peak")`(調速機あり): 14 of 21 で、E1 と同じです。`GUILDA.doc` の警告は 3 件(`set_avr`/`set_pss`/`set_governor`)。公開の引数は変えていないので `functionSignatures.json` の再生成は不要です。
+- 結果(2026-11-13): small 559 件(F31 の 1 件を直す前: PASS 556 / KNOWN 1 / FAIL 1 / SKIP 1。直した後 F31 は 13 件すべて PASS)、medium 764 件 PASS 762 / KNOWN 1 / FAIL 0 / SKIP 1。

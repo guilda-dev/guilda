@@ -24,14 +24,13 @@ function lim = limit_set(net, sv_limits, w, sv_load)
     c_row  = cell(0, 6);       % {kind, object index, class, object, limit, bound}
 
     rv_Qother = zeros(n_bus, 1);
-    i_slack   = tools.slack_bus_index(net);
     for i = 1:n_bus
         bus    = a_Bus{i};
         a_Comp = bus.a_Component;
         for j = find(~w.c_lvFree{i}(:)).'
             rv_Qother(i) = rv_Qother(i) + imag(a_Comp{j}.c_Vequilibrium * conj(a_Comp{j}.c_Iequilibrium));
         end
-        if ismember("Q", sv_limits) && bus.s_bustype == "PV" && i ~= i_slack   % not the slack bus, also when it was selected
+        if ismember("Q", sv_limits) && bus.get_pf_condition().Type == "PV"
             a_gen = a_Comp(w.c_lvFree{i});
             r_min = sum(cellfun(@(c) group(c, "operation").Qmin, a_gen));
             r_max = sum(cellfun(@(c) group(c, "operation").Qmax, a_gen));

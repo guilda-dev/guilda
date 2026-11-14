@@ -33,6 +33,8 @@ classdef IEEJ_EAST30 < PowerNetwork
 % - Transformers (X cards): pi_transformer branches from `NF` to `NT` with `X = ZX`
 %   (one bank on all cards), `R = C = 0` and `tap = 1/TAPR`. The report's 0.14 pu
 %   transformer rule does not apply to this model.
+% - Every branch has `circuit = 1` (column `circuit` of `branch/parameter.csv`): a line
+%   branch is one circuit, and a transformer is one bank.
 % - Shunts: `YC` of the N card is `Bshunt` (capacitors at peak, a reactor at night).
 % - Loads: `P = -PL`, `Q = -QL`; negative `PL` of the data is kept.
 % - Night section: nodes 3016 and 3020 pump with `PG`, `QG` given and no voltage. gen-park

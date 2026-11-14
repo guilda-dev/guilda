@@ -1,4 +1,4 @@
-function sct_block = get_linear_block(obj, x, V, u)
+function sct_block = get_linear_matrix(obj, x, V, u)
 % Get the linear block of the global controller at a point.
 %
 % Returns the linear model of the controller at the states x, the voltages

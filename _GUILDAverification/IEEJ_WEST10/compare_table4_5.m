@@ -166,9 +166,10 @@ function c_sc = add_csv_scenarios(s_file, net)
 %
 % The rows with the same Scenario form one scenario, in the order of their first rows:
 % Description and Time [ScenarioTimeStart, ScenarioTimeEnd] from its first row, and one
-% disturbance per row with Tag, TimeSpan [TimeStart, TimeEnd] and the tags in FaultBus,
-% TripUnit and OpenBranch (several separated by ";"). The other columns of the file are
-% empty and not read.
+% disturbance per row from TimeStart to TimeEnd with the tags in FaultBus (add_fault),
+% TripUnit (add_trip) and OpenBranch (add_open_branch; several separated by ";"). The tags
+% of the disturbances are given by the scenario (Fault001, Parallel001, ...); the column
+% Tag and the other columns of the file are not read.
     arguments (Input)
         s_file (1,1) string   % CSV file.
         net PowerNetwork      % Network to add the scenarios to.
@@ -189,13 +190,16 @@ function c_sc = add_csv_scenarios(s_file, net)
         sc = net.add_scenario(sv_sc(i), Description=tab_i.Description(1), ...
                               Time=double([tab_i.ScenarioTimeStart(1), tab_i.ScenarioTimeEnd(1)]));
         for r = 1:height(tab_i)
-            c_nv = cell(1, 0);
-            for s_col = ["FaultBus", "TripUnit", "OpenBranch"]
-                if tab_i.(s_col)(r) ~= ""
-                    c_nv = [c_nv, {s_col, strip(split(tab_i.(s_col)(r), ";"))}]; %#ok<AGROW>
-                end
+            rv_time = double([tab_i.TimeStart(r), tab_i.TimeEnd(r)]);
+            if tab_i.FaultBus(r) ~= ""
+                sc.add_fault(strip(split(tab_i.FaultBus(r), ";")), rv_time);
             end
-            sc.add_disturbance(tab_i.Tag(r), "TimeSpan", double([tab_i.TimeStart(r), tab_i.TimeEnd(r)]), c_nv{:});
+            if tab_i.TripUnit(r) ~= ""
+                sc.add_trip(strip(split(tab_i.TripUnit(r), ";")), rv_time);
+            end
+            if tab_i.OpenBranch(r) ~= ""
+                sc.add_open_branch(strip(split(tab_i.OpenBranch(r), ";")), rv_time);
+            end
         end
         c_sc{i} = sc;
     end

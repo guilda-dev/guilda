@@ -87,7 +87,7 @@ for i = 1:n_bus
     for j = 1:numel(sol0.odeResults.Bus(i).Component)
         c = sol0.odeResults.Bus(i).Component(j);
         if isfield(c, "X")
-            n_comp = n_comp + width(c.X) + width(c.U);
+            n_comp = n_comp + width(c.X) + width(c.U) + width(c.I);   % I: Ireal, Iimag of the component
         end
     end
 end
