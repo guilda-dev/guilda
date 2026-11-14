@@ -14,7 +14,7 @@
 % 各テストは見えない figure で始め、終わりに閉じる
 fig = figure("Visible", "off");
 c_fig = onCleanup(@() close(fig));
-% B001: gen-park (slack)、B002: gen-classical + 負荷、B003: 負荷
+% B001: gen-park (スラック)、B002: gen-classical + 負荷、B003: 負荷
 % (定インピーダンス負荷: 定電力負荷では B003 の地絡で解けなくなるため)
 net = PowerNetwork("Test3Bus");
 net.add_bus("V", 1.00);
@@ -26,6 +26,7 @@ net.a_Bus{1}.add_component("gen-park");
 gen   = net.a_Bus{2}.add_component("gen-classical", "P", 0.5, "Q", nan);
 load2 = net.a_Bus{2}.add_component("load-impedance", "P", -0.2, "Q", -0.05);
 net.a_Bus{3}.add_component("load-impedance", "P", -1.0, "Q", -0.2);
+evalc("net.a_Bus{1}.l_isSlack = true;");     % スラック母線 (自動では選ばれない)。INFO は抑制
 DebugScript.helper.quiet(@() net.initialize);
 
 
