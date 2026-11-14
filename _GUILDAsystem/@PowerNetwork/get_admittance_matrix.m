@@ -38,6 +38,10 @@ function tab_Ybus2bus = get_admittance_matrix(obj, opt)
 % tab_state = table(["EL001";"EL002"], ["3LG";"6open"], [0.3; NaN], ...
 %     VariableNames=["Target","Status","Point"]);
 % tab_Yf = net.get_admittance_matrix(BranchStatus=tab_state);
+% % the start rows of the events of a scenario, passed as they are
+% sc = net.add_scenario("case1");
+% sc.add_fault("EL003", [0.10, 0.17], Status="3LG", Point=0.3);
+% tab_Yf = net.get_admittance_matrix(BranchStatus=sc.tab_event(sc.tab_event.Time == 0.10, :));
 % ```
 %
 % See also Branch.get_admittance_matrix

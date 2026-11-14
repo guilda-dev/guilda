@@ -5,11 +5,14 @@ function s_tag = add_trip(obj, unit, time)
 % t_end. Two rows per unit are added to tab_event with one new tag Parallel<n>: (t_start,
 % "open") and (t_end, "close"). remove_disturbance(tag) removes them. Two parallel events
 % of one unit may touch but not overlap. An input whose source is tripped takes its
-% equilibrium value (see the Scenario help).
+% equilibrium value (see the Scenario help). A reconnected unit restarts from its
+% equilibrium (a generator from its bus voltage). The local controllers under a tripped
+% component or local controller keep running; give them too to stop them.
 %
 % <@Examples>
 % ```matlab
 % sc.add_trip("B003LPQ2", [1, 1.2]);      % Parallel001
+% sc.add_trip("B001SG1CA1", [2, 3]);      % a local controller (an AVR of IEEE14bus with avr-ST1 added)
 % ```
     arguments (Input)
         obj

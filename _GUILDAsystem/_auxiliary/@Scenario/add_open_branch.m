@@ -7,11 +7,14 @@ function s_tag = add_open_branch(obj, branch, time, opt)
 % tab_event with one new tag Parallel<n>: (t_start, Status) and (t_end, "close").
 % remove_disturbance(tag) removes them. Two parallel events of one branch may touch but
 % not overlap. "3open" needs a branch of two or more circuits
-% (GUILDA:Scenario:SingleCircuit).
+% (GUILDA:Scenario:SingleCircuit). An opening may overlap a fault of the same branch: the
+% two states give one matrix (see PowerNetwork.get_admittance_matrix), e.g. "3open" during
+% a "3LG" fault opens the faulted circuit.
 %
 % <@Examples>
 % ```matlab
 % sc.add_open_branch(["EL003"; "EL004"], [0.17, 20]);   % open until the end
+% sc.add_open_branch("EL005", [1, 2], Status="3open");  % one circuit open for 1 s
 % ```
     arguments (Input)
         obj
