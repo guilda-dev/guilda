@@ -1,28 +1,25 @@
-function [sct_solution, flag, output] = solve(obj, tab_bus, tab_component, tab_branch, sct_options, sct_input)
-% Build and solve the optimal power flow from the data of a network.
+function [sct_solution, flag, output] = solve(obj, prob, x0, tab_bus, tab_component, tab_branch, sct_options)
+% Solve an optimal power flow problem and return the solution.
 %
-% Builds the optimal power flow problem with build_problem from the tables of the buses,
-% components and branches (collected by net.calculate_optimal_powerflow from tab_parameter)
-% for the options sct_options of the call, solves it and returns the solution as a struct;
-% no network object is read. The caller builds the ResultOPF. The solver keeps only the
-% bus voltages of a solved "AC OPF", with their bus tags, for the next warm start (see
-% SolverOPF). Called by net.calculate_optimal_powerflow; calling it directly is for
-% advanced use. Without Optimization Toolbox it stops with
-% GUILDA:require_toolbox:Unavailable before anything is built.
-% sct_input carries the call-only options Problem and InitialPoint of
-% calculate_optimal_powerflow: with Problem, that problem is solved as it is instead of a
-% built one (Cost, Constraint, DefaultCost and ReferenceBus are not applied to it). It
-% must have the variables of the sct_options.Method problem of the same data (e.g.
-% net.build_opf_problem, modified by the user). InitialPoint replaces the initial point;
-% by default it is the x0 of build_problem, so a Problem with added variables needs an
-% InitialPoint that covers them.
+% Solves the problem prob (built by net.build_opf_problem, or given by the user) from the initial point x0 with the solver options of
+% sct_options, and returns the solution as a struct; the problem is not built again and no
+% network object is read. The tables of the buses, components and branches (the data the
+% problem was built from) give the rows of the result tables; the caller builds the
+% ResultOPF. A problem without these variables (or with other sizes) stops with
+% GUILDA:SolverOPF:ProblemMismatch. With sct_options.WarmStart, the bus and branch-end values of x0 are replaced
+% by the start from the bus voltages of the last solved "AC OPF" when it was solved for the
+% same bus tags (in the same order); the solver keeps only these voltages, with their bus
+% tags (see SolverOPF). Called by net.calculate_optimal_powerflow; calling it directly is
+% for advanced use. Without Optimization Toolbox it stops with
+% GUILDA:require_toolbox:Unavailable before anything is solved.
     arguments (Input)
         obj % Solver (net.solver_OPF).
+        prob % optimproblem to solve; it holds the variables of the problem built from the tables.
+        x0  (1,1) struct % Initial point: values by variable name.
         tab_bus       table % Buses (see build_problem).
         tab_component table % Components (see build_problem).
         tab_branch    table % Branches (see build_problem).
-        sct_options (1,1) struct % Name-Value options of calculate_optimal_powerflow (defaults from GUILDA.setting), with ReferenceBus as a bus tag or "none" and base (baseMVA, Hz).
-        sct_input (1,1) struct = struct() % Call-only options: Problem (optimproblem), InitialPoint (struct of initial values by variable name); either may be absent.
+        sct_options (1,1) struct % Options of calculate_optimal_powerflow: Method, Solver, Tolerance, MaxIteration, Verbose, PlotFcn, WarmStart (see optimoption).
     end
     arguments (Output)
         sct_solution % tab_bus, tab_cub, tab_branch, r_cost, lambda and OPFprob (see ResultOPF).
@@ -30,38 +27,36 @@ function [sct_solution, flag, output] = solve(obj, tab_bus, tab_component, tab_b
         output % Solver details; output.message describes the outcome.
     end
     tools.require_toolbox("optim", "OPF");
-    s_method = sct_options.Method;
-
-    % OPF problem: built, or given by the user
-    if isfield(sct_input, "Problem")
-        % the user terms are in the given problem: build without them for x0 and the check
-        sct_build = sct_options;
-        sct_build.Cost       = [];
-        sct_build.Constraint = [];
-        [OPFprob, x0] = obj.build_problem(tab_bus, tab_component, tab_branch, sct_build);
-        % the given problem must hold every variable of the built one with the same size,
-        % so that the solution can be formatted into the result tables
-        prob = sct_input.Problem;
-        if ~isa(prob, "optim.problemdef.OptimizationProblem")
-            error(msg("GUILDA:SolverOPF:InvalidProblem"))
-        end
-        sv_name = string(fieldnames(OPFprob.Variables)).';
-        lv_bad  = arrayfun(@(s) ~isfield(prob.Variables, s) ...
-                                || ~isequal(size(prob.Variables.(s)), size(OPFprob.Variables.(s))), sv_name);
-        if any(lv_bad)
-            error(msg("GUILDA:SolverOPF:ProblemMismatch", s_method, join(sv_name(lv_bad), ", ")))
-        end
-        OPFprob = prob;
-    else
-        [OPFprob, x0] = obj.build_problem(tab_bus, tab_component, tab_branch, sct_options);
+    if ~isa(prob, "optim.problemdef.OptimizationProblem")
+        error(msg("GUILDA:SolverOPF:InvalidProblem"))
     end
-    if isfield(sct_input, "InitialPoint")
-        x0 = sct_input.InitialPoint;
+    s_method = sct_options.Method;
+    sv_bus   = string(tab_bus.Properties.RowNames);
+    sv_com   = string(tab_component.Properties.RowNames);
+    sv_br    = string(tab_branch.Properties.RowNames);
+
+    % The problem must hold the variables that the result tables are read from, with their
+    % sizes: buses [Varg; V], components [P; Q], branch ends [P; Q; Ireal; Iimag] in
+    % "AC OPF", one value each in "DC OPF", the components only in "ELD"
+    rv_n   = struct("AC_OPF", [2 2 4], "DC_OPF", [1 1 1], "ELD", [0 1 0]).(replace(s_method, " ", "_"));
+    c_name = {sv_bus, sv_com, [sv_br + "_" + tab_branch.From; sv_br + "_" + tab_branch.To]};
+    sv_bad = strings(0,1);
+    for k = find(rv_n)
+        lv_bad = arrayfun(@(s) ~isfield(prob.Variables, s) ...
+            || ~isequal(size(prob.Variables.(s)), [rv_n(k) 1]), c_name{k});
+        sv_bad = [sv_bad; c_name{k}(lv_bad)]; %#ok<AGROW>
+    end
+    if ~isempty(sv_bad)
+        error(msg("GUILDA:SolverOPF:ProblemMismatch", s_method, join(sort(sv_bad), ", ")))
+    end
+
+    if sct_options.WarmStart && ~isempty(obj.sv_warmBus) && isequal(obj.sv_warmBus, sv_bus)
+        x0 = start_point(x0, sv_bus, obj.rm_Vwarm, tab_branch, s_method);
     end
 
     % solve OPF problem
-    [~, c_nv] = obj.optimoption(OPFprob, sct_options);
-    [sol,fval,flag,output,lambda] = solve(OPFprob,x0,c_nv{:});
+    [~, c_nv] = obj.optimoption(prob, sct_options);
+    [sol,fval,flag,output,lambda] = solve(prob,x0,c_nv{:});
     if isstruct(fval)
         fval = sum(cell2mat(struct2cell(fval)));
     end
@@ -69,9 +64,6 @@ function [sct_solution, flag, output] = solve(obj, tab_bus, tab_component, tab_b
     % Buses and connections. tab_cub has one row per connection to a bus, in bus order: the
     % components of the bus ("<component>"), then the branch ends at the bus
     % ("<branch>_<bus>"); each row is the injection into the bus (Iphasor, P, Q).
-    sv_bus = string(tab_bus.Properties.RowNames);
-    sv_com = string(tab_component.Properties.RowNames);
-    sv_br  = string(tab_branch.Properties.RowNames);
     rm_bus = [];
     rm_cub = [];
     sv_cub = [];
@@ -165,7 +157,7 @@ function [sct_solution, flag, output] = solve(obj, tab_bus, tab_component, tab_b
     end
 
     sct_solution = struct("tab_bus", tab_busSol, "tab_cub", tab_cub, "tab_branch", tab_branchSol, ...
-        "r_cost", fval, "lambda", lambda, "OPFprob", OPFprob);
+        "r_cost", fval, "lambda", lambda, "OPFprob", prob);
 
     % keep the bus voltages of a solved AC OPF for the next warm start
     if s_method == "AC OPF" && flag > 0

@@ -24,10 +24,11 @@ function [result, flag, output] = calculate_optimal_powerflow(obj, opt)
 % the components; branch current and power limits are applied as |I|^2 <= Imax^2 and
 % P^2 + Q^2 <= Smax^2 at both ends. Options not listed below stop with the MATLAB error
 % of an unknown name. The result is written to a file with result.export.
-% The network assembles the data of the problem (the tables of net.get_opf_condition,
-% the base and the reference bus) and net.solver_OPF builds
-% and solves it from these data only; the ResultOPF is built from a snapshot of the
-% network (struct(net, false)) and the solution. res.options holds the Name-Value options
+% The calculation runs three stages: net.build_opf_problem builds the problem (it collects
+% the tables of net.get_opf_condition, the base and the reference bus, and
+% net.solver_OPF builds the problem from these data only); net.solver_OPF.solve solves
+% the built problem, or the given Problem, without building it again; the ResultOPF is
+% built from a snapshot of the network (struct(net, false)) and the solution. res.options holds the Name-Value options
 % of the run (Problem and InitialPoint excepted), with ReferenceBus as the bus tag ("auto"
 % resolved) and base (baseMVA, Hz); the settings without an option (the algorithm and
 % the step tolerances of each solver, <Solver><option>) are read by SolverOPF from
@@ -98,23 +99,27 @@ function [result, flag, output] = calculate_optimal_powerflow(obj, opt)
     opt = rmfield(opt, fieldnames(sct_input));
     opt.PlotFcn = tools.check_plotfcn(opt.PlotFcn, "calculate_optimal_powerflow", ...
         ["fval","constrviolation","fvalconstr","firstorderopt","stepsize","funccount","x"]);
-
-    % Data of the problem: the tables of the network, its base (p.base of Cost and
-    % Constraint) and the reference bus ("auto": the slack bus, else the first bus)
-    sct_OPF = obj.get_opf_condition(Display=false);
-    opt.base = table2struct(obj.tab_parameter.base);
-    if opt.ReferenceBus == "auto"
-        i_ref = find(cellfun(@(b) b.l_isSlack, obj.a_Bus), 1);   % the slack bus, else the first bus
-        if isempty(i_ref); i_ref = 1; end
-        if isempty(obj.a_Bus)
-            opt.ReferenceBus = "none";
-        else
-            opt.ReferenceBus = string(obj.a_Bus{i_ref});
-        end
-    end
-
     t0 = tic;
-    [sct_solution, flag, output] = obj.solver_OPF.solve(sct_OPF.Bus, sct_OPF.Component, sct_OPF.Branch, opt, sct_input);
+
+    % 1. Build the problem; a given Problem is solved as it is, and the problem built
+    % without the user terms gives its initial point and data
+    c_user = {"Cost", opt.Cost, "Constraint", opt.Constraint};
+    if isfield(sct_input, "Problem"); c_user = {}; end
+    [prob, x0, sct_data] = obj.build_opf_problem(c_user{:}, Method=opt.Method, ...
+        DefaultCost=opt.DefaultCost, ReferenceBus=opt.ReferenceBus);
+    if isfield(sct_input, "Problem"); prob = sct_input.Problem; end
+    opt.base = sct_data.base;
+    opt.ReferenceBus = sct_data.ReferenceBus;
+
+    % 2. Solve it. A given InitialPoint is used as it is, without the warm start
+    sct_solve = opt;
+    if isfield(sct_input, "InitialPoint")
+        x0 = sct_input.InitialPoint;
+        sct_solve.WarmStart = false;
+    end
+    [sct_solution, flag, output] = obj.solver_OPF.solve(prob, x0, sct_data.Bus, sct_data.Component, sct_data.Branch, sct_solve);
+
+    % 3. Build the result from a snapshot of the network and the solution
     sct_solver = struct("solver", string(class(obj.solver_OPF)), "options", opt, ...
         "flag", flag, "output", output, "elapsed", toc(t0));
     result = ResultOPF(struct(obj, false), sct_solution, sct_solver);

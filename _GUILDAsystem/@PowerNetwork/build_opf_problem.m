@@ -1,17 +1,25 @@
 function varargout = build_opf_problem(obj, opt)
 % Build the optimization problem of the optimal power flow without solving it.
 %
-% Builds the problem that `net.calculate_optimal_powerflow` solves (SolverOPF.build_problem), so
-% that it can be inspected or modified before solving it with
-% net.calculate_optimal_powerflow(Problem=prob, InitialPoint=x0). Method defaults to the
-% OptimalPowerFlow section of GUILDA.setting; the other options are options of the call
-% only. Options not listed below stop with the MATLAB error of an unknown name.
+% Builds the problem that `net.calculate_optimal_powerflow` solves, so that it can be
+% inspected or modified before solving it with
+% net.calculate_optimal_powerflow(Problem=prob, InitialPoint=x0). It is the first step of
+% calculate_optimal_powerflow: the data of the problem are collected here (the tables of
+% net.get_opf_condition, the base and the reference bus, "auto" resolved) and
+% net.solver_OPF builds the problem from them (SolverOPF.build_problem). Method defaults
+% to the OptimalPowerFlow section of GUILDA.setting; the other options are options of the
+% call only. Options not listed below stop with the MATLAB error of an unknown name.
 % With no output the problem is displayed.
 % Constraint names: balancedP_<bus>, balancedQ_<bus> (balancedP in "ELD"), VargRef,
 % VargMax1_<branch>, VargMax2_<branch>, defIre_, defIim_, defP_, defQ_, Imax_, Smax_
 % (<branch>_<bus>), plus the names of Constraint. Variables are named by the tags of the
 % buses (Varg, V), components (P, Q) and branch ends (<branch>_<bus>: P, Q, Ireal, Iimag
 % flowing into the bus). The initial point x0 is the flat start (see SolverOPF).
+% The third output sct_data holds the data the problem was built from:
+%
+% - `Bus`, `Component`, `Branch` — Tables of net.get_opf_condition (row names = tags).
+% - `base` — Base of the network (baseMVA, Hz; p.base of Cost and Constraint).
+% - `ReferenceBus` — Bus with a fixed angle: the bus tag ("auto" resolved: the slack bus if one is set, else the first bus) or "none".
 %
 % Name-Value options:
 %
@@ -26,6 +34,7 @@ function varargout = build_opf_problem(obj, opt)
 % ```matlab
 % prob = net.build_opf_problem(Method="DC OPF");
 % [prob, x0] = net.build_opf_problem(Method="AC OPF", validate=true);
+% [~, ~, sct_data] = net.build_opf_problem();        % sct_data.ReferenceBus: the bus with a fixed angle
 % % Add a constraint and solve the modified problem
 % [prob, x0] = net.build_opf_problem(Method="DC OPF");
 % prob.Constraints.Cap = prob.Variables.B001SG1 <= 0.4;
@@ -45,29 +54,32 @@ function varargout = build_opf_problem(obj, opt)
         opt.validate (1,1) logical = false % Check that x0 fits the problem.
     end
     arguments (Output, Repeating)
-        varargout   % prob (the optimproblem), then x0 (the initial point as a struct of the variables).
+        varargout   % prob (the optimproblem), x0 (the initial point as a struct of the variables), then sct_data (the data of the problem: Bus, Component, Branch, base, ReferenceBus).
     end
-    sct_options = rmfield(opt, "validate");
-    sct_OPF = obj.get_opf_condition(Display=false);
-    sct_options.base = table2struct(obj.tab_parameter.base);
+    % Data of the problem: the tables of the network, its base and the reference bus
+    sct_data = obj.get_opf_condition(Display=false);
+    sct_data.base = table2struct(obj.tab_parameter.base);
+    sct_data.ReferenceBus = opt.ReferenceBus;
     if opt.ReferenceBus == "auto"
         i_ref = find(cellfun(@(b) b.l_isSlack, obj.a_Bus), 1);   % the slack bus, else the first bus
         if isempty(i_ref); i_ref = 1; end
         if isempty(obj.a_Bus)
-            sct_options.ReferenceBus = "none";
+            sct_data.ReferenceBus = "none";
         else
-            sct_options.ReferenceBus = string(obj.a_Bus{i_ref});
+            sct_data.ReferenceBus = string(obj.a_Bus{i_ref});
         end
     end
 
-    [prob, x0] = obj.solver_OPF.build_problem(sct_OPF.Bus, sct_OPF.Component, sct_OPF.Branch, sct_options);
+    sct_options = rmfield(opt, "validate");
+    sct_options.base = sct_data.base;
+    sct_options.ReferenceBus = sct_data.ReferenceBus;
+    [prob, x0] = obj.solver_OPF.build_problem(sct_data.Bus, sct_data.Component, sct_data.Branch, sct_options);
 
-    switch nargout
-        case 0; disp(prob);
-        case 1; varargout{1} = prob;
-        case 2; varargout{1} = prob;
-                varargout{2} = x0;
+    if nargout == 0
+        disp(prob);
     end
+    varargout = {prob, x0, sct_data};
+    varargout = varargout(1:nargout);
 
     if opt.validate
         validate(prob,x0)
