@@ -8,11 +8,13 @@ classdef SolverOPF < auxiliary
 % optimoption reads the settings without an option (<Solver><option>) from GUILDA.config.
 % Cost, Constraint, DefaultCost and ReferenceBus are options of the call only. The solver
 % keeps only the warm start.
-% It never reads the network: net.calculate_optimal_powerflow (and net.build_opf_problem)
-% collect the data of the buses, components and branches from tab_parameter as three
-% tables (tags as row names), resolve ReferenceBus "auto" to a bus tag and pass the base
-% (baseMVA, Hz). build_problem builds the optimization problem from these data; solve
-% solves it and returns the solution, from which the caller builds the ResultOPF.
+% It never reads the network: net.build_opf_problem collects the data of the buses,
+% components and branches from tab_parameter as three tables (tags as row names),
+% resolves ReferenceBus "auto" to a bus tag and passes the base (baseMVA, Hz);
+% build_problem builds the optimization problem from these data. net.calculate_optimal_powerflow
+% runs three stages: net.build_opf_problem builds the problem, solve solves the built (or
+% given) problem from its initial point without building it again and returns the
+% solution, and the caller builds the ResultOPF.
 %
 % - `Method`: "ELD" (economic load dispatch, branches ignored), "DC OPF" (DC approximation:
 %   |V| = 1, no losses, b_ij = 1/(X*tap) as in MATPOWER) or "AC OPF" (AC power flow
@@ -38,7 +40,9 @@ classdef SolverOPF < auxiliary
 %   option WarmStart of calculate_optimal_powerflow is true and it was solved for the same
 %   bus tags (in the same order), and from the flat start otherwise: angle 0 and
 %   magnitude 1, with the set V at PV and slack buses and the set angle at the slack bus.
-%   "DC OPF" starts from the angles of the same start. net.reset_solver() discards the
+%   build_problem returns the flat start; solve applies the warm start to the bus and
+%   branch-end values of the initial point. "DC OPF" starts from the angles of the same
+%   start. A given InitialPoint is used as it is. net.reset_solver() discards the
 %   kept voltages.
 % - The problem is built at every call (no cache); net.build_opf_problem builds the same
 %   problem without solving it.
@@ -73,7 +77,7 @@ classdef SolverOPF < auxiliary
         end
 
         [prob, x0] = build_problem(obj, tab_bus, tab_component, tab_branch, sct_options)
-        [sct_solution, flag, output] = solve(obj, tab_bus, tab_component, tab_branch, sct_options, sct_input)
+        [sct_solution, flag, output] = solve(obj, prob, x0, tab_bus, tab_component, tab_branch, sct_options)
     end
 
     methods(Hidden)

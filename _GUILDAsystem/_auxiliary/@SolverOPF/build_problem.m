@@ -2,9 +2,9 @@ function [prob, x0] = build_problem(obj, tab_bus, tab_component, tab_branch, sct
 % Build the optimization problem of the optimal power flow from the data of a network.
 %
 % Builds the optimproblem for sct_options.Method from the tables of the buses, components
-% and branches that net.calculate_optimal_powerflow and net.build_opf_problem collect
-% from tab_parameter (rows named by tag; see those methods); no network object is read.
-% Called by net.build_opf_problem and SolverOPF.solve.
+% and branches that net.build_opf_problem collects from tab_parameter (rows named by tag;
+% see that method); no network object and no state of the solver is read. Called by
+% net.build_opf_problem, which net.calculate_optimal_powerflow calls.
 %
 % - Variables: one per bus (Varg, V), component (P, Q) and branch end
 %   ("<branch>_<bus>": P, Q, Ireal, Iimag flowing into the bus), named by tag.
@@ -16,9 +16,10 @@ function [prob, x0] = build_problem(obj, tab_bus, tab_component, tab_branch, sct
 % - Objective GenCost: HP*P^2 + fP*P + HQ*Q^2 + fQ*Q of every component (DefaultCost),
 %   plus Cost(v, p).
 % - Constraint(v, p) adds named constraints prob.Constraints.<name>.
-% x0 starts from the bus voltages of the flat start, or of the last solved "AC OPF" when
-% sct_options.WarmStart is true and it was solved for the same bus tags (see SolverOPF),
-% and P0, Q0 of the components; the branch ends start at the flows of these voltages.
+% x0 is the flat start: the bus voltages angle 0 and magnitude 1, with the set V at PV and
+% slack buses and the set angle at the slack bus, and P0, Q0 of the components; the branch
+% ends start at the flows of these voltages. The warm start replaces the bus and branch
+% values in SolverOPF.solve.
 %
 % <@Examples>
 % ```matlab
@@ -37,11 +38,11 @@ function [prob, x0] = build_problem(obj, tab_bus, tab_component, tab_branch, sct
 %
 % See also PowerNetwork.build_opf_problem, SolverOPF.solve
     arguments (Input)
-        obj                          % Solver (net.solver_OPF); its warm start is read.
+        obj                          % Solver (net.solver_OPF); not read.
         tab_bus       table          % Buses: Vmin, Vmax, Gshunt, Bshunt, Type, V, Varg; row names = bus tags.
         tab_component table          % Components: Bus, HP, fP, HQ, fQ, P0, Q0, Pmin, Pmax, Qmin, Qmax; row names = tags.
         tab_branch    table          % Branches: From, To, Y (2x2 pages), X, tap, phase, Pmax, Qmax, Vargmax, Imax, Smax; row names = tags.
-        sct_options   (1,1) struct   % Settings: Method, Cost, Constraint, DefaultCost, ReferenceBus (bus tag or "none"), base (baseMVA, Hz); WarmStart (absent: false).
+        sct_options   (1,1) struct   % Settings: Method, Cost, Constraint, DefaultCost, ReferenceBus (bus tag or "none"), base (baseMVA, Hz).
     end
     arguments (Output)
         prob % optimproblem; its Description shows the OPF data of the buses, components and branches.
@@ -67,24 +68,19 @@ function [prob, x0] = build_problem(obj, tab_bus, tab_component, tab_branch, sct
         const.P = 0;
     end
 
-    % [Varg, V] of each bus at the start: the kept "AC OPF" solution (WarmStart, same bus
-    % tags in the same order), or the flat start (angle 0 and magnitude 1, the set V at PV
-    % and slack buses and the set angle at the slack bus)
-    l_warm = isfield(sct_options, "WarmStart") && sct_options.WarmStart;
-    if l_warm && ~isempty(obj.sv_warmBus) && isequal(obj.sv_warmBus, sv_bus(:))
-        rm_init = obj.rm_Vwarm;
-    else
-        n_bus    = height(tab_bus);
-        rm_init  = [zeros(n_bus,1), ones(n_bus,1)];
-        lv_set   = tab_bus.Type ~= "PQ";
-        lv_slack = tab_bus.Type == "slack";
-        rm_init(lv_set, 2)   = tab_bus.V(lv_set);
-        rm_init(lv_slack, 1) = tab_bus.Varg(lv_slack);
-    end
+    % Flat start of the buses and branch ends: [Varg, V] = [0, 1], the set V at PV and
+    % slack buses and the set angle at the slack bus
+    n_bus    = height(tab_bus);
+    rm_init  = [zeros(n_bus,1), ones(n_bus,1)];
+    lv_set   = tab_bus.Type ~= "PQ";
+    lv_slack = tab_bus.Type == "slack";
+    rm_init(lv_set, 2)   = tab_bus.V(lv_set);
+    rm_init(lv_slack, 1) = tab_bus.Varg(lv_slack);
+    x0 = start_point(x0, sv_bus, rm_init, tab_branch, s_method);
 
     sv_at = tab_component.Bus;
     for i_bus = 1:numel(sv_bus)
-        [x0, const, var] = build_bus(tab_bus(i_bus,:), x0, const, s_method, rm_init(i_bus,:));
+        [const, var] = build_bus(tab_bus(i_bus,:), const, s_method);
         if ~isempty(var)
             sct_var.(sv_bus(i_bus)) = var;
         end
@@ -110,7 +106,7 @@ function [prob, x0] = build_problem(obj, tab_bus, tab_component, tab_branch, sct
     end
 
     for i_br = 1:height(tab_branch)
-        [prob, x0, const, sct_var] = build_branch(tab_branch(i_br,:), prob, x0, const, sct_var, s_method);
+        [prob, const, sct_var] = build_branch(tab_branch(i_br,:), prob, const, sct_var, s_method);
     end
 
     sv_const = fieldnames(const);

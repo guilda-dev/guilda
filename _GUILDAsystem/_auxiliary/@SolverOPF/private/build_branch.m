@@ -1,22 +1,21 @@
-function [prob, x0, const, sct_var] = build_branch(row, prob, x0, const, sct_var, s_method)
+function [prob, const, sct_var] = build_branch(row, prob, const, sct_var, s_method)
 % Add the flow variables, definitions and limits of one branch to the OPF problem.
 %
 % The variables of each end are "<branch>_<bus>" and hold the flow from the branch into
 % that bus, which is added to the balance of the bus. Limits at both ends: -Pmax <= P <= Pmax, -Qmax <= Q <= Qmax, |I|^2 <= Imax^2,
 % P^2 + Q^2 <= Smax^2 ("AC OPF") and |Varg_i - Varg_j| <= Vargmax; NaN or Inf adds no
 % limit. "DC OPF" uses P only, with the MATPOWER flow b*(θi - θj - phase),
-% b = 1/(X*tap). "ELD" ignores branches.
+% b = 1/(X*tap). "ELD" ignores branches. The initial values of the ends are set by
+% start_point.
     arguments (Input)
         row      table           % Row of the branch table (From, To, Y, X, tap, phase, Pmax, ...); row name = tag.
         prob                     % Problem being built.
-        x0       (1,1) struct    % Initial values (with the end buses), extended.
         const    (1,1) struct    % Power-balance expressions, extended.
         sct_var  (1,1) struct    % Variables by name (with the end buses), extended.
         s_method (1,1) string    % "ELD", "DC OPF" or "AC OPF".
     end
     arguments (Output)
         prob                     % Problem with the definitions and limits added.
-        x0                       % Extended initial values.
         const                    % Extended power-balance expressions.
         sct_var                  % Variables with the two branch ends added.
     end
@@ -51,15 +50,6 @@ function [prob, x0, const, sct_var] = build_branch(row, prob, x0, const, sct_var
             % The direction into the bus is positive, hence the minus sign.
             rm_Yij = - reshape(row.Y, 2, 2);
             rm_Yex = tools.complex2matrix(rm_Yij);
-
-            % Initial point: the end values at the initial bus voltages, so that the
-            % definitions below hold at x0 (a zero current is also a non-smooth point of |I|).
-            rm_x0V = [x0.(sv_bus(1)), x0.(sv_bus(2))];
-            cv_V0  = (rm_x0V(2,:) .* exp(1j*rm_x0V(1,:))).';
-            cv_I0  = rm_Yij * cv_V0;
-            cv_S0  = cv_V0 .* conj(cv_I0);
-            x0.(str(1)) = [real(cv_S0(1)); imag(cv_S0(1)); real(cv_I0(1)); imag(cv_I0(1))];
-            x0.(str(2)) = [real(cv_S0(2)); imag(cv_S0(2)); real(cv_I0(2)); imag(cv_I0(2))];
 
             c_end = {varji, varij};
             for k = 1:2
@@ -113,9 +103,6 @@ function [prob, x0, const, sct_var] = build_branch(row, prob, x0, const, sct_var
             phase = row.phase;
             prob.Constraints.("defP_"+str(1)) = P_i == b *(Vbusj("Varg")-Vbusi("Varg")+phase);
             prob.Constraints.("defP_"+str(2)) = P_j == b *(Vbusi("Varg")-Vbusj("Varg")-phase);
-
-            x0.(str(1)) = b *(x0.(sv_bus(2))-x0.(sv_bus(1))+phase);
-            x0.(str(2)) = b *(x0.(sv_bus(1))-x0.(sv_bus(2))-phase);
 
             const.(sm_con(1,1)) = const.(sm_con(1,1)) + P_i;
             const.(sm_con(2,1)) = const.(sm_con(2,1)) + P_j;
