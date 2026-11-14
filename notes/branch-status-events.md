@@ -613,3 +613,13 @@ s_tag = add_trip(obj, unit, time)
 - **`simulate_baseline(Mode="compare")`:** `ieee68_fault`, `ieee68_nolc`, `ieee14_trip`, `ieee9_offset`, `agc_trip` は `isequaln`。`ieee14_trip` は解列する B003 の機器を観測する制御器がないので変わりません。`agc_trip` も変わりません: GC が観測する omega の平衡値は 0 なので、今の 0 と平衡値が同じ値です。`ieee14_open`(EL003 の `"6open"`)は `isequaln` ではありません: 行列の要素の最大差は 1.78e-15、最初に違う点は 1 s(開放の区間の始まり)、点の数は同じ 253 で時刻の最大差 4.1e-7、同じ区間の中で基準の時刻に補間した差の最大値は `rm_variable` 1.38e-8、`rm_I` 2.47e-8 で、`Tolerance`(1e-4)以下です。`simulate_baseline` は `ieee14_open` を許容差で、`agc_trip` を 2.5 s で区切って比べるようにしました(区切りの比較は今は使われない)。基準のファイルは更新していません。
 - `_GUILDAverification/IEEJ_EAST10/compare_table4_3(Sections="peak")`(調速機あり): 14 of 21 で、E1 と同じです。`GUILDA.doc` の警告は 3 件(`set_avr`/`set_pss`/`set_governor`)。公開の引数は変えていないので `functionSignatures.json` の再生成は不要です。
 - 結果(2026-11-13): small 559 件(F31 の 1 件を直す前: PASS 556 / KNOWN 1 / FAIL 1 / SKIP 1。直した後 F31 は 13 件すべて PASS)、medium 764 件 PASS 762 / KNOWN 1 / FAIL 0 / SKIP 1。
+
+## 実装の状況(D1)
+
+ブランチ `docs/branch-status-events-d1`(基準 `2aa23900`)。§5 の文書を書きました。
+
+- **ヘルプ:** B1, E1, E2 の記述で §5 の項目はほぼ満たされていたので、例だけを足しました。`Scenario.m`(ブランチの `3LG` の後に故障した回線の `3open`、AVR の解列と `add_input` による界磁喪失)、`PowerNetwork/get_admittance_matrix.m`(`tab_event` の開始の行を渡す例)、`add_trip.m`(ローカル制御器の例、再閉路と子の LC)、`add_open_branch.m`(`3open` の例、故障との合成)。例は MATLAB R2026a で動かして確かめました。
+- **開発者ページ:** `feature-simulation.html`(3 つの表、イベントの種類、状態の決め方、`tend` との関係、解列した源の規則、LC の解列、SIM-03〜SIM-19 の `c_Y`/`i_Y`/`tab_branch`/`iv_tripLC`/`sct_conn`/`lv_lcOn`、エラー ID)、`feature-data-io.html`(JSON の version 2 と例、`circuit` の列)、`feature-model-building.html`(`Circuit`)、`model-implementation.html`(ブランチのクラスの `get_admittance_matrix` の約束、`add_fault`/`add_trip` の例)、`class-design.html`(`Branch` の役割、`get_admittance_matrix` の 2 つの層)、`naming-conventions.html`(新しい節「`simulate` の private 関数の命名」。§0.4 の規則は他のページに書かれていなかった)。クラスのページは自動生成なので触れていません。`_GUILDAdoc/index.html` の例は今の API で動くので変えていません。
+- **Update log** に 1 件(2026-11-14)、`v4-migration.md` に 1.29 と 1.11・1.18 の古い記述の修正、`status.md` に節を加えました。
+- **`simulate_baseline`:** 最後の行が、許容差で ACCEPTED の例があるときも「all cases isequaln」と出ていたので、「all cases isequaln or ACCEPTED within Tolerance or before the split (accepted: ieee14_open)」と例を挙げるようにしました(比較は変えていない)。
+- **確認(2026-11-14、MATLAB R2026a):** `GUILDA.doc(open=false, update="always")` は 77 クラス、警告 3(`component.generator.abstract` の `set_avr`/`set_pss`/`set_governor`、既知)、エラー 0。編集した 6 ページの内部リンクとアンカーはスクリプトで確認し、問題 0、重複 ID 0。small 553 件 PASS 547 / KNOWN 1 / FAIL 4 / SKIP 1。FAIL は F43 の 4 件だけで、基準から続く「No slack bus is set in network 'Test3Bus'」です。`simulate_baseline(Mode="compare")` は 5 例が `isequaln`、`ieee14_open` が ACCEPTED。

@@ -789,12 +789,13 @@ Option names:
 
     | ID | 条件 |
     |----|------|
-    | `GUILDA:Scenario:UnknownFaultBus` | `FaultBus` が系統の母線でない |
-    | `GUILDA:Scenario:UnknownTripUnit` | `TripUnit` が機器でもグローバル制御器でもない(ローカル制御器は解列できない) |
+    | `GUILDA:Scenario:UnknownFaultTarget`, `MixedFaultTarget` | 故障の対象が系統の母線でもブランチでもない、または母線とブランチが混ざっている(1.29) |
+    | `GUILDA:Scenario:UnknownParallelTarget` | 解列・開放の対象が機器、ローカル制御器、グローバル制御器、ブランチのどれでもない(1.29) |
+    | `GUILDA:Scenario:InvalidFaultStatus`, `InvalidPoint`, `InvalidEventRows`, `OverlappingEvents`, `SingleCircuit` | イベントの表の行の誤り(1.29) |
     | `GUILDA:Scenario:UnknownOffsetUnit`, `UnknownOffsetState` | `OffsetUnit` が機器でない、`OffsetState` がその状態でない |
     | `GUILDA:Scenario:InvalidTimeSpan` | `TimeSpan` に NaN がある、または順序が逆 |
     | `GUILDA:Scenario:ValueCountMismatch` | 値の数が `OffsetState` や `InputName` の数と合わない(1 つの値は全部に共通) |
-    | `GUILDA:Scenario:DuplicateTag`, `ReservedTag` | タグの重複、または `t1`, `t2`, `Properties`, `Row`, `Variables`, 空, `NoAction<数字>` |
+    | `GUILDA:Scenario:DuplicateTag`, `ReservedTag` | タグの重複、または `t1`, `t2`, `Properties`, `Row`, `Variables`, 空, `NoAction<数字>`(オフセットと入力では `Fault<数字>`, `Parallel<数字>` も) |
 
     イベントは系統のタグや状態数の写しを持たなくなったので、作成後にグローバル制御器を足すなど構成を変えても、そのイベントは使えます。
   - **`simulate` の時間の検査。** `Time`(と `sc.Time`)は有限で `t0 < tend` の `[t0, tend]` だけです。他の値は `GUILDA:mustBeSimulationTime:InvalidTime` で止まります。以前は 3 点以上の時間を渡すと無言で短い区間だけを計算することがありました。一定間隔の時刻は `SampleTime`、任意の時刻は `res.get_point` で読み出してください。
@@ -1117,7 +1118,7 @@ there.
 | `ODEevent(..., "OffsetUnit", c, "OffsetState", x, "OffsetValue", v)` | `sc.add_offset(c, x, v, t)` |
 | `ODEevent(..., "InputUnit", c, "InputName", n, "InputValue", v)` | `sc.add_input(c, n, v, [t1,t2])` |
 | `sc.add_input(c, n, @(t) 0.01*t, [1 3])`(関数の入力) | `sc.add_input(c, n, [0 0; 2 0.02], [1 3])`(時系列 `[t, 値]`。`Method` の既定は `"foh"`) |
-| 複数の種類を 1 つのイベントに | `sc.add_disturbance(tag, TimeSpan=..., FaultBus=..., OpenBranch=..., ...)`(旧 `ODEevent` と同じ Name-Value。入力の補間は `InputMethod`) |
+| 複数の種類を 1 つのイベントに | 地絡・解列・開放は `add_fault`, `add_trip`, `add_open_branch` で、オフセットと入力は `sc.add_disturbance(tag, TimeSpan=..., OffsetUnit=..., InputUnit=..., ...)` で 1 つのタグにまとめる(入力の補間は `InputMethod`。1.29) |
 | `net.simulate([0,20], ev_fault, ev_open)` | 1 つのシナリオに 2 つの外乱を入れて `net.simulate("fault", Time=[0,20])` |
 | `sc = Scenario("f"); net.add_scenario(sc)` | `sc = net.add_scenario("f")`(`Scenario(...)` を直接呼ぶとエラー) |
 | `other.add_scenario(sc.copy())` | `other.add_scenario("f", From=sc)` |
@@ -1130,7 +1131,7 @@ there.
 - **入力の時系列。** `InputValue` は定数(名前ごとに 1 つ、または全部に 1 つ)か、時系列 `[t, v_1, ..., v_n]`(または `Time` と入力名を変数に持つ table)です。`t` は `t_start` からの時刻で 0 から増加します。補間は `"zoh"`、`"foh"`(既定)、`"spline"` で、最後の点の後は最後の値を保ちます。`"zoh"` の 2 点目以降は区間の境目になります。関数ハンドルは受け付けません。
 - **判定。** `result.judge_out_of_step(Reference=..., Threshold=...)` は、状態 `delta` を持つ機器(同期発電機)の回転子角の基準からの差の絶対値が `Threshold`(既定 360 度)を超えたら `"out-of-step"`、超えずに `flag ~= 1` なら `"incomplete"`、それ以外は `"stable"` を返します。基準 `Reference` は既定がスラック母線の発電機で、`"COI"`(慣性 `M` の重み付き重心)や機器のタグも指定できます。結果は構造体(`Verdict`, `Time`, `Units`, `MaxAngle`, `Reference`, `Threshold`)です。結果だけを読むので、系統を編集・削除した後でも使えます。ほかの基準は結果を受け取る関数 `v = my_judge(result)` として書きます。文献との比較や一致数の集計は GUILDA には入れず、検証用スクリプトで行います。
 - **メッセージ ID。** `GUILDA:ODEevent:*` は `GUILDA:Scenario:*` になりました(キーは同じ)。シナリオ内のタグの重複は追加の時点の `DuplicateTag` です。存在しないタグの `simulate` / `remove_scenario` は `GUILDA:PowerNetwork:ScenarioNotFound` です。判定のエラーは `GUILDA:ResultODE:NoRotorAngle`, `NoSlackGenerator`, `NoInertia`, `UnknownReference` です。
-- **互換。** `ODEevent(tag, net, Name=Value)` の互換(`_VersionSupport/ODEevent.m`、警告 `GUILDA:Deprecated:ODEevent`、`Scenario.l_compat`)は削除しました。上の表のとおり `net.add_scenario` で作ってください。返り値の違い(旧 `ev.TimeSpan` などは `sc.tab_disturbance` の列)と、タグ・状態・入力の検査が追加の時点で行われることは、`Scenario` でも同じです。
+- **互換。** `ODEevent(tag, net, Name=Value)` の互換(`_VersionSupport/ODEevent.m`、警告 `GUILDA:Deprecated:ODEevent`、`Scenario.l_compat`)は削除しました。上の表のとおり `net.add_scenario` で作ってください。返り値の違い(旧 `ev.TimeSpan` などは `sc.tab_event`, `sc.tab_offset`, `sc.tab_input` の列。1.29)と、タグ・状態・入力の検査が追加の時点で行われることは、`Scenario` でも同じです。
 - **内部。** 区間ごとのデータ(有効な外乱、地絡、解列、開放ブランチ、オフセット、入力)は `net.build_simulation_data` の中で `Scenario.compile` が 1 回だけ、`sct_dae` の中の位置として作ります。`SolverODE` は系統もシナリオも読みません。結果は以前の `ODEevent` と同じ(`rv_t`, `rm_variable`, `rm_I`, `output.phases` が代表的な地絡、解列、オフセット、入力、開放の例で一致。`simulate_baseline` の 6 例)です。
 
 ### 1.19 文字列と構造体の名前(`str_` → `s_`、`s_` → `sct_`)
@@ -1297,6 +1298,31 @@ of its parent, so the labels stay unique within a network.
 ### 1.28 時間応答の機器ごとの電流(`ResultODE.rm_Icomponent`)
 
 `net.simulate` の結果 `ResultODE` に、各機器が母線へ注入する電流 `rm_Icomponent`(n_t × 2·機器数)が加わりました。列は `sv_bus` / `c_component` の順(母線ごと、母線内は機器の順)に `Ireal, Iimag` で、値は各機器の `f_I` を出力時刻で評価したもの(母線へ流れ込む向きが正)、解列中は `NaN` です。母線の機器電流の和はソルバーの許容誤差の範囲で `rm_I` と一致します(地絡中の地絡母線は地絡電流の分だけ違います)。`odeResults.Bus(i).Component(j).I`(表 `[Ireal, Iimag]`)で同じ値を読めます。`export` の表には `<機器>_Ireal`、`<機器>_Iimag` の列が加わります。
+
+### 1.29 ブランチの状態とシナリオのイベントの表
+
+仕様は [branch-status-events.md](branch-status-events.md) です(B1, E1, E2, N1)。ブランチの地絡と回線の開放、ローカル制御器の解列を加え、シナリオの外乱を 3 つの表にしました。
+
+| 旧 | 新 |
+|---|---|
+| `sc.tab_disturbance`(列 `TimeSpan`, `FaultBus`, `TripUnit`, `OpenBranch`, `Offset*`, `Input*`) | `sc.tab_event`(故障と並列のイベント。列 `Tag`, `Target`, `Time`, `Status`, `Point`、対象ごとに開始と終了の 2 行)、`sc.tab_offset`、`sc.tab_input`(列は旧表のオフセットと入力の列のまま) |
+| `sc.add_fault(bus, [t1 t2], Tag="f")` | `sc.add_fault(bus, [t1 t2])`。`add_fault`, `add_trip`, `add_open_branch` の `Tag` は削除し、タグは `Fault001`, `Parallel001`, … をシナリオが付ける(返り値で受け取る) |
+| `sc.add_disturbance(tag, FaultBus=b, ...)` / `TripUnit=u` / `OpenBranch=br` | `sc.add_fault(b, ...)` / `sc.add_trip(u, ...)` / `sc.add_open_branch(br, ...)`。`add_disturbance` はオフセットと入力だけを受け付ける |
+| `sc.add_open_branch(br, [t1 t2])`(ブランチ全体) | 同じ(既定 `Status="6open"`)。1 回線だけなら `Status="3open"` |
+| なし | `sc.add_fault(br, [t1 t2], Status="3LG"\|"6LG", Point=p)`(ブランチでは `Status` と `Point` が必須、`0 < p < 1` を送電端から) |
+| ローカル制御器は解列できない(`UnknownTripUnit`) | `sc.add_trip(lc_tag, [t1 t2])`。解列中の状態は NaN、再閉路で平衡点から再開。子のローカル制御器は動き続ける |
+| `output.phases` の列 `fault1`, `trip1`, `open1` | `Fault001`, `Parallel001`(`tab_event` のタグ)。オフセットと入力の列は今のタグのまま |
+| シナリオのファイル `version` 1(`Disturbances`) | `version` 2(`Event`, `Offset`, `Input`)。**version 1 は読みません**(`GUILDA:PowerNetwork:ScenarioJson`)。古いファイルはシナリオを作り直して `net.export` で書き直す |
+| `br.get_admittance_matrix()` | 同じ(閉じた状態)。`Status=`("close", "3LG", "6LG", "3open", "6open")と `Point=` を加えた |
+| `net.get_admittance_matrix()` | 同じ。`BranchStatus=`(列 `Target`, `Status`, `Point` の表)でブランチの状態を与えられる |
+| なし | `add_branch(..., Circuit=n)`(既定 2)、`tab_parameter.dynamics.circuit`、`branch/parameter.csv` の列 `circuit`(なければ 2)。R, X, C は全回線をまとめた値のままなので、潮流計算と閉じた行列は変わらない |
+
+- **解列した源の規則(動作の変化)。** 接続の源(観測される機器、入力を動かすローカル制御器、グローバル制御器)が解列している間、その接続はないものとして扱い、主な源(`observe`, `local`)が解列した入力は平衡値をとります。以前は、グローバル制御器が観測する機器が解列するとその入力は 0 を読み、ローカル制御器は解列した機器の出力をそのまま読んでいました。組み込みの制御器が観測する量(omega)の平衡値は 0 なので、同梱の例の軌道は変わりません。AVR の解列は界磁電圧を平衡値に保つので、界磁喪失は `sc.add_input(gen, "Vfield", -Vfield0, [t1 t2])` で与えます。
+- **期間の重なり。** 同じ対象の 2 つの故障、または 2 つの並列のイベントが重なるとエラー(`GUILDA:Scenario:OverlappingEvents`)です。以前は 2 つの期間の和集合になっていました。接する期間(`[1 2]` と `[2 3]`)は許します。異なる種類(故障と開放)は重なってよく、1 つの行列に合成します。
+- **1 回線のブランチ。** `circuit = 1` のブランチの `"3LG"` と `"3open"` はエラーです(`GUILDA:Scenario:SingleCircuit`、`GUILDA:Branch:SingleCircuit`)。IEEJ の系統はデータに合わせて回線数を設定しています(EAST10, WEST10, EAST30 はすべて 1、WEST30 の線路はカードの回線数)。
+- **自作のブランチのクラス。** `get_admittance_matrix(obj)` が引数を受けないクラスは、閉じた行列を使う処理(潮流計算など)では今までどおり動きますが、シナリオでそのブランチの状態を変えると MATLAB のエラー(入力引数が多すぎる)で止まります。`arguments` ブロックに `opt.Status` と `opt.Point` を加えてください(`model-implementation.html#other`)。
+- **メッセージ ID。** `GUILDA:Scenario:UnknownFaultBus`, `UnknownOpenBranch`, `UnknownTripUnit` は `UnknownFaultTarget`, `UnknownParallelTarget` に置き換わりました。新しい ID は `MixedFaultTarget`, `InvalidFaultStatus`, `InvalidPoint`, `InvalidEventRows`, `OverlappingEvents`, `SingleCircuit`(`GUILDA:Scenario:*`)、`GUILDA:Branch:InvalidPoint`, `GUILDA:Branch:SingleCircuit`、`GUILDA:PowerNetwork:InvalidBranchStatus` です。
+- **内部(`build_simulation_data` を直接使うスクリプト)。** `sct_event(k).iv_openBranch` と `sct_dae.c_branchY` は削除しました。区間のブランチの状態は `sct_event(k).tab_branch`、行列は `sct_dae.c_Y{sct_event(k).i_Y}` です。解列したローカル制御器は `sct_event(k).iv_tripLC` です。`SolverODE.set_admittance(ctx, i_Y, l_force)` は引数の意味が変わりました。
 
 ## 2. Changes so far — model authors
 

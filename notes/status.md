@@ -238,6 +238,16 @@ matlab -batch "DebugScript.run_all('Level','small')"
   - `DebugScript.helper.ode_options` の不正値の置き換えと型の変換も削除しました。
 - **未対応(別のセッションの担当):** `calculate_powerflow` の `solver_options`、`get_sys` の `string()` は、設定を読み込むときの正規化によって冗長になりました。いずれも壊れはしません。
 
+## ブランチの状態とシナリオのイベント(B1, E1, E2, N1, D1、2026-11-14)
+
+仕様と手順ごとの記録は [branch-status-events.md](branch-status-events.md)(§7、各「実装の状況」)にあります。B1, E1, E2, N1 は `refactor/design-alignment` に統合済み、D1(文書)は `docs/branch-status-events-d1` です(未統合、未 push)。
+
+- ブランチの `get_admittance_matrix(Status=, Point=)`(`"close"`, `"3LG"`, `"6LG"`, `"3open"`, `"6open"`)、回線数 `Circuit` / `circuit`(既定 2)、`PowerNetwork.get_admittance_matrix(BranchStatus=)` と合成の表。
+- シナリオの表は `tab_event`, `tab_offset`, `tab_input`、JSON は version 2(version 1 は読まない)。`add_fault` のブランチの地絡、`add_open_branch(Status="3open")`、ローカル制御器の `add_trip`、解列した源の規則(源が解列した入力は平衡値)。
+- 移行は [v4-migration.md](v4-migration.md) 1.29、告知は Update log(2026-11-14)。
+- `simulate_baseline(Mode="compare")`: 5 例が `isequaln`、`ieee14_open` は Tolerance 以内で ACCEPTED(基準のファイルは更新していない)。全例に「the solver options differ from the baseline」の注記が出る(軌道の比較は上のとおり。`options` の差の中身と原因は未確認)。
+- **未決:** `two_winding_transformer` の位相の掛け方(仕様 Q5、別の Issue として記録する予定)。
+
 ## 未決事項
 
 状態は `a9afe24` のコードと履歴で確認しました(`301b5d0` までの統合はコードを変えていません)(下で日付や基準を別に示した項目を除く)。
