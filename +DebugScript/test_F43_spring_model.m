@@ -26,6 +26,7 @@ net.a_Bus{1}.add_component("gen-park");
 gen   = net.a_Bus{2}.add_component("gen-classical", "P", 0.5, "Q", nan);
 load2 = net.a_Bus{2}.add_component("load-impedance", "P", -0.2, "Q", -0.05);
 net.a_Bus{3}.add_component("load-impedance", "P", -1.0, "Q", -0.2);
+evalc("net.a_Bus{1}.l_isSlack = true;");   % スラック母線は利用者が設定する
 DebugScript.helper.quiet(@() net.initialize);
 
 
