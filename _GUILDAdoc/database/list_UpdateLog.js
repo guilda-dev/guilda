@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Branch faults, circuit opening and controller trips in scenarios",
+    "date": "2026-11-14",
+    "type": "feature",
+    "content": "A scenario can ground a branch along its length and open one of its circuits: sc.add_fault(\"EL003\", [0.10, 0.17], Status=\"3LG\", Point=0.3) grounds one circuit at 30 % from the from end (\"6LG\": all circuits), and sc.add_open_branch(\"EL003\", [0.17, 20], Status=\"3open\") opens one circuit (\"6open\", the default, opens all of them). Branches have a number of circuits: add_branch(..., Circuit=n) (default 2) and the column circuit of branch/parameter.csv; R, X and C stay the values of all circuits together, so the power flow does not change. br.get_admittance_matrix(Status=, Point=) gives the matrix of a branch in each state, and net.get_admittance_matrix(BranchStatus=tab) that of the network for a table of branch states. sc.add_trip now also trips local controllers. While a component or controller is tripped, an input that it drives or that observes it takes its equilibrium value, as if it were not connected; a global controller that observed a tripped component read 0 before. A tripped AVR thus keeps the field voltage at its equilibrium; model a loss of excitation with sc.add_input(gen, \"Vfield\", -Vfield0, [t1, t2]). The disturbances of a scenario are now in three tables: tab_event (faults and parallel events, two rows per target with the tags Fault001, Parallel001, ...), tab_offset and tab_input; tab_disturbance is removed. add_fault, add_trip and add_open_branch no longer take Tag, add_disturbance no longer takes FaultBus, TripUnit and OpenBranch, and two faults or two parallel events of one target may no longer overlap. Scenario files are written in version 2; files of version 1 are no longer read, so build those scenarios again and write them with net.export. The columns of output.phases are the new tags. Scripts that use the removed options or tab_disturbance need updating."
+  },
+  {
     "title": "Current of each component in time simulation results",
     "date": "2026-11-13",
     "type": "feature",
