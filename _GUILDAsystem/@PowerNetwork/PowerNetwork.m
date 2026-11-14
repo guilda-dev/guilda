@@ -186,7 +186,7 @@ classdef PowerNetwork < PowerSystemModel
         % User Interface << Information >>
         disp_summary(obj, opt)
         varargout = disp_connection(obj, opt)
-        G = plot_diagram(obj,ax)
+        G = plot_diagram(obj, opt)
         G = plot_spring_model(obj, opt)
 
         % IO

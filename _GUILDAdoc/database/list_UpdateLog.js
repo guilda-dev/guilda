@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "The network diagram no longer changes the network",
+    "date": "2026-11-13",
+    "type": "feature",
+    "content": "net.plot_diagram(Parent=ax) draws the equilibrium from a snapshot of the network and no longer writes the positions of its automatic layout into the graph parameters of the buses; it needs an initialized network (\"Run net.initialize() first\" otherwise). Other Name-Value options set the properties of the diagram, for example net.plot_diagram(ColorMode=\"P\", BusHeightMode=\"V\"). result.plot_diagram() of a power flow draws the solution. The properties of DrawerNetDiagram are renamed: ColorLimits, Colormap, BranchWidthMode (\"Ysvd\"), BranchWidthScale, BranchWidthOffset, BusHeightMode (\"V\", \"angle\", \"Vimag\"), BusColorData, ComponentColorData, BranchColorData, LinkColorData, BranchDirection, LinkDirection, BusLabel, ComponentLabel, LabelMode (\"tag\", \"value\"), LabelFontSize, LabelFontWeight and GridSpacing; the ColorMode values are \"I\", \"P\", \"Q\", \"Loss\", \"none\" and \"user\". G.set_time(t) shows a sample, and set_network and set_powerflow are no longer public. The old names and the positional axes argument are removed, so scripts that use them need updating."
+  },
+  {
     "title": "Current of each component in time simulation results",
     "date": "2026-11-13",
     "type": "feature",

@@ -7,7 +7,7 @@ classdef ResultPF < ResultBase
 % matrix, a struct snapshot of the network (struct(net, false), no handles) and the
 % solver information. It keeps no reference to the network, so a later edit of the
 % network does not change it. The plot_* methods draw the voltage profile, the branch
-% flows, the convergence, the network and a spring-mass picture of the bus phasors; the disp_* methods print tables. export writes the bus or
+% flows, the convergence, the network, a 3D network diagram and a spring-mass picture of the bus phasors; the disp_* methods print tables. export writes the bus or
 % branch table (CSV, Excel) or the iteration history (JSON for the GridSpring viewer).
 %
 % - `tab_bus` has the bus tags as row names.
@@ -46,6 +46,7 @@ classdef ResultPF < ResultBase
 % result.plot_convergence(Bus="B014");       % largest residual and |V| per iteration
 % result.plot_network(Color="V", Arrow="P");  % |V| colors and P flow arrows on the network
 % result.plot_spring_model();      % spring-mass picture of the bus phasors
+% result.plot_diagram();          % 3D network diagram of the solution
 % result.export("pf.csv", Table="branch");
 % ```
 %
@@ -121,6 +122,7 @@ classdef ResultPF < ResultBase
         fig = plot_convergence(obj, opt)
         h = plot_network(obj, opt)
         G = plot_spring_model(obj, opt)
+        G = plot_diagram(obj, opt)
         varargout = disp_summary(obj)
         varargout = disp_bus(obj, opt)
         varargout = disp_branch(obj, opt)
