@@ -96,6 +96,28 @@ classdef (Sealed = true) Scenario < LayerPackage
 % sc.tab_event                                    % four rows
 % ```
 %
+% One circuit of the branch EL003 grounded at 30 % from its from end, then that circuit
+% opened (EL003 has the default 2 circuits):
+%
+% ```matlab
+% sc3 = net.add_scenario("case3", Time=[0, 20]);
+% sc3.add_fault("EL003", [0.10, 0.17], Status="3LG", Point=0.3);   % Fault001
+% sc3.add_open_branch("EL003", [0.17, 20], Status="3open");        % Parallel001
+% [result, flag] = net.simulate("case3", Progress="none");
+% ```
+%
+% A trip of the AVR of a generator: the field voltage stays at its equilibrium. A loss of
+% excitation is an input that cancels it:
+%
+% ```matlab
+% net68 = network.IEEE68bus();
+% gen = net68.a_Bus{1}.a_Component{1};
+% sc4 = net68.add_scenario("avr", Time=[0, 10]);
+% sc4.add_trip(gen.a_LocalController{1}.s_tag, [1, 10]);          % the AVR
+% Vfield0 = gen.rv_Uequilibrium(gen.sv_u == "Vfield");
+% sc4.add_input(gen.s_tag, "Vfield", -Vfield0, [1, 10]);          % field voltage 0
+% ```
+%
 % Other disturbances, and a copy for another network:
 %
 % ```matlab
