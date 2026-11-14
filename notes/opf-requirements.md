@@ -29,8 +29,8 @@ the end as open questions.
 `set_opffcn` は未リリースのまま置き換え）
 
 - 既定: 問題の種類ごとに標準の目的関数・制約・アルゴリズム。
-- 問題の構築: 潮流計算と同じ方式（2026-11-12）。`calculate_optimal_powerflow` と
-  `build_opf_problem` が `net.get_opf_condition(Display=false)` で母線・機器・ブランチの
+- 問題の構築: 潮流計算と同じ方式（2026-11-12）。`build_opf_problem` が
+  `net.get_opf_condition(Display=false)` で母線・機器・ブランチの
   `tab_parameter`（operation / OPF / powerflow / dynamics）から 3 つの表（行名はタグ）、
   `base`（baseMVA、Hz）、解決済みの `ReferenceBus`（`"auto"` → 母線タグ）を集める。
   `SolverOPF.build_problem` / `solve` はこの表とオプションだけを受け取り、系統や
@@ -49,8 +49,8 @@ the end as open questions.
   表示では `Y` の列を除く（返す表には残す）。出力なしで呼ぶと表示だけ。内部の呼び出し
   （`calculate_optimal_powerflow`、`build_opf_problem`、ネットワークからの Bus / Branch）は
   常に `Display=false`。基準値と `ReferenceBus` の `"auto"` の解決は
-  `calculate_optimal_powerflow` と `build_opf_problem` の本体に直接書く（数行の重複は許容。
-  2026-11-13 に利用者が「不要な関数定義をしない」と指示）。`opf_data.m`・`opf_setting.m` は削除。
+  `build_opf_problem` の本体だけに書く（2026-11-14 の分担の整理で、
+  `calculate_optimal_powerflow` との重複をなくした）。`opf_data.m`・`opf_setting.m` は削除。
   `calculate_optimal_powerflow.m` にローカル関数はなく、arguments の検証関数
   （`mustBeHandleOrEmpty`、`mustBePositiveIntegerOrNaN`、`mustBePositiveOrNaN`）は
   `@PowerNetwork/private/` に置く。
@@ -63,7 +63,8 @@ the end as open questions.
   （`apply.m` の `call`、`build_branch.m` の `current`、`build_component.m` の `cost_term`）、
   arguments の検証関数（`@PowerNetwork/private/mustBe*`）、独立した長い診断処理の
   `build_opf_problem` の `validate`。非公開ファイル `build_bus`・`build_component`・
-  `build_branch`・`apply`・`variables` はローカル関数ではないので今回は分けたまま。
+  `build_branch`・`apply`・`variables` はローカル関数ではないので今回は分けたまま
+  （2026-11-14 に、2 か所から呼ぶ `start_point` を追加）。
   Bus / Component / Branch に OPF のメソッドや状態は持たせない。
   - 理由: OPF を使う解析はほかにない。動特性（`f_dx` など）は `simulate` と `get_sys`
     が再利用するため、キャッシュしたハンドルをクラスに保持するのとは事情が異なる。
@@ -95,6 +96,27 @@ the end as open questions.
     ページでは OPF が制約として使うと記述してよい）。
   - 未決: シミュレーションと連続潮流計算での使い方（制約違反の検出・警告・停止、
     リミッターとして動特性に入れるか、連続潮流計算の終了条件にするか）。
+- 3 つの要素の分担（2026-11-14、利用者が「build_opf_problem と calculate_optimal_powerflow の
+  分担の境界が薄い」と指摘し、build_opf_problem を残して境界を明確にする案を承認）:
+  - `build_opf_problem`: 問題を作るだけ。データ（`get_opf_condition` の 3 つの表、`base`、
+    解決後の `ReferenceBus`）を集め、`SolverOPF.build_problem` で `prob` とフラットスタートの
+    `x0` を作る。省略できる 3 番目の出力 `sct_data`（`Bus`、`Component`、`Branch`、`base`、
+    `ReferenceBus`）を利用者の承認で追加した。出力 0〜2 個の動作は従来どおり。
+  - `calculate_optimal_powerflow`: 本体は 3 段。(1) `build_opf_problem` で問題を作る
+    （`Problem` を指定したときは `Cost`・`Constraint` を入れずに作り、`x0` と `sct_data` だけを
+    使って、問題は指定されたものに置き換える）。`InitialPoint` は `x0` を置き換える。
+    (2) `SolverOPF.solve` で解く。(3) `ResultOPF` を作る。`res.options` の `base` と
+    `ReferenceBus` は `sct_data` から入れる。
+  - `SolverOPF.solve(prob, x0, tab_bus, tab_component, tab_branch, sct_options)`: 作られた
+    問題を解くだけで、問題を作り直さない。表は結果の表の行に使う。`Problem` の検査
+    （`ProblemMismatch`）は、結果の表が読む変数（母線・機器・ブランチ端）とそのサイズを表から
+    確かめる形にした（エラー ID と文言は従来どおり。`msg` は ID のクラスからしか呼べないため
+    solve に置く）。
+  - ウォームスタートは solve で反映する。`build_problem` はソルバーの状態を読まず、`x0` は
+    常にフラットスタート。非公開関数 `start_point`（母線とブランチ端の初期値を母線電圧から
+    設定）を `build_problem`（フラットスタート）と `solve`（保持した "AC OPF" の電圧）の
+    2 か所から呼ぶ。`InitialPoint` を指定したときは、従来どおりウォームスタートしない
+    （calculate が solve に `WarmStart=false` を渡す）。
 - 変更した問題の求解: `[prob, x0] = net.build_opf_problem(...)` の `prob` を変更し、
   `net.calculate_optimal_powerflow(Problem=prob, InitialPoint=x0)` で求解（呼び出しのみの
   オプション、保存しない）。結果の表は通常どおり。
