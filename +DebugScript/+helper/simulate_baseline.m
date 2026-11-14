@@ -62,6 +62,7 @@ function sct_report = simulate_baseline(opt)
     fprintf("[simulate_baseline] baseline %s (commit %s)\n", opt.File, S.sct_meta.commit);
     sct_report = struct();
     l_all = true;
+    sv_accepted = strings(1, 0);     % cases that are not isequaln but accepted (Tolerance or split)
     for s_name = string(fieldnames(sct_run)).'
         a = sct_run.(s_name);
         b = S.baseline.(s_name);
@@ -113,6 +114,9 @@ function sct_report = simulate_baseline(opt)
             fprintf("[simulate_baseline] %-14s isequaln\n", s_name);
         else
             sr_verdict = ["DIFFERENT", "ACCEPTED"];
+            if l_same
+                sv_accepted(end+1) = s_name; %#ok<AGROW>
+            end
             fprintf("[simulate_baseline] %-14s %s: %s; max |diff| t %g, variable %g, I %g. %s\n", s_name, ...
                     sr_verdict(1 + l_same), ...
                     strjoin(string(fieldnames(sct_cmp)).'+"="+string(cell2mat(struct2cell(sct_cmp))).', ", "), ...
@@ -122,8 +126,10 @@ function sct_report = simulate_baseline(opt)
             fprintf("[simulate_baseline] %-14s note: the solver options differ from the baseline\n", s_name);
         end
     end
-    if l_all
+    if l_all && isempty(sv_accepted)
         fprintf("[simulate_baseline] all cases isequaln\n");
+    elseif l_all
+        fprintf("[simulate_baseline] all cases isequaln or ACCEPTED within Tolerance or before the split (accepted: %s)\n", strjoin(sv_accepted, ", "));
     else
         fprintf("[simulate_baseline] SOME CASES DIFFER\n");
     end
