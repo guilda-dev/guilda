@@ -563,13 +563,13 @@ assert(flag == 0 && ~res.l_success)
 assert(res.options.MaxIteration == 1 && res.options.Tolerance == 1e-10)
 % Verbose=true は反復ごとの表示 ("iter")
 s_log = evalc("res = net.calculate_powerflow(Verbose=true, WarmStart=false);");
-assert(res.options.Display == "iter" && strlength(s_log) > strlength(evalc("net.calculate_powerflow(WarmStart=false);")))
+assert(res.options.Verbose && strlength(s_log) > strlength(evalc("net.calculate_powerflow(WarmStart=false);")))
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(verbose=false, solver="dynamic"));   % 名前の大文字小文字は区別しない
-assert(res.options.Display == "none" && res.options.Solver == "dynamic")
+assert(~res.options.Verbose && res.options.Solver == "dynamic")
 % Verbose は GUILDA.setting のキーでもある (他の解析と同じ)。MaxIteration の自動は NaN
 c_cfg = DebugScript.helper.user_config("PowerFlowCalculation", struct("Verbose", true));
 s_log = evalc("res = net.calculate_powerflow(WarmStart=false, MaxIteration=NaN);");
-assert(res.options.Verbose && res.options.Display == "iter" && contains(s_log, "iter") && res.flag == 1)
+assert(res.options.Verbose && contains(s_log, "iter") && res.flag == 1)
 clear c_cfg
 assert(error_id(@() net.calculate_powerflow(MaxIteration=-1)) ~= "")
 

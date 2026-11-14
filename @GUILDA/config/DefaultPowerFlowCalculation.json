@@ -27,11 +27,13 @@
     "NewtonStepSize":{
         "Value": 1,
         "Type": "double",
+        "Valid": "v > 0",
         "Description": "Factor of the Newton-Raphson update ('newton')"
     },
     "GradientStepSize":{
         "Value": NaN,
         "Type": "double",
+        "Valid": "isnan(v) || v > 0",
         "Description": "Step size alpha of 'gradient'. NaN: automatic"
     },
     "FsolveUseParallel":{
@@ -42,6 +44,7 @@
     "FsolveMaxFunctionEvaluations":{
         "Value": NaN,
         "Type": "double",
+        "Valid": "isnan(v) || v >= 0 && mod(v,1) == 0",
         "Description": "'MaxFunctionEvaluations' option @fsolve. NaN: the fsolve default"
     },
     "WhenFailed":{

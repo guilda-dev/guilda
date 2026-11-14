@@ -12,7 +12,9 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
 % bus.l_isSlack = true) with GUILDA:PowerNetwork:NoSlackBus. A calculation that does not converge gives the
 % warning GUILDA:PowerNetwork:PowerflowNotConverged (WhenFailed of GUILDA.setting:
 % "WARN", "ERROR", "DISP" or "NONE"). Options not listed below stop with the MATLAB
-% error of an unknown name.
+% error of an unknown name. The options of the call go to net.solver_PF as they are, and
+% res.options holds them; the settings without an option (WhenFailed and the settings
+% <Solver><option> such as NewtonStepSize) are read from GUILDA.setting where they are used.
 %
 % Name-Value options:
 %
@@ -60,17 +62,21 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
         output   % Solver details; output.message describes the outcome.
     end
 
-    sct_options = solver_options(opt);
-
     sct_PFcondition = obj.get_pf_condition(Display=false);
     tab_PFcondition = sct_PFcondition.Bus;
     sv_bus = string(tab_PFcondition.Properties.RowNames);
     cm_Y   = sct_PFcondition.Y{sv_bus, sv_bus};
 
     t0 = tic;
-    [cv_V, flag, output, cm_Vhistory, rv_step] = obj.solver_PF.solve(cm_Y, tab_PFcondition, sct_options);
+    [cv_V, flag, output, cm_Vhistory, rv_step] = obj.solver_PF.solve(cm_Y, tab_PFcondition, opt);
     r_elapsed = toc(t0);
-    notify_failure(flag, output, sct_options.WhenFailed);
+    if ~(flag > 0)   % WhenFailed of GUILDA.setting: a warning, an error or the message
+        switch GUILDA.config("PowerFlowCalculation", "WhenFailed")
+            case "WARN" ; show_msg("warning", "GUILDA:PowerNetwork:PowerflowNotConverged", output.message)
+            case "ERROR"; error(msg("GUILDA:PowerNetwork:PowerflowNotConverged", output.message))
+            case "DISP" ; disp(output.message)
+        end
+    end
 
     % V, I (complex phasors), P, Q (real injections, S = V.*conj(I)) of each bus; only
     % "powerflow(tab)" builds a table and only "GUILDAorigin" the ResultPF and its snapshot
@@ -89,39 +95,10 @@ function [result, flag, output] = calculate_powerflow(obj, opt)
         case "powerflow(tab)"
             result = tab_pf;
         case "GUILDAorigin"
-            sct_solver = struct("solver", string(class(obj.solver_PF)), "options", sct_options, ...
+            sct_solver = struct("solver", string(class(obj.solver_PF)), "options", opt, ...
                 "flag", flag, "output", output, "elapsed", r_elapsed, "cm_Vhistory", cm_Vhistory, ...
                 "rv_step", rv_step, "tab_PFcondition", tab_PFcondition);
             result = ResultPF(tab_pf, cm_Y, struct(obj, false), sct_solver);
     end
 end
 
-
-function notify_failure(flag, output, s_when)
-% The WhenFailed setting: a warning, an error or the message when the calculation failed
-    if flag > 0
-        return
-    end
-    switch s_when
-        case "WARN" ; show_msg("warning", "GUILDA:PowerNetwork:PowerflowNotConverged", output.message)
-        case "ERROR"; error(msg("GUILDA:PowerNetwork:PowerflowNotConverged", output.message))
-        case "DISP" ; disp(output.message)
-    end
-end
-
-
-function sct = solver_options(opt)
-% Settings handed to the solver: the PowerFlowCalculation section of GUILDA.setting with
-% the options of the call, and Display ("iter" for Verbose true, "none" for false)
-    sct_cfg = GUILDA.config("PowerFlowCalculation");
-    sct = struct();
-    for s_name = string(fieldnames(sct_cfg)).'
-        sct.(s_name) = sct_cfg.(s_name).Value;
-    end
-    for s_name = ["Solver","Tolerance","MaxIteration","Verbose","WarmStart"]
-        sct.(s_name) = opt.(s_name);
-    end
-    sct.PlotFcn    = tools.check_plotfcn(opt.PlotFcn, "calculate_powerflow", "residual");
-    sct.WhenFailed = string(sct.WhenFailed);
-    sct.Display    = replace(string(sct.Verbose), ["true","false"], ["iter","none"]);
-end

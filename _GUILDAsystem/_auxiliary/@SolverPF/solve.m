@@ -10,7 +10,7 @@ function [cv_V, flag, output, cm_Vhistory, rv_step] = solve(obj, cm_Y, tab_PFcon
         obj % Solver (net.solver_PF).
         cm_Y (:,:) double % [pu] Bus admittance matrix (rows and columns in tab_PFcondition order).
         tab_PFcondition table % Power flow conditions, one row per bus: Type, Varg, V, P, Q (Bus.get_pf_condition); row names = bus tags.
-        sct_options (1,1) struct % Settings of the run: the PowerFlowCalculation section with the call options, and Display (built by PowerNetwork.calculate_powerflow).
+        sct_options (1,1) struct % Options of the call (PowerNetwork.calculate_powerflow): Solver, Tolerance, MaxIteration, Verbose, WarmStart, PlotFcn.
     end
     arguments (Output)
         cv_V (:,1) double % [pu] Complex bus voltages of the solution (tab_PFcondition order).
@@ -50,12 +50,17 @@ end
 
 
 function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, sct_eq, cv_V0, sct)
-% Create the Method object of sct.Solver from the settings and map its results to the bus
-% voltages (cv_Vbus), flag, output, the voltage history and its steps.
+% Create the Method object of sct.Solver from the options of the call and the settings
+% <Solver><option> of GUILDA.setting, and map its results to the bus voltages (cv_Vbus),
+% flag, output, the voltage history and its steps.
     tab    = sct_eq.tab;
     r_tol  = sct.Tolerance;
     n_max  = sct.MaxIteration;
     l_plot = ~isequal(sct.PlotFcn, "none");
+    s_display = "none";
+    if sct.Verbose
+        s_display = "iter";
+    end
 
     % a bus without branches (not slack) has no determined voltage: no solution
     lv_isolated = ~any(cm_Y, 2) & tab.Type ~= "slack";
@@ -94,21 +99,21 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, sct_eq, cv
     switch sct.Solver
         case "newton"
             mt = MethodNewtonRaphson(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
-                ConvTol=r_tol, MaxIter=auto(n_max, 50), StepSize=sct.NewtonStepSize, Display=sct.Display);
+                ConvTol=r_tol, MaxIter=auto(n_max, 50), StepSize=GUILDA.config("PowerFlowCalculation", "NewtonStepSize"), Display=s_display);
         case "gradient"
-            r_alpha = sct.GradientStepSize;
+            r_alpha = GUILDA.config("PowerFlowCalculation", "GradientStepSize");
             if isnan(r_alpha)
                 r_alpha = 0.5/(max(abs(diag(cm_Y))) * max([tab.V; 1], [], "omitnan")^2);
             end
             mt = MethodGradient(Fcn=f_grad, InitVal=rv_xp0, ...
-                StepSize=r_alpha, ConvTol=r_tol, MaxIter=auto(n_max, 1e6), Display=sct.Display);
+                StepSize=r_alpha, ConvTol=r_tol, MaxIter=auto(n_max, 1e6), Display=s_display);
         case "levenberg-marquardt"
             mt = MethodLevenbergMarquardt(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
-                ConvTol=r_tol, MaxIter=auto(n_max, 100), Display=sct.Display);
+                ConvTol=r_tol, MaxIter=auto(n_max, 100), Display=s_display);
         case "fsolve"
             mt = MethodFsolve(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
-                ConvTol=r_tol, MaxIter=auto(n_max, 400), MaxFunEvals=auto(sct.FsolveMaxFunctionEvaluations, 0), Display=sct.Display, ...
-                UseParallel=sct.FsolveUseParallel, Feature='Solver="fsolve" of the power flow');
+                ConvTol=r_tol, MaxIter=auto(n_max, 400), MaxFunEvals=auto(GUILDA.config("PowerFlowCalculation", "FsolveMaxFunctionEvaluations"), 0), Display=s_display, ...
+                UseParallel=GUILDA.config("PowerFlowCalculation", "FsolveUseParallel"), Feature='Solver="fsolve" of the power flow');
     end
     if l_plot
         mt.f_iter = live_residual(sct.PlotFcn, sct.Solver, f_res, tab, r_tol);

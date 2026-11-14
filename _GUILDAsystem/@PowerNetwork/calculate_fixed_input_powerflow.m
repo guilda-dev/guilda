@@ -80,24 +80,26 @@ function [result, flag, output] = calculate_fixed_input_powerflow(obj, opt)
     z0  = initial_point(obj, eq, opt.WarmStart);
     f_F = @(z) residual(eq, z);
     f_J = @(z) residual_jacobian(eq, z);
-    s_display = replace(string(opt.Verbose), ["true","false"], ["iter","none"]);
-    cfg   = GUILDA.config("PowerFlowCalculation");
+    s_display = "none";
+    if opt.Verbose
+        s_display = "iter";
+    end
     n_max = opt.MaxIteration;   % NaN: the automatic value of the method
     switch opt.Solver
         case "newton"
             n_max(isnan(n_max)) = 50;
             [z, flag, output, rm_history] = MethodNewtonRaphson(Fcn=f_F, Jac=f_J, InitVal=z0, ConvTol=opt.Tolerance, ...
-                MaxIter=n_max, StepSize=cfg.NewtonStepSize.Value, Display=s_display).solve();
+                MaxIter=n_max, StepSize=GUILDA.config("PowerFlowCalculation", "NewtonStepSize"), Display=s_display).solve();
         case "levenberg-marquardt"
             n_max(isnan(n_max)) = 100;
             [z, flag, output, rm_history] = MethodLevenbergMarquardt(Fcn=f_F, Jac=f_J, InitVal=z0, ConvTol=opt.Tolerance, ...
                 MaxIter=n_max, Display=s_display).solve();
         case "fsolve"
             n_max(isnan(n_max)) = 400;
-            n_fev = cfg.FsolveMaxFunctionEvaluations.Value;
+            n_fev = GUILDA.config("PowerFlowCalculation", "FsolveMaxFunctionEvaluations");
             n_fev(isnan(n_fev)) = 0;
             [z, flag, output, rm_history] = MethodFsolve(Fcn=f_F, Jac=f_J, InitVal=z0, ConvTol=opt.Tolerance, ...
-                MaxIter=n_max, MaxFunEvals=n_fev, UseParallel=cfg.FsolveUseParallel.Value, Display=s_display, ...
+                MaxIter=n_max, MaxFunEvals=n_fev, UseParallel=GUILDA.config("PowerFlowCalculation", "FsolveUseParallel"), Display=s_display, ...
                 Feature='Method="FixedInput" of initialize').solve();
     end
     r_elapsed = toc(t0);

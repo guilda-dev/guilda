@@ -45,7 +45,7 @@ classdef SolverPF < auxiliary
 %   steps. A non-slack bus without branches has no determined voltage: every method
 %   returns flag -2 without solving. "gradient" fixes the slack angle and voltage and the
 %   PV voltages, and updates the angle only at PV buses.
-% - `Verbose` (setting; Display "iter" or "none" of the Method class): true prints one line per iteration for "newton", "gradient"
+% - `Verbose` (Display "iter" or "none" of the Method class): true prints one line per iteration for "newton", "gradient"
 %   and "levenberg-marquardt" (the fsolve display for "fsolve"), and the final message.
 % - Outputs of solve: the complex bus voltages, flag, output, the voltages at each
 %   iteration (cm_Vhistory) and the iteration numbers or virtual times (rv_step).
@@ -60,8 +60,9 @@ classdef SolverPF < auxiliary
 %   bus voltages, optimValues.iteration, .fval (residuals), .residual (largest |residual|)
 %   and, for "dynamic", .time (virtual time); state "init", "iter" or "done". A true stop
 %   ends the calculation with flag -1. "none" leaves the calculation as it is.
-% - The settings struct of a run has one field per setting of the section and Display
-%   ("iter" for Verbose true, "none" for false); calculate_powerflow builds it.
+% - solve takes the Name-Value options of net.calculate_powerflow as they are (Solver,
+%   Tolerance, MaxIteration, Verbose, WarmStart, PlotFcn). The settings without an option
+%   (<Solver><option>) are read from GUILDA.config where they are used.
 %
 % <@Examples>
 % ```matlab
@@ -72,8 +73,8 @@ classdef SolverPF < auxiliary
 % % the solver alone: admittance matrix, conditions and settings assembled by the caller
 % tab = tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus);
 % tab_Y = net.get_admittance_matrix;
-% sct = struct("Solver","newton","Tolerance",1e-8,"MaxIteration",NaN,"WarmStart",false, ...
-%     "PlotFcn","none","Display","none","NewtonStepSize",1);
+% sct = struct("Solver","newton","Tolerance",1e-8,"MaxIteration",NaN,"Verbose",false, ...
+%     "WarmStart",false,"PlotFcn","none");
 % cv_V = net.solver_PF.solve(tab_Y{:,:}, tab, sct);
 % ```
 %
