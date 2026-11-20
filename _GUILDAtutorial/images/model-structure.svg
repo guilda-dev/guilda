@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 612" width="960" height="612" role="img">
+  <title>系統モデルの中身の格納構造</title>
+  <style>
+    .h { font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 700; fill: #1B2127; }
+    .t { font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; fill: #1B2127; }
+    .s { font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, Helvetica, Arial, sans-serif; font-size: 12px; fill: #1B2127; }
+    .n { font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, Helvetica, Arial, sans-serif; font-size: 11.5px; fill: #5A6570; }
+    .c { font-family: ui-monospace, Menlo, Consolas, "Liberation Mono", monospace; font-size: 12px; fill: #1B2127; }
+    .cm { font-family: ui-monospace, Menlo, Consolas, "Liberation Mono", monospace; font-size: 11px; fill: #5A6570; }
+    .ln { fill: none; stroke: #5A6570; stroke-width: 1.6; stroke-linejoin: round; }
+    .ob { fill: none; stroke: #5A6570; stroke-width: 1.4; stroke-dasharray: 5 3; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#5A6570"/></marker>
+  </defs>
+  <rect x="0.5" y="0.5" width="959" height="611" rx="6" fill="#FFFFFF" stroke="#DADFE4"/>
+  <rect x="24" y="24" width="500" height="30" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5"/>
+  <text class="c" x="34" y="44">net</text>
+  <text class="t" x="202" y="44">PowerNetwork</text>
+  <path class="ln" d="M38 54 V83.0 H58" style="stroke:#8A949E"/>
+  <rect x="58" y="68" width="500" height="30" rx="4" fill="#FBE8D8" stroke="#C2682A" stroke-width="1.5"/>
+  <text class="c" x="68" y="88">a_Bus{1}</text>
+  <text class="t" x="236" y="88">母線  Bus</text>
+  <text class="cm" x="548" y="88" text-anchor="end">B001</text>
+  <text class="cm" x="686" y="88">bus = net.a_Bus{1};</text>
+  <path class="ln" d="M72 98 V127.0 H92" style="stroke:#8A949E"/>
+  <rect x="92" y="112" width="500" height="30" rx="4" fill="#E4EFE6" stroke="#2E6B3F" stroke-width="1.5"/>
+  <text class="c" x="102" y="132">a_Component{1}</text>
+  <text class="t" x="270" y="132">発電機  Component</text>
+  <text class="cm" x="582" y="132" text-anchor="end">"gen-1axis"</text>
+  <text class="cm" x="686" y="132">gen = bus.a_Component{1};</text>
+  <path class="ln" d="M106 142 V171.0 H126" style="stroke:#8A949E"/>
+  <rect x="126" y="156" width="500" height="30" rx="4" fill="#E2EBF5" stroke="#0059A7" stroke-width="1.5"/>
+  <text class="c" x="136" y="176">a_LocalController{1}</text>
+  <text class="t" x="304" y="176">AVR  LocalController</text>
+  <text class="cm" x="616" y="176" text-anchor="end">"avr-ST1"</text>
+  <text class="cm" x="686" y="176">gen.avr</text>
+  <path class="ln" d="M140 186 V215.0 H160" style="stroke:#8A949E"/>
+  <rect x="160" y="200" width="500" height="30" rx="4" fill="#E2EBF5" stroke="#0059A7" stroke-width="1.5"/>
+  <text class="c" x="170" y="220">a_LocalController{1}</text>
+  <text class="t" x="338" y="220">PSS  LocalController</text>
+  <text class="cm" x="650" y="220" text-anchor="end">"pss-PSS1"</text>
+  <text class="cm" x="686" y="220">gen.pss（AVR の下）</text>
+  <path class="ln" d="M106 142 V259.0 H126" style="stroke:#8A949E"/>
+  <rect x="126" y="244" width="500" height="30" rx="4" fill="#E2EBF5" stroke="#0059A7" stroke-width="1.5"/>
+  <text class="c" x="136" y="264">a_LocalController{2}</text>
+  <text class="t" x="304" y="264">ガバナ  LocalController</text>
+  <text class="cm" x="616" y="264" text-anchor="end">"gov-LPT1"</text>
+  <text class="cm" x="686" y="264">gen.governor</text>
+  <path class="ln" d="M38 54 V303.0 H58" style="stroke:#8A949E"/>
+  <rect x="58" y="288" width="500" height="30" rx="4" fill="#FBE8D8" stroke="#C2682A" stroke-width="1.5"/>
+  <text class="c" x="68" y="308">a_Bus{2}, …</text>
+  <text class="t" x="236" y="308">母線  Bus</text>
+  <text class="cm" x="548" y="308" text-anchor="end">B002, …</text>
+  <path class="ln" d="M38 54 V347.0 H58" style="stroke:#8A949E"/>
+  <rect x="58" y="332" width="500" height="30" rx="4" fill="#F8F0D2" stroke="#B08A18" stroke-width="1.5"/>
+  <text class="c" x="68" y="352">a_Branch{1}, …</text>
+  <text class="t" x="236" y="352">ブランチ  Branch</text>
+  <text class="cm" x="548" y="352" text-anchor="end">"pi"</text>
+  <text class="cm" x="686" y="352">net.a_Branch{1}</text>
+  <path class="ln" d="M38 54 V391.0 H58" style="stroke:#8A949E"/>
+  <rect x="58" y="376" width="500" height="30" rx="4" fill="#E2EBF5" stroke="#0059A7" stroke-width="1.5"/>
+  <text class="c" x="68" y="396">a_GlobalController{1}</text>
+  <text class="t" x="236" y="396">AGC  GlobalController</text>
+  <text class="cm" x="548" y="396" text-anchor="end">"agc-PI"</text>
+  <text class="cm" x="686" y="396">net.a_GlobalController{1}</text>
+  <path class="ln" d="M38 54 V435.0 H58" style="stroke:#8A949E"/>
+  <rect x="58" y="420" width="500" height="30" rx="4" fill="#FFFFFF" stroke="#8A949E" stroke-width="1.5"/>
+  <text class="c" x="68" y="440">a_Scenario{1}</text>
+  <text class="t" x="236" y="440">シナリオ  Scenario</text>
+  <text class="cm" x="686" y="440">sc = net.a_Scenario{1};</text>
+  <path class="ln" d="M72 450 V479.0 H92" style="stroke:#8A949E"/>
+  <rect x="92" y="464" width="500" height="30" rx="4" fill="#FFFFFF" stroke="#8A949E" stroke-width="1.5"/>
+  <text class="c" x="102" y="484">a_Event{1}, …</text>
+  <text class="t" x="270" y="484">地絡など  EventFault, …</text>
+  <text class="cm" x="686" y="484">sc.a_Event{1}</text>
+  <text class="n" x="686" y="52">取り出し方の例</text>
+  <rect x="24" y="518" width="912" height="74" rx="6" fill="#F5F6F7"/>
+  <text class="t" x="38" y="542">子から親へたどる:</text>
+  <text class="c" x="174" y="542">bus.a_PowerNetwork</text>
+  <text class="c" x="344" y="542">gen.a_Bus</text>
+  <text class="c" x="444" y="542">lc.a_Component</text>
+  <text class="c" x="584" y="542">branch.a_Bus{1}</text>
+  <text class="n" x="714" y="542">（PSS の a_Component は AVR）</text>
+  <text class="s" x="38" y="570">各 a_ プロパティは cell 配列です。追加は add_*、取り外しは remove_* のメソッドで行い、プロパティを直接書き換えることはできません。</text>
+</svg>

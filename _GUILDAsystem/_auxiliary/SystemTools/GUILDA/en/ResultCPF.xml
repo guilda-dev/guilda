@@ -1,0 +1,15 @@
+<!--This is an XML file containing error messages related to the class "ResultCPF".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="ExportFormat">Export of ResultCPF does not support the extension ''{0}''. Use .csv, .txt, .xlsx or .xls.</entry>
+        <entry key="PointStep">Step = {0} is not a step of the path. Give an integer from 1 to {1} (the index in result.rv_lambda).</entry>
+        <entry key="InvalidMap">tab_map of the continuation power flow result must be a variable map (columns Kind, Owner, Name, Bus), see get_variable_map.</entry>
+        <entry key="UnknownVariable">The continuation power flow result has no values for {0}. Give rows of result.tab_variable (the network as it was analysed).</entry>
+        <entry key="UnknownBus">ResultCPF has no bus {0}. Use the tags in result.sv_bus.</entry>
+        <entry key="NoStepData">{0} needs the data of the steps of the path, but {1} of this ResultCPF is empty or does not match its steps (e.g. a result built by hand). Get the result from net.calculate_continuation_powerflow.</entry>
+        <entry key="NoGenerator">The network of the ResultCPF has no generator: no component has Q = NaN in its powerflow parameters.</entry>
+        <entry key="UnknownGenerator">ResultCPF has no generator {0}. Use the tags of the components with Q = NaN in powerflow: {1}.</entry>
+        <entry key="UnknownBranch">ResultCPF has no branch {0}. Use the tags of the branches of result.sct_network, or "all".</entry>
+        <entry key="NoLimit">No {0} has a finite {1} in its operating limits: there is nothing to draw for Quantity="{2}".</entry>
+    </message>
+</rsccat>

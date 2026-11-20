@@ -1,16 +1,66 @@
 function data = config(category,parameter,option)
-    arguments
-        category     = [] %(1,1) string 
-        parameter    = [] %(1,1) string
-        option.reset (1,1) logical = false;
+% Return the GUILDA settings: all of them, one category, or the value of one setting.
+%
+% The settings are read once from @GUILDA/config (defaults) and @GUILDA/user (values of
+% the user, written by GUILDA.setting) and kept until a setting changes. They are checked
+% when they are read: each value has the class of its type (double, logical, string) and
+% passes the condition of its definition; an invalid user value is reset to its default
+% (INFO GUILDA:GUILDA:ConfigValueReset). An analysis therefore uses the value as it is,
+% as the default of its Name-Value option or, for a setting without an option, where it
+% is used.
+%
+% <@Examples>
+% ```matlab
+% GUILDA.config("OptimalPowerFlow", "Method")      % value of one setting
+% sct = GUILDA.config("OptimalPowerFlow");         % Value, Type, Description of each setting
+% tab = GUILDA.config("OptimalPowerFlow", Format="table")   % Name, Type, Value, Description
+% ```
+%
+% See also GUILDA.setting
+    arguments (Input)
+        category     = []                    % Configuration category (field of the config struct); empty returns everything.
+        parameter    = []                    % Parameter in the category; empty returns the whole category.
+        option.reset  (1,1) logical = false;  % Read the configuration files again instead of the cache.
+        option.Format (1,1) string {mustBeMember(option.Format, ["struct","table"])} = "struct"  % "table" returns the settings of the category (or the one parameter) as a table, one row per setting; it needs a category.
+    end
+    arguments (Output)
+        data  % Configuration struct, category struct, or the parameter value; with Format="table", a table of Name, Type, Value (cell), Description.
     end
     
     persistent cache
     if isempty(cache) || option.reset
-        cache = get_config();
+        [cache, sv_reset, sm_invalid] = get_config();
+        % after the cache is set: show_msg reads the Message settings through GUILDA.config
+        for s_reset = sv_reset'
+            show_msg("info", "GUILDA:GUILDA:ConfigReset", s_reset)
+        end
+        for k = 1:size(sm_invalid, 1)
+            show_msg("info", "GUILDA:GUILDA:ConfigValueReset", sm_invalid(k,1), sm_invalid(k,2), sm_invalid(k,3))
+        end
     end
     
     data = cache;
+    if option.Format == "table"
+        if isempty(category)
+            error(msg("GUILDA:config:TableNeedsCategory"));
+        end
+        sct_cat = data.(category);
+        Name    = string(fieldnames(sct_cat));
+        if ~isempty(parameter)
+            Name = string(parameter);
+        end
+        n = numel(Name);
+        Type        = strings(n,1);
+        Value       = cell(n,1);
+        Description = strings(n,1);
+        for k = 1:n
+            Type(k)        = string(sct_cat.(Name(k)).Type);
+            Value{k}       = sct_cat.(Name(k)).Value;
+            Description(k) = string(sct_cat.(Name(k)).Description);
+        end
+        data = table(Name, Type, Value, Description);
+        return
+    end
     if ~isempty(category)
         data = data.(category);
         if ~isempty(parameter)

@@ -1,0 +1,39 @@
+{
+    "version": 1,
+    "PrintLogo":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Print the GUILDA logo at startup"
+    },
+    "CheckRequirement":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Verifying version requirements at startup"
+    },
+    "UpdateDoc":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Update this documentation at startup"
+    },
+    "UpdateKeyMap":{
+        "Value": "disp",
+        "Type": "select",
+        "FromLogical": ["none", "disp"],
+        "options": [
+            "none",
+            "silent",
+            "disp"
+        ],
+        "Description": "Update the model key map at startup: 'none' (do not update), 'silent' (update without printing) or 'disp' (update and print the keys)"
+    },
+    "Tutorial":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Open the tutorial at startup"
+    },
+    "DeveloperPath":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Add the developer folder _GUILDAsystem/_admin to the MATLAB path (scripts for developers, such as those that draw the figures of the documentation). Applied by GUILDA.addpath, which runs at startup"
+    }
+}

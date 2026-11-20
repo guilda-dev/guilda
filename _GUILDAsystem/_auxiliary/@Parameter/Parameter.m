@@ -1,171 +1,146 @@
-classdef Parameter < auxiliary & LayerPackage & dynamicprops
-% <@Desc> 
+classdef Parameter < auxiliary & LayerPackage
 % Parameter container for LayerPackage-derived objects.
-% It manages dynamic parameters, change callbacks, and edit logging.
-% <@Role> 
-% Edit Log, Parameter
-% <@Constructor> 
-% Parameter(a_parent, str_tag, CallBackChanged)
-% Create a parameter container for the given parent layer.
-    properties(SetAccess=private)
-
-        % <@Desc> Callback function executed after parameter changes.
-        % <@Role> Edit Log
-        % <@Type> function_handle
-        % <@Size> 1x1
-        CallbackChanged = @() [];
+%
+% It stores the parameters of one group of its owner as a table (`tab_parameter`): one
+% row (a GlobalController: one row per controlled unit, named by the unit), one column
+% per parameter. Writing the table checks it against the stored one, stores it, and
+% reports each changed column with log_edit (tag: the group, e.g. "dynamics"; log:
+% "edit <name>: <old> -> <new>"), so the owner layer and the layers above it mark what
+% the edit makes stale. `s_lastEdited` is the name of the parameter of that edit, for the
+% layers that tell parameters of one group apart (PowerNetwork: baseMVA and Hz).
+% A container made with a check function (`f_validate`, the graph parameters of the buses,
+% branches and components) also checks the values: a wrong value stops the write, whether
+% it comes from add_*, a direct table write, the GUI or net.set_layout, and nothing is stored.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE14bus();
+% bus = net.a_Bus{1};
+% bus.tab_parameter                  % parameters of the bus as a table
+% bus.tab_parameter.powerflow.V = 1.02;
+% net.sct_stale.powerflow            % the edit makes the power flow of the network stale
+% ```
+%
+% See also LayerPackage
+    properties(SetAccess=private, Hidden) % Edit report
+        s_lastEdited (1,1) string = ""               % Name of the parameter of the last edit, set before log_edit.
     end
-    properties(Access=private)
-
-        % <@Desc> Parameter names managed by this container.
-        % <@Role> Parameter
-        % <@Type> string
-        % <@Size> 1xN
-        sv_parameter = [];
-
-        % <@Desc> Stashed value used for change comparison.
-        % <@Role> Parameter
-        % <@Type> any
-        % <@Size> 1x1
-        val_stash 
-
-        % <@Desc> Parent layer object managed by this container.
-        % <@Role> Layer Structure
-        % <@Type> LayerPackage
-        % <@Size> 1x1
-        a_cls
+    properties(SetAccess=private, Hidden) % Value check
+        f_validate = []                              % Check of a table before it is stored: f_validate(tab, s_owner) stops with an error for a wrong value ([]: no check). <@Type> function_handle
     end
-    properties(Dependent)
-
-        % <@Desc> Parameter table generated from dynamic properties.
-        % <@Role> Parameter
-        % <@Type> table
-        % <@Size> 1xN (N: number of parameters)
-        tab_parameter
+    properties(Access=private) % Internal state
+        a_cls                                        % Owner layer of this container. <@Type> LayerPackage
+        sv_class (1,:) string = string.empty(1,0)    % Class of each column of tab_parameter, fixed by the defaults.
     end
-    properties(Dependent, Access=protected)
-
-        % <@Desc> Parent layer interface for compatibility.
-        % <@Role> Layer Structure
-        % <@Type> LayerPackage
-        % <@Size> 1x1
-        parent
-
-        % <@Desc> Parameter class has no children, but the property is kept for interface compatibility.
-        % <@Role> Layer Structure
-        % <@Type> none
-        % <@Size> 0x1
-        children
+    properties % Parameter
+        tab_parameter = []                           % Parameter table: one column per parameter; writing it keeps the names, height and row names, checks the classes and logs each changed column. <@Type> table (1xN)
     end
-    properties
-        NoData = nan;
+    properties(Dependent, Access=protected) % Layer structure
+        parent                                       % Parent in the layer structure: the owner layer. <@Type> LayerPackage
+        children                                     % Children in the layer structure: none (kept for the LayerPackage interface). <@Type> none (0x1)
     end
     
     %% Constructor
     methods
-        function obj = Parameter(a_parent,str_tag, CallBackChanged)
-        % <@Desc>
-        % Creates a parameter container for a parent layer.
-        % <@Role>
-        % Constructor
-        % <@Summary>
-        % Initialize the parameter container and callback.
-        % <@Signatures>
-        % [
-        %   "obj = Parameter(a_parent, str_tag, CallBackChanged)"
-        % ]
-        % <@Parameters>
-        % [
-        %   {
-        %     "Name": "a_parent",
-        %     "Type": "LayerPackage",
-        %     "Description": "Parent layer object.",
-        %     "Required": true,
-        %     "Default": "-"
-        %   },
-        %   {
-        %     "Name": "str_tag",
-        %     "Type": "string scalar",
-        %     "Description": "Parameter tag.",
-        %     "Required": false,
-        %     "Default": "\"Parameter\""
-        %   },
-        %   {
-        %     "Name": "CallBackChanged",
-        %     "Type": "function_handle",
-        %     "Description": "Callback executed after parameter changes.",
-        %     "Required": false,
-        %     "Default": "@(varargin) []"
-        %   }
-        % ]
-        % <@Returns>
-        % [
-        %   {
-        %     "Name": "obj",
-        %     "Type": "Parameter",
-        %     "Description": "Created parameter container."
-        %   }
-        % ]
-            arguments
-                a_parent 
-                str_tag = "Parameter"
-                CallBackChanged = @(varargin) [];
+        function obj = Parameter(a_parent, s_tag, sct_default, f_validate)
+        % Create a parameter container for a parent layer.
+        %
+        % Its tag names the parameter group (e.g. "powerflow", "dynamics"), the tag of its
+        % edits. sct_default gives the parameters and their defaults (field: name, value:
+        % default, of the class the parameter keeps); fields with N rows make an N-row table.
+        % The rows of a container of a GlobalController are named by its controlled units.
+        % f_validate (optional) checks the defaults here and every table written later.
+            arguments (Input)
+                a_parent                             % Parent layer object.
+                s_tag       = "Parameter"            % Parameter tag.
+                sct_default (1,1) struct = struct()  % Parameters and their defaults (field: name).
+                f_validate  = []                     % Check of the values: f_validate(tab, s_owner) errors for a wrong value ([]: no check).
             end
-            obj.a_cls        = a_parent;
-            obj.l_managedTag = false;
-            obj.str_tag      = str_tag;
-            obj.CallbackChanged = CallBackChanged;
+            arguments (Output)
+                obj  % Created parameter container.
+            end
+            % The tag is set before the parent: the owner is still being built, so its other
+            % containers cannot be checked as siblings yet (set.s_tag).
+            obj.s_tag = s_tag;
+            obj.a_cls = a_parent;
+            if isempty(fieldnames(sct_default))
+                tab = table('Size', [1 0], 'VariableTypes', string.empty);
+            else
+                tab = struct2table(sct_default);
+            end
+            if isa(a_parent, "GlobalController") && height(tab) == numel(a_parent.controlledUnits) && height(tab) > 0
+                tab.Properties.RowNames = string(a_parent.controlledUnits);
+            end
+            obj.sv_class = string(tab.Properties.VariableTypes);
+            obj.f_validate = f_validate;
+            if ~isempty(f_validate)
+                f_validate(tab, string(a_parent.s_tag));
+            end
+            obj.tab_parameter = tab;                 % the first assignment logs nothing (set.tab_parameter)
         end
     end
 
     methods
-        function tab_para  = get.tab_parameter(obj)
-            % <@Desc>
-            % Builds a table from the registered parameter properties.
-            % <@Role>
-            % Parameter
-            % <@Summary>
-            % Convert dynamic parameter properties into a table.
-            % <@Signatures>
-            % [
-            %   "tab_para = get.tab_parameter(obj)"
-            % ]
-            % <@Parameters>
-            % [
-            %   {
-            %     "Name": "obj",
-            %     "Type": "Parameter",
-            %     "Description": "Target parameter class.",
-            %     "Required": true,
-            %     "Default": "-"
-            %   }
-            % ]
-            % <@Returns>
-            % [
-            %   {
-            %     "Name": "tab_para",
-            %     "Type": "table",
-            %     "Description": "Parameter table."
-            %   }
-            % ]
-            sv_para = obj.sv_parameter;
-            if isempty(sv_para)
-                NoData = nan;               %#ok
-                tab_para = table(NoData);   %#ok
-            else
-                for s_ipara =  sv_para(:)'
-                    sct_para.(s_ipara) = obj.(s_ipara);
+        function set.tab_parameter(obj, tab)
+            % Store a table of the same parameters and log the changed columns.
+            %
+            % Nothing is stored when the names, the height or the row names differ, a
+            % column has another class than its default (sv_class), or f_validate rejects a value.
+            tab_old = obj.tab_parameter;
+            if ~istable(tab_old)                     % constructor
+                obj.tab_parameter = tab;
+                if isa(obj.a_cls, "PowerSystemModel")
+                    obj.a_cls.tab_parameterCache = [];
                 end
-                tab_para = struct2table(sct_para);
+                return
+            end
+            % Nothing changed: table isequaln compares the names and their order, the row
+            % names, the height and the values, but not the classes.
+            if isequaln(tab_old, tab) && isequal(string(tab.Properties.VariableTypes), obj.sv_class)
+                return
+            end
+            sv_name = string(tab_old.Properties.VariableNames);
+            n_row   = height(tab_old);
+            if ~istable(tab) || height(tab) ~= n_row || ~isequal(tab.Properties.RowNames, tab_old.Properties.RowNames)
+                error(msg("GUILDA:Parameter:TableMismatch", char(obj.s_tag), char(strjoin(sv_name, ", ")), char(string(n_row))))
+            end
+            sv_new = string(tab.Properties.VariableNames);
+            if ~isequal(sv_new, sv_name)
+                if numel(sv_new) ~= numel(sv_name) || ~all(ismember(sv_name, sv_new))
+                    error(msg("GUILDA:Parameter:TableMismatch", char(obj.s_tag), char(strjoin(sv_name, ", ")), char(string(n_row))))
+                end
+                tab = tab(:, sv_name);
+            end
+            sv_class_new = string(tab.Properties.VariableTypes);
+            i_bad = find(sv_class_new ~= obj.sv_class, 1);
+            if ~isempty(i_bad)
+                error(msg("GUILDA:Parameter:ClassNameMismatch", char(sv_name(i_bad)), char(obj.sv_class(i_bad)), char(sv_class_new(i_bad))))
+            end
+            n_col = numel(sv_name);
+            c_old = cell(1, n_col);
+            c_new = cell(1, n_col);
+            lv_changed = false(1, n_col);
+            for i = 1:n_col
+                c_old{i} = tab_old.(i);
+                c_new{i} = tab.(i);
+                lv_changed(i) = ~isequaln(c_old{i}, c_new{i});
+            end
+            if ~any(lv_changed)
+                return
+            end
+            if ~isempty(obj.f_validate)
+                obj.f_validate(tab, string(obj.a_cls.s_tag));
+            end
+            obj.tab_parameter = tab;
+            if isa(obj.a_cls, "PowerSystemModel")
+                obj.a_cls.tab_parameterCache = [];  % the owner builds its table again
+            end
+            for i = find(lv_changed)
+                obj.s_lastEdited = sv_name(i);
+                obj.log_edit("edit " + sv_name(i) + ": " + tools.value_text(c_old{i}) + " -> " + tools.value_text(c_new{i}), obj.s_tag);
             end
         end
         function p = get.parent(obj); p = obj.a_cls; end
         function c = get.children(~); c = {};        end
-    end
-
-    methods(Hidden)
-        add_entry(obj,names,defaults,valids)
-        callbackPreSet(obj,name,event)
-        callbackPostSet(obj,name,cls,event)
     end
 end

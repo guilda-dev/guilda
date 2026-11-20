@@ -1,0 +1,18 @@
+<!--This is an XML file containing error messages related to the file "import".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NotFound">Model folder not found: {0}. Give the folder that holds bus/, branch/ and component/ (e.g. the path returned by net.export).</entry>
+        <entry key="InvalidNetwork">Network must be a PowerNetwork object (got {0}).</entry>
+        <entry key="NoComponentFolder">Folder not found: {0}. The network is built without components. Give the folder that holds bus/, branch/ and component/.</entry>
+        <entry key="MissingFile">File not found: {0}. Export the model again or add {1}.</entry>
+        <entry key="BusRow">{0} row {1}: {2} = {3} is not a bus number. bus/parameter.csv has {4} rows, so give an integer from 1 to {5}.</entry>
+        <entry key="UnknownID">{0} row {1}: {2} = {3} is not in {4}.</entry>
+        <entry key="RemovedColumn">Ignored the columns {1} of {0}: the bus initial values V0 and Varg0 were removed. The power flow starts from the flat start or the last solution (WarmStart).</entry>
+        <entry key="UnknownColumn">Ignored unknown columns in {0}: {1}. Known columns: {2}.</entry>
+        <entry key="OldGraphColumns">{0} has the graph columns of earlier versions ({1}), which are no longer read.&#xA;Convert the model folder once with&#xA;  &gt;&gt; tools.layout_convert_columns("{2}")&#xA;(Xaxis, Yaxis, Marker, MidXaxis, MidYaxis become X, Y, Shape, Length / Path, FromOffset, ToOffset, Style / DX, DY, Shape, Path, Offset).</entry>
+        <entry key="UnknownControllerKey">{0}: {1} is not a {2} key, so the controllers of this folder cannot be built. Known keys: {3}. Run GUILDA.update_keymap after adding a controller class.</entry>
+        <entry key="UnknownComponent">{0} row {1}: Component = {2} is not the full tag of a component of the model folder (column FullTag of component/&lt;key&gt;/main.csv).</entry>
+        <entry key="ControllerSlots">local_controller/: the component {0} has the controllers of the roles {1}. A component has at most one AVR or "local" controller, one governor, and one PSS, which needs an AVR.</entry>
+        <entry key="OptionJson">{0}: {1}. option.json is one JSON object whose keys are FullTag values of parameter.csv and whose values are objects of constructor arguments (see LocalController.get_option).</entry>
+    </message>
+</rsccat>

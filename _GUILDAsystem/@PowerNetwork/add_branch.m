@@ -1,53 +1,101 @@
-function bra = add_branch(obj, Type, from_to, opt)
-    arguments
+function bra = add_branch(obj, Key, from_to, opt)
+% Add a branch between two buses and return it.
+%
+% `from_to` names the two end buses by their index in `a_Bus` or by their tags. The
+% branch tag is the class header followed by a three-digit number. The addition is
+% a "Topology" edit, which makes the power flow stale.
+%
+% R, X and C are the values of all circuits of the branch together. `Circuit` (default 2)
+% is the number of parallel circuits: it does not change the closed admittance matrix and
+% is used by the states that act on one circuit, Branch.get_admittance_matrix(Status="3LG")
+% and (Status="3open").
+%
+% The end buses must exist and differ, and R and X must not both be 0; otherwise the
+% network stays unchanged and an error explains the fix.
+%
+% <@Examples>
+% ```matlab
+% net.add_branch("pi", [1,2], R=0.01, X=0.085, C=0.088);
+% net.add_branch("pi_transformer", ["B004","B007"], X=0.2091, Tap=0.978);
+% net.add_branch("pi", [2,3], R=0.02, X=0.17, Circuit=1);   % a single-circuit line
+% net.add_branch("pi", [1,3], X=0.1, Path="0.2 0.5; 0.4 0.5");   % with two bend points
+% ```
+%
+% See also PowerNetwork.remove_branch, PowerNetwork.add_bus, Branch
+    arguments (Input)
         obj 
-        Type         (1,:) char {mustBeMember(Type,{'T','pi','pi_transformer','two_winding_transformer'})}
-        from_to      (1,2) {string,double}   = [1,2]
-        opt.R        (1,1) double = 0;
-        opt.X        (1,1) double = 1;
-        opt.C        (1,1) double = 0;
-        opt.Tap      (1,1) double = 1;
-        opt.Phase    (1,1) double = 0 /180*pi;
-        opt.Smax     (1,1) double = inf;
-        opt.Imax     (1,1) double = inf;
-        opt.Pmax     (1,1) double = inf;
-        opt.Qmax     (1,1) double = inf;
-        opt.Vargmax  (1,1) double = 90/180*pi;
-        opt.MidXaxis     (1,:) string = [];
-        opt.MidYaxis     (1,:) string = [];
-        opt.Marker       (1,1) string = "-";
+        Key          (1,:) char {tools.mustBeKeyOf(Key, "Branch")}  % Branch model key, e.g. "pi" or "pi_transformer".
+        from_to      (1,2) {string,double}   = [1,2]                % End buses [from, to], as indices of a_Bus or as bus tags.
+        opt.R        (1,1) double = 0;                              % [pu] Series resistance.
+        opt.X        (1,1) double = 1;                              % [pu] Series reactance.
+        opt.C        (1,1) double = 0;                              % [pu] Shunt susceptance at each end (half of the line charging).
+        opt.Tap      (1,1) double = 1;                              % Off-nominal tap ratio of a transformer (the lines "pi" and "T" have none: NaN).
+        opt.Phase    (1,1) double = 0 /180*pi;                      % [rad] Phase shift of a transformer (the lines "pi" and "T" have none: NaN).
+        opt.Circuit  (1,1) double {mustBeInteger, mustBePositive} = 2;  % Number of parallel circuits; R, X and C are for all of them together (one circuit: Circuit*R, Circuit*X, C/Circuit).
+        opt.Smax     (1,1) double = inf;                            % [pu] Limit of the apparent power at both ends (Inf: none).
+        opt.Imax     (1,1) double = inf;                            % [pu] Limit of the current at both ends (Inf: none).
+        opt.Pmax     (1,1) double = inf;                            % [pu] Limit of the active power at both ends (Inf: none).
+        opt.Qmax     (1,1) double = inf;                            % [pu] Limit of the reactive power at both ends (Inf: none).
+        opt.Vargmax  (1,1) double = 90/180*pi;                      % [rad] Limit of the angle difference between the end buses (Inf: none).
+        opt.Path                  {tools.layout_mustBePath} = "";   % Bend points of the line in network diagrams: "x y; x y" or an n x 2 matrix ("" = none).
+        opt.FromOffset   (1,1) double {mustBeReal} = nan;           % Position on the bar of the from bus, from the bar center (NaN = from the first bend point).
+        opt.ToOffset     (1,1) double {mustBeReal} = nan;           % Position on the bar of the to bus, from the bar center (NaN = from the last bend point).
+        opt.Style        (1,1) string {mustBeMember(opt.Style, ["line","transformer"])} = "line";  % Line style in network diagrams: "line" or "transformer" (symbol at the from end).
+    end
+    arguments (Output)
+        bra  % Added Branch object.
     end
 
     % a_Busの番号で指定された場合
     if isnumeric(from_to)
-        a_Bus = obj.a_Bus(from_to);
+        ir_bus = from_to;
+        n_bus  = numel(obj.a_Bus);
+        if any(ir_bus < 1 | ir_bus > n_bus | ir_bus ~= fix(ir_bus))
+            error(msg("GUILDA:PowerNetwork:BranchBusIndex", mat2str(from_to), char(obj.s_tag), char(string(n_bus))))
+        end
     else
-        str_Bus = string(obj.a_Bus)';
-        [~,ir_bus] = ismember(from_to, str_Bus);
-        
-        assert(ir_bus(1),"Bus class '"+from_to(1)+"' not found.")
-        assert(ir_bus(2),"Bus class '"+from_to(2)+"' not found.")
-        
-        a_Bus = net.a_Bus(ir_bus);
+        % the tags are read in a loop (string(obj.a_Bus) calls string() on every bus)
+        sr_Bus = strings(1, numel(obj.a_Bus));
+        for i = 1:numel(sr_Bus)
+            sr_Bus(i) = obj.a_Bus{i}.s_tag;
+        end
+        [~,ir_bus] = ismember(from_to, sr_Bus);
+        if any(ir_bus == 0)
+            error(msg("GUILDA:PowerNetwork:BusNotFound", char(from_to(find(ir_bus == 0, 1))), char(obj.s_tag)))
+        end
+    end
+    a_Bus = obj.a_Bus(ir_bus);
+
+    if ir_bus(1) == ir_bus(2)
+        error(msg("GUILDA:PowerNetwork:BranchSelfLoop", char(a_Bus{1}.s_tag)))
+    end
+    if opt.R == 0 && opt.X == 0
+        error(msg("GUILDA:PowerNetwork:BranchZeroImpedance", char(a_Bus{1}.s_tag), char(a_Bus{2}.s_tag)))
     end
 
-    n_Branch  = numel(obj.a_Branch);
-    str_Index = num2str(n_Branch+1,"%.3d");
+    % largest number in use + 1 (after remove_branch, numel+1 may already be taken);
+    % the tags are read in a loop (string(obj.a_Branch) calls string() on every branch)
+    sv_Branch = strings(numel(obj.a_Branch), 1);
+    for i = 1:numel(sv_Branch)
+        sv_Branch(i) = obj.a_Branch{i}.s_tag;
+    end
+    s_Index = num2str(tools.next_tag_number(sv_Branch),"%.3d");
+
+    % A Path matrix is stored as its text "x y; x y" (the graph column is a string)
+    if isnumeric(opt.Path)
+        opt.Path = strjoin(join(compose("%.15g", opt.Path), " ", 2), "; ");
+    end
+    opt.Path = string(opt.Path);
 
     % Build Instance
-    switch Type
-        case 'T';                       mkInst = @branch.T;
-        case 'pi';                      mkInst = @branch.pi;
-        case 'pi_transformer';          mkInst = @branch.pi_transformer;
-        case 'two_winding_transformer'; mkInst = @branch.two_winding_transformer;
-
-    end
-    bra = mkInst(str_Index, opt);
+    dic    = GUILDA.keymap("Branch");
+    mkInst = str2func(dic(string(Key)));
+    bra = mkInst(s_Index, opt);
 
     % register
-    bra.set_bus(a_Bus)
-    bra.set_network(obj)
+    bra.a_Bus          = a_Bus;
+    bra.a_PowerNetwork = obj;
     obj.a_Branch = [obj.a_Branch;{bra}];
-    obj.log_edit(obj.str_tag+" <<-Add--- "+bra.str_tag,"Topology");
+    obj.log_edit(obj.s_tag+" <<-Add--- "+bra.s_tag,"Topology");
     
 end

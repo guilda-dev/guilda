@@ -1,0 +1,833 @@
+% F8 補助機能 (アドミタンス行列 / disp_summary / plot_diagram / CSV 入出力 / 系統テンプレート)
+%
+% 実行: runtests("DebugScript.test_F8_utilities")  または  DebugScript.run_all("Features","F8")
+
+% 共通設定 (各テストの前に毎回実行される)
+sr_templates = ["IEEE14bus","IEEE14bus_NoTap","IEEE14bus_lossless","TEST31bus","Txt3Bus","Tutorial3bus"];
+
+
+c_quiet = DebugScript.helper.user_config("TimeSimulation", struct("Progress", "none"));   % 進捗表示なし (各テストの終わりに元へ戻す)
+
+%% Admittance matrix is symmetric and matches branch data
+net = DebugScript.helper.build_9bus();
+tab_Y = net.get_admittance_matrix;
+
+% 行・列名は母線タグ
+assert(istable(tab_Y) && isequal(string(tab_Y.Properties.RowNames), string(net.a_Bus)))
+Y = tab_Y.Variables;
+
+% 位相器のない系統では対称行列
+assert(norm(Y - Y.', "fro") < 1e-12)
+
+% 送電線定数から組み立てた行列と一致 (π 型: 直列 1/(R+jX)、両端に jC)
+Y_ref = zeros(9);
+for k = 1:numel(net.a_Branch)
+    br = net.a_Branch{k};
+    p  = br.tab_parameter.dynamics;
+    [~, ij] = ismember(string(br.a_Bus), string(net.a_Bus));
+    y = 1/(p.R + 1j*p.X);
+    t = p.tap;
+    if isnan(t); t = 1; end   % 線路 (pi) の tap は NaN
+    Y_ref(ij,ij) = Y_ref(ij,ij) + [y + 1j*p.C, -y; -y, y + 1j*p.C] ./ [t^2, t; t, 1];
+end
+assert(norm(Y - Y_ref, "fro") < 1e-10)
+
+% 非対角成分は送電線の get_admittance_matrix の非対角成分
+Y45 = net.a_Branch{4}.get_admittance_matrix;
+assert(abs(tab_Y{"B004","B005"} - Y45(1,2)) < 1e-12)
+
+
+%% Admittance matrix includes bus shunts
+net = PowerNetwork();
+net.add_bus("Gshunt", 0.01, "Bshunt", 0.2);
+net.add_bus();
+net.add_branch("pi", [1,2], "X", 0.5);
+Y = net.get_admittance_matrix.Variables;
+assert(abs(Y(1,1) - (1/(0.5j) + 0.01 + 0.2j)) < 1e-12)
+assert(abs(sum(Y(2,:))) < 1e-12)          % シャントのない母線は行和 0
+
+
+%% disp_summary prints summary
+net = DebugScript.helper.build_ieee14();
+DebugScript.helper.quiet(@() net.initialize);
+txt = evalc("net.disp_summary");
+assert(contains(txt, "- Buses: 14"))
+assert(contains(txt, "- Branches: " + numel(net.a_Branch)))
+assert(contains(txt, "B001SG1"))
+
+% 表示する項目は選べる
+txt = evalc("net.disp_summary(""parameter"", false, ""equilibrium"", false)");
+assert(contains(txt, "- Buses: 14"))
+
+
+%% struct keeps each layer and gives a repeated one its first path
+% 同じタグの別オブジェクト (各機器のパラメータ表) を取り違えない
+net = DebugScript.helper.build_9bus();
+s   = net.struct(false);
+for i = 1:numel(net.a_Bus)
+    for j = 1:numel(net.a_Bus{i}.a_Component)
+        sc = s.a_Bus{i}.a_Component{j};
+        assert(istable(sc.tab_parameter) && isequaln(sc.tab_parameter, net.a_Bus{i}.a_Component{j}.tab_parameter), ...
+               "a_Bus{" + i + "}.a_Component{" + j + "}.tab_parameter")
+    end
+end
+% 2 回目に現れたオブジェクトは最初に格納したパス
+br  = net.a_Branch{1};
+i_from = find(cellfun(@(b) b == br.a_Bus{1}, net.a_Bus));
+assert(s.a_Branch{1}.a_Bus{1} == "net.a_Bus{" + i_from + "}", s.a_Branch{1}.a_Bus{1})
+% disp_summary の表はパスではなくタグを表示する
+txt = evalc("net.disp_summary(""parameter"", false, ""equilibrium"", false)");
+assert(~contains(txt, """net.") && contains(txt, """" + string(br.a_Bus{1}) + """"))
+
+
+%% disp_summary shows no struct messages and always shows bustype
+net = DebugScript.helper.build_9bus();
+for l_para = [true, false]
+    txt = evalc("net.disp_summary(""parameter"", l_para, ""equilibrium"", false)");
+    assert(~contains(txt, "Failed to get") && ~contains(txt, "Unable to copy"))   % struct の表示は出さない
+    assert(contains(txt, "Type") && contains(txt, """slack"""))                 % parameter=false でも母線種別は残す
+end
+
+
+%% disp_summary without an equilibrium leaves out the equilibrium columns
+% initialize 前 (機器の c_Iequilibrium = []) でも止まらず、平衡点の列を出さずに INFO を出す
+net = DebugScript.helper.build_9bus();
+txt = evalc("net.disp_summary(""parameter"", false)");
+assert(contains(txt, "no equilibrium yet"), txt)
+assert(contains(txt, "- Buses: 9") && contains(txt, "Type") && ~contains(txt, "theta"))
+assert(contains(txt, "- Equilibrium: not computed"))
+% initialize 後は平衡点の列を出す
+DebugScript.helper.quiet(@() net.initialize);
+txt = evalc("net.disp_summary(""parameter"", false)");
+assert(contains(txt, "theta") && contains(txt, "State") && ~contains(txt, "no equilibrium yet"))
+assert(contains(txt, "- Equilibrium: up to date"))
+
+
+%% disp_tree prints a layer without children
+net = DebugScript.helper.build_9bus();
+br  = net.a_Branch{1};
+txt = evalc("br.disp_tree()");
+assert(contains(txt, br.s_tag))
+assert(contains(br.disp_tree(), br.s_tag))
+txt = net.disp_tree();
+assert(contains(txt, "┗━━") && contains(txt, string(net.a_Bus{end})))
+
+
+%% plot_diagram draws the diagram
+% 図は非表示で作成して閉じる
+net = DebugScript.helper.build_ieee14();
+DebugScript.helper.quiet(@() net.initialize);
+fig = figure("Visible", "off");
+c   = onCleanup(@() close(fig));
+ax  = axes(fig);
+G   = DebugScript.helper.quiet(@() net.plot_diagram(Parent=ax));
+assert(isa(G, "GraphNetDiagram") && G.ax == ax)
+assert(~isempty(ax.Children))
+
+
+%% CSV export import round trip
+% CSV に書き出して読み込むと同じ系統になる
+net = DebugScript.helper.build_ieee14();
+DebugScript.helper.quiet(@() net.initialize);
+s_dir = tempname;  mkdir(s_dir);
+c = onCleanup(@() rmdir(s_dir, "s"));
+
+% フォルダ名が @ で始まるとクラスファイルも書き出す
+s_path = net.export(fullfile(s_dir, "@RoundTrip14"));
+assert(all(isfolder(fullfile(s_path, ["network","bus","branch","component"]))))
+assert(isfile(fullfile(s_path, "RoundTrip14.m")))
+assert(contains(fileread(fullfile(s_path, "RoundTrip14.m")), "PowerNetwork.import(s_dirpath, Network=obj)"))
+
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path));
+assert(isa(net2, "PowerNetwork") && string(net2.s_tag) == "RoundTrip14")
+assert(numel(net2.a_Bus) == numel(net.a_Bus) && numel(net2.a_Branch) == numel(net.a_Branch))
+n_comp = @(n) sum(cellfun(@(b) numel(b.a_Component), n.a_Bus));
+assert(n_comp(net2) == n_comp(net))
+assert(norm(net2.get_admittance_matrix.Variables - net.get_admittance_matrix.Variables, "fro") < 1e-10)
+assert(norm(net2.cv_Vequilibrium - net.cv_Vequilibrium) < 1e-8)
+assert(isequal(cellfun(@(b) b.l_isSlack, net2.a_Bus), cellfun(@(b) b.l_isSlack, net.a_Bus)))
+
+% クラスファイルを使うとフォルダがそのまま系統クラスになる
+addpath(s_dir);
+c_path = onCleanup(@() rmpath(s_dir));
+net3 = DebugScript.helper.quiet(@() feval("RoundTrip14"));
+assert(isa(net3, "PowerNetwork") && norm(net3.cv_Vequilibrium - net.cv_Vequilibrium) < 1e-8)
+clear c_path
+
+% 母線の baseMVA は廃止: 書き出さず、読み込み時は列があっても無視する (テンプレートの CSV には残っている)
+tab_bus = readtable(fullfile(s_path, "bus", "parameter.csv"));
+assert(~ismember("baseMVA", string(tab_bus.Properties.VariableNames)))
+tab_bus.baseMVA = repmat(50, height(tab_bus), 1);
+writetable(tab_bus, fullfile(s_path, "bus", "parameter.csv"));
+net3 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path));
+assert(norm(net3.cv_Vequilibrium - net.cv_Vequilibrium) < 1e-8)
+assert(~ismember("baseMVA", string(net3.a_Bus{1}.tab_parameter.operation.Properties.VariableNames)))
+assert(net3.tab_parameter.base.baseMVA == 100 && net3.tab_parameter.base.Hz == GUILDA.config("PowerSystemModel","Hz"))
+
+% 同じフォルダへの再出力は Overwrite 指定が必要
+assert(error_id(@() net.export(s_path)) == "GUILDA:export:FolderExists")
+% Overwrite は前回の機器フォルダを消してから書き出す (古い機器が残らない)
+mkdir(fullfile(s_path, "component", "gen-classical"));
+net.export(s_path, Overwrite=true);
+assert(~isfolder(fullfile(s_path, "component", "gen-classical")))
+% @ で始まらないフォルダにはクラスファイルを書かない
+s_plain = net.export(fullfile(s_dir, "Plain14"));
+assert(isempty(dir(fullfile(s_plain, "*.m"))))
+assert(error_id(@() PowerNetwork.import(fullfile(s_dir, "NoSuchFolder"))) == "GUILDA:import:NotFound")
+
+
+%% CSV round trip keeps Hz baseMVA and the slack bus
+% 系統の Hz と baseMVA は network/parameter.csv に保存され、読み込むと戻る
+net = PowerNetwork("Base2Bus");
+net.add_bus();  net.add_bus("V", 1.02);
+net.add_branch("pi", [1,2], "X", 0.2);
+net.a_Bus{1}.add_component("load-power", "P",-0.5, "Q",-0.1);
+net.a_Bus{2}.add_component("gen-park");
+net.tab_parameter.base.Hz      = 50;
+net.tab_parameter.base.baseMVA = 250;
+DebugScript.helper.quiet(@() set_slack(net.a_Bus{2}));
+s_dir = tempname;  mkdir(s_dir);
+c = onCleanup(@() rmdir(s_dir, "s"));
+s_path   = net.export(fullfile(s_dir, "Base2Bus"));
+tab_net  = readtable(fullfile(s_path, "network", "parameter.csv"));
+assert(isequal(string(tab_net.Properties.VariableNames), ["Hz","baseMVA"]) && height(tab_net) == 1)
+assert(tab_net.Hz == 50 && tab_net.baseMVA == 250)
+
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
+assert(net2.tab_parameter.base.Hz == 50 && net2.tab_parameter.base.baseMVA == 250)
+assert(net2.a_Bus{2}.l_isSlack && ~net2.a_Bus{1}.l_isSlack)
+assert(net2.a_Bus{1}.a_Component{1}.get_Hz() == 50)
+
+% network/parameter.csv の無い古いフォルダ・値が NaN の列は既定値 (GUILDA.config の Hz, 100 MVA)
+writetable(table(nan, 300, 'VariableNames', ["Hz","baseMVA"]), fullfile(s_path, "network", "parameter.csv"));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
+assert(net2.tab_parameter.base.Hz == GUILDA.config("PowerSystemModel","Hz") && net2.tab_parameter.base.baseMVA == 300)
+rmdir(fullfile(s_path, "network"), "s");
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
+assert(net2.tab_parameter.base.Hz == GUILDA.config("PowerSystemModel","Hz") && net2.tab_parameter.base.baseMVA == 100)
+
+% Network= で既存の系統へ追加できる (母線番号は CSV の行番号)
+net3 = PowerNetwork("Host");
+net3.add_bus();
+net3.a_Bus{1}.add_component("load-power");
+out  = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Network=net3, Initialize=false));
+assert(out == net3 && numel(net3.a_Bus) == 3 && numel(net3.a_Branch) == 1)
+assert(isequal(string(net3.a_Branch{1}.a_Bus(:)).', string(net3.a_Bus(2:3)).'))
+
+
+%% CSV round trip keeps transformer tap and phase
+% export は tap/phase の列名で書き出し、import はその列 (と Tap/Phase) を読む
+net = PowerNetwork("Tap2Bus");
+net.add_bus();  net.add_bus();
+net.add_branch("pi_transformer", [1,2], "X",0.2, "Tap",0.95, "Phase",5/180*pi);
+net.a_Bus{1}.add_component("gen-park");
+net.a_Bus{2}.add_component("load-power", "P",-0.5, "Q",-0.1);
+s_dir = tempname;  mkdir(s_dir);
+c = onCleanup(@() rmdir(s_dir, "s"));
+s_path   = net.export(fullfile(s_dir, "@Tap2Bus"));
+s_csv    = fullfile(s_path, "branch", "parameter.csv");
+tab_bra  = readtable(s_csv);
+assert(all(ismember(["tap","phase"], string(tab_bra.Properties.VariableNames))))
+
+get_tp = @(n) n.a_Branch{1}.tab_parameter.dynamics{1,["tap","phase"]};
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
+assert(max(abs(get_tp(net2) - [0.95, 5/180*pi])) < 1e-12)
+assert(norm(net2.get_admittance_matrix.Variables - net.get_admittance_matrix.Variables, "fro") < 1e-12)
+
+% 列名 Tap/Phase でも読める
+writetable(renamevars(tab_bra, ["tap","phase"], ["Tap","Phase"]), s_csv);
+net3 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
+assert(max(abs(get_tp(net3) - [0.95, 5/180*pi])) < 1e-12)
+
+% 両方の綴りがあるとエラー
+tab_bra.Tap = tab_bra.tap;
+writetable(tab_bra, s_csv);
+assert(error_id(@() PowerNetwork.import(s_path, Initialize=false)) == "GUILDA:import:DuplicateColumns")
+
+% 同梱の IEEE14bus の変圧器タップが読み込まれる
+net = DebugScript.helper.quiet(@() network.IEEE14bus);
+sr_bus = string(net.a_Bus(:)).';
+r_tap = @(f,t) net.a_Branch{cellfun(@(b) isequal(string(b.a_Bus(:)).', sr_bus([f t])), net.a_Branch)}.tab_parameter.dynamics.tap;
+assert(isequal([r_tap(4,7), r_tap(4,9), r_tap(5,6)], [0.978, 0.969, 0.932]))
+
+
+%% Deprecated CsvNetHandler wrappers
+% v3 の CsvNetHandler.import / export は警告を出して新しい API を呼ぶ
+net = DebugScript.helper.build_ieee14();
+DebugScript.helper.quiet(@() net.initialize);
+s_dir = tempname;  mkdir(s_dir);
+c = onCleanup(@() rmdir(s_dir, "s"));
+clear Deprecated
+lastwarn("");
+s_path = DebugScript.helper.quiet(@() CsvNetHandler.export(net, "Old14", "savepath", s_dir, "version", 3));
+id = DebugScript.helper.msg_id();
+assert(id == "GUILDA:Deprecated:CsvNetHandlerExport", id)
+assert(s_path == fullfile(s_dir, "@Old14") && isfile(fullfile(s_path, "Old14.m")))
+assert(contains(fileread(fullfile(s_path, "Old14.m")), "ver = 3"))
+assert(isfile(fullfile(s_path, "network", "parameter.csv")))
+% 既存フォルダは Overwrite が必要
+assert(error_id(@() CsvNetHandler.export(net, "Old14", "savepath", s_dir)) == "GUILDA:export:FolderExists")
+
+lastwarn("");
+net2 = DebugScript.helper.quiet(@() CsvNetHandler.import(s_path));
+id = DebugScript.helper.msg_id();
+assert(id == "GUILDA:Deprecated:CsvNetHandlerImport", id)
+assert(norm(net2.cv_Vequilibrium - net.cv_Vequilibrium) < 1e-8)
+% 既存の系統へ読み込む v3 の形 (系統クラスのコンストラクタで使っていた形)
+net3 = PowerNetwork();
+out  = DebugScript.helper.quiet(@() CsvNetHandler.import(s_path, net3, "Initialize", false));
+assert(out == net3 && numel(net3.a_Bus) == 14)
+
+
+%% MAT file round trip keeps a usable network
+% save / load で構成が戻り、解析の結果も同じ
+[net, ~] = DebugScript.helper.build_3bus("gen-1axis");
+DebugScript.helper.quiet(@() net.initialize);
+s_mat = tempname + ".mat";
+c = onCleanup(@() delete(s_mat));
+save(s_mat, "net");
+
+lastwarn("");
+s = load(s_mat);  n1 = s.net;
+assert(isempty(lastwarn), lastwarn)
+assert(n1 ~= net)
+assert(isequal(string(n1.a_Bus), string(net.a_Bus)) && isequal(string(n1.a_Branch), string(net.a_Branch)))
+comp = n1.a_Bus{2}.a_Component{1};
+assert(comp.a_Bus == n1.a_Bus{2})                       % 親への参照は読み込んだ系統を指す
+assert(n1.a_Bus{2}.a_PowerNetwork == n1)
+assert(norm(n1.cv_Vequilibrium - net.cv_Vequilibrium) == 0)
+assert(norm(sort(abs(eig(n1.get_sys.A))) - sort(abs(eig(net.get_sys.A)))) < 1e-10)
+f = functions(comp.f_dx);
+assert(f.workspace{1}.obj == comp)                      % f_* も読み込んだ機器を指す
+ev  = DebugScript.helper.scenario("fault", n1, "TimeSpan", [1,1.05], "FaultBus", "B003");
+sol = DebugScript.helper.quiet(@() n1.simulate(ev.s_tag, Time=[0,2]));
+assert(sol.odeResults.t(end) == 2)
+
+% 読み込んだ系統でも編集が古さとして記録される
+assert(isempty(DebugScript.helper.stale(n1)) && ~DebugScript.helper.is_stale(n1))
+h_dx = comp.f_dx;
+comp.tab_parameter.dynamics.D = comp.tab_parameter.dynamics.D * 2;
+assert(numel(DebugScript.helper.stale(n1)) == 1)                     % リスナーは 1 組だけ
+assert(isequal(h_dx, comp.f_dx) && DebugScript.helper.is_stale(n1))
+assert(error_id(@() n1.get_sys) == "GUILDA:PowerSystemModel:Stale")
+assert(isempty(DebugScript.helper.stale(net)) && ~DebugScript.helper.is_stale(net))  % 元の系統は変わらない
+DebugScript.helper.quiet(@() n1.initialize);
+assert(~isequal(h_dx, comp.f_dx) && ~DebugScript.helper.is_stale(n1))
+
+% 型の検査も効く (読み込む前と同じく、エラーになり値は変わらない)
+r_D = comp.tab_parameter.dynamics.D;
+assert(error_id(@() set_dynamics_D(comp, "abc")) == "GUILDA:Parameter:ClassNameMismatch")
+assert(isequal(comp.tab_parameter.dynamics.D, r_D))
+
+% 母線・送電線・系統のパラメータと、読み込み後の構成の編集
+s = load(s_mat);  n2 = s.net;
+n2.a_Bus{3}.tab_parameter.powerflow.V = 1.01;
+assert(numel(DebugScript.helper.stale(n2)) == 1 && DebugScript.helper.is_stale(n2))
+s = load(s_mat);  n3 = s.net;
+n3.a_Branch{1}.tab_parameter.dynamics.R = 0.02;
+assert(numel(DebugScript.helper.stale(n3)) == 1 && DebugScript.helper.is_stale(n3))
+s = load(s_mat);  n4 = s.net;
+n4.tab_parameter.base.Hz = 50;
+assert(isempty(n4.sct_stale.powerflow) && DebugScript.helper.is_stale(n4))   % 周波数は関数ハンドルだけを古くする
+DebugScript.helper.quiet(@() n4.initialize);
+assert(DebugScript.helper.handle_Hz(n4.a_Bus{2}.a_Component{1}) == 50)
+s = load(s_mat);  n5 = s.net;
+DebugScript.helper.quiet(@() set_slack(n5.a_Bus{2}));
+assert(n5.a_Bus{2}.l_isSlack && DebugScript.helper.is_stale(n5))
+s = load(s_mat);  n6 = s.net;
+n6.add_bus();
+assert(numel(n6.a_Bus) == 4 && DebugScript.helper.is_stale(n6) && numel(net.a_Bus) == 3)
+
+% 直接は代入できない
+for s_prop = ["a_Bus","a_Branch","a_GlobalController"]
+    assert(error_id(@() set_prop(net, s_prop, cell(0,1))) == "MATLAB:class:SetProhibited", s_prop)
+end
+
+
+%% MAT file round trip keeps controllers and lower layers
+% 制御器のパラメータの編集も古さとして記録される
+net = DebugScript.helper.quiet(@() network.IEEE9bus);
+DebugScript.helper.quiet(@() net.initialize);
+s_mat = tempname + ".mat";
+c = onCleanup(@() delete(s_mat));
+save(s_mat, "net");
+s   = load(s_mat);
+avr = s.net.a_Bus{1}.a_Component{1}.a_LocalController{1};
+pss = avr.a_LocalController{1};
+assert(isa(avr, "controller.avr.AVR_ST1") && isa(pss, "controller.pss.PSS1"))
+avr.tab_parameter.dynamics.kap = avr.tab_parameter.dynamics.kap * 1.1;
+assert(numel(DebugScript.helper.stale(s.net)) == 1 && DebugScript.helper.is_stale(s.net))
+pss.tab_parameter.dynamics.kpss = pss.tab_parameter.dynamics.kpss * 1.1;
+assert(numel(DebugScript.helper.stale(s.net)) == 2)
+
+% 潮流計算の結果は系統のハンドルを持たず、スナップショット (struct) と表を保存する。
+% 一緒に保存した系統は下の層まで戻り、編集が記録される。結果は系統の編集で変わらない
+[net, ~] = DebugScript.helper.build_3bus("gen-1axis");
+DebugScript.helper.quiet(@() net.initialize);
+res = DebugScript.helper.quiet(@() net.calculate_powerflow());
+save(s_mat, "res", "net");
+lastwarn("");
+s = load(s_mat);
+assert(isempty(lastwarn), lastwarn)
+assert(isa(s.res, "ResultPF") && isempty(s.res.a_PowerNetwork) && s.res.s_network == string(net.s_tag))
+sct = s.res.sct_network;
+assert(isstruct(sct) && numel(sct.a_Bus) == 3 && numel(sct.a_Branch) == numel(net.a_Branch))
+assert(isfield(sct.a_Branch{1}, "cm_Y") && isequal(sct.a_Branch{1}.cm_Y, net.a_Branch{1}.get_admittance_matrix()))
+assert(isequaln(s.res.tab_bus, res.tab_bus) && isequaln(s.res.tab_branch, res.tab_branch))
+assert(isequaln(s.res.tab_violation, res.tab_violation) && isequal(s.res.cm_Y, res.cm_Y) && isequaln(s.res.tab_PFcondition, res.tab_PFcondition))
+assert(contains(s.res.disp_summary(), "converged"))          % 読み込んだ結果も表示できる
+assert(numel(s.net.a_Bus) == 3 && s.net.a_Bus{2}.a_Component{1}.a_Bus == s.net.a_Bus{2})
+r_D = sct.a_Bus{2}.a_Component{1}.tab_parameter.dynamics.D;
+s.net.a_Bus{2}.a_Component{1}.tab_parameter.dynamics.D = r_D + 1;
+assert(numel(DebugScript.helper.stale(s.net)) == 1)
+assert(s.res.sct_network.a_Bus{2}.a_Component{1}.tab_parameter.dynamics.D == r_D)
+
+% 系統の下の層だけを保存しても、読み込んだ層の編集は記録され、型も検査される
+gen = net.a_Bus{2}.a_Component{1};
+save(s_mat, "gen");
+lastwarn("");
+s = load(s_mat);
+assert(isempty(lastwarn), lastwarn)
+assert(numel(s.gen.a_Bus.a_PowerNetwork.a_Bus) == 3)     % 構成は戻る
+s.gen.tab_parameter.dynamics.D = s.gen.tab_parameter.dynamics.D + 1;
+assert(numel(DebugScript.helper.stale(s.gen.a_Bus.a_PowerNetwork)) == 1)
+assert(error_id(@() set_dynamics_D(s.gen, "abc")) == "GUILDA:Parameter:ClassNameMismatch")
+comp = gen;                                              % 系統と一緒に保存しても同じ
+save(s_mat, "net", "comp");
+s = load(s_mat);
+assert(s.comp == s.net.a_Bus{2}.a_Component{1})
+
+%% MAT file round trip keeps the linear models
+% 制御器 (AVR + PSS, LQR, AGC) 付きの系統で、線形モデルの行列と名前が読み込みの前後で一致する
+net = DebugScript.helper.build_ieee14();
+net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
+net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
+net.a_Bus{2}.a_Component{1}.add_local_controller("local-LQR");
+net.add_global_controller("agc-PI", "B003SG1");
+DebugScript.helper.quiet(@() net.initialize);
+res = net.get_sys();
+sim = net.simulate(DebugScript.helper.no_disturbance(net), Time=[0,1], Progress="none");
+s_mat = tempname + ".mat";
+c = onCleanup(@() delete(s_mat));
+save(s_mat, "net", "res", "sim");
+s = load(s_mat);
+same_ss = @(a, b) isequal(a.A, b.A) && isequal(a.B, b.B) && isequal(a.C, b.C) && isequal(a.D, b.D) && isequal(a.E, b.E) && ...
+                  isequal(a.StateName, b.StateName) && isequal(a.InputName, b.InputName) && isequal(a.OutputName, b.OutputName);
+for alg = ["ODE","DAE"]
+    assert(same_ss(s.net.get_sys("Type", alg), net.get_sys("Type", alg)), alg + ": 読み込んだ系統")
+    assert(same_ss(s.res.get_ss(alg), res.get_ss(alg)), alg + ": 読み込んだ結果")
+end
+% 各層の get_sys も同じ。読み込んだ結果の点でも線形化できる
+gen  = @(n) n.a_Bus{1}.a_Component{1};
+lqr  = @(n) n.a_Bus{2}.a_Component{1}.a_LocalController{1};
+c_layer = {gen, @(n) n.a_Bus{1}, @(n) gen(n).a_LocalController{1}, lqr, @(n) n.a_GlobalController{1}};
+for k = 1:numel(c_layer)
+    assert(same_ss(c_layer{k}(s.net).get_sys(), c_layer{k}(net).get_sys()), "layer %d", k)
+end
+assert(isequal(s.net.get_sys({s.sim, 0.5}).rm_Axx, net.get_sys({sim, 0.5}).rm_Axx))
+
+% 読み込んだ系統でも、Hz の編集は K を作り直し、動特性の編集は各層で initialize を促す
+K = lqr(s.net).K;
+s.net.tab_parameter.base.Hz = 50;
+DebugScript.helper.quiet(@() s.net.initialize);
+assert(norm(lqr(s.net).K - K) > 1e-3, "K が古い Hz のまま")
+assert(isequal(lqr(net).K, K), "元の系統の K が変わった")
+g3 = s.net.a_Bus{3}.a_Component{1};
+g3.tab_parameter.dynamics.D = 2 * g3.tab_parameter.dynamics.D;
+assert(error_id(@() g3.get_sys()) == "GUILDA:PowerSystemModel:Stale")
+assert(error_id(@() s.net.a_Bus{3}.get_sys()) == "GUILDA:PowerSystemModel:Stale")
+s.net.a_GlobalController{1}.get_sys();   % グローバル制御器の get_sys は系統と自分のタグだけを見る
+
+
+%% MATPOWER import reproduces case14
+% import_matpower は tools.network_to_mpc の逆変換 (MATPOWER 不要)。
+% case14 を読み込んで mpc に戻すと母線電圧 VM/VA 以外は元のデータになり、潮流計算・OPF は network.IEEE14bus と一致する。
+mpc14 = DebugScript.helper.case14_data();
+net   = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc14));
+assert(numel(net.a_Bus) == 14 && numel(net.a_Branch) == 20)
+assert(net.tab_parameter.base.baseMVA == 100 && net.tab_parameter.base.Hz == GUILDA.config("PowerSystemModel","Hz"))
+assert(net.a_Bus{1}.l_isSlack && sum(cellfun(@(b) b.l_isSlack, net.a_Bus)) == 1)
+assert(all(isfinite(net.cv_Vequilibrium)))                  % Initialize=true が既定
+
+% bus の VM/VA (8, 9 列) は case14 の値ではなく系統の平衡点の電圧を書き出すので、case14 とは比べない
+mpc = tools.network_to_mpc(net);
+for s_f = ["bus","gen","branch","gencost"]
+    assert(isequal(size(mpc.(s_f)), size(mpc14.(s_f))), s_f)
+    i_col = setdiff(1:size(mpc14.(s_f),2), (s_f=="bus")*[8 9]);
+    assert(max(abs(mpc.(s_f)(:,i_col) - mpc14.(s_f)(:,i_col)), [], "all") < 1e-12, s_f)
+end
+assert(max(abs(mpc.bus(:,8) - abs(net.cv_Vequilibrium))) < 1e-12)
+assert(max(abs(mpc.bus(:,9) - angle(net.cv_Vequilibrium)*180/pi)) < 1e-12)
+
+% 機器: 発電機は gen-park (既定)、負荷は load-power で P, Q は消費が負
+gen = net.a_Bus{2}.a_Component{1};
+ld  = net.a_Bus{2}.a_Component{2};
+assert(isa(gen, "component.generator.park") && isa(ld, "component.load.power"))
+assert(isnan(gen.tab_parameter.powerflow.Q) && abs(gen.tab_parameter.powerflow.P - 0.4) < 1e-15)
+assert(max(abs(ld.tab_parameter.powerflow{1,["P","Q"]} - [-0.217, -0.127])) < 1e-15)
+assert(abs(net.a_Bus{9}.tab_parameter.dynamics.Bshunt - 0.19) < 1e-15)
+assert(isempty(net.a_Bus{7}.a_Component))                   % 負荷も発電機も無い母線
+sv_type = string(cellfun(@(b) b.key, net.a_Branch, "UniformOutput", false));
+assert(sum(sv_type == "pi_transformer") == 3 && sum(sv_type == "pi") == 17)
+
+% 潮流計算は network.IEEE14bus と一致
+ref = DebugScript.helper.quiet(@() network.IEEE14bus);
+r1  = DebugScript.helper.quiet(@() ref.calculate_powerflow());
+[r2, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+assert(flag > 0)
+assert(max(abs(r2.tab_bus.V - r1.tab_bus.V)) < 1e-8 && max(abs(r2.tab_bus.Varg - r1.tab_bus.Varg)) < 1e-8)
+% OPF は MATPOWER の case14 の最適値 (8081.53 $/hr)
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF", Tolerance=1e-10));
+assert(flag > 0 && abs(res.r_cost - 8081.53) < 0.01, sprintf("AC cost %.4f", res.r_cost))
+
+% 入力の形: 関数ハンドル・ケースファイル・オプション
+net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(@DebugScript.helper.case14_data, ...
+          GeneratorModel="gen-classical", Hz=50, Tag="My14", Initialize=false));
+assert(string(net.s_tag) == "My14" && net.tab_parameter.base.Hz == 50)
+assert(isa(net.a_Bus{1}.a_Component{1}, "component.generator.classical"))
+s_dir = tempname;  mkdir(s_dir);
+c = onCleanup(@() rmdir(s_dir, "s"));
+writelines(["function mpc = mycase14()", "mpc = DebugScript.helper.case14_data();", "end"], fullfile(s_dir, "mycase14.m"));
+net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(fullfile(s_dir, "mycase14.m"), Initialize=false));
+assert(string(net.s_tag) == "mycase14" && numel(net.a_Bus) == 14)
+assert(~contains(path, s_dir))                            % 一時的に追加したパスは戻す
+assert(error_id(@() PowerNetwork.import_matpower("no_such_case_xyz")) == "GUILDA:import_matpower:CaseNotFound")
+
+% 停止中の発電機・送電線は読み込まない。CSV を経由しても同じ mpc に戻る
+mpc_off = mpc14;
+mpc_off.branch(16, 11) = 0;
+net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc_off, Initialize=false));
+assert(numel(net.a_Branch) == 19)
+s_path = net.export(fullfile(s_dir, "Csv14"));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import(s_path, Initialize=false));
+mpc2 = tools.network_to_mpc(net2);
+i_col = setdiff(1:size(mpc14.bus,2), [8 9]);              % VM/VA は平衡点の電圧なので比べない
+assert(max(abs(mpc2.bus(:,i_col) - mpc14.bus(:,i_col)), [], "all") < 1e-12 && max(abs(mpc2.gen - mpc14.gen), [], "all") < 1e-12)
+
+
+%% MATPOWER import rejects unsupported gencost
+mpc = DebugScript.helper.case14_data();
+% 区分線形の費用 (MODEL = 1) はエラー
+mpc_pw = mpc;
+mpc_pw.gencost(2,:) = [1 0 0 2 0 0 100];          % MODEL = 1 (区分線形)
+assert(error_id(@() PowerNetwork.import_matpower(mpc_pw, Initialize=false)) == "GUILDA:import_matpower:GencostPiecewise")
+% 3 次以上の多項式もエラー
+mpc_cu = mpc;
+mpc_cu.gencost = [mpc_cu.gencost(:,1:3), 4*ones(5,1), [1; zeros(4,1)], mpc_cu.gencost(:,5:7)];
+assert(error_id(@() PowerNetwork.import_matpower(mpc_cu, Initialize=false)) == "GUILDA:import_matpower:GencostDegree")
+% 定数項 c0 は列 c に読み (換算なし)、警告は出ない。network_to_mpc は c を c0 に書く (往復で保たれる)
+mpc_c0 = mpc;
+mpc_c0.gencost(1:2,7) = [10; 25];
+lastwarn("");
+net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc_c0, Initialize=false));
+assert(isempty(lastwarn()), lastwarn())
+opf = net.a_Bus{1}.a_Component{1}.tab_parameter.OPF;
+assert(opf.fP == 2000 && opf.c == 10 && net.a_Bus{2}.a_Component{1}.tab_parameter.OPF.c == 25)
+mpc_back = tools.network_to_mpc(net);
+assert(isequal(mpc_back.gencost(:,7), mpc_c0.gencost(:,7)) && max(abs(mpc_back.gencost - mpc_c0.gencost), [], "all") < 1e-12)
+net_back = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc_back, Initialize=false));
+assert(net_back.a_Bus{1}.a_Component{1}.tab_parameter.OPF.c == 10)
+% 1 次の費用 (NCOST = 2) と Q の費用の行 (2*ng 行)。Q の行の c0 も c に足す
+mpc_q = mpc;
+mpc_q.gencost = [mpc.gencost; repmat([2 0 0 2 3 4 0], 5, 1)];
+net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc_q, Initialize=false));
+opf = net.a_Bus{1}.a_Component{1}.tab_parameter.OPF;
+assert(opf.HQ == 0 && opf.fQ == 300 && opf.c == mpc.gencost(1,7) + 4)
+% version 1 の mpc と孤立母線は対象外
+mpc_v1 = mpc;  mpc_v1.version = '1';
+assert(error_id(@() PowerNetwork.import_matpower(mpc_v1)) == "GUILDA:import_matpower:UnsupportedVersion")
+mpc_iso = mpc;  mpc_iso.bus(14,2) = 4;
+assert(error_id(@() PowerNetwork.import_matpower(mpc_iso)) == "GUILDA:import_matpower:IsolatedBus")
+
+
+%% Template IEEE14bus
+net = DebugScript.helper.quiet(@() network.IEEE14bus);
+[~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+assert(numel(net.a_Bus) == 14 && numel(net.a_Branch) == 20 && flag > 0)
+DebugScript.helper.quiet(@() net.initialize);
+assert(all(isfinite(net.cv_Vequilibrium)))
+
+
+%% IEEE14bus generator limits are numbers
+% 発電機の出力制限は数値 (-Inf を含む) であり NaN ではないはず
+net = DebugScript.helper.quiet(@() network.IEEE14bus);
+for i = 1:numel(net.a_Bus)
+    for j = 1:numel(net.a_Bus{i}.a_Component)
+        op = net.a_Bus{i}.a_Component{j}.tab_parameter.operation;
+        assert(~any(isnan(op{1,["Pmin","Pmax","Qmin","Qmax"]})), string(net.a_Bus{i}.a_Component{j}) + " の出力制限が NaN")
+    end
+end
+
+
+%% Template IEEE14bus_NoTap differs from IEEE14bus only in the taps
+% IEEE14bus_NoTap は IEEE14bus (case14) の変圧器 4-7, 4-9, 5-6 のタップを 1 にした系統
+net = DebugScript.helper.quiet(@() network.IEEE14bus_NoTap);
+ref = DebugScript.helper.quiet(@() network.IEEE14bus);
+assert(numel(net.a_Bus) == 14 && numel(net.a_Branch) == 20)
+lv_pi  = cellfun(@(b) b.key == "pi", net.a_Branch);
+rv_tap = cellfun(@(b) b.tab_parameter.dynamics.tap, net.a_Branch);
+rv_ph  = cellfun(@(b) b.tab_parameter.dynamics.phase, net.a_Branch);
+assert(all(rv_tap(~lv_pi) == 1) && all(rv_ph(~lv_pi) == 0), "変圧器のタップは 1")
+assert(all(isnan([rv_tap(lv_pi), rv_ph(lv_pi)]), "all"), "線路の tap, phase は NaN")
+
+% アドミタンス行列が変わるのは 3 台の変圧器の要素だけ: 非対角と、タップ側 (from) の対角
+% (two_winding_transformer のタップは from 側だけに掛かる)
+D = net.get_admittance_matrix.Variables - ref.get_admittance_matrix.Variables;
+l_tr = false(14);
+for ij = [4 7; 4 9; 5 6]'
+    l_tr(ij(1), ij(1)) = true;
+    l_tr(ij(1), ij(2)) = true;
+    l_tr(ij(2), ij(1)) = true;
+end
+assert(all(D(~l_tr) == 0))
+assert(all(abs(D(l_tr)) > 1e-3))
+
+% 母線・機器のデータは IEEE14bus と同じ (base は系統の値を見せるだけの view なので除く)
+data = @(o) o.tab_parameter(:, setdiff(string(o.tab_parameter.Properties.VariableNames), "base"));
+for i = 1:14
+    assert(isequaln(data(net.a_Bus{i}), data(ref.a_Bus{i})))
+    for j = 1:numel(ref.a_Bus{i}.a_Component)
+        assert(isequaln(data(net.a_Bus{i}.a_Component{j}), data(ref.a_Bus{i}.a_Component{j})))
+    end
+end
+
+% 参照値 (このブランチで計算した値)
+
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());
+assert(flag > 0)
+V_ref = [1.06 1.045 1.01 1.0294893 1.0348827 1.07 1.0558758 1.09 1.0496724 1.045822 1.0542952 1.0546926 1.0494854 1.0315436]';
+assert(max(abs(res.tab_bus.V - V_ref)) < 1e-6)
+res = DebugScript.helper.quiet(@() net.calculate_optimal_powerflow(Method="AC OPF"));
+assert(abs(res.r_cost - 8079.9528) < 1e-2)
+DebugScript.helper.quiet(@() net.initialize);
+e = eig(net.get_sys("Type", "ODE").A);
+e = e(abs(e) > 1e-6);
+assert(abs(max(real(e)) - (-0.5297416)) < 1e-6)
+
+
+%% Template IEEE14bus_lossless
+% IEEE14bus_lossless は IEEE14bus (case14) の全ブランチの抵抗 R を 0 にした系統
+% (線路の充電容量・母線シャント・変圧器タップはそのまま)
+net = DebugScript.helper.quiet(@() network.IEEE14bus_lossless);
+ref = DebugScript.helper.quiet(@() network.IEEE14bus);
+assert(numel(net.a_Bus) == 14 && numel(net.a_Branch) == 20)
+assert(all(cellfun(@(b) b.tab_parameter.dynamics.R, net.a_Branch) == 0))
+
+% R 以外のブランチのデータと、母線・機器のデータは IEEE14bus と同じ
+data = @(o) o.tab_parameter(:, setdiff(string(o.tab_parameter.Properties.VariableNames), "base"));
+for i = 1:20
+    d = net.a_Branch{i}.tab_parameter.dynamics;  dr = ref.a_Branch{i}.tab_parameter.dynamics;
+    assert(isequaln(removevars(d, "R"), removevars(dr, "R")))
+    assert(net.a_Branch{i}.key == ref.a_Branch{i}.key)
+end
+for i = 1:14
+    assert(isequaln(data(net.a_Bus{i}), data(ref.a_Bus{i})))
+    for j = 1:numel(ref.a_Bus{i}.a_Component)
+        assert(isequaln(data(net.a_Bus{i}.a_Component{j}), data(ref.a_Bus{i}.a_Component{j})))
+    end
+end
+
+% アドミタンス行列は純虚数、有効電力の損失は 0
+Y = net.get_admittance_matrix.Variables;
+assert(all(real(Y(:)) == 0))
+
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow()); tab = res.tab_bus;
+assert(flag > 0)
+assert(abs(sum(tab.P)) < 1e-8)
+
+% 参照値 (このブランチで計算した値)
+V_ref = [1.06 1.045 1.01 1.0325439 1.031804 1.07 1.0695736 1.09 1.0652518 1.0616713 1.0640645 1.0636242 1.0617756 1.056307]';
+assert(max(abs(tab.V - V_ref)) < 1e-6)
+DebugScript.helper.quiet(@() net.initialize);
+e = eig(net.get_sys.A);
+e = e(abs(e) > 1e-6);
+assert(abs(max(real(e)) - (-0.594552)) < 1e-5)
+ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,3]));
+assert(sol.odeResults.t(end) == 3)
+
+
+%% Template TEST31bus
+net = DebugScript.helper.quiet(@() network.TEST31bus);
+[~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+assert(numel(net.a_Bus) == 31 && flag > 0)
+DebugScript.helper.quiet(@() net.initialize);
+assert(all(isfinite(net.cv_Vequilibrium)))
+
+
+%% Template Txt3Bus
+net = DebugScript.helper.quiet(@() network.Txt3Bus);
+[~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+assert(numel(net.a_Bus) == 3 && flag > 0)
+DebugScript.helper.quiet(@() net.initialize);
+assert(all(isfinite(net.cv_Vequilibrium)))
+
+
+%% Template Tutorial3bus
+% Tutorial3bus はコンストラクタ内で initialize まで行う
+net = DebugScript.helper.quiet(@() network.Tutorial3bus);
+assert(numel(net.a_Bus) == 3)
+assert(all(isfinite(net.cv_Vequilibrium)) && abs(net.a_Bus{1}.c_Vequilibrium) > 0)
+
+
+%% Template Tutorial6bus has the operating point of the IEEJ 2026 spring-mass example
+% 50 Hz、同期機 4 台 (古典モデル)。Bus3, 4 の電圧は Q = 0.8, -0.2 となる値
+net = DebugScript.helper.quiet(@() network.Tutorial6bus);
+assert(numel(net.a_Bus) == 6 && numel(net.a_Branch) == 5 && net.tab_parameter.base.Hz == 50)
+cv_V = net.cv_Vequilibrium;
+Y = net.get_admittance_matrix().Variables;
+cv_S = cv_V .* conj(Y*cv_V);
+assert(max(abs(cv_S - [0.5-0.5183j; 1.0+1.2483j; -0.7+0.8j; -0.8-0.2j; 0; 0])) < 1e-4)
+rv_E = zeros(1, 4);
+for i = 1:4
+    rv_u = net.a_Bus{i}.a_Component{1}.rv_Uequilibrium;
+    rv_E(i) = rv_u(2);
+end
+assert(max(abs(rv_E - [0.7927, 1.5000, 1.4507, 0.9815])) < 1e-4)   % |E'| = Vfield
+
+
+%% Tutorial6bus without governors keeps the frequency deviation of the damping
+% G3, G4 の消費を 0.1 pu ずつ増やすと、定常の周波数偏差は -0.2 / sum(D) = -0.01 pu
+net = DebugScript.helper.quiet(@() network.Tutorial6bus);
+sc = net.add_scenario("step", Time=[0, 20]);
+sc.add_input("B003SG1", "Pmech", -0.1, [1, 20]);
+sc.add_input("B004SG1", "Pmech", -0.1, [1, 20]);
+res = DebugScript.helper.quiet(@() net.simulate("step"));
+tab = res.get_trajectory("omega");
+assert(res.l_success && max(abs(tab{end, 2:end} + 0.01)) < 5e-4)
+
+
+%% Template IEEE9bus keeps the v2 data
+% network.IEEE9bus は v2 の IEEE9bus_past (archive/IEEE9bus_past) の CSV を変換したもの
+net = DebugScript.helper.quiet(@() network.IEEE9bus);
+assert(numel(net.a_Bus) == 9 && numel(net.a_Branch) == 9)
+assert(net.tab_parameter.base.Hz == 60 && net.a_Bus{1}.l_isSlack)
+check_v2_network(net, fullfile(fileparts(which("network.IEEE9bus")), "..", "archive", "IEEE9bus_past"))
+
+% 潮流計算は Anderson & Fouad (Fig. 2.18, 丸めた値) の WSCC 9 母線の潮流解と一致
+
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());  tab = res.tab_bus;
+assert(flag > 0)
+V_lit   = [1.04 1.025 1.025 1.026 0.996 1.013 1.026 1.016 1.032]';
+deg_lit = [0 9.3 4.7 -2.2 -4.0 -3.7 3.7 0.7 2.0]';
+assert(max(abs(tab.V - V_lit)) < 1e-3)
+assert(max(abs(rad2deg(tab.Varg) - deg_lit)) < 0.05)
+assert(abs(tab.P(1) - 0.716) < 1e-3)
+
+DebugScript.helper.quiet(@() net.initialize);
+e = DebugScript.helper.finite_eigs(net.get_sys("Type", "ODE"));
+e = e(abs(e) > 1e-6);
+assert(abs(max(real(e)) - (-0.0069046)) < 1e-6)     % AVR・PSS 付きで安定
+ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,3]));
+assert(sol.odeResults.t(end) == 3)
+Vfd = sol.odeResults.Bus(1).Component(1).U.Vfield;     % AVR が動作する
+assert(max(Vfd) - min(Vfd) > 1e-3)
+
+% LocalController=false では AVR・PSS を付けない
+net = DebugScript.helper.quiet(@() network.IEEE9bus(LocalController=false));
+assert(all(cellfun(@(b) isempty(b.a_Component) || isempty(b.a_Component{1}.a_LocalController), net.a_Bus)))
+
+
+%% Template IEEE68bus keeps the v2 data
+% network.IEEE68bus は v2 の IEEE68bus (archive/IEEE68bus) の CSV を変換したもの
+% (B. Pal and B. Chaudhuri, Robust Control in Power Systems, pp. 171-178)
+net = DebugScript.helper.quiet(@() network.IEEE68bus);
+assert(numel(net.a_Bus) == 68 && numel(net.a_Branch) == 83)
+assert(net.tab_parameter.base.Hz == 60 && net.a_Bus{16}.l_isSlack)
+check_v2_network(net, fullfile(fileparts(which("network.IEEE68bus")), "..", "archive", "IEEE68bus"))
+
+% v2 の CSV には潮流解が無いので、参照値はこのブランチで計算した値
+
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow());  tab = res.tab_bus;
+assert(flag > 0)
+assert(abs(tab.P(16) - 33.7953168) < 1e-6 && abs(sum(tab.P) - 1.6683168) < 1e-6)
+assert(abs(min(tab.V) - 0.8366601) < 1e-6 && abs(rad2deg(tab.Varg(39)) - (-39.290156)) < 1e-5)
+
+DebugScript.helper.quiet(@() net.initialize);
+e = DebugScript.helper.finite_eigs(net.get_sys("Type", "ODE"));
+e = e(abs(e) > 1e-6);
+assert(abs(max(real(e)) - (-0.0051275)) < 1e-6)     % AVR・PSS 付きで安定
+ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.2,0.25], "FaultBus", "B030");
+sol = DebugScript.helper.quiet(@() net.simulate(ev.s_tag, Time=[0,1], TimeLimit=Inf));
+assert(sol.odeResults.t(end) == 1)
+
+
+% ---- local functions ----
+function check_v2_network(net, old_dir)
+% net のデータが v2 (network.build) の CSV フォルダ old_dir の値と同じかを調べる
+    tb = readtable(fullfile(old_dir, "bus.csv"), "TextType", "string");
+    tr = readtable(fullfile(old_dir, "branch.csv"));
+    tg = readtable(fullfile(old_dir, "generator_1axis.csv"), "TextType", "string");
+    ta = readtable(fullfile(old_dir, "avr_sadamoto2019.csv"));
+    tp = readtable(fullfile(old_dir, "pss.csv"));
+
+    % 母線: 電圧の設定値とシャント
+    for i = 1:height(tb)
+        pf = net.a_Bus{i}.tab_parameter.powerflow;  dy = net.a_Bus{i}.tab_parameter.dynamics;
+        assert(pf.V == tb.V_abs(i) && dy.Gshunt == tb.G_shunt(i) && dy.Bshunt == tb.B_shunt(i))
+    end
+    % ブランチ: tap 0 は pi、それ以外は pi_transformer (v2 の y は片端の値 = C)
+    for k = 1:height(tr)
+        br = net.a_Branch{k};  d = br.tab_parameter.dynamics;
+        assert(isequal(string(br.a_Bus{1}), string(net.a_Bus{tr.bus_from(k)})) && ...
+               isequal(string(br.a_Bus{2}), string(net.a_Bus{tr.bus_to(k)})))
+        assert(d.R == tr.x_real(k) && d.X == tr.x_imag(k) && d.C == tr.y(k))
+        if tr.tap(k) == 0
+            assert(br.key == "pi")
+        else
+            assert(br.key == "pi_transformer" && d.tap == tr.tap(k) && d.phase == tr.phase(k))
+        end
+    end
+    % 機器: 発電機 (gen-1axis, AVR_ST1, PSS1) と負荷 (load-impedance)
+    for i = 1:height(tb)
+        a_comp = net.a_Bus{i}.a_Component;
+        switch string(tb.SetClass(i))
+            case "generator_1axis"
+                gen = a_comp{1};  g = tg(tg.ID == tb.ID(i), :);
+                assert(numel(a_comp) == 1 && gen.key == "gen-1axis")
+                p = gen.tab_parameter.dynamics;
+                assert(isequal(p{1,["M","D","Xd","Xq","Xd_p","Td_p"]}, g{1,["M","D","Xd","Xq","Xd_p","Td_p"]}))
+                if ~ismember(string(tb.type(i)), ["slack","1"])
+                    assert(gen.tab_parameter.powerflow.P == tb.P_gen(i))
+                end
+                avr = gen.a_LocalController{1};  pss = avr.a_LocalController{1};
+                assert(isa(avr, "controller.avr.AVR_ST1") && isa(pss, "controller.pss.PSS1"))
+                a  = ta(ta.ID == g.ID, :);   q  = tp(tp.ID == g.ID, :);
+                pa = avr.tab_parameter.dynamics;  pp = pss.tab_parameter.dynamics;
+                assert(pa.kap == a.Ka && pa.tap == a.Te && pa.ttr == 0 && pa.kst == 0 && pa.tst == 0)
+                % v2 の PSS は Kpss/Tpss * Tpss*s/(1+Tpss*s) * ... なので kpss = Kpss/Tpss
+                assert(abs(pp.kpss - q.Kpss/q.Tpss) < 1e-12 && pp.tWS == q.Tpss)
+                assert(pp.tn1 == q.TL1p && pp.td1 == q.TL1 && pp.tn2 == q.TL2p && pp.td2 == q.TL2)
+            case "load_impedance"
+                assert(numel(a_comp) == 1 && a_comp{1}.key == "load-impedance")
+                pf = a_comp{1}.tab_parameter.powerflow;
+                assert(pf.P == -tb.P_load(i) && pf.Q == -tb.Q_load(i))
+            otherwise
+                assert(isempty(a_comp))
+        end
+    end
+end
+
+
+function id = error_id(fcn)
+% fcn を実行し、エラーの ID を返す (エラーにならなければ "")
+    id = "";
+    try
+        DebugScript.helper.quiet(fcn);
+    catch ME
+        id = string(DebugScript.helper.msg_id(ME));
+    end
+end
+
+function set_slack(bus)
+    bus.l_isSlack = true;
+end
+
+function set_dynamics_D(comp, val)
+    comp.tab_parameter.dynamics.D = val;
+end
+
+function set_prop(obj, s_prop, val)
+    obj.(s_prop) = val;
+end

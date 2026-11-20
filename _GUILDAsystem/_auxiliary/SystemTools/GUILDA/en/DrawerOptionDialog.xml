@@ -1,0 +1,14 @@
+<!--This is an XML file containing error messages related to the class "DrawerOptionDialog".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="InvalidValue">The Value of {0} cannot be shown in its field: {1}</entry>
+        <entry key="NoObject">Give the object expression of the call to {0}, e.g. Object="net".</entry>
+        <entry key="NotNumber">{0} must be a number or a numeric array such as [0 10], not "{1}".</entry>
+        <entry key="NotUIContainer">The form needs a uifigure, uipanel, uitab or uigridlayout of a uifigure, not a {0} (a figure made by figure() is not supported).</entry>
+        <entry key="Required">{0} is required.</entry>
+        <entry key="UnknownSignature">functionSignatures.json has no method "{0}" (GUILDA.update_keymap(Signature=true) writes it).</entry>
+        <entry key="SharedTag">{0}: the tag {1} names {2} elements of the network ({3}); the call uses the tag only.</entry>
+        <entry key="UnknownTag">{0}: no element has the tag "{1}".</entry>
+        <entry key="UnknownValue">{0} has no input "{1}" in its form (Value).</entry>
+    </message>
+</rsccat>

@@ -1,0 +1,597 @@
+@charset "UTF-8";
+
+/* Class reference (index.html#tab-reference, class.html, method.html).
+   Shared tokens come from style.css; only reference-specific rules live here. */
+
+/* Reference tab summary: one tile per figure, wrapping on narrow screens. */
+.ref-status { margin: 0 0 18px; }
+.ref-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.ref-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 12px 10px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.ref-stat-label { color: var(--muted); font-size: 0.75rem; font-weight: 600; line-height: 1.3; }
+.ref-stat-value { margin-top: auto; color: var(--ink); font-size: 1.35rem; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.ref-stat-total { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+.ref-stat-pct { margin-left: 6px; color: var(--ok); font-size: 0.75rem; font-weight: 600; }
+.ref-stat-bar { display: block; height: 4px; margin-top: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.ref-stat-bar > span { display: block; height: 100%; background: var(--ok); }
+.ref-stat.is-partial { border-top-color: var(--brand); }
+.ref-stat.is-partial .ref-stat-pct { color: var(--brand); }
+.ref-stat.is-partial .ref-stat-bar > span { background: var(--brand); }
+.ref-stat.is-clear { border-top-color: var(--ok); }
+.ref-stat.is-clear .ref-stat-value { color: var(--ok); }
+.ref-stat.is-warn { border-color: var(--warn-line); border-top-color: var(--warn-line); background: var(--warn-bg); }
+.ref-stat.is-warn .ref-stat-value, .ref-stat.is-warn .ref-stat-label { color: var(--warn); }
+.ref-stat.is-err { border-color: var(--err); border-top-color: var(--err); background: var(--err-bg); }
+.ref-stat.is-err .ref-stat-value, .ref-stat.is-err .ref-stat-label { color: var(--err); }
+.ref-stat-caption { margin: 6px 0 0; color: var(--muted); font-size: 0.75rem; }
+
+.ref-empty {
+  padding: 16px 18px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.ref-empty p { margin: 0 0 8px; }
+.ref-empty p:last-child { margin-bottom: 0; }
+
+.ref-notice {
+  margin: 12px 0 20px;
+  padding: 10px 14px;
+  border-left: 2px solid var(--warn-line);
+  border-radius: 0;
+  background: var(--surface-subtle);
+  font-size: 0.9rem;
+}
+
+.ref-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+.ref-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.ref-badge.is-abstract { border-color: var(--line-strong); color: var(--primary-color); }
+.ref-badge.is-sealed { border-color: var(--warn-line); color: var(--warn); }
+.ref-badge.is-undocumented { border-color: var(--warn-line); background: var(--surface); color: var(--warn); }
+.ref-badge.is-small { padding: 0 6px; font-size: 0.7rem; }
+
+.ref-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.ref-chain-sep { color: var(--line-strong); }
+.ref-chain-external { color: var(--muted); }
+
+.ref-source {
+  color: var(--muted);
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+.ref-source code { white-space: normal; word-break: break-all; }
+
+/* Long code-like lines in comments must wrap instead of widening the page. */
+.doc-layout .markdown-content { overflow-wrap: anywhere; }
+/* So must long error IDs in the Throws list of a method page. */
+.doc-layout #dynamic-content li > code { overflow-wrap: anywhere; }
+
+.ref-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 8px 0 12px;
+}
+.ref-toolbar .search-box {
+  flex: 1 1 220px;
+  margin: 0;
+}
+.ref-toolbar .view-switcher { margin: 0; }
+
+.ref-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ref-table-scroll {
+  overflow-x: auto;
+  margin-bottom: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+.ref-table-scroll > table { margin: 0; }
+
+.ref-count {
+  margin: -4px 0 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+tr.ref-inherited td { color: var(--muted); }
+tr.ref-inherited td strong,
+tr.ref-inherited td .row-link { font-weight: normal; }
+
+.ref-defined-in { white-space: nowrap; }
+
+.ref-code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.ref-muted { color: var(--muted); }
+
+.ref-method-nav {
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+.ref-method-nav a.is-current { font-weight: bold; }
+.ref-method-nav .ref-muted { font-size: 0.75rem; }
+
+.ref-nav-title { margin: 18px 0 6px; }
+
+/* Source folder tree (doc-tree.js) in the sidebar and the Reference tab. */
+.ref-tree-panel { margin: 0 0 18px; }
+.ref-tree-title {
+  margin: 0 0 6px;
+  color: var(--ink);
+  font-size: 1.0rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+.ref-tree-filter {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 6px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+.ref-tree-scroll {
+  position: relative;
+  max-height: 45vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 4px 0;
+  -webkit-overflow-scrolling: touch;
+}
+.ref-tree,
+.ref-tree ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ref-tree ul { padding-left: 12px; border-left: 1px solid var(--line); margin-left: 10px; }
+.ref-tree li { margin: 0; font-size: 0.82rem; line-height: 1.6; }
+.ref-tree li[hidden] { display: none; }
+.ref-tree summary,
+.ref-tree-file > a,
+.ref-tree-file > span {
+  display: block;
+  padding: 0 8px 0 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ref-tree summary {
+  display: list-item;
+  list-style-position: inside;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  cursor: pointer;
+}
+.ref-tree summary::marker { color: var(--muted); }
+.ref-tree-file > a,
+.ref-tree-file > span {
+  padding-left: 20px;
+  font-family: var(--font-mono);
+  text-decoration: none;
+}
+.ref-tree-file > a:hover { background: var(--surface-subtle); text-decoration: underline; }
+.ref-tree-file > a.is-current {
+  background: var(--brand-tint);
+  box-shadow: inset 2px 0 0 var(--brand);
+  color: var(--brand-strong);
+  font-weight: bold;
+}
+.ref-tree summary:focus-visible,
+.ref-tree-file > a:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+
+/* Reference tab: the tree sits in a left column next to the content. */
+.ref-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+.ref-aside .ref-toc {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+.ref-aside h3 { margin: 0 0 6px; font-size: 1.0rem; }
+@media (min-width: 900px) {
+  .ref-layout { grid-template-columns: var(--sidebar-width) minmax(0, 1fr); }
+  /* Below the sticky page header of index.html. */
+  .ref-aside {
+    position: sticky;
+    top: 106px;
+    align-self: start;
+    max-height: calc(100vh - 122px);
+    overflow-y: auto;
+  }
+  .ref-aside .ref-tree-scroll { max-height: 55vh; }
+}
+
+/* Deprecated classes and methods. */
+.ref-deprecated {
+  margin: 12px 0 20px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--err);
+  background: var(--err-bg);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.ref-deprecated p { margin: 4px 0 0; }
+.ref-badge.is-deprecated { border-color: var(--err); color: var(--err); }
+.ref-badge.is-user { border-color: var(--brand); color: var(--brand); }
+
+/* Group headings (groupHeading in doc-render.js): a tinted band with a
+   "Group" tag, the name in the UI font and a count badge, unlike the
+   monospace member names below them. */
+.ref-group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+.ref-group-tag {
+  padding: 0 6px;
+  border: 1px solid var(--brand);
+  border-radius: var(--radius);
+  color: var(--brand);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+.ref-group-name { color: var(--ink); font-family: var(--font-sans); font-size: 0.9rem; font-weight: 700; overflow-wrap: anywhere; }
+.ref-group-count {
+  min-width: 1.6em;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--surface);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.6;
+  text-align: center;
+}
+tr.ref-group-row th,
+.doc-layout .compact-table tr.ref-group-row th {
+  padding: 7px 12px;
+  border-top: 1px solid var(--brand);
+  border-bottom: 1px solid var(--line);
+  border-left: 3px solid var(--brand);
+  background: var(--brand-tint);
+  font-family: var(--font-sans);
+  font-weight: normal;
+  text-align: left;
+  white-space: normal;
+}
+tr.ref-group-row:hover { background: transparent; }
+.ref-nav-group { margin: 10px 0 2px; }
+.ref-nav-group .ref-group-tag { display: none; }
+.ref-nav-group .ref-group-name { font-size: 0.78rem; }
+.ref-nav-group .ref-group-count { background: var(--surface-subtle); color: var(--muted); border: 1px solid var(--line); }
+.ref-hints { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 6px; vertical-align: middle; }
+.ref-see-also a > code { color: inherit; }
+.ref-unit { font-family: var(--font-mono); font-size: 0.85em; white-space: nowrap; }
+
+/* Call graph on the method page (inline SVG drawn by method.html). */
+.cg-lead { margin: 0 0 10px; color: var(--muted); font-size: 0.9rem; }
+.cg-chart { width: 100%; overflow: hidden; margin: 0 0 10px; }
+.cg-svg { display: block; max-width: 100%; font-family: var(--font-mono); font-size: 12px; }
+.cg-box { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1; }
+.cg-box.is-property { fill: var(--surface-subtle); stroke: var(--line); }
+.cg-box.is-parameter { fill: var(--brand-tint); stroke: var(--line); }
+.cg-bar { fill: var(--brand); }
+.cg-text { fill: var(--ink); }
+.cg-text.is-parameter { font-style: italic; }
+.cg-prefix { fill: var(--muted); }
+.cg-node a:hover .cg-box { stroke: var(--brand); }
+.cg-node a:hover .cg-text { fill: var(--brand-strong); }
+.cg-node a:focus-visible .cg-box { stroke: var(--brand); stroke-width: 2; }
+.cg-node a { text-decoration: none; }
+.cg-link { fill: none; stroke: var(--muted); stroke-width: 1.1; }
+.cg-link.is-inferred { stroke-dasharray: 5 3; }
+.cg-link.is-candidates { stroke-dasharray: 1.5 3; stroke-linecap: round; }
+.cg-trunk { fill: none; stroke: var(--line-strong); stroke-width: 1.1; }
+.cg-arrow { fill: var(--muted); }
+.cg-head { fill: var(--muted); font-family: var(--font-sans); font-size: 12px; font-weight: 600; }
+.cg-none { fill: var(--muted); font-family: var(--font-sans); font-size: 12px; }
+.cg-more { fill: var(--brand); font-family: var(--font-sans); font-size: 12px; cursor: pointer; }
+.cg-more:hover { text-decoration: underline; }
+.cg-more:focus-visible { outline: 2px solid var(--brand); }
+.cg-toggle { cursor: pointer; }
+.cg-toggle rect { fill: var(--surface-subtle); stroke: var(--line); }
+.cg-toggle text { fill: var(--ink-2); font-size: 13px; }
+.cg-toggle:hover rect, .cg-toggle:focus-visible rect { stroke: var(--brand); }
+.cg-toggle:focus { outline: none; }
+.cg-current rect { fill: var(--brand); }
+.cg-current-class { fill: var(--on-brand-muted); font-size: 11px; }
+.cg-current-member { fill: var(--surface); font-weight: 600; }
+.cg-note { margin: 0 0 10px; font-size: 0.85rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.cg-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0 0 20px;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.cg-legend li { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Class overview (Role, Owned data, References, Methods by purpose, Used by,
+   Subclasses). Tables stack at every width, as on the For Developer pages:
+   one block per row, the first cell heads it, the others follow as
+   "label | value". */
+.ref-lead { margin: 0 0 10px; color: var(--ink); font-size: 1.05rem; }
+.ref-small { font-size: 0.82rem; }
+.ref-figure { margin: 16px 0 20px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: #FFFFFF; }
+.ref-figure img { display: block; width: 100%; max-width: 640px; height: auto; margin: 0 auto; }
+.ref-overview-table { margin: 0 0 24px; }
+.doc-layout table.ref-stack,
+.ref-stack tbody, .ref-stack tr, .ref-stack td, .ref-stack th { display: block; width: auto !important; max-width: none !important; white-space: normal !important; }
+.ref-stack { border: 0; box-shadow: none; background: transparent; }
+.ref-stack thead { display: none; }
+/* Each row is a card; its first cell is the card's title bar. */
+.ref-stack tr { margin: 0 0 8px; padding: 0 0 8px; border: 1px solid var(--line); border-left: 3px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); }
+.ref-stack tr:hover { background: var(--surface); }
+.doc-layout .ref-stack td { padding: 2px 14px; border: 0; font-size: 0.9rem; }
+.doc-layout .ref-stack td:first-child { margin-bottom: 6px; padding: 7px 14px; border-bottom: 1px solid var(--line); background: var(--surface-subtle); overflow-wrap: anywhere; }
+.ref-stack td.col-unit { white-space: nowrap !important; }
+.doc-layout .ref-stack td[data-label] { position: relative; padding-left: calc(9.5rem + 14px); }
+.ref-stack td[data-label]::before { content: attr(data-label); position: absolute; left: 14px; top: 4px; width: 9rem; color: var(--muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+.ref-stack td .markdown-content > :first-child { margin-top: 0; }
+.ref-stack td .markdown-content > :last-child { margin-bottom: 0; }
+.ref-stack tr.ref-group-row { margin: 18px 0 8px; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.ref-stack tr.ref-group-row th { box-sizing: border-box; width: 100% !important; }
+.ref-tree-indent { padding-left: calc(var(--depth, 0) * 1.25rem); }
+@media (max-width: 599px) {
+  .doc-layout .ref-stack td[data-label] { padding-left: 14px; }
+  .ref-stack td[data-label]::before { position: static; display: block; width: auto; }
+}
+
+/* LaTeX math (KaTeX); the source is shown when KaTeX is missing. */
+.doc-math { margin: 10px 0; overflow-x: auto; overflow-y: hidden; }
+.doc-math-source { white-space: pre-wrap; }
+
+/* Narrow screens: the sidebar stacks above the content. */
+@media (max-width: 899px) {
+  body.doc-layout #sidebar img { max-width: 180px; }
+  body.doc-layout #main-content { padding: 16px; }
+  .ref-method-nav { columns: 2; }
+}
+
+/* Section headings of the class and method pages: a tinted band with a
+   brand bar, unlike the group headings and cards inside the section. */
+.doc-layout #dynamic-content > h2 {
+  margin: 44px 0 14px;
+  padding: 8px 14px;
+  border: 0;
+  border-left: 5px solid var(--brand);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: linear-gradient(90deg, var(--brand-tint), var(--surface-subtle));
+  font-size: 1.35rem;
+  scroll-margin-top: 12px;
+}
+.doc-layout #dynamic-content > h3 {
+  margin: 22px 0 10px;
+  padding-left: 10px;
+  border-left: 3px solid var(--line-strong);
+  font-size: 1.05rem;
+}
+
+/* Links: brand colour and an underline, so they differ from inline code.
+   Code inside a link keeps the link colour on a blue tint. */
+.doc-layout #dynamic-content a {
+  color: var(--brand);
+  text-decoration: underline;
+  text-decoration-color: var(--on-brand-muted);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.doc-layout #dynamic-content a:hover { color: var(--brand-strong); text-decoration-color: currentColor; }
+.doc-layout #dynamic-content a > code,
+.doc-layout #dynamic-content a > strong > code {
+  background: var(--brand-tint);
+  color: inherit;
+}
+.doc-layout #dynamic-content svg a,
+.doc-layout #dynamic-content a.view-btn { text-decoration: none; }
+
+/* Member tables: a narrow Unit column; Description takes the rest. */
+.doc-layout .compact-table th.col-unit,
+.doc-layout .compact-table td.col-unit { width: 6ch; min-width: 0; white-space: nowrap; }
+.doc-layout .compact-table th.col-description,
+.doc-layout .compact-table td.col-description { width: auto; max-width: none; }
+/* Member names stay monospace, unlike the group headings between them. */
+.doc-layout .compact-table td.col-name { font-family: var(--font-mono); }
+/* Phones: member names may wrap (at the <wbr> of breakableName first) so
+   Description keeps room; desktop keeps them on one line. */
+@media (max-width: 600px) {
+  .doc-layout .compact-table td.col-name { width: auto; white-space: normal; word-break: normal; overflow-wrap: normal; font-size: 0.85rem; }
+  .doc-layout .compact-table th.col-name { width: auto; min-width: 0; }
+  .doc-layout .ref-table-scroll .compact-table td,
+  .doc-layout .ref-table-scroll .compact-table th { padding: 8px; }
+}
+
+/* Facts under a member description (class.html): Points to, Unit / size,
+   Set by, Edit makes stale, Called by. Label beside value; stacked on phones. */
+/* Each fact is a row that wraps: the value drops under its label when the
+   cell is too narrow for both (many columns, or phones). */
+.ref-facts {
+  margin: 8px 0 0;
+  padding: 6px 0 0;
+  border-top: 1px dashed var(--line);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+}
+.ref-facts > div { display: flex; flex-wrap: wrap; gap: 0 12px; margin-bottom: 2px; }
+.ref-facts dt { flex: 0 0 9.5rem; padding-top: 2px; color: var(--muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+.ref-facts dd { flex: 1 1 24ch; min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.ref-facts dd .markdown-content > :first-child { margin-top: 0; }
+@media (max-width: 600px) {
+  .ref-facts > div { margin-bottom: 4px; }
+  .ref-facts dt { flex-basis: 100%; }
+}
+/* Member tables of the class page (class.html) and argument tables of the
+   method page (method.html). On the class page the column picker sets the
+   columns. "is-fit" columns take the width of their content, "is-wrap" ones
+   too but may wrap at spaces, "is-flex" ones (Description, Summary,
+   Signature, Details) share the rest. These replace the nth-child widths of
+   style.css. On phones each row stacks: the name, then the cells, the short
+   ones with their column name. */
+.doc-layout table.ref-member-table th,
+.doc-layout table.ref-member-table td { width: auto; max-width: none; vertical-align: top; }
+.doc-layout table.ref-member-table th { min-width: 0; }
+@media (min-width: 601px) {
+  .doc-layout .ref-table-scroll table.ref-member-table td,
+  .doc-layout .ref-table-scroll table.ref-member-table th { padding: 9px 8px; }
+}
+.doc-layout table.ref-member-table .is-name { width: 1%; }
+.doc-layout table.ref-member-table .is-fit { width: 1%; white-space: nowrap; }
+.doc-layout table.ref-member-table .is-wrap { width: 1%; min-width: 0; white-space: normal; word-break: normal; overflow-wrap: anywhere; }
+.doc-layout table.ref-member-table td.is-wrap { max-width: 28ch; }
+.doc-layout table.ref-member-table .is-flex { width: auto; min-width: 16ch; }
+.doc-layout table.ref-member-table.is-fit { width: auto; }
+.doc-layout table.ref-member-table.is-fit th,
+.doc-layout table.ref-member-table.is-fit td { width: auto; }
+/* Headers of wrapping columns break between words only. */
+.doc-layout table.ref-member-table th.is-wrap { overflow-wrap: normal; word-break: keep-all; }
+.doc-layout table.ref-member-table td.col-signature { overflow-wrap: anywhere; }
+.ref-member-table td .markdown-content > :first-child { margin-top: 0; }
+.ref-member-table td .markdown-content > :last-child { margin-bottom: 0; }
+/* Resizable columns (doc-colresize.js): a grab handle on the right edge of
+   each header cell, seen on hover and focus only. Once a column is resized
+   the table takes a fixed layout with the widths in --ref-col-w and may grow
+   past its container, scrolling inside .ref-table-scroll. Phones keep the
+   stacked rows, so the fixed layout applies on wide screens only. */
+.ref-member-table thead th { position: relative; }
+.ref-col-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ref-col-handle::after {
+  content: "";
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  right: 2px;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent;
+}
+.ref-col-handle:hover::after,
+.ref-col-handle.is-dragging::after { background: var(--line-strong); }
+.ref-col-handle:focus { outline: none; }
+.ref-col-handle:focus-visible::after { top: 0; bottom: 0; background: var(--primary-color); }
+@media (min-width: 601px) {
+  .doc-layout table.ref-member-table.is-col-resized { table-layout: fixed; width: var(--ref-table-width); max-width: none; }
+  .doc-layout table.ref-member-table.is-col-resized > thead > tr > th { box-sizing: border-box; width: var(--ref-col-w, auto); min-width: 0; max-width: none; }
+  .doc-layout table.ref-member-table.is-col-resized th,
+  .doc-layout table.ref-member-table.is-col-resized td { overflow: hidden; max-width: none; white-space: normal; overflow-wrap: anywhere; }
+}
+@media (max-width: 600px) {
+  .ref-col-handle { display: none; }
+  .ref-member-table thead { display: none; }
+  .ref-member-table tr:not(.ref-group-row) { display: block; padding: 4px 0; border-bottom: 1px solid var(--line); }
+  .doc-layout .ref-member-table tr:not(.ref-group-row) td { display: block; width: auto !important; max-width: none; min-width: 0; border: 0; white-space: normal; }
+  .doc-layout .ref-table-scroll .ref-member-table tr:not(.ref-group-row) td { padding-top: 2px; padding-bottom: 2px; }
+  .doc-layout .ref-member-table td.is-fit { overflow-wrap: anywhere; }
+  .ref-member-table td[data-label]::before {
+    content: attr(data-label);
+    display: inline-block;
+    min-width: 7.5rem;
+    margin-right: 8px;
+    color: var(--muted);
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .ref-member-table td.col-facts[data-label]::before { display: block; }
+  .ref-member-table tr.ref-group-row,
+  .ref-member-table tr.ref-group-row th { display: block; width: auto !important; }
+}
+
+/* Column picker above a member table: one row of small checkboxes; on
+   phones a collapsed "Columns" disclosure. */
+.ref-columns { margin: -4px 0 12px; font-size: 0.8rem; }
+.ref-columns > summary { display: none; }
+.ref-columns-list { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.ref-columns-label { color: var(--muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+.ref-columns .ref-check { gap: 4px; font-size: 0.8rem; }
+.ref-columns .ref-check input { margin: 0; }
+@media (max-width: 600px) {
+  .ref-columns > summary { display: list-item; color: var(--ink-2); font-weight: 600; cursor: pointer; }
+  .ref-columns-label { display: none; }
+  .ref-columns[open] .ref-columns-list { margin-top: 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+}
+
+/* Access values (accessTag in doc-render.js): public green, protected
+   orange, private red, a class list such as {?SolverODE} blue, others
+   neutral. Text on a tint, the border in the same hue. */
+:root {
+  --access-public: var(--ok);   --access-public-bg: var(--ok-bg);   --access-public-line: #7FA88A;
+  --access-protected: #9A4A00;  --access-protected-bg: #FBF2EA;     --access-protected-line: #D99A5E;
+  --access-private: var(--err); --access-private-bg: var(--err-bg); --access-private-line: #D48F8F;
+  --access-classes: var(--brand); --access-classes-bg: var(--brand-tint); --access-classes-line: #8FB0D3;
+  --access-other: var(--ink);   --access-other-bg: var(--surface);  --access-other-line: var(--line-strong);
+}
+.ref-access { font-family: var(--font-mono); }
+.ref-access.is-public { border-color: var(--access-public-line); background: var(--access-public-bg); color: var(--access-public); }
+.ref-access.is-protected { border-color: var(--access-protected-line); background: var(--access-protected-bg); color: var(--access-protected); }
+.ref-access.is-private { border-color: var(--access-private-line); background: var(--access-private-bg); color: var(--access-private); }
+.ref-access.is-classes { border-color: var(--access-classes-line); background: var(--access-classes-bg); color: var(--access-classes); white-space: normal; word-break: normal; overflow-wrap: normal; }
+.ref-access.is-other { border-color: var(--access-other-line); background: var(--access-other-bg); color: var(--access-other); }

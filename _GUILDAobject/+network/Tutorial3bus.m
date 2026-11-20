@@ -1,7 +1,29 @@
 classdef Tutorial3bus < PowerNetwork
+% 3-bus network for the GUILDA tutorial.
+% It has 3 buses, 2 pi lines (1-2 and 2-3), 2 generators (gen-park) at buses 1
+% and 2 and a constant-power load (load-power, 3 pu) at bus 3. The network is
+% built with add_bus, add_branch and add_component and is initialized by the
+% constructor.
+%
+% <@Examples>
+% Simulate a fault at bus 3:
+%
+% ```matlab
+% net = network.Tutorial3bus();
+% sc  = net.add_scenario("fault");
+% sc.add_fault("B003", [1,1.05]);
+% sol = net.simulate("fault");
+% ```
+%
+% See also network.Txt3Bus, PowerNetwork.add_bus, PowerNetwork.add_branch
 
     methods
         function obj = Tutorial3bus()
+            % Create the network and initialize it.
+
+            arguments (Output)
+                obj  % Tutorial3bus network.
+            end
 
             obj.add_bus("Varg",0, "V",2);
             obj.add_bus("Varg",0, "V",2);
@@ -27,7 +49,8 @@ classdef Tutorial3bus < PowerNetwork
 
             obj.a_Bus{1}.add_component( "gen-park", "P", 0.0, "parameter",para(1,:));
             obj.a_Bus{2}.add_component( "gen-park", "P", 0.5, "parameter",para(2,:));
-            obj.a_Bus{3}.add_component("load-power", "P",-3.0, "Q",0);
+            obj.a_Bus{3}.add_component("load-power", "P",-3.0, "Q",0, "Shape",">");
+            evalc("obj.a_Bus{1}.l_isSlack = true;");   % the slack bus (GUILDA never selects one)
 
             obj.initialize;
         end

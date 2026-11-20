@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<!--
+Body of the model GUI (DrawerModelGUI): the tabs Parameter and the pages of gui_content.
+
+MATLAB sets Data (body_data.m) and draws nothing else here; this page draws the tab strip
+and the tables from it and sends the actions back with sendEventToMATLAB:
+  "select"       {title}                  a tab was chosen (kept for the next render)
+  "edit"         {index, var, row, value} a parameter cell was edited (index of a_Parameter)
+  "remove_event" {tags}                   "Remove event" on rows of an event table
+Every table fits its columns to the header and the contents and scrolls sideways.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; height: 100%; font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  body { display: flex; flex-direction: column; overflow: hidden; }
+  #strip { display: flex; flex: 0 0 auto; padding: 4px 8px 0 8px; gap: 2px; border-bottom: 1px solid var(--border); }
+  #strip button { font: inherit; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    padding: 5px 12px; background: transparent; color: var(--subtext); cursor: pointer; }
+  #strip button:hover { color: var(--text); }
+  #strip button.on { color: var(--text); font-weight: bold; border-bottom-color: var(--blue); }
+  #page { flex: 1 1 auto; overflow: auto; padding: 8px; }
+  .note { font-style: italic; color: var(--subtext); margin: 0 0 8px 0; }
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
+  .panel { grid-column: 1 / 3; background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: 4px; min-width: 0; }
+  .panel.half { grid-column: auto; }
+  .panel h3 { font-size: 12px; margin: 2px 4px 4px 4px; color: var(--text); }
+  .scroll { overflow-x: auto; }
+  .panel:not(.vertical) .scroll { max-height: 260px; overflow-y: auto; }   /* about 8 rows */
+  table { border-collapse: collapse; color: var(--text); }
+  .vertical table { width: 100%; }
+  th, td { border: 1px solid var(--border); padding: 3px 8px; white-space: nowrap; text-align: left; }
+  th { background: var(--stripe); position: sticky; top: 0; font-weight: bold; }
+  .vertical th { position: static; }
+  th.row { position: static; text-align: left; }
+  tr:nth-child(even) td { background: var(--stripe); }
+  tr:nth-child(odd) td { background: var(--card); }
+  td.number { text-align: right; font-variant-numeric: tabular-nums; }
+  .vertical td.number { text-align: left; }
+  td.edit { cursor: text; }
+  td.edit:hover { outline: 1px solid var(--blue); outline-offset: -1px; }
+  tr.selected td { background: var(--select) !important; }
+  td input[type=text] { font: inherit; width: 100%; min-width: 60px; box-sizing: border-box; border: 1px solid var(--blue); padding: 1px 3px; }
+  .message { color: var(--text); }
+  #menu { position: fixed; display: none; background: var(--card); border: 1px solid var(--subtext); border-radius: 3px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2); padding: 2px 0; z-index: 10; }
+  #menu div { padding: 4px 16px; cursor: pointer; color: var(--text); }
+  #menu div:hover { background: var(--stripe); }
+</style>
+<script>
+var html = null;     // the uihtml component
+var state = { selected: "", data: null, rows: [] };
+function arr(x) { return Array.isArray(x) ? x : (x === null || x === undefined ? [] : [x]); }
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function setup(h) {
+  html = h;
+  h.addEventListener("DataChanged", function () { draw(h.Data); });
+  document.addEventListener("click", function () { document.getElementById("menu").style.display = "none"; });
+  draw(h.Data);
+}
+function draw(d) {
+  if (!d || !d.tabs) { return; }
+  state.data = d;
+  var c = d.color || {};
+  var root = document.documentElement.style;
+  for (var k in c) { root.setProperty("--" + k, c[k]); }
+  document.body.style.background = c.background || "";
+  var tabs = arr(d.tabs);
+  var titles = tabs.map(function (t) { return t.title; });
+  state.selected = titles.indexOf(d.selected) >= 0 ? d.selected : (titles[0] || "");
+  var s = "";
+  tabs.forEach(function (t) {
+    s += '<button class="' + (t.title === state.selected ? "on" : "") + '" data-title="' + esc(t.title) + '">' + esc(t.title) + "</button>";
+  });
+  var strip = document.getElementById("strip");
+  strip.innerHTML = s;
+  strip.querySelectorAll("button").forEach(function (b) {
+    b.onclick = function () {
+      state.selected = b.getAttribute("data-title");
+      html.sendEventToMATLAB("select", { title: state.selected });
+      draw_page();
+      strip.querySelectorAll("button").forEach(function (x) { x.className = x === b ? "on" : ""; });
+    };
+  });
+  draw_page();
+}
+function table_html(t, o) {
+  // t: cols, kinds, rows, rownames, rowkinds; o: vertical, editable, events, panel index
+  var cols = arr(t.cols), rows = arr(t.rows), names = arr(t.rownames), kinds = arr(t.kinds), rowkinds = arr(t.rowkinds);
+  var s = "<table><thead><tr>" + (names.length ? "<th></th>" : "");
+  cols.forEach(function (c) { s += "<th>" + esc(c) + "</th>"; });
+  s += "</tr></thead><tbody>";
+  rows.forEach(function (r, i) {
+    r = arr(r);
+    s += '<tr data-row="' + (i + 1) + '">' + (names.length ? '<th class="row">' + esc(names[i]) + "</th>" : "");
+    r.forEach(function (v, j) {
+      var kind = o.vertical ? rowkinds[i] : kinds[j];
+      var name = o.vertical ? names[i] : cols[j];
+      var edit = o.editable && kind !== "fixed";
+      var cls = (kind === "number" ? "number" : "") + (edit && kind !== "logical" ? " edit" : "");
+      var attr = edit ? ' data-var="' + esc(name) + '" data-kind="' + kind + '"' : "";
+      if (kind === "logical") {
+        s += '<td class="' + cls + '"' + attr + '><input type="checkbox"' + (v ? " checked" : "") + (edit ? "" : " disabled") + "></td>";
+      } else {
+        s += '<td class="' + cls + '"' + attr + ">" + esc(v) + "</td>";
+      }
+    });
+    s += "</tr>";
+  });
+  return s + "</tbody></table>";
+}
+function draw_page() {
+  var d = state.data;
+  var page = document.getElementById("page");
+  var t = arr(d.tabs).filter(function (x) { return x.title === state.selected; })[0];
+  if (!t) { page.innerHTML = ""; return; }
+  var s = "";
+  if (t.type === "parameter") {
+    s += '<p class="note">' + esc(t.message) + "</p>";
+    var panels = arr(t.panels);
+    if (!panels.length) { s += '<div class="message">No parameters.</div>'; }
+    s += '<div class="panels">';
+    panels.forEach(function (p) {
+      s += '<div class="panel' + (p.vertical ? " half vertical" : "") + '" data-index="' + p.index + '"><h3>' + esc(p.tag) +
+        '</h3><div class="scroll">' + table_html(p.table, { vertical: p.vertical, editable: p.editable }) + "</div></div>";
+    });
+    s += "</div>";
+  } else if (t.type === "table") {
+    s += '<div class="scroll' + (t.events ? " events" : "") + '">' + table_html(t.table, {}) + "</div>";
+  } else {
+    s += '<div class="message">' + esc(t.message) + "</div>";
+  }
+  page.innerHTML = s;
+  // Parameter edits: a text cell becomes an input; Enter or leaving it sends the value, Escape cancels
+  page.querySelectorAll(".panel").forEach(function (p) {
+    var index = Number(p.getAttribute("data-index"));
+    p.querySelectorAll("td[data-var]").forEach(function (td) {
+      var tr = td.parentNode, row = Number(tr.getAttribute("data-row"));
+      var name = td.getAttribute("data-var");
+      if (td.getAttribute("data-kind") === "logical") {
+        td.querySelector("input").onchange = function (e) {
+          html.sendEventToMATLAB("edit", { index: index, var: name, row: row, value: e.target.checked });
+        };
+        return;
+      }
+      td.onclick = function () {
+        if (td.querySelector("input")) { return; }
+        var old = td.textContent;
+        td.innerHTML = '<input type="text">';
+        var input = td.querySelector("input");
+        input.value = old;
+        input.focus();
+        input.select();
+        var done = false;
+        function finish(l_send) {
+          if (done) { return; }
+          done = true;
+          var value = input.value;
+          td.textContent = l_send ? value : old;
+          if (l_send && value !== old) {
+            html.sendEventToMATLAB("edit", { index: index, var: name, row: row, value: value });
+          }
+        }
+        input.onkeydown = function (e) {
+          if (e.key === "Enter") { finish(true); } else if (e.key === "Escape") { finish(false); }
+        };
+        input.onblur = function () { finish(true); };
+      };
+    });
+  });
+  // Event tables: a click selects a row (Shift/Ctrl/Cmd for several), the context menu removes them
+  var ev = page.querySelector(".events");
+  if (ev) {
+    var tags = arr(t.table.cols).indexOf("Tag");
+    ev.querySelectorAll("tbody tr").forEach(function (tr) {
+      tr.onclick = function (e) {
+        if (!(e.shiftKey || e.ctrlKey || e.metaKey)) {
+          ev.querySelectorAll("tr.selected").forEach(function (x) { x.classList.remove("selected"); });
+        }
+        tr.classList.toggle("selected");
+      };
+      tr.oncontextmenu = function (e) {
+        e.preventDefault();
+        if (!tr.classList.contains("selected")) {
+          ev.querySelectorAll("tr.selected").forEach(function (x) { x.classList.remove("selected"); });
+          tr.classList.add("selected");
+        }
+        var sel = [];
+        ev.querySelectorAll("tr.selected").forEach(function (x) {
+          var v = arr(arr(t.table.rows)[Number(x.getAttribute("data-row")) - 1])[tags];
+          if (sel.indexOf(v) < 0) { sel.push(v); }
+        });
+        var menu = document.getElementById("menu");
+        menu.innerHTML = "<div>Remove event</div>";
+        menu.firstChild.onclick = function () {
+          menu.style.display = "none";
+          html.sendEventToMATLAB("remove_event", { tags: sel });
+        };
+        menu.style.left = e.clientX + "px";
+        menu.style.top = e.clientY + "px";
+        menu.style.display = "block";
+      };
+    });
+  }
+}
+</script>
+</head>
+<body>
+<div id="strip"></div>
+<div id="page"></div>
+<div id="menu"></div>
+</body>
+</html>

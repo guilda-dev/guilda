@@ -1,0 +1,10 @@
+<!--This is an XML file containing error messages related to the class "GraphSpringBase".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="MissingField">The data of the spring model has no field {0}.</entry>
+        <entry key="FieldSize">The field {0} of the spring model data must be {1}; it is {2}.</entry>
+        <entry key="FieldValue">The field {0} of the spring model data must hold {1}.</entry>
+        <entry key="StyleSize">{0} of the spring model must have one row per element ({1} rows); it has {2}.</entry>
+        <entry key="PositionPhysical">The node positions of the {0} are the voltage phasors of the data: they cannot be set or saved as a layout. Change the data with set_data.</entry>
+    </message>
+</rsccat>

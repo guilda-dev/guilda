@@ -1,157 +1,167 @@
 classdef Branch < PowerSystemModel
-% <@Desc> 
-% Abstract class representing a branch in the power system, such as a transmission line or transformer.
-% It defines the structure and parameters of a branch, including its connection to buses and cubicles.
-% Main function
-% - build admittance matrix
-% - build OPF problem
-% - build ode function
-% <@Role> 
-% Power System Model
-% <@Constructor> 
-% Branch(tag, struct_default, opt)
+% Abstract class of a line or transformer between two buses, which computes its own 2x2 admittance matrix.
+%
+% The network sums the matrices of its branches into the bus admittance matrix used by the
+% power flow, the OPF and the simulation.
+%
+% - Owns R, X, C, tap, phase, circuit (`tab_parameter.dynamics`), its operating limits
+%   (`tab_parameter.operation`: Smax, Imax, Pmax, Qmax, Vargmax) and drawing data, and
+%   decides how they form an admittance matrix (the subclass contract
+%   `get_admittance_matrix`).
+% - Parameters (`tab_parameter`) are per unit on the system base, set by add_branch (R, X,
+%   C, Tap, Phase, Circuit and the limits) or by writing the table. An edit of dynamics
+%   makes the power flow of the network stale; operation and graph make nothing stale.
+% - R, X and C are the values of all circuits together; `circuit` (default 2) is the number
+%   of parallel circuits. One circuit has n*R, n*X and C/n, so its closed matrix is the
+%   closed matrix of the branch divided by n. Only the states that act on one circuit
+%   ("3LG", "3open") depend on `circuit`.
+% - get_admittance_matrix(Status=, Point=) gives the matrix of the branch in one of five
+%   states: "close" (default, the normal matrix), "3LG" (one circuit grounded at Point),
+%   "6LG" (all circuits grounded at Point), "3open" (one circuit open) and "6open" (all
+%   circuits open: the zero matrix). Point is the fault position along the branch, from 0
+%   (from end) to 1 (to end), with 0 < Point < 1; only "3LG" and "6LG" use it and the other
+%   states ignore it. A fault at an end is a bus fault (Scenario.add_fault on the bus).
+%   Faults are bolted (no fault resistance). A branch with one circuit has no "3LG" or
+%   "3open" (error GUILDA:Branch:SingleCircuit). The faulted circuit is split at Point into
+%   two sections of the same form as the branch (pi into two pi sections, T into two T
+%   sections) with the series impedance and the shunt in proportion to their lengths; the
+%   shunt at the fault point is shorted to ground. A transformer has its ideal transformer
+%   (tap and phase) at the from end, and Point is the position on the series part after it
+%   (the series impedance of a two-winding transformer, the pi line of a pi transformer).
+%   Common simulators place a transformer fault on a terminal bus and only open a
+%   transformer; GUILDA also accepts the fault states for transformers.
+% - PowerNetwork.get_admittance_matrix(BranchStatus=) sums these matrices for a table of
+%   branch states (the network matrix of a fault or an open branch).
+% - Refers to its two end buses (`a_Bus`, from and to), but is not their parent and does
+%   not own their voltages. The end voltages and currents it shows are derived from the
+%   buses. The order of `a_Bus` is the row and column order of the 2x2 matrix.
+% - struct(br) is the LayerPackage struct with one more field, `cm_Y`: the 2x2 matrix of
+%   get_admittance_matrix. A network snapshot (struct(net, false)) thus carries the
+%   admittance of every branch, also of a branch class of your own; ResultPF reads it.
+% - Has no states and no function-handle cache. It takes part in the simulation only
+%   through the admittance matrix built when an analysis starts.
+% - Created only by `PowerNetwork.add_branch` (the constructors of the concrete classes
+%   are accessible only from `PowerNetwork`); only the network sets `a_PowerNetwork` and
+%   `a_Bus`, and `PowerNetwork.remove_branch` deletes the branch. No dangling ends: `PowerNetwork.remove_bus` on a bus with
+%   branches stops unless RemoveBranches=true.
+%
+% Subclasses in the `branch` package define `key` (the type name of add_branch), `header`
+% (the tag prefix, "EL" for lines and "ET" for transformers) and `get_admittance_matrix`.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE9bus();
+% br  = net.a_Branch{1};               % or net.add_branch("pi", [1,2], R=0.01, X=0.085)
+% br.tab_parameter.dynamics            % R, X, C, tap, phase, circuit
+% Y   = br.get_admittance_matrix();    % 2x2 admittance matrix
+% Yo  = br.get_admittance_matrix(Status="3open");             % one of the 2 circuits open
+% Yf  = br.get_admittance_matrix(Status="3LG", Point=0.3);    % one circuit grounded at 30 %
+% br.tab_parameter.operation.Smax = Inf;   % no apparent-power limit
+% ```
+%
+% See also PowerNetwork.add_branch, PowerNetwork.get_admittance_matrix, branch.pi, Bus
 
-%% Abstract Methods/Properties
-    properties(Abstract, Constant)
-        % <@Desc> Key Value to identify the type of branch (e.g., "pi", "pi_transformer").
-        % <@Role> Signature
-        % <@Type> string
-        % <@Size> 1x1
-        key
-
-        header
-    end
-    methods(Abstract)
-        % Dynamics
-        Ymat = get_admittance_matrix(obj)
+%% Abstract Properties
+    properties(Abstract, Constant) % Subclass contract
+        key                  % Branch type, e.g. "pi": the Type of PowerNetwork.add_branch (running GUILDA regenerates its key list).
+        header               % Tag prefix of branches of this type, e.g. "EL" for lines and "ET" for transformers.
     end
 
 %% Properties
-   properties(SetAccess=protected)
-
-        % <@Desc> PoweNetwork object to which the branch belongs
-        % <@Role> Layer Structure
-        % <@Type> PowerNetwork
-        % <@Size> 1×1
-        a_PowerNetwork 
-
-        % <@Desc> Bus objects connected by the branch
-        % <@Role> LayerStructure
-        % <@Type> Bus objects cell array
-        % <@Size> 2×1
-        a_Bus
-   end
-    properties(Dependent)
-
-        % <@Desc> Parameter table of the branch
-        % <@Role> Parameter
-        % <@Type> table
-        % <@Size> 1xn
-        tab_parameter
-
-        % <@Desc> Operating point of the Voltage at the branch terminals
-        % <@Role> Equilibrium
-        % <@Type> complex
-        % <@Size> 2×1
-        cv_Vequilibrium
-
-        % <@Desc> Operating point of the Voltage at the branch terminals
-        % <@Role> Equilibrium
-        % <@Type> complex
-        % <@Size> 2×1
-        cv_Iequilibrium
+    properties(SetAccess={?PowerNetwork}) % Layer Structure
+        a_PowerNetwork = []           % PowerNetwork the branch belongs to (set by add_branch). <@Type> PowerNetwork
+        a_Bus (:,1) cell = cell(0,1)  % End buses {from; to}: the row and column order of the admittance matrix. <@Type> cell of Bus (2x1)
     end
-    
-    properties(Hidden,SetAccess=protected)
-
-        % <@Desc> Parameters related to the branch dynamics
-        % <@Role> Parameter
-        % <@Type> Parameter
-        % <@Size> 1×1
-        para_dynamics
-
-        % <@Desc> Parameters related to the branch operation
-        % <@Role> Parameter
-        % <@Type> Parameter
-        % <@Size> 1×1
-        para_operation    
-        
-        % <@Desc> Parameters related to the branch graph plot.
-        % <@Role> Parameter
-        % <@Type> Parameter
-        % <@Size> 1×1
-        para_graph
-
+    properties(Dependent) % Parameter
+        cv_Vequilibrium      % [pu] Voltage phasors of the end buses at the equilibrium. <@Type> double
+        cv_Iequilibrium      % [pu] Currents into the branch at its ends at the equilibrium: get_admittance_matrix() * cv_Vequilibrium. <@Type> double
     end
-    properties(Dependent, Access=protected)
 
-        % <@Desc> manage hierarchical structure of layers.
-        % <@Role> Layer Structure
-        % <@Type> PowerNetwork(LayerPackage)
-        % <@Size> 1x1
-        parent
+    properties(Dependent, Access=protected) % Layer Structure
+        parent               % Parent in the layer structure: the network.
+        children             % Children in the layer structure: the Parameter objects.
+    end
 
-        % <@Desc> manage hierarchical structure of layers.
-        % <@Role> Layer Structure
-        % <@Type> Cubicle(LayerPackage) cell array
-        % <@Size> Nx1
-        children
+%% Abstract Methods
+    methods(Abstract)
+        % Return the 2x2 admittance matrix of the branch in a state.
+        %
+        % The matrix maps the voltages of the end buses [V_from; V_to] to the currents
+        % injected into the branch at those ends, in per unit. It reads tab_parameter.dynamics and
+        % must not read or change anything else.
+        %
+        % Name-Value: Status ("close" (default), "3LG", "6LG", "3open", "6open") and Point
+        % (0 < Point < 1 from the from end; used only by "3LG" and "6LG", ignored by the
+        % others). A call without arguments returns the "close" matrix. "6open" is the zero
+        % matrix, "3open" is (n-1)/n times the "close" matrix (n = circuit), "3LG" adds the
+        % grounded circuit to it and "6LG" is n times the grounded circuit. Errors:
+        % GUILDA:Branch:InvalidPoint (Point missing or outside (0,1) for a fault) and
+        % GUILDA:Branch:SingleCircuit ("3LG" or "3open" with circuit = 1).
+        Ymat = get_admittance_matrix(obj, opt)
     end
 
 %% Constructor
     methods(Access={?Branch, ?PowerNetwork})
         function obj = Branch(index, opt)
-            obj.str_tag = obj.header+index;
+            % Create a branch (called by PowerNetwork.add_branch through a subclass).
+            arguments (Input)
+                index (1,1) string  % Number part of the tag, e.g. "001".
+                opt   (1,1) struct  % Branch settings of add_branch.
+            end
+            arguments (Output)
+                obj  % New Branch object.
+            end
+            obj.s_tag = obj.header+index;
             
-            a_Pm = Parameter(obj,"dynamics");
-            a_Po = Parameter(obj,"operation");
-            a_Pg = Parameter(obj,"graph");
+            % tab_parameter columns:
+            % - dynamics: R, X [pu]: series impedance; C [pu]: shunt susceptance (meaning set by the subclass); tap: off-nominal ratio; phase [rad] (tap, phase: NaN for the lines "pi" and "T", which have no transformer); circuit: number of parallel circuits (R, X, C are for all of them)
+            % - operation: operating limits at both ends: Smax, Imax, Pmax, Qmax [pu] (default Inf); Vargmax [rad]: end-bus angle difference (default pi/2); Inf or NaN: no limit
+            % - graph: Path: bend points of the line in network diagrams, "x y; x y" ("": none); FromOffset, ToOffset: position on the bar of the from and to bus, from the bar center (NaN: from the first and last bend point); Style: "line" or "transformer" (a transformer symbol at the from end). check_graph checks every write.
 
             assert( isreal(opt.R), "ERROR: R must be a real number.")
             assert( isreal(opt.X), "ERROR: X must be a real number.")
             assert( isreal(opt.C), "ERROR: C must be a real number.")
 
-            a_Pm.add_entry(        "R", opt.R        , "double" ,...
-                                   "X", opt.X        , "double" ,...
-                                   "C", opt.C        , "double" ,...
-                                 "tap", opt.Tap      , "double" ,...
-                               "phase", opt.Phase    , "double" );
-            a_Po.add_entry(     "Smax", opt.Smax     , "double" ,...
-                                "Imax", opt.Imax     , "double" ,...
-                                "Pmax", opt.Pmax     , "double" ,...
-                                "Qmax", opt.Qmax     , "double" ,...
-                             "Vargmax", opt.Vargmax  , "double" );
-            a_Pg.add_entry( "MidXaxis", opt.MidXaxis , "string",...
-                            "MidYaxis", opt.MidYaxis , "string",...
-                              "Marker", opt.Marker      , "string");
+            a_Pm = Parameter(obj, "dynamics", struct( ...
+                    "R", opt.R, ...
+                    "X", opt.X, ...
+                    "C", opt.C, ...
+                  "tap", opt.Tap, ...
+                "phase", opt.Phase, ...
+              "circuit", opt.Circuit));
+            a_Po = Parameter(obj, "operation", struct( ...
+                   "Smax", opt.Smax, ...
+                   "Imax", opt.Imax, ...
+                   "Pmax", opt.Pmax, ...
+                   "Qmax", opt.Qmax, ...
+                "Vargmax", opt.Vargmax));
+            a_Pg = Parameter(obj, "graph", struct( ...
+                      "Path", opt.Path, ...
+                "FromOffset", opt.FromOffset, ...
+                  "ToOffset", opt.ToOffset, ...
+                     "Style", opt.Style), @check_graph);
 
-            obj.para_dynamics  = a_Pm;
-            obj.para_operation = a_Po;
-            obj.para_graph     = a_Pg;
+            obj.a_Parameter = {a_Pm; a_Po; a_Pg};
         end
     end
 
 %% Methods
-    methods(Access={?PowerNetwork})
-        set_network(obj,a_PowerNetwork)
-        set_bus(obj,a_Bus)
-    end
     methods
-        % OPF
-        [prob, x0, const] = build_opf_problem(obj, prob, x0, const, rm_V, option)
-        
-        % ode setting
-        [n_odeX, n_odeU, Mass, x0] = reset_odeset(~, n_odeX, n_odeU, omega0)
+        % OPF(optimal power-flow) condition
+        varargout = get_opf_condition(obj, opt)
+    end
+    methods(Hidden)
+        [out, sct_visited] = struct(obj, l_disp, s_header, sct_visited)
+    end
+    methods(Access={?PowerNetwork})
+        initialize(obj)
+    end
+    methods(Access=protected)
+        sct_page = gui_content(obj)
     end
 
 %% Get Methods
     methods
-        function tp = get.tab_parameter(obj)
-            dynamics  = obj.para_dynamics.tab_parameter;
-            operation = obj.para_operation.tab_parameter;
-            graph     = obj.para_graph.tab_parameter;
-            tp        = table(dynamics,operation,graph);
-        end
         function v = get.cv_Vequilibrium(obj)
             v = cellfun(@(cub) cub.c_Vequilibrium, obj.a_Bus);
         end
@@ -163,22 +173,32 @@ classdef Branch < PowerSystemModel
             p = obj.a_PowerNetwork;
         end
         function p = get.children(obj)
-            p = {obj.para_dynamics; obj.para_operation; obj.para_graph};
+            p = obj.a_Parameter;
         end
     end
+end
 
-%% Set Methods
-    methods
-        function set.tab_parameter(obj,val)
-            fieldname = val.Properties.VariableNames;
-            for i = 1:numel(fieldname)
-                propname = "para_"+fieldname{i};
-                tabdata  = val.(fieldname{i});
-                paraname = tabdata.Properties.VariableNames;
-                for j = 1:numel(paraname)
-                    obj.(propname).(paraname{j}) = tabdata.(paraname{j});
-                end
+
+function check_graph(tab, s_owner)
+% Check the graph parameters of a branch before they are stored (Parameter.f_validate).
+%
+% Path: "x y; x y" or "" (tools.layout_parse_path); FromOffset, ToOffset: finite or NaN;
+% Style: "line" or "transformer".
+    arguments (Input)
+        tab     table         % graph table of the branch.
+        s_owner (1,1) string  % Tag of the branch, for the messages.
+    end
+    sv_style = ["line", "transformer"];
+    for i = 1:height(tab)
+        tools.layout_parse_path(tab.Path(i), Context=s_owner + ": ");
+        for s_col = ["FromOffset", "ToOffset"]
+            if isinf(tab.(s_col)(i))
+                error(msg("GUILDA:Branch:InvalidGraphNumber", char(s_owner), char(s_col), char(tools.value_text(tab.(s_col)(i)))))
             end
+        end
+        s_style = tab.Style(i);
+        if ismissing(s_style) || ~ismember(s_style, sv_style)
+            error(msg("GUILDA:Branch:InvalidStyle", char(s_owner), char(tools.value_text(s_style)), char(strjoin(sv_style, ", "))))
         end
     end
 end

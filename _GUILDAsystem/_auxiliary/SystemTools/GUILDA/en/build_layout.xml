@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the file "build_layout".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="MissingGetCompPQ">UseInternalState=true needs getCompPQ(obj,x,V,u,param), which {0} ({1}) does not define. Use UseInternalState=false or define the method.</entry>
+    </message>
+</rsccat>

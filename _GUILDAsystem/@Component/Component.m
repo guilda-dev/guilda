@@ -1,219 +1,335 @@
 classdef Component < PowerSystemModel
-% Class for managing equipment dynamics and power-flow settings 
+% Abstract class of the equipment connected to a bus, such as generators and loads.
+%
+% A component is a dynamical system with state $x$, input $u$ and output $y$, connected to
+% its bus through the bus voltage $V$ and the current $I$ it injects (positive for generation):
+%
+% - `fcn_dx`, `fcn_Mass`: the state equation M*dx/dt = fcn_dx(t, x, V, u)
+% - `fcn_I`: the current injected into the bus, fcn_I(t, x, V, u)
+% - `fcn_Y`: the output signals fcn_Y(t, x, V), read by the local and global controllers.
+%   The output does not depend on u (no feedthrough), so there is no algebraic loop through
+%   the inputs.
+%
+% No model function takes the bus current: it is the sum of all the components on the bus.
+%
+% Subclasses in the `component` package define these static methods, the names of the
+% variables (`sv_x`, `sv_u`, `sv_y`, `sv_para`) and the equilibrium (`get_equilibrium`).
+% Components are created by `Bus.add_component`. Their parameters are in
+% `tab_parameter`: dynamics, operation limits, power-flow settings (P, Q), OPF costs and
+% diagram settings, set by `add_component` (dynamics by the subclass constructor) or by
+% writing the table. An edit of dynamics makes the handles and the equilibrium of the
+% component stale (stale tags odefcn and equilibrium), an edit of powerflow the power flow
+% of the network; operation, OPF and graph make nothing stale. The OPF
+% cost of a component is $H_P P^2 + f_P P + H_Q Q^2 + f_Q Q$. Analytic Jacobians (static
+% methods Jacobi_dx, Jacobi_I, Jacobi_Y) are optional; without them the Jacobians are
+% computed numerically.
+%
+% Role in the model:
+%
+% - Owns the device equations (through its subclass), its parameters (dynamics, power-flow
+%   P and Q, operation limits, OPF cost, drawing), its equilibrium (`rv_Xequilibrium`,
+%   `rv_Uequilibrium`, `c_Iequilibrium`) and its local controllers (`a_LocalController`).
+% - The base class turns the static model functions into the cached handles `f_*`, adds its
+%   local controllers to the DAE and the linear model, and computes Jacobians numerically
+%   when the subclass gives none. The handles @(t,x,V,u) (f_Y and f_JacobiY: @(t,x,V)) bind the parameters and omega0;
+%   `set_odefcn` builds them, called by `PowerNetwork.initialize` when they are stale
+%   (`sct_stale.odefcn`, or a network frequency other than `r_odefcnHz`).
+% - Stale tags (`sct_stale`): `equilibrium` (its dynamics, its local controllers, its
+%   attachment) and `odefcn` (its dynamics). `initialize`, called by
+%   PowerNetwork.initialize through the bus, rebuilds the handles and recomputes the
+%   equilibrium from the held V and I when they are stale.
+% - Does not own the bus voltage (it reads `a_Bus.c_Vequilibrium`), the network frequency
+%   (it reads `get_Hz()`) or the system base.
+% - Created only by `Bus.add_component` and `Bus.replace_component` (the constructors of
+%   the concrete classes are accessible only from `Bus`), so a component is always on a
+%   bus of a network. Only the bus sets `a_Bus` (`SetAccess`) and logs the attachment as a
+%   "Topology" edit of the component; the component sets `LocalController.a_Component` of
+%   its controllers. `Bus.remove_component` and `Bus.replace_component` delete the
+%   component they take out (with its local controllers). A
+%   `GlobalController` refers to controlled components in `controlledUnits`; a controlled
+%   component cannot be removed or replaced while the controller is on the network.
+%
+% A new model inherits from `component.generator.abstract`, `component.load.abstract`,
+% `component.GFMInverter.abstract` or `component.GFLInverter.abstract`.
+% The framework relies on three more rules:
+%
+% - `get_equilibrium` is always called with all of c_V, c_I, r_P and r_Q (a trip of
+%   `simulate` passes c_I = r_P = r_Q = 0).
+% - `fcn_Mass` is constant: `simulate` calls it with empty t, x, V and u.
+% - `getCompPQ(obj, x, V, u, param)`, which returns the injected power [P; Q], is needed only
+%   by the continuation power flow with `UseInternalState=true`.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE14bus();
+% gen = net.a_Bus{1}.a_Component{1};
+% gen.tab_parameter.powerflow                  % P, Q settings of the power flow
+% gen.add_local_controller("avr-ST1");
+% net.initialize();
+% gen.rv_Xequilibrium                          % state equilibrium
+% sys = gen.get_sys();                         % linear model from V to I
+% ```
+%
+% See also Bus.add_component, LocalController, component.generator.abstract
 
-%% Abstract properties/methods
-    properties(Abstract,Constant)
-        key      (1,1) string
-        sv_x    (:,1) string
-        sv_u    (:,1) string 
-        sv_y    (:,1) string
-        sv_para (:,1) string
+%% Abstract properties
+    properties(Abstract,Constant) % Subclass contract
+        key (1,1) string                     % Key of the component type, used by Bus.add_component.
+        sv_x (:,1) string                    % Names of the states.
+        sv_u (:,1) string                    % Names of the inputs.
+        sv_y (:,1) string                    % Names of the outputs.
+        sv_para (:,1) string                 % Names of the dynamic parameters passed to the model functions.
     end
+    
+
+%% Parameter
+    properties(SetAccess={?Bus}) % Layer Structure
+        a_Bus = []                           % Bus the component is connected to (set by Bus.add_component and Bus.replace_component). <@Type> Bus
+    end
+    properties(SetAccess=protected) % Layer Structure
+        a_LocalController (:,1) = cell(0,1)  % Top-level local controllers, in slot order whatever the attach order: the AVR or "local" controller (a PSS hangs under an AVR), then the governor. <@Stale> equilibrium
+    end
+    properties(SetAccess=protected) % Cached function handles
+        f_Mass                               % Mass matrix function @(t,x,V,u) with the parameters bound.
+        f_dx                                 % State equation function @(t,x,V,u) with the parameters bound.
+        f_I                                  % Current injection function @(t,x,V,u) with the parameters bound.
+        f_Y                                  % Output function @(t,x,V) with the parameters bound (no input).
+        f_JacobiDx                           % Jacobian function of f_dx (analytic or numerical).
+        f_JacobiI                            % Jacobian function of f_I (analytic or numerical).
+        f_JacobiY                            % Jacobian function of f_Y (analytic or numerical).
+    end
+    properties(SetAccess=protected, Hidden) % Cached function handles
+        r_odefcnHz double = []               % [Hz] Network frequency bound into the f_* handles (empty: never built).
+    end
+    properties(SetAccess=protected) % Steady State
+        rv_Xequilibrium = zeros(0,1)         % State equilibrium.
+        rv_Uequilibrium = zeros(0,1)         % Input equilibrium (edited by set_input; held by initialize(Method="FixedInput")).
+        c_Iequilibrium                       % [pu] Current injected into the bus at the equilibrium (complex).
+    end
+    properties(Dependent) % Steady State
+        c_Vequilibrium                       % [pu] Terminal voltage at the equilibrium (= a_Bus.c_Vequilibrium).
+        rv_Xequilibrium_all                  % State equilibrium of the component, then of its controllers depth first (the order of get_variable_map).
+        rv_Uoffset                           % Offset of each input in simulate: 0 where a local controller drives it ("local" in get_variable_map), rv_Uequilibrium elsewhere.
+    end
+    properties(Dependent, Access=protected) % Layer Structure
+        parent                               % Parent in the layer structure: the bus.
+        children                             % Children in the layer structure: the local controllers, then the Parameter objects.
+    end
+    properties (Access={?SolverODE, ?Component}) % Simulation working data
+        l_hasController = false;             % Whether a local controller is attached.
+    end
+    properties (SetAccess={?SolverCPF}) % Continuation Power Flow
+        iv_CPFX = zeros(0,1)                 % Indices of the states in the CPF variable vector (CPF working data).
+        f_PQ2Bus = @(t,V,u) zeros(2,1)       % Function of the injected power [P; Q] [pu] used by the CPF (CPF working data).
+    end
+
+%% Abstract methods
     methods(Abstract)
+        % Return the state and input equilibria for a bus voltage and current.
+        %
+        % Called by set_equilibrium during PowerNetwork.initialize and by simulate for a
+        % tripped generator, always with four arguments; c_V and c_I are the voltage and
+        % injected current phasors [pu], r_P and r_Q the injected power [pu].
         [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q);
     end
     methods(Abstract, Static)      
-        rv_dx = fcn_dx(  obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
-        c_I   = fcn_I(   obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)        
-        rv_y  = fcn_Y(   obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
-        rm_M  = fcn_Mass(obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
+        % Return the state derivatives of the model.
+        %
+        % The arguments of all model functions are the time r_t [s], the states rv_x, the
+        % bus voltage rv_V = [Vre; Vim] [pu], the inputs rv_u (not for fcn_Y), the dynamic
+        % parameters rr_param (in the order of sv_para) and the nominal frequency r_omega0
+        % [Hz]. A subclass may define them as ordinary methods instead, with obj before r_t.
+        rv_dx = fcn_dx(  r_t, rv_x, rv_V, rv_u, rr_param, r_omega0)
+
+        % Return the current injected into the bus as a complex number.
+        c_I   = fcn_I(   r_t, rv_x, rv_V, rv_u, rr_param, r_omega0)
+
+        % Return the outputs of the model. They do not depend on the inputs.
+        rv_y  = fcn_Y(   r_t, rv_x, rv_V, rr_param, r_omega0)
+
+        % Return the mass matrix of the state equation.
+        %
+        % It must be constant: simulate calls it with empty r_t, rv_x, rv_V and rv_u.
+        rm_M  = fcn_Mass(r_t, rv_x, rv_V, rv_u, rr_param, r_omega0)
     end
 
 %% override recommended
     % methods(Static)
-    %     [rm_Axx,rm_Bxv,rm_Bxi,rm_Bxu] = Jacobi_dx(r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
-    %     [rm_Cyx,rm_Dyv,rm_Dyi,rm_Dyu] = Jacobi_Y( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
-    %     [rm_Cix,rm_Div,rm_Dii,rm_Diu] = Jacobi_I( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
+    %     [rm_Axx,rm_Bxv,rm_Bxu] = Jacobi_dx(r_t,rv_x,rv_V,rv_u,rr_param,r_omega0);
+    %     [rm_Cyx,rm_Dyv]        = Jacobi_Y( r_t,rv_x,rv_V,rr_param,r_omega0);
+    %     [rm_Cix,rm_Div,rm_Diu] = Jacobi_I( r_t,rv_x,rv_V,rv_u,rr_param,r_omega0);
     % end
-    
 
-%% Parameter
-    properties(SetAccess=protected)
-        a_Bus                                  % [   Layer   ] 接続しているBusクラス(a_Cubicleから辿る)
-        a_LocalController (:,1) = cell(0,1)    % [   Layer   ] 接続されているControllerクラスのcell配列        
 
-        f_Mass                                 % [  Dynamics ] 数値積分の計算に使用する質量行列の関数ハンドル
-        f_dx                                   % [  Dynamics ] 数値積分の計算に使用する微分方程式の関数ハンドル
-        f_I                                    % [  Dynamics ] 数値積分の計算に使用する接続方程式の関数ハンドル
-        f_Y
-        f_JacobiDx
-        f_JacobiI        
-        f_JacobiY
 
-        rv_Xequilibrium = zeros(0,1)           % [SteadyState] 状態の平衡点
-        rv_Uequilibrium = zeros(0,1)           % [SteadyState] 定常入力
-        c_Iequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電流
-        c_Vequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電圧
-    end
-    properties (SetAccess={?odeSimulator, ?Component}, Hidden)
-        iv_odeX  = [];
-        iv_odeU  = [];        
-        iv_odeY  = [];        
-    end    
-    properties(Dependent)
-        rv_Xequilibrium_all                    % [SteadyState] 制御器の状態も含めた平衡点
-        tab_parameter                          % [ Parameter ] ハイパーパラメータの設定値
-    end
-    properties(SetAccess=protected)
-        para_base
-        para_dynamics                          % [ Parameter ] tab_prameterの動特性の部分を管理するParameterクラス 
-        para_powerflow                         % [ Parameter ] tab_prameterの潮流設定の部分を管理するParameterクラス
-        para_operation                         % [ Parameter ] tab_prameterの運用基準の部分を管理するParameterクラス
-        para_OPF                               % [ Parameter ] tab_prameterのOPFの部分を管理するParameterクラス
-        para_graph                             % [ Parameter ] tab_prameterのグラフ描画の部分を管理するParameterクラス
-    end  
-    properties(Dependent, Access=protected)
-        parent                                 % [   Layer   ] Layerの上位に当たるクラス
-        children                               % [   Layer   ] Layerの下位に当たるクラス群
-    end
-    properties (Access={?odeSimulator, ?Component, ?odeEventSet})        
-        l_hasController = false;
-        l_isConnect     = true
-    end
-    properties (Hidden)
-        rv_Xoffset 
-        rv_Uoffset 
-    end
-    properties (SetAccess={?ContinuationPowerFlow})
-        iv_CPFX  = zeros(0,1)                
-        f_PQ2Bus = @(t,V,u) zeros(2,1)
-    end
-
-    
-    
 %% Constructor
     methods(Access=protected)
-        function obj = Component(str_tag, opt)
-            obj.str_tag        = str_tag;
-            obj.para_base      = Parameter(obj);            
-            obj.para_dynamics  = Parameter(obj,"dynamics");
-            obj.para_powerflow = Parameter(obj,"powerflow");
-            obj.para_OPF       = Parameter(obj,"OPF");
-            obj.para_graph     = Parameter(obj,"graph");
-            obj.para_operation = Parameter(obj,"operation");
+        function obj = Component(s_tag, opt)
+            % Create the parameters of a component (called by the subclass constructors).
+            arguments (Input)
+                s_tag (1,1) string  % Class header and number of the tag, e.g. "SG1".
+                opt   (1,1) struct  % Settings of add_component (without parameter), and BusTag: the tag of the bus, put in front of s_tag.
+            end
+            arguments (Output)
+                obj  % New Component object.
+            end
+            obj.s_tag          = opt.BusTag + s_tag;
+            obj.sct_stale      = struct("equilibrium", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
+            % tab_parameter columns:
+            % - dynamics: model parameters, per unit on the system base; the sv_para columns are passed to the model functions
+            % - operation: operating limits and rating: Pmin, Pmax, Qmin, Qmax [pu]: output limits (-Inf/Inf: none), also used by the "Qmax" rule of set_equilibrium; baseMVA [MVA]: rating, to share Q on a bus and exported to MATPOWER (not the system base)
+            % - powerflow: P, Q [pu]: injection settings of the power flow (negative for a load); Q = NaN makes the bus a PV bus
+            % - OPF: P0, Q0 [pu]: OPF initial values; HP, fP, HQ, fQ: cost coefficients (default 1, 1, 0, 0; 0 for a load or a grid-following inverter); c: constant cost (default 0); startup, shutdown: reserved
+            % - graph: DX, DY: position in network diagrams, from the center of the bus (NaN: placed around the bus); Shape: "circle", "square", "^", "v", "<", ">" or "none"; Path: bend points of the connection line, from the center of the bus, "x y; x y" ("": none); Offset: position on the bar of the bus, from the bar center (NaN: from the last bend point); MarkerSize: marker size (NaN: drawer default); Color: color name or "#RRGGBB" ("": drawer default). check_graph checks every write.
+            a_Pd = Parameter(obj,"dynamics");
+            % Default cost (NaN): 0 for a load or a grid-following inverter (a fixed injection adds nothing to the cost), 1 otherwise
+            r_cost0 = double(~isa(obj,"component.load.abstract") && ~isa(obj,"component.GFLInverter.abstract"));
+            if isnan(opt.OPFcost_HP); opt.OPFcost_HP = r_cost0; end
+            if isnan(opt.OPFcost_fP); opt.OPFcost_fP = r_cost0; end
 
-            obj.para_base.add_entry(           "Hz", GUILDA.config("Model","Hz"), "double");
-            obj.para_operation.add_entry( "baseMVA", opt.baseMVA          , "double",...
-                                             "Pmin", opt.Pmin             , "double",...
-                                             "Pmax", opt.Pmax             , "double",...
-                                             "Qmin", opt.Qmin             , "double",...
-                                             "Qmax", opt.Qmax             , "double");
-            obj.para_powerflow.add_entry(       "P", opt.P                , "double",...
-                                                "Q", opt.Q                , "double");
-            obj.para_OPF.add_entry(            "P0", opt.OPFinit_P0       , "double",...
-                                               "Q0", opt.OPFinit_Q0       , "double",...
-                                               "HP", opt.OPFcost_HP       , "double",...
-                                               "HQ", opt.OPFcost_HQ       , "double",...
-                                               "fP", opt.OPFcost_fP       , "double",...
-                                               "fQ", opt.OPFcost_fQ       , "double",...
-                                          "startup", opt.OPFcost_startup  , "double",...
-                                         "shutdown", opt.OPFcost_shutdown , "double");
-            obj.para_graph.add_entry(       "Xaxis", opt.Xaxis            , "double",...
-                                            "Yaxis", opt.Yaxis            , "double",...
-                                           "Marker", opt.Marker           , "string",...
-                                         "MidXaxis", opt.MidXaxis         , "string",...
-                                         "MidYaxis", opt.MidYaxis         , "string");
+            a_Po = Parameter(obj, "operation", struct( ...
+                "baseMVA", opt.baseMVA, ...
+                   "Pmin", opt.Pmin, ...
+                   "Pmax", opt.Pmax, ...
+                   "Qmin", opt.Qmin, ...
+                   "Qmax", opt.Qmax));
+            a_Pp = Parameter(obj, "powerflow", struct( ...
+                "P", opt.P, ...
+                "Q", opt.Q));
+            a_PO = Parameter(obj, "OPF", struct( ...
+                      "P0", opt.OPFinit_P0, ...
+                      "Q0", opt.OPFinit_Q0, ...
+                      "HP", opt.OPFcost_HP, ...
+                      "HQ", opt.OPFcost_HQ, ...
+                      "fP", opt.OPFcost_fP, ...
+                      "fQ", opt.OPFcost_fQ, ...
+                       "c", opt.OPFcost_c, ...
+                 "startup", opt.OPFcost_startup, ...
+                "shutdown", opt.OPFcost_shutdown));
+            a_Pg = Parameter(obj, "graph", struct( ...
+                      "DX", opt.DX, ...
+                      "DY", opt.DY, ...
+                   "Shape", opt.Shape, ...
+                    "Path", opt.Path, ...
+                  "Offset", opt.Offset, ...
+              "MarkerSize", opt.MarkerSize, ...
+                   "Color", opt.Color), @check_graph);
+            obj.a_Parameter = {a_Pd; a_Po; a_Pp; a_PO; a_Pg};
         end        
 
-        function set_odefcn(obj,omega0)
-            array = obj.para_dynamics.tab_parameter{:,obj.sv_para};
-            
-            if ismethod(obj, "Jacobi_dx")
-                obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,array,omega0);
-            else
-                obj.f_JacobiDx = @(t,x,V,I,u) Jacobi_dx_num(obj,t,x,V,I,u,array,omega0);
-            end
-
-            if ismethod(obj, "Jacobi_I")
-                obj.f_JacobiI  = @(t,x,V,I,u) obj.Jacobi_I(t,x,V,I,u,array,omega0);
-            else
-                obj.f_JacobiI  = @(t,x,V,I,u) Jacobi_I_num(obj,t,x,V,I,u,array,omega0);
-            end
-
-            if ismethod(obj, "Jacobi_Y")
-                obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,array,omega0);            
-            else
-                obj.f_JacobiY  = @(t,x,V,I,u) Jacobi_Y_num(obj,t,x,V,I,u,array,omega0);            
-            end
-
-            obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, array, omega0);            
-            obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);
-            obj.f_I    = @(t,x,V,I,u) obj.fcn_I(t, x, V, I, u, array, omega0);
-            obj.f_Y    = @(t,x,V,I,u) obj.fcn_Y(t, x, V, I, u, array, omega0);
-        end
+        set_odefcn(obj)
+        handle_edit(obj, a_layer, tag, log)
+        sct_page = gui_content(obj)
+        % Blocks and names of get_hessian from the Hessian over [x; theta; V]
+        sct_hessian = pack_hessian(obj, H, R)
     end
             
 
 %% Methods
     methods
         % Layer Structure
-        add_local_controller(obj, a_Controller)
+        con = add_local_controller(obj, Key, opt)
+        remove_local_controller(obj, s_tag, opt)
 
-        % OPF
-        [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, option)
+        % Steady State
+        set_input(obj, rv_u)
 
-        % get_sys
-        [sys, varargout] = get_sys(obj, x, V, I, u, opt)
-
-        % get dx, I and y
-        DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec) 
-
+        % Energy-function Hessian (port "PI"; overridden by the classes that support it)
+        sct_hessian = get_hessian(obj, x, V, u)
     end
-
+    methods(Static)
+        % Drawing (overridden by the models with an own node)
+        [cv_E, rv_P, rv_Iq, cv_I] = get_spring_node(rm_x, rm_V, rm_I, rm_u, rr_param)
+    end
     methods(Hidden)
         % Debugger
         flag = validate(obj)
+        % Linearization (get_sys connects the blocks)
+        sct_block = get_linear_matrix(obj, x, V, u)
     end
 
     methods(Access={?Bus})
-        set_bus(obj,bus)
-        set_equilibrium(obj,c_V,c_I,r_P,r_Q)
+        initialize(obj)
+        set_equilibrium(obj,c_V,c_I,r_P,r_Q,opt)
+        move_local_controllers(obj,comp_new)
     end
 
 
 %% Get Methods
     methods
         function x = get.rv_Xequilibrium_all(obj)
-            x_con = tools.vcellfun(@(comp) comp.rv_Xequilibrium, obj.a_LocalController);
-            x     = [obj.rv_Xequilibrium; x_con];
+            x = equilibrium_depth_first(obj);
+        end
+        function rv = get.rv_Uoffset(obj)
+            % The rule of the connection map: an input with the connection "equilibrium" (no
+            % local controller drives it) keeps its equilibrium, as e in simulate (SolverODE.build_index)
+            rv = obj.rv_Uequilibrium;
+            [~, sm_conn] = obj.get_variable_map("rows");
+            lv_driven = sm_conn(sm_conn(:,4) == "u", 1) ~= "equilibrium";
+            if numel(rv) == numel(lv_driven)
+                rv(lv_driven) = 0;
+            end
+        end
+        function V = get.c_Vequilibrium(obj)
+            % The bus owns the voltage
+            V = obj.a_Bus.c_Vequilibrium;
         end
         function p = get.parent(obj)
             p = obj.a_Bus;
         end
         function p = get.children(obj)
-            p = [ obj.a_LocalController  ;...
-                 {obj.para_dynamics      ; obj.para_powerflow     ;...
-                  obj.para_operation     ; obj.para_OPF           ;...
-                  obj.para_graph         }];
-        end
-        function tp = get.tab_parameter(obj)
-            base      = obj.para_base.tab_parameter;
-            dynamics  = obj.para_dynamics.tab_parameter;
-            powerflow = obj.para_powerflow.tab_parameter;
-            OPF       = obj.para_OPF.tab_parameter;
-            operation = obj.para_operation.tab_parameter;
-            graph     = obj.para_graph.tab_parameter;
-            tp        = table(base,dynamics,operation,powerflow,OPF,graph);
+            p = [obj.a_LocalController; obj.a_Parameter];
         end
     end
 
 %% Set Methods
     methods
-        function set.tab_parameter(obj,val)
-            fieldname = val.Properties.VariableNames;
-            for i = 1:numel(fieldname)
-                propname = "para_"+fieldname{i};
-                tabdata  = val.(fieldname{i});
-                paraname = tabdata.Properties.VariableNames;
-                for j = 1:numel(paraname)
-                    obj.(propname).(paraname{j}) = tabdata.(paraname{j});
-                end
-            end
+        function set.a_LocalController(obj, a_con)
+            % Every write keeps the slots: the AVR or "local" controller, then the governor
+            check_controller_slots(obj, a_con);
+            obj.a_LocalController = a_con;
         end
-    end   
+    end
 end
 
 
-
-
-
+function check_graph(tab, s_owner)
+% Check the graph parameters of a component before they are stored (Parameter.f_validate).
+%
+% DX, DY, Offset: finite or NaN; Shape: a component shape (no bar); Path: "x y; x y" or
+% "" (tools.layout_parse_path); MarkerSize: positive finite or NaN; Color: "" or a color
+% that validatecolor accepts.
+    arguments (Input)
+        tab     table         % graph table of the component.
+        s_owner (1,1) string  % Tag of the component, for the messages.
+    end
+    sv_shape = ["circle", "square", "^", "v", "<", ">", "none"];
+    for i = 1:height(tab)
+        for s_col = ["DX", "DY", "Offset"]
+            if isinf(tab.(s_col)(i))
+                error(msg("GUILDA:Component:InvalidGraphNumber", char(s_owner), char(s_col), char(tools.value_text(tab.(s_col)(i)))))
+            end
+        end
+        s_shape = tab.Shape(i);
+        if ismissing(s_shape) || ~ismember(s_shape, sv_shape)
+            error(msg("GUILDA:Component:InvalidShape", char(s_owner), char(tools.value_text(s_shape)), char(strjoin(sv_shape, ", "))))
+        end
+        tools.layout_parse_path(tab.Path(i), Context=s_owner + ": ");
+        r_size = tab.MarkerSize(i);
+        if ~isnan(r_size) && ~(isfinite(r_size) && r_size > 0)
+            error(msg("GUILDA:Component:InvalidGraphPositive", char(s_owner), "MarkerSize", char(tools.value_text(r_size))))
+        end
+        s_color = tab.Color(i);
+        l_color = ~ismissing(s_color);
+        if l_color && s_color ~= ""
+            try
+                validatecolor(s_color);
+            catch
+                l_color = false;
+            end
+        end
+        if ~l_color
+            error(msg("GUILDA:Component:InvalidColor", char(s_owner), char(tools.value_text(s_color))))
+        end
+    end
+end

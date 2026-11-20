@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class "DrawerTagPicker".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NoColumn">The table has no column "{0}" to return (Column); its columns are {1}.</entry>
+    </message>
+</rsccat>

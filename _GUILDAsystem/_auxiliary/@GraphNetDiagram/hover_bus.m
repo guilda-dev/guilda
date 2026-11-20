@@ -1,0 +1,25 @@
+function output_txt = hover_bus(obj, i_bus)
+    arguments (Input)
+        obj
+        i_bus  % Index of the bus.
+    end
+    arguments (Output)
+        output_txt  % Lines of the data tip text.
+    end
+
+    bustype = char(obj.tab_bus{i_bus,"Type"});
+    c_Vbus  = obj.cv_Vbus(i_bus);
+    r_Vabs  = abs(c_Vbus);
+    r_Varg  = angle(c_Vbus)/pi*180;
+    s_tag   = char(obj.sv_bus(i_bus));
+
+    if isnan(c_Vbus)                   % topology only: no state
+        output_txt = {['\bf{',s_tag,' (',bustype,')}'], ...
+                      ['\fontname{SansSerif} ', num2str(nnz(obj.tab_component.bus == i_bus)), ' component(s)']};
+        return
+    end
+    output_txt = {['\bf{',s_tag,' (',bustype,')}'], ...
+                  ['\fontname{Monospaced}{\it ∠V} = ' , num2str(r_Varg,"%.2f"),'^\circ'], ...
+                  ['\fontname{Monospaced}{\it |V|} = ', num2str(r_Vabs)] ...
+                  };
+end

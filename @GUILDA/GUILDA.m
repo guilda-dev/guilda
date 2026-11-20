@@ -8,12 +8,15 @@ classdef GUILDA < handle
 % >> GUILDA.pwd()        : Get guilda path
 % >> GUILDA.rmpath()     : Remove paths for use of this software
 % >> GUILDA.addpath()    : Add paths for use of this software
-% >> GUILDA.gitpull()    : Get new version from GitHub
-% >> GUILDA.setting()    : Launch settings window (GUI launches)
+% >> GUILDA.setting()    : Launch settings window (GUI launches); GUILDA.setting(Category, Name=Value) changes settings
 % >> GUILDA.tutorial()   : open Tutorial
 % >> GUILDA.doc()        : open documentation on browser
+% >> GUILDA.publish_doc(): publish reference and developer docs to gh-pages (local commit)
 % >> GUILDA.newclass()   : Create a new class (GUI launches)
 % >> GUILDA.dictionary() : Search classes implemented in this software
+% >> GUILDA.keymap()    : Model keys of a category and the names of their classes
+% >> GUILDA.update_keymap(): Rebuild the model key map from the classes on the path
+% >> GUILDA.launch_gui() : Start the GUILDA app (build, analyze and export a script; GUI launches)
 %
 % Major Folders within the @GUILDA Directory
 % <WARNING> DO NOT modify the files inside the following folders, as they are read and written by the system
@@ -23,9 +26,10 @@ classdef GUILDA < handle
 %
 % <@Constructor> 
 % >> GUILDA;
-% There are no input arguments for the constructor. However, it performs several startup operations, such as displaying the GUILDA logo, performing a Git pull, adding necessary paths, checking version requirements, launching the tutorial, and displaying the update log. These operations can be customized.
-% To customize the startup behavior, change the "startup" setting using the "setting" method.
+% There are no input arguments for the constructor. However, it performs several startup operations, such as displaying the GUILDA logo, adding necessary paths, checking version requirements, updating the model key map, and launching the tutorial. These operations can be customized.
+% To customize the startup behavior, change the "Startup" settings using the "setting" method.
 % >> GUILDA.setting;
+% >> GUILDA.setting("Startup", UpdateKeyMap="silent")
 
     methods
         function obj = GUILDA
@@ -33,80 +37,83 @@ classdef GUILDA < handle
             % The following operations are executed:
             %
             %   o Print the GUILDA logo
-            %   o Perform a Git pull
-            %   x Add paths
+            %   x Add paths (the developer folder _GUILDAsystem/_admin only when DeveloperPath is true)
             %   o Check version requirements
+            %   o Update the documentation database
+            %   o Update the model key map (UpdateKeyMap: "none", "silent" or "disp")
             %   o Launch the tutorial
-            %   o Display the update log
             %
-            % If any of the above startup operations are not required, modify the contents of the startup setting via GUILDA.setting. 
+            % If any of the above startup operations are not required, modify the Startup settings via GUILDA.setting. 
             % Only items marked with 'o' can be skipped. Items marked with 'x' cannot be skipped.
+            arguments (Output)
+                obj  % GUILDA utility object.
+            end
 
             GUILDApath = fullfile(obj.pwd,"@GUILDA","config");
-            cf_all     = get_config();
-            cf         = cf_all.EnvStartup;
+            has_desktop = usejava('desktop');   % false in -batch / -nodisplay
+            [cf_all, sv_reset, sm_invalid] = get_config();
+            cf         = cf_all.Startup;
             set_config(cf_all);
             % disp GUILDA LOGO
             if cf.PrintLogo.Value
                 cellfun(@(c)disp(c),readlines(fullfile(GUILDApath,"GUILDAstring.txt")))
             end
-            % git pull
-            if cf.gitpull.Value
-                obj.gitpull;
-            end
             % add GUILDA path
             obj.addpath
+            % user settings reset by a new version of their defaults (show_msg needs the path)
+            for s_reset = sv_reset'
+                show_msg("info", "GUILDA:GUILDA:ConfigReset", s_reset)
+            end
+            for k = 1:size(sm_invalid, 1)
+                show_msg("info", "GUILDA:GUILDA:ConfigValueReset", sm_invalid(k,1), sm_invalid(k,2), sm_invalid(k,3))
+            end
             % check required Toolbox
             if cf.CheckRequirement.Value
                 check_requirement
             end
             % update documentation database
             if cf.UpdateDoc.Value
-                obj.doc('update',true);
+                obj.doc('update',"auto",'open',false);
             end
-            % update key map
-            if cf.UpdateKeyMap.Value
-                update_class_signature;
+            % update key map: "none" skips it, "silent" hides the list of the keys
+            switch cf.UpdateKeyMap.Value
+                case "disp"
+                    GUILDA.update_keymap;
+                case "silent"
+                    evalc("GUILDA.update_keymap;");
             end
             % open Tutorial (Mail.mlx)
             if cf.Tutorial.Value
-                obj.tutorial;
+                if has_desktop
+                    obj.tutorial;
+                else
+                    show_msg("info", "GUILDA:GUILDA:NoDesktopTutorial")
+                end
             end
    
         end
 
-        function disp(~)
-            fprintf( "  === @GUILDA Class Methods ===\n"+...
-                     "  >> GUILDA.pwd()        : Get guilda path\n"+...
-                     "  >> GUILDA.setting()    : Launch settings window (GUI launches)\n"+...
-                     "  >> GUILDA.tutorial()   : open Tutorial\n"+...
-                     "  >> GUILDA.doc()        : open documentation on browser\n"+...
-                     "  >> GUILDA.newclass()   : Create a new class (GUI launches)\n"+...
-                     "  >> GUILDA.dictionary() : Search classes implemented in this software"+...
-                     "  >> GUILDA.rmpath()     : Remove paths for use of this software\n"+...
-                     "  >> GUILDA.addpath()    : Add paths for use of this software\n"+...
-                     "  >> GUILDA.gitpull()    : Get new version from GitHub\n\n")
-        end
+        disp(~)
     end
-    
-    
+
 %%%%%%%%%%%%%%%%
 %%%% Static %%%%
 %%%%%%%%%%%%%%%%
     methods(Static)
 
         class_list = dictionary(char_class,opt)
-        net        = import_MATPOWER(results)
         path       = pwd()
         data       = config(category,parameter,option)
 
         newclass()
         tutorial(mode)
-        setting()
-        gitpull()
+        setting(s_category, varargin)
         addpath()
         rmpath() 
-        document()
-        doc()
+        doc(option)
+        publish_doc()
+        dic        = keymap(category)
+        update_keymap(opt)
+        h          = launch_gui(net)
     end
 end

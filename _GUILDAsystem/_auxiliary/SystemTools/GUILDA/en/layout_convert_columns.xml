@@ -1,0 +1,9 @@
+<!--This is an XML file containing error messages related to the function "tools.layout_convert_columns".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NoModelFolder">No model folder was found in {0}: a model folder has the file bus/parameter.csv. Give the folder of the network (e.g. the path returned by net.export) or a folder above such folders.</entry>
+        <entry key="MidPoints">{0} row {1}: MidXaxis has {2} values and MidYaxis has {3}. Give one y for each x and run tools.layout_convert_columns again. The file was not changed.</entry>
+        <entry key="UnknownMarker">{0} row {1}: the marker "{2}" cannot be converted. Bus bars are "_L" or "|L" with a positive length L, component markers are not bars, and branch markers are "-" or contain "oo" (a transformer). The file was not changed.</entry>
+        <entry key="FieldCount">{0} row {1} has {2} cells, but the header has {3} columns. The file was not changed.</entry>
+    </message>
+</rsccat>

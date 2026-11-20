@@ -1,90 +1,35 @@
-function log_edit(obj, log, tag, before, after, time, tab)
-    % <@Desc>
-    % Records an edit event and propagates it to parent layers.
-    % <@Role>
-    % Edit Log
-    % <@Summary>
-    % Append a new edit-log record.
-    % <@Signatures>
-    % [
-    %   "log_edit(obj)",
-    %   "log_edit(obj, log, tag, before, after, time, tab)"
-    % ]
-    % <@Parameters>
-    % [
-    %   {
-    %     "Name": "obj",
-    %     "Type": "LayerPackage",
-    %     "Description": "Target layer object.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   },
-    %   {
-    %     "Name": "log",
-    %     "Type": "string scalar",
-    %     "Description": "Edit message.",
-    %     "Required": false,
-    %     "Default": "\"\""
-    %   },
-    %   {
-    %     "Name": "tag",
-    %     "Type": "string scalar",
-    %     "Description": "Edited field tag.",
-    %     "Required": false,
-    %     "Default": "\"\""
-    %   },
-    %   {
-    %     "Name": "before",
-    %     "Type": "double scalar",
-    %     "Description": "Value before edit.",
-    %     "Required": false,
-    %     "Default": "NaN"
-    %   },
-    %   {
-    %     "Name": "after",
-    %     "Type": "double scalar",
-    %     "Description": "Value after edit.",
-    %     "Required": false,
-    %     "Default": "NaN"
-    %   },
-    %   {
-    %     "Name": "time",
-    %     "Type": "string scalar",
-    %     "Description": "Timestamp for the event.",
-    %     "Required": false,
-    %     "Default": "current time"
-    %   },
-    %   {
-    %     "Name": "tab",
-    %     "Type": "table (1x6)",
-    %     "Description": "Prebuilt edit-log row.",
-    %     "Required": false,
-    %     "Default": "auto-generated"
-    %   }
-    % ]
-    % <@Returns>
-    % []
-    arguments
-        obj 
-        log   (1,1) string = "";                                                    %#ok
-        tag   (1,1) string = ""; %#ok
-        before = nan;                                                               %#ok
-        after  = nan;                                                               %#ok
-        time   = string(datetime('now','Format','uuuu/MM/dd HH:mm:ss'));            %#ok
-        tab    = table(time, obj.get_tag(true,"/"), log, tag, {before}, {after})
+function log_edit(obj, log, tag)
+    % Report an edit of this layer to every layer up to the top.
+    %
+    % Calls handle_edit(a_owner, tag, message) on the edited layer and on every layer
+    % above it; a_owner is the edited layer (the owner for a Parameter container) and
+    % message is "<tag of obj>: <log>", or "<container tag>/<owner tag>: <log>" for a
+    % Parameter container (e.g. "dynamics/B001SG1: edit D: 2 -> 2.1"). A generated tag
+    % already contains the tags of the parents. Each layer appends the message to its own
+    % stale tags that the edit affects.
+    arguments (Input)
+        obj                  % Edited layer (a Parameter container for a parameter edit).
+        log    (1,1) string  % What was edited, with the values (e.g. "edit D: 0.1 -> 0.2").
+        tag    (1,1) string  % Kind of edit: a parameter group ("dynamics", "powerflow", ...), "Topology", "Slack" or "Tag".
     end
-    if isa(obj,"PowerNetwork")
-        if obj.str_editFlag == "unset"
-            return
-        else
-            obj.str_editFlag = "editted";
-            tab.Properties.VariableNames = {'timestamp','ID','log','tag','before','after'};
-            obj.tab_editLog  = [obj.tab_editLog; tab];
+    s_message = obj.s_tag + ": " + log;
+
+    % A Parameter container is not a child of a controller, so the walk starts at its owner.
+    a_owner = obj;
+    if isa(obj,"Parameter") && isa(obj.parent,"LayerPackage")
+        a_owner = obj.parent;
+        if isa(a_owner, "PowerSystemModel")
+            a_owner.tab_parameterCache = [];   % a value or the tag of a column changed
         end
-    elseif isa(obj.parent,"LayerPackage")
-        obj.str_editFlag = "editted";
-        obj.parent.log_edit("","",nan,nan,"",tab)
-    else
-        return
+        s_message = obj.s_tag + "/" + a_owner.s_tag + ": " + log;
+    end
+    a_layer = a_owner;
+    while true
+        a_layer.handle_edit(a_owner, tag, s_message);
+        a_parent = a_layer.parent;
+        if ~isa(a_parent,"LayerPackage")
+            break
+        end
+        a_layer = a_parent;
     end
 end

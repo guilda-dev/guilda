@@ -1,0 +1,121 @@
+function [h, h_arrow] = plot_edge(ax, path, radius, color, edgedata, type)
+    arguments (Input)
+        ax        % Axes to draw in.
+        path      % Points of the path, one [x y z] per row.
+        radius    % Radius of the tube.
+        color     % Face color.
+        edgedata  % UserData stored on the drawn objects (struct with Type and Index).
+        type      % Edge style (graph parameter Style): "line", or "transformer" (two spheres near the "from" end).
+    end
+    arguments (Output)
+        h        % Tube, or group of the tube and its spheres.
+        h_arrow  % Group of the two arrow cones (empty placeholder when the path is too short).
+    end
+
+    h_arrow   = gobjects(1, 1);
+    edge_type = string(type);
+    h_main    = draw_edge_tube(ax, path, radius, color);
+    h_main.UserData = edgedata;
+    h_main.Tag      = "tube";                % draw_graph_network scales it about its center line
+    
+    if size(path, 1) > 1
+        keep = [true; sqrt(sum(diff(path, 1, 1).^2, 2)) > eps];
+        path = path(keep, :);
+    end
+
+    if size(path, 1) >= 2
+        cone_radius = 2 * radius;
+
+        % From-side arrow: midpoint of first segment (path(1:2,:)).
+        p_from_1 = path(1, :);
+        p_from_2 = path(2, :);
+        tip_from = p_from_1;
+        dir_from = normalize(p_from_1 - p_from_2);
+        cone_len = min(norm(p_from_1 - p_from_2) * 0.5, cone_radius);
+        h_arrow_from = draw_arrow_cone(ax, tip_from, dir_from, cone_len, cone_radius, color);
+        h_arrow_from.UserData = edgedata;
+
+        % To-side arrow: midpoint of last segment (path(end-1:end,:)).
+        p_to_1 = path(end-1, :);
+        p_to_2 = path(end, :);
+        tip_to = path(end, :);
+        dir_to = normalize(p_to_2 - p_to_1);
+        cone_len = min(norm(p_to_2 - p_to_1) * 0.5, cone_radius*2);
+        h_arrow_to = draw_arrow_cone(ax, tip_to, dir_to, cone_len, cone_radius, color);
+        h_arrow_to.UserData = edgedata;
+
+        h_arrow = hggroup('Parent', ax, 'HandleVisibility', 'off');
+        set(h_arrow_from, 'Parent', h_arrow, 'Tag', 'From');   % the Tag tells the end (no handles in UserData)
+        set(h_arrow_to,   'Parent', h_arrow, 'Tag', 'To');
+    end
+
+    % For normal edges, return the tube handle directly so color updates
+    % always target a concrete graphics primitive.
+    if edge_type ~= "transformer"
+        h = h_main;
+        return
+    end
+
+    h_group = hggroup('Parent', ax, 'HandleVisibility', 'off');
+    set(h_main, 'Parent', h_group);
+    if size(path, 1) >= 2
+        % Two spheres near the "from" terminal, along the path (the tap of the branch model):
+        % 0.05 from it, or a quarter of a shorter path
+        sphere_radius = min(max(radius * 3, radius + eps), 5);
+        r_from = min(0.05, 0.25 * sum(vecnorm(diff(path, 1, 1), 2, 2)));
+        c1 = get_point_on_path(path, r_from + sphere_radius / 2);
+        c2 = get_point_on_path(path, r_from + sphere_radius);
+        h1 = draw_sphere(ax, c1(1), c1(2), c1(3), sphere_radius, color);
+        h2 = draw_sphere(ax, c2(1), c2(2), c2(3), sphere_radius, color);
+        h1.UserData = edgedata;
+        h2.UserData = edgedata;
+        set(h1, 'Parent', h_group);
+        set(h2, 'Parent', h_group);
+    end
+
+    h = h_group;
+end
+
+function point = get_point_on_path(path, distance)
+    % Returns point at specified distance along path from start
+    if size(path, 1) < 2
+        point = path(1, :);
+        return
+    end
+    
+    diffs = diff(path, 1, 1);
+    segment_lengths = sqrt(sum(diffs.^2, 2));
+    cumulative_lengths = [0; cumsum(segment_lengths)];
+    total_length = cumulative_lengths(end);
+    
+    if distance >= total_length
+        point = path(end, :);
+        return
+    end
+    
+    idx = find(cumulative_lengths <= distance, 1, 'last');
+    if idx >= length(cumulative_lengths)
+        point = path(end, :);
+        return
+    end
+    
+    remaining_distance = distance - cumulative_lengths(idx);
+    segment_length = segment_lengths(idx);
+    if segment_length < eps
+        point = path(idx, :);
+        return
+    end
+    
+    t = remaining_distance / segment_length;
+    point = path(idx, :) + t * (path(idx+1, :) - path(idx, :));
+end
+
+function vec_normalized = normalize(vec)
+    % Normalize vector
+    mag = norm(vec);
+    if mag < eps
+        vec_normalized = [1, 0, 0];
+    else
+        vec_normalized = vec / mag;
+    end
+end

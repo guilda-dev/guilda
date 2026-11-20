@@ -1,0 +1,38 @@
+function I = fcn_I(obj, t, x, V, u, param, omega0)
+% Calculate the current that the component injects into the bus.
+%
+% The current follows the convention of `c_Iequilibrium`: positive into the bus. It is
+% the current of the classical model rotated by `alpha`.
+%
+% See also Jacobi_I
+    arguments (Input)
+        obj
+        t      double        % [s] Time.
+        x      double        % State vector in the order of `sv_x`.
+        V      double        % [pu] Bus voltage as `[real; imag]`.
+        u      double        % Input vector in the order of `sv_u`.
+        param  double        % Dynamic parameters in the order of `sv_para`.
+        omega0 (1,1) double  % [Hz] Network frequency (`get_Hz`).
+    end
+    arguments (Output)
+        I  % [pu] Complex current injected into the bus.
+    end
+    
+    Xd = param(3);
+    Xq = param(4);
+    alpha = param(5);
+
+    delta = x(1);
+    
+    Vref  = u(2);
+    
+    Vdq = exp(1j*delta) * conj([1,1j]*V);
+    Vd  = imag(Vdq);
+    Vq  = real(Vdq);
+    
+    Id  = (Vref-Vq)/Xd;
+    Iq  = Vd/Xq;
+    Idq = Iq + 1j*Id;
+
+    I   = exp(1j*(alpha+delta)) * conj(Idq);
+end

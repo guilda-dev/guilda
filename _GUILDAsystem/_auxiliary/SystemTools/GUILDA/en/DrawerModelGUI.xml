@@ -1,0 +1,10 @@
+<!--This is an XML file containing error messages related to the class "DrawerModelGUI".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="HiddenAlert">{0}: {1}</entry>
+        <entry key="NotInTree">{0} is not a child of its parent, so the GUI has no code to reach it.</entry>
+        <entry key="NotANumber">"{0}" is not a value of {1}: write a number (several numbers separated by spaces for a row vector, NaN for none).</entry>
+        <entry key="OtherRoot">The history holds another model in its variable {0} than the root model {1} of the GUI; pass a history without that variable, or one that holds the root model in it.</entry>
+        <entry key="NotUIContainer">The GUI needs a uifigure, uipanel, uitab or uigridlayout of a uifigure, not a {0} (a figure made by figure() is not supported).</entry>
+    </message>
+</rsccat>
