@@ -1,0 +1,9 @@
+[submodule "_GUILDAslides"]
+	path = _GUILDAslides
+	url = git@github.com:guilda-dev/guilda-slides.git
+[submodule "_GUILDAverification"]
+	path = _GUILDAverification
+	url = git@github.com:guilda-dev/guilda-verification.git
+[submodule "_GUILDAdocPages"]
+	path = _GUILDAdocPages
+	url = git@github.com:guilda-dev/guilda-doc.git
