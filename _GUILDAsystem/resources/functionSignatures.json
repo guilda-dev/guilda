@@ -1031,6 +1031,45 @@
       {"name":"G","purpose":"The chart (GraphChart), lines \"max_real\" and \"min_damping\"."}
     ]
   },
+  "ResultLIN.plot_matrix": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"Matrix","kind":"namevalue","type":["string","scalar","choices=cellstr([\"J\",\"A\",\"B\",\"C\",\"D\",\"E\"])"],"purpose":"Matrix drawn: \"J\" (A of get_ss(\"DAE\") over [x; v]) or \"A\" ... \"E\" of get_ss(Type). Default: \"J\"."},
+      {"name":"Display","kind":"namevalue","type":["string","scalar","choices=cellstr([\"pattern\",\"magnitude\"])"],"purpose":"\"pattern\" (nonzero entries) or \"magnitude\" (log10|value|). Default: \"pattern\"."},
+      {"name":"Type","kind":"namevalue","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model of \"A\" ... \"E\": \"ODE\" or \"DAE\"; the Type of the result when omitted. Default: obj.Type."},
+      {"name":"Port","kind":"namevalue","type":["string","scalar","choices=cellstr([\"PI\",\"PQ\",\"I\"])"],"purpose":"Bus port of the \"DAE\" (see get_ss); options.Port of the result when omitted. Default: default_port(obj)."},
+      {"name":"Form","kind":"namevalue","type":["string","scalar","choices=cellstr([\"descriptor\",\"absorbed\",\"hessian\"])"],"purpose":"View (see get_ss); res.Form when omitted. Default: obj.Form."},
+      {"name":"Index","kind":"namevalue","type":["double","scalar"],"purpose":"Section shown first (1 ... numel(rv_t)); res.Index when omitted. Default: obj.Index."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The graph (GraphMatrix), elements the owners of the rows (\"rowgroup\") and of the columns (\"colgroup\")."}
+    ]
+  },
+  "ResultLIN.plot_kernel": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"Kernel","kind":"namevalue","type":["double","scalar"],"purpose":"Kernel (island) drawn: a column of rm_left of get_kernel. Default: 1."},
+      {"name":"Label","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"value\",\"tag\"])"],"purpose":"Labels: \"value\" (the kernel entries), \"tag\" or \"none\". Default: \"value\"."},
+      {"name":"Index","kind":"namevalue","type":["double","scalar"],"purpose":"Section shown first (1 ... numel(rv_t)); res.Index when omitted. Default: obj.Index."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The diagram (GraphNetDiagram), ColorMode \"user\" with the kernel entries in BusColorData."}
+    ]
+  },
+  "ResultLIN.plot_participation": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"Mode","kind":"namevalue","type":["double","scalar"],"purpose":"Mode picked first: a column of get_participation. Default: 1."},
+      {"name":"Type","kind":"namevalue","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model whose modes are used: \"ODE\" or \"DAE\"; the Type of the result when omitted. Default: obj.Type."},
+      {"name":"Index","kind":"namevalue","type":["double","scalar"],"purpose":"Section shown first (1 ... numel(rv_t)); res.Index when omitted. Default: obj.Index."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"sct_graph","purpose":"Eigenvalue (GraphChart), Diagram (GraphNetDiagram) and Table (uitable)."}
+    ]
+  },
   "ResultLIN.get_mode": {
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultLIN"},
