@@ -12,7 +12,8 @@ function build_form(obj, h_container, sv_exclude, history, sct_value)
 % tagtext, choice, flag, logical, number, string, expression), baseline (the default as a
 % value of the widget), shown (the value shown first), s_base (the text of the default in a
 % text field), s_default, s_purpose, s_label, s_unit, s_hint (a default in words), items,
-% s_pick ("", "element" or "key"), sv_kind (element kinds), s_category (key category),
+% s_pick ("", "element", "key" or "table"), sv_kind (element kinds), s_category (key category),
+% s_table (the table expression of gui_forms.json "pick", evaluated by form_event),
 % l_multiple, r_auto, s_auto (the word for r_auto), r_none, s_note (a hint of gui_forms.json), s_group, i_row, the handles (h, h_label, h_extra, h_reset),
 % l_built, l_visible, l_shown and l_changed, and for choices or a default that refer to other
 % inputs (refer_args, refresh_depend): s_choices and sv_default (the expressions with
@@ -76,7 +77,7 @@ function build_form(obj, h_container, sv_exclude, history, sct_value)
     if isfield(sct_spec, "labels")
         sct_label = sct_spec.labels;
     end
-    sct_pick = struct();    % input name -> element kind, for inputs without choices
+    sct_pick = struct();    % input name -> element kinds, or {"table": expression on obj}
     if isfield(sct_spec, "pick")
         sct_pick = sct_spec.pick;
     end
@@ -148,7 +149,7 @@ function build_form(obj, h_container, sv_exclude, history, sct_value)
     sv_numeric = ["double", "single", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"];
     sct_field = struct("name", {}, "kind", {}, "widget", {}, "baseline", {}, "shown", {}, "s_base", {}, ...
         "s_default", {}, "s_purpose", {}, "s_label", {}, "s_unit", {}, "s_hint", {}, "items", {}, ...
-        "s_pick", {}, "sv_kind", {}, "s_category", {}, "l_multiple", {}, "r_auto", {}, "s_auto", {}, "r_none", {}, ...
+        "s_pick", {}, "sv_kind", {}, "s_category", {}, "s_table", {}, "l_multiple", {}, "r_auto", {}, "s_auto", {}, "r_none", {}, ...
         "s_note", {}, "s_group", {}, "rv_order", {}, "i_row", {}, "h", {}, "h_label", {}, "h_extra", {}, "h_reset", {}, ...
         "l_built", {}, "l_visible", {}, "l_shown", {}, "l_changed", {}, "s_choices", {}, "sv_default", {}, "sv_depend", {}, "s_wait", {});
     % The inputs a choices or default expression may refer to: their names and their defaults
@@ -226,7 +227,7 @@ function build_form(obj, h_container, sv_exclude, history, sct_value)
 
         sct = struct("name", s_name, "kind", string(sct_in.kind), "widget", "", "baseline", [], "shown", [], ...
             "s_base", "", "s_default", s_default, "s_purpose", s_purpose, "s_label", s_name, "s_unit", "", "s_hint", "", ...
-            "items", strings(0, 1), "s_pick", "", "sv_kind", strings(1, 0), "s_category", "", "l_multiple", ~l_scalar, ...
+            "items", strings(0, 1), "s_pick", "", "sv_kind", strings(1, 0), "s_category", "", "s_table", "", "l_multiple", ~l_scalar, ...
             "r_auto", [], "s_auto", "auto", "r_none", [], "s_note", "", "s_group", "", "rv_order", [0 0 0], "i_row", 0, "h", [], "h_label", [], ...
             "h_extra", [], "h_reset", [], "l_built", false, "l_visible", true, "l_shown", false, "l_changed", false, ...
             "s_choices", "", "sv_default", sv_alt, "sv_depend", sv_depend, "s_wait", "");
@@ -305,7 +306,9 @@ function build_form(obj, h_container, sv_exclude, history, sct_value)
                     end
                 end
             end
-            % A picker: model keys, or the elements of the network
+            % A picker: model keys, a table of gui_forms.json "pick" (evaluated on the object
+            % when Select... is pressed), or the elements of the network
+            l_table = isfield(sct_pick, s_name) && isstruct(sct_pick.(s_name)) && isfield(sct_pick.(s_name), "table");
             s_category = string(regexp(s_items, "GUILDA\.keymap\(""(\w+)""\)", "tokens", "once"));
             % (a list, not a step of a path: obj.a_Scenario.a_PowerNetwork is not a list of scenarios)
             c_kind = regexp(s_items, "\<a_(Bus|Branch|Component|LocalController|GlobalController|Scenario)\>(?!\.)", "tokens");
@@ -313,6 +316,12 @@ function build_form(obj, h_container, sv_exclude, history, sct_value)
                 sct.s_pick = "key";
                 sct.s_category = s_category;
                 sct.l_multiple = false;
+            elseif l_table && ismember(sct.widget, ["tags", "choice"])
+                sct.s_pick  = "table";
+                sct.s_table = string(sct_pick.(s_name).table);
+                if sct.widget == "tags"
+                    sct.widget = "tagtext";
+                end
             elseif ~isempty(c_kind) && ~isempty(obj.a_network) && ismember(sct.widget, ["tags", "choice"])
                 sct.s_pick  = "element";
                 sct.sv_kind = unique(string(cellfun(@(c) c{1}, c_kind, "UniformOutput", false)), "stable");
@@ -334,7 +343,7 @@ function build_form(obj, h_container, sv_exclude, history, sct_value)
             else
                 sct.widget = "expression";
             end
-            if isfield(sct_pick, s_name) && ~isempty(obj.a_network) && ismember(sct.widget, ["string", "expression"])
+            if isfield(sct_pick, s_name) && ~isstruct(sct_pick.(s_name)) && ~isempty(obj.a_network) && ismember(sct.widget, ["string", "expression"])
                 sct.s_pick  = "element";    % an input without choices that takes tags (gui_forms.json "pick")
                 sct.sv_kind = reshape(string(sct_pick.(s_name)), 1, []);
             end
