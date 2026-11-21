@@ -1,7 +1,82 @@
 {
-    "None":{
-        "Value": true,
+    "version": 1,
+    "InitialLambda":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "lambda at the starting point (the equilibrium)"
+    },
+    "MaxIteration":{
+        "Value": 500,
+        "Type": "double",
+        "Valid": "v > 0 && mod(v,1) == 0",
+        "Description": "Maximum number of predictor-corrector steps"
+    },
+    "StepSize":{
+        "Value": 0.5,
+        "Type": "double",
+        "Valid": "v > 0",
+        "Description": "Step size of the predictor"
+    },
+    "ArcLength":{
+        "Value": 0.001,
+        "Type": "double",
+        "Valid": "v > 0",
+        "Description": "Arc length of the corrector"
+    },
+    "Tolerance":{
+        "Value": 1e-5,
+        "Type": "double",
+        "Valid": "v > 0",
+        "Description": "Convergence tolerance of the Newton-Raphson corrector"
+    },
+    "CorrectorMaxIteration":{
+        "Value": 1000,
+        "Type": "double",
+        "Description": "Maximum number of iterations of the Newton-Raphson corrector"
+    },
+    "CorrectorStepSize":{
+        "Value": 1,
+        "Type": "double",
+        "Description": "Factor of the update of the Newton-Raphson corrector"
+    },
+    "Increment":{
+        "Value": 1e-4,
+        "Type": "double",
+        "Description": "Step of the numerical Jacobian of the predictor and the corrector"
+    },
+    "Limits":{
+        "Value": "none",
+        "Type": "string",
+        "Description": "Operating limits applied by the continuation power flow: a subset of \"Q\" (PV to PQ at Qmin/Qmax of the generators), \"V\" (stop at Vmin/Vmax of a bus) and \"S\" (stop at Smax of a branch), or \"all\" / \"none\""
+    },
+    "UseInternalState":{
+        "Value": false,
         "Type": "logical",
-        "Description": "未定義"
+        "Description": "Solve with the internal states of the generators"
+    },
+    "Verbose":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Print lambda at each step"
+    },
+    "Progress":{
+        "Value": "dialog",
+        "Type": "select",
+        "FromLogical": ["none", "dialog"],
+        "options":[
+            "none",
+            "disp",
+            "dialog"
+        ],
+        "Description": "Progress display during the calculation (the step and lambda): 'dialog' (opens when the calculation lasts 0.5 s or longer), 'disp' (one line per step in the Command Window) or 'none'"
+    },
+    "PlotFcn":{
+        "Value": "none",
+        "Type": "select",
+        "options": [
+            "none",
+            "pvcurve"
+        ],
+        "Description": "Live display during the analysis: 'pvcurve' (|V| of every bus against lambda, extended at each step) or 'none'. The figure after the analysis: result.plot_pvcurve()"
     }
 }

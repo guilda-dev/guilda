@@ -1,5 +1,27 @@
 {
-    "Algorithm_linprog":{
+    "version": 2,
+    "Method":{
+        "Value": "AC OPF",
+        "Type": "select",
+        "options":[
+            "ELD",
+            "DC OPF",
+            "AC OPF"
+        ],
+        "Description": "Formulation: 'ELD' (economic load dispatch, branches ignored), 'DC OPF' (DC approximation) or 'AC OPF' (AC power flow equations)"
+    },
+    "Solver":{
+        "Value": "auto",
+        "Type": "select",
+        "options":[
+            "auto",
+            "linprog",
+            "quadprog",
+            "fmincon"
+        ],
+        "Description": "Optimization solver ('auto': the solver that 'solve' chooses for the problem)"
+    },
+    "LinprogAlgorithm":{
         "Value": "dual-simplex-highs",
         "Type": "select",
         "options":[
@@ -7,9 +29,9 @@
             "interior-point",
             "dual-simplex-highs"
         ],
-        "Description": "algorithm option @linprog"
+        "Description": "'Algorithm' option @linprog"
     },
-    "Algorithm_quadprog":{
+    "QuadprogAlgorithm":{
         "Value": "interior-point-convex",
         "Type": "select",
         "options":[
@@ -17,9 +39,9 @@
             "trust-region-reflective",
             "interior-point-convex"
         ],
-        "Description": "algorithm option @quadprog"
+        "Description": "'Algorithm' option @quadprog"
     },
-    "Algorithm_fmincon":{
+    "FminconAlgorithm":{
         "Value": "interior-point",
         "Type": "select",
         "options":[
@@ -29,45 +51,113 @@
             "trust-region-reflective",
             "interior-point"
         ],
-        "Description": "algorithm option @fmincon"
+        "Description": "'Algorithm' option @fmincon"
     },
-    "Display":{
-        "Value": "iter-detailed",
+    "Verbose":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Print the progress of the solver (Display 'iter'; false: 'none')"
+    },
+    "Progress":{
+        "Value": "dialog",
         "Type": "select",
-        "options": [
+        "FromLogical": ["none", "dialog"],
+        "options":[
             "none",
-            "iter",
-            "iter-detailed",
-            "final",
-            "final-detailed",
-            "notify",
-            "notify-detailed"
+            "disp",
+            "dialog"
         ],
-        "Description": "'Display' option of solver"
+        "Description": "Progress display during the calculation (the solver and its iterations): 'dialog' (opens when the calculation lasts 0.5 s or longer), 'disp' (one line per step in the Command Window) or 'none'"
     },
     "MaxIteration":{
         "Value": NaN,
         "Type": "double",
-        "Description": "'MaxIteration' option of solver (If blank, use default value.)"
+        "Valid": "isnan(v) || v > 0 && mod(v,1) == 0",
+        "Description": "'MaxIterations' option of the solver (NaN: the default of the solver)"
     },
-    "OptimalityTolerance":{
+    "Tolerance":{
         "Value": NaN,
         "Type": "double",
-        "Description": "'OptimalityTolerance' option of solver (If blank, use default value.)"
+        "Valid": "v > 0 || isnan(v)",
+        "Description": "'OptimalityTolerance' option of the solver (NaN: the default of the solver)"
     },
-    "StepTolerance":{
+    "QuadprogStepTolerance":{
         "Value": NaN,
         "Type": "double",
-        "Description": "'StepTolerance' option of solver (If blank, use default value.)"
+        "Description": "'StepTolerance' option @quadprog (NaN: the default of quadprog)"
     },
-    "MaxFunctionEvaluations":{
+    "FminconStepTolerance":{
         "Value": NaN,
         "Type": "double",
-        "Description": "'MaxFunctionEvaluations' option of solver (If blank, use default value.)"
+        "Description": "'StepTolerance' option @fmincon (NaN: the default of fmincon)"
     },
-    "UseParallel":{
+    "FminconMaxFunctionEvaluations":{
+        "Value": NaN,
+        "Type": "double",
+        "Description": "'MaxFunctionEvaluations' option @fmincon (NaN: the default of fmincon)"
+    },
+    "FminconUseParallel":{
         "Value": false,
         "Type": "logical",
-        "Description": "'UseParallel' option of solver"
+        "Description": "'UseParallel' option @fmincon"
+    },
+    "WarmStart":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Start 'AC OPF' from the last AC OPF solution of the network (false: flat start)"
+    },
+    "PlotFcn":{
+        "Value": "none",
+        "Type": "select",
+        "options": [
+            "none",
+            "fval",
+            "constrviolation",
+            "fvalconstr",
+            "firstorderopt",
+            "stepsize",
+            "funccount",
+            "x"
+        ],
+        "Description": "Live display during the analysis (fmincon only, 'AC OPF'): the plot function optimplot<key> of fmincon, or 'none'. The figure after the analysis: result.plot_dispatch()"
+    },
+    "MinDampingRatio":{
+        "Value": NaN,
+        "Type": "double",
+        "Valid": "isnan(v) || v >= 0 && v < 1",
+        "Description": "Stability-constrained 'AC OPF': lower limit of the damping ratio of the oscillatory modes of get_sys at the solution (NaN: no limit)"
+    },
+    "MaxRealPart":{
+        "Value": NaN,
+        "Type": "double",
+        "Valid": "isnan(v) || isfinite(v)",
+        "Description": "Stability-constrained 'AC OPF': upper limit [1/s] of the real part of the nonzero eigenvalues of get_sys at the solution (NaN: no limit)"
+    },
+    "StabilityMaxIteration":{
+        "Value": 10,
+        "Type": "double",
+        "Valid": "v >= 1 && mod(v,1) == 0",
+        "Description": "Stability-constrained 'AC OPF': largest number of outer iterations (OPF with linearized stability constraints)"
+    },
+    "StabilityStep":{
+        "Value": [0.1, 0.02],
+        "Type": "double",
+        "Size": [1, 2],
+        "Valid": "all(v > 0)",
+        "Description": "Stability-constrained 'AC OPF': initial trust region [dP dV] [pu] of each outer iteration (Inf: none for that kind)"
+    },
+    "StabilityMargin":{
+        "Value": [0.005, 0.005],
+        "Type": "double",
+        "Size": [1, 2],
+        "Valid": "all(v >= 0 & isfinite(v))",
+        "Description": "Stability-constrained 'AC OPF': margin [damping ratio, real part 1/s] of the linearized constraints over the limits"
+    },
+    "StabilityBand":{
+        "Value": [0.02, 0.05],
+        "Type": "double",
+        "Size": [1, 2],
+        "Valid": "all(v >= 0 & isfinite(v))",
+        "Description": "Stability-constrained 'AC OPF': width [damping ratio, real part 1/s] of the band near a limit whose modes get linearized constraints"
     }
 }

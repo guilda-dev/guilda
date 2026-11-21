@@ -1,0 +1,9 @@
+{
+    "version": 1,
+    "Hz":{
+        "Value": 60,
+        "Type": "double",
+        "Valid": "v > 0",
+        "Description": "Grid Frequency"
+    }
+}

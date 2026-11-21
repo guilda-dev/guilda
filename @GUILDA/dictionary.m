@@ -1,31 +1,54 @@
 function tab_out = dictionary(headword,opt)
 % Search classes implemented in this software
-    arguments
-        headword   (1,1) string {mustBeMember(headword,  ["PowerSystemModel","PowerNetwork","Branch","Component","Controller","LocalController","GlobalController","auxiliary"])} = "PowerSystemModel"
-        opt.disp   (1,1) logical = true
-        opt.output (1,:) string {mustBeMember(opt.output,["PowerSystemModel","PowerNetwork","Branch","Component","Controller","LocalController","GlobalController","auxiliary"])} = headword
+%
+% Prints the class tree under headword. Each row starts with a [doc] link, which opens
+% the reference page of the class (GUILDA.doc("class", name)), whether the class is
+% abstract, and its model key (the Constant property `key`; blank for a class without
+% a key, such as PowerNetwork or an abstract class). The returned table lists the
+% descendants of the classes in output with their keys; GUILDA.keymap is built from it.
+%
+% <@Examples>
+% ```matlab
+% GUILDA.dictionary("Component")                          % class tree under Component
+% tab = GUILDA.dictionary("Component", "disp", false);    % No, filename, superclass, Key
+% tab(tab.Key ~= "", ["filename","Key"])                  % classes that have a key
+% ```
+%
+% See also GUILDA.keymap, GUILDA.doc
+    arguments (Input)
+        headword   (1,1) string {mustBeMember(headword,  ["PowerSystemModel","PowerNetwork","Branch","Component","Controller","LocalController","GlobalController","auxiliary"])} = "PowerSystemModel"  % Root class of the displayed class tree.
+        opt.disp   (1,1) logical = true  % Print the class tree to the Command Window.
+        opt.output (1,:) string {mustBeMember(opt.output,["PowerSystemModel","PowerNetwork","Branch","Component","Controller","LocalController","GlobalController","auxiliary"])} = headword  % Root classes whose descendants are returned.
     end
-    
+    arguments (Output)
+        tab_out  % Table of descendant classes (No, filename, superclass, Key; Key is "" for a class without a model key); a cell of tables when several outputs are requested.
+    end
+
     char_class = char(headword);
 
-    if strcmp(char_class([end-1,end]),'.m')
-        char_class = char_class(1:end-2);
-    end
-    
     filename      = "handle";
     superclass    = "";
-    class_list    = make_classlist(table(filename,superclass),cell(0), opt.disp);
+    Key           = "";
+    class_list    = make_classlist(table(filename,superclass,Key),cell(0), opt.disp);
 
     if opt.disp
+        % width of the Key column: the longest key in the displayed tree
+        sv_tree = string(char_class);
+        sv_new  = sv_tree;
+        while ~isempty(sv_new)
+            sv_new  = class_list.filename(ismember(class_list.superclass, sv_new));
+            sv_tree = [sv_tree; sv_new]; %#ok<AGROW>
+        end
+        n_key = max(strlength(["Key"; class_list.Key(ismember(class_list.filename, sv_tree))]));
         bar = "================================================================";
         disp(' ')
         disp("Search for '" + char_class + "' class")
         disp(bar)
-        disp("     Link   　   Type      class tree ")
+        disp("  Link   Type        " + pad("Key", n_key) + "  class tree")
         disp(bar)
-        fprintf_doc_and_help(char_class);
-        disp("  "+char_class)
-        print_tree(class_list,string(char_class),'');
+        print_row(char_class, class_key(headword), n_key);
+        fprintf('%s\n', char_class)
+        print_tree(class_list,string(char_class),'',n_key);
         disp(bar)
     end
 
@@ -33,18 +56,18 @@ function tab_out = dictionary(headword,opt)
     tab_out = cell(n_out,1);
     for i = 1:n_out
         l_flag      = true;
-        str_parent  = opt.output(i);
-        tab_outi     = [];
+        sv_parent   = opt.output(i);
+        tab_outi    = class_list([],:);   % keeps the filename/superclass/Key columns when nothing is found
         while l_flag
             l_flag = false;
-            lv_child = ismember(class_list.superclass,str_parent);
+            lv_child = ismember(class_list.superclass,sv_parent);
             if any(lv_child)
                 l_flag = true;
                 tab_add    = class_list(lv_child,:);
                 [~,iv_add] = sort(tab_add.superclass);
                 tab_outi   = [tab_outi; tab_add(iv_add,:)]; %#ok
                 class_list = class_list(~lv_child,:);
-                str_parent = tab_add.filename;
+                sv_parent  = tab_add.filename;
             end
         end
         No = (1:size(tab_outi,1))';
@@ -57,7 +80,12 @@ end
 
 function data = make_classlist(data, cell_dirlist, l_disp)
 
-    list = dir(fullfile( pwd, cell_dirlist{:} ));
+    % Old load classes kept for reference only (same names as the current ones)
+    if isequal(cell_dirlist, {'_GUILDAobject','+component','+load','history'})
+        return
+    end
+
+    list = dir(fullfile( GUILDA.pwd, cell_dirlist{:} ));
     for idx = 1:numel(list)
         char_name = list(idx).name;
 
@@ -67,6 +95,16 @@ function data = make_classlist(data, cell_dirlist, l_disp)
             continue
         end
         
+
+        % 保管用の archive フォルダ：スキップ (旧ファイルは現行クラスと同名のことがある)
+        if  list(idx).isdir && strcmp(char_name, 'archive')
+            continue
+        end
+
+        % 検証・教科書のフォルダ：スキップ (ルートの _GUILDAverification、_GUILDAtextbook)
+        if  list(idx).isdir && ismember(char_name, {'_GUILDAverification', '_GUILDAtextbook'})
+            continue
+        end
 
         % ディレクトリの場合：フォルダ内を探索
         if  list(idx).isdir
@@ -102,68 +140,48 @@ function data = make_classlist(data, cell_dirlist, l_disp)
         
         try
             superclass_list = superclasses(filename);
-        catch
-            if l_disp
-                disp("Unable to analyze parent class : "+filename)
-            end
+        catch ME
+            show_msg("warning", "GUILDA:dictionary:ClassNotLoaded", filename, ME.message);
             superclass_list = {};
         end
 
         if numel(superclass_list)>0
             superclass = string(superclass_list{1});
-            data = [data; table(filename,superclass)]; %#ok
+            Key        = class_key(filename);
+            data = [data; table(filename,superclass,Key)]; %#ok
         end
     
     end
 end
 
-function print_tree(data,superclass,char_preword)
+function print_tree(data,superclass,char_preword,n_key)
     idx_list = find(data.superclass == superclass);
     for idx = idx_list.'
         
         char_filename = char( data{idx,'filename'} );
-        fprintf_doc_and_help(char_filename);
+        print_row(char_filename, data.Key(idx), n_key);
 
-    
         filelink = ['<a href="matlab:open(''',char_filename,''');">',char_filename,'</a>\n'];
         if idx == idx_list(end)
             fprintf([char_preword,'  ┗━━ ',filelink])
-            print_tree(data,string(char_filename),[char_preword,'    ']);
+            print_tree(data,string(char_filename),[char_preword,'    '],n_key);
         else
             fprintf([char_preword,'  ┣━━ ',filelink])
-            print_tree(data,string(char_filename),[char_preword,'  ┃ ']);
+            print_tree(data,string(char_filename),[char_preword,'  ┃ '],n_key);
         end
     end
 end
 
 
-function fprintf_doc_and_help(char_filename)
-    fprintf(' ')
-    fprintf(['<a href="matlab:' ,...
-             'disp('' '');',...
-             'disp('' '');',...
-             'disp([''help：'',''',char_filename,''']);',...
-             'disp(''==================================================='');',...
-             'help(''',char_filename,''');',...
-             'disp(''==================================================='');',...
-             'disp('' '');',...
-             'disp('' '');',...
-             '">[help]</a>'])
-    fprintf(',')
-
-    if ismethod(char_filename,"doc")
-        fprintf(['<a href="matlab:' ,...
-                 char_filename,'.doc;',...
-                 '">[mlx]</a>  '])
-    else
-        char_filename_for_cmd = strrep(char_filename, '''', '''''');
-        fprintf('<a href="matlab:GUILDA.doc(''class'', ''%s'')">[doc]</a>  ', char_filename_for_cmd)
-    end
-
+function print_row(char_filename, s_key, n_key)
+    % Start a row of the tree: the [doc] link, Abstract/Concrete and the model key
+    char_filename_for_cmd = strrep(char_filename, '''', '''''');
+    fprintf('  <a href="matlab:GUILDA.doc(''class'', ''%s'')">[doc]</a>  ', char_filename_for_cmd)
     c = meta.class.fromName(char_filename);
     if ~isempty(c) && c.Abstract
-        fprintf("-:Abstract")
+        fprintf("-:Abstract  ")
     else
-        fprintf("o:Concrete")
+        fprintf("o:Concrete  ")
     end
+    fprintf("%s  ", pad(string(s_key), n_key))
 end
