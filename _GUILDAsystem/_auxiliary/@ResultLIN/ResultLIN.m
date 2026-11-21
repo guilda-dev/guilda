@@ -23,7 +23,12 @@ classdef ResultLIN < ResultBase
 % eigenvectors in the order of get_mode, get_kernel the kernel of the Jacobian of the DAE
 % (the rotation of the phases of each island), get_reduced_matrix the Jacobian with the
 % variables of chosen elements eliminated (Schur complement), and disp_summary and
-% disp_mode display the result and its modes.
+% disp_mode display the result and its modes. plot_matrix draws a matrix of the model by
+% groups of variables; plot_kernel, plot_participation, plot_eigenvector,
+% plot_contribution and plot_reduced_matrix draw the kernel, the participation, the
+% eigenvectors, the shares of the elements in an eigenvalue and the reduced matrix on the
+% network diagram (the participation, eigenvectors and shares with the mode picked on the
+% eigenvalue map).
 %
 % The properties A, B, C, D, E, StateName, InputName and OutputName hold one linear model
 % (E dx/dt = A x + B u, y = C x + D u) with the names of the states, inputs and outputs, as
@@ -324,6 +329,12 @@ classdef ResultLIN < ResultBase
         sct_part = get_participation(obj, opt)
         G = plot_eigenvalue(obj, opt)
         G = plot_eigenvalue_path(obj, opt)
+        [G, G_block] = plot_matrix(obj, opt)
+        G = plot_kernel(obj, opt)
+        sct_graph = plot_participation(obj, opt)
+        sct_graph = plot_eigenvector(obj, opt)
+        [G, tab_coupling] = plot_reduced_matrix(obj, target, opt)
+        sct_graph = plot_contribution(obj, opt)
         cv_lambda = get_eigenvalue(obj, Type, opt)
         sct_vector = get_eigenvector(obj, Type, opt)
         sct_kernel = get_kernel(obj, opt)
