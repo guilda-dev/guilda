@@ -97,7 +97,15 @@ function load_data(obj, sct_data)
         end
         sct.(s_field) = s;
     end
-    for s_field = ["l_frame", "l_valueText"]
+    s_pattern = "dot";
+    if isfield(sct_data, "s_pattern") && ~isempty(sct_data.s_pattern)
+        s_pattern = string(sct_data.s_pattern);
+    end
+    if ~(isscalar(s_pattern) && ismember(s_pattern, ["dot", "circle"]))
+        error(msg("GUILDA:GraphMatrix:FieldValue", "s_pattern", """dot"" or ""circle"""));
+    end
+    sct.s_pattern = s_pattern;
+    for s_field = ["l_frame", "l_valueText", "l_groupTicks", "l_cellGrid"]
         l = false;
         if isfield(sct_data, s_field) && ~isempty(sct_data.(s_field))
             l = sct_data.(s_field);

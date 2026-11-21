@@ -1,21 +1,21 @@
 function [G, G_block] = plot_matrix(obj, opt)
-% Plot a matrix of the linear model: its pattern by groups of variables, and a block of it.
+% Plot a matrix of the linear model by element, and a block of it with its values.
 %
-% Draws one matrix of the model with GraphMatrix: one dot per nonzero entry (Display
-% "pattern", default; zeros are empty) or log10|value| ("magnitude"), with the names of
-% the variables (StateName, InputName, OutputName of get_ss) on the rows and columns. The
-% variables are grouped, and the rows and columns sorted by group (in the order of the
-% first variable of each group, the order of the model within a group); separator lines
-% run between the groups and a box frames each diagonal block (a group of the rows that is
-% also a group of the columns). Group chooses the groups:
+% What it shows: which variables of the model act on which. Each row is an equation (the
+% derivative of a state, or the balance of a bus) and each column a variable; an entry is
+% the coefficient of the column in the row (e.g. A(i, j) = d(dx_i/dt)/dx_j). The
+% variables are grouped by their element (the owner tag: the component, controller or
+% bus, tab_variable.Owner; a bus variable of the "DAE" belongs to its bus), so a diagonal
+% block is the internal dynamics of one element and an off-diagonal block the coupling of
+% two elements.
 %
-% - "class" (default): the class of the owner of the variable (tab_owner of the connected
-%   model, e.g. all the states of one generator model, of one AVR model, and "Bus" for
-%   the bus variables of the "DAE").
-% - "element": the owner (the tag of the component, controller or bus,
-%   tab_variable.Owner; a bus variable of the "DAE" belongs to its bus).
-%
-% An input or output that is not in tab_variable belongs to the group "(other)".
+% Draws the matrix with GraphMatrix: with Display "pattern" (default) a red filled circle
+% per nonzero entry and a hollow circle per zero entry, or log10|value| ("magnitude").
+% The rows and columns are sorted by element (in the order of the first variable of each
+% element, the order of the model within one); the tick labels are the element tags, one
+% at the middle of each element's rows and columns; separator lines run between the
+% elements and a box frames each diagonal block. An input or output that is not in
+% tab_variable belongs to the group "(other)".
 %
 % Matrix chooses the matrix:
 %
@@ -27,9 +27,12 @@ function [G, G_block] = plot_matrix(obj, opt)
 %   equations, then the bus balance). Only a result of the network (output.s_layer
 %   "PowerNetwork") has it; another layer stops with GUILDA:ResultLIN:NetworkOnly.
 %
-% Clicking the matrix (a block of a group of rows and a group of columns) shows that
-% block on the right in G_block (GraphMatrix, Display "value"): the names of its rows and
-% columns and the values written in the cells. It starts with the first diagonal block.
+% Clicking anywhere in a block of the matrix (a circle, an empty cell, or a data tip on
+% it: the graph turns on the data cursor mode) shows that block on the right, in G_block
+% (GraphMatrix, Display "value", a line around each cell): its title is the element tag
+% (or "row tag × column tag"), its rows and columns the variable names without the tag
+% (delta, omega, Eq) and its cells the values. It starts with the first diagonal block; a
+% gray line separates the two panels.
 % With an axes as Parent only the matrix is drawn (G_block is empty). G.Display,
 % G.Tolerance and G.ColorLimits change the view later. Form chooses the view as in get_ss
 % ("hessian": the Hessian H of the energy function).
@@ -44,10 +47,10 @@ function [G, G_block] = plot_matrix(obj, opt)
 % <@Examples>
 % ```matlab
 % res = net.get_sys();
-% [G, Gb] = res.plot_matrix();                   % A by classes; click a block
-% G = res.plot_matrix(Matrix="J", Type="DAE", Group="element", Display="magnitude");
+% [G, Gb] = res.plot_matrix();                   % A by element; click a block
+% G = res.plot_matrix(Matrix="J", Type="DAE", Display="magnitude");
 % G.Tolerance = 1e-8;                             % hide the tiny entries
-% G.select("Bus");                                % the rows and columns of a group
+% G.select("B001SG1");                            % the rows and columns of an element
 % res = net.get_sys({sim, [0.5 1 2]});
 % G = res.plot_matrix(Index=2);                   % three sections, the second first
 % ```
@@ -57,7 +60,6 @@ function [G, G_block] = plot_matrix(obj, opt)
         obj
         opt.Matrix (1,1) string {mustBeMember(opt.Matrix, ["J","A","B","C","D","E"])} = "A"  % Matrix drawn: "A" ... "E" of get_ss(Type) or "J" (A of get_ss("DAE") over [x; v]).
         opt.Display (1,1) string {mustBeMember(opt.Display, ["pattern","magnitude"])} = "pattern"  % "pattern" (nonzero entries) or "magnitude" (log10|value|).
-        opt.Group (1,1) string {mustBeMember(opt.Group, ["class","element"])} = "class"  % Groups of the rows and columns: the class of the owner or the owner tag.
         opt.Type (1,1) string {mustBeMember(opt.Type, ["ODE","DAE"])} = obj.Type  % Model of "A" ... "E": "ODE" or "DAE"; the Type of the result when omitted.
         opt.Port (1,1) string {mustBeMember(opt.Port, ["PI","PQ","I"])} = default_port(obj)  % Bus port of the "DAE" (see get_ss); options.Port of the result when omitted.
         opt.Form (1,1) string {mustBeMember(opt.Form, ["descriptor","absorbed","hessian"])} = obj.Form  % View (see get_ss); res.Form when omitted.
@@ -153,20 +155,8 @@ function [G, G_block] = plot_matrix(obj, opt)
         sv_label.x = "variable";
     end
 
-    % Groups: the owner tag ("element") or the class of the owner ("class"; a bus "Bus"),
-    % the rows and columns sorted by group (in the order of the first variable of each)
-    if opt.Group == "class"
-        tab_owner = table(strings(0, 1), strings(0, 1), 'VariableNames', ["Owner","Class"]);
-        if isfield(obj.c_section{k_ok}, "tab_owner")
-            tab_owner = obj.c_section{k_ok}.tab_owner;
-        end
-        for s_side = ["x","u","y"]
-            sv_owner = sct_side.(s_side).sv_owner;
-            [lv, iv] = ismember(sv_owner, tab_owner.Owner);
-            sv_owner(lv) = tab_owner.Class(iv(lv));
-            sct_side.(s_side).sv_owner = sv_owner;
-        end
-    end
+    % Groups: the owner tag of each variable, the rows and columns sorted by group (in the
+    % order of the first variable of each)
     for s_side = ["x","u","y"]
         [~, ~, iv_g] = unique(sct_side.(s_side).sv_owner, "stable");
         [~, iv_perm] = sort(iv_g);
@@ -193,6 +183,8 @@ function [G, G_block] = plot_matrix(obj, opt)
     sct.sv_rowGroup = sct_side.(s_row).sv_owner(iv_r);
     sct.sv_colGroup = sct_side.(s_col).sv_owner(iv_c);
     sct.l_frame     = true;
+    sct.l_groupTicks = true;
+    sct.s_pattern   = "circle";
     sct.s_title     = s_title;
     sct.s_rowLabel  = sv_label.(s_row);
     sct.s_colLabel  = sv_label.(s_col);
@@ -215,20 +207,27 @@ function [G, G_block] = plot_matrix(obj, opt)
     if isa(h_parent, "matlab.graphics.axis.Axes")
         G = GraphMatrix(sct, Parent=h_parent, Display=opt.Display);
     else
-        h_root = uipanel(h_parent, "BorderType", "none", "Units", "normalized", "Position", [0 0 1 1], ...
+        c_fill = {"Units", "normalized", "Position", [0 0 1 1]};
+        if isa(h_parent, "matlab.ui.container.GridLayout")
+            c_fill = {};            % a cell of the grid sets its size
+        end
+        h_root = uipanel(h_parent, "BorderType", "none", c_fill{:}, ...
             "Tag", "GUILDA:ResultLIN:Matrix");
         if isprop(h_parent, "Color")
             h_root.BackgroundColor = h_parent.Color;
         end
         c_panel = {"BorderType", "none", "Units", "normalized", "BackgroundColor", h_root.BackgroundColor};
         G = GraphMatrix(sct, Parent=uipanel(h_root, c_panel{:}, "Position", [0 0 0.6 1]), Display=opt.Display);
+        uipanel(h_root, "BorderType", "none", "Units", "normalized", "Position", [0.6 0.03 0.002 0.94], ...
+            "BackgroundColor", [0.7 0.7 0.7], "Tag", "GUILDA:ResultLIN:MatrixSeparator");   % the line between the two panels
         G_block = GraphMatrix(block_data(sct, sct.sv_rowGroup(1), sct.sv_colGroup(1)), ...
-            Parent=uipanel(h_root, c_panel{:}, "Position", [0.6 0 0.4 1]), Display="value");
+            Parent=uipanel(h_root, c_panel{:}, "Position", [0.602 0 0.398 1]), Display="value");
         G.ElementClickedFcn = @(G, data) show_block(G, data, G_block, sct);
         if n_t > 1
             G.link(G_block);
         end
     end
+    subtitle(G.ax(1), ["Red: nonzero (row: equation, column: variable), hollow: zero"; "Click a block to see its values"], "FontSize", 8);
     if n_t > 1
         G.set_time(sct.rv_t(opt.Index));
     end
@@ -236,7 +235,7 @@ end
 
 
 function show_block(G, data, G_block, sct)
-% Click on the matrix: the block of the group of the row (data.Tag) and of the column under CurrentPoint, in G_block
+% Click on the matrix: the block of the group of the row and of the column of the cell clicked (ClickedCell), in G_block
     arguments (Input)
         G             % The matrix (GraphMatrix).
         data          % Event data (GraphEventData).
@@ -246,11 +245,11 @@ function show_block(G, data, G_block, sct)
     if data.Kind ~= "rowgroup" || ~isvalid(G_block)
         return
     end
-    j = round(G.ax(1).CurrentPoint(1, 1));
-    if j < 1 || j > numel(sct.sv_colGroup)
+    rv_cell = G.ClickedCell;
+    if any(isnan(rv_cell))
         return
     end
-    G_block.set_data(block_data(sct, data.Tag, sct.sv_colGroup(j)));
+    G_block.set_data(block_data(sct, sct.sv_rowGroup(rv_cell(1)), sct.sv_colGroup(rv_cell(2))));
     G_block.set_time(G.rv_t(G.i_time));
 end
 
@@ -269,11 +268,31 @@ function sct_block = block_data(sct, s_row, s_col)
     lv_c = sct.sv_colGroup == s_col;
     sct_block = sct;
     sct_block.c_matrix    = cellfun(@(M) M(lv_r, lv_c), sct.c_matrix, "UniformOutput", false);
-    sct_block.sv_rowName  = sct.sv_rowName(lv_r);
-    sct_block.sv_colName  = sct.sv_colName(lv_c);
+    sct_block.sv_rowName  = strip_tag(sct.sv_rowName(lv_r), s_row);
+    sct_block.sv_colName  = strip_tag(sct.sv_colName(lv_c), s_col);
     sct_block.sv_rowGroup = sct.sv_rowGroup(lv_r);
     sct_block.sv_colGroup = sct.sv_colGroup(lv_c);
     sct_block.s_title     = s_row + " × " + s_col;
+    if s_row == s_col
+        sct_block.s_title = s_row;
+    end
     sct_block.l_frame     = false;
+    sct_block.l_groupTicks = false;
+    sct_block.l_cellGrid  = true;
+    sct_block.s_pattern   = "dot";
     sct_block.l_valueText = true;
+end
+
+
+function sv = strip_tag(sv, s_tag)
+% Names of the variables without the tag of their owner: delta_B001SG1 -> delta
+    arguments (Input)
+        sv (:,1) string       % Names.
+        s_tag (1,1) string    % Tag of the owner.
+    end
+    arguments (Output)
+        sv (:,1) string       % Names without "_" + tag at their end.
+    end
+    lv = endsWith(sv, "_" + s_tag);
+    sv(lv) = extractBefore(sv(lv), strlength(sv(lv)) - strlength(s_tag));
 end
