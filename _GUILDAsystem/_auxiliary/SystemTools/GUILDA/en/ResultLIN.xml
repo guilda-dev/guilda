@@ -14,5 +14,8 @@
         <entry key="NoHessianForm">Form "hessian" needs the energy-function blocks of every section: make the result with net.get_sys(Form="hessian").</entry>
         <entry key="HessianPort">Form "hessian" is written in Port "PI" ([theta, V], [P, Q/V]) or "PQ" ([theta, rho], [P, Q]); Port "I" has no energy-function form.</entry>
         <entry key="SingularE">Form "absorbed" needs a mass matrix E whose nonzero rows of the states form an invertible block that does not couple to the other states (rcond {0}).</entry>
+        <entry key="KernelRange">Kernel must be an integer from 1 to {0}, the number of kernels (islands) of the section shown; get_kernel gives them.</entry>
+        <entry key="NoKernel">The section shown has no kernel of the rotation form to draw: {0}</entry>
+        <entry key="ModeRange">Mode must be an integer from 1 to {0}, a column of get_participation of the section shown.</entry>
     </message>
 </rsccat>
