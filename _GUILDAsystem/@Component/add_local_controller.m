@@ -1,62 +1,299 @@
-function add_local_controller(obj, varargin)
-    arguments
-        obj        
+function con = add_local_controller(obj, Key, opt)
+% Build a local controller (AVR, PSS, governor, LQR, ...) from its model key, attach it to the component and return it.
+%
+% `Key` is the model key of a local controller class (`keys(GUILDA.keymap("LocalController"))`
+% lists them). `parameter` gives the parameters of the constructor as a struct
+% (or a one-row table) of Name=Value; omitted fields keep the class defaults. The
+% controller tag is the component tag, the class header and a number, e.g. "B001SG1CA1".
+% One controller is added per call.
+%
+% The role of the controller class (`s_role`) says where it goes:
+%
+% - "avr": attached to the component (the PSS feeds it)
+% - "pss": attached to the AVR of the component
+% - "local": attached to the component in the place of an AVR (e.g. "local-LQR")
+% - "governor": attached to the component beside the AVR or "local" controller (it
+%   drives Pmech, e.g. "gov-LPT1")
+%
+% A component has two slots for top-level controllers: the AVR or "local" controller
+% (with the PSS under an AVR), then the governor. a_LocalController lists them in this
+% order whatever the order of attachment, and so do the variables (get_variable_map).
+% A controller reads the outputs and states of the component it observes by the names
+% of its inputs sv_u ("Xall" / "Yall": all the states / all the outputs), and its outputs
+% drive the inputs of the component of the same name (an input event or a global
+% controller on such an input adds to them).
+% Every synchronous generator has a Static AVR ("avr-static") and a Static governor
+% ("gov-static") from its creation (controller.avr.Static, controller.governor.Static).
+% They are replaced like any other controller, but without the warning, and are not
+% counted in the numbers of the tags.
+% A new AVR or "local" controller replaces the attached one. The PSS of an old AVR moves
+% to a new AVR, and is deleted when the new controller is not an AVR. A new PSS
+% replaces the attached one, and a new governor the attached governor. Replaced
+% controllers are deleted, so a handle to them becomes invalid.
+% Every write to a_LocalController is checked against these slots (Component.a_LocalController
+% and LocalController.a_LocalController reject any other list: GUILDA:Component:ControllerSlots,
+% GUILDA:LocalController:NestedControllerSlot). A generator returns them as gen.avr, gen.pss and
+% gen.governor, and gen.set_avr, set_pss and set_governor call this method.
+% The two top-level controllers must drive different inputs: a governor and an AVR or
+% "local" controller with a common output (e.g. a local_LQR on all the inputs, Pmech
+% among them) are rejected with an error, unless the attached one is a default Static:
+% it is then removed (a local_LQR on all the inputs takes the place of both Statics).
+% A role other than "avr", "pss", "local" or "governor" is rejected with an error, and so
+% is an output that matches no input of the component (for a PSS, of its AVR), e.g. an
+% AVR on a load. A rejected call leaves the component as it was.
+% A misspelled input is not an error, because it has the same form as an input left
+% unconnected on purpose.
+% Each addition is a "Topology" edit, so the equilibrium of the component becomes stale.
+% When a global controller controls the component and the edit changes where one of its
+% outputs goes (the "global" rows of net.get_variable_map), an INFO message
+% (GUILDA:Component:GconRouteChanged) lists the outputs that go elsewhere now.
+%
+% <@Examples>
+% ```matlab
+% gen = net.a_Bus{1}.a_Component{1};
+% avr = gen.add_local_controller("avr-ST1", parameter=struct(kap=30));
+% pss = gen.add_local_controller("pss-PSS1");                          % under the AVR
+% gov = gen.add_local_controller("gov-LPT1", parameter=struct(PLM=5));
+% ```
+%
+% See also Component.remove_local_controller, LocalController, controller.avr.AVR_ST1, controller.pss.PSS1, controller.governor.IEEJ_LPT1, controller.local_LQR
+%
+% <@Group> Construction and editing
+    arguments (Input)
+        obj
+        Key           (1,:) char {tools.mustBeKeyOf(Key, "LocalController")}  % Local controller model key, e.g. "avr-ST1" or "pss-PSS1".
+        opt.parameter {mustBeA(opt.parameter, ["struct","table"])} = struct()  % Constructor parameters (struct or one-row table of Name=Value); omitted ones use the class defaults.
     end
-    arguments (Input,Repeating)
-        varargin (1,1) {mustBeA(varargin, 'LocalController')}
-    end    
-        
-    str_setKeys = ["avr";"pss"];    
-    str_extKeys = cellfun(@(con) con.key, obj.a_LocalController);
+    arguments (Output)
+        con  % Added LocalController object.
+    end
 
-    if numel(obj.a_LocalController) == 2
-        warning(msg('GUILDA:Component:NumOfController'))        
+    % Build Instance
+    % largest number among the controllers of this component + 1 (nested ones included); the
+    % default Static controllers are not counted, so the tags of the others do not depend on them
+    a_con = obj.a_LocalController;
+    for k = 1:numel(obj.a_LocalController)
+        a_con = [a_con; obj.a_LocalController{k}.a_LocalController]; %#ok<AGROW>
+    end
+    a_con = a_con(~cellfun(@is_static_controller, a_con));
+    s_index = string(tools.next_tag_number(string(a_con), obj.s_tag));
+    sct_para = opt.parameter;
+    if istable(sct_para)
+        sct_para = table2struct(sct_para);
+    end
+    c_para = namedargs2cell(sct_para);
 
-        idx = 1;
-        while idx <= nargin-1
-            obj.a_LocalController(str_extKeys==varargin{idx}.key) = varargin(idx);
-            obj.a_LocalController{1}.add_local_controller(obj.a_LocalController{2})            
-            
-            cellfun(@(con,parent) con.set_parent(parent), obj.a_LocalController, {obj,obj.a_LocalController{1}});
+    % get controller function
+    dic    = GUILDA.keymap("LocalController");
+    mkInst = str2func(dic(string(Key)));
+    new_con = mkInst(s_index, c_para{:});
+    new_con.s_tag = obj.s_tag + new_con.s_tag;    % "<component tag><header><number>", e.g. "B001SG1CA1"
 
-            idx = idx + 1;
+    % Checked before anything changes, so a rejected call leaves the component as it was
+    check_role(new_con);
+    con_drop = check_outputs(obj, new_con);
+    sm_route = gc_routes(obj);      % connections of the global controllers before the edit
+    if ~isempty(con_drop)
+        % a default Static in the other slot drives an input that the new controller drives: it goes
+        obj.a_LocalController = obj.a_LocalController(cellfun(@(c) c ~= con_drop, obj.a_LocalController));
+        obj.log_edit(obj.s_tag+" ---remove->> "+con_drop.s_tag, "Topology");
+        tools.delete_layers({con_drop});
+    end
+
+    switch new_con.s_role
+        case {"avr", "local"}
+            old_avr = chain_of(obj);
+            if isempty(old_avr)
+                set_slots(obj, new_con, governor_of(obj));
+                new_con.a_Component = obj;    % so that AVR parameter edits reach the layers above
+                new_con.resolve_observe();
+                new_con.log_edit("attached to " + obj.s_tag, "Topology");
+                obj.log_edit(obj.s_tag+" <<-Add--- "+new_con.s_tag, "Topology");
+            else
+                warn_replace(label(new_con), new_con, old_avr, obj)
+                a_pss = old_avr.a_LocalController;
+                old_avr.remove_local_controller();
+                s_old = old_avr.s_tag;
+                tools.delete_layers({old_avr});
+                set_slots(obj, new_con, governor_of(obj));
+                new_con.a_Component = obj;
+                new_con.resolve_observe();
+                new_con.log_edit("attached to " + obj.s_tag, "Topology");
+                if ~isempty(a_pss)
+                    if new_con.s_role ~= "avr"
+                        tools.delete_layers(a_pss);
+                    else
+                        new_con.add_local_controller(a_pss{1})
+                        a_pss{1}.a_Component = new_con;
+                        a_pss{1}.resolve_observe();
+                        a_pss{1}.log_edit("attached to " + new_con.s_tag, "Topology");
+                    end
+                end
+                obj.log_edit(obj.s_tag+" <<-replace--- "+new_con.s_tag+" (was "+s_old+")", "Topology");
+            end
+
+        case "governor"
+            old_gov = governor_of(obj);
+            set_slots(obj, chain_of(obj), new_con);
+            if isempty(old_gov)
+                obj.log_edit(obj.s_tag+" <<-Add--- "+new_con.s_tag, "Topology");
+            else
+                warn_replace(label(new_con), new_con, old_gov, obj)
+                obj.log_edit(obj.s_tag+" <<-replace--- "+new_con.s_tag+" (was "+old_gov.s_tag+")", "Topology");
+                tools.delete_layers({old_gov});
+            end
+            new_con.a_Component = obj;
+            new_con.resolve_observe();
+            new_con.log_edit("attached to " + obj.s_tag, "Topology");
+
+        case "pss"
+            avr = chain_of(obj);
+            if isempty(avr)
+                error(msg("GUILDA:Component:NotExtAvr"))
+            end
+            if avr.s_role ~= "avr"
+                error(msg("GUILDA:Component:PssParentKey", char(new_con.s_tag), char(avr.s_tag), char(avr.s_role), char(obj.s_tag)))
+            end
+            if isempty(avr.a_LocalController)
+                obj.log_edit(obj.s_tag+" <<-Add--- "+new_con.s_tag, "Topology");
+            else
+                old_pss = avr.a_LocalController{1};
+                warn_replace("PSS", new_con, old_pss, avr)
+                obj.log_edit(obj.s_tag+" <<-replace--- "+new_con.s_tag+" (was "+old_pss.s_tag+")", "Topology");
+                tools.delete_layers({old_pss});
+            end
+            avr.add_local_controller(new_con)
+            new_con.a_Component = avr;
+            new_con.resolve_observe();
+            new_con.log_edit("attached to " + avr.s_tag, "Topology");
+    end
+
+    obj.l_hasController = ~isempty(obj.a_LocalController);
+    con = new_con;
+    gc_routes(obj, sm_route);       % INFO when an output of a global controller goes elsewhere now
+end
+
+function con = chain_of(comp)
+    % The AVR or "local" controller of the component ([] if none)
+    con = slot_of(comp, ["avr", "local"]);
+end
+
+function con = governor_of(comp)
+    % The governor of the component ([] if none)
+    con = slot_of(comp, "governor");
+end
+
+function con = slot_of(comp, sv_role)
+    con = [];
+    for k = 1:numel(comp.a_LocalController)
+        if ismember(comp.a_LocalController{k}.s_role, sv_role)
+            con = comp.a_LocalController{k};
+            return
         end
+    end
+end
+
+function set_slots(comp, chain, gov)
+    % The top-level controllers in their fixed order: the AVR or "local" controller, then the governor
+    a_con = cell(0,1);
+    if ~isempty(chain)
+        a_con = [a_con; {chain}];
+    end
+    if ~isempty(gov)
+        a_con = [a_con; {gov}];
+    end
+    comp.a_LocalController = a_con;
+end
+
+function check_role(con)
+    if ~ismember(con.s_role, ["avr", "pss", "local", "governor"])
+        error(msg("GUILDA:Component:InvalidControllerKey", char(con.s_tag), char(con.s_role)))
+    end
+end
+
+function con_drop = check_outputs(comp, con)
+    % A PSS is checked against the AVR it will go under; a PSS without an AVR is left to
+    % the NotExtAvr error of the attachment.
+    % The two top-level controllers after the call must drive different inputs. When the
+    % other one is a default Static, it is returned as con_drop (to be removed) instead.
+    con_drop = [];
+    chain    = chain_of(comp);
+    gov      = governor_of(comp);
+    sv_chain = outputs_of(chain, comp);
+    sv_gov   = outputs_of(gov, comp);
+    switch con.s_role
+        case "pss"
+            if ~isempty(chain) && chain.s_role == "avr"
+                check_output(con, con.driven_inputs(chain), chain);
+            end
+        case "governor"
+            gov    = con;
+            sv_gov = outputs_of(con, comp);
+            check_output(con, sv_gov, comp);
+        otherwise
+            % a new AVR takes the PSS of the old one: the PSS checks its new parent
+            % (a "local" controller deletes the PSS, so nothing is checked then)
+            if con.s_role == "avr" && ~isempty(chain) && ~isempty(chain.a_LocalController)
+                pss = chain.a_LocalController{1};
+                check_output(pss, pss.driven_inputs(con), con);
+            end
+            chain    = con;
+            sv_chain = outputs_of(con, comp);
+            check_output(con, sv_chain, comp);
+    end
+    sv_common = intersect(sv_chain, sv_gov, "stable");
+    if ~isempty(sv_common) && con.s_role ~= "pss"
+        con_drop = chain;
+        if con.s_role ~= "governor"
+            con_drop = gov;
+        end
+        if is_static_controller(con_drop)
+            return
+        end
+        con_drop = [];
+    end
+    if ~isempty(sv_common)
+        error(msg("GUILDA:Component:ControllerOutputOverlap", char(gov.s_tag), char(chain.s_tag), ...
+                  strjoin(cellstr(sv_common(:)'), ', '), char(comp.s_tag)))
+    end
+end
+
+function sv = outputs_of(con, comp)
+    % The inputs of comp that a top-level controller drives once attached to it
+    if isempty(con)
+        sv = strings(0,1);
     else
-        idx = 1;
-        while idx <= nargin-1
-            str_extKeys = cellfun(@(con) con.key, obj.a_LocalController);
-
-            if isempty(str_extKeys)
-                str_extKeys = "";
-            end
-
-            new_con = varargin{idx};
-            if ismember(new_con.key, str_extKeys)
-                tag = new_con.str_tag;
-                warning(msg('GUILDA:Component:AldExtCon', tag))
-            end            
-
-            if strcmp(new_con.key, "pss")
-               if ~ismember("avr", str_extKeys) 
-                   error(msg('GUILDA:Component:NotExtAvr'))
-               else
-                   avr = obj.a_LocalController{1};
-                   avr.add_local_controller(new_con)
-
-                   avr.set_parent(obj)
-                   new_con.set_parent(avr)                   
-               end
-            end
-
-            if strcmp(new_con.key, "avr")
-                obj.a_LocalController{1} = new_con;            
-            end
-            % obj.a_LocalController(str_setKeys==new_con.key) = {new_con};            
-
-            idx = idx + 1;
-        end
-
-        obj.l_hasController = true;
+        sv = reshape(string(con.driven_inputs(comp)), [], 1);
     end
-    
+end
+
+function check_output(con, sv_y, target)
+    % target: the object whose inputs sv_u the outputs sv_y of the controller replace
+    sv_miss = setdiff(string(sv_y), string(target.sv_u), "stable");
+    if ~isempty(sv_miss)
+        error(msg("GUILDA:Component:ControllerOutput", strjoin(cellstr(sv_miss(:)'), ', '), char(con.s_tag), ...
+                  char(target.s_tag), strjoin(cellstr(string(target.sv_u(:)')), ', ')))
+    end
+end
+
+function warn_replace(s_label, new_con, old_con, parent)
+    % The one place that decides whether a replacement warns (GUILDA:Component:ReplaceController).
+    % Replacing a default Static AVR or governor does not warn: it is meant to be replaced.
+    if ~is_static_controller(old_con)
+        show_msg("warning", "GUILDA:Component:ReplaceController", s_label, char(new_con.s_tag), char(old_con.s_tag), char(parent.s_tag))
+    end
+end
+
+function str = label(con)
+    % Name of the controller kind in the ReplaceController message
+    switch con.s_role
+        case "avr"
+            str = "AVR";
+        case "pss"
+            str = "PSS";
+        case "governor"
+            str = "Governor";
+        otherwise
+            str = "Local controller";
+    end
 end

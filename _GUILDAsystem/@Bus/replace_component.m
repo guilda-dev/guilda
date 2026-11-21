@@ -1,0 +1,180 @@
+function comp = replace_component(obj, s_tag, Key, parameter, opt)
+% Replace a component of the bus by a component of another model.
+%
+% The new component keeps the power-flow, operation, OPF and graph settings and the
+% number of the replaced one. The replacement is a "Topology" edit, which makes
+% the power flow stale, so `net.initialize()` is needed before the dynamic analyses.
+% A tag that is not found is an error. A component controlled by a global controller
+% cannot be replaced.
+%
+% The replaced component is deleted, so a handle to it becomes invalid. The local
+% controllers are not carried over by default: they are deleted with it and the warning
+% GUILDA:Bus:ControllersDropped names them. The default Static AVR and governor of a
+% generator (controller.avr.Static, controller.governor.Static) are neither carried over
+% nor named: a new generator has its own. A PSS under the Static AVR is named and
+% carried over like the others. With
+% `Controllers="keep"` they move to the new component (a handle to one of them then refers
+% to the new component), and `net.initialize()` designs them again; a PSS under the Static
+% AVR moves under the Static AVR of the new component. If the new component lacks an
+% input they drive or a signal they observe, or such a PSS finds no Static AVR there, the
+% error GUILDA:Bus:ControllersNotKept stops the call and nothing changes. The weights of
+% `controller.local_LQR` are kept as given, so a `Q` of another size stops `net.initialize()`.
+%
+% <@Examples>
+% ```matlab
+% net.a_Bus{1}.replace_component("B001SG1", "gen-classical");
+% net.a_Bus{1}.replace_component("B001SG1", "gen-1axis", Controllers="keep");
+% ```
+%
+% See also Bus.add_component, Bus.remove_component
+
+    arguments (Input)
+        obj
+        s_tag                (1,1) string  % Tag of the component to replace.
+        Key                  (1,:) char {tools.mustBeKeyOf(Key, "Component")}  % Component model key, e.g. "gen-park" or "load-power".
+        parameter             = nan;       % Dynamic parameters (table, struct or string); NaN uses the class defaults.
+        opt.Controllers      (1,1) string {mustBeMember(opt.Controllers,["drop","keep"])} = "drop";  % Local controllers of the replaced component: "drop" leaves them on it with a warning, "keep" moves them to the new one.
+    end
+    arguments (Output)
+        comp  % New Component object.
+    end
+
+    s_tagComp = string(obj.a_Component);
+    lv_rmcub = s_tagComp==s_tag;
+    if ~any(lv_rmcub)
+        error(msg("GUILDA:Bus:ComponentNotFound", char(s_tag), char(obj.s_tag)))
+    end
+
+    comp_pre = obj.a_Component{lv_rmcub};
+    s_gcon   = controlling_gcon(obj, comp_pre);
+    if s_gcon ~= ""
+        error(msg("GUILDA:Bus:ComponentControlled", char(comp_pre.s_tag), char(s_gcon)))
+    end
+    tp_pre   = comp_pre.tab_parameter;
+    tab_pre  = [tp_pre.powerflow, tp_pre.operation, tp_pre.graph];
+    opt_comp = table2struct(tab_pre);
+
+    tab_opf  = tp_pre.OPF;
+    opt_comp.OPFinit_P0       = tab_opf.P0;
+    opt_comp.OPFinit_Q0       = tab_opf.Q0;
+    opt_comp.OPFcost_HP       = tab_opf.HP;
+    opt_comp.OPFcost_HQ       = tab_opf.HQ;
+    opt_comp.OPFcost_fP       = tab_opf.fP;
+    opt_comp.OPFcost_fQ       = tab_opf.fQ;
+    opt_comp.OPFcost_c        = tab_opf.c;
+    opt_comp.OPFcost_startup  = tab_opf.startup;
+    opt_comp.OPFcost_shutdown = tab_opf.shutdown;
+
+    % keep the number of the replaced component: "<bus tag><header><number>"
+    s_index   = string(regexp(extractAfter(comp_pre.s_tag, strlength(obj.s_tag)), "\d+$", "match", "once"));
+
+    
+    % get component function
+    dic    = GUILDA.keymap("Component");
+    mkInst = str2func(dic(string(Key)));
+    s_controllers = opt.Controllers;
+    opt_comp.BusTag = obj.s_tag;
+    comp = mkInst(s_index, parameter, opt_comp);
+    a_con = controllers_of(comp_pre);
+    if s_controllers == "keep"
+        check_keep(comp_pre, comp);    % before anything changes
+    end
+
+    % register
+    comp.a_Bus = obj;
+    comp.log_edit("connected to " + obj.s_tag, "Topology")
+
+    Iequilibrium = obj.a_Component{lv_rmcub}.c_Iequilibrium;
+    Vequilibrium = obj.c_Vequilibrium;
+
+    obj.a_Component{lv_rmcub} = comp;   
+    
+    % The equilibrium is a placeholder: the topology change below makes
+    % simulate/get_sys require net.initialize() first, which builds the f_* handles.
+    % A replaced component without an equilibrium (the network is not initialized yet)
+    % leaves the new one without, as a component just added.
+    if ~isempty(Iequilibrium)
+        comp.set_equilibrium(Vequilibrium, Iequilibrium);
+    end
+    obj.log_edit(obj.s_tag+" <<-replace--- "+s_tag+" -> "+comp.s_tag,"Topology")
+    if ~isempty(a_con)
+        if s_controllers == "keep"
+            % After the placeholder equilibrium, on which a controller must not be designed
+            comp_pre.move_local_controllers(comp);
+        else
+            show_msg("warning", "GUILDA:Bus:ControllersDropped", tag_list(a_con), char(comp_pre.s_tag), char(comp.s_tag))
+        end
+    end
+    tools.delete_layers({comp_pre});    % with the dropped controllers ("keep" has moved them)
+end
+
+function a_con = controllers_of(comp)
+    % The local controllers of the component and the controllers nested in them
+    % (a default Static is left out, but not the PSS under it)
+    a_con = cell(0,1);
+    for k = 1:numel(comp.a_LocalController)
+        con   = comp.a_LocalController{k};
+        if is_static(con)
+            a_con = [a_con; con.a_LocalController(:)];           %#ok<AGROW>
+        else
+            a_con = [a_con; {con}; con.a_LocalController(:)];    %#ok<AGROW>
+        end
+    end
+end
+
+function check_keep(comp_pre, comp)
+    % Stop if the new component lacks an input driven or a signal observed by a controller
+    sv_why  = strings(0,1);
+    for k = 1:numel(comp_pre.a_LocalController)
+        con     = comp_pre.a_LocalController{k};
+        if is_static(con)
+            % the default Static controllers do not move; a PSS under the Static AVR goes
+            % under the Static AVR of the new component
+            if ~isempty(con.a_LocalController)
+                pss     = con.a_LocalController{1};
+                lv_avr  = cellfun(@(c) c.s_role == "avr", comp.a_LocalController);
+                avr_new = comp.a_LocalController(lv_avr);
+                if isempty(avr_new) || ~is_static(avr_new{1})
+                    sv_why(end+1,1) = pss.s_tag + " needs the Static AVR";    %#ok<AGROW>
+                    continue
+                end
+                avr_new = avr_new{1};
+                sv_miss = setdiff(string(pss.driven_inputs(avr_new)), string(avr_new.sv_u(:)), "stable");
+                if ~isempty(sv_miss)
+                    sv_why(end+1,1) = pss.s_tag + " drives " + join(sv_miss, ", ");    %#ok<AGROW>
+                end
+            end
+            continue
+        end
+        sv_miss = setdiff(string(con.sv_y(:)), string(comp.sv_u(:)), "stable");
+        if ~isempty(sv_miss)
+            sv_why(end+1,1) = con.s_tag + " drives " + join(sv_miss, ", ");    %#ok<AGROW>
+        end
+    end
+    a_con = controllers_of(comp_pre);
+    for k = 1:numel(a_con)
+        % An input that covers all the states is "Xall", which follows any component
+        con    = a_con{k};
+        sv_obs = con.sv_u(con.iv_obsY > 0);
+        sv_x   = con.sv_u(con.iv_obsX > 0);
+        if ~all(ismember(comp_pre.sv_x, sv_x))
+            sv_obs = [sv_obs(:); sv_x(:)];
+        end
+        sv_miss = setdiff(sv_obs, [string(comp.sv_y(:)); string(comp.sv_x(:))], "stable");
+        if ~isempty(sv_miss)
+            sv_why(end+1,1) = a_con{k}.s_tag + " observes " + join(sv_miss, ", ");    %#ok<AGROW>
+        end
+    end
+    if ~isempty(sv_why)
+        error(msg("GUILDA:Bus:ControllersNotKept", char(comp_pre.s_tag), char(comp.s_tag), char(join(sv_why, "; "))))
+    end
+end
+
+function str = tag_list(a_con)
+    str = char(join(cellfun(@(con) con.s_tag, a_con), ", "));
+end
+
+function l = is_static(con)
+    % Whether con is a default Static controller of a generator (it is not carried over)
+    l = ismember(con.key, ["avr-static", "gov-static"]);
+end

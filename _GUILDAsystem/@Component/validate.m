@@ -1,30 +1,26 @@
 function flag = validate(obj, l_message)
-    arguments
-        obj 
-        l_message (1,1) logical = true
+% Check the model functions of the component against the contract of Component.
+%
+% Evaluates the model at the equilibrium, or at a random point of unit V and injected
+% current when the equilibrium is not set (the current gives the power of get_equilibrium).
+% The model functions take no bus current, and the output fcn_Y takes no input. A broken model does not stop the check: it is reported as FAIL
+% in flag.contract and the values that cannot be computed are NaN. Analytic Jacobians
+% (Jacobi_*) are compared with finite differences of fcn_dx, fcn_I and fcn_Y; a component
+% without them uses those same finite differences, so there is nothing to compare.
+%
+% get_equilibrium is called as the model requires it, so a model that stores values
+% there (e.g. the loads) stores those of the evaluation point: run net.initialize after
+% validating a component that has no equilibrium.
+%
+% <@Group> Queries and checks
+    arguments (Input)
+        obj
+        l_message (1,1) logical = true  % Print the comparison.
+    end
+    arguments (Output)
+        flag  % Struct of tables: dx, I (residuals at the point), Axx, Bxv, ... (absolute differences of each Jacobian block), contract (PASS, FAIL or INFO of each check), inputs (connection source of each input).
     end
 
-
-    if obj.str_editFlag == "unset"
-        rv_V = rand(2,1);
-        rv_I = rand(2,1);
-        c_V  = [1,1j]*( rv_V/norm(rv_V) );
-        c_I  = [1,1j]*( rv_V/norm(rv_I) );
-        [rv_x,rv_u] = obj.get_equilibrium(c_V,c_I);
-    else
-        c_V = obj.c_Vequilibrium;
-        c_I = obj.c_Iequilibrium;
-        rv_V = [real(c_V); imag(c_V)];
-        rv_I = [real(c_I); imag(c_I)];
-        rv_x = obj.rv_Xequilibrium;
-        rv_u = obj.rv_Uequilibrium;
-    end
-
-    
-    r_omega0 = 2*pi*60;
-    r_t      = 0;
-    rr_param = obj.para_dynamics.tab_parameter{:,obj.sv_para};
-    
     % make variable
     sv_x  = obj.sv_x;
     sv_u  = obj.sv_u;
@@ -35,50 +31,108 @@ function flag = validate(obj, l_message)
     nu = numel(sv_u);
     ny = numel(sv_y);
 
+    r_omega0 = obj.get_Hz();    % omega0 is the nominal frequency in Hz (models multiply by 2*pi)
+    r_t      = 0;
+    rr_param = obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.tab_parameter{:,obj.sv_para};
 
-    com2vec = @(c) [real(c);imag(c)];
+    com2vec  = @(c) [real(c);imag(c)];
+    contract = strings(0,3);
+
+    % evaluation point
+    if ~isempty(obj.sct_stale.equilibrium) || isempty(obj.c_Iequilibrium)
+        rv_V = rand(2,1);
+        rv_I = rand(2,1);
+        rv_V = rv_V/norm(rv_V);
+        rv_I = rv_I/norm(rv_I);
+        c_V  = [1,1j]*rv_V;
+        c_I  = [1,1j]*rv_I;
+        try
+            [rv_x,rv_u] = obj.get_equilibrium(c_V,c_I,real(c_V*conj(c_I)),imag(c_V*conj(c_I)));
+        catch ME
+            contract = add_row(contract, "get_equilibrium(V,I,P,Q)", false, error_text(ME));
+            rv_x = nan(nx,1);
+            rv_u = nan(nu,1);
+        end
+    else
+        c_V = obj.c_Vequilibrium;
+        c_I = obj.c_Iequilibrium;
+        rv_V = com2vec(c_V);
+        rv_I = com2vec(c_I);
+        rv_x = obj.rv_Xequilibrium;
+        rv_u = obj.rv_Uequilibrium;
+    end
+
+    % A wrong size is reported once here; the other checks run at a point of the right size
+    l_size = numel(rv_x) == nx && numel(rv_u) == nu;
+    contract = add_row(contract, "x, u sizes", l_size, ...
+        sprintf("x %d (sv_x %d), u %d (sv_u %d)", numel(rv_x), nx, numel(rv_u), nu));
+    rv_x = fit_size(rv_x, nx);
+    rv_u = fit_size(rv_u, nu);
 
     % validate dx=0 and I=Ist at the equilibrium point
-    dx_test = reshape( obj.fcn_dx(r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0), nx, 1);
-    I_test  = com2vec( obj.fcn_I( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0) ) -rv_I;
+    [dx_test, s_id] = eval_value(@() obj.fcn_dx(r_t,rv_x,rv_V,rv_u,rr_param,r_omega0));
+    [l_ok, s_detail] = check_size(dx_test, s_id, nx);
+    contract = add_row(contract, "fcn_dx size", l_ok, s_detail);
+    if l_ok
+        dx_test = reshape(dx_test, nx, 1);
+    else
+        dx_test = nan(nx,1);
+    end
+
+    [c_test, s_id] = eval_value(@() obj.fcn_I(r_t,rv_x,rv_V,rv_u,rr_param,r_omega0));
+    [l_ok, s_detail] = check_size(c_test, s_id, 1);
+    contract = add_row(contract, "fcn_I complex scalar", l_ok, s_detail);
+    if l_ok
+        I_test = com2vec(c_test) - rv_I;
+    else
+        I_test = nan(2,1);
+    end
+
+    [y_test, s_id] = eval_value(@() obj.fcn_Y(r_t,rv_x,rv_V,rr_param,r_omega0));
+    [l_ok, s_detail] = check_size(y_test, s_id, ny);
+    contract = add_row(contract, "fcn_Y size", l_ok, s_detail);
+
+    % simulate reads the mass matrix without a point (SolverODE.build_index)
+    [M_test, s_id] = eval_value(@() obj.fcn_Mass([],[],[],[],rr_param,r_omega0));
+    l_ok = s_id == "" && (isequal(size(M_test),[nx,nx]) || (nx == 0 && isempty(M_test)));
+    contract = add_row(contract, "fcn_Mass constant and square", l_ok, ...
+        join_detail(s_id, "size " + join(string(size(M_test)),"x") + sprintf(" (sv_x %d)",nx)));
+
+    sv_port = intersect(sv_u, [sv_v;sv_i]);
+    contract = add_row(contract, "sv_u has no port names", isempty(sv_port), join(sv_port,", "));
+    s_defined = "not defined";
+    if ismethod(obj,"getCompPQ")
+        s_defined = "defined";
+    end
+    contract = [contract; "getCompPQ (continuation power flow with UseInternalState)", "INFO", s_defined];
 
     % make flag
-    mktab = @(flag,r,v) array2table(flag,"RowNames",r,"VariableNames",v);
     flag = struct( ...
         "dx" , mktab(      abs(dx_test)      ,  sv_x, "diff" ),...
         "I"  , mktab(      abs( I_test)      ,  sv_i, "diff" )...
         );
 
     % validate linearized matrix
+    point = {r_t,rv_x,rv_V,rv_u,rr_param,r_omega0};
     if ismethod(obj,"Jacobi_dx")
-        [Axx_test , Bxv_test , Bxi_test , Bxu_test ] = Jacobi_dx_num(obj,r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
-        [Axx_valid, Bxv_valid, Bxi_valid, Bxu_valid] = obj.Jacobi_dx(r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
-        Axx_valid = reshape( Axx_valid, nx, nx);
-        Bxv_valid = reshape( Bxv_valid, nx,  2);
-        Bxi_valid = reshape( Bxi_valid, nx,  2);
-        Bxu_valid = reshape( Bxu_valid, nx, nu);
-
-        flag.Axx = mktab( abs(Axx_test-reshape(Axx_valid, nx, nx)), sv_x, sv_x);
-        flag.Bxv = mktab( abs(Bxv_test-reshape(Bxv_valid, nx,  2)), sv_x, sv_v);
-        flag.Bxi = mktab( abs(Bxi_test-reshape(Bxi_valid, nx,  2)), sv_x, sv_v);
-        flag.Bxu = mktab( abs(Bxu_test-reshape(Bxu_valid, nx, nu)), sv_x, sv_u);
+        [flag, contract] = compare_jacobian(flag, contract, "Jacobi_dx", ...
+            @() Jacobi_dx_num(obj,point{:}), @() obj.Jacobi_dx(point{:}), ...
+            ["Axx","Bxv","Bxu"], {sv_x,sv_x,sv_x}, {sv_x,sv_v,sv_u});
     end
     if ismethod(obj,"Jacobi_I")
-        [Cix_test, Div_test, Dii_test, Diu_test] = Jacobi_I_num( obj,r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
-        [Cix_valid, Div_valid, Dii_valid, Diu_valid] = obj.Jacobi_I( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
-        flag.Cix = mktab( abs(Cix_test-reshape(Cix_valid,  2, nx)), sv_i, sv_x);
-        flag.Div = mktab( abs(Div_test-reshape(Div_valid,  2,  2)), sv_i, sv_v);
-        flag.Dii = mktab( abs(Dii_test-reshape(Dii_valid,  2,  2)), sv_i, sv_v);
-        flag.Diu = mktab( abs(Diu_test-reshape(Diu_valid,  2, nu)), sv_i, sv_u);
+        [flag, contract] = compare_jacobian(flag, contract, "Jacobi_I", ...
+            @() Jacobi_I_num(obj,point{:}), @() obj.Jacobi_I(point{:}), ...
+            ["Cix","Div","Diu"], {sv_i,sv_i,sv_i}, {sv_x,sv_v,sv_u});
     end
     if ismethod(obj,"Jacobi_Y")
-        [Cyx_test , Dyv_test , Dyi_test , Dyu_test ] = Jacobi_Y_num( obj,r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
-        [Cyx_valid, Dyv_valid, Dyi_valid, Dyu_valid] = obj.Jacobi_Y( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
-        flag.Cyx = mktab( abs(Cyx_test-reshape(Cyx_valid,ny,nx)), sv_y, sv_x);
-        flag.Dyv = mktab( abs(Dyv_test-reshape(Dyv_valid,ny, 2)), sv_y, sv_v);
-        flag.Dyi = mktab( abs(Dyi_test-reshape(Dyi_valid,ny, 2)), sv_y, sv_v);
-        flag.Dyu = mktab( abs(Dyu_test-reshape(Dyu_valid,ny,nu)), sv_y, sv_u);
+        [flag, contract] = compare_jacobian(flag, contract, "Jacobi_Y", ...
+            @() Jacobi_Y_num(obj,point{[1:3,5:6]}), @() obj.Jacobi_Y(point{[1:3,5:6]}), ...
+            ["Cyx","Dyv"], {sv_y,sv_y}, {sv_x,sv_v});
     end
+
+    flag.contract = table(contract(:,2), contract(:,3), ...
+        RowNames=contract(:,1), VariableNames=["status","detail"]);
+    flag.inputs   = table(input_sources(obj), RowNames=sv_u, VariableNames="source");
 
     % message
     if l_message
@@ -94,8 +148,12 @@ function flag = validate(obj, l_message)
                 disp(">> obj.Jacobi"+fn+"(0,xst,Vst,ust) - (Numerical differentiation @obj.f_dx)"+newline)
             elseif ismember(fn ,["Cix","Diu","Div"])
                 disp(">> obj.Jacobi"+fn+"(0,xst,Vst,ust) - (Numerical differentiation @obj.f_I)"+newline)
-            elseif ismember(fn ,["Cyx","Dyu","Dyv"])
-                disp(">> obj.Jacobi"+fn+"(0,xst,Vst,ust) - (Numerical differentiation @obj.f_Y)"+newline)
+            elseif ismember(fn ,["Cyx","Dyv"])
+                disp(">> obj.Jacobi"+fn+"(0,xst,Vst) - (Numerical differentiation @obj.f_Y)"+newline)
+            elseif fn == "contract"
+                disp(">> Contract of the model functions"+newline)
+            elseif fn == "inputs"
+                disp(">> Connection source of each input"+newline)
             end
 
             if isempty(flag.(fn))
@@ -107,4 +165,102 @@ function flag = validate(obj, l_message)
         disp(repmat('=',1,100))
     end
 
+end
+
+
+function tab = mktab(flag, r, v)
+    tab = array2table(flag, "RowNames", r, "VariableNames", v);
+end
+
+function contract = add_row(contract, s_check, l_ok, s_detail)
+    if ismissing(s_detail)   % join of an empty list
+        s_detail = "";
+    end
+    if l_ok
+        contract = [contract; s_check, "PASS", s_detail];
+    else
+        contract = [contract; s_check, "FAIL", s_detail];
+    end
+end
+
+function v = fit_size(v, n)
+    v = reshape(v, [], 1);
+    v = [v(1:min(end,n)); zeros(n-numel(v),1)];
+end
+
+function [val, s_id] = eval_value(f)
+    val = [];
+    s_id = "";
+    try
+        val = f();
+    catch ME
+        s_id = error_text(ME);
+    end
+end
+
+function str = error_text(ME)
+    % The identifier of the error, or its message when it has none (error(msg(...)) of GUILDA)
+    str = string(ME.identifier);
+    if str == ""
+        str = string(ME.message);
+    end
+end
+
+function [l_ok, s_detail] = check_size(val, s_id, n)
+    l_ok = s_id == "" && numel(val) == n;
+    s_detail = join_detail(s_id, "size " + join(string(size(val)),"x") + sprintf(" (expected %d)",n));
+end
+
+function str = join_detail(s_id, s_value)
+    if s_id == ""
+        str = s_value;
+    else
+        str = s_id;
+    end
+end
+
+function [flag, contract] = compare_jacobian(flag, contract, s_method, f_num, f_valid, sv_name, c_row, c_col)
+    % Compare the analytic blocks with the numerical ones; NaN for a block that cannot be compared
+    s_detail = "";
+    n_blk   = numel(sv_name);
+    c_num   = cell(1,n_blk);
+    c_valid = cell(1,n_blk);
+    try
+        [c_num{:}]   = f_num();
+        [c_valid{:}] = f_valid();
+    catch ME
+        s_detail = error_text(ME);
+    end
+    for k = 1:n_blk
+        nr = numel(c_row{k});
+        nc = numel(c_col{k});
+        A = nan(nr,nc);
+        if s_detail == ""
+            V = c_valid{k};
+            if isempty(V)              % Models may return [] for an empty or all-zero block (get_sys)
+                A = abs(c_num{k});
+            elseif numel(V) == nr*nc
+                A = abs(c_num{k} - reshape(full(V),nr,nc));
+            else
+                s_detail = sv_name(k) + " size " + join(string(size(V)),"x") + sprintf(" (expected %dx%d)",nr,nc);
+            end
+        end
+        flag.(sv_name(k)) = mktab(A, c_row{k}, c_col{k});
+    end
+    contract = add_row(contract, s_method+" sizes", s_detail == "", s_detail);
+end
+
+function sv_src = input_sources(obj)
+    % Who drives each input, from the connection map of the network: the outputs of the local controllers of the same
+    % name, and those of the global controllers that no local controller of the component
+    % takes as an input; the other inputs stay at the equilibrium.
+    [tab, ~, ~, tab_c] = obj.a_Bus.a_PowerNetwork.get_variable_map();
+    iv_u = find(tab.Kind == "u" & tab.Owner == string(obj.s_tag));
+    sv_src = repmat("equilibrium (not connected)", numel(obj.sv_u), 1);
+    for k = 1:numel(iv_u)
+        iv_c = find(tab_c.TargetIndex == iv_u(k) & tab_c.Kind ~= "equilibrium");
+        if ~isempty(iv_c)
+            sv_src(k) = "output of " + join(unique(tab.Owner(tab_c.SourceIndex(iv_c)), "stable"), ", ");
+        end
+    end
 end
