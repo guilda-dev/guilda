@@ -1036,7 +1036,6 @@
       {"name":"obj","kind":"required","type":"ResultLIN"},
       {"name":"Matrix","kind":"namevalue","type":["string","scalar","choices=cellstr([\"J\",\"A\",\"B\",\"C\",\"D\",\"E\"])"],"purpose":"Matrix drawn: \"A\" ... \"E\" of get_ss(Type) or \"J\" (A of get_ss(\"DAE\") over [x; v]). Default: \"A\"."},
       {"name":"Display","kind":"namevalue","type":["string","scalar","choices=cellstr([\"pattern\",\"magnitude\"])"],"purpose":"\"pattern\" (nonzero entries) or \"magnitude\" (log10|value|). Default: \"pattern\"."},
-      {"name":"Group","kind":"namevalue","type":["string","scalar","choices=cellstr([\"class\",\"element\"])"],"purpose":"Groups of the rows and columns: the class of the owner or the owner tag. Default: \"class\"."},
       {"name":"Type","kind":"namevalue","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model of \"A\" ... \"E\": \"ODE\" or \"DAE\"; the Type of the result when omitted. Default: obj.Type."},
       {"name":"Port","kind":"namevalue","type":["string","scalar","choices=cellstr([\"PI\",\"PQ\",\"I\"])"],"purpose":"Bus port of the \"DAE\" (see get_ss); options.Port of the result when omitted. Default: default_port(obj)."},
       {"name":"Form","kind":"namevalue","type":["string","scalar","choices=cellstr([\"descriptor\",\"absorbed\",\"hessian\"])"],"purpose":"View (see get_ss); res.Form when omitted. Default: obj.Form."},
@@ -1063,7 +1062,6 @@
   "ResultLIN.plot_participation": {
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultLIN"},
-      {"name":"Mode","kind":"namevalue","type":["double","scalar"],"purpose":"Mode picked first: a column of get_participation. Default: 1."},
       {"name":"Type","kind":"namevalue","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model whose modes are used: \"ODE\" or \"DAE\"; the Type of the result when omitted. Default: obj.Type."},
       {"name":"Index","kind":"namevalue","type":["double","scalar"],"purpose":"Section shown first (1 ... numel(rv_t)); res.Index when omitted. Default: obj.Index."},
       {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) to draw in; [] for a new figure. Default: []."}
@@ -1076,7 +1074,6 @@
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultLIN"},
       {"name":"Side","kind":"namevalue","type":["string","scalar","choices=cellstr([\"right\",\"left\"])"],"purpose":"Eigenvector: \"right\" (the mode shape) or \"left\". Default: \"right\"."},
-      {"name":"Mode","kind":"namevalue","type":["double","scalar"],"purpose":"Mode picked first: a column of get_participation. Default: 1."},
       {"name":"Type","kind":"namevalue","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model whose modes are used: \"ODE\" or \"DAE\"; the Type of the result when omitted. Default: obj.Type."},
       {"name":"Index","kind":"namevalue","type":["double","scalar"],"purpose":"Section shown first (1 ... numel(rv_t)); res.Index when omitted. Default: obj.Index."},
       {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) to draw in; [] for a new figure. Default: []."}
@@ -1088,7 +1085,7 @@
   "ResultLIN.plot_reduced_matrix": {
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultLIN"},
-      {"name":"target","kind":"required","type":["string"],"purpose":"Tags and class (or package) names of the elements whose variables are eliminated (see get_reduced_matrix)."},
+      {"name":"target","kind":"required","type":[["string","choices=cellstr(unique([strings(0,1); tools.vcellfun(@(S) [S.tab_owner.Owner; unique(S.tab_owner.Class); unique(regexprep(S.tab_owner.Class(contains(S.tab_owner.Class, \".\")), \"\\.[^.]+$\", \"\"))], repmat({obj.sct_model.sct_sys}, isfield(obj.sct_model.sct_sys, \"tab_owner\"), 1)); [\"Component\"; \"LocalController\"; \"GlobalController\"; \"Branch\"; \"Bus\"]], \"stable\"))"],["string"]],"purpose":"Tags and class (or package) names of the elements whose variables are eliminated (see get_reduced_matrix)."},
       {"name":"State","kind":"namevalue","type":["string","scalar","choices=cellstr([\"settled\",\"fixed\"])"],"purpose":"Dynamic states of the targets: \"settled\" (eliminated) or \"fixed\" (held at the point). Default: \"settled\"."},
       {"name":"Block","kind":"namevalue","type":["string","scalar","choices=cellstr([\"P\",\"Q\"])"],"purpose":"Block drawn: \"P\" (P balance x theta) or \"Q\" (Q balance x the second bus variable). Default: \"P\"."},
       {"name":"Index","kind":"namevalue","type":["double","scalar"],"purpose":"Section shown first (1 ... numel(rv_t)); res.Index when omitted. Default: obj.Index."},
@@ -1104,7 +1101,6 @@
       {"name":"obj","kind":"required","type":"ResultLIN"},
       {"name":"Quantity","kind":"namevalue","type":["string","scalar","choices=cellstr([\"damping\",\"synchronizing\",\"voltage\"])"],"purpose":"Quantity: \"damping\" (share in an eigenvalue), \"synchronizing\" (dP/dtheta of the ports) or \"voltage\" (dQ/drho of the ports). Default: \"damping\"."},
       {"name":"State","kind":"namevalue","type":["string","scalar","choices=cellstr([\"settled\",\"fixed\"])"],"purpose":"Ports of \"synchronizing\" and \"voltage\": states \"settled\" (eliminated) or \"fixed\" (held at the point). Default: \"settled\"."},
-      {"name":"Mode","kind":"namevalue","type":["double","scalar"],"purpose":"Mode picked first (\"damping\"): a column of get_participation(Type=\"DAE\"). Default: 1."},
       {"name":"Index","kind":"namevalue","type":["double","scalar"],"purpose":"Section shown first (1 ... numel(rv_t)); res.Index when omitted. Default: obj.Index."},
       {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) to draw in; [] for a new figure. Default: []."}
     ],
@@ -1154,7 +1150,7 @@
   "ResultLIN.get_contribution": {
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultLIN"},
-      {"name":"target","kind":"required","type":["string"],"purpose":"Tags and class (or package) names of the elements; several are summed."},
+      {"name":"target","kind":"required","type":[["string","choices=cellstr(unique([strings(0,1); tools.vcellfun(@(S) [S.tab_owner.Owner; unique(S.tab_owner.Class); unique(regexprep(S.tab_owner.Class(contains(S.tab_owner.Class, \".\")), \"\\.[^.]+$\", \"\"))], repmat({obj.sct_model.sct_sys}, isfield(obj.sct_model.sct_sys, \"tab_owner\"), 1)); [\"Component\"; \"LocalController\"; \"GlobalController\"; \"Branch\"; \"Bus\"]], \"stable\"))"],["string"]],"purpose":"Tags and class (or package) names of the elements; several are summed."},
       {"name":"Index","kind":"namevalue","type":["double","scalar"],"purpose":"Section of the DAE (1 ... numel(rv_t)); res.Index when omitted. Default: obj.Index."}
     ],
     "outputs": [
@@ -1198,7 +1194,7 @@
   "ResultLIN.get_reduced_matrix": {
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultLIN"},
-      {"name":"target","kind":"required","type":["string"],"purpose":"Tags and class (or package) names of the elements whose variables are eliminated."},
+      {"name":"target","kind":"required","type":[["string","choices=cellstr(unique([strings(0,1); tools.vcellfun(@(S) [S.tab_owner.Owner; unique(S.tab_owner.Class); unique(regexprep(S.tab_owner.Class(contains(S.tab_owner.Class, \".\")), \"\\.[^.]+$\", \"\"))], repmat({obj.sct_model.sct_sys}, isfield(obj.sct_model.sct_sys, \"tab_owner\"), 1)); [\"Component\"; \"LocalController\"; \"GlobalController\"; \"Branch\"; \"Bus\"]], \"stable\"))"],["string"]],"purpose":"Tags and class (or package) names of the elements whose variables are eliminated."},
       {"name":"State","kind":"namevalue","type":["string","scalar","choices=cellstr([\"settled\",\"fixed\"])"],"purpose":"Dynamic states of the targets: \"settled\" (eliminated, E dx/dt = 0) or \"fixed\" (held at the point, removed). Default: \"settled\"."},
       {"name":"Index","kind":"namevalue","purpose":"Section (1 ... numel(rv_t)) or \"all\" (a struct array, one per section); res.Index when omitted. Default: obj.Index."},
       {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time: the section whose rv_t is nearest; overrides Index."}
