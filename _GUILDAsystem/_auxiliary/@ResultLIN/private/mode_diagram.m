@@ -21,7 +21,9 @@ function sct_graph = mode_diagram(obj, opt, sct_spec)
 % - rm_comp (components x modes, or empty), rm_branch (branches x modes, or empty): the
 %   color values of the components and branches (empty: none);
 % - sv_row, sv_rowBus (rows), rm_row (rows x modes): the rows of the table, their bus
-%   ("": no bus) and their values (complex: magnitude and phase in degrees).
+%   ("": no bus) and their values: one column for one name in sv_column, else the
+%   magnitude and phase in degrees, or the real and imaginary parts with
+%   sct_spec.l_cartesian true.
 %
 % Other fields of sct_spec: s_name (start of the title), s_colorbar (label),
 % s_limit ("zero": [0 max] of the mode shown; "symmetric": [-m m]), sv_column (names of
@@ -125,7 +127,7 @@ function pick_bus(h_root, data)
         case {"component", "link"}
             tab = U.G_net.tab_element;
             sv_bus = tab.Tag(tab.Kind == "bus");
-            sv_bus = sv_bus(startsWith(data.Tag, sv_bus));
+            sv_bus = sv_bus(arrayfun(@(b) startsWith(data.Tag, b), sv_bus));
             if ~isempty(sv_bus)
                 [~, i] = max(strlength(sv_bus));
                 s_bus = sv_bus(i);
@@ -213,7 +215,10 @@ function show_mode(h_root)
     end
     cv = column_of(S.rm_row, m, numel(S.sv_row));
     cv = cv(lv);
-    if isreal(cv)
+    if isfield(U.sct_spec, "l_cartesian") && U.sct_spec.l_cartesian
+        c_data = [cellstr(S.sv_row(lv)), num2cell(real(cv)), num2cell(imag(cv))];
+        s_sum = sprintf(" (sum %.4g %+.4gj)", real(sum(cv)), imag(sum(cv)));
+    elseif numel(U.sct_spec.sv_column) == 1
         c_data = [cellstr(S.sv_row(lv)), num2cell(cv)];
         s_sum = sprintf(" (sum %.3g)", sum(cv));
     else
