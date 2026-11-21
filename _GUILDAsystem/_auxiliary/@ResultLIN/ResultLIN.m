@@ -326,6 +326,7 @@ classdef ResultLIN < ResultBase
         G = plot_eigenvalue_path(obj, opt)
         G = plot_matrix(obj, opt)
         G = plot_kernel(obj, opt)
+        sct_graph = plot_participation(obj, opt)
         cv_lambda = get_eigenvalue(obj, Type, opt)
         sct_vector = get_eigenvector(obj, Type, opt)
         sct_kernel = get_kernel(obj, opt)

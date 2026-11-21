@@ -1,4 +1,4 @@
-function [G, sv_bus, sv_comp] = section_diagram(obj, s_name, c_opt)
+function [G, sv_bus, sv_comp, sv_text] = section_diagram(obj, s_name, c_opt)
 % Diagram of the snapshot sct_network with one sample per section (plot_kernel and
 % plot_participation): the topology (a state of NaN), the colors and labels set by the
 % caller ("user").
@@ -15,6 +15,7 @@ function [G, sv_bus, sv_comp] = section_diagram(obj, s_name, c_opt)
         G                         % The diagram (GraphNetDiagram).
         sv_bus  (:,1) string      % Bus tags in the order of the diagram (a_Bus of the snapshot).
         sv_comp (:,1) string      % Full component tags in the order of the diagram.
+        sv_text (1,:) string      % Title of each section (s_name alone for one section).
     end
     sct_net = obj.sct_network;
     if ~isfield(sct_net, "a_Bus") || ~isfield(sct_net, "a_Branch")
@@ -29,9 +30,11 @@ function [G, sv_bus, sv_comp] = section_diagram(obj, s_name, c_opt)
         rv_sample = 1:n_t;
     end
     sct_state = struct("rv_t", rv_sample, "cm_Vbus", NaN(numel(sv_bus), n_t), "cm_Icomp", NaN(n_comp, n_t));
+    sv_text = s_name;
     if n_t > 1
+        sv_text = s_name + ", " + compose("section %d of %d, t = %g", (1:n_t)', n_t, reshape(double(obj.rv_t), [], 1))';
         sct_state.s_sampleName  = "Section";
-        sct_state.sv_sampleText = s_name + ", " + compose("section %d of %d, t = %g", (1:n_t)', n_t, reshape(double(obj.rv_t), [], 1))';
+        sct_state.sv_sampleText = sv_text;
     end
     G = GraphNetDiagram(sct_net, sct_state, "ColorMode", "user", "FlowMode", "none", c_opt{:});
     if n_t == 1
