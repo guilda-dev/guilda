@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the function "tools.layout_parse_path".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="InvalidPath">{0}Path "{1}" is not a list of points: the point "{2}" is not two finite numbers.&#xA;Write the points as "x y; x y" (two numbers separated by a space, points separated by ;), or "" for none.</entry>
+    </message>
+</rsccat>

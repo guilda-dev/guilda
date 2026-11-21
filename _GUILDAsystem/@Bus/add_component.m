@@ -1,0 +1,64 @@
+function comp = add_component(obj,Key,opt)
+% Add a component to the bus and return it.
+%
+% `Key` is the model key of a component class (`keys(GUILDA.keymap("Component"))` lists
+% them). The component tag is the bus tag, the class header and a number, e.g.
+% "B001SG1". The addition is a "Topology" edit, which makes the power flow of the network stale.
+%
+% <@Examples>
+% ```matlab
+% gen  = net.a_Bus{1}.add_component("gen-park", P=0.5);
+% ld   = net.a_Bus{3}.add_component("load-power", P=-0.8, Q=-0.2);
+% ```
+%
+% See also Bus.remove_component, Bus.replace_component, Component
+    arguments (Input)
+        obj
+        Key                  (1,:) char {tools.mustBeKeyOf(Key, "Component")}  % Component model key, e.g. "gen-park" or "load-power".
+        opt.parameter                     = nan;   % Dynamic parameters (table, struct or string); NaN uses the class defaults.
+        opt.P                (1,1) double = 0;     % [pu] Active power injection setting for the power flow (negative for a load).
+        opt.Q                (1,1) double = 0;     % [pu] Reactive power injection setting; NaN makes the bus a PV bus.
+        opt.baseMVA          (1,1) double = 100;   % [MVA] Rating of the component; shares Q among the components of a bus (not the system base).
+        opt.Pmin             (1,1) double = -inf;  % [pu] Lower limit of the active power output (-Inf: none).
+        opt.Pmax             (1,1) double =  inf;  % [pu] Upper limit of the active power output (Inf: none).
+        opt.Qmin             (1,1) double = -inf;  % [pu] Lower limit of the reactive power output (-Inf: none).
+        opt.Qmax             (1,1) double =  inf;  % [pu] Upper limit of the reactive power output (Inf: none).
+        opt.OPFinit_P0       (1,1) double = 0;     % [pu] Initial active power of the OPF solver.
+        opt.OPFinit_Q0       (1,1) double = 0;     % [pu] Initial reactive power of the OPF solver.
+        opt.OPFcost_HP       (1,1) double = nan;   % Quadratic cost coefficient of P; NaN: class default (0 for loads and grid-following inverters, 1 otherwise).
+        opt.OPFcost_HQ       (1,1) double = 0;     % Quadratic cost coefficient of Q (AC OPF).
+        opt.OPFcost_fP       (1,1) double = nan;   % Linear cost coefficient of P; NaN: class default (0 for loads and grid-following inverters, 1 otherwise).
+        opt.OPFcost_fQ       (1,1) double = 0;     % Linear cost coefficient of Q (AC OPF).
+        opt.OPFcost_c        (1,1) double = 0;     % Constant cost (added to the cost; it does not change the solution).
+        opt.OPFcost_startup  (1,1) double = 0;     % Startup cost (reserved; unit commitment is not part of the OPF).
+        opt.OPFcost_shutdown (1,1) double = 0;     % Shutdown cost (reserved; unit commitment is not part of the OPF).
+        opt.DX               (1,1) double {mustBeReal} = nan;      % x position in network diagrams, from the bus center (NaN = placed around the bus).
+        opt.DY               (1,1) double {mustBeReal} = nan;      % y position in network diagrams, from the bus center (NaN = placed around the bus).
+        opt.Shape            (1,1) string {mustBeMember(opt.Shape, ["circle","square","^","v","<",">","none"])} = "circle";  % Marker of the component in network diagrams.
+        opt.Path             (1,1) string {tools.layout_mustBePath} = "";  % Bend points of the connection line, from the bus center: "x y; x y" ("" = none).
+        opt.Offset           (1,1) double {mustBeReal} = nan;      % Position on the bar of the bus, from the bar center (NaN = from the last bend point).
+        opt.MarkerSize       (1,1) double = nan;                   % Marker size in network drawings (NaN = drawer default).
+        opt.Color            (1,1) string = "";                    % Color in network drawings: a MATLAB color name or "#RRGGBB" ("" = drawer default).
+    end
+    arguments (Output)
+        comp  % Added Component object.
+    end
+    % Build Instance
+    % largest number on this bus + 1 (after remove_component, numel+1 may already be taken)
+    index     = tools.next_tag_number(string(obj.a_Component), obj.s_tag);
+    s_index   = string(index);
+    para      = opt.parameter;
+    opt       = rmfield( opt, "parameter");
+
+    % get component function
+    dic    = GUILDA.keymap("Component");
+    mkInst = str2func(dic(string(Key)));
+    opt.BusTag = obj.s_tag;    % the tag is "<bus tag><header><number>", e.g. "B001SG1" (Component)
+    comp = mkInst(s_index,para,opt);
+
+    % register
+    comp.a_Bus = obj;
+    comp.log_edit("connected to " + obj.s_tag, "Topology")
+    obj.a_Component = [obj.a_Component; {comp}];
+    obj.log_edit(obj.s_tag+" <<-connect--- "+comp.s_tag+"","Topology")
+end

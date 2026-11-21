@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the function "tools.require_toolbox".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="Unavailable">{0} needs {1}, which is not installed or not licensed.</entry>
+    </message>
+</rsccat>

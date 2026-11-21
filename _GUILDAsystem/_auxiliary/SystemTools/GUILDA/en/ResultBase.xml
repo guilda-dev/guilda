@@ -1,0 +1,7 @@
+<!--This is an XML file containing error messages related to the class "ResultBase".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="Unsupported">{0} is not supported by {1}.</entry>
+        <entry key="OtherVariable">The variable "{0}" of the history holds another object ({1}), not this result. Give another Variable.</entry>
+    </message>
+</rsccat>

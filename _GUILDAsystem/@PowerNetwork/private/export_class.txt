@@ -1,0 +1,30 @@
+classdef ___MODEL_NAME___ < PowerNetwork
+% Power network ___MODEL_NAME___ loaded from the CSV model folder next to this file.
+%
+% Made by PowerNetwork.export (____MADE_DATE____).
+%
+% - Bus: ___BUS_NUM___
+% - Branch: ___BRANCH_NUM___
+% - Component: ___COMPONENT_NUM___ (generators: ___GENERATOR_NUM___, loads: ___LOAD_NUM___, others: ___COMPENSATOR_NUM___)
+%
+% <@Examples>
+% ```matlab
+% net = ___MODEL_NAME___();
+% res = net.calculate_powerflow();
+% ```
+%
+% See also PowerNetwork.import, PowerNetwork.export
+
+    properties(Constant)
+        ver = 1
+    end
+
+    methods
+        function obj = ___MODEL_NAME___()
+            % Build the network from the CSV model folder.
+            s_filepath   = mfilename("fullpath");
+            s_dirpath    = fileparts(s_filepath);
+            PowerNetwork.import(s_dirpath, Network=obj);
+        end
+    end
+end

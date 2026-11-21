@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class "DrawerGUILDA".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NotNetwork">GUILDA.launch_gui takes a PowerNetwork (or nothing, for the start screen), not a {0}.</entry>
+    </message>
+</rsccat>

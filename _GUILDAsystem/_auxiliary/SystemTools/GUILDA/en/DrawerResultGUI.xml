@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class "DrawerResultGUI".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NotUIContainer">The result GUI needs a uifigure, uipanel, uitab or uigridlayout of a uifigure, not a {0} (a figure made by figure() is not supported).</entry>
+    </message>
+</rsccat>

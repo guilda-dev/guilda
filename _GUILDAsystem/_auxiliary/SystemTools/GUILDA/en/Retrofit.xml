@@ -1,0 +1,9 @@
+<!--This is an XML file containing error messages related to the class "Retrofit".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="ParentNotStatic">{0}: a Retrofit controller goes only under the Static AVR ("avr-static"), not under ''{1}'' ("{2}"). Remove the Retrofit controller first (gen.remove_local_controller("{3}")), then change the AVR.</entry>
+        <entry key="SingularMass">{0}: the mass matrix E of ''{1}'' is singular; the Retrofit controller needs a generator without algebraic states.</entry>
+        <entry key="WeightSize">{0}: Q must be {1}x{2} (states {3}) and R a scalar (input Vfield).</entry>
+        <entry key="WeightShape">{0} must be a vector or a square matrix.</entry>
+    </message>
+</rsccat>

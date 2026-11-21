@@ -1,0 +1,11 @@
+<!--This is an XML file containing error messages related to the class "LocalController".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NestedControllerSlot">''{0}'' (role ''{1}'') cannot hold the local controllers {2} (roles {3}). Only an AVR holds a nested controller, and only one PSS. Attach it with add_local_controller.</entry>
+        <entry key="ReservedInputNames">{0}: the inputs "X" / "Y" are not reserved names; use "Xall" for all the states or "Yall" for all the outputs of the component.</entry>
+        <entry key="ReservedInputNoOverride">{0} uses the reserved input names "Xall" / "Yall" but does not override set_inputs.</entry>
+        <entry key="HessianNotSupported">{0} has no energy-function Hessian: {1} (see LocalController.get_hessian for the contract).</entry>
+        <entry key="Stale">{2} of local controller ''{0}'' stopped: the model is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
+        <entry key="InputEdited">A local controller of ''{0}'' stopped: inputs of components were edited ({1}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
+    </message>
+</rsccat>

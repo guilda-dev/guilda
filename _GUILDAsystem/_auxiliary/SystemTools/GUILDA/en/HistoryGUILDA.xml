@@ -1,0 +1,10 @@
+<!--This is an XML file containing error messages related to the class "HistoryGUILDA".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="CannotWrite">Cannot open "{0}" for writing.</entry>
+        <entry key="NotMFile">The script must be a .m file, not "{0}".</entry>
+        <entry key="NotUIContainer">The log view needs a uifigure, uipanel, uitab or uigridlayout of a uifigure, not a {0} (a figure made by figure() is not supported).</entry>
+        <entry key="ReservedName">"{0}" is used by HistoryGUILDA to run the code and cannot be a variable of its workspace.</entry>
+        <entry key="UnknownVariable">The workspace has no variable "{0}". Variables: {1}.</entry>
+    </message>
+</rsccat>
