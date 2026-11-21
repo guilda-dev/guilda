@@ -1,0 +1,54 @@
+# notes/
+
+統合ブランチ `refactor/design-alignment` で進めている GUILDA の再設計の作業ノートです。
+
+**利用者向けの文書ではありません。** 何が変わったか、何が未決か、スクリプトとモデルをどう移行するかを、開発の間だけ記録します。経緯を知らない共同開発者が単独で読めるように書きます。結果や状態には基準コミットと日付を添え、確認済み、未確認、未決を区別します。
+
+## 現在の状態と移行
+
+- [status.md](status.md): テスト結果と未決事項。
+- [v4-migration.md](v4-migration.md): スクリプト作者とモデル作者向けの移行ガイド、非推奨の形、互換性の方針。
+- [naming-struct-string.md](naming-struct-string.md): 構造体(`sct_`)と文字列(`s_`/`sv_`/`sr_`)の接頭辞への改名の対応表。
+- [test-categories.md](test-categories.md): デバッグテストの分類(`DebugScript.test_categories`、`run_all` の `Category`)、重複テストの整理の対応表、small を 1 分以内にする段階の見直しと計測。
+
+## コードの問題の記録
+
+- [dev-pages-code-findings.md](dev-pages-code-findings.md): For Developer のクラスと機能のページを書く途中で見つかったコードと文書の問題(バグ、仕様・コメント不一致、整理)。
+
+## 要件
+
+- [opf-requirements.md](opf-requirements.md): OPF の要件、ロードマップ、未決の設計事項。
+- [powerflow-options.md](powerflow-options.md): 潮流計算のオプション、Method クラス、ウォームスタートとキャッシュ、`V0`/`Varg0` の廃止、`operation` 制約の扱いの仕様。
+- [fixed-input.md](fixed-input.md): `initialize` の Method="FixedInput"(入力 u を固定した平衡点)、`rv_Uequilibrium` の編集、アルゴリズムの選択の `Solver` への改名、線形化の `Algorithm` から `Method` への改名の仕様。
+- [controller-signal-routing.md](controller-signal-routing.md): 機器・ローカル制御器・グローバル制御器の信号構造(母線電流 I の廃止、出力の直達の禁止、GC の観測と出力の振り分け、DAE の右辺の評価順)の仕様。
+- [structural-checks.md](structural-checks.md): モデルの物体を追加メソッドだけで作り、外すと削除する設計と、それで起きえなくなった親の検査の削除(Issue #119)。
+- [branch-status-events.md](branch-status-events.md): ブランチの状態(地絡・開放と回線数)と `get_admittance_matrix(Status=, Point=)`、シナリオの故障・並列のイベントの表、ローカル制御器の解列、シナリオの JSON version 2 の仕様。
+- [linearization-connector.md](linearization-connector.md): 線形化の接続器 `SolverLIN` と共通の `get_sys`、各層のブロックとポート、Kron と Feedback の比較の仕様(Issue #121)。§13 は `Type`(`"ODE"`/`"DAE"`)、`SolverLIN.reduce`、`ResultLIN.get_contribution`。
+- [launch-gui.md](launch-gui.md): シミュレーターアプリ `GUILDA.launch_gui` の画面構成と段階の計画、第1-0段階の実行記録 `HistoryGUILDA` とオプション入力 `DrawerOptionDialog` の決定事項と残りの事項。
+- [graph-spring.md](graph-spring.md): ばね質点モデルの図(`GraphSpring2D` / `GraphSpring3D`)のデータの約束、`Component.get_spring_node`、入口 `plot_spring_model`(系統・`ResultODE`・`ResultPF`)と共通の組み立て関数 `tools.spring_model_data` の仕様。
+- [graph-layout.md](graph-layout.md): ネットワーク図の配置データ(Bus・Branch・Component の graph パラメータ)の新しい列、入力時の検査、`net.get_layout` / `net.set_layout`、座標のない母線の配置、変換スクリプトの仕様(D1〜D10 決定済み、未実装)。
+- [analysis-progress.md](analysis-progress.md): 潮流計算・最適潮流計算・連続潮流計算の `Progress`(既定でダイアログ、0.5 秒以上で表示、アプリの画面に表示)と `ProgressGUILDA` の仕様。
+- [graph-diagram-2d.md](graph-diagram-2d.md): `plot_diagram` の 2D 化(`Dimension`)、流れのアニメーション、幅と大きさの範囲の正規化(`BranchWidthRange`、`MarkerSizeRange`)、GraphBase の操作パネル(`show_controls`)の仕様(Q1〜Q17 決定済み、未実装)。
+- [tutorial-assets.md](tutorial-assets.md): チュートリアル（`_GUILDAtutorial`）の画像素材（前後ボタン、Step ごとの赤枠つきの流れ図、母線の種類・格納構造・制御器の付き方の図）の一覧と置く場所の案、ライブスクリプトへの画像とリンクの埋め込み方。
+- [docs-repo-split.md](docs-repo-split.md): ドキュメントの分割。`_GUILDAdoc`（Reference、For Developer、更新履歴）と公開サイトのサブモジュール `_GUILDAdocPages`（guilda-doc）のファイルの振り分け、リンクの書き換え、`GUILDA.publish_doc` の流れ、利用者の手作業。
+- [lecture-notes.md](lecture-notes.md): 講義ノート（`_GUILDAdocPages/lecture/`）の共通の型、使える CSS クラスと SVG の書き方、ファイルの担当、Part1〜8 の節立ての案。
+
+## 調査と改善案
+
+各ファイルは当時の基準コミットでの記録で、本文は更新しません。冒頭に基準を示しています。改善案のファイルには、質問への対応状況を判断の節に追記しています。
+
+| 対象 | 調査 | 改善案 |
+|---|---|---|
+| `get_sys` | [get-sys-workflow.md](get-sys-workflow.md)(流れ、データ、編集、引数)、[get-sys-linearization.md](get-sys-linearization.md)(数値計算と内部構造) | [get-sys-improvements.md](get-sys-improvements.md) |
+| `simulate` | [simulate-review-workflow.md](simulate-review-workflow.md)(流れ、データ、編集、副作用)、[simulate-review-runtime.md](simulate-review-runtime.md)(引数、イベント、区間、内部構造)、[simulate-review-measurements.md](simulate-review-measurements.md)(挙動と性能の実測)、[simulate-review-measurements.m](simulate-review-measurements.m)(実測スクリプト) | [simulate-improvements.md](simulate-improvements.md)、[simulate-redesign.md](simulate-redesign.md)(再設計の仕様) |
+| モデル構築 | [model-building-workflow.md](model-building-workflow.md)(既存クラスからの組み立て)、[model-building-extension.md](model-building-extension.md)(新しいクラスの実装) | [model-building-improvements.md](model-building-improvements.md) |
+
+調査文書が参照する `GUILDA_主機能UX定義シート.xlsx` はリポジトリに含まれていません。
+
+## 他の内容の置き場所
+
+- `_GUILDAdoc/` の HTML: 利用者と将来の開発者向けの恒久的な文書です。GUILDA の仕組みを説明し、この作業の進捗は書きません。
+- 同梱ネットワークと文献の結果の比較: `_GUILDAverification/<network>/`(条件、モデルの違い、一致数の日付つきの記録は各 `README.md`)。
+- 新しいクラス、機能、修正の利用者向けのお知らせ: ホームタブの Update log(`_GUILDAdoc/database/list_UpdateLog.js`)。
+
+このフォルダは、再設計のリリース時に削除するか、リリースノートと文書へまとめます。
