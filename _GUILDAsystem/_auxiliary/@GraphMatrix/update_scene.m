@@ -73,10 +73,10 @@ function update_scene(obj, k)
         plt.Colorbar.Label.String = s_label;
     end
 
-    % Title: the title of the data and the time (not for one sample at t = 0)
+    % Title: the title of the data and the sample (not for one sample at t = 0 without a text)
     s_title = d.s_title;
-    if numel(obj.rv_t) > 1 || obj.rv_t(1) ~= 0
-        s_time = sprintf("t = %.4g s", obj.rv_t(k));
+    if numel(obj.rv_t) > 1 || obj.rv_t(1) ~= 0 || ~isempty(obj.sv_sampleText)
+        s_time = obj.sample_text(k, "t = %.4g s");
         s_title = join([s_title(s_title ~= ""), s_time], ", ");
     end
     title(ax, s_title, "Interpreter", "none");

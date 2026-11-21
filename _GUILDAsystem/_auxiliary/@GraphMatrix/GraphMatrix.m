@@ -16,6 +16,9 @@ classdef GraphMatrix < GraphBase
 %   column, nonempty. The rows of a group need not be next to each other.
 % - `s_title`, `s_rowLabel`, `s_colLabel` (optional, default ""): the title and the
 %   labels of the axes.
+% - `s_sampleName`, `sv_sampleText` (optional): the name of the samples (e.g. "Section")
+%   and the text of each sample (1 x n_t), shown in the title and the playback bar
+%   instead of the time (see GraphBase).
 %
 % Display:
 %
@@ -35,8 +38,8 @@ classdef GraphMatrix < GraphBase
 % chosen again when the figure is resized. A data tip on the matrix shows the row name,
 % the column name, their groups and the value of the sample shown.
 %
-% Time: set_time(t) shows the sample nearest to t, and the title shows its time (not for
-% data of one sample at t = 0).
+% Time: set_time(t) shows the sample nearest to t, and the title shows its time or its
+% sample text (not for data of one sample at t = 0 without a text).
 %
 % Elements: one row per group of rows (Kind "rowgroup") and per group of columns (Kind
 % "colgroup"), in the order of their first row or column; the Tag is the group. A group of

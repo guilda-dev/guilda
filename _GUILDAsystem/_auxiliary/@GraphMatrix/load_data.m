@@ -104,6 +104,7 @@ function load_data(obj, sct_data)
     obj.sct_limitAuto = struct.empty;
     obj.rv_t   = sct.rv_t;
     obj.i_time = 1;
+    obj.load_sample_label(sct_data);
     n_elem = numel(sv_tag);
     obj.SeparatorColor     = repmat([0.6 0.6 0.6], n_elem, 1);
     obj.SeparatorLineWidth = repmat(0.5, n_elem, 1);
