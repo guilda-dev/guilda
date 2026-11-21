@@ -728,3 +728,69 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 ### 22.6 テスト [事実]
 
 - `test_F112_linearization_plots.m` は 15 件(`linearize`、`graph`)。すべて 0.3 s を超えるので `test_levels.m` に medium で登録しました。
+
+## 23. 図を使ったユーザーの指摘への対応(2026-11-22)
+
+`refactor/design-alignment`(`fd68ad05`、サブモジュール `75ded01c`)を早送りで取り込んでから続けました。
+
+### 23.1 「NoData」とクリックが効かない原因 [事実]
+
+- GraphNetDiagram と GraphMatrix は、図全体のデータカーソルモードを有効にします(`datacursormode(fig).Enable = "on"`)。このモードでは、グラフィックスオブジェクトのクリックはデータチップになり、ButtonDownFcn は呼ばれません。
+- そのため、実際の図では ButtonDownFcn に頼る処理(固有値の印のクリックでモードを選ぶ、行列のクリック)が動きませんでした。固有値のデータチップには、最後に設定された GraphNetDiagram の UpdateFcn(customhover)が「No Data...」を返していました [計測: `dcm.createDatatip` を見える figure と uifigure で、修正前のコミット `fd68ad05` に使って再現]。
+- 以前のテストは ButtonDownFcn を直接呼んでいたので、この経路を通っていませんでした。
+
+### 23.2 対応 [事実]
+
+- private の `datatip_wrap(fig, h_owner, fcn_text)` は、図の UpdateFcn を包みます。前の UpdateFcn のテキストを得てから、図ごとの関数で書き足したり置き換えたりします。同じ図に二重には包みません。グラフが自分の UpdateFcn を設定し直したら、次の更新で包み直します。
+- `mode_diagram` の動作:
+  - 固有値のデータチップで、その位置に最も近いモードを選びます。データチップには λ、f、ζ、「mode k (picked)」を表示します。
+  - 母線のデータチップには値の行を加えます。
+  - 印の ButtonDownFcn の経路(データカーソルモードが無効のとき)も残しました。
+- `Mode` を `plot_participation`、`plot_eigenvector`、`plot_contribution` から削除しました。最初はモード 1(`get_mode` の最初の行)を選びます。エラー `ModeRange` も削除しました。
+- 色と ColorLimits は、モードか断面が変わったときだけ描き直します(`show_colors`)。ColorLimits は値が変わったときだけ設定します。
+- 母線のクリックやデータチップは、選択と表だけを更新します(`pick_bus` → `show_table`)。同じ母線なら何もしません。F112 では母線のデータチップを 5 回出しても、ColorLimits の PostSet は 0 回、lastwarn は空でした。
+- GraphMatrix の変更:
+  - 全セルを覆う透明な画像 `HitArea`(PickableParts "all")を置きました。
+  - セル(点・円・空のセル)のデータチップもクリックとして扱い、読み取り専用の `ClickedCell`([行 列])を設定します。
+  - データカーソルモードが無効のときは、ButtonDownFcn の経路(CurrentPoint)で同じ処理をします。
+  - 見える figure で `createDatatip` を使い、空のセル(行 1, 列 12)でブロックを選べることを確かめました [計測]。
+
+### 23.3 警告の連続 [推測を含む]
+
+- 報告された呼び出し履歴は次のとおりです: customhover(データチップ)→ click_element → pick_bus → show_mode → set.ColorLimits → restyle_all → apply_style(150 行、`ax.Colorbar.Label.String` を読む)→ ColorBar/get.Label → createCustomStringStrategy。
+- つまり、データチップを作るたびに色と ColorLimits を描き直し、データチップの文字列を作る途中でカラーバーのラベルを読んでいました。
+- 警告の文面は、`matlab -batch` でも、見える figure・uifigure で `createDatatip` を使っても再現できず、取得できませんでした(lastwarn は空)。実際のマウスの移動で出るものと思われます。
+- 対応: データチップ(母線)では色も ColorLimits も触らないようにしたので、この経路はなくなりました。GraphNetDiagram の変更は不要と判断しました。
+
+### 23.4 `plot_matrix` [事実]
+
+- `Group` を削除し、常に要素(所有者のタグ)でまとめます。左の目盛りは要素ごとに 1 つで、その行と列の中央に置きます(GraphMatrix のデータ `l_groupTicks`)。
+- `Display "pattern"` では、非ゼロを赤く塗った円、ゼロを白抜きの円で描きます(`s_pattern = "circle"`)。
+- 右のパネル:
+  - タイトルは要素のタグ(非対角なら「行 × 列」)です。
+  - 名前はタグを除いた変数名(`delta_B001SG1` → `delta`)です。
+  - セルごとに枠線を描きます(`l_cellGrid`)。
+- 2 つのパネルの間に灰色の縦線を引きました(Tag `GUILDA:ResultLIN:MatrixSeparator`)。
+- 副題に「赤: 非ゼロ(行: 式、列: 変数)、白抜き: ゼロ」と「ブロックをクリック」を書きました。
+
+### 23.5 説明 [事実]
+
+- 各図に、色と値の意味を書いた副題(1〜2 行)を付けました。ヘルプにも同じ説明があります。
+  - `plot_eigenvalue`: 各点はモード e^{λt}。Re λ < 0 で減衰し、Im λ/2π が周波数です。
+  - `plot_participation`: 母線の状態のモードへの分担で、母線の和は 1 です。
+  - `plot_eigenvector`: δ(なければ θ)での固有ベクトルの大きさです。
+  - `plot_kernel`: 母線の角 θ での左核の成分です。島の回転における、その母線の P の釣り合いの重みを表します。
+  - `plot_reduced_matrix`: K(i,i) と結合の太さです。
+  - `plot_contribution`: Re λ_e、∂P/∂θ、∂Q/∂ρ です。
+- 母線のデータチップには、その値の行を加えます(`section_diagram` の `s_value`、`mode_diagram` の `s_value`)。
+
+### 23.6 `target` の候補 [計測]
+
+- `update_keymap` の既存の仕組み(タグの引数を `choices=cellstr(<obj の式>)` にする)を使いました。`get_contribution`、`get_reduced_matrix`、`plot_reduced_matrix` の `target` では、次を候補にします。
+  - 結果の接続モデルの要素(`obj.sct_model.sct_sys.tab_owner.Owner`)とそのクラス
+  - パッケージ(クラス名の最後を除いたもの)
+  - 基底クラス(Component、LocalController、GlobalController、Branch、Bus)
+- IEEE9(制御器つき)で 52 個です。モデルのない結果では基底クラスだけになります(式は空の結果でもエラーにならないように書きました)。
+- タブ補完でこの式が評価されることは、F34 の既存の仕組みと同じです。F112 では、JSON の式を `obj` に対して評価して確かめました。
+- GUI のフォームでは、`obj` を含む choices は複数選択の欄(widget "tags")になります(`DrawerOptionDialog.build_form`)。
+- 「参照」ボタン(DrawerTagPicker)は、`obj.a_network` があるときだけ出ます。ResultLIN にはネットワークがないので出ません。これは GUI 側のコードの変更が要るため、コーディネーターに最小の変更を伝えました。
