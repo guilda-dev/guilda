@@ -40,6 +40,7 @@
 ## 未確認・残っていること
 
 - 負荷のない状態の medium の時間 (後) は計測していません。
+- F77 `askOfTheOPFFormOpensFastTheSecondTimeAndTheResultGUIOpensFastOnIEEE68bus` (large) は、負荷で時間の比が揺れて失敗することが何度かありました。負荷に敏感な既知のテストです。閾値はこのブランチでは変えていません。
 - `matlab -batch "cd <GUILDA>; DebugScript.run_all"` は、ワークツリーでは `DebugScript.run_all` を解決できません (`_GUILDAverification` がパスにないため)。先に `GUILDA;` を実行する必要があります。今回は直していません。
 - `fix/ode-default-tolerance` が `test_levels.m` に行を足すと、この変更と衝突する可能性があります。
 
