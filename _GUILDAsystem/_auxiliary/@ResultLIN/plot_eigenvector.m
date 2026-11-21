@@ -1,11 +1,16 @@
 function sct_graph = plot_eigenvector(obj, opt)
 % Plot the eigenvector of a mode on the network diagram, with the mode picked on the eigenvalue map.
 %
+% What it shows: the shape of one mode over the network. The right eigenvector v
+% (Side "right", default; A v = lambda E v, cm_right of get_eigenvector) says how much
+% and with which phase each variable swings in the mode: buses of the same color phase
+% swing together, buses 180° apart swing against each other. The left eigenvector w
+% (Side "left"; w' A = lambda w' E, cm_left) says how strongly an input or a disturbance
+% in the equation of each variable excites the mode.
+%
 % Draws the same figure as plot_participation (the eigenvalue map on the left, the
 % diagram of sct_network on the right and a table below it) for the eigenvector of the
-% mode picked: Side "right" (default) is the mode shape v (A v = lambda E v, cm_right of
-% get_eigenvector), "left" the left eigenvector w (w' A = lambda w' E, cm_left), the side of
-% the inputs and of the observation of the mode.
+% mode picked on the map (mode 1, the first row of get_mode, first).
 %
 % Each bus shows the entry at its representative variable:
 %
@@ -21,12 +26,10 @@ function sct_graph = plot_eigenvector(obj, opt)
 % label "tag: magnitude∠phase°" gives the phase relative to that largest entry (0° there;
 % buses swinging against it are near 180°). Clicking a bus (or a component: its bus) lists
 % every state of the bus with the magnitude and phase [deg] of its entry (the vector as
-% get_eigenvector normalizes it). Clicking an eigenvalue picks its mode, as in
-% plot_participation; Mode is the mode picked first (the column of get_participation, one
-% of each complex pair). Type chooses the model. Sections switch through the playback bar
-% as in plot_participation; a Mode beyond the modes of the section shown first stops with
-% GUILDA:ResultLIN:ModeRange, and another layer than the network with
-% GUILDA:ResultLIN:NetworkOnly.
+% get_eigenvector normalizes it); the data tip of a bus gives its |entry| / max. Clicking
+% an eigenvalue picks its mode, as in plot_participation. Type chooses the model.
+% Sections switch through the playback bar as in plot_participation; another layer than
+% the network stops with GUILDA:ResultLIN:NetworkOnly.
 %
 % It returns a struct with Eigenvalue (GraphChart), Diagram (GraphNetDiagram) and Table
 % (uitable).
@@ -35,7 +38,7 @@ function sct_graph = plot_eigenvector(obj, opt)
 % ```matlab
 % res = net.get_sys();
 % sct = res.plot_eigenvector();                   % mode shape of the least stable mode
-% sct = res.plot_eigenvector(Side="left", Mode=2);
+% sct = res.plot_eigenvector(Side="left");
 % sct = res.plot_eigenvector(Type="DAE");         % the load buses by their theta
 % ```
 %
@@ -43,7 +46,6 @@ function sct_graph = plot_eigenvector(obj, opt)
     arguments (Input)
         obj
         opt.Side (1,1) string {mustBeMember(opt.Side, ["right","left"])} = "right"  % Eigenvector: "right" (the mode shape) or "left".
-        opt.Mode (1,1) double {mustBeInteger, mustBePositive} = 1  % Mode picked first: a column of get_participation.
         opt.Type (1,1) string {mustBeMember(opt.Type, ["ODE","DAE"])} = obj.Type  % Model whose modes are used: "ODE" or "DAE"; the Type of the result when omitted.
         opt.Index (1,1) double {mustBeInteger, mustBePositive} = obj.Index  % Section shown first (1 ... numel(rv_t)); res.Index when omitted.
         opt.Parent = []                                        % Container (figure, uifigure, uipanel, uitab, uigridlayout) to draw in; [] for a new figure.
@@ -62,9 +64,11 @@ function sct_graph = plot_eigenvector(obj, opt)
     sct_vec  = obj.get_eigenvector(opt.Type, Index="all");
     s_side = opt.Side;
     sct_spec = struct("s_name", "Eigenvector (" + s_side + ")", "s_colorbar", "|entry| / max", "s_limit", "zero", ...
+        "s_explain", ["Color: |" + s_side + " eigenvector| at the bus's \delta (else \theta) / largest"; "Label: magnitude∠phase"], ...
+        "s_value", "|entry| / max", ...
         "sv_column", ["Magnitude", "Phase [deg]"], "l_tableAll", false, ...
         "fcn_section", @(sv_bus, ~, ~) vector_sections(obj, sct_part, sct_vec, s_side, sv_bus));
-    sct_graph = mode_diagram(obj, struct("Type", opt.Type, "Index", opt.Index, "Mode", opt.Mode, "Parent", opt.Parent), sct_spec);
+    sct_graph = mode_diagram(obj, struct("Type", opt.Type, "Index", opt.Index, "Parent", opt.Parent), sct_spec);
 end
 
 

@@ -1,44 +1,48 @@
 function sct_graph = plot_participation(obj, opt)
 % Plot the participation of the buses in a mode, picked on the eigenvalue map.
 %
-% Draws one figure (in Parent) with three parts:
+% What it shows: how much the states at each bus take part in one oscillation or decay
+% (a mode) of the linear model. The participation of state k in mode i is
+% |w_k (E v)_k| (right and left eigenvectors v, w), normalized so that it sums to 1 over
+% the states; a bus gets the sum over its states (its components and their local
+% controllers, and its bus variables in Type "DAE"), so the bus values of a mode sum to 1
+% over the buses (with the global controllers). A bus near 1 is where the mode lives.
 %
-% - left: the eigenvalue map of plot_eigenvalue (GraphChart, marker sets "stable" and
-%   "unstable"). Clicking an eigenvalue picks the mode of that eigenvalue (the nearest
-%   eigenvalue, or its conjugate, of the modes of get_participation in the section shown
-%   to the point clicked), marked by a black ring on it and its conjugate.
-% - right: the diagram of the snapshot sct_network (GraphNetDiagram, the topology), whose
-%   buses are colored by tab_bus.Participation of get_participation in the mode picked,
-%   on the colormap of the diagram with a colorbar from 0 to the largest participation of
-%   the mode. A bus without states (no component or controller states at it, and no bus
-%   variable in Type "DAE") is gray (NaN), and so is every bus of a section that has fewer
-%   modes. The title gives the mode, its eigenvalue, frequency and damping ratio.
-% - below the diagram: a table of the bus clicked (or selected) on the diagram, with the
-%   participation of each state of that bus in the mode picked (a component clicked shows
-%   its bus). Its panel title is the tag of the bus.
+% One figure (in Parent) with three parts:
 %
-% Mode is the mode picked first: the column of get_participation (the modes of get_mode,
-% one of each complex pair, sorted by the real part, the largest first). Type chooses the
-% model, as in get_participation.
+% - left: the eigenvalue map of plot_eigenvalue (marker sets "stable" and "unstable").
+%   Clicking an eigenvalue picks the mode of the nearest eigenvalue (or its conjugate) of
+%   the modes of get_participation in the section shown, marked by a black ring; its data
+%   tip shows lambda, the frequency, the damping ratio and the mode picked. Mode 1, the
+%   first row of get_mode (the largest real part), is picked first.
+% - right: the diagram of the snapshot sct_network (GraphNetDiagram, the topology), each
+%   bus colored by tab_bus.Participation of get_participation in the mode picked
+%   (colorbar from 0 to the largest participation of the mode). A bus without states (no
+%   component or controller states at it, and no bus variable in Type "DAE") is gray
+%   (NaN), and so is every bus of a section that has fewer modes. The title gives the mode,
+%   its eigenvalue, frequency and damping ratio, the subtitle what the colors are, and the
+%   data tip of a bus its participation.
+% - below the diagram: a table of the bus clicked on the diagram, with the participation of
+%   each state of that bus in the mode picked (a component clicked shows its bus).
 %
-% A result with several sections (numel(rv_t) > 1) has one sample per section in both
-% graphs, which are linked (G.link): the playback bar of either switches the section of
-% both, and the colors, the ring and the table follow the mode of the same number in that
-% section. It starts at Index; a Mode beyond the modes of that section stops with
-% GUILDA:ResultLIN:ModeRange. Only a result of the network has a diagram; another layer
-% stops with GUILDA:ResultLIN:NetworkOnly.
+% Type chooses the model, as in get_participation. A result with several sections
+% (numel(rv_t) > 1) has one sample per section in both graphs, which are linked
+% (G.link): the playback bar of either switches the section of both, and the colors, the
+% ring and the table follow the mode of the same number in that section. It starts at
+% Index. Only a result of the network has a diagram; another layer stops with
+% GUILDA:ResultLIN:NetworkOnly.
 %
 % It returns a struct with the parts: Eigenvalue (the GraphChart), Diagram (the
-% GraphNetDiagram) and Table (the uitable). The two graphs are GraphBase objects; a bus
-% clicked is also selected on the diagram (Diagram.select). Their ElementClickedFcn are
-% used by the figure: add more with addlistener(G, "ElementClicked", ...).
+% GraphNetDiagram) and Table (the uitable). A bus clicked is also selected on the diagram
+% (Diagram.select). The figure turns on the data cursor mode (the diagram does) and adds
+% to its UpdateFcn; the ElementClickedFcn of the two graphs are used by the figure: add
+% more with addlistener(G, "ElementClicked", ...).
 %
 % <@Examples>
 % ```matlab
 % res = net.get_sys();
 % sct = res.plot_participation();             % click an eigenvalue, then a bus
-% sct = res.plot_participation(Mode=3);       % the third mode of get_participation
-% sct.Diagram.BusColorData                    % = tab_bus.Participation(:, 3), NaN without states
+% sct.Diagram.BusColorData                    % = tab_bus.Participation(:, 1), NaN without states
 % res = net.get_sys({sim, [0.5 1 2]});
 % sct = res.plot_participation(Index=2);      % sections switched by the playback bar
 % ```
@@ -46,7 +50,6 @@ function sct_graph = plot_participation(obj, opt)
 % See also ResultLIN.get_participation, ResultLIN.plot_eigenvalue, ResultLIN.get_mode, GraphNetDiagram
     arguments (Input)
         obj
-        opt.Mode (1,1) double {mustBeInteger, mustBePositive} = 1  % Mode picked first: a column of get_participation.
         opt.Type (1,1) string {mustBeMember(opt.Type, ["ODE","DAE"])} = obj.Type  % Model whose modes are used: "ODE" or "DAE"; the Type of the result when omitted.
         opt.Index (1,1) double {mustBeInteger, mustBePositive} = obj.Index  % Section shown first (1 ... numel(rv_t)); res.Index when omitted.
         opt.Parent = []                                        % Container (figure, uifigure, uipanel, uitab, uigridlayout) to draw in; [] for a new figure.
@@ -64,6 +67,8 @@ function sct_graph = plot_participation(obj, opt)
     sct_part = obj.get_participation(Type=opt.Type, Index="all");
     tab = obj.tab_variable;
     sct_spec = struct("s_name", "Participation", "s_colorbar", "participation", "s_limit", "zero", ...
+        "s_explain", ["Color: share of the bus's states in the mode (sum over buses = 1)"; "Gray: no states"], ...
+        "s_value", "Participation in the mode", ...
         "sv_column", "Participation", "l_tableAll", false, ...
         "fcn_section", @(sv_bus, ~, ~) participation_sections(sct_part, tab, sv_bus));
     sct_graph = mode_diagram(obj, opt, sct_spec);

@@ -8,7 +8,7 @@ function sct_graph = plot_contribution(obj, opt)
 % (Type "DAE") on the left, the diagram of sct_network on the right and a table below it.
 %
 % "damping" (default): the share of each element in the eigenvalue of the mode picked
-% (click an eigenvalue on the map, or Mode=k: the column of get_participation(Type="DAE")).
+% (click an eigenvalue on the map; mode 1, the first row of get_mode(Type="DAE"), first).
 % With the right and left eigenvectors v, w of the DAE (get_eigenvector("DAE"),
 % w' E v = 1),
 %
@@ -61,7 +61,7 @@ function sct_graph = plot_contribution(obj, opt)
 % <@Examples>
 % ```matlab
 % res = net.get_sys();
-% sct = res.plot_contribution(Mode=4);                      % which elements damp mode 4
+% sct = res.plot_contribution();                            % click a mode: which elements damp it
 % sct = res.plot_contribution(Quantity="synchronizing", State="fixed");
 % sct = res.plot_contribution(Quantity="voltage");          % steady-state reactive stiffness
 % ```
@@ -71,7 +71,6 @@ function sct_graph = plot_contribution(obj, opt)
         obj
         opt.Quantity (1,1) string {mustBeMember(opt.Quantity, ["damping","synchronizing","voltage"])} = "damping"  % Quantity: "damping" (share in an eigenvalue), "synchronizing" (dP/dtheta of the ports) or "voltage" (dQ/drho of the ports).
         opt.State (1,1) string {mustBeMember(opt.State, ["settled","fixed"])} = "settled"  % Ports of "synchronizing" and "voltage": states "settled" (eliminated) or "fixed" (held at the point).
-        opt.Mode (1,1) double {mustBeInteger, mustBePositive} = 1  % Mode picked first ("damping"): a column of get_participation(Type="DAE").
         opt.Index (1,1) double {mustBeInteger, mustBePositive} = obj.Index  % Section shown first (1 ... numel(rv_t)); res.Index when omitted.
         opt.Parent = []                                        % Container (figure, uifigure, uipanel, uitab, uigridlayout) to draw in; [] for a new figure.
     end
@@ -85,9 +84,11 @@ function sct_graph = plot_contribution(obj, opt)
     if opt.Index > n_t
         error(msg("GUILDA:ResultLIN:IndexRange", string(n_t)))
     end
-    c_opt = struct("Type", "DAE", "Index", opt.Index, "Mode", opt.Mode, "Parent", opt.Parent);
+    c_opt = struct("Type", "DAE", "Index", opt.Index, "Parent", opt.Parent);
     if opt.Quantity == "damping"
         sct_spec = struct("s_name", "Share in the damping", "s_colorbar", "Re(λ_e)", ...
+            "s_explain", ["Color: Re \lambda_e, the element's part in the decay rate"; "Negative: adds damping; \Sigma\lambda_e = \lambda"], ...
+            "s_value", "Re \lambda_e of the bus (shunt)", ...
             "s_limit", "symmetric", "sv_column", ["Re", "Im"], "l_tableAll", true, "l_cartesian", true, ...
             "fcn_section", @(sv_bus, sv_comp, sv_branch) share_sections(obj, sv_bus, sv_comp, sv_branch));
         sct_graph = mode_diagram(obj, c_opt, sct_spec);
@@ -109,7 +110,10 @@ function sct_graph = plot_contribution(obj, opt)
     s_quantity = opt.Quantity + " " + sv_name(i_var) + " (" + opt.State + ", Port " + s_port + ")";
     s_q = opt.Quantity;
     s_state = opt.State;
+    sv_explain = ["Color: ∂P/∂θ of the devices at the bus (positive: pulls the angle back)", ...
+                  "Color: " + sv_name(2) + " of the devices at the bus (positive: supports the voltage)"];
     sct_spec = struct("s_name", "Port stiffness", "s_colorbar", sv_name(i_var), "s_limit", "symmetric", ...
+        "s_explain", sv_explain(i_var), "s_value", sv_name(i_var) + " of the devices at the bus", ...
         "sv_column", ["K11", "K12", "K21", "K22"], "l_tableAll", true, "l_modeFree", true, "s_quantity", s_quantity, ...
         "fcn_section", @(sv_bus, sv_comp, sv_branch) port_sections(obj, s_q, s_state, sv_bus, sv_comp, sv_branch));
     sct_graph = mode_diagram(obj, c_opt, sct_spec);
