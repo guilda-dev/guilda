@@ -73,6 +73,18 @@ function update_scene(obj, k)
         plt.Colorbar.Label.String = s_label;
     end
 
+    % Values written in the cells (l_valueText): the entries above Tolerance, up to 900
+    delete(plt.Text(isgraphics(plt.Text)));
+    obj.sct_plt.Text = gobjects(0, 1);
+    if d.l_valueText
+        [iv_i, iv_j] = find(abs(M) > r_tol);
+        rv_v = M(sub2ind(size(M), iv_i, iv_j));
+        if numel(rv_v) <= 900
+            obj.sct_plt.Text = text(ax, iv_j, iv_i, compose("%.3g", full(rv_v)), "HorizontalAlignment", "center", ...
+                "FontSize", 8, "HitTest", "off", "PickableParts", "none", "Interpreter", "none", "Tag", "Value");
+        end
+    end
+
     % Title: the title of the data and the sample (not for one sample at t = 0 without a text)
     s_title = d.s_title;
     if numel(obj.rv_t) > 1 || obj.rv_t(1) ~= 0 || ~isempty(obj.sv_sampleText)

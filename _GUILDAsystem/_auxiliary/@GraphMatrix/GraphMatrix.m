@@ -16,6 +16,10 @@ classdef GraphMatrix < GraphBase
 %   column, nonempty. The rows of a group need not be next to each other.
 % - `s_title`, `s_rowLabel`, `s_colLabel` (optional, default ""): the title and the
 %   labels of the axes.
+% - `l_frame` (optional, default false): a box around each block of a group that is
+%   both a row group and a column group (the diagonal blocks of a square matrix).
+% - `l_valueText` (optional, default false): the values of the sample shown are written
+%   in their cells ("%.3g"; the entries above Tolerance, when there are at most 900).
 % - `s_sampleName`, `sv_sampleText` (optional): the name of the samples (e.g. "Section")
 %   and the text of each sample (1 x n_t), shown in the title and the playback bar
 %   instead of the time (see GraphBase).
@@ -46,7 +50,9 @@ classdef GraphMatrix < GraphBase
 % rows has a horizontal line before each block of its rows (the first one on the edge of
 % the axes), a group of columns a vertical line before each block of its columns.
 % `select(tag)` highlights the rows and the columns of the group; a data tip on a
-% separator line is a click on its group (ElementClicked). set_style options by kind:
+% separator line is a click on its group (ElementClicked). A click on the matrix (a dot,
+% the image or the empty background) is a click on the group of the row clicked; the
+% column is in G.ax.CurrentPoint. set_style options by kind:
 %
 % | Kind | Options |
 % |---|---|
