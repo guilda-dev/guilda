@@ -1,5 +1,5 @@
 {
-    "version": 2,
+    "version": 3,
     "Solver":{
         "Value": "ode15s",
         "Type": "select",
@@ -10,7 +10,7 @@
         "Description": "Solver of the MATLAB ode object (a solver for DAEs)"
     },
     "Tolerance":{
-        "Value": 1e-4,
+        "Value": 1e-6,
         "Type": "double",
         "Valid": "v >= 1e-15 && v <= 1e-3",
         "Description": "Relative error tolerance, 'RelativeTolerance' of the ode object (1e-15 <= tol <= 1e-3)"

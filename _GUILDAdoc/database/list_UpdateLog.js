@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Time simulations use a tighter default relative tolerance",
+    "date": "2026-11-21",
+    "type": "fix",
+    "content": "The default relative tolerance of time simulations is now 1e-6 instead of 1e-4; the absolute tolerance (1e-6) and the largest step (the solver default) do not change. With the looser tolerance, a long run in which the frequency does not return, such as a network without governors after a change of mechanical power, could stop partway with a message that the solver cannot meet the tolerance; it now runs to the end, and in our tests it takes about the same time. Results change slightly, by up to about 0.02 in the states of our test cases, about the error of the old default. At the first startup after the update, GUILDA shows the information message GUILDA:GUILDA:ConfigReset once and every time simulation setting (the tolerances, the solver, the progress display and the others) returns to its default; set again any of them you had changed."
+  },
+  {
     "title": "Quieter path setup and the verification folder on the path",
     "date": "2026-11-21",
     "type": "feature",
