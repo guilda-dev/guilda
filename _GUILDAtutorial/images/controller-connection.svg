@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 550" width="920" height="550" role="img">
+  <title>ローカル制御器とグローバル制御器の付き方と信号の向き</title>
+  <style>
+    .h { font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 700; fill: #1B2127; }
+    .t { font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; fill: #1B2127; }
+    .s { font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, Helvetica, Arial, sans-serif; font-size: 12px; fill: #1B2127; }
+    .n { font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, Helvetica, Arial, sans-serif; font-size: 11.5px; fill: #5A6570; }
+    .c { font-family: ui-monospace, Menlo, Consolas, "Liberation Mono", monospace; font-size: 12px; fill: #1B2127; }
+    .cm { font-family: ui-monospace, Menlo, Consolas, "Liberation Mono", monospace; font-size: 11px; fill: #5A6570; }
+    .ln { fill: none; stroke: #5A6570; stroke-width: 1.6; stroke-linejoin: round; }
+    .ob { fill: none; stroke: #5A6570; stroke-width: 1.4; stroke-dasharray: 5 3; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#5A6570"/></marker>
+  </defs>
+  <rect x="0.5" y="0.5" width="919" height="549" rx="6" fill="#FFFFFF" stroke="#DADFE4"/>
+  <rect x="20" y="20" width="250" height="420" rx="8" fill="#F3F7FB" stroke="#0059A7" stroke-width="1" stroke-dasharray="4 3"/>
+  <text class="h" x="34" y="44" style="fill:#0059A7">ローカル制御器</text>
+  <text class="n" x="34" y="62">発電機（機器）に付く</text>
+  <rect x="640" y="20" width="260" height="420" rx="8" fill="#F3F7FB" stroke="#0059A7" stroke-width="1" stroke-dasharray="4 3"/>
+  <text class="h" x="654" y="44" style="fill:#0059A7">グローバル制御器</text>
+  <text class="n" x="654" y="62">系統に付き、複数の発電機を制御する</text>
+  <rect x="40" y="84" width="210" height="62" rx="4" fill="#E2EBF5" stroke="#0059A7" stroke-width="1.5"/>
+  <text class="t" x="54" y="106">PSS</text>
+  <text class="cm" x="236" y="106" text-anchor="end">"pss-PSS1"</text>
+  <text class="n" x="54" y="128">観測: omega</text>
+  <rect x="40" y="186" width="210" height="86" rx="4" fill="#E2EBF5" stroke="#0059A7" stroke-width="1.5"/>
+  <text class="t" x="54" y="208">AVR</text>
+  <text class="cm" x="236" y="208" text-anchor="end">"avr-ST1"</text>
+  <text class="n" x="54" y="227">入力: Vref, Vpss</text>
+  <text class="n" x="54" y="244">観測: Ifield</text>
+  <text class="n" x="54" y="261">母線電圧 V も受け取る</text>
+  <rect x="40" y="320" width="210" height="62" rx="4" fill="#E2EBF5" stroke="#0059A7" stroke-width="1.5"/>
+  <text class="t" x="54" y="342">ガバナ</text>
+  <text class="cm" x="236" y="342" text-anchor="end">"gov-LPT1"</text>
+  <text class="n" x="54" y="364">観測: omega　入力: Pref</text>
+  <rect x="400" y="190" width="170" height="120" rx="6" fill="#E4EFE6" stroke="#2E6B3F" stroke-width="1.5"/>
+  <text class="t" x="485.0" y="220" text-anchor="middle">発電機</text>
+  <text class="cm" x="485.0" y="238" text-anchor="middle">Component</text>
+  <text class="cm" x="410" y="272">Vfield</text>
+  <text class="cm" x="410" y="297">Pmech</text>
+  <text class="cm" x="560" y="272" text-anchor="end">omega</text>
+  <text class="cm" x="560" y="290" text-anchor="end">Ifield</text>
+  <text class="n" x="485.0" y="256" text-anchor="middle">入力 u ← → 出力 y</text>
+  <path class="ln" d="M485.0 310 V368"/>
+  <rect x="410" y="368" width="150" height="10" rx="2" fill="#C2682A"/>
+  <text class="n" x="485.0" y="398" text-anchor="middle">母線（電圧 V）</text>
+  <path class="ln" d="M145 146 V184" marker-end="url(#a)"/>
+  <text class="cm" x="152" y="170">Vpss</text>
+  <path class="ln" d="M250 222 H320 V268 H398" marker-end="url(#a)"/>
+  <text class="cm" x="326" y="262">Vfield</text>
+  <path class="ln" d="M250 351 H340 V302" marker-end="url(#a)"/>
+  <text class="cm" x="280" y="344">Pmech</text>
+  <circle cx="340" cy="293" r="9" fill="#FFFFFF" stroke="#5A6570" stroke-width="1.6"/>
+  <path d="M335 293 H345 M340 288 V298" stroke="#5A6570" stroke-width="1.6"/>
+  <path class="ln" d="M349 293 H398" marker-end="url(#a)"/>
+  <path class="ob" d="M525.0 190 V115 H252" marker-end="url(#a)"/>
+  <text class="cm" x="300" y="108">omega</text>
+  <path class="ob" d="M568 268 H602 V420 H160 V384" marker-end="url(#a)"/>
+  <path class="ob" d="M602 268 V150 H658" marker-end="url(#a)"/>
+  <text class="cm" x="596" y="176" text-anchor="end">omega</text>
+  <path class="ob" d="M430 190 V160 H205 V184" marker-end="url(#a)"/>
+  <text class="cm" x="300" y="154">Ifield</text>
+  <rect x="660" y="100" width="220" height="100" rx="4" fill="#E2EBF5" stroke="#0059A7" stroke-width="1.5"/>
+  <text class="t" x="674" y="122">AGC</text>
+  <text class="cm" x="866" y="122" text-anchor="end">"agc-PI"</text>
+  <text class="n" x="674" y="144">観測: 各発電機の omega</text>
+  <text class="n" x="674" y="162">（全母線の電圧 V も受け取る）</text>
+  <text class="n" x="674" y="186">出力: 各発電機の Pmech</text>
+  <path class="ln" d="M770 200 V470 H340 V304" marker-end="url(#a)" style="stroke:#0059A7"/>
+  <text class="cm" x="780" y="270" style="fill:#0059A7">Pmech</text>
+  <path class="ln" d="M800 200 V250 H880" marker-end="url(#a)" style="stroke:#0059A7"/>
+  <text class="n" x="812" y="242">他の発電機へ</text>
+  <path class="ln" d="M24 500 H64" marker-end="url(#a)"/>  <text class="s" x="72" y="504">出力 → 入力（駆動）</text>
+  <path class="ob" d="M220 500 H260" marker-end="url(#a)"/>  <text class="s" x="268" y="504">名前で観測（機器の出力・状態）</text>
+  <circle cx="490" cy="500" r="8" fill="#FFFFFF" stroke="#5A6570" stroke-width="1.6"/><path d="M485 500 H495 M490 495 V505" stroke="#5A6570" stroke-width="1.6"/>  <text class="s" x="504" y="504">同じ入力に入る出力は足し合わせる</text>
+  <text class="n" x="24" y="534">AGC の出力 Pmech は、同じ名前の入力を持つローカル制御器があればそこへ、なければ機器の入力へ入ります（ここではガバナの出力に足されて発電機へ）。</text>
+</svg>
