@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Select... for the targets of the linearization result forms",
+    "date": "2026-11-22",
+    "type": "feature",
+    "content": "In the result window of a linearization (res.launch_gui()), the forms of get_contribution, get_reduced_matrix and plot_reduced_matrix now have a Select... button beside target. It opens a searchable table of the elements of the result (their tags and classes) and of their classes, and writes the rows chosen into the field, several at a time. The table is read only when the button is pressed, so the forms open as fast as before. When the result has no elements to list, a message says so and the field does not change."
+  },
+  {
     "title": "Time simulations use a tighter default relative tolerance",
     "date": "2026-11-21",
     "type": "fix",
