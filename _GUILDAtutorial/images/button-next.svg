@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" width="240" height="64" role="img">
+  <title>次のステップへ</title>
+  <rect x="1.5" y="1.5" width="237" height="61" rx="12" fill="#0059A7" stroke="#0059A7" stroke-width="2"/>
+  <text x="108.0" y="39.0" text-anchor="middle" font-family='-apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, Helvetica, Arial, sans-serif' font-size="20" font-weight="700" fill="#FFFFFF">次のステップへ</text>
+  <path d="M210 32.0 l-11 -9 v18 z" fill="#FFFFFF"/>
+</svg>
