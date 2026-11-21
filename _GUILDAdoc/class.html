@@ -3,11 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GUILDA Reference - Class</title>
+  <title data-title-ja="GUILDA リファレンス - クラス">GUILDA Reference - Class</title>
+  <script src="doc-lang.js"></script>
   <link rel="stylesheet" href="style.css">
-  
+  <link rel="stylesheet" href="reference.css">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+
+  <script src="./vendor/katex/katex.min.js"></script>
   <script src="./database/list_Classes.js"></script>
   <script src="./doc-loader.js"></script>
+  <script src="./doc-render.js"></script>
+  <script src="./doc-colresize.js"></script>
+  <script src="./doc-tree.js"></script>
 </head>
 <body class="doc-layout">
 
@@ -15,545 +22,603 @@
     <a href="index.html" onclick="window.GuildaDocLoader.navigate('index.html'); return false;" style="display: block; margin-bottom: 20px;">
       <img src="./images/GUILDAicon.png" alt="GUILDA Logo" style="width: 100%;">
     </a>
-    <a href="index.html#tab-reference" onclick="window.GuildaDocLoader.navigate('index.html', 'tab-reference'); return false;" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to Home</a>
-    
-    <h3 style="margin-top: 0;">On this page</h3>
-    <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
-      <li><a href="#description" onclick="document.getElementById('description')?.scrollIntoView(); return false;">Description</a></li>
-      <li><a href="#role" onclick="document.getElementById('role')?.scrollIntoView(); return false;">Role</a></li>
-      <li><a href="#constructor" onclick="document.getElementById('constructor')?.scrollIntoView(); return false;">Constructor</a></li>
-      <li><a href="#properties" onclick="document.getElementById('properties')?.scrollIntoView(); return false;">Properties</a></li>
-      <li><a href="#methods" onclick="document.getElementById('methods')?.scrollIntoView(); return false;">Methods</a></li>
-    </ul>
+    <a href="index.html#tab-reference" onclick="window.GuildaDocLoader.navigate('index.html', 'tab-reference'); return false;" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;"><span lang="en">← Back to Reference</span><span lang="ja">← リファレンスに戻る</span></a>
+
+    <div id="source-tree"></div>
+
+    <h3 style="margin-top: 0;"><span lang="en">On this page</span><span lang="ja">このページの内容</span></h3>
+    <ul id="page-toc" style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;"></ul>
   </nav>
 
   <main id="main-content" style="flex: 1; min-width: 0;">
     <div id="dynamic-content">
-      <h1 style="color: #888;">Loading...</h1>
+      <h1 style="color: var(--muted);"><span lang="en">Loading...</span><span lang="ja">読み込み中...</span></h1>
     </div>
   </main>
 
   <script>
-    // Read URL parameters
-    const routeParams = window.GuildaDocLoader.getRouteParams();
+    const loader = window.GuildaDocLoader;
+    const {
+      tr, setPageTitle, escapeHtml, nl2br, firstText, toList, renderMarkdown, formatInlineMarkdown,
+      classLink: renderClassLink, seeAlsoLink, sourceLocation, examplesText, groupRows, groupHeading, breakableName, accessTag
+    } = window.GuildaDocRender;
+    const routeParams = loader.getRouteParams();
     const className = routeParams.get('class');
-    let propertyViewMode = 'attributes';
-    let methodViewMode = 'attributes';
-    let propertySearchTerm = '';
-    let methodSearchTerm = '';
-    let propertySortColumn = 'name';
-    let propertySortOrder = 1;
-    let methodSortColumn = 'name';
-    let methodSortOrder = 1;
-    let metaDataCache = null;
-    let classDocCache = null;
+    loader.reloadOnRouteChange(['class']);
 
-    window.setPropertyViewMode = (mode) => {
-      propertyViewMode = mode;
-      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
+    // View state of the member tables. The tables are re-rendered on their
+    // own so that the search boxes keep focus while typing. The shown
+    // columns are read from localStorage when the table is first drawn.
+    const memberState = {
+      property: { columns: null, search: '', inherited: true, publicOnly: false, grouped: true, sort: 'name', order: 1 },
+      method:   { columns: null, search: '', inherited: true, publicOnly: false, grouped: true, sort: 'name', order: 1 }
     };
+    let pageData = null;
 
-    window.setMethodViewMode = (mode) => {
-      methodViewMode = mode;
-      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
+    const methodUrl = (method) => loader.pageUrl('method.html', { class: className, method });
+    const isPublic = (access) => !access || access === 'public';
+    const muted = (text) => `<span class="ref-muted">${text}</span>`;
+
+    const normalizeProperty = (p) => ({
+      name: p?.Name || '',
+      defining: p?.Defining || '',
+      inherited: (p?.Defining || className) !== className,
+      getAccess: p?.GetAccess || '',
+      setAccess: p?.SetAccess || '',
+      dependent: Boolean(p?.Dependent),
+      constant: Boolean(p?.Constant),
+      abstract: Boolean(p?.Abstract),
+      hidden: Boolean(p?.Hidden),
+      group: p?.Group || '',
+      summary: firstText(p?.Summary, p?.Desc),
+      description: [p?.Summary, p?.Desc].map((v) => (v ?? '').toString().trim()).filter(Boolean).join('\n\n'),
+      // The Type tag wins; otherwise show what the declaration itself says.
+      type: firstText(p?.Type, p?.Validation?.Class),
+      size: firstText(p?.Validation?.Size, p?.Size),
+      unit: p?.Unit || '',
+      defaultValue: firstText(p?.DefaultCode, p?.Default),
+      constraints: firstText(toList(p?.Validation?.Validators).join(', '), p?.Constraints),
+      seeAlso: toList(p?.SeeAlso),
+      stale: p?.Stale || '',
+      deprecated: p?.Deprecated || ''
+    });
+    const normalizeMethod = (m) => ({
+      name: m?.Name || '',
+      defining: m?.Defining || '',
+      inherited: (m?.Defining || className) !== className,
+      access: m?.Access || '',
+      static: Boolean(m?.Static),
+      abstract: Boolean(m?.Abstract),
+      sealed: Boolean(m?.Sealed),
+      hidden: Boolean(m?.Hidden),
+      constructor: Boolean(m?.IsConstructor),
+      group: m?.Abstract ? CONTRACT_GROUP : (m?.Group || (m?.IsConstructor ? 'Constructor' : '')),
+      overrides: m?.Overrides || '',
+      implementedIn: m?.ImplementedIn || '',
+      summary: firstText(m?.Summary, m?.Desc),
+      description: [m?.Summary, m?.Desc].map((v) => (v ?? '').toString().trim()).filter(Boolean).join('\n\n'),
+      signature: firstText(m?.Signature, toList(m?.Signatures)[0], `${m?.Name || ''}()`),
+      deprecated: m?.Deprecated || ''
+    });
+
+    const flag = (value, label) => (value ? `<span class="ref-badge is-small">${label}</span>` : '');
+    const definedIn = (row) => `<span class="ref-defined-in">${row.inherited ? renderClassLink(row.defining) : muted(tr('this class', 'このクラス'))}</span>`;
+    const IMPLEMENTED_IN_TITLES = {
+      file: ['Defined in its own file in the class folder', 'クラスフォルダ内の個別ファイルで定義'],
+      private: ['Defined in the private folder of the class', 'クラスの private フォルダで定義']
     };
-
-    window.setPropertySearchTerm = (value) => {
-      propertySearchTerm = (value || '').toLowerCase();
-      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
+    // Group names written by the generator or shared by every class; other group names come from the source comments.
+    const CONTRACT_GROUP = 'Subclass contract';
+    const groupLabel = (name) => ({ Constructor: tr('Constructor', 'コンストラクタ'), Other: tr('Other', 'その他'), [CONTRACT_GROUP]: tr('Subclass contract', 'サブクラスの契約'), 'Cached function handles': tr('Cached function handles', 'キャッシュした関数ハンドル') })[name] || name;
+    const memberHints = (row) => {
+      const hints = [
+        row.deprecated ? `<span class="ref-badge is-small is-deprecated">${tr('Deprecated', '非推奨')}</span>` : '',
+        row.overrides ? `<span class="ref-badge is-small" title="${tr('Overrides', 'オーバーライド元:')} ${escapeHtml(row.overrides)}.${escapeHtml(row.name)}">${tr('overrides', 'オーバーライド元')} <a href="${loader.pageUrl('method.html', { class: row.overrides, method: row.name })}">${escapeHtml(row.overrides)}</a></span>` : '',
+        IMPLEMENTED_IN_TITLES[row.implementedIn] ? `<span class="ref-badge is-small" title="${tr(...IMPLEMENTED_IN_TITLES[row.implementedIn])}">${escapeHtml(row.implementedIn)}</span>` : ''
+      ].join('');
+      return hints ? `<span class="ref-hints">${hints}</span>` : '';
     };
+    const propertyName = (p) => `<strong>${breakableName(p.name)}</strong>${memberHints(p)}`;
+    const methodName = (m) => `<a class="row-link" href="${methodUrl(m.name)}">${breakableName(m.name)}</a>${memberHints(m)}`;
 
-    window.setMethodSearchTerm = (value) => {
-      methodSearchTerm = (value || '').toLowerCase();
-      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
+    // Facts shown under the description of a member: a label and its value,
+    // stacked on phones (reference.css).
+    const facts = (items) => {
+      const shown = items.filter(([, value]) => value);
+      return shown.length ? `<dl class="ref-facts">${shown.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</dl>` : '';
     };
+    const propertySetBy = (p) => {
+      if (p.constant) return muted('Constant');
+      if (p.dependent) return muted(tr('derived (Dependent)', '導出 (Dependent)'));
+      const writers = pageData.graph.writers.get(`${p.defining}.${p.name}`);
+      const access = isPublic(p.setAccess) ? `${tr('anyone', '誰でも')} ${accessTag('public')}` : `SetAccess = ${accessTag(p.setAccess)}`;
+      return [writers?.size ? nodeLinks(writers) : '', muted(access)].filter(Boolean).join(' · ');
+    };
+    // Unit and size are left out of the facts while their own columns are shown.
+    const propertyFacts = (p, shown) => facts([
+      [tr('Points to', '参照先'), p.pointsTo ? renderClassLink(p.pointsTo) : ''],
+      [tr('Unit / size', '単位 / サイズ'), [p.unit && !shown.has('unit') ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : '', p.size && !shown.has('size') ? `<code>${escapeHtml(p.size)}</code>` : ''].filter(Boolean).join(' ')],
+      [tr('Set by', '設定元'), p.abstract ? '' : propertySetBy(p)],
+      [tr('Edit makes stale', '編集で無効化'), p.stale ? formatInlineMarkdown(p.stale) : '']
+    ]);
+    const methodCallers = (m) => {
+      const set = new Set(pageData.graph.callers.get(`${m.defining}.${m.name}`) || []);
+      if (m.overrides) (pageData.graph.callers.get(`${m.overrides}.${m.name}`) || []).forEach((n) => set.add(n));
+      return set;
+    };
+    // Hints beside a member name: the access tag and attribute badges, each
+    // left out while its own column is shown.
+    const nameHints = (access, labels) => {
+      const shown = [access && !isPublic(access) ? accessTag(access) : '',
+        ...labels.filter(Boolean).map((label) => `<span class="ref-badge is-small${label === 'Abstract' ? ' is-abstract' : ''}">${escapeHtml(label)}</span>`)].filter(Boolean);
+      return shown.length ? `<span class="ref-hints">${shown.join('')}</span>` : '';
+    };
+    const accessCell = (value) => (value ? accessTag(value) : muted('N/A'));
+    const orDash = (html) => html || muted('-');
 
-    window.sortPropertyTable = (column) => {
-      if (propertySortColumn === column) {
-        propertySortOrder *= -1;
-      } else {
-        propertySortColumn = column;
-        propertySortOrder = 1;
+    // Columns of the member tables. Name is always shown; the picker turns the
+    // others on and off. width: "fit" columns take the width of their content,
+    // "wrap" ones too but may wrap, the others share the rest (reference.css).
+    // Details (the facts) sit under Description or Summary while it is shown.
+    const memberColumns = {
+      property: [
+        { key: 'name', label: () => tr('Name', '名前'),
+          cell: (p, on) => propertyName(p) + nameHints(on.has('getAccess') ? '' : p.getAccess, on.has('flags') ? [] : [p.dependent ? 'Dependent' : '', p.abstract ? 'Abstract' : '', p.hidden ? 'Hidden' : '']) },
+        { key: 'description', label: () => tr('Description', '説明'),
+          cell: (p, on) => (p.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted(tr('No description.', '説明なし。')))
+            + (p.seeAlso.length ? `<p class="ref-see-also ref-muted" style="margin: 4px 0 0;">${tr('See also', '関連項目:')} ${p.seeAlso.map((item) => seeAlsoLink(item, className, pageData.methods.map((m) => m.name))).join(', ')}</p>` : '')
+            + (on.has('facts') ? propertyFacts(p, on) : '') },
+        { key: 'facts', label: () => tr('Details', '詳細'), sort: false, under: 'description',
+          cell: (p, on) => orDash(propertyFacts(p, on)) },
+        { key: 'unit', label: () => tr('Unit', '単位'), width: 'fit', cell: (p) => (p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : muted('-')) },
+        { key: 'type', label: () => tr('Type', '型'), width: 'fit', cell: (p) => orDash(nl2br(p.type)) },
+        { key: 'size', label: () => tr('Size', 'サイズ'), width: 'fit', cell: (p) => orDash(nl2br(p.size)) },
+        { key: 'defaultValue', label: () => tr('Default', '既定値'), width: 'wrap', cell: (p) => (p.defaultValue ? `<span class="ref-code">${nl2br(p.defaultValue)}</span>` : muted('-')) },
+        { key: 'constraints', label: () => tr('Validators', '検証関数'), width: 'wrap', cell: (p) => orDash(nl2br(p.constraints)) },
+        { key: 'getAccess', label: () => 'GetAccess', width: 'fit', cell: (p) => accessCell(p.getAccess) },
+        { key: 'setAccess', label: () => 'SetAccess', width: 'fit', cell: (p) => accessCell(p.setAccess) },
+        { key: 'flags', label: () => tr('Attributes', '属性'), width: 'wrap', sort: false,
+          cell: (p) => orDash([flag(p.dependent, 'Dependent'), flag(p.constant, 'Constant'), flag(p.abstract, 'Abstract'), flag(p.hidden, 'Hidden')].join(' ').trim()) },
+        { key: 'defining', label: () => tr('Defined in', '定義元'), width: 'fit', cell: definedIn }
+      ],
+      method: [
+        { key: 'name', label: () => tr('Method', 'メソッド'),
+          cell: (m, on) => methodName(m) + nameHints(on.has('access') ? '' : m.access, on.has('flags') ? [] : [m.static ? 'Static' : '', m.abstract ? 'Abstract' : '', m.hidden ? 'Hidden' : '']) },
+        { key: 'summary', label: () => tr('Summary', '概要'),
+          cell: (m, on) => (m.summary ? formatInlineMarkdown(m.summary) : muted(tr('No summary.', '概要なし。')))
+            + (on.has('facts') ? methodFacts(m) : '') },
+        { key: 'facts', label: () => tr('Details', '詳細'), sort: false, under: 'summary', cell: (m) => orDash(methodFacts(m)) },
+        { key: 'signature', label: () => tr('Signature', 'シグネチャ'), cell: (m) => `<span class="ref-code">${escapeHtml(m.signature)}</span>` },
+        { key: 'access', label: () => tr('Access', 'アクセス'), width: 'fit', cell: (m) => accessCell(m.access) },
+        { key: 'flags', label: () => tr('Attributes', '属性'), width: 'wrap', sort: false,
+          cell: (m) => orDash([flag(m.constructor, 'Constructor'), flag(m.static, 'Static'), flag(m.abstract, 'Abstract'), flag(m.sealed, 'Sealed'), flag(m.hidden, 'Hidden')].join(' ').trim()) },
+        { key: 'defining', label: () => tr('Defined in', '定義元'), width: 'fit', cell: definedIn }
+      ]
+    };
+    const methodFacts = (m) => {
+      const callers = methodCallers(m);
+      return facts([[tr('Called by', '呼び出し元'), callers.size ? nodeLinks(callers, 6) : '']]);
+    };
+    // The default equals the former Description view.
+    const DEFAULT_COLUMNS = { property: ['description', 'facts'], method: ['summary', 'facts'] };
+    const columnStoreKey = (kind) => `guilda-doc-columns-${kind}`;
+    function loadColumns(kind) {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(columnStoreKey(kind)) || 'null');
+        if (Array.isArray(saved)) return new Set(saved.filter((key) => key !== 'name' && memberColumns[kind].some((col) => col.key === key)));
+      } catch (error) {
+        // No storage (private window, blocked site data): use the default.
       }
-      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
-    };
-
-    window.sortMethodTable = (column) => {
-      if (methodSortColumn === column) {
-        methodSortOrder *= -1;
-      } else {
-        methodSortColumn = column;
-        methodSortOrder = 1;
+      return new Set(DEFAULT_COLUMNS[kind]);
+    }
+    function saveColumns(kind) {
+      try {
+        window.localStorage.setItem(columnStoreKey(kind), JSON.stringify([...memberState[kind].columns]));
+      } catch (error) {
+        // The choice lasts until the page is left.
       }
-      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
-    };
+    }
+
+    const hasGroups = (kind) => (kind === 'property' ? pageData.properties : pageData.methods).some((row) => row.group);
+
+    function renderMemberTable(kind) {
+      const state = memberState[kind];
+      const allRows = kind === 'property' ? pageData.properties : pageData.methods;
+      const on = state.columns;
+      const columns = memberColumns[kind].filter((col) => col.key === 'name' || (on.has(col.key) && !(col.under && on.has(col.under))));
+      const term = state.search.toLowerCase();
+      const accessOf = (row) => (kind === 'property' ? row.getAccess : row.access);
+
+      const rows = allRows
+        .filter((row) => state.inherited || !row.inherited)
+        .filter((row) => !state.publicOnly || (isPublic(accessOf(row)) && !row.hidden))
+        .filter((row) => !term || Object.values(row).join(' ').toLowerCase().includes(term))
+        .sort((left, right) => {
+          const a = (left[state.sort] ?? '').toString().toLowerCase();
+          const b = (right[state.sort] ?? '').toString().toLowerCase();
+          return a > b ? state.order : (a < b ? -state.order : 0);
+        });
+
+      const widthClass = (col) => (col.key === 'name' ? ' is-name' : (col.width ? ` is-${col.width}` : ' is-flex'));
+      const header = columns.map((col) => (col.sort === false
+        ? `<th class="col-${col.key}${widthClass(col)}">${col.label()}</th>`
+        : `<th class="sortable-header col-${col.key}${widthClass(col)}" data-sort="${col.key}">${col.label()}&nbsp;↕</th>`)).join('');
+      // Phones stack each row; data-label names the short cells there.
+      const labelOf = (col) => (col.width || col.under ? ` data-label="${escapeHtml(col.label())}"` : '');
+      const renderRow = (row) => `<tr${row.inherited ? ' class="ref-inherited"' : ''}>${columns.map((col) => `<td class="col-${col.key}${widthClass(col)}"${labelOf(col)}>${col.cell(row, on)}</td>`).join('')}</tr>`;
+      let body;
+      if (!rows.length) {
+        body = `<tr><td colspan="${columns.length}" style="text-align:center; color: var(--muted);">${kind === 'property' ? tr('No matching properties found.', '該当するプロパティなし。') : tr('No matching methods found.', '該当するメソッドなし。')}</td></tr>`;
+      } else if (state.grouped && hasGroups(kind)) {
+        body = groupRows(rows, 'Other', allRows).map((group) => `
+          <tr class="ref-group-row"><th colspan="${columns.length}">${groupHeading(groupLabel(group.name), group.items.length)}</th></tr>
+          ${group.items.map(renderRow).join('')}`).join('');
+      } else {
+        body = rows.map(renderRow).join('');
+      }
+
+      // Without a column that takes the rest, the table is as wide as its content.
+      const fit = columns.every((col) => col.key === 'name' || col.width);
+      const container = document.getElementById(`${kind}-table`);
+      container.innerHTML = `
+        <p class="ref-count">${tr(`${rows.length} of ${allRows.length} shown`, `${allRows.length} 件中 ${rows.length} 件を表示`)}</p>
+        <div class="ref-table-scroll">
+          <table class="compact-table ref-member-table${kind === 'method' ? ' method-link-table' : ''}${fit ? ' is-fit' : ''}" data-colresize="class-${kind}">
+            <thead><tr>${header}</tr></thead>
+            <tbody>${body}</tbody>
+          </table>
+        </div>`;
+      // Column widths set by dragging the header edges (doc-colresize.js).
+      window.GuildaColResize?.attachAll(container);
+      container.querySelectorAll('[data-sort]').forEach((th) => {
+        th.addEventListener('click', () => {
+          state.order = state.sort === th.dataset.sort ? -state.order : 1;
+          state.sort = th.dataset.sort;
+          renderMemberTable(kind);
+        });
+      });
+    }
+
+    // Column picker: one row of checkboxes on desktop, a collapsed
+    // <details> on phones (opened here, by width).
+    const phoneQuery = window.matchMedia('(max-width: 600px)');
+    function renderMemberToolbar(kind) {
+      const state = memberState[kind];
+      if (!state.columns) state.columns = loadColumns(kind);
+      const choices = memberColumns[kind].filter((col) => col.key !== 'name');
+      return `
+        <div class="ref-toolbar" data-kind="${kind}">
+          <input type="search" class="search-box" placeholder="${kind === 'property' ? tr('Search properties...', 'プロパティを検索...') : tr('Search methods...', 'メソッドを検索...')}" value="${escapeHtml(state.search)}" autocomplete="off">
+          ${hasGroups(kind) ? `<label class="ref-check"><input type="checkbox" data-option="grouped"${state.grouped ? ' checked' : ''}> ${tr('Group', 'グループ表示')}</label>` : ''}
+          <label class="ref-check"><input type="checkbox" data-option="inherited"${state.inherited ? ' checked' : ''}> ${tr('Inherited', '継承メンバー')}</label>
+          <label class="ref-check"><input type="checkbox" data-option="publicOnly"${state.publicOnly ? ' checked' : ''}> ${tr('Public only', 'public のみ')}</label>
+        </div>
+        <details class="ref-columns" data-kind="${kind}"${phoneQuery.matches ? '' : ' open'}>
+          <summary>${tr('Columns', '表示列')}</summary>
+          <div class="ref-columns-list">
+            <span class="ref-columns-label">${tr('Columns', '表示列')}</span>
+            ${choices.map((col) => `<label class="ref-check"><input type="checkbox" data-column="${col.key}"${state.columns.has(col.key) ? ' checked' : ''}> ${col.label()}</label>`).join('')}
+          </div>
+        </details>
+        <div id="${kind}-table"></div>`;
+    }
+
+    function bindMemberToolbar(kind) {
+      const state = memberState[kind];
+      const toolbar = document.querySelector(`.ref-toolbar[data-kind="${kind}"]`);
+      const picker = document.querySelector(`.ref-columns[data-kind="${kind}"]`);
+      toolbar.querySelector('input[type="search"]').addEventListener('input', (event) => {
+        state.search = event.target.value;
+        renderMemberTable(kind);
+      });
+      toolbar.querySelectorAll('input[data-option]').forEach((input) => {
+        input.addEventListener('change', () => {
+          state[input.dataset.option] = input.checked;
+          renderMemberTable(kind);
+        });
+      });
+      picker.querySelectorAll('input[data-column]').forEach((input) => {
+        input.addEventListener('change', () => {
+          if (input.checked) state.columns.add(input.dataset.column);
+          else state.columns.delete(input.dataset.column);
+          saveColumns(kind);
+          renderMemberTable(kind);
+        });
+      });
+      renderMemberTable(kind);
+    }
+    phoneQuery.addEventListener('change', () => {
+      document.querySelectorAll('.ref-columns').forEach((picker) => { picker.open = !phoneQuery.matches; });
+    });
+
+    // ---- Sections derived from the class data, the class index and the call
+    // graph (database/list_CallGraph.js): Role, the Set by / Called by facts
+    // of the member tables, Pointing to this class, Used by, Subclasses. A
+    // section without data is not shown.
+
+    // Callers, writers and nodes of the call graph, by node name. Candidate
+    // edges (receiver class unknown) are left out.
+    function indexGraph(graph) {
+      const model = { callers: new Map(), callees: new Map(), writers: new Map() };
+      if (!graph) return model;
+      const name = (index) => graph.nodes[index];
+      const add = (map, key, value) => { if (!map.has(key)) map.set(key, new Set()); map.get(key).add(value); };
+      graph.edges.forEach((edge) => {
+        if (graph.confidences[edge[3]] === 'candidates') return;
+        (Array.isArray(edge[1]) ? edge[1] : [edge[1]]).forEach((to) => {
+          add(model.callers, name(to), name(edge[0]));
+          add(model.callees, name(edge[0]), name(to));
+        });
+      });
+      (graph.writes || []).forEach(([prop, from]) => toList(from).forEach((f) => add(model.writers, name(prop), name(Number(f)))));
+      return model;
+    }
+
+    // "Class.member", "pkg.Class.member", or "Class.get.prop" for an accessor.
+    function nodeParts(name) {
+      const accessor = name.match(/^(.*)\.((?:get|set)\.[^.]+)$/);
+      if (accessor) return { className: accessor[1], member: accessor[2], accessor: true };
+      const dot = name.lastIndexOf('.');
+      return { className: name.slice(0, dot), member: name.slice(dot + 1), accessor: false };
+    }
+
+    // Links to methods given as graph nodes; methods of this class show the bare name.
+    function nodeLinks(names, limit = 8) {
+      const sorted = [...names].sort((a, b) => a.localeCompare(b));
+      const shown = sorted.slice(0, limit).map((name) => {
+        const parts = nodeParts(name);
+        const label = parts.className === className ? parts.member : name;
+        return parts.accessor
+          ? `<code>${escapeHtml(label)}</code>`
+          : `<a href="${loader.pageUrl('method.html', { class: parts.className, method: parts.member })}"><code>${escapeHtml(label)}</code></a>`;
+      });
+      const rest = sorted.length - shown.length;
+      return shown.join(', ') + (rest > 0 ? ` ${muted(tr(`+${rest} more`, `ほか ${rest} 件`))}` : '');
+    }
+
+    // A table whose rows stack into blocks on narrow screens (reference.css).
+    function stackTable(columns, rows) {
+      return `
+        <div class="ref-overview-table">
+          <table class="compact-table ref-stack">
+            <thead><tr>${columns.map(([, label]) => `<th>${label}</th>`).join('')}</tr></thead>
+            <tbody>${rows.map((row) => (row.group !== undefined
+              ? `<tr class="ref-group-row"><th colspan="${columns.length}">${groupHeading(row.group, row.count)}</th></tr>`
+              : `<tr>${columns.map(([key, label], index) => `<td class="col-${key}"${index ? ` data-label="${escapeHtml(label)}"` : ''}>${row[key] ?? ''}</td>`).join('')}</tr>`)).join('')}</tbody>
+          </table>
+        </div>`;
+    }
+
+    // A JSON list that may arrive as a single object or be missing.
+    const toArray = (value) => (Array.isArray(value) ? value : (value ? [value] : []));
+
+    function renderRole(c, name) {
+      const summary = firstText(c.Summary);
+      const desc = firstText(c.Desc);
+      const image = firstText(c.Image);
+      if (!summary && !desc && !image) return '';
+      return `
+        <h2 id="role">${tr('Role', '役割')}</h2>
+        ${summary ? `<p class="ref-lead">${formatInlineMarkdown(summary)}</p>` : ''}
+        ${desc ? `<div class="markdown-content">${renderMarkdown(desc)}</div>` : ''}
+        ${image ? `<figure class="ref-figure"><img src="${escapeHtml(image)}" alt="${escapeHtml(tr(`Diagram of ${name}`, `${name} の図`))}"></figure>` : ''}`;
+    }
+
+    // Properties of other classes that point to this class (the references
+    // this class holds are the "Points to" of its own properties).
+    function renderIncomingReferences(name, graph) {
+      const incoming = loader.getClasses().flatMap((other) => toArray(other.References)
+        .filter((ref) => other.Name !== name && ref.Type === name)
+        .map((ref) => ({
+          name: `${renderClassLink(other.Name)}<code>.${escapeHtml(ref.Name)}</code>`,
+          setBy: (() => { const w = graph.writers.get(`${other.Name}.${ref.Name}`); return w?.size ? nodeLinks(w) : muted('-'); })()
+        })));
+      if (!incoming.length) return '';
+      return `
+        <h3 id="referenced-by">${tr('Pointing to this class', 'このクラスを指す参照')}</h3>
+        ${stackTable([['name', tr('Reference', '参照')], ['setBy', tr('Set by', '設定元')]], incoming)}`;
+    }
+
+    // Public methods of PowerNetwork are the entry points. For each one, the
+    // members of this class reached first from outside it, following the call
+    // graph (certain and inferred edges).
+    function renderUsedBy(name, ancestors, graph, networkDoc) {
+      if (!networkDoc || name === 'PowerNetwork' || !graph.callees.size) return '';
+      // A member of an ancestor counts when this class implements it (a
+      // subclass contract method reached through the base class).
+      const ownMethods = new Set(pageData.methods.filter((row) => !row.inherited).map((row) => row.name));
+      const ancestorSet = new Set(ancestors);
+      const inClass = (node) => {
+        const parts = nodeParts(node);
+        return parts.className === name || (ancestorSet.has(parts.className) && ownMethods.has(parts.member));
+      };
+      const entries = (networkDoc.methods || [])
+        .filter((m) => m.Defining === 'PowerNetwork' && isPublic(m.Access) && !m.Hidden && !m.IsConstructor);
+      const groups = new Map();
+      entries.forEach((m) => {
+        const start = `PowerNetwork.${m.Name}`;
+        const seen = new Set([start]);
+        const queue = [start];
+        const reached = new Set();
+        while (queue.length) {
+          const node = queue.shift();
+          (graph.callees.get(node) || []).forEach((next) => {
+            if (inClass(next)) {
+              if (!inClass(node)) reached.add(next);
+              return;
+            }
+            if (!seen.has(next)) { seen.add(next); queue.push(next); }
+          });
+        }
+        if (!reached.size) return;
+        const group = m.Group || 'Other';
+        if (!groups.has(group)) groups.set(group, []);
+        groups.get(group).push({ entry: m.Name, reached });
+      });
+      if (!groups.size) return '';
+      const entryLink = (entry) => `<a href="${loader.pageUrl('method.html', { class: 'PowerNetwork', method: entry })}"><code>${escapeHtml(entry)}</code></a>`;
+      const body = [...groups.entries()].flatMap(([group, items]) => [
+        { group: groupLabel(group), count: items.length },
+        ...items.sort((a, b) => a.entry.localeCompare(b.entry)).map((item) => ({ entry: entryLink(item.entry), members: nodeLinks(item.reached, 6) }))
+      ]);
+      return `
+        <h2 id="used-by">${tr('Used by', '利用元')}</h2>
+        <p class="ref-muted ref-small">${tr('Public methods of PowerNetwork whose calls reach this class, with the members they reach first (from the call graph, without candidate links).', '呼び出しがこのクラスに届く PowerNetwork の public メソッドと、最初に届くメンバー（呼び出しグラフから、候補リンクを除く）。')}</p>
+        ${stackTable([['entry', tr('Entry point', '入口')], ['members', tr('Members reached', '届くメンバー')]], body)}`;
+    }
+
+    function renderSubclassTree(name) {
+      const rows = [];
+      const walk = (parent, depth, seen) => {
+        loader.getSubclasses(parent).map((item) => item.Name).sort().forEach((child) => {
+          if (seen.has(child)) return;
+          seen.add(child);
+          const meta = loader.findClass(child) || {};
+          rows.push({
+            name: `<span class="ref-tree-indent" style="--depth: ${depth}">${renderClassLink(child)}</span>${meta.Abstract ? `<span class="ref-hints"><span class="ref-badge is-small is-abstract">${tr('Abstract', '抽象')}</span></span>` : ''}`,
+            summary: meta.Summary ? formatInlineMarkdown(meta.Summary) : muted('-')
+          });
+          walk(child, depth + 1, seen);
+        });
+      };
+      walk(name, 0, new Set());
+      if (!rows.length) return '';
+      return `
+        <h2 id="subclasses">${tr('Subclasses', 'サブクラス')}</h2>
+        ${stackTable([['name', tr('Class', 'クラス')], ['summary', tr('Summary', '概要')]], rows)}`;
+    }
+
+    function renderClassPage(meta, classDoc, graphRaw, networkDoc) {
+      const c = meta || {};
+      const name = c.Name || className;
+      const graph = indexGraph(graphRaw);
+      const pointsTo = new Map(toArray(c.References).map((ref) => [ref.Name, ref.Type]));
+      const methods = (Array.isArray(classDoc.methods) ? classDoc.methods : []).map(normalizeMethod);
+      pageData = {
+        graph,
+        properties: (Array.isArray(classDoc.properties) ? classDoc.properties : []).map(normalizeProperty)
+          .map((p) => ({ ...p, pointsTo: pointsTo.get(p.name) || '' })),
+        // The subclass contract leads the method groups.
+        methods: [...methods.filter((m) => m.group === CONTRACT_GROUP), ...methods.filter((m) => m.group !== CONTRACT_GROUP)]
+      };
+      const events = toList(classDoc.events);
+      const enumeration = toList(classDoc.enumeration);
+      const ancestors = Array.isArray(c.Ancestors) ? c.Ancestors : loader.parentNames(c);
+      const documented = c.Documented ?? Boolean(firstText(c.Summary, c.Desc));
+      const category = firstText(c.Category, c.Package);
+      const deprecated = firstText(c.Deprecated);
+      setPageTitle(`GUILDA Reference - ${name}`, `GUILDA リファレンス - ${name}`);
+
+      const badges = [
+        c.Origin ? `<span class="ref-badge${c.Origin === 'User' ? ' is-user' : ''}" title="${tr('Source root', 'ソースのルート')}">${escapeHtml(c.Origin)}</span>` : '',
+        category ? `<span class="ref-badge" title="${tr('Package', 'パッケージ')}">${tr('package', 'パッケージ')} ${escapeHtml(category)}</span>` : '',
+        c.Type && !['auxiliary', 'other'].includes(c.Type) ? `<span class="ref-badge">${escapeHtml(c.Type === 'PowerSystemModel' && c.Model ? c.Model : c.Type)}</span>` : '',
+        c.Abstract ? `<span class="ref-badge is-abstract">${tr('Abstract', '抽象クラス')}</span>` : '',
+        c.Sealed ? '<span class="ref-badge is-sealed">Sealed</span>' : '',
+        c.Hidden ? '<span class="ref-badge">Hidden</span>' : '',
+        deprecated ? `<span class="ref-badge is-deprecated">${tr('Deprecated', '非推奨')}</span>` : '',
+        documented ? '' : `<span class="ref-badge is-undocumented">${tr('Not documented yet', 'ドキュメント未整備')}</span>`
+      ].join('');
+
+      const chain = [name, ...ancestors].map((item, index) => (index === 0
+        ? `<strong>${escapeHtml(item)}</strong>`
+        : renderClassLink(item))).join('<span class="ref-chain-sep" aria-hidden="true">←</span>');
+      const seeAlso = toList(c.SeeAlso);
+      const examples = examplesText(c.Examples);
+      const source = sourceLocation(c.File, c.Line);
+
+      const sections = [];
+      let html = `
+        <div style="font-size: 0.9rem; color: var(--muted); margin-bottom: 10px;">
+          <a href="${loader.pageUrl('index.html')}">${tr('Home', 'ホーム')}</a> &gt; <a href="${loader.pageUrl('index.html', 'tab-reference')}">${tr('Reference', 'リファレンス')}</a> &gt; ${escapeHtml(name)}
+        </div>
+        <h1 style="font-size: 2.2rem; margin-bottom: 8px; word-break: break-word;">${escapeHtml(name)}</h1>
+        <div class="ref-badges">${badges}</div>
+        ${source ? `<p class="ref-source">${tr('Source:', 'ソース:')} <code>${escapeHtml(source)}</code></p>` : ''}
+      `;
+      if (deprecated) {
+        html += `<div class="ref-deprecated" role="note"><strong>${tr('Deprecated.', '非推奨。')}</strong>${/^(true|1)$/i.test(deprecated) ? '' : `<p>${nl2br(deprecated)}</p>`}</div>`;
+      }
+      if (!documented) {
+        html += `<div class="ref-notice">${tr('This class has no documentation comments yet. The tables below are generated from the source code. To add a description, follow the comment rules in <a href="developer/class-documentation.html">Class Documentation</a>.', 'このクラスのドキュメントコメントは未記入。以下の表はソースコードから生成。説明の追加時は <a href="developer/class-documentation.html">Class Documentation</a> のコメント規約に準拠。')}</div>`;
+      }
+      const overview = [
+        ['role', tr('Role', '役割'), renderRole(c, name)],
+        ['examples', tr('Examples', '使用例'), firstText(examples) ? `
+          <h2 id="examples">${tr('Examples', '使用例')}</h2>
+          <div class="markdown-content">${renderMarkdown(examples)}</div>` : ''],
+        ['properties', tr('Properties', 'プロパティ'), `
+          <h2 id="properties">${tr('Properties', 'プロパティ')}</h2>
+          ${pageData.properties.length ? renderMemberToolbar('property') : `<p>${tr('No properties.', 'プロパティなし。')}</p>`}
+          ${renderIncomingReferences(name, graph)}`],
+        ['methods', tr('Methods', 'メソッド'), `
+          <h2 id="methods">${tr('Methods', 'メソッド')}</h2>
+          ${pageData.methods.length ? renderMemberToolbar('method') : `<p>${tr('No methods.', 'メソッドなし。')}</p>`}`],
+        ['used-by', tr('Used by', '利用元'), renderUsedBy(name, ancestors, graph, networkDoc)],
+        ['subclasses', tr('Subclasses', 'サブクラス'), renderSubclassTree(name)]
+      ];
+      overview.filter(([, , part]) => part).forEach(([id, title, part]) => {
+        sections.push([id, title]);
+        html += part;
+      });
+
+      sections.push(['inheritance', tr('Inheritance', '継承')]);
+      html += `
+        <h2 id="inheritance">${tr('Inheritance', '継承')}</h2>
+        <div class="meta-box">
+          <table class="meta-table">
+            <tbody>
+              <tr><th style="width: 22%;">${tr('Superclasses', 'スーパークラス')}</th><td><div class="ref-chain">${chain}</div></td></tr>
+            </tbody>
+          </table>
+        </div>`;
+
+      if (events.length) {
+        sections.push(['events', tr('Events', 'イベント')]);
+        html += `<h2 id="events">${tr('Events', 'イベント')}</h2><p>${events.map((item) => `<code>${escapeHtml(item)}</code>`).join(', ')}</p>`;
+      }
+      if (enumeration.length) {
+        sections.push(['enumeration', tr('Enumeration', '列挙')]);
+        html += `<h2 id="enumeration">${tr('Enumeration', '列挙')}</h2><p>${enumeration.map((item) => `<code>${escapeHtml(item)}</code>`).join(', ')}</p>`;
+      }
+      if (seeAlso.length) {
+        sections.push(['see-also', tr('See also', '関連項目')]);
+        html += `<h2 id="see-also">${tr('See also', '関連項目')}</h2><p class="ref-see-also">${seeAlso.map((item) => seeAlsoLink(item, name, pageData.methods.map((m) => m.name))).join(', ')}</p>`;
+      }
+
+      document.getElementById('dynamic-content').innerHTML = html;
+      document.getElementById('page-toc').innerHTML = sections.map(([id, title]) =>
+        `<li><a href="#${id}" onclick="document.getElementById('${id}')?.scrollIntoView(); return false;">${title}</a></li>`).join('');
+      if (pageData.properties.length) bindMemberToolbar('property');
+      if (pageData.methods.length) bindMemberToolbar('method');
+    }
 
     if (!className) {
-      document.getElementById('dynamic-content').innerHTML = "<h1 style='color:red;'>Error: Class not specified</h1><p>The URL must specify a class name.</p>";
+      document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">${tr('Error: Class not specified', 'エラー: クラス未指定')}</h1><p>${tr('The URL must specify a class name.', 'URL にクラス名の指定が必要。')}</p>`;
+    } else if (!loader.hasIndex()) {
+      document.getElementById('dynamic-content').innerHTML = `
+        <h1>${escapeHtml(className)}</h1>
+        <div class="ref-empty"><p>${tr('The class reference has not been generated yet.', 'クラスリファレンスは未生成。')}</p><p>${tr('Run <code>GUILDA.doc</code> in MATLAB to build it.', 'MATLAB で <code>GUILDA.doc</code> を実行して生成。')}</p></div>`;
     } else {
-      window.GuildaDocLoader.loadClass(className)
-        .then(({ meta, data }) => {
-          metaDataCache = meta;
-          classDocCache = data;
-          renderClassPage(className, metaDataCache, classDocCache);
+      window.GuildaDocTree.mount(document.getElementById('source-tree'), {
+        className: loader.findClass(className)?.Name || className
+      });
+      // The call graph and PowerNetwork (the entry points of Used by) are optional.
+      Promise.all([
+        loader.loadClass(className),
+        loader.loadCallGraph(),
+        loader.loadClass('PowerNetwork').then(({ data }) => data).catch(() => null)
+      ])
+        .then(([{ meta, data }, graph, networkDoc]) => {
+          renderClassPage(meta, data, graph, networkDoc);
+          document.addEventListener('guilda-langchange', () => renderClassPage(meta, data, graph, networkDoc));
         })
         .catch((err) => {
           document.getElementById('dynamic-content').innerHTML = `
-            <h1 style="color:red;">Load Error</h1>
-            <p>${(err && err.message) ? err.message : err}</p>
+            <h1 style="color: var(--err);">${tr('Load Error', '読み込みエラー')}</h1>
+            <p>${escapeHtml((err && err.message) ? err.message : err)}</p>
           `;
         });
-    }
-
-    // 3. Render the page
-    function renderClassPage(className, meta, classData) {
-      const nl2br = (text) => (text ?? '').toString().replace(/\n/g, '<br>');
-      const escapeAttr = (text) => (text ?? '').toString()
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-      const escapeHtml = (text) => (text ?? '').toString()
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-      const renderMarkdown = (input) => {
-        const rawText = (input ?? '').toString().replace(/\r\n?/g, '\n').trim();
-        if (!rawText) return '<p style="margin: 0;">N/A</p>';
-
-        const sourceLines = rawText.split('\n');
-        const textArtLineCount = sourceLines.filter((line) =>
-          /[┌┐└┘│─]/.test(line) || /(?:={6,}|-{6,}|~{3,}|\/{3,})/.test(line)
-        ).length;
-        if (textArtLineCount >= 2) {
-          return `<pre class="doc-text-art">${escapeHtml(rawText)}</pre>`;
-        }
-
-        const codeBlocks = [];
-        let text = rawText.replace(/```([\s\S]*?)```/g, (_, code) => {
-          const token = `@@CODEBLOCK_${codeBlocks.length}@@`;
-          codeBlocks.push(`<pre><code>${escapeHtml(code.trimEnd())}</code></pre>`);
-          return token;
-        });
-
-        const lines = text.split('\n');
-        const htmlParts = [];
-        let paragraphLines = [];
-        let listType = '';
-        let listItems = [];
-
-        const flushParagraph = () => {
-          if (!paragraphLines.length) return;
-          const paragraph = paragraphLines.map((line) => formatInlineMarkdown(line)).join('<br>');
-          if (paragraph) {
-            htmlParts.push(`<p>${paragraph}</p>`);
-          }
-          paragraphLines = [];
-        };
-
-        const flushList = () => {
-          if (!listType || !listItems.length) return;
-          htmlParts.push(`<${listType}>${listItems.map((item) => `<li>${formatInlineMarkdown(item)}</li>`).join('')}</${listType}>`);
-          listType = '';
-          listItems = [];
-        };
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          const unorderedMatch = trimmed.match(/^[-*+]\s+(.*)$/);
-          const orderedMatch = trimmed.match(/^\d+\.\s+(.*)$/);
-
-          if (!trimmed) {
-            flushParagraph();
-            flushList();
-            continue;
-          }
-
-          const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
-          if (headingMatch) {
-            flushParagraph();
-            flushList();
-            const headingLevel = headingMatch[1].length;
-            htmlParts.push(`<h${headingLevel}>${formatInlineMarkdown(headingMatch[2])}</h${headingLevel}>`);
-            continue;
-          }
-
-          if (unorderedMatch || orderedMatch) {
-            flushParagraph();
-            const nextListType = unorderedMatch ? 'ul' : 'ol';
-            if (listType && listType !== nextListType) {
-              flushList();
-            }
-            listType = nextListType;
-            listItems.push((unorderedMatch || orderedMatch)[1]);
-            continue;
-          }
-
-          flushList();
-          paragraphLines.push(line);
-        }
-
-        flushParagraph();
-        flushList();
-
-        let html = htmlParts.join('');
-        html = html.replace(/@@CODEBLOCK_(\d+)@@/g, (_, index) => codeBlocks[Number(index)] || '');
-        return html;
-      };
-      const formatInlineMarkdown = (text) => {
-        let output = escapeHtml(text);
-        output = output.replace(/`([^`]+)`/g, '<code>$1</code>');
-        output = output.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        output = output.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-        output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-        return output;
-      };
-      const normalizeStringList = (raw) => Array.isArray(raw)
-        ? raw.map((value) => (value ?? '').toString().trim()).filter(Boolean)
-        : ((raw ?? '').toString().trim() ? [(raw ?? '').toString().trim()] : []);
-      const normalizeClassMeta = (raw) => ({
-        name: raw?.Name || raw?.ClassName || className,
-        type: raw?.Type || '',
-        model: raw?.Model || '',
-        parent: raw?.Parent || '',
-        abstract: raw?.Abstract ?? false,
-        hidden: raw?.Hidden ?? false,
-        summary: raw?.Summary || '',
-        description: raw?.Desc || '',
-        role: raw?.Role || '',
-        constructor: raw?.Constructor || '',
-        notes: raw?.Notes || '',
-        seeAlso: normalizeStringList(raw?.SeeAlso),
-        since: raw?.Since || '',
-        deprecated: raw?.Deprecated || '',
-        path: raw?.path || ''
-      });
-      const normalizeProperty = (p) => ({
-        name: p?.Name || '',
-        summary: p?.Summary || '',
-        role: p?.Role || '',
-        type: p?.Type || '',
-        size: p?.Size || '',
-        unit: p?.Unit || '',
-        defaultValue: p?.Default || '',
-        constraints: p?.Constraints || '',
-        notes: p?.Notes || '',
-        since: p?.Since || '',
-        deprecated: p?.Deprecated || '',
-        defining: p?.Defining || '',
-        getAccess: p?.GetAccess || '',
-        setAccess: p?.SetAccess || '',
-        accessText: [p?.GetAccess || '', p?.SetAccess || ''].filter(Boolean).join(' / '),
-        abstract: p?.Abstract ?? false,
-        dependent: p?.Dependent ?? false,
-        constant: p?.Constant ?? false,
-        hidden: p?.Hidden ?? false,
-        description: p?.Desc || p?.Summary || ''
-      });
-      const normalizeIoArray = (rawList) => {
-        if (!Array.isArray(rawList)) return [];
-        return rawList
-          .map((item) => ({
-            name: item?.Name || item?.name || '',
-            type: item?.Type || item?.type || item?.Class || item?.class || '',
-            description: item?.Description || item?.description || item?.Desc || item?.desc || ''
-          }))
-          .filter((item) => item.name || item.type || item.description);
-      };
-      const ioSummaryFromArray = (list) => {
-        if (!Array.isArray(list) || list.length === 0) return '';
-        return list.map((item) => {
-          const parts = [];
-          if (item.name) parts.push(item.name);
-          if (item.type) parts.push(`(${item.type})`);
-          if (item.description) parts.push(`: ${item.description}`);
-          return parts.join(' ').replace(' :', ':');
-        }).join('\n');
-      };
-      const normalizeMethod = (m) => ({
-        name: m?.Name || '',
-        defining: m?.Defining || '',
-        access: m?.Access || '',
-        static: m?.Static ?? false,
-        abstract: m?.Abstract ?? false,
-        hidden: m?.Hidden ?? false,
-        role: m?.Role || '',
-        summary: m?.Summary || m?.Abst || '',
-        description: m?.Desc || m?.Summary || m?.Abst || '',
-        notes: m?.Notes || m?.DetailsCode || '',
-        throws: m?.Throws || '',
-        since: m?.Since || '',
-        deprecated: m?.Deprecated || '',
-        parameters: normalizeIoArray(m?.Parameters),
-        returns: normalizeIoArray(m?.Returns),
-        calls: Array.isArray(m?.Calls)
-          ? m.Calls.map((call) => {
-              if (typeof call === 'string') return call;
-              return `${call?.Class || call?.class || ''} ${call?.Method || call?.method || ''} ${call?.Condition || call?.condition || ''}`.trim();
-            }).filter(Boolean)
-          : [],
-        arginText: m?.Argin || '',
-        argoutText: m?.Argout || '',
-        vararginText: ioSummaryFromArray(normalizeIoArray(m?.Parameters)) || (m?.Argin || ''),
-        varargoutText: ioSummaryFromArray(normalizeIoArray(m?.Returns)) || (m?.Argout || '')
-      });
-
-      const sortRows = (rows, column, order) => rows.slice().sort((left, right) => {
-        const valueLeft = (left?.[column] ?? '').toString().toLowerCase();
-        const valueRight = (right?.[column] ?? '').toString().toLowerCase();
-        if (valueLeft > valueRight) return order;
-        if (valueLeft < valueRight) return -order;
-        return 0;
-      });
-
-      const normalizeSearch = (value) => (value ?? '').toString().toLowerCase();
-      const renderPropertyFlag = (value, label) => (value ? label : '');
-      const renderClassLink = (name) => {
-        const classNameValue = (name ?? '').toString();
-        return classNameValue ? `<a href="${window.GuildaDocLoader.pageUrl('class.html', { class: classNameValue })}">${classNameValue}</a>` : '';
-      };
-
-      const c = normalizeClassMeta(meta || classData || {});
-      const classDoc = classData || {};
-      const properties = Array.isArray(classDoc.properties) ? classDoc.properties : [];
-      const methods = Array.isArray(classDoc.methods) ? classDoc.methods : [];
-
-      const propertySearch = normalizeSearch(propertySearchTerm);
-      const methodSearch = normalizeSearch(methodSearchTerm);
-
-      const propertyRows = sortRows(
-        properties.map(normalizeProperty).filter((p) => {
-          const searchStr = `${p.name} ${p.summary} ${p.role} ${p.type} ${p.size} ${p.unit} ${p.defaultValue} ${p.constraints} ${p.defining} ${p.accessText} ${p.description} ${p.notes} ${p.deprecated}`.toLowerCase();
-          return searchStr.includes(propertySearch);
-        }),
-        propertySortColumn,
-        propertySortOrder
-      );
-
-      const methodRows = sortRows(
-        methods.map(normalizeMethod).filter((m) => {
-          const searchStr = `${m.name} ${m.defining} ${m.access} ${m.role} ${m.summary} ${m.description} ${m.notes} ${m.throws} ${m.calls.join(' ')} ${m.vararginText} ${m.varargoutText} ${m.deprecated}`.toLowerCase();
-          return searchStr.includes(methodSearch);
-        }),
-        methodSortColumn,
-        methodSortOrder
-      );
-
-      const propertyHeader = propertyViewMode === 'attributes'
-        ? `
-          <tr>
-            <th class="sortable-header" onclick="sortPropertyTable('name')">Name ↕</th>
-            <th class="sortable-header" onclick="sortPropertyTable('getAccess')">GetAccess ↕</th>
-            <th class="sortable-header" onclick="sortPropertyTable('setAccess')">SetAccess ↕</th>
-            <th class="sortable-header" onclick="sortPropertyTable('dependent')">Dependent ↕</th>
-            <th class="sortable-header" onclick="sortPropertyTable('constant')">Constant ↕</th>
-            <th class="sortable-header" onclick="sortPropertyTable('abstract')">Abstract ↕</th>
-            <th class="sortable-header" onclick="sortPropertyTable('hidden')">Hidden ↕</th>
-          </tr>`
-        : propertyViewMode === 'type'
-          ? `
-          <tr>
-            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('name')">Name ↕</th>
-            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('type')">Type ↕</th>
-            <th class="sortable-header" style="width: 12ch;" onclick="sortPropertyTable('size')">Size ↕</th>
-            <th class="sortable-header" style="width: 12ch;" onclick="sortPropertyTable('unit')">Unit ↕</th>
-            <th class="sortable-header" style="width: 16ch;" onclick="sortPropertyTable('defaultValue')">Default ↕</th>
-            <th class="sortable-header" style="width: auto;" onclick="sortPropertyTable('constraints')">Constraints ↕</th>
-            <th class="sortable-header" style="width: auto;" onclick="sortPropertyTable('defining')">Defining Class ↕</th>
-          </tr>`
-        : `
-          <tr>
-            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('name')">Name ↕</th>
-            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('role')">Role ↕</th>
-            <th class="sortable-header" style="width: auto;" onclick="sortPropertyTable('description')">Description ↕</th>
-          </tr>`;
-      const methodHeader = methodViewMode === 'attributes'
-        ? `
-          <tr>
-            <th class="sortable-header" onclick="sortMethodTable('name')">Method ↕</th>
-            <th class="sortable-header" onclick="sortMethodTable('access')">Access ↕</th>
-            <th class="sortable-header" onclick="sortMethodTable('static')">Static ↕</th>
-            <th class="sortable-header" onclick="sortMethodTable('abstract')">Abstract ↕</th>
-            <th class="sortable-header" onclick="sortMethodTable('hidden')">Hidden ↕</th>
-          </tr>`
-        : (methodViewMode === 'details'
-          ? `
-            <tr>
-              <th class="sortable-header" style="width: 18ch;" onclick="sortMethodTable('name')">Method ↕</th>
-              <th class="sortable-header" style="width: auto;" onclick="sortMethodTable('vararginText')">varargin ↕</th>
-              <th class="sortable-header" style="width: auto;" onclick="sortMethodTable('varargoutText')">varargout ↕</th>
-              <th class="sortable-header" style="width: 20ch;" onclick="sortMethodTable('defining')">Defining Class ↕</th>
-            </tr>`
-          : (methodViewMode === 'description'
-          ? `
-            <tr>
-              <th class="sortable-header" style="width: 20ch;" onclick="sortMethodTable('name')">Method ↕</th>
-              <th class="sortable-header" style="width: 20ch;" onclick="sortMethodTable('role')">Role ↕</th>
-              <th class="sortable-header" style="width: auto;" onclick="sortMethodTable('summary')">Summary ↕</th>
-            </tr>`
-          : ''));
-
-      const container = document.getElementById('dynamic-content');
-      let html = `
-        <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">
-          <a href="${window.GuildaDocLoader.pageUrl('index.html')}">Home</a> &gt; <a href="${window.GuildaDocLoader.pageUrl('index.html', 'tab-reference')}">Reference</a> &gt; ${className}
-        </div>
-        <h1 style="font-size: 2.5rem; margin-bottom: 10px;">${c.name}</h1>
-
-        <div class="meta-box" style="margin-top: 16px;">
-          <h2 id="summary" style="margin-top: 0;">Summary</h2>
-          <div class="markdown-content">${renderMarkdown(c.summary || 'N/A')}</div>
-        </div>
-        
-        <div class="meta-box" id="overview">
-          <table>
-            <tbody>
-              <tr><th style="width: 18%;">Type</th><td>${c.type || 'N/A'}</td></tr>
-              <tr><th>Model</th><td>${c.model || 'N/A'}</td></tr>
-              <tr><th>Parent</th><td>${c.parent || 'N/A'}</td></tr>
-              <tr><th>Abstract</th><td>${c.abstract ? 'true' : 'false'}</td></tr>
-              <tr><th>Hidden</th><td>${c.hidden ? 'true' : 'false'}</td></tr>
-              <tr><th>Since</th><td>${c.since || 'N/A'}</td></tr>
-              <tr><th>Deprecated</th><td>${c.deprecated || 'No'}</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="meta-box" style="margin-top: 16px;">
-          <h2 id="role" style="margin-top: 0;">Role</h2>
-          <div class="markdown-content">${renderMarkdown(c.role || 'N/A')}</div>
-        </div>
-
-        <div class="meta-box" style="margin-top: 16px;">
-          <h2 id="description" style="margin-top: 0;">Description</h2>
-          <div class="markdown-content">${renderMarkdown(c.description || 'N/A')}</div>
-        </div>
-
-        <div class="meta-box" style="margin-top: 16px;">
-          <h2 id="constructor" style="margin-top: 0;">Constructor</h2>
-          <div class="markdown-content">${renderMarkdown(c.constructor || 'N/A')}</div>
-        </div>
-
-        ${c.notes ? `<div class="meta-box" style="margin-top: 16px;"><h2 style="margin-top: 0;">Notes</h2><div class="markdown-content">${renderMarkdown(c.notes)}</div></div>` : ''}
-        ${c.seeAlso.length ? `<div class="meta-box" style="margin-top: 16px;"><h2 style="margin-top: 0;">See Also</h2><p>${c.seeAlso.map(renderClassLink).join(', ')}</p></div>` : ''}
-      `;
-
-      // Properties セクション
-      html += `<h2 id="properties">Properties</h2>`;
-      if (properties.length > 0) {
-        html += `<input type="text" class="search-box" placeholder="Search properties..." value="${escapeAttr(propertySearchTerm)}" oninput="setPropertySearchTerm(this.value)">`;
-        html += `
-          <div class="view-switcher">
-            <button class="view-btn ${propertyViewMode === 'attributes' ? 'active' : ''}" onclick="setPropertyViewMode('attributes')">Meta Data</button>
-            <button class="view-btn ${propertyViewMode === 'type' ? 'active' : ''}" onclick="setPropertyViewMode('type')">Details</button>
-            <button class="view-btn ${propertyViewMode === 'description' ? 'active' : ''}" onclick="setPropertyViewMode('description')">Description</button>
-          </div>
-        `;
-        html += `<table class="compact-table description-table">
-          <thead>${propertyHeader}</thead>
-          <tbody>
-            ${propertyRows.length > 0 ? propertyRows.map(p => {
-              if (propertyViewMode === 'attributes') {
-                return `
-                  <tr>
-                    <td><strong>${p.name}</strong></td>
-                    <td>${p.getAccess || 'N/A'}</td>
-                    <td>${p.setAccess || 'N/A'}</td>
-                    <td>${renderPropertyFlag(p.dependent, 'Dependent')}</td>
-                    <td>${renderPropertyFlag(p.constant, 'Constant')}</td>
-                    <td>${renderPropertyFlag(p.abstract, 'Abstract')}</td>
-                    <td>${renderPropertyFlag(p.hidden, 'Hidden')}</td>
-                  </tr>
-                `;
-              }
-              if (propertyViewMode === 'type') {
-                return `
-                  <tr>
-                    <td style="width: 20ch;"><strong>${p.name}</strong></td>
-                    <td style="width: 20ch;">${nl2br(p.type)}</td>
-                    <td style="width: 12ch;">${nl2br(p.size)}</td>
-                    <td style="width: 12ch;">${nl2br(p.unit) || 'N/A'}</td>
-                    <td style="width: 16ch;">${nl2br(p.defaultValue) || 'N/A'}</td>
-                    <td style="width: auto;">${nl2br(p.constraints) || 'N/A'}</td>
-                    <td style="width: auto;">${renderClassLink(p.defining)}</td>
-                  </tr>
-                `;
-              }
-              return `
-                <tr>
-                  <td style="width: 20ch;"><strong>${p.name}</strong></td>
-                  <td style="width: 20ch;">${nl2br(p.role)}</td>
-                  <td style="width: auto;">${nl2br(p.description)}</td>
-                </tr>
-              `;
-            }).join('') : `<tr><td colspan="${propertyViewMode === 'attributes' ? 7 : propertyViewMode === 'type' ? 7 : 3}" style="text-align:center; color:#888;">No matching properties found.</td></tr>`}
-          </tbody>
-        </table>`;
-      } else {
-        html += `<p>No public properties.</p>`;
-      }
-
-      // Methods セクション
-      html += `<h2 id="methods">Methods</h2>`;
-      if (methods.length > 0) {
-        html += `<input type="text" class="search-box" placeholder="Search methods..." value="${escapeAttr(methodSearchTerm)}" oninput="setMethodSearchTerm(this.value)">`;
-        html += `
-          <div class="view-switcher">
-            <button class="view-btn ${methodViewMode === 'attributes' ? 'active' : ''}" onclick="setMethodViewMode('attributes')">Meta Data</button>
-            <button class="view-btn ${methodViewMode === 'details' ? 'active' : ''}" onclick="setMethodViewMode('details')">Details</button>
-            <button class="view-btn ${methodViewMode === 'description' ? 'active' : ''}" onclick="setMethodViewMode('description')">Description</button>
-          </div>
-        `;
-        html += `<table class="method-link-table compact-table ${methodViewMode === 'description' ? 'description-table' : ''}">
-          <thead>${methodHeader}</thead>
-          <tbody>
-            ${methodRows.length > 0 ? methodRows.map(m => {
-              if (methodViewMode === 'attributes') {
-                return `
-                  <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('method.html', { class: '${className}', method: '${m.name}' })">
-                    <td><span class="row-link">${m.name}</span></td>
-                    <td>${m.access || ''}</td>
-                    <td>${m.static ? 'true' : 'false'}</td>
-                    <td>${m.abstract ? 'true' : 'false'}</td>
-                    <td>${m.hidden ? 'true' : 'false'}</td>
-                  </tr>
-                `;
-              }
-              if (methodViewMode === 'description') {
-                return `
-                  <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('method.html', { class: '${className}', method: '${m.name}' })">
-                    <td style="width: 20ch;"><span class="row-link">${m.name}</span></td>
-                    <td style="width: 20ch;">${nl2br(m.role)}</td>
-                    <td style="width: auto;">${nl2br(m.summary || m.description)}</td>
-                  </tr>
-                `;
-              }
-              if (methodViewMode === 'details') {
-                return `
-                  <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('method.html', { class: '${className}', method: '${m.name}' })">
-                    <td style="width: 18ch;"><span class="row-link">${m.name}</span></td>
-                    <td style="width: auto;">${nl2br(m.vararginText || 'N/A')}</td>
-                    <td style="width: auto;">${nl2br(m.varargoutText || 'N/A')}</td>
-                    <td style="width: 20ch;">${renderClassLink(m.defining) || 'N/A'}</td>
-                  </tr>
-                `;
-              }
-              return `
-                <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('method.html', { class: '${className}', method: '${m.name}' })">
-                  <td><span class="row-link">${m.name}</span></td>
-                  <td>${nl2br(m.arginText)}</td>
-                  <td>${nl2br(m.argoutText)}</td>
-                </tr>
-              `;
-              }).join('') : `<tr><td colspan="${methodViewMode === 'attributes' ? 5 : methodViewMode === 'details' ? 4 : 3}" style="text-align:center; color:#888;">No matching methods found.</td></tr>`}
-          </tbody>
-        </table>`;
-      } else {
-        html += `<p>No methods available.</p>`;
-      }
-
-      container.innerHTML = html;
     }
   </script>
 </body>
