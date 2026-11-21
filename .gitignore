@@ -37,9 +37,6 @@ $RECYCLE.BIN/
 # GUILDA Generic
 # ==========================
 @GUILDA/user/
-_GUILDAsystem/@Bus/add_component.m
-_GUILDAsystem/@Bus/replace_component.m
-_GUILDAsystem/@PowerNetwork/add_branch.m
 
 
 # ==========================
@@ -57,3 +54,14 @@ _GUILDAexport
 _GUILDAdoc/database/list_Classes.js
 _GUILDAdoc/database/GUILDAsystem
 _GUILDAdoc/database/GUILDAobject
+_GUILDAdoc/database/User
+_GUILDAdoc/database/manifest.json
+_GUILDAdoc/database/list_CallGraph.js
+_GUILDAdoc/database/callgraph_cache.mat
+_GUILDAdoc/database/images
+# >>> dev-only (left out of versionX.Y snapshots by integrate.sh)
+# Claude Code: session worktrees and personal settings
+# (.claude/settings.json and .claude/hooks/ are shared and committed)
+.claude/worktrees/
+.claude/settings.local.json
+# <<< dev-only
