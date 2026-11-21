@@ -685,3 +685,42 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 ### 21.4 テスト [事実]
 
 - `+DebugScript/test_F112_linearization_plots.m`(8 件、`linearize` と `graph`)。0.3 s を超える 7 件を `test_levels.m` に medium で登録しました(small に残る 1 件が共通設定の時間を含みます)。
+
+## 22. 図の追加仕様: `plot_matrix` の表示、`plot_eigenvector`、`plot_reduced_matrix`、`plot_contribution`(2026-11-21)
+
+ユーザーの追加の仕様(コーディネーター経由、2026-11-21)。同じブランチ `feature/linearization-plots` で続けました。
+
+### 22.1 `plot_matrix` の変更 [事実]
+
+- 署名は `[G, G_block] = plot_matrix(Matrix, Display, Group, Type, Port, Form, Index, Parent)`。既定の `Matrix` を `"A"` に変えました(`"J"`、`"B"`〜`"E"` も選べます)。
+- `Group="class"`(既定)は所有者のクラス(`tab_owner.Class`、例 `component.generator.one_axis`、`controller.avr.AVR_ST1`、`Bus`)、`"element"` は所有者のタグでまとめます。行と列はグループ順(各グループの最初の変数の順、グループ内はモデルの順)に並べ替えます。
+- 対角のブロック(行と列の同じグループ)を枠で囲み、グループの間に区切り線を引きます。ゼロの成分は描きません(点は非ゼロだけ)。
+- 行列をクリックすると、その行のグループ × その列のグループのブロックを右側の `G_block`(GraphMatrix、`Display "value"`、セルに `%.3g` の数値)に表示します。最初は最初の対角ブロックです。`G` と `G_block` はリンクし、再生バーで両方が切り替わります。`Parent` が軸なら行列だけで、`G_block` は空です。
+- `GraphMatrix` の最小の拡張: データの任意のフィールド `l_frame`(対角のブロックの枠)と `l_valueText`(セルの数値。閾値を超える成分が 900 以下のとき)、行列(点・画像・背景)のクリックをその行のグループの要素のクリック(`ElementClicked`)にしました。列は `G.ax.CurrentPoint` で求めます。F82 は変更なしで通ります。
+
+### 22.2 共有の private 関数 `mode_diagram` [事実]
+
+- `plot_participation`、`plot_eigenvector`、`plot_contribution` の図(固有値マップ・接続図・表、固有値のクリックでモードを選ぶ、母線のクリックで表、断面のリンク)を `private/mode_diagram.m` にまとめました。各メソッドは断面ごとのデータ(固有値、母線・機器・ブランチの色の値、母線のラベル、表の行)を作る関数を渡します。
+- 機器・リンクのクリックからその母線を求める処理に、`startsWith(タグ, 母線タグの配列)` がスカラーを返すための誤りがありました(最初の母線になる)。`mode_diagram` で直し、F112 で機器のクリックを確かめています。
+
+### 22.3 `plot_eigenvector(Side, Mode, Type, Index, Parent)` [事実]
+
+- `Side="right"`(既定、モードの形 `cm_right`)か `"left"`(`cm_left`)。モードは `get_participation` の列で、固有値の列は最も近い固有値で選びます。
+- 母線の代表の変数: その母線の最初の発電機の `delta`(`tab_variable.Name == "delta"`)、なければ母線の `theta`(Type `"DAE"` のみ)、どちらもなければ灰色。
+- 色は |成分| / 代表の変数の中の最大値(0〜1)、位相はラベル `"B001: 0.82∠-34°"`(最大の成分を 0° とする相対位相)で示します。矢印は GraphNetDiagram の変更が要るので使っていません。表はクリックした母線のすべての状態の大きさと位相 [deg] です。
+
+### 22.4 `plot_reduced_matrix(target, State, Block, Index, Parent)` → `[G, tab_coupling]` [事実]
+
+- `get_reduced_matrix(target, State)` の母線の変数どうしのブロック `K`: `Block="P"`(既定、P の釣り合い × `theta`)か `"Q"`(Q の釣り合い × 2 つ目の変数)。母線の変数の母線と種類は全体の DAE の `StateName` から決めます(縮約後の名前だけでは母線の対応が崩れるため)。
+- 母線の色とラベルは `K(i,i)`、ブランチの太さ(`BranchLineWidth`)は両端の結合 `(|K(i,j)| + |K(j,i)|)/2` を 0.5〜6 pt(全断面の最大で 6 pt)にしたものです。色にしなかったのは、対角と非対角の大きさが違い 1 つのカラーマップでは非対角が潰れるためです。
+- ブランチのない母線の結合は描けないので、`tab_coupling`(Bus1、Bus2、Coupling、Branch。ブランチがなければ `""`)に最初の断面のすべての組を降順で返します。IEEE9 で `["Component","B004"]` を消去すると B001-B005、B001-B006、B005-B006 がブランチなしの結合になります [計測]。
+
+### 22.5 `plot_contribution(Quantity, Mode, Index, Parent)` [事実]
+
+- コーディネーターに提案した量(返事は未着のまま実装): DAE の右と左の固有ベクトル `v`、`w`(`wᴴ E v = 1`)と `get_contribution` の `A_e` から `λ_e = wᴴ A_e v`。`A = Σ A_e` なので `Σ λ_e = λ`(IEEE9 + 制御器で相対 1e-8 以内 [計測])。
+- `Quantity="real"`(既定、減衰への分担)、`"imag"`、`"abs"`。機器はその局所制御器(タグがその機器のタグで始まる)の分担を足した値、ブランチと母線(シャント)はそれぞれの分担で色付けし、カラーバーは 0 について対称(`"abs"` は 0 から)です。グローバル制御器は図に置けないので表だけに出ます。表は最初はすべての要素(Re、Im、タイトルに和 = λ)、母線をクリックするとその母線の要素です。固有値マップは Type `"DAE"` です。
+- IEEE9 では母線のシャントの分担は 0 でした [計測]。
+
+### 22.6 テスト [事実]
+
+- `test_F112_linearization_plots.m` は 14 件(`linearize`、`graph`)。すべて 0.3 s を超えるので `test_levels.m` に medium で登録しました。
