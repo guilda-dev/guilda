@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Main.mlx mock</title>
+<!-- Image of the MATLAB R2026a desktop (English) with _GUILDAtutorial/Main.mlx open in the
+     Live Editor, laid out after _GUILDAdocPages/images/getting-started/start-guilda.gif.
+     make-main-gif.mjs scrolls only #doc (the Main.mlx document) and turns the frames into
+     _GUILDAdocPages/images/tutorial/main.gif. Not a screenshot: icons are simple shapes, no logos. -->
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 960px; height: 600px; overflow: hidden; background: #DADDE2; font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 11px; color: #1F1F1F; }
+  .win { position: relative; width: 960px; height: 600px; border-radius: 10px; overflow: hidden; background: #F1EEF1; }
+
+  /* macOS title bar and the navy tab bar */
+  .title { height: 22px; display: flex; align-items: center; background: #EBEAEB; position: relative; }
+  .tl { width: 12px; height: 12px; border-radius: 50%; margin-left: 8px; }
+  .tl:first-child { margin-left: 14px; background: #FF5F57; } .tl.y { background: #FEBC2E; } .tl.g { background: #28C840; }
+  .title b { position: absolute; left: 0; right: 0; text-align: center; font-size: 12px; font-weight: 600; color: #2A2A2A; pointer-events: none; }
+  .tabs { height: 24px; display: flex; align-items: stretch; background: #003366; color: #FFFFFF; font-size: 11px; }
+  .burger { width: 40px; display: grid; place-items: center; }
+  .burger i { display: block; width: 16px; height: 2px; background: #fff; box-shadow: 0 5px 0 #fff, 0 -5px 0 #fff; }
+  .tab { display: flex; align-items: center; padding: 0 20px; }
+  .tab.on { background: #FCFCFC; color: #1F1F1F; border-top: 2px solid #1E6FCF; }
+  .tab.ctx { background: #1E6FCF; }
+  .tabs .sp { flex: 1; }
+  .search { align-self: center; width: 210px; height: 18px; border-radius: 4px; background: #fff; color: #6B6B6B; display: flex; align-items: center; padding: 0 8px; font-size: 11px; justify-content: space-between; }
+  .qa { display: flex; align-items: center; gap: 9px; padding: 0 10px 0 12px; }
+  .qa .sq { width: 11px; height: 11px; background: #8EA3BC; }
+  .qa .ar { width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+  .qa .ar.l { border-right: 8px solid #6FBF73; } .qa .ar.r { border-left: 8px solid #6FBF73; }
+  .qa .hp { width: 15px; height: 15px; border-radius: 50%; background: #fff; color: #003366; font-weight: 700; font-size: 11px; display: grid; place-items: center; }
+  .qa .dt { width: 9px; height: 9px; border-radius: 50%; background: #8EA3BC; margin-left: 4px; }
+
+  /* Ribbon of the Live Editor tab */
+  .ribbon { height: 66px; display: flex; background: #FCFCFC; border-bottom: 1px solid #D9D9D9; }
+  .grp { position: relative; display: flex; gap: 1px; padding: 3px 5px 14px; border-right: 1px solid #E1E1E1; }
+  .grp > small { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 8.5px; letter-spacing: 0.06em; color: #7A7A7A; }
+  .big { width: 37px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 9.5px; color: #1F1F1F; text-align: center; line-height: 1.1; }
+  .big svg { width: 26px; height: 26px; flex: none; }
+  .big .dd { font-size: 7px; color: #444; line-height: 6px; }
+  .col { display: flex; flex-direction: column; justify-content: flex-start; gap: 1px; padding-top: 0; }
+  .col .sm { height: 15px; }
+  .sm { display: flex; align-items: center; gap: 3px; font-size: 9.5px; white-space: nowrap; }
+  .sm svg { width: 14px; height: 14px; flex: none; }
+  .fmt { display: flex; gap: 2px; }
+  .fmt span { width: 12px; height: 12px; border: 1px solid #4A4A4A; font-size: 8px; font-weight: 700; display: grid; place-items: center; }
+  .dim { color: #A0A0A0; }
+
+  /* Address bar */
+  .addr { height: 22px; display: flex; align-items: center; gap: 4px; padding: 0 6px; background: #F1EEF1; }
+  .addr .nav { color: #3D8BE0; font-size: 13px; font-weight: 700; }
+  .addr .nav.off { color: #9DC2EB; }
+  .fold { display: inline-block; width: 14px; height: 10px; background: #F2C14E; border-radius: 1px; position: relative; top: 1px; flex: none; }
+  .fold::before { content: ""; position: absolute; left: 0; top: -2px; width: 6px; height: 3px; background: #F2C14E; border-radius: 1px 1px 0 0; }
+  .fold.b { background: #8FB8E8; } .fold.b::before { background: #8FB8E8; }
+  .fold.f { background: #F7E2B0; } .fold.f::before { background: #F7E2B0; }
+  .path { flex: 1; height: 18px; margin-left: 4px; border: 1px solid #CFCFCF; border-radius: 2px; background: #fff; display: flex; align-items: center; gap: 6px; padding: 0 6px; font-size: 10px; }
+  .path .sp { flex: 1; } .path .cv { font-size: 8px; }
+
+  /* Desktop panels */
+  .desk { position: absolute; top: 135px; bottom: 24px; left: 0; right: 0; display: flex; }
+  .rail { width: 30px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 6px; background: #F1EEF1; }
+  .rail i { display: block; width: 14px; height: 16px; border: 1.5px solid #6E6E6E; border-radius: 1px; background: #fff; }
+  .rail i.on { outline: 4px solid #FCFCFC; box-shadow: 0 0 0 5px #C9C9C9; }
+  .rail i.sq { height: 12px; }
+  .rail b { color: #888; font-size: 10px; }
+  .pane { display: flex; flex-direction: column; background: #FCFCFC; border: 1px solid #D5D5D5; }
+  .ph { height: 22px; flex: none; display: flex; align-items: center; padding: 0 6px; gap: 6px; background: #F1EEF1; font-size: 10.5px; border-bottom: 1px solid #DADADA; }
+  .ph .sp { flex: 1; } .ph .tri { font-size: 8px; } .ph .kb { font-weight: 700; letter-spacing: 1px; }
+  .left { width: 152px; display: flex; flex-direction: column; gap: 4px; }
+  .files { flex: 1; }
+  .colh { height: 18px; display: flex; align-items: center; padding: 0 6px; background: #EBEAEB; font-weight: 600; font-size: 10.5px; border-bottom: 1px solid #DDD; }
+  .colh span { flex: 1; } .colh span + span { border-left: 1px solid #D0D0D0; padding-left: 4px; }
+  .tree { padding: 3px 0; }
+  .row { height: 17px; display: flex; align-items: center; gap: 5px; padding-left: 6px; font-size: 10px; white-space: nowrap; }
+  .row .tw { width: 6px; font-size: 7px; color: #333; }
+  .row.fade { color: #A6A6A6; }
+  .lic { display: inline-block; width: 13px; height: 9px; border-top: 2px solid #5B87C7; border-bottom: 2px solid #5B87C7; position: relative; }
+  .lic::after { content: ""; position: absolute; left: 0; right: 0; top: 2.5px; height: 2px; background: #5B87C7; }
+  .md { color: #2F6DB5; font-weight: 700; font-size: 9px; width: 13px; }
+  .ws { height: 140px; flex: none; }
+  .ws .r { display: flex; align-items: center; height: 20px; padding: 0 6px; font-size: 10.5px; white-space: nowrap; }
+  .ws .colh span:nth-child(1), .ws .r span:nth-child(1) { flex: 0 0 40px; } .ws .colh span:nth-child(3), .ws .r span:nth-child(3) { flex: 0 0 30px; }
+  .ws .r span { flex: 1; } .ws .r b { font-weight: 700; }
+  .wsi { display: inline-block; width: 11px; height: 11px; border: 1px solid #8DA7C9; background: #DCE7F5; margin-right: 6px; vertical-align: -1px; }
+  .split { width: 4px; }
+
+  /* Editor with Main.mlx */
+  .editor { width: 360px; }
+  .etabs { height: 22px; flex: none; display: flex; align-items: stretch; background: #F1EEF1; border-bottom: 1px solid #D5D5D5; font-size: 10.5px; }
+  .etabs .ham { width: 18px; display: grid; place-items: center; color: #777; font-size: 10px; }
+  .etabs .et { display: flex; align-items: center; gap: 16px; padding: 0 10px; background: #FCFCFC; border-top: 2px solid #176ECE; border-left: 1px solid #D5D5D5; border-right: 1px solid #D5D5D5; }
+  .etabs .et em { font-style: normal; color: #666; font-size: 10px; }
+  .etabs .plus { display: grid; place-items: center; width: 24px; color: #777; }
+  .ebody { flex: 1; min-height: 0; display: flex; }
+  .lsbar { width: 3px; background: #176ECE; flex: none; }
+  #doc { flex: 1; overflow: hidden; position: relative; background: #FCFCFC; }
+  /* The scrolling document has no text antialiasing: crisp edges keep each frame of the GIF small. */
+  #doc, #doc * { -webkit-font-smoothing: none; }
+  #doc .page, #doc table { font-family: "Lucida Grande", Verdana, sans-serif; }  /* keeps even letter spacing without antialiasing */
+  .outcol { width: 16px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; background: #FCFCFC; border-left: 1px solid #E6E6E6; }
+  .outcol i { width: 10px; height: 10px; border: 1px solid #9A9A9A; background: #fff; }
+  .page { padding: 12px 14px 30px 16px; font-size: 10px; line-height: 1.45; color: #1F1F1F; }
+  .page h1 { margin: 0 0 8px; font-size: 17px; font-weight: 700; color: #1F1F1F; }
+  .page h2 { margin: 14px 0 5px; font-size: 13px; font-weight: 700; color: #1F1F1F; }
+  .page p { margin: 0 0 6px; }
+  .page code { font-family: Menlo, Monaco, monospace; font-size: 9.5px; }
+  .page a { color: #0E5FB8; text-decoration: underline; }
+  .page ul { margin: 0 0 6px; padding-left: 16px; }
+  .fig { display: flex; justify-content: center; margin: 6px 0; }
+  .fig img { width: 200px; height: auto; }
+  table { width: 100%; border-collapse: collapse; margin: 4px 0 6px; font-size: 9.5px; line-height: 1.3; }
+  th, td { padding: 2px 4px; border: 1px solid #BFBFBF; text-align: left; vertical-align: top; }
+  th { background: #F2F2F2; font-weight: 700; }
+  td.n { width: 24px; text-align: center; }
+  td.m { width: 88px; }
+  td.o { width: 52px; }
+  td.o2 { width: 58px; }
+  .code { margin: 6px 0 4px; padding: 5px 8px; background: #F2F2F2; border: 1px solid #E0E0E0; font-family: Menlo, Monaco, monospace; font-size: 9.5px; line-height: 1.55; white-space: pre; }
+  .start { display: flex; gap: 8px; margin: 6px 0 0; }
+  .pill { padding: 5px 9px; border-radius: 3px; background: #0059A7; color: #fff; font-size: 10px; font-weight: 700; }
+  .pill.ghost { background: #fff; color: #0059A7; border: 1px solid #0059A7; }
+  .thumb { position: absolute; top: 0; right: 1px; width: 6px; border-radius: 3px; background: #C2C2C2; }
+
+  /* Command Window */
+  .cmd { flex: 1; }
+  .cbody { flex: 1; overflow: hidden; background: #FCFCFC; padding: 4px 6px; font-family: Menlo, Monaco, monospace; font-size: 9.5px; line-height: 1.42; white-space: pre; color: #1F1F1F; }
+  .rrail { width: 28px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 8px; background: #F1EEF1; }
+  .rrail .pl { width: 15px; height: 15px; border: 1.5px solid #555; border-radius: 50%; display: grid; place-items: center; font-size: 12px; line-height: 1; color: #333; }
+  .rrail i { display: block; width: 13px; height: 12px; border: 1.5px solid #6E6E6E; background: #fff; }
+  .rrail b { color: #888; font-size: 10px; }
+
+  /* Status bar */
+  .status { position: absolute; left: 0; right: 0; bottom: 0; height: 24px; display: flex; align-items: center; gap: 22px; padding: 0 20px 0 30px; background: #F1EEF1; font-size: 9.5px; color: #333; border-top: 1px solid #DADADA; }
+  .status .add { width: 22px; height: 15px; border: 1px solid #8FA9CC; border-radius: 3px; background: #fff; color: #2F6DB5; font-weight: 700; display: grid; place-items: center; }
+  .status .sp { flex: 1; }
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="title"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>MATLAB R2026a</b></div>
+  <div class="tabs">
+    <span class="burger"><i></i></span>
+    <span class="tab">Home</span><span class="tab">Plots</span><span class="tab">Apps</span>
+    <span class="tab on">Live Editor</span><span class="tab ctx">Insert</span><span class="tab ctx">View</span>
+    <span class="sp"></span>
+    <span class="search">Search (&#8984;&#8679;Space) <span>&#9906;</span></span>
+    <span class="qa"><i class="sq"></i><i class="ar l"></i><i class="ar r"></i><span class="hp">?</span><i class="dt"></i></span>
+  </div>
+
+  <div class="ribbon">
+    <div class="grp">
+      <span class="big"><svg viewBox="0 0 26 26"><path d="M10 3h6v7h7v6h-7v7h-6v-7H3v-6h7z" fill="#F2B632"/></svg>New<span class="dd">&#9660;</span></span>
+      <span class="big"><svg viewBox="0 0 26 26"><path d="M2 7h8l2 2h12v13H2z" fill="#F2C14E"/><path d="M2 11h22v11H2z" fill="#F7D27A"/></svg>Open<span class="dd">&#9660;</span></span>
+      <span class="big"><svg viewBox="0 0 26 26"><rect x="3" y="3" width="20" height="20" fill="#5A5A5A"/><rect x="7" y="3" width="12" height="7" fill="#fff"/><rect x="7" y="14" width="12" height="9" fill="#1F1F1F"/></svg>Save<span class="dd">&#9660;</span></span>
+      <span class="col"><span class="sm"><svg viewBox="0 0 14 14"><rect x="2" y="1" width="10" height="5" fill="none" stroke="#444"/><rect x="1" y="6" width="12" height="5" fill="#666"/></svg>Print</span><span class="sm"><svg viewBox="0 0 14 14"><rect x="1" y="5" width="8" height="8" fill="none" stroke="#444"/><rect x="5" y="1" width="8" height="8" fill="#1E6FCF"/></svg>Export &#9662;</span></span>
+      <span class="big" style="width:44px"><svg viewBox="0 0 26 26"><path d="M8 2h10l4 4v16H8z" fill="#fff" stroke="#555"/><path d="M4 6h10l3 3v15H4z" fill="#fff" stroke="#555"/><path d="M7 13h7M7 16h7M7 19h7" stroke="#777"/></svg>Compare<span class="dd">&#9660;</span></span>
+      <small>FILE</small>
+    </div>
+    <div class="grp">
+      <span class="big"><svg viewBox="0 0 26 26"><path d="M2 10h10V5l8 8-8 8v-5H2z" fill="#4E9BE6"/><rect x="21" y="3" width="3" height="20" fill="#1F4E8C"/></svg>Go To<span class="dd">&#9660;</span></span>
+      <span class="col"><span class="sm"><svg viewBox="0 0 14 14"><path d="M1 7h8V3l4 4-4 4V7" fill="#4E9BE6"/></svg>&nbsp;</span><span class="sm"><svg viewBox="0 0 14 14"><circle cx="6" cy="6" r="4" fill="none" stroke="#333" stroke-width="1.5"/><path d="M9 9l4 4" stroke="#333" stroke-width="1.5"/></svg>Find &#9662;</span><span class="sm"><svg viewBox="0 0 14 14"><path d="M3 1h8v12l-4-3-4 3z" fill="none" stroke="#4E9BE6" stroke-width="1.3"/></svg>Bookmark &#9662;</span></span>
+      <small>NAVIGATE</small>
+    </div>
+    <div class="grp">
+      <span class="big dim"><svg viewBox="0 0 26 26"><path d="M6 2h10l5 5v17H6z" fill="#fff" stroke="#AAA"/><path d="M9 11h9M9 14h9M9 17h9" stroke="#BBB"/></svg>Text</span>
+      <span class="col"><span class="sm"><svg viewBox="0 0 14 14"><rect x="1" y="1" width="12" height="12" fill="#fff" stroke="#D0312D"/><text x="2.5" y="10" font-size="8" fill="#D0312D" font-family="Arial">Aa</text></svg>Title</span><span class="fmt"><span>B</span><span>I</span><span>U</span><span>M</span></span><span class="fmt"><span>&#8801;</span><span>&#8801;</span><span>&#8801;</span><span>&#8801;</span><span>&#8801;</span></span></span>
+      <small>TEXT</small>
+    </div>
+    <div class="grp">
+      <span class="big"><svg viewBox="0 0 26 26"><path d="M6 2h10l5 5v17H6z" fill="#fff" stroke="#555"/><path d="M9 11h9M9 14h9M9 17h6" stroke="#777"/></svg>Code</span>
+      <span class="big"><svg viewBox="0 0 26 26"><rect x="3" y="4" width="20" height="17" fill="#fff" stroke="#555"/><path d="M6 9h14M6 13h14" stroke="#777"/><rect x="11" y="15" width="5" height="3" fill="#555"/></svg>Control<span class="dd">&#9660;</span></span>
+      <span class="big"><svg viewBox="0 0 26 26"><rect x="3" y="4" width="20" height="17" fill="#fff" stroke="#555"/><path d="M5 17l5-6 4 3 6-7" fill="none" stroke="#1E6FCF" stroke-width="1.6"/></svg>Task<span class="dd">&#9660;</span></span>
+      <span class="col"><span class="sm"><svg viewBox="0 0 14 14"><rect x="1" y="1" width="9" height="12" fill="#fff" stroke="#555"/><path d="M8 5h5M11 3v4" stroke="#1E6FCF"/></svg>Refactor &#9662;</span><span class="sm"><svg viewBox="0 0 14 14"><rect x="2" y="1" width="10" height="12" fill="#fff" stroke="#555"/><path d="M3 7h8" stroke="#1E6FCF"/></svg>&nbsp;</span><span class="sm"><svg viewBox="0 0 14 14"><rect x="2" y="1" width="10" height="12" fill="#fff" stroke="#555"/><path d="M3 7h8" stroke="#1E6FCF"/></svg>&nbsp;</span></span>
+      <small>CODE</small>
+    </div>
+    <div class="grp">
+      <span class="col"><span class="sm"><svg viewBox="0 0 14 14"><rect x="1" y="1" width="9" height="11" fill="#fff" stroke="#555"/><circle cx="10" cy="10" r="3.5" fill="#2E9E4F"/></svg>Code Issues</span><span class="sm"><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="4.5" fill="#E04B3F"/></svg>Debugger</span></span>
+      <small>ANALYZE</small>
+    </div>
+    <div class="grp">
+      <span class="big"><svg viewBox="0 0 26 26"><path d="M4 2h11l5 5v17H4z" fill="#fff" stroke="#555"/><path d="M12 11l10 6-10 6z" fill="#2E9E4F"/></svg>Run<br>Section</span>
+      <span class="col"><span class="sm"><svg viewBox="0 0 14 14"><rect x="2" y="1" width="10" height="12" fill="#fff" stroke="#555"/><path d="M3 7h8" stroke="#1E6FCF"/></svg>Section Break</span><span class="sm"><svg viewBox="0 0 14 14"><rect x="1" y="1" width="9" height="12" fill="#fff" stroke="#555"/><path d="M6 8h4V6l3 3-3 3v-2H6z" fill="#1E6FCF"/></svg>Run and Advance</span><span class="sm"><svg viewBox="0 0 14 14"><rect x="1" y="1" width="9" height="12" fill="#fff" stroke="#555"/><path d="M6 8h4V6l3 3-3 3v-2H6z" fill="#1E6FCF"/></svg>Run to End</span></span>
+      <small>SECTION</small>
+    </div>
+    <div class="grp" style="border-right:0">
+      <span class="big"><svg viewBox="0 0 26 26"><path d="M5 3l18 10L5 23z" fill="#2E9E4F"/></svg>Run<span class="dd">&#9660;</span></span>
+      <small>RUN</small>
+    </div>
+  </div>
+
+  <div class="addr">
+    <span class="nav">&#8592;</span><span class="nav off">&#8594;</span>
+    <span class="fold"></span><span class="fold"></span><span class="fold b"></span>
+    <span class="path"><span class="fold"></span>GUILDA <span>&#8250;</span><span class="sp"></span><span class="cv">&#9660;</span></span>
+  </div>
+
+  <div class="desk">
+    <div class="rail"><i class="on"></i><i class="sq"></i><i></i><i></i><i class="sq"></i><b>&middot;&middot;&middot;</b></div>
+    <div class="left">
+      <div class="pane files">
+        <div class="ph"><span class="tri">&#9660;</span>Files<span class="sp"></span><span class="kb">&#8942;</span></div>
+        <div class="colh"><span>Name</span></div>
+        <div class="tree">
+          <div class="row"><span class="tw">&#9654;</span><span class="fold"></span>_GUILDAdoc</div>
+          <div class="row"><span class="tw">&#9654;</span><span class="fold"></span>_GUILDAobject</div>
+          <div class="row"><span class="tw">&#9654;</span><span class="fold"></span>_GUILDAsystem</div>
+          <div class="row"><span class="tw">&#9654;</span><span class="fold"></span>_GUILDAtutorial</div>
+          <div class="row fade"><span class="tw">&#9654;</span><span class="fold f"></span>_GUILDAverification</div>
+          <div class="row"><span class="tw">&#9654;</span><span class="fold"></span>@GUILDA</div>
+          <div class="row"><span class="tw">&#9654;</span><span class="fold"></span>+DebugScript</div>
+          <div class="row fade"><span class="tw">&#9654;</span><span class="fold f"></span>notes</div>
+          <div class="row"><span class="tw"></span><span class="lic"></span>LICENSE</div>
+          <div class="row"><span class="tw"></span><span class="md">M&#8595;</span>README.md</div>
+        </div>
+      </div>
+      <div class="pane ws">
+        <div class="ph"><span class="tri">&#9660;</span>Workspace<span class="sp"></span><span class="kb">&#8942;</span></div>
+        <div class="colh"><span>Name</span><span>Value</span><span>Size</span></div>
+        <div class="r"><span><i class="wsi"></i>ans</span><span><b>1x1 GUILDA</b></span><span>1x1</span></div>
+      </div>
+    </div>
+    <div class="split"></div>
+
+    <div class="pane editor">
+      <div class="etabs"><span class="ham">&#8801;</span><span class="et">Main.mlx <em>&#10005;</em></span><span class="plus">+</span></div>
+      <div class="ebody">
+        <div class="lsbar"></div>
+        <div id="doc">
+          <div class="page">
+            <h1>GUILDA Tutorial</h1>
+            <p>GUILDA is a MATLAB tool for building power system models and running analyses such as power flow, time-domain simulation, approximate linearization, optimal power flow and continuation power flow. This file is the table of contents of the Live Scripts in the <code>_GUILDAtutorial</code> folder. <code>GUILDA.tutorial()</code> opens it again at any time.</p>
+            <p>Getting started: in MATLAB, go to the GUILDA folder and run <code>GUILDA</code> (it adds the paths), then open a Live Script from the links in the tables below and run it from top to bottom. Every Live Script builds or loads its own network first, so any of them can be opened on its own.</p>
+
+            <h2>Basic workflow of GUILDA</h2>
+            <p>An analysis in GUILDA builds (or loads) a network, finds and initializes the operating point, adds controllers if needed, then goes on to time-domain simulation, approximate linearization, continuation power flow, optimal power flow and other analyses. Each Step explains one part of this flow in detail.</p>
+            <div class="fig"><img src="../../_GUILDAdocPages/images/tutorial/basic-workflow.en.svg" alt=""></div>
+
+            <h2>Contents</h2>
+            <p>There are two kinds of Live Scripts. The <b>Steps</b> (usage manual) cover the features of GUILDA. The <b>Parts</b> (texts on analysis) teach the background of power system analysis while computing it with GUILDA; they go with the lecture notes and the video lectures.</p>
+            <ul>
+              <li>New to GUILDA? Read from Step 1. Steps 1-4 take you from building a network to a power flow.</li>
+              <li>Want the background of the analyses? Read from Part 0, with its knowledge page.</li>
+              <li>Know the feature you need? Open only that Step.</li>
+            </ul>
+
+            <h2>Usage manual (Steps 1-12)</h2>
+            <table>
+              <tr><th>Step</th><th>Name</th><th>Contents</th><th>Open</th></tr>
+              <tr><td class="n">1</td><td class="m">Network and components</td><td>Load a bundled network or build one from buses, branches and components</td><td class="o"><a>Live Script</a></td></tr>
+              <tr><td class="n">2</td><td class="m">Controllers</td><td>Local controllers (AVR, PSS, governor) and global controllers (AGC)</td><td class="o"><a>Live Script</a></td></tr>
+              <tr><td class="n">3</td><td class="m">Reading and editing network data</td><td>Get buses and components; read and write parameters</td><td class="o"><a>Live Script</a></td></tr>
+              <tr><td class="n">4</td><td class="m">Power flow</td><td>Conditions, options, results as tables and figures</td><td class="o"><a>Live Script</a></td></tr>
+              <tr><td class="n">5</td><td class="m">Simulation scenarios</td><td>Faults, branch openings, trips and other events</td><td class="o"><a>Live Script</a></td></tr>
+              <tr><td class="n">6</td><td class="m">Simulation results</td><td>Options of simulate and the result data</td><td class="o"><a>Live Script</a></td></tr>
+              <tr><td class="n">7</td><td class="m">Visualization</td><td>Network diagram, power flow, time responses, spring-mass model</td><td class="o"><a>Live Script</a></td></tr>
+              <tr><td class="n">8</td><td class="m">Approximate linearization</td><td>Linear models with get_sys and eigenvalues</td><td class="o"><a>Live Script</a></td></tr>
+              <tr><td class="n">9</td><td class="m">Optimal power flow</td><td>ELD, DC OPF and AC OPF; results and the LMP</td><td class="o"><a>Live Script</a></td></tr>
+              <tr><td class="n">10</td><td class="m">Continuation power flow</td><td>PV curves, the nose point and the options</td><td class="o"><a>Live Script</a></td></tr>
+              <tr><td class="n">11</td><td class="m">Settings</td><td>Defaults with GUILDA.setting</td><td class="o"><a>Live Script</a></td></tr>
+              <tr><td class="n">12</td><td class="m">Data import and export</td><td>Networks, MATPOWER cases and results</td><td class="o"><a>Live Script</a></td></tr>
+            </table>
+
+            <h2>Texts on analysis (Parts 0-8)</h2>
+            <table>
+              <tr><th>Part</th><th>Name</th><th>Contents</th><th>Open</th></tr>
+              <tr><td class="n">0</td><td class="m">Introduction</td><td>Role of a power system, supply-demand balance</td><td class="o2"><a>Live Script</a> <a>Page</a></td></tr>
+              <tr><td class="n">1</td><td class="m">Building a power system</td><td>Per-unit values, admittance matrix, bus types</td><td class="o2"><a>Live Script</a> <a>Page</a></td></tr>
+              <tr><td class="n">2</td><td class="m">Power flow</td><td>Power flow equations and Newton's method</td><td class="o2"><a>Live Script</a> <a>Page</a></td></tr>
+              <tr><td class="n">3</td><td class="m">Time-domain simulation</td><td>Swing equation, faults, critical clearing time</td><td class="o2"><a>Live Script</a> <a>Page</a></td></tr>
+              <tr><td class="n">4</td><td class="m">Spring-mass model</td><td>Voltages as masses, lines as springs</td><td class="o2"><a>Live Script</a> <a>Page</a></td></tr>
+              <tr><td class="n">5</td><td class="m">Approximate linearization</td><td>Eigenvalues, damping ratios, participation factors</td><td class="o2"><a>Live Script</a> <a>Page</a></td></tr>
+              <tr><td class="n">6</td><td class="m">Optimal power flow</td><td>Economic dispatch, AC OPF, LMP</td><td class="o2"><a>Live Script</a> <a>Page</a></td></tr>
+              <tr><td class="n">7</td><td class="m">Continuation power flow</td><td>PV curves and the nose point</td><td class="o2"><a>Live Script</a> <a>Page</a></td></tr>
+              <tr><td class="n">8</td><td class="m">Controller design</td><td>AVR, PSS, governor, AGC, LQR, Retrofit</td><td class="o2"><a>Live Script</a> <a>Page</a></td></tr>
+            </table>
+
+            <h2>Reference material</h2>
+            <ul>
+              <li>Command cheat sheet: <code>open _GUILDAtutorial/Supplement_CheetSheet.mlx</code></li>
+              <li>Useful tools: <code>open _GUILDAtutorial/Supplement_Tools.mlx</code></li>
+              <li><code>_GUILDAtutorial/ClassManual</code>: the models of the classes</li>
+            </ul>
+
+            <h2>Try it first</h2>
+            <p>Load the bundled IEEE 9-bus system and draw its network diagram. A bundled network comes with its equilibrium, so the diagram shows the power flow.</p>
+            <div class="code">net = network.IEEE9bus();
+G = net.plot_diagram();</div>
+
+            <h2>Get started</h2>
+            <div class="start"><span class="pill">Manual (Step 1) &#9654;</span><span class="pill ghost">Analysis text (Part 0) &#9654;</span></div>
+          </div>
+          <div class="thumb" id="thumb"></div>
+        </div>
+        <div class="outcol"><i></i><i></i><i></i></div>
+      </div>
+    </div>
+    <div class="split"></div>
+
+    <div class="pane cmd">
+      <div class="ph"><span class="tri">&#9660;</span>Command Window<span class="sp"></span><span class="kb">&#8942;</span></div>
+      <div class="cbody">&gt;&gt; GUILDA
+
+ === Add path for GUILDA ===
+
+ === Check Requirement ===
+   version : R2025a~                ... ok
+   toolbox : Optimization Toolbox   ... ok
+   toolbox : Control System Toolbox ... ok
+   toolbox : Symbolic Math Toolbox  ... ok
+
+ === Tutorial ===
+ &gt;&gt; open _GUILDAtutorial/Main.mlx
+
+
+ans =
+
+  === @GUILDA Class Methods ===
+  &gt;&gt; GUILDA.pwd()        : Get guilda path
+  &gt;&gt; GUILDA.setting()    : Launch settings window
+  &gt;&gt; GUILDA.tutorial()   : open Tutorial
+  &gt;&gt; GUILDA.doc()        : open documentation
+  &gt;&gt; GUILDA.dictionary() : Search classes
+  &gt;&gt; GUILDA.addpath()    : Add paths
+
+&gt;&gt; </div>
+    </div>
+    <div class="rrail"><span class="pl">+</span><i></i><i></i><b>&middot;&middot;&middot;</b></div>
+  </div>
+
+  <div class="status"><span class="add">+</span><span class="sp"></span><span>Editor: 80%</span><span>UTF-8</span><span>LF</span><span>Script</span></div>
+</div>
+<script>
+  // Called by make-main-gif.mjs for each frame: scroll #doc to y and move the scroll thumb.
+  window.setScroll = function (y) {
+    const doc = document.getElementById('doc');
+    doc.scrollTop = y;
+    const thumb = document.getElementById('thumb');
+    const ratio = doc.clientHeight / doc.scrollHeight;
+    thumb.style.height = `${Math.max(24, doc.clientHeight * ratio)}px`;
+    thumb.style.top = `${doc.scrollTop + doc.scrollTop * ratio}px`;
+    return doc.scrollHeight - doc.clientHeight;
+  };
+</script>
+</body>
+</html>
