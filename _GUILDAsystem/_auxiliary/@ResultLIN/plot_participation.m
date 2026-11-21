@@ -62,35 +62,26 @@ function sct_graph = plot_participation(obj, opt)
         error(msg("GUILDA:ResultLIN:IndexRange", string(n_t)))
     end
     sct_part = obj.get_participation(Type=opt.Type, Index="all");
-    if opt.Mode > numel(sct_part(opt.Index).cv_lambda)
-        error(msg("GUILDA:ResultLIN:ModeRange", string(numel(sct_part(opt.Index).cv_lambda))))
-    end
-
-    % Layout: the eigenvalues on the left, the diagram and the table on the right
-    h_parent = opt.Parent;
-    if isempty(h_parent)
-        h_parent = figure("Color", "w");
-    end
-    h_root = uipanel(h_parent, "BorderType", "none", "Units", "normalized", "Position", [0 0 1 1], ...
-        "Tag", "GUILDA:ResultLIN:Participation");
-    if isprop(h_parent, "Color")
-        h_root.BackgroundColor = h_parent.Color;
-    end
-    c_panel = {"BorderType", "none", "Units", "normalized", "BackgroundColor", h_root.BackgroundColor};
-    h_eig  = uipanel(h_root, c_panel{:}, "Position", [0 0 0.42 1]);
-    h_net  = uipanel(h_root, c_panel{:}, "Position", [0.42 0.28 0.58 0.72]);
-    h_info = uipanel(h_root, "Units", "normalized", "Position", [0.43 0.01 0.56 0.26], "Title", "Click a bus");
-    h_tab  = uitable(h_info, "Units", "normalized", "Position", [0 0 1 1], "Data", cell(0, 2), ...
-        "ColumnName", {'Variable', 'Participation'}, "RowName", {}, "Tag", "GUILDA:ResultLIN:ParticipationTable");
-
-    G_eig = obj.plot_eigenvalue(Type=opt.Type, Index=opt.Index, Parent=h_eig);
-    [G_net, sv_bus, ~, sv_title] = section_diagram(obj, "Participation", {"ColorbarLabel", "participation", "Parent", h_net});
-
-    % The bus of each state of every section, and the participation of the buses (NaN without states)
     tab = obj.tab_variable;
-    c_at  = cell(1, n_t);
-    c_bus = cell(1, n_t);
-    for s = 1:n_t
+    sct_spec = struct("s_name", "Participation", "s_colorbar", "participation", "s_limit", "zero", ...
+        "sv_column", "Participation", "l_tableAll", false, ...
+        "fcn_section", @(sv_bus, ~, ~) participation_sections(sct_part, tab, sv_bus));
+    sct_graph = mode_diagram(obj, opt, sct_spec);
+end
+
+
+function sct_sec = participation_sections(sct_part, tab, sv_bus)
+% Data of each section for mode_diagram: the participation of the buses (NaN without states) and of the states at each bus
+    arguments (Input)
+        sct_part struct         % get_participation of every section.
+        tab table               % Variable map of the result.
+        sv_bus (:,1) string     % Bus tags of the diagram.
+    end
+    arguments (Output)
+        sct_sec struct          % Data of each section (see mode_diagram).
+    end
+    c_sec = cell(1, numel(sct_part));
+    for s = 1:numel(sct_part)
         P = sct_part(s);
         [lv_known, iv_row] = ismember(P.sv_state, tab.Label);
         sv_at = P.sv_owner;
@@ -98,129 +89,8 @@ function sct_graph = plot_participation(obj, opt)
         [~, iv] = ismember(sv_bus, P.tab_bus.Bus);
         rm = P.tab_bus.Participation(iv, :);
         rm(~ismember(sv_bus, sv_at), :) = NaN;
-        c_at{s}  = sv_at;
-        c_bus{s} = rm;
+        c_sec{s} = struct("cv_lambda", P.cv_lambda, "rm_bus", rm, "sm_busLabel", strings(0, 0), ...
+            "rm_comp", [], "rm_branch", [], "sv_row", P.sv_state, "sv_rowBus", sv_at, "rm_row", P.rm_value);
     end
-    h_root.UserData = struct("sct_part", sct_part, "c_at", {c_at}, "c_bus", {c_bus}, "i_mode", opt.Mode, ...
-        "s_bus", "", "sv_title", sv_title, "G_eig", G_eig, "G_net", G_net, "h_tab", h_tab, "h_info", h_info, ...
-        "h_ring", line(G_eig.ax(1), NaN, NaN, "LineStyle", "none", "Marker", "o", "MarkerSize", 12, ...
-        "LineWidth", 1.5, "Color", "k", "HitTest", "off", "PickableParts", "none", "HandleVisibility", "off", ...
-        "Tag", "GUILDA:ResultLIN:PickedMode"));
-
-    G_eig.ElementClickedFcn = @(G, data) pick_mode(h_root, G);
-    G_net.ElementClickedFcn = @(G, data) pick_bus(h_root, data);
-    if n_t > 1
-        G_net.TimeChangedFcn = @(G, data) show_mode(h_root);
-        G_net.set_time(G_net.rv_t(opt.Index));
-        G_eig.link(G_net);
-    end
-    show_mode(h_root);
-    sct_graph = struct("Eigenvalue", G_eig, "Diagram", G_net, "Table", h_tab);
-end
-
-
-function pick_mode(h_root, G)
-% Click on a marker set of the eigenvalues: the mode nearest to the point clicked (CurrentPoint of the axes)
-    arguments (Input)
-        h_root  % Panel of the figure, with the data in UserData.
-        G       % The eigenvalue chart.
-    end
-    if ~isvalid(h_root)
-        return
-    end
-    U = h_root.UserData;
-    rv_p = G.ax(1).CurrentPoint(1, 1:2);
-    cv_lambda = U.sct_part(U.G_net.i_time).cv_lambda;
-    if isempty(cv_lambda)
-        return
-    end
-    c_p = complex(rv_p(1), rv_p(2));
-    [~, m] = min(min(abs(cv_lambda - c_p), abs(conj(cv_lambda) - c_p)));
-    U.i_mode = m;
-    h_root.UserData = U;
-    show_mode(h_root);
-end
-
-
-function pick_bus(h_root, data)
-% Click on the diagram: a bus, or the bus of a component, for the table
-    arguments (Input)
-        h_root  % Panel of the figure, with the data in UserData.
-        data    % Event data (GraphEventData).
-    end
-    if ~isvalid(h_root)
-        return
-    end
-    U = h_root.UserData;
-    s_bus = "";
-    switch data.Kind
-        case "bus"
-            s_bus = data.Tag;
-        case {"component", "link"}
-            tab = U.G_net.tab_element;
-            sv_bus = tab.Tag(tab.Kind == "bus");
-            s_bus = sv_bus(startsWith(data.Tag, sv_bus));
-            if ~isempty(s_bus)
-                [~, i] = max(strlength(s_bus));
-                s_bus = s_bus(i);
-            end
-    end
-    if isempty(s_bus) || s_bus == ""
-        return
-    end
-    U.s_bus = s_bus;
-    h_root.UserData = U;
-    U.G_net.select(s_bus);
-    show_mode(h_root);
-end
-
-
-function show_mode(h_root)
-% Colors, title, ring and table of the mode picked in the section shown (also the TimeChangedFcn of the diagram)
-    arguments (Input)
-        h_root  % Panel of the figure, with the data in UserData.
-    end
-    if ~isvalid(h_root)
-        return
-    end
-    U = h_root.UserData;
-    G = U.G_net;
-    k = G.i_time;
-    m = U.i_mode;
-    P = U.sct_part(k);
-    rm = U.c_bus{k};
-    s_mode = sprintf("mode %d", m);
-    if m <= size(rm, 2)
-        rv_c = rm(:, m);
-        c_l = P.cv_lambda(m);
-        s_sign = "+";
-        if imag(c_l) < 0
-            s_sign = "-";
-        end
-        s_mode = s_mode + sprintf(": \\lambda = %.4g %s %.4gj, f = %.3g Hz, \\zeta = %.3g", real(c_l), s_sign, ...
-            abs(imag(c_l)), abs(imag(c_l))/(2*pi), -real(c_l)/max(abs(c_l), eps));
-        set(U.h_ring, "XData", real([c_l, conj(c_l)]), "YData", imag([c_l, conj(c_l)]));
-    else
-        rv_c = NaN(size(rm, 1), 1);
-        s_mode = s_mode + " (not in this section)";
-        set(U.h_ring, "XData", NaN, "YData", NaN);
-    end
-    G.BusColorData = rv_c;
-    r_max = max(rv_c(isfinite(rv_c)));
-    if ~isempty(r_max) && r_max > 0
-        G.ColorLimits = [0 r_max];
-    end
-    title(G.ax(1), [U.sv_title(min(k, end)); s_mode]);
-
-    % Table of the bus clicked
-    if U.s_bus == ""
-        return
-    end
-    lv = U.c_at{k} == U.s_bus;
-    rv_v = NaN(nnz(lv), 1);
-    if m <= size(P.rm_value, 2)
-        rv_v = P.rm_value(lv, m);
-    end
-    U.h_tab.Data = [cellstr(P.sv_state(lv)), num2cell(rv_v)];
-    U.h_info.Title = U.s_bus + " in " + sprintf("mode %d", m) + sprintf(" (sum %.3g)", sum(rv_v));
+    sct_sec = [c_sec{:}];
 end
