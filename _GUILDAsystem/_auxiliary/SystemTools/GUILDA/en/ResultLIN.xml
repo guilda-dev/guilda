@@ -17,5 +17,6 @@
         <entry key="KernelRange">Kernel must be an integer from 1 to {0}, the number of kernels (islands) of the section shown; get_kernel gives them.</entry>
         <entry key="NoKernel">The section shown has no kernel of the rotation form to draw: {0}</entry>
         <entry key="ModeRange">Mode must be an integer from 1 to {0}, a column of get_participation of the section shown.</entry>
+        <entry key="PortQuantity">Quantity "{0}" reads the angle and voltage variables of the bus ports: it needs a result in Port "PQ" or "PI" (net.get_sys(Port="PQ")); this result has Port "I".</entry>
     </message>
 </rsccat>

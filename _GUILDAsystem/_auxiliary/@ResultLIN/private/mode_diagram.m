@@ -25,10 +25,18 @@ function sct_graph = mode_diagram(obj, opt, sct_spec)
 %   magnitude and phase in degrees, or the real and imaginary parts with
 %   sct_spec.l_cartesian true.
 %
+% - sm_compLabel (components x modes, optional): the label of each component.
+%
+% With sct_spec.l_modeFree true the values do not depend on a mode: the data has one
+% column (rm_bus, rm_comp, rm_branch, sm_*Label) and rm_row has one column per name in
+% sv_column; the eigenvalue map is shown for reference, a click on it changes nothing,
+% and opt.Mode is not checked.
+%
 % Other fields of sct_spec: s_name (start of the title), s_colorbar (label),
 % s_limit ("zero": [0 max] of the mode shown; "symmetric": [-m m]), sv_column (names of
 % the value columns of the table), l_tableAll (true: the table shows every row until a
-% bus is clicked).
+% bus is clicked), l_cartesian (optional: Re and Im of complex rows), l_modeFree and
+% s_quantity (optional: the name of a mode-free quantity, in the titles).
     arguments (Input)
         obj    ResultLIN          % The result (of the network).
         opt    struct             % Options of the method: Type, Index, Mode, Parent.
@@ -65,7 +73,10 @@ function sct_graph = mode_diagram(obj, opt, sct_spec)
     sv_branch = tab.Tag(tab.Kind == "branch");
     sct_sec = sct_spec.fcn_section(sv_bus, sv_comp, sv_branch);
     n_mode = numel(sct_sec(opt.Index).cv_lambda);
-    if opt.Mode > n_mode
+    l_free = isfield(sct_spec, "l_modeFree") && sct_spec.l_modeFree;
+    if l_free
+        opt.Mode = 1;
+    elseif opt.Mode > n_mode
         delete(h_root);
         error(msg("GUILDA:ResultLIN:ModeRange", string(n_mode)))
     end
@@ -97,6 +108,9 @@ function pick_mode(h_root, G)
         return
     end
     U = h_root.UserData;
+    if isfield(U.sct_spec, "l_modeFree") && U.sct_spec.l_modeFree
+        return
+    end
     rv_p = G.ax(1).CurrentPoint(1, 1:2);
     cv_lambda = U.sct_sec(U.G_net.i_time).cv_lambda;
     if isempty(cv_lambda)
@@ -156,9 +170,12 @@ function show_mode(h_root)
     k = G.i_time;
     m = U.i_mode;
     S = U.sct_sec(k);
-    l_mode = m <= numel(S.cv_lambda);
+    l_free = isfield(U.sct_spec, "l_modeFree") && U.sct_spec.l_modeFree;
+    l_mode = l_free || m <= numel(S.cv_lambda);
     s_mode = sprintf("mode %d", m);
-    if l_mode
+    if l_free
+        s_mode = U.sct_spec.s_quantity;
+    elseif l_mode
         c_l = S.cv_lambda(m);
         s_sign = "+";
         if imag(c_l) < 0
@@ -192,13 +209,18 @@ function show_mode(h_root)
             G.ColorLimits = [0 r_max];
         end
     end
-    if ~isempty(S.sm_busLabel)
+    l_compLabel = isfield(S, "sm_compLabel") && ~isempty(S.sm_compLabel);
+    if ~isempty(S.sm_busLabel) || l_compLabel
         sv_label = G.tab_element.Tag(G.tab_element.Kind == "bus");
-        if l_mode
+        if l_mode && ~isempty(S.sm_busLabel)
             sv_label = S.sm_busLabel(:, m);
         end
         G.BusLabel = sv_label;
-        G.ComponentLabel = strings(nnz(G.tab_element.Kind == "component"), 1);
+        sv_label = strings(nnz(G.tab_element.Kind == "component"), 1);
+        if l_mode && l_compLabel
+            sv_label = S.sm_compLabel(:, m);
+        end
+        G.ComponentLabel = sv_label;
         G.LabelMode = "user";
     end
     title(G.ax(1), [U.sv_title(min(k, end)); s_mode]);
@@ -212,6 +234,11 @@ function show_mode(h_root)
     if U.s_bus ~= ""
         lv = S.sv_rowBus == U.s_bus;
         s_title = U.s_bus;
+    end
+    if l_free
+        U.h_tab.Data = [cellstr(S.sv_row(lv)), num2cell(S.rm_row(lv, :))];
+        U.h_info.Title = s_title + ": " + U.sct_spec.s_quantity;
+        return
     end
     cv = column_of(S.rm_row, m, numel(S.sv_row));
     cv = cv(lv);

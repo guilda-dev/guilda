@@ -715,12 +715,16 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 - 母線の色とラベルは `K(i,i)`、ブランチの太さ(`BranchLineWidth`)は両端の結合 `(|K(i,j)| + |K(j,i)|)/2` を 0.5〜6 pt(全断面の最大で 6 pt)にしたものです。色にしなかったのは、対角と非対角の大きさが違い 1 つのカラーマップでは非対角が潰れるためです。
 - ブランチのない母線の結合は描けないので、`tab_coupling`(Bus1、Bus2、Coupling、Branch。ブランチがなければ `""`)に最初の断面のすべての組を降順で返します。IEEE9 で `["Component","B004"]` を消去すると B001-B005、B001-B006、B005-B006 がブランチなしの結合になります [計測]。
 
-### 22.5 `plot_contribution(Quantity, Mode, Index, Parent)` [事実]
+### 22.5 `plot_contribution(Quantity, State, Mode, Index, Parent)` [事実]
 
-- コーディネーターに提案した量(返事は未着のまま実装): DAE の右と左の固有ベクトル `v`、`w`(`wᴴ E v = 1`)と `get_contribution` の `A_e` から `λ_e = wᴴ A_e v`。`A = Σ A_e` なので `Σ λ_e = λ`(IEEE9 + 制御器で相対 1e-8 以内 [計測])。
-- `Quantity="real"`(既定、減衰への分担)、`"imag"`、`"abs"`。機器はその局所制御器(タグがその機器のタグで始まる)の分担を足した値、ブランチと母線(シャント)はそれぞれの分担で色付けし、カラーバーは 0 について対称(`"abs"` は 0 から)です。グローバル制御器は図に置けないので表だけに出ます。表は最初はすべての要素(Re、Im、タイトルに和 = λ)、母線をクリックするとその母線の要素です。固有値マップは Type `"DAE"` です。
-- IEEE9 では母線のシャントの分担は 0 でした [計測]。
+- ユーザーの決定(2026-11-21、コーディネーター経由): `Quantity="damping"|"synchronizing"|"voltage"`(既定 `"damping"`)。最初に実装した `Quantity="real"|"imag"|"abs"` は廃止しました。
+- `"damping"`: DAE の右と左の固有ベクトル `v`、`w` と `get_contribution` の `A_e` から `λ_e = wᴴ A_e v / (wᴴ E v)`。`A = Σ A_e` なので `Σ λ_e = λ`(IEEE9 + 制御器で相対 1e-8 以内 [計測])。色は `Re(λ_e)`(0 について対称、負は減衰を加える)。機器はその局所制御器(タグがその機器のタグで始まる)の分担を足し、ラベルに「(with controllers)」と書きます。ブランチと母線(シャント)はそれぞれの分担、グローバル制御器は表だけです。表は Re と Im(Im は表だけ)。IEEE9 では母線のシャントの分担は 0 でした [計測]。
+- `"synchronizing"`/`"voltage"`: 各機器と局所制御器の `A_e`(`get_contribution` の要素ごとの項)を、その状態と母線の 2 つの変数に限り、`get_reduced_matrix` と同じ規則で状態を消去して 2 × 2 の `K` にします(`State="settled"` は全状態、`"fixed"` は `E` の行が 0 の代数的な状態だけを消去)。`"synchronizing"` は `K(1,1) = ∂P/∂θ`、`"voltage"` は `K(2,2)`(Port `"PQ"` で `∂Q/∂ρ`、`"PI"` で `∂(Q/V)/∂V`)。Port `"I"` は新しいエラー `GUILDA:ResultLIN:PortQuantity` で止めます。
+  - 符号: 母線の釣り合いの行の機器の項は、角が進むと機器の注入が減る向きで正です。IEEE9 の B001 の発電機は `"fixed"` で `∂P/∂θ = 1.63`(回転子角を固定した古典的な同期化力係数)、`"settled"` では -0.27 でした [計測]。
+  - 色: 機器はその値、母線はその母線の機器の和(機器のない母線は灰色)、ブランチは自身の `A_e` の両端の変数の結合 `−(K_ij + K_ji)/2`(同期化の結合)。同じカラーバーなので、ブランチ(IEEE9 で 6〜18)が機器(0.3〜4)より強く出ます。
+  - 固有値マップは参考に表示するだけで、クリックしても何も変わりません(`mode_diagram` の `l_modeFree`)。表は各機器の K11、K12、K21、K22 です。
+- `mode_diagram` に `l_modeFree`、`s_quantity`、機器のラベル `sm_compLabel` を加えました。
 
 ### 22.6 テスト [事実]
 
-- `test_F112_linearization_plots.m` は 14 件(`linearize`、`graph`)。すべて 0.3 s を超えるので `test_levels.m` に medium で登録しました。
+- `test_F112_linearization_plots.m` は 15 件(`linearize`、`graph`)。すべて 0.3 s を超えるので `test_levels.m` に medium で登録しました。

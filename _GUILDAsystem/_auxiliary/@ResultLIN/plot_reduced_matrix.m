@@ -77,12 +77,7 @@ function [G, tab_coupling] = plot_reduced_matrix(obj, target, opt)
 
     % The bus variables of the DAE: their bus and kind (1: theta / Vre, 2: the second), as
     % in get_ss (every bus for the first kind, then for the second)
-    sv_dae = obj.get_ss("DAE", Index=opt.Index, Format="struct").StateName;
-    lv_bv = ~ismember(sv_dae, obj.tab_variable.Label);
-    sv_bv = sv_dae(lv_bv);
-    sv_bvBus = state_owner(obj, sv_dae);
-    sv_bvBus = sv_bvBus(lv_bv);
-    iv_kind = 1 + ((1:numel(sv_bv))' > numel(sv_bv)/2);
+    [sv_bv, sv_bvBus, iv_kind] = bus_variables(obj, opt.Index);
     i_kind = 1 + (opt.Block == "Q");
     sv_var = sv_bv(iv_kind == i_kind);
     [~, iv_varBus] = ismember(sv_bvBus(iv_kind == i_kind), sv_bus);

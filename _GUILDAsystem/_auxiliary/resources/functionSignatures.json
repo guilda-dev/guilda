@@ -761,8 +761,9 @@
   "ResultLIN.plot_contribution": {
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultLIN"},
-      {"name":"Quantity","kind":"namevalue","type":["string","scalar","choices=cellstr([\"real\",\"imag\",\"abs\"])"],"purpose":"Value of the colors: Re, Im or |.| of the share of each element. Default: \"real\"."},
-      {"name":"Mode","kind":"namevalue","type":["double","scalar"],"purpose":"Mode picked first: a column of get_participation(Type=\"DAE\"). Default: 1."},
+      {"name":"Quantity","kind":"namevalue","type":["string","scalar","choices=cellstr([\"damping\",\"synchronizing\",\"voltage\"])"],"purpose":"Quantity: \"damping\" (share in an eigenvalue), \"synchronizing\" (dP/dtheta of the ports) or \"voltage\" (dQ/drho of the ports). Default: \"damping\"."},
+      {"name":"State","kind":"namevalue","type":["string","scalar","choices=cellstr([\"settled\",\"fixed\"])"],"purpose":"Ports of \"synchronizing\" and \"voltage\": states \"settled\" (eliminated) or \"fixed\" (held at the point). Default: \"settled\"."},
+      {"name":"Mode","kind":"namevalue","type":["double","scalar"],"purpose":"Mode picked first (\"damping\"): a column of get_participation(Type=\"DAE\"). Default: 1."},
       {"name":"Index","kind":"namevalue","type":["double","scalar"],"purpose":"Section shown first (1 ... numel(rv_t)); res.Index when omitted. Default: obj.Index."},
       {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) to draw in; [] for a new figure. Default: []."}
     ],
