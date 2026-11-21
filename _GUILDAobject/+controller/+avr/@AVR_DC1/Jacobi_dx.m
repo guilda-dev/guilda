@@ -1,0 +1,82 @@
+function [Axx,Bxv,Bxu] = Jacobi_dx(t,x,V,u,param,omega0)
+    % Return the Jacobians of the AVR_DC1 state equation.
+    % The derivatives of the right-hand side `f` of fcn_dx are taken with respect to
+    % the state, the voltage, the current and the input.
+    %
+    % See also controller.avr.AVR_DC1.fcn_dx, controller.avr.AVR_DC1.Jacobi_Y
+    arguments (Input)
+        t      double        % [s] Time (unused).
+        x      double        % [pu] State `[Vtr; Vap; Vfld; Vst]`: transducer output, amplifier output, field voltage and stabilizer feedback.
+        V      double        % [pu] Terminal voltage of the generator as `[real; imag]`.
+        u      double        % [pu] Input `[Vref; Vpss]`: voltage reference and PSS output.
+        param  double        % Parameter vector in the order of `sv_para`.
+        omega0 (1,1) double  % [Hz] Nominal frequency (unused).
+    end
+    arguments (Output)
+        Axx  % Derivative of `f` with respect to `x`.
+        Bxv  % Derivative of `f` with respect to `V` (`[real; imag]`).
+        Bxu  % Derivative of `f` with respect to `u`.
+    end
+    Vtr  = x(1);
+    Vap  = x(2);
+    Vfld = x(3);
+    Vst  = x(4);
+    
+    Vap_max = param(2);
+    Vap_min = param(3);
+    kap     = param(4);
+    aex1    = param(6);
+    aex2    = param(7);
+    bex     = param(9);
+    Vfld_max = param(12);
+    Vfld_min = param(13);
+    Limiter  = param(14);
+
+    Vref = u(1);
+    Vpss = u(2);
+    Vcom = Vref + Vpss - Vtr - Vst;            
+
+    Axx = zeros(4, 4);
+
+    Axx(1,1) = -1;              
+
+    rv = 0;
+    if ~Limiter || Vap*Vcom<=0 || (Vap_min < Vap && Vap_max > Vap)
+        rv = 1;
+    end
+    
+    Axx(2,[1,2,4]) = [-kap, -1, -kap] * rv;    
+    
+    exp_part = exp(bex * Vfld);
+    Axx(3,[2,3]) = [1, -aex1 - aex2 * exp_part * (1 + bex * Vfld)];         
+    % 界磁電圧の制限で止まっている間は行が 0 (fcn_dx と同じ条件)
+    dx3 = -(aex1 + aex2 * exp_part) * Vfld + Vap;
+    if Limiter && ((Vfld >= Vfld_max && dx3 >= 0) || (Vfld <= Vfld_min && dx3 <= 0))
+        Axx(3,:) = 0;
+    end
+    
+    Axx(4,4) = -1; 
+
+    Vre  = V(1);
+    Vim  = V(2);
+    
+    Vabs = sqrt(Vre^2 + Vim^2);
+    dVabs_dVre = Vre / Vabs;
+    dVabs_dVim = Vim / Vabs;
+
+    Bxv = zeros(4, 2);
+    
+    Bxv(1,[1,2]) = [dVabs_dVre,dVabs_dVim];      
+
+    nx  = numel(x);
+    
+    nu = numel(u);    
+
+    Bxu = zeros(nx,nu);
+
+    if Limiter
+        Bxu(2,[1,2]) = [kap,kap]*( tools.heaviside(Vap - Vap_min) - tools.heaviside(Vap - Vap_max) );
+    else
+        Bxu(2,[1,2]) = [kap,kap];
+    end
+end
