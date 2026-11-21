@@ -651,3 +651,37 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 
 - 安定度制約付き OPF の `sct_stability.tab_mode` の列は `Owner` のままです(今回の範囲外)。`test_F74` は列名の違いを読み替えて比べます。
 - `test_F52_result_gui/ResultCPF_Plot_pvcurveAndExport` は、CPF のメソッド一覧の期待値が古いため失敗します(この変更の前から)。
+
+## 21. 結果の図: `plot_matrix`、`plot_kernel`、`plot_participation`(2026-11-21)
+
+ブランチ `feature/linearization-plots`(分岐元 `8d8432ef`、未 push)。テストはサブモジュール `_GUILDAverification` の同名のブランチです。
+
+### 21.1 実装 [事実]
+
+- `plot_matrix(Matrix, Display, Type, Port, Form, Index, Parent)` → `GraphMatrix`。`Matrix="J"`(既定)は `get_ss("DAE", Port)` の `A`(`[x; v]` 全体、ネットワークのみ)、`"A"`〜`"E"` は `get_sys` の `Input`/`Output` での `get_ss(Type)` の行列です。行と列の名前は `StateName`/`InputName`/`OutputName`(名前のない出力は `y1`, `y2`, …)、グループは所有者(状態は private の `state_owner`、入力と出力は `tab_variable.Owner`、見つからなければ `"(other)"`)。`Display` は `"pattern"`/`"magnitude"`(`GraphMatrix` の `"value"` は `G.Display` で選べます)。モデルを作れない断面(例: `"ODE"` で Avv が特異)は NaN の行列で描き、すべての断面で作れなければ `get_ss` のエラーを出します。
+- `GraphMatrix` の最小の拡張: データの `s_sampleName`/`sv_sampleText` を `load_sample_label` で読み、タイトルを `sample_text` で書きます(標本の文字がなければ従来どおり `t = … s`)。F82 は変更なしで通ります。
+- `plot_kernel(Kernel, Label, Index, Parent)` → `GraphNetDiagram`(状態は NaN の接続図、`ColorMode="user"`、`FlowMode="none"`)。色は島 `Kernel` の左核の母線の `theta` の成分(`tab_phase.Left`)、ほかの島の母線とその核のない断面の母線は NaN(灰色)。`Label="value"`(既定: 母線 `"B001: 0.117"`、位相の変数を持つ機器 `"δ 0.0019"`)、`"tag"`(`LabelMode="tag"`)、`"none"`。色の範囲は全断面の `theta` の成分の `[min max]` に固定します。断面の切り替えは `TimeChangedFcn` で `BusColorData`/`BusLabel`/`ComponentLabel` を書き直します。最初の断面に回転の形の核がなければ `GUILDA:ResultLIN:NoKernel`、島の数を超える `Kernel` は `GUILDA:ResultLIN:KernelRange`。
+- `plot_participation(Mode, Type, Index, Parent)` → 構造体 `Eigenvalue`(GraphChart、`plot_eigenvalue` のもの)、`Diagram`(GraphNetDiagram)、`Table`(uitable)。Parent の中に枠なしの uipanel を作り、左に固有値、右上に図、右下に表を置きます(正規化位置。figure と uifigure の両方で動きます)。
+  - 母線の色は `tab_bus.Participation(:, Mode)`。状態を持たない母線(`get_participation` の状態の母線にない母線)は NaN で灰色。色の範囲は `[0, そのモードの最大値]`。タイトルにモード番号、λ、周波数、減衰比。
+  - 固有値のクリック: 印の集合(`stable`/`unstable`)の `ElementClicked` で、軸の `CurrentPoint` に固有値か共役が最も近いモード(`get_participation` の列)を選びます。選んだモードは黒い輪(Tag `GUILDA:ResultLIN:PickedMode`、クリックを受けない line)で示します。
+  - 母線のクリック(機器・リンクならその母線): `Diagram.select` で選択し、表にその母線の状態の名前とそのモードでの参加率、パネルのタイトルに「タグ in mode k (sum …)」。
+  - 複数断面: 2 つの図を `link` し、図の `TimeChangedFcn` で色・輪・表・タイトルを書き直します。断面のモード数が `Mode` より少なければ灰色で「not in this section」。`Mode` が最初の断面のモード数を超えると `GUILDA:ResultLIN:ModeRange`。
+  - 状態(選んだモード、母線、各断面の母線ごとの参加率)は外側の uipanel の `UserData` に置き、公開のメンバーは増やしていません。
+- 共有の private 関数 `section_diagram`(plot_kernel と plot_participation の接続図と断面の標本)と `default_port`(`get_ss` の局所関数を private に移し、`plot_matrix` と共有)。
+- 新しいメッセージ `KernelRange`、`NoKernel`、`ModeRange`(`ResultLIN.xml`)。
+- GUI: `@GUILDA/update_keymap.m` の結果のメソッドの一覧に 3 つを加え、`gui_forms.json` に配置、`functionSignatures.json`(2 か所)を作り直しました。F52 の期待する一覧も更新しました。
+
+### 21.2 クリックの API [事実]
+
+- `GraphEventData.Index` は `tab_element` の要素の位置で、印の集合の中の点は示しません(`GraphChart/create_scene.m` の印の `ButtonDownFcn` は行番号だけを渡します)。
+- 軸の `CurrentPoint` はクリックで更新され、図の `CurrentPoint` を設定しても追従します [計測、R2026a、見えない figure]。そのため GraphChart を変えずに、クリックした点に最も近い固有値を選べます。テストは図の `CurrentPoint` を固有値の画素位置にして、印の line の `ButtonDownFcn` を呼びます。
+
+### 21.3 色の決め方の所見 [計測]
+
+- IEEE9(Port `"PQ"`)の左核は `theta` の行だけでなく `rho`(Q の釣り合い)の行にも同程度の成分を持ちます(例: θ1 0.117、ρ1 0.085)。発電機の `delta` の成分は小さく(〜1e-3)、§19 のとおり `omega` の成分の `D/ω0` 倍です。
+- `tab_phase.Left` の和は島全体で 1(`rm_leftᵀ rm_right = I`)なので、「母線の `theta` の成分 + その母線の機器の `delta` の成分」は 1 を母線に分けた値になり、母線の色として比べやすい可能性があります。今回は指示どおり `theta` の成分で色を付け、`delta` はラベルに出しています(ユーザーの判断待ち)。
+- 故障中の断面(B008 の地絡、t = 1.02)では電圧 0 の B008 の `theta8` と `rho8` が別の核になり、核 1 では B008 が灰色になります。
+
+### 21.4 テスト [事実]
+
+- `+DebugScript/test_F112_linearization_plots.m`(8 件、`linearize` と `graph`)。0.3 s を超える 7 件を `test_levels.m` に medium で登録しました(small に残る 1 件が共通設定の時間を含みます)。
