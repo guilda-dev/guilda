@@ -162,9 +162,12 @@
   "ResultCPF.plot_branch": {"main": ["Quantity", "Branch"], "labels": {"Branch": {"hint": "empty: every branch (loss: the total)"}}, "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultLIN.plot_eigenvalue": {"main": ["Type", "Tolerance"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultLIN.plot_eigenvalue_path": {"main": ["Type", "Tolerance"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
-  "ResultLIN.plot_matrix": {"main": ["Matrix", "Display", "Type"], "groups": [{"name": "Advanced", "members": ["Port", "Form", "Index", "Parent"]}]},
+  "ResultLIN.plot_matrix": {"main": ["Matrix", "Display", "Group", "Type"], "groups": [{"name": "Advanced", "members": ["Port", "Form", "Index", "Parent"]}]},
   "ResultLIN.plot_kernel": {"main": ["Kernel", "Label"], "groups": [{"name": "Advanced", "members": ["Index", "Parent"]}]},
   "ResultLIN.plot_participation": {"main": ["Mode", "Type"], "groups": [{"name": "Advanced", "members": ["Index", "Parent"]}]},
+  "ResultLIN.plot_eigenvector": {"main": ["Side", "Mode", "Type"], "groups": [{"name": "Advanced", "members": ["Index", "Parent"]}]},
+  "ResultLIN.plot_reduced_matrix": {"main": ["State", "Block"], "groups": [{"name": "Advanced", "members": ["Index", "Parent"]}]},
+  "ResultLIN.plot_contribution": {"main": ["Quantity", "Mode"], "groups": [{"name": "Advanced", "members": ["Index", "Parent"]}]},
   "ResultPF.plot_diagram": {
     "propertyDefaults": "GraphNetDiagram",
     "main": ["Dimension", "ColorMode", "BranchWidthMode", "MarkerSizeMode", "BusHeightMode", "LabelMode", "FlowMode"],
