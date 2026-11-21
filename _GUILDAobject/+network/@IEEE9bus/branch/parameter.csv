@@ -1,0 +1,10 @@
+Type,From,To,R,X,C,tap,phase,Smax,Imax,Pmax,Qmax,Vargmax,Path,FromOffset,ToOffset,Style
+pi_transformer,1,4,0,0.0576,0,1,0,Inf,Inf,Inf,Inf,1.5707963267949,,0,0,transformer
+pi_transformer,2,7,0,0.0625,0,1,0,Inf,Inf,Inf,Inf,1.5707963267949,,0,0,transformer
+pi_transformer,3,9,0,0.0586,0,1,0,Inf,Inf,Inf,Inf,1.5707963267949,,0,0,transformer
+pi,4,5,0.01,0.085,0.088,NaN,NaN,Inf,Inf,Inf,Inf,1.5707963267949,0.45 0.4; 0.3 0.4,-0.05,0.02,line
+pi,4,6,0.017,0.092,0.079,NaN,NaN,Inf,Inf,Inf,Inf,1.5707963267949,0.55 0.4; 0.7 0.4,0.05,-0.02,line
+pi,5,7,0.032,0.161,0.153,NaN,NaN,Inf,Inf,Inf,Inf,1.5707963267949,,0,-0.05,line
+pi,6,9,0.039,0.17,0.179,NaN,NaN,Inf,Inf,Inf,Inf,1.5707963267949,,0,-0.05,line
+pi,7,8,0.0085,0.072,0.0745,NaN,NaN,Inf,Inf,Inf,Inf,1.5707963267949,,0,0,line
+pi,8,9,0.0119,0.1008,0.1045,NaN,NaN,Inf,Inf,Inf,Inf,1.5707963267949,,0,0,line

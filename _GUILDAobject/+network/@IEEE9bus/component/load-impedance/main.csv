@@ -1,0 +1,4 @@
+Bus,P,Q,baseMVA,Pmin,Pmax,Qmin,Qmax,DX,DY,Shape,Path,Offset,ParameterID,OpfID
+5,-1.25,-0.5,100,-Inf,Inf,-Inf,Inf,-0.08,-0.04,<,-0.03 -0.04,-0.03,1,1
+6,-0.9,-0.3,100,-Inf,Inf,-Inf,Inf,0.08,-0.04,>,0.03 -0.04,0.03,2,1
+8,-1,-0.35,100,-Inf,Inf,-Inf,Inf,0,-0.08,v,,-0.04,3,1

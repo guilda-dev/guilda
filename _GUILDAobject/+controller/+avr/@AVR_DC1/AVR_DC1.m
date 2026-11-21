@@ -1,85 +1,114 @@
 classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
+% Automatic voltage regulator with a DC exciter (IEEE type DC1).
+% The AVR observes the terminal voltage $V$ [pu] of the generator it is attached to
+% and drives the field voltage input of the generator.
+%
+% **Dynamic model**
+% The controller is a dynamical system with state $x$, input $u$ and output $y$.
+%
+% **State variables** $x$ (`sv_x`)
+% - `Vtr` [pu]: Transducer output.
+% - `Vap` [pu]: Amplifier output.
+% - `Vfld` [pu]: Exciter output (field voltage).
+% - `Vst` [pu]: Stabilizing feedback.
+%
+% **Input signals** $u$ (`sv_u`)
+% - `Vref` [pu]: Voltage reference.
+% - `Vpss` [pu]: Output of the attached PSS (0 without a PSS).
+%
+% **Output signals** $y$ (`sv_y`)
+% - `Vfield` [pu]: Field voltage, the `Vfield` input of the generator.
+%
+% **Equations** (transducer, amplifier, exciter, stabilizing feedback)
+% ```math
+% \left\{
+% \begin{aligned}
+% t_\mathrm{tr}\dot{V}_\mathrm{tr} &= -V_\mathrm{tr} + |V| \\
+% t_\mathrm{ap}\dot{V}_\mathrm{ap} &= -V_\mathrm{ap} + k_\mathrm{ap}\,(V_\mathrm{ref} + V_\mathrm{pss} - V_\mathrm{tr} - V_\mathrm{st}) \\
+% t_\mathrm{ex}\dot{V}_\mathrm{fld} &= -\left(a_\mathrm{ex1} + a_\mathrm{ex2}\,e^{b_\mathrm{ex}V_\mathrm{fld}}\right)V_\mathrm{fld} + V_\mathrm{ap} \\
+% t_\mathrm{st}\dot{V}_\mathrm{st} &= -V_\mathrm{st} + k_\mathrm{st}\,\dot{V}_\mathrm{fld}
+% \end{aligned}
+% \right.
+% ```
+%
+% The output is `Vfield = Vfld`. Two non-windup limits freeze a state while it is out
+% of its range and the input drives it further out: `Vap` outside
+% `(Vap_min, Vap_max)`, and `Vfld` at or beyond `Vfld_max` or `Vfld_min` (a limit on
+% the field voltage). The logical parameter `Limiter` switches both limits: true (the
+% default) applies them, false ignores them (the same as all four limits at +-Inf).
+%
+% <@Examples>
+% Attach the AVR and a PSS to a generator and simulate a fault:
+%
+% ```matlab
+% net = network.IEEE9bus(LocalController=false);
+% gen = net.a_Bus{1}.a_Component{1};
+% gen.add_local_controller("avr-DC1", parameter=struct(kap=20));
+% gen.add_local_controller("pss-PSS1");
+% net.initialize;
+% sc  = net.add_scenario("fault");
+% sc.add_fault("B007", [1,1.05]);
+% sol = net.simulate("fault");
+% ```
+%
+% See also controller.avr.AVR_ST1, controller.pss.PSS1, controller.avr.abstract
     
-    methods
+    properties (Constant, Hidden) % Model definition
+        key = "avr-DC1"  % Model key that selects this class in `Component.add_local_controller`.
+    end
+
+    methods (Access={?Component})
         function obj = AVR_DC1(tag, param)
-            arguments               
-                tag           (1,1) string 
-                param.ttr     (1,1) double = 0.01
-                param.tap     (1,1) double = 0.2
-                param.kap     (1,1) double = 0
-                param.Vap_max (1,1) double = Inf
-                param.Vap_min (1,1) double = -Inf  
-                param.tex     (1,1) double = 0.314
-                param.aex1    (1,1) double = 1
-                param.aex2    (1,1) double = 0.0039                
-                param.bex     (1,1) double = 1.555
-                param.tst     (1,1) double = 0.35
-                param.kst     (1,1) double = 0.063                
+        % Create an AVR_DC1 regulator with the tag "CA" + tag.
+            arguments (Input)
+                tag           (1,1) string           % Tag suffix; the controller tag is "CA" + tag.
+                param.ttr     (1,1) double = 0.01    % [s] Time constant of the voltage transducer.
+                param.tap     (1,1) double = 0.2     % [s] Time constant of the amplifier.
+                param.kap     (1,1) double = 20      % [pu] Gain of the amplifier (nonzero: the equilibrium needs Vap/kap).
+                param.Vap_max (1,1) double = Inf     % [pu] Upper limit of the amplifier output.
+                param.Vap_min (1,1) double = -Inf    % [pu] Lower limit of the amplifier output.
+                param.tex     (1,1) double = 0.314   % [s] Time constant of the exciter.
+                param.aex1    (1,1) double = 1       % [pu] Linear coefficient of the exciter saturation.
+                param.aex2    (1,1) double = 0.0039  % [pu] Exponential coefficient of the exciter saturation.
+                param.bex     (1,1) double = 1.555   % [1/pu] Exponent of the exciter saturation.
+                param.tst     (1,1) double = 0.35    % [s] Time constant of the stabilizing feedback.
+                param.kst     (1,1) double = 0.063   % [pu] Gain of the stabilizing feedback.
+                param.Vfld_max (1,1) double = Inf    % [pu] Upper limit of the field voltage (exciter output).
+                param.Vfld_min (1,1) double = -Inf   % [pu] Lower limit of the field voltage (exciter output).
+                param.Limiter (1,1) logical = true   % true to apply the limits of Vap and Vfld; false ignores them.
             end            
+            arguments (Output)
+                obj  % AVR_DC1 object.
+            end
             obj@controller.avr.abstract(tag)                                 
             
-            obj.para_dynamics.add_entry(    "ttr", param.ttr    , "double", ...
-                                        "Vap_max", param.Vap_max, "double", ...
-                                        "Vap_min", param.Vap_min, "double", ...
-                                            "kap", param.kap    , "double", ...
-                                            "tap", param.tap    , "double", ...
-                                           "aex1", param.aex1   , "double", ...
-                                           "aex2", param.aex2   , "double", ...
-                                            "tex", param.tex    , "double", ...
-                                            "bex", param.bex    , "double", ...
-                                            "kst", param.kst    , "double", ...
-                                            "tst", param.tst    , "double");                       
-
-            obj.key     = "avr";
+            obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", struct( ...
+                     "ttr", param.ttr, ...
+                 "Vap_max", param.Vap_max, ...
+                 "Vap_min", param.Vap_min, ...
+                     "kap", param.kap, ...
+                     "tap", param.tap, ...
+                    "aex1", param.aex1, ...
+                    "aex2", param.aex2, ...
+                     "tex", param.tex, ...
+                     "bex", param.bex, ...
+                     "kst", param.kst, ...
+                     "tst", param.tst, ...
+                "Vfld_max", param.Vfld_max, ...
+                "Vfld_min", param.Vfld_min, ...
+                 "Limiter", param.Limiter));
             obj.sv_x    = ["Vtr";"Vap"; "Vfld"; "Vst"];
             obj.sv_u    = ["Vref";"Vpss"];   
             obj.sv_y    = "Vfield";
-            obj.sv_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"];              
-
-            obj.set_odefcn(60);
+            obj.sv_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"; "Vfld_max"; "Vfld_min"; "Limiter"];              
         end        
-
-        function get_equilibrium(obj, V, u)                   
-            tab = obj.tab_parameter.dynamics;
-            Vap_max = tab{:, 'Vap_max'};
-            Vap_min = tab{:, 'Vap_min'};
-            aex1    = tab{:, 'aex1'   };
-            aex2    = tab{:, 'aex2'   };
-            bex     = tab{:, 'bex'    };
-            kap     = tab{:, 'kap'    };
-
-            Vfld_st = u(2);
-            Vap_st  = Vfld_st*(aex1 + aex2*exp(bex*Vfld_st));
-            
-            if Vap_st <= Vap_min || Vap_st >= Vap_max
-                obj.error(msg('GUILDA:AVR_DC1:InvalidValueRange'))
-            end
-            Vcom_st = Vap_st/kap;            
-            Vref_st = abs(V) + Vcom_st;
-            Vtr_st  = abs(V);
-            Vst_st  = 0;
-            Vpss_st = 0;
-
-            obj.rv_Xequilibrium = [Vtr_st; Vap_st; Vfld_st; Vst_st];
-            obj.rv_Uequilibrium = [Vref_st;Vpss_st];            
-
-            obj.c_Vequilibrium = V;
-            obj.c_Iequilibrium = [];
-
-            cellfun(@(c) c.get_equilibrium(V,u), obj.a_LocalController);
-        end
-        function set_PSS(obj, cls)
-            obj.a_LocalController{1} = cls;
-            obj.l_hasController = true;
-        end
     end    
 
     methods (Static)
-        M  = fcn_Mass(t, x, V, I, u, param, omega0)
-        dx = fcn_dx(t, x, V, I, u, param, omega0)
-        y  = fcn_y(t, x, V, I, u, param, omega0)                
-
-        [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)        
-        [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0)
+        M  = fcn_Mass(t, x, V, u, param, omega0)
+        dx = fcn_dx(t, x, V, u, param, omega0)
+        y  = fcn_y(t, x, V, u, param, omega0)                
+        [Axx,Bxv,Bxu] = Jacobi_dx(t,x,V,u,param,omega0)        
+        [Cyx,Dyv,Dyu] = Jacobi_Y(t,x,V,u,param,omega0)
     end
 end

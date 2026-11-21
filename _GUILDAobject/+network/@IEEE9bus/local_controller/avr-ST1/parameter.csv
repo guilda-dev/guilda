@@ -1,0 +1,4 @@
+Component,FullTag,ttr,Vap_max,Vap_min,kap,tap,kst,tst,Limiter,gamma_max,gamma_min,k0
+B001SG1,B001SG1CA1,0,Inf,-Inf,2,0.05,0,0,1,Inf,-Inf,0
+B002SG1,B002SG1CA1,0,Inf,-Inf,2,0.05,0,0,1,Inf,-Inf,0
+B003SG1,B003SG1CA1,0,Inf,-Inf,2,0.05,0,0,1,Inf,-Inf,0

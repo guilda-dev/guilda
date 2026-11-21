@@ -1,0 +1,11 @@
+Bus,P,Q,baseMVA,Pmin,Pmax,Qmin,Qmax,DX,DY,Shape,Path,Offset,ParameterID,OpfID
+18,13.5,NaN,15000,-Inf,Inf,-Inf,Inf,-0.05,0,circle,,0,1,1
+19,9,NaN,10000,-Inf,Inf,-Inf,Inf,0,-0.06,circle,,0,2,1
+20,9,NaN,10000,-Inf,Inf,-Inf,Inf,0,-0.06,circle,,0,3,1
+21,9,NaN,10000,-Inf,Inf,-Inf,Inf,0,-0.06,circle,,0,4,1
+22,9,NaN,10000,-Inf,Inf,-Inf,Inf,0,-0.06,circle,,0,5,1
+23,9,NaN,10000,-Inf,Inf,-Inf,Inf,0,-0.06,circle,,0,6,1
+24,9,NaN,10000,-Inf,Inf,-Inf,Inf,0,-0.06,circle,,0,7,1
+25,4.5,NaN,5000,-Inf,Inf,-Inf,Inf,0,-0.06,circle,,0,8,1
+26,9,NaN,10000,-Inf,Inf,-Inf,Inf,0,-0.06,circle,,0,9,1
+27,27,NaN,30000,-Inf,Inf,-Inf,Inf,0.05,0,circle,,0,10,1
