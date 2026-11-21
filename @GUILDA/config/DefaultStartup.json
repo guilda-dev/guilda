@@ -1,0 +1,39 @@
+{
+    "version": 1,
+    "PrintLogo":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Print the GUILDA logo at startup"
+    },
+    "PrintPathLog":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Print the log lines of GUILDA.addpath (run at startup) and GUILDA.rmpath in the Command Window. A failure to add a folder is printed either way"
+    },
+    "CheckRequirement":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Verifying version requirements at startup"
+    },
+    "UpdateDoc":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Update this documentation at startup"
+    },
+    "UpdateKeyMap":{
+        "Value": "disp",
+        "Type": "select",
+        "FromLogical": ["none", "disp"],
+        "options": [
+            "none",
+            "silent",
+            "disp"
+        ],
+        "Description": "Update the model key map at startup: 'none' (do not update), 'silent' (update without printing) or 'disp' (update and print the keys)"
+    },
+    "Tutorial":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Open the tutorial at startup"
+    }
+}

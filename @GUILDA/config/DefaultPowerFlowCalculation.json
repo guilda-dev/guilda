@@ -1,43 +1,51 @@
 {
-    "MaxIterations":{
-        "Value": 0,
-        "Type": "double",
-        "Description": "'MaxIterations' option @fsolve"
-    },
-    "Display":{
-        "Value": "none",
+    "version": 1,
+    "Solver":{
+        "Value": "newton",
         "Type": "select",
         "options": [
-            "none",
-            "iter",
-            "iter-detailed",
-            "final",
-            "final-detailed"
+            "newton",
+            "gradient",
+            "levenberg-marquardt",
+            "fsolve",
+            "dynamic"
         ],
-        "Description": "'Display' option @fsolve"
+        "Description": "Algorithm: 'newton', 'gradient', 'levenberg-marquardt', 'fsolve' (needs Optimization Toolbox) or 'dynamic' (virtual bus dynamics)"
     },
-    "MaxFunEvals"  :{
-        "Value": 0,
+    "Tolerance":{
+        "Value": 1e-8,
         "Type": "double",
-        "Description": "'MaxFunEvals' option @fsolve (If NaN, use default)"
-    }, 
-    "UseParallel":{
+        "Valid": "v > 0",
+        "Description": "[pu] Largest P/Q mismatch of a converged solution (every method)"
+    },
+    "MaxIteration":{
+        "Value": NaN,
+        "Type": "double",
+        "Valid": "isnan(v) || v >= 0 && mod(v,1) == 0",
+        "Description": "Maximum number of iterations. NaN: automatic (newton 50, gradient 1e6, levenberg-marquardt 100, fsolve 400)"
+    },
+    "NewtonStepSize":{
+        "Value": 1,
+        "Type": "double",
+        "Valid": "v > 0",
+        "Description": "Factor of the Newton-Raphson update ('newton')"
+    },
+    "GradientStepSize":{
+        "Value": NaN,
+        "Type": "double",
+        "Valid": "isnan(v) || v > 0",
+        "Description": "Step size alpha of 'gradient'. NaN: automatic"
+    },
+    "FsolveUseParallel":{
         "Value": false,
         "Type": "logical",
         "Description": "'UseParallel' option @fsolve"
     },
-    "PlotFcn":{
-        "Value": "none",
-        "Type": "select",
-        "options":[
-            "none",
-            "optimplotx",
-            "optimplotfunccount",
-            "optimplotfval",
-            "optimplotstepsize",
-            "optimplotfirstorderopt"
-        ],
-        "Description": "'PlotFcn' option @fsolve"
+    "FsolveMaxFunctionEvaluations":{
+        "Value": NaN,
+        "Type": "double",
+        "Valid": "isnan(v) || v >= 0 && mod(v,1) == 0",
+        "Description": "'MaxFunctionEvaluations' option @fsolve. NaN: the fsolve default"
     },
     "WhenFailed":{
         "Value": "WARN",
@@ -48,6 +56,36 @@
             "ERROR",
             "NONE"
         ],
-        "Description": "Behavior if fsolve fails to find an powerflow solution"
+        "Description": "Behavior if the power flow calculation does not converge"
+    },
+    "Verbose":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Print each iteration and the final message (the fsolve display for 'fsolve')"
+    },
+    "Progress":{
+        "Value": "dialog",
+        "Type": "select",
+        "FromLogical": ["none", "dialog"],
+        "options":[
+            "none",
+            "disp",
+            "dialog"
+        ],
+        "Description": "Progress display during the calculation (the iteration): 'dialog' (opens when the calculation lasts 0.5 s or longer), 'disp' (one line per step in the Command Window) or 'none'"
+    },
+    "WarmStart":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Start from the last power flow solution of the network (false: flat start)"
+    },
+    "PlotFcn":{
+        "Value": "none",
+        "Type": "select",
+        "options": [
+            "none",
+            "residual"
+        ],
+        "Description": "Live display during the analysis: 'residual' (a bar of |residual| per power equation, updated at each iteration) or 'none'. The figure after the analysis: result.plot_voltage()"
     }
 }

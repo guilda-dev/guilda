@@ -1,0 +1,30 @@
+{
+    "version": 1,
+    "Type":{
+        "Value": "ODE",
+        "Type": "select",
+        "options":[
+            "ODE",
+            "DAE"
+        ],
+        "Description": "Model of net.get_sys and result.get_ss(): 'ODE' (the bus voltages eliminated) or 'DAE' (the connected model with the bus voltages as algebraic variables)"
+    },
+    "Port":{
+        "Value": "PQ",
+        "Type": "select",
+        "options":[
+            "PI",
+            "PQ",
+            "I"
+        ],
+        "Description": "Bus port of the 'DAE' model (bus variables v, current balance w): 'PI': v=[theta, V], w=[P, Q/V]; 'PQ': v=[theta, log V], w=[P, Q]; 'I': v=[Vre, Vim], w=[-Iim, Ire]"
+    },
+    "PlotFcn":{
+        "Value": "none",
+        "Type": "select",
+        "options": [
+            "none"
+        ],
+        "Description": "Live display during the analysis ('none'; other displays are under development). The figure after the analysis: result.plot_eigenvalue()"
+    }
+}
