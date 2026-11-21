@@ -1,0 +1,628 @@
+(function (root) {
+  root.GUILDA_DOC_CLASSES = root.GUILDA_DOC_CLASSES || {};
+  root.GUILDA_DOC_CLASSES["DrawerResultGUI"] = {
+  "schema": {
+    "name": "GUILDA class document",
+    "version": 5
+  },
+  "ClassName": "DrawerResultGUI",
+  "properties": [
+    {
+      "Name": "a_target",
+      "Defining": "DrawerResultGUI",
+      "Group": "Display",
+      "GetAccess": "public",
+      "SetAccess": "private",
+      "Dependent": false,
+      "Constant": false,
+      "Abstract": false,
+      "Hidden": false,
+      "Transient": false,
+      "HasDefault": false,
+      "DefaultCode": "",
+      "Validation": {
+        "Class": "",
+        "Size": "",
+        "Validators": []
+      },
+      "Unit": "",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/DrawerResultGUI.m",
+      "Line": 67,
+      "Summary": "Result shown.",
+      "Desc": "",
+      "SeeAlso": [],
+      "Type": "ResultBase",
+      "Stale": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "history",
+      "Defining": "DrawerResultGUI",
+      "Group": "Display",
+      "GetAccess": "public",
+      "SetAccess": "private",
+      "Dependent": false,
+      "Constant": false,
+      "Abstract": false,
+      "Hidden": false,
+      "Transient": false,
+      "HasDefault": false,
+      "DefaultCode": "",
+      "Validation": {
+        "Class": "",
+        "Size": "",
+        "Validators": []
+      },
+      "Unit": "",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/DrawerResultGUI.m",
+      "Line": 68,
+      "Summary": "Log that runs and records the actions.",
+      "Desc": "",
+      "SeeAlso": [],
+      "Type": "HistoryGUILDA",
+      "Stale": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "h_container",
+      "Defining": "DrawerResultGUI",
+      "Group": "Layout",
+      "GetAccess": "private",
+      "SetAccess": "private",
+      "Dependent": false,
+      "Constant": false,
+      "Abstract": false,
+      "Hidden": false,
+      "Transient": false,
+      "HasDefault": false,
+      "DefaultCode": "",
+      "Validation": {
+        "Class": "",
+        "Size": "",
+        "Validators": []
+      },
+      "Unit": "",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/DrawerResultGUI.m",
+      "Line": 71,
+      "Summary": "Container the GUI fills (uifigure, uipanel, uitab or uigridlayout).",
+      "Desc": "",
+      "SeeAlso": [],
+      "Type": "matlab.ui.container",
+      "Stale": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "s_variable",
+      "Defining": "DrawerResultGUI",
+      "Group": "Layout",
+      "GetAccess": "private",
+      "SetAccess": "private",
+      "Dependent": false,
+      "Constant": false,
+      "Abstract": false,
+      "Hidden": false,
+      "Transient": false,
+      "HasDefault": false,
+      "DefaultCode": "",
+      "Validation": {
+        "Class": "",
+        "Size": "",
+        "Validators": []
+      },
+      "Unit": "",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/DrawerResultGUI.m",
+      "Line": 72,
+      "Summary": "Name of the result in the workspace of the history.",
+      "Desc": "",
+      "SeeAlso": [],
+      "Type": "string",
+      "Stale": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "h_plot",
+      "Defining": "DrawerResultGUI",
+      "Group": "Layout",
+      "GetAccess": "private",
+      "SetAccess": "private",
+      "Dependent": false,
+      "Constant": false,
+      "Abstract": false,
+      "Hidden": false,
+      "Transient": false,
+      "HasDefault": false,
+      "DefaultCode": "",
+      "Validation": {
+        "Class": "",
+        "Size": "",
+        "Validators": []
+      },
+      "Unit": "",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/DrawerResultGUI.m",
+      "Line": 73,
+      "Summary": "Panel the plot_* methods draw in.",
+      "Desc": "",
+      "SeeAlso": [],
+      "Type": "matlab.ui.container.Panel",
+      "Stale": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "h_text",
+      "Defining": "DrawerResultGUI",
+      "Group": "Layout",
+      "GetAccess": "private",
+      "SetAccess": "private",
+      "Dependent": false,
+      "Constant": false,
+      "Abstract": false,
+      "Hidden": false,
+      "Transient": false,
+      "HasDefault": false,
+      "DefaultCode": "",
+      "Validation": {
+        "Class": "",
+        "Size": "",
+        "Validators": []
+      },
+      "Unit": "",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/DrawerResultGUI.m",
+      "Line": 74,
+      "Summary": "Text area of the disp_* and get_* outputs.",
+      "Desc": "",
+      "SeeAlso": [],
+      "Type": "matlab.ui.control.TextArea",
+      "Stale": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "h_tabs",
+      "Defining": "DrawerResultGUI",
+      "Group": "Layout",
+      "GetAccess": "private",
+      "SetAccess": "private",
+      "Dependent": false,
+      "Constant": false,
+      "Abstract": false,
+      "Hidden": false,
+      "Transient": false,
+      "HasDefault": false,
+      "DefaultCode": "",
+      "Validation": {
+        "Class": "",
+        "Size": "",
+        "Validators": []
+      },
+      "Unit": "",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/DrawerResultGUI.m",
+      "Line": 75,
+      "Summary": "Tab group of the view area.",
+      "Desc": "",
+      "SeeAlso": [],
+      "Type": "matlab.ui.container.TabGroup",
+      "Stale": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "G_plot",
+      "Defining": "DrawerResultGUI",
+      "Group": "Layout",
+      "GetAccess": "private",
+      "SetAccess": "private",
+      "Dependent": false,
+      "Constant": false,
+      "Abstract": false,
+      "Hidden": false,
+      "Transient": false,
+      "HasDefault": false,
+      "DefaultCode": "",
+      "Validation": {
+        "Class": "",
+        "Size": "",
+        "Validators": []
+      },
+      "Unit": "",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/DrawerResultGUI.m",
+      "Line": 76,
+      "Summary": "Graph of the last plot ([] when it returned none).",
+      "Desc": "",
+      "SeeAlso": [],
+      "Type": "GraphBase",
+      "Stale": "",
+      "Deprecated": ""
+    }
+  ],
+  "methods": [
+    {
+      "Name": "DrawerResultGUI",
+      "Defining": "DrawerResultGUI",
+      "Group": "Constructor",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": true,
+      "InputNames": [
+        "a_target",
+        "h_container",
+        "history",
+        "s_variable"
+      ],
+      "OutputNames": [
+        "obj"
+      ],
+      "Arguments": [
+        {
+          "Name": "a_target",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "ResultBase",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Result to show."
+        },
+        {
+          "Name": "h_container",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "uifigure, uipanel, uitab or uigridlayout; [] opens a new uifigure."
+        },
+        {
+          "Name": "history",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "HistoryGUILDA",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Log that runs the actions; its workspace holds the result as s_variable."
+        },
+        {
+          "Name": "s_variable",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "string",
+          "Validators": [
+            "mustBeValidVariableName"
+          ],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Name of the result in the workspace of the history."
+        }
+      ],
+      "Outputs": [
+        {
+          "Name": "obj",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "The GUI."
+        }
+      ],
+      "Signature": "obj = DrawerResultGUI(a_target, h_container, history, s_variable)",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/DrawerResultGUI.m",
+      "Line": 80,
+      "ImplementedIn": "classdef",
+      "Overrides": "",
+      "Throws": [
+        "GUILDA:DrawerResultGUI:NotUIContainer"
+      ],
+      "Summary": "Create the GUI of a result in a container (a new uifigure when empty).",
+      "Desc": "",
+      "SeeAlso": [],
+      "Examples": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "autoplay",
+      "Defining": "DrawerResultGUI",
+      "Group": "Other",
+      "Access": "private",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj",
+        "c_output"
+      ],
+      "OutputNames": [],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": ""
+        },
+        {
+          "Name": "c_output",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "cell",
+          "Validators": [],
+          "Default": "{}",
+          "Required": false,
+          "Unit": "",
+          "Description": "The outputs of the call that drew G_plot."
+        }
+      ],
+      "Outputs": [],
+      "Signature": "autoplay(obj, c_output)",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/autoplay.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Start playing the last plot when it animates, as if its Play button had been pressed, without blocking.",
+      "Desc": "The last plot (G_plot) plays when it is a GraphBase with two or more samples (e.g.\nResultODE.plot_diagram or plot_spring_model). A GraphChart only moves its time cursor, so\nit plays only when it drives a graph that animates: another output of the same call\n(c_output) is a GraphBase other than a GraphChart with two or more samples (e.g.\nResultOPF.plot_iteration: G_chart plays and the linked G_net follows it). A plain time\nchart (ResultODE.plot_trajectory) does not play. Only G_plot gets G.play(), so one timer\nplays. G.play() starts the timer playback of the graph and returns at once, so the window\nstays usable while it plays; it plays nothing under matlab -batch or in a hidden window,\nso tests and hidden windows stay as drawn. The playback stops when the window closes or\nanother plot replaces it (its axes are deleted), and when Pause of the playback bar is\npressed. A network diagram drawn as G_plot also gets FlowAnimation on.",
+      "SeeAlso": [],
+      "Examples": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "show_log",
+      "Defining": "DrawerResultGUI",
+      "Group": "show",
+      "Access": "private",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj",
+        "h_tab"
+      ],
+      "OutputNames": [],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": ""
+        },
+        {
+          "Name": "h_tab",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Tab selected (matlab.ui.container.Tab)."
+        }
+      ],
+      "Outputs": [],
+      "Signature": "show_log(obj, h_tab)",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/show_log.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Draw the view of the log in the Log tab when it is opened first (HistoryGUILDA.attach_view).",
+      "Desc": "The view costs a draw of its own, so render leaves the tab empty and the tab group calls\nthis when a tab is selected; another tab, or a Log tab that already has its view, is left\nas it is.",
+      "SeeAlso": [],
+      "Examples": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "show_plot_controls",
+      "Defining": "DrawerResultGUI",
+      "Group": "show",
+      "Access": "private",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj"
+      ],
+      "OutputNames": [],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": ""
+        }
+      ],
+      "Outputs": [],
+      "Signature": "show_plot_controls(obj)",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/show_plot_controls.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Show the control panel of the last plot right of the plot panel, or remove it.",
+      "Desc": "While the toggle \"Display options\" (Tag \"controls\") is pressed and the last plot returned\na GraphBase (G_plot), G_plot.show_controls(Parent=<grid of the Plot tab>) fills the second\ncolumn of that grid (230 px; 0 px for a graph without declared controls). Otherwise that column is 0 px wide and its panel is removed.\nA plot run deletes the axes and with them the panel shown before, so it is shown again\nafter each plot. Changes in the panel are not logged.",
+      "SeeAlso": [],
+      "Examples": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "run_method",
+      "Defining": "DrawerResultGUI",
+      "Group": "run",
+      "Access": "private",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj",
+        "s_signature"
+      ],
+      "OutputNames": [],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": ""
+        },
+        {
+          "Name": "s_signature",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "string",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Method in functionSignatures.json, e.g. \"ResultPF.plot_voltage\"."
+        }
+      ],
+      "Outputs": [],
+      "Signature": "run_method(obj, s_signature)",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/run_method.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Run a method of the result through the history and show what it returns.",
+      "Desc": "The code calls the method on the result variable, with the outputs named as in the\nsignature (\"s_text\" for the text of a disp_* method). The options come from\nDrawerOptionDialog.ask, without Parent and the file of export, with the history so that\ndefaults and choices on obj (e.g. obj.Type) are evaluated on the result; a method with no other\ninput runs without the dialog, and a canceled dialog runs nothing. See DrawerResultGUI\nfor the code of each kind of method and for h_parent. After a plot, the control panel\nfollows its graph (show_plot_controls) and a plot that animates starts playing (autoplay). The button pressed is marked (light blue) and the\npointer of the figure waits from the press to the end of the run, so a press shows at once.",
+      "SeeAlso": [],
+      "Examples": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "render",
+      "Defining": "DrawerResultGUI",
+      "Group": "Other",
+      "Access": "private",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj"
+      ],
+      "OutputNames": [],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": ""
+        }
+      ],
+      "Outputs": [],
+      "Signature": "render(obj)",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/render.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Draw the GUI in the container: header, method list and view area, then the default view.",
+      "Desc": "Only the grid drawn before (Tag \"DrawerResultGUI\") is replaced, so an app may keep other\ncomponents in the container. The method list is read from both functionSignatures.json\nfiles (read_signatures): the entries \"<class>_<method>\" (as jsondecode names them) of the\nclass of the result and of its superclasses, the nearest class first, with the prefixes\nplot_, disp_, get_ and the method export. Each button shows a readable label (e.g.\n\"Voltage\" for plot_voltage, \"LMP\" for get_lmp) under the heading of its group, and the\nmethod in its tooltip.\n\nThe default view is drawn without logging (it changes no variable of the history): the\nText tab shows the summary of the result (disp_summary when the class has it, else the\ndisplay of the object), and the Plot tab the first plot_* method of the list called with\nits defaults (Parent = the plot panel). The Plot tab is selected when that plot is drawn,\nthe Text tab otherwise. The Log tab gets the view of the log (HistoryGUILDA.attach_view)\nwhen it is first opened (show_log), not here. The frame is drawn before the default view,\nso the window is usable while the first plot is drawn. A first plot that animates starts\nplaying (autoplay).",
+      "SeeAlso": [],
+      "Examples": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "read_signatures",
+      "Defining": "DrawerResultGUI",
+      "Group": "read",
+      "Access": "private",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [],
+      "OutputNames": [
+        "sct_sig"
+      ],
+      "Arguments": [],
+      "Outputs": [
+        {
+          "Name": "sct_sig",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "struct",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "One field \"<class>_<method>\" per signature."
+        }
+      ],
+      "Signature": "sct_sig = read_signatures()",
+      "File": "_GUILDAsystem/_auxiliary/@DrawerResultGUI/private/read_signatures.m",
+      "Line": 1,
+      "ImplementedIn": "private",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Signatures of both functionSignatures.json files of GUILDA, merged into one struct.",
+      "Desc": "`_GUILDAsystem/resources/functionSignatures.json` (the classes of the model) and\n`_GUILDAsystem/_auxiliary/resources/functionSignatures.json` (the auxiliary classes, e.g.\nthe Result classes) are decoded with jsondecode, whose field names are \"<class>_<method>\".\nA method in both files keeps the entry of the first one. A missing file is skipped. The\nmerged struct is kept for the MATLAB session and read again when a file changes (its\ndate or size), so opening a result GUI or pressing a button does not decode the files.",
+      "SeeAlso": [],
+      "Examples": "",
+      "Deprecated": ""
+    }
+  ],
+  "events": [],
+  "enumeration": [],
+  "validation": {
+    "Warnings": [],
+    "Errors": []
+  }
+};
+})(window);

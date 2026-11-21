@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-title-ja="GUILDA 開発者ガイド - モデル構築機能の設計">GUILDA Developer Guide - Model Building Feature Design</title>
+  <script src="../doc-lang.js"></script>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Model Building feature page only (fmb-*); shared parts are dg-* in style.css */
+    .fmb-seq { max-width: 960px; margin: 0 auto; }
+    .fmb-seq .fmb-l { paint-order: stroke; stroke: var(--dg-panel); stroke-width: 7px; stroke-linejoin: round; }
+    .fmb-ref { max-width: 760px; margin: 0 auto; }
+    .fmb-ref .fmb-open { fill: none; stroke: var(--dg-muted); stroke-width: 1.5; }
+    .fmb-ref .fmb-assoc { fill: none; stroke: var(--dg-muted); stroke-width: 1.5; stroke-dasharray: 2 4; }
+    .fmb-ref .fmb-l { paint-order: stroke; stroke: var(--dg-panel); stroke-width: 6px; stroke-linejoin: round; font-size: 11px; }
+    .fmb-narrow { margin: 0; padding-left: 0; list-style: none; font-size: 0.9rem; }
+    .fmb-narrow li { padding: 6px 0; border-bottom: 1px solid var(--dg-line); }
+    .fmb-narrow b { display: inline-block; min-width: 3.6em; color: var(--dg-accent); font-family: var(--dg-mono); }
+    @media (max-width: 640px) {
+      html[data-lang="ja"] .fmb-entry td:nth-child(2)::before { content: "戻り値"; }
+      html[data-lang="ja"] .fmb-entry td:nth-child(3)::before { content: "既定値の出所"; }
+      html[data-lang="ja"] .fmb-refs td:nth-child(2)::before { content: "参照先"; }
+      html[data-lang="ja"] .fmb-refs td:nth-child(3)::before { content: "種類"; }
+      html[data-lang="ja"] .fmb-refs td:nth-child(4)::before { content: "設定・解除"; }
+      html[data-lang="ja"] .fmb-fail td:nth-child(2)::before { content: "呼び出し側に見えるもの"; }
+    }
+    /* Step list (fs-*): one block per step, ID + call as the head, labelled descriptions below. Same block on every feature page. */
+    .fs-steps { margin: var(--dg-s3) 0 var(--dg-s5); padding: 0; list-style: none; font-size: 0.9rem; line-height: 1.55; }
+    .fs-step { padding: 12px 0; border-bottom: 1px solid var(--dg-line); scroll-margin-top: 80px; }
+    .fs-step:first-child { border-top: 1px solid var(--dg-line); }
+    .fs-head { margin: 0 0 6px; overflow-wrap: anywhere; }
+    .fs-id { margin-right: 10px; color: var(--dg-accent); font-family: var(--dg-mono); }
+    .fs-head small { display: block; margin-top: 2px; color: var(--dg-muted); font-size: 0.88em; }
+    .fs-body { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 4px 14px; margin: 0; }
+    .fs-body dt { padding-top: 0.15rem; color: var(--dg-muted); font-size: 0.72rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+    .fs-body dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+    .fs-body ul { margin: 0; padding-left: 1.1em; list-style: disc; }
+    .fs-steps code { background: var(--code-bg); padding: 1px 5px; border-radius: var(--radius); color: var(--ink); }
+    @media (max-width: 640px) {
+      .fs-body { display: block; }
+      .fs-body dt { margin-top: 6px; }
+    }
+  </style>
+</head>
+<body class="developer-layout dg">
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+  </svg>
+  <main>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
+    <h1><span lang="en">Model Building Feature Design</span><span lang="ja">モデル構築機能の設計</span></h1>
+    <p class="page-lead" lang="en">A network is a tree of handle objects. The parent's <code>add_*</code> method creates or attaches each child and sets the child's reference back to it; every change is reported up to the network, which records what became stale.</p>
+    <p class="page-lead" lang="ja">ネットワークは、ハンドルオブジェクトでできた木構造です。子を作ったりつないだりするのは親の <code>add_*</code> メソッドで、そのとき子から親への参照も設定します。どの変更もネットワークまで伝わり、何が古くなったかをネットワークが記録します。</p>
+
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#entry"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></a>
+      <a href="#sequence"><span lang="en">Call sequence between classes</span><span lang="ja">クラス間の呼び出し順</span></a>
+      <a href="#steps"><span lang="en">Processing steps in detail</span><span lang="ja">処理ステップの詳細</span></a>
+      <a href="#data"><span lang="en">Data the feature produces</span><span lang="ja">この機能が生成するデータ</span></a>
+      <a href="#side-effects"><span lang="en">Side effects on the model and caches</span><span lang="ja">モデルへの副作用とキャッシュ</span></a>
+      <a href="#failures"><span lang="en">Failure behavior and result flags</span><span lang="ja">失敗時の動作と結果フラグ</span></a>
+      <a href="#extension"><span lang="en">Where to extend the feature</span><span lang="ja">機能を拡張する箇所</span></a>
+      <a href="#related"><span lang="en">Related pages</span><span lang="ja">関連ページ</span></a>
+    </nav>
+
+    <!-- ============================== 1. ENTRY ============================== -->
+    <h2 id="entry"><span lang="en">1. What the feature does and how to call it</span><span lang="ja">1. 機能の目的と呼び出し方</span></h2>
+    <p lang="en">Model building produces a <code>PowerNetwork</code> with its buses, branches, components, local controllers and global controllers, and the power-flow, operating-limit (operation), OPF, dynamics and diagram parameters of each. Three ways:</p>
+    <p lang="ja">モデル構築で作るのは、<code>PowerNetwork</code> とその母線、ブランチ、機器、ローカル制御器、グローバル制御器です。それぞれが潮流、運転制約（operation）、OPF、dynamics、図のパラメータを持ちます。作り方は次の 3 通りです:</p>
+    <ul lang="en">
+      <li>By hand</li>
+      <li>By a shipped network class (<code>network.IEEE9bus()</code> and the other classes in <code>_GUILDAobject/+network</code>)</li>
+      <li>By import (see <a href="feature-data-io.html">Data Import and Export</a>)</li>
+    </ul>
+    <ul lang="ja">
+      <li>手で組み立てる</li>
+      <li>同梱のネットワーククラスを使う（<code>network.IEEE9bus()</code> など <code>_GUILDAobject/+network</code> のクラス）</li>
+      <li>ファイルから読み込む（<a href="feature-data-io.html">データの入出力</a>を参照）</li>
+    </ul>
+<pre><code>net = PowerNetwork("ThreeBus");
+b1  = net.add_bus(V=1.0, Varg=0);
+b2  = net.add_bus();
+net.add_branch("pi", [b1.s_tag, b2.s_tag], R=0.01, X=0.085);
+gen = b1.add_component("gen-1axis", P=0.5);
+b2.add_component("load-power", P=-0.5, Q=-0.1);
+avr = gen.add_local_controller("avr-ST1", parameter=struct(kap=30));
+pss = gen.add_local_controller("pss-PSS1");
+b1.l_isSlack = true;</code></pre>
+    <table class="dg-table fmb-entry">
+      <thead><tr><th><span lang="en">Call</span><span lang="ja">呼び出し</span></th><th><span lang="en">Returns</span><span lang="ja">戻り値</span></th><th><span lang="en">Defaults come from</span><span lang="ja">既定値の出所</span></th></tr></thead>
+      <tbody>
+        <tr><td><code>PowerNetwork(tag="PowerNetwork")</code></td><td data-label="Returns" data-label-ja="戻り値"><code>net</code></td><td data-label="Defaults come from" data-label-ja="既定値の出所"><code>Hz</code> = <code>GUILDA.config("PowerSystemModel","Hz")</code>, <code>baseMVA</code> = 100; <span lang="en">solvers from <code>reset_solver</code></span><span lang="ja">ソルバーは <code>reset_solver</code> が作ります</span></td></tr>
+        <tr><td><code>net.add_bus(Name=Value)</code></td><td data-label="Returns" data-label-ja="戻り値"><code>Bus</code></td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">arguments block of <code>add_bus</code></span><span lang="ja"><code>add_bus</code> の arguments ブロック</span></td></tr>
+        <tr><td><code>net.add_branch(Key, from_to, Name=Value)</code></td><td data-label="Returns" data-label-ja="戻り値"><code>Branch</code></td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">arguments block of <code>add_branch</code></span><span lang="ja"><code>add_branch</code> の arguments ブロック</span></td></tr>
+        <tr><td><code>bus.add_component(Key, parameter=..., Name=Value)</code></td><td data-label="Returns" data-label-ja="戻り値"><code>Component</code></td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">arguments block of <code>add_component</code>; dynamics: first row of the class <code>parameter.csv</code> (or a named row / a given table)</span><span lang="ja"><code>add_component</code> の arguments ブロックです。dynamics の既定値は、クラスの <code>parameter.csv</code> の 1 行目（または名前で選んだ行・与えた table）です。</span></td></tr>
+        <tr><td><code>comp.add_local_controller(Key, parameter=S)</code></td><td data-label="Returns" data-label-ja="戻り値"><code>LocalController</code></td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">constructor of the key's class, e.g. <code>controller.avr.AVR_ST1(tag, Name=Value)</code>; <code>S</code> (struct or one-row table) overrides some of them</span><span lang="ja">キーが表すクラスのコンストラクタの既定値です（例: <code>controller.avr.AVR_ST1(tag, Name=Value)</code>）。一部は <code>S</code>（struct または 1 行の table）で上書きできます。</span></td></tr>
+        <tr><td><code>net.add_global_controller(Key, a_Unit, parameter=S)</code></td><td data-label="Returns" data-label-ja="戻り値"><code>GlobalController</code></td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">constructor of the key's class, e.g. <code>controller.agc.broadcast_PI_AGC(net, tag, gens..., Name=Value)</code>; <code>S</code> overrides some of them</span><span lang="ja">キーが表すクラスのコンストラクタの既定値です（例: <code>controller.agc.broadcast_PI_AGC(net, tag, gens..., Name=Value)</code>）。一部は <code>S</code> で上書きできます。</span></td></tr>
+        <tr><td><code>bus.l_isSlack = true</code>, <code>obj.tab_parameter = tab</code>, <code>obj.tab_parameter.group.Name = v</code>, <code>obj.s_tag = s</code></td><td data-label="Returns" data-label-ja="戻り値">—</td><td data-label="Defaults come from" data-label-ja="既定値の出所">—</td></tr>
+        <tr><td><code>net.set_parameter(Group, tab)</code></td><td data-label="Returns" data-label-ja="戻り値">—</td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">writes the rows of <code>net.get_parameter(Group, Key=, Class=, Owner=)</code> (row names: tags) into <code>tab_parameter.(Group)</code> of each element, as a direct write does; every row is checked first and nothing is written when one is wrong</span><span lang="ja"><code>net.get_parameter(Group, Key=, Class=, Owner=)</code> の表（行名はタグ）の各行を、要素の <code>tab_parameter.(Group)</code> に直接の書き込みと同じように書きます。先にすべての行を検査し、1 行でも誤りがあれば何も書きません。</span></td></tr>
+        <tr><td><code>remove_bus</code>, <code>remove_branch</code>, <code>remove_global_controller</code>, <code>remove_component</code>, <code>replace_component</code>, <code>remove_local_controller</code></td><td data-label="Returns" data-label-ja="戻り値"><span lang="en"><code>replace_component</code>: the new <code>Component</code></span><span lang="ja"><code>replace_component</code>: 新しい <code>Component</code></span></td><td data-label="Defaults come from" data-label-ja="既定値の出所">—</td></tr>
+      </tbody>
+    </table>
+    <ul lang="en">
+      <li>Solver settings: no <code>solver_*</code> setting used</li>
+      <li>Precondition: the GUILDA paths are on the MATLAB path. The model keys come from <code>GUILDA.keymap</code>, read from the constant <code>key</code> of the model classes on its first call; after adding a model class, <code>GUILDA.update_keymap</code> reads them again without restarting (also run at startup)</li>
+      <li><code>net.initialize()</code>: not needed to build; needed after building, before the dynamic analyses</li>
+    </ul>
+    <ul lang="ja">
+      <li>モデル構築では <code>solver_*</code> の設定を使いません。</li>
+      <li>前提として、GUILDA のフォルダを MATLAB のパスに追加しておく必要があります。モデルのキーは <code>GUILDA.keymap</code> が管理し、最初の呼び出しでモデルクラスの定数 <code>key</code> から読み込みます。モデルクラスを追加したときは、<code>GUILDA.update_keymap</code> を実行すれば再起動せずに読み直せます（起動時にも自動で実行されます）。</li>
+      <li><code>net.initialize()</code> は構築そのものには要りませんが、構築後に動的な解析をする前には必要です。</li>
+    </ul>
+
+    <!-- ============================== 2. SEQUENCE ============================== -->
+    <h2 id="sequence"><span lang="en">2. Call sequence between classes</span><span lang="ja">2. クラス間の呼び出し順</span></h2>
+    <figure class="dg-figure">
+      <div class="dg-only-wide">
+        <svg class="dg-svg dg-sv fmb-seq" viewBox="0 0 960 1006" role="img" aria-labelledby="fmb-seq-title">
+          <title id="fmb-seq-title">Call sequence of model building: the caller creates the network, adds buses, branches, components and controllers, sets the slack bus and parameters, and every edit is reported up to the network; a shipped network class runs the same calls through import.</title>
+          <defs>
+            <marker id="fmb-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="fmb-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head is-muted" d="M0 0L10 5L0 10z"/></marker>
+          </defs>
+          <path class="dg-sv-line is-muted" d="M84 62V1002"/>
+          <rect class="dg-sv-box is-soft" x="29" y="16" width="111" height="46" rx="6"/>
+          <text class="is-sm is-muted" lang="en" x="84" y="44" text-anchor="middle">Caller</text>
+          <text class="is-sm is-muted" lang="ja" x="84" y="44" text-anchor="middle">呼び出し側</text>
+          <path class="dg-sv-line is-muted" d="M203 62V1002"/>
+          <rect class="dg-sv-box" x="147" y="16" width="111" height="46" rx="6"/>
+          <text class="dg-mono is-b" x="203" y="36" text-anchor="middle" style="font-size:10.5px">PowerNetwork</text>
+          <text class="is-sm is-muted" x="203" y="52" text-anchor="middle">net</text>
+          <path class="dg-sv-line is-muted" d="M322 62V1002"/>
+          <rect class="dg-sv-box" x="266" y="16" width="111" height="46" rx="6"/>
+          <text class="dg-mono is-b" x="322" y="36" text-anchor="middle" style="font-size:10.5px">Bus</text>
+          <text class="is-sm is-muted" x="322" y="52" text-anchor="middle">bus</text>
+          <path class="dg-sv-line is-muted" d="M441 62V1002"/>
+          <rect class="dg-sv-box" x="385" y="16" width="111" height="46" rx="6"/>
+          <text class="dg-mono is-b" x="441" y="36" text-anchor="middle" style="font-size:10.5px">Branch</text>
+          <text class="is-sm is-muted" x="441" y="52" text-anchor="middle">br</text>
+          <path class="dg-sv-line is-muted" d="M559 62V1002"/>
+          <rect class="dg-sv-box" x="504" y="16" width="111" height="46" rx="6"/>
+          <text class="dg-mono is-b" x="559" y="36" text-anchor="middle" style="font-size:10.5px">Component</text>
+          <text class="is-sm is-muted" x="559" y="52" text-anchor="middle">comp</text>
+          <path class="dg-sv-line is-muted" d="M678 62V1002"/>
+          <rect class="dg-sv-box" x="623" y="16" width="111" height="46" rx="6"/>
+          <text class="dg-mono is-b" x="678" y="36" text-anchor="middle" style="font-size:10.5px">LocalController</text>
+          <text class="is-sm is-muted" x="678" y="52" text-anchor="middle">avr, pss</text>
+          <path class="dg-sv-line is-muted" d="M797 62V1002"/>
+          <rect class="dg-sv-box" x="742" y="16" width="111" height="46" rx="6"/>
+          <text class="dg-mono is-b" x="797" y="36" text-anchor="middle" style="font-size:10.5px">GlobalController</text>
+          <text class="is-sm is-muted" x="797" y="52" text-anchor="middle">gc</text>
+          <path class="dg-sv-line is-muted" d="M916 62V1002"/>
+          <rect class="dg-sv-box" x="861" y="16" width="111" height="46" rx="6"/>
+          <text class="dg-mono is-b" x="916" y="36" text-anchor="middle" style="font-size:10.5px">Parameter</text>
+          <text class="is-sm is-muted" x="916" y="52" text-anchor="middle">a_Parameter</text>
+          <text class="is-k" lang="en" x="4" y="104">Build by hand</text>
+          <text class="is-k" lang="ja" x="4" y="104">手で組み立てる</text>
+          <path class="dg-sv-line is-muted" d="M4 109H956" style="stroke-dasharray:2 4"/>
+          <path class="dg-sv-line" d="M88 134H200" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 134H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="126" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="138" text-anchor="middle" style="font-size:10px">01</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="128" text-anchor="start">PowerNetwork(tag)</text>
+          <path class="dg-sv-line" d="M207 164H913" marker-end="url(#fmb-ah)"/>
+          <text class="dg-mono is-sm fmb-l" x="211" y="158" text-anchor="start">Parameter(obj, &quot;base&quot;, struct(Hz, baseMVA))</text>
+          <path class="dg-sv-line" d="M88 194H200" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 194H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="186" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="198" text-anchor="middle" style="font-size:10px">02</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="188" text-anchor="start">add_bus(Name=Value)</text>
+          <path class="dg-sv-line" d="M207 224H319" marker-end="url(#fmb-ah)"/>
+          <text class="dg-mono is-sm fmb-l" x="211" y="218" text-anchor="start">Bus(net, tag, opt)</text>
+          <path class="dg-sv-line" d="M88 254H200" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 254H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="246" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="258" text-anchor="middle" style="font-size:10px">03</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="248" text-anchor="start">add_branch(Key, from_to, ...)</text>
+          <path class="dg-sv-line" d="M207 284H438" marker-end="url(#fmb-ah)"/>
+          <text class="dg-mono is-sm fmb-l" x="211" y="278" text-anchor="start">mkInst(index, opt); a_Bus; a_PowerNetwork</text>
+          <path class="dg-sv-line" d="M88 314H319" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 314H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="306" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="318" text-anchor="middle" style="font-size:10px">04</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="308" text-anchor="start">add_component(Key, ...)</text>
+          <path class="dg-sv-line" d="M326 344H556" marker-end="url(#fmb-ah)"/>
+          <text class="dg-mono is-sm fmb-l" x="330" y="338" text-anchor="start">mkInst(...); a_Bus = bus; log_edit</text>
+          <path class="dg-sv-line" d="M88 374H556" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 374H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="366" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="378" text-anchor="middle" style="font-size:10px">05</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="368" text-anchor="start">add_local_controller(Key, ...)</text>
+          <path class="dg-sv-line" d="M563 404H675" marker-end="url(#fmb-ah)"/>
+          <text class="dg-mono is-sm fmb-l" x="567" y="398" text-anchor="start">mkInst; a_Component → resolve_observe</text>
+          <path class="dg-sv-line" d="M88 434H200" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 434H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="426" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="438" text-anchor="middle" style="font-size:10px">06</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="428" text-anchor="start">add_global_controller(Key, units)</text>
+          <path class="dg-sv-line" d="M207 464H794" marker-end="url(#fmb-ah)"/>
+          <text class="dg-mono is-sm fmb-l" x="211" y="458" text-anchor="start">mkInst(net, tag, units..., Name=Value)</text>
+          <path class="dg-sv-line" d="M207 494H794" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 494H197" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="486" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="498" text-anchor="middle" style="font-size:10px">07</text>
+          <text class="dg-mono is-sm fmb-l" x="211" y="488" text-anchor="start">check; a_PowerNetwork = net</text>
+          <path class="dg-sv-line" d="M88 524H319" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 524H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="516" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="528" text-anchor="middle" style="font-size:10px">08</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="518" text-anchor="start">l_isSlack = true</text>
+          <path class="dg-sv-line" d="M88 554H913" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 554H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="546" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="558" text-anchor="middle" style="font-size:10px">09</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="548" text-anchor="start">tab_parameter.group.Name = value | tab_parameter = tab</text>
+          <path class="dg-sv-line" d="M912 584H206" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 584H197" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="576" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="588" text-anchor="middle" style="font-size:10px">10</text>
+          <text class="dg-mono is-sm fmb-l" x="908" y="578" text-anchor="end">log_edit → handle_edit (each layer up) → sct_stale</text>
+          <text class="is-k" lang="en" x="4" y="634">Shipped network class</text>
+          <text class="is-k" lang="ja" x="4" y="634">同梱ネットワーククラス</text>
+          <path class="dg-sv-line is-muted" d="M4 639H956" style="stroke-dasharray:2 4"/>
+          <path class="dg-sv-line" d="M88 664H200" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 664H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="656" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="668" text-anchor="middle" style="font-size:10px">11</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="658" text-anchor="start">network.IEEE9bus()</text>
+          <path class="dg-sv-line" d="M203 688h26v14h-24" marker-end="url(#fmb-ah)"/>
+          <text class="dg-mono is-sm fmb-l" x="235" y="699" text-anchor="start">import(dir, Network=obj, Initialize=false)</text>
+          <path class="dg-sv-line" d="M207 732H556" marker-end="url(#fmb-ah)"/>
+          <text class="dg-mono is-sm fmb-l" x="211" y="726" text-anchor="start">add_local_controller(Key, ...)</text>
+          <path class="dg-sv-line" d="M203 756h26v14h-24" marker-end="url(#fmb-ah)"/>
+          <text class="dg-mono is-sm fmb-l" x="235" y="767" text-anchor="start">initialize()</text>
+          <text class="is-k" lang="en" x="4" y="820">Edit and remove</text>
+          <text class="is-k" lang="ja" x="4" y="820">編集と削除</text>
+          <path class="dg-sv-line is-muted" d="M4 825H956" style="stroke-dasharray:2 4"/>
+          <path class="dg-sv-line" d="M88 850H200" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 850H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="842" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="854" text-anchor="middle" style="font-size:10px">12</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="844" text-anchor="start">remove_bus | remove_branch | remove_global_controller</text>
+          <path class="dg-sv-line" d="M88 880H319" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 880H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="872" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="884" text-anchor="middle" style="font-size:10px">13</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="874" text-anchor="start">remove_component | replace_component</text>
+          <path class="dg-sv-line" d="M88 910H556" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 910H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="902" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="914" text-anchor="middle" style="font-size:10px">14</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="904" text-anchor="start">remove_local_controller(tag)</text>
+          <path class="dg-sv-line" d="M88 940H319" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 940H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="932" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="944" text-anchor="middle" style="font-size:10px">15</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="934" text-anchor="start">s_tag = &quot;BX&quot;</text>
+          <path class="dg-sv-line" d="M88 970H200" marker-end="url(#fmb-ah)"/>
+          <path class="dg-sv-line is-muted" d="M34 970H78" style="stroke-dasharray:1 5"/>
+          <rect class="dg-sv-box is-solid" x="3" y="962" width="30" height="16" rx="8"/>
+          <text class="is-inv is-b" x="18" y="974" text-anchor="middle" style="font-size:10px">16</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="964" text-anchor="start">get_layout | set_layout(L)</text>
+        </svg>
+      </div>
+      <ol class="dg-only-narrow fmb-narrow">
+        <li><b>MB-01</b> <span lang="en">Caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork</code></li>
+        <li><b>MB-02</b> → <code>PowerNetwork.add_bus</code> → <code>Bus</code></li>
+        <li><b>MB-03</b> → <code>PowerNetwork.add_branch</code> → <code>Branch</code></li>
+        <li><b>MB-04</b> → <code>Bus.add_component</code> → <code>Component</code></li>
+        <li><b>MB-05</b> → <code>Component.add_local_controller</code> → <code>LocalController.resolve_observe</code></li>
+        <li><b>MB-06</b> → <code>PowerNetwork.add_global_controller</code> → <code>GlobalController</code></li>
+        <li><b>MB-07</b> <code>PowerNetwork.add_global_controller</code> → <code>GlobalController.log_edit</code></li>
+        <li><b>MB-08</b> → <code>Bus.l_isSlack</code></li>
+        <li><b>MB-09</b> → <code>Parameter</code> <span lang="en">(set)</span><span lang="ja">（設定）</span></li>
+        <li><b>MB-10</b> <code>Parameter</code> → <code>LayerPackage.log_edit</code> → <code>handle_edit</code></li>
+        <li><b>MB-11</b> → <code>network.IEEE9bus</code> → <code>import</code>, <code>add_local_controller</code>, <code>initialize</code></li>
+        <li><b>MB-12</b> → <code>PowerNetwork.remove_*</code></li>
+        <li><b>MB-13</b> → <code>Bus.remove_component</code> / <code>replace_component</code></li>
+        <li><b>MB-14</b> → <code>Component.remove_local_controller</code></li>
+        <li><b>MB-15</b> → <code>LayerPackage.set.s_tag</code></li>
+        <li><b>MB-16</b> → <code>PowerNetwork.get_layout</code> / <code>set_layout</code></li>
+      </ol>
+      <figcaption lang="en">Numbers are the step IDs of the list below. Every <code>add_*</code>, <code>remove_*</code> and <code>replace_*</code> call ends with <code>log_edit</code> on the parent (MB-10), not drawn for each step.</figcaption>
+      <figcaption lang="ja">番号は下のステップ一覧の ID です。<code>add_*</code>・<code>remove_*</code>・<code>replace_*</code> はすべて最後に親の <code>log_edit</code>（MB-10）を呼び出します（図では各ステップで省略しています）。</figcaption>
+    </figure>
+
+    <!-- ============================== 3. STEPS ============================== -->
+    <h2 id="steps"><span lang="en">3. Processing steps in detail</span><span lang="ja">3. 処理ステップの詳細</span></h2>
+    <ol class="fs-steps">
+      <li class="fs-step" id="MB-01">
+        <p class="fs-head"><b class="fs-id">MB-01</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork</code> <span lang="en">(constructor)</span><span lang="ja">（コンストラクタ）</span></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Set the tag</li>
+            <li>Set <code>a_Parameter</code> to the <code>base</code> container (<code>Parameter(obj,"base")</code> with <code>Hz</code> and <code>baseMVA</code>)</li>
+            <li>Call <code>reset_solver</code>: creates <code>SolverPF</code>, <code>SolverOPF</code>, <code>SolverCPF</code>, <code>SolverODE</code> and <code>SolverLIN</code></li>
+            <li>Called implicitly by a network class such as <code>network.IEEE9bus</code>, so its tag is <code>"PowerNetwork"</code></li>
+          </ul><ul lang="ja">
+            <li>タグを設定します。</li>
+            <li><code>a_Parameter</code> に <code>base</code> のコンテナ（<code>Hz</code> と <code>baseMVA</code> を持つ <code>Parameter(obj,"base")</code>）を設定します。</li>
+            <li><code>reset_solver</code> を呼び出し、<code>SolverPF</code>・<code>SolverOPF</code>・<code>SolverCPF</code>・<code>SolverODE</code>・<code>SolverLIN</code> を作成します。</li>
+            <li><code>network.IEEE9bus</code> などのネットワーククラスが暗黙に呼び出すので、タグの既定値を <code>"PowerNetwork"</code> にしています。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><code>tag</code>, <code>GUILDA.config("PowerSystemModel","Hz")</code>, <code>GUILDA.config</code> <span lang="en">of each solver</span><span lang="ja">（各ソルバー）</span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>net</code> <span lang="en">with empty <code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code> (0×1 cell); <code>sct_stale.powerflow</code> and <code>.odefcn</code> = "initialize has not been run"</span><span lang="ja">（<code>a_Bus</code>・<code>a_Branch</code>・<code>a_GlobalController</code> は空の 0×1 cell。<code>sct_stale.powerflow</code> と <code>.odefcn</code> = "initialize has not been run"）</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-02">
+        <p class="fs-head"><b class="fs-id">MB-02</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.add_bus</code> → <code>Bus</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Tag: <code>Tag</code> + three digits (<code>tools.next_tag_number</code>: largest number in use + 1), or <code>FullTag</code> when given</li>
+            <li>Ignore the option <code>baseMVA</code> and remove it from the options (<code>v3_bus_baseMVA</code>)</li>
+            <li><code>Bus</code> constructor (access: <code>PowerNetwork</code>, <code>Bus</code>): set <code>a_PowerNetwork</code> first, then the tag (a tag used by another bus gets a suffix)</li>
+            <li>Create four <code>Parameter</code> objects</li>
+            <li>Append the bus to <code>a_Bus</code></li>
+          </ul><ul lang="ja">
+            <li>タグは <code>Tag</code> + 3 桁（<code>tools.next_tag_number</code>: 使用中の最大番号 + 1）です。<code>FullTag</code> を指定した場合はそれを使います。</li>
+            <li>オプション <code>baseMVA</code> は無視し、オプションから削除します（<code>v3_bus_baseMVA</code>）。</li>
+            <li><code>Bus</code> のコンストラクタ（呼び出せるのは <code>PowerNetwork</code> と <code>Bus</code>）は、先に <code>a_PowerNetwork</code>、次にタグを設定します（他の母線が使用中のタグには接尾辞を付けます）。</li>
+            <li>4 つの <code>Parameter</code> を作成します。</li>
+            <li>母線を <code>a_Bus</code> に追加します。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><span lang="en">options (defaults: V 1, Varg 0, Gshunt 0, Bshunt 0, Vmin 0.5, Vmax 1.5, baseKV 230, X/Y NaN, Shape "square", Length/MarkerSize NaN, Color ""), tags of <code>a_Bus</code></span><span lang="ja">オプション（既定値: V 1, Varg 0, Gshunt 0, Bshunt 0, Vmin 0.5, Vmax 1.5, baseKV 230, X/Y NaN, Shape "square", Length/MarkerSize NaN, Color ""）、<code>a_Bus</code> のタグ</span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>bus</code>; <code>tab_parameter.dynamics</code> (Gshunt, Bshunt), <code>tab_parameter.operation</code> (baseKV, Vmin, Vmax), <code>tab_parameter.powerflow</code> (V, Varg), <code>tab_parameter.graph</code> (X, Y, Shape, Length, MarkerSize, Color; <span lang="en">see <a href="#layout">Diagram layout</a></span><span lang="ja"><a href="#layout">図の配置</a>を参照</span>); <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-03">
+        <p class="fs-head"><b class="fs-id">MB-03</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.add_branch</code> → <code>Branch</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Before any change: check <code>Key</code> against the generated key list, resolve <code>from_to</code> (indices of <code>a_Bus</code> or tags), reject equal ends and <code>R = X = 0</code></li>
+            <li>Create the class of the key (<code>mkInst</code>)</li>
+            <li><code>Branch</code> constructor: set the tag <code>header</code> + three digits, assert real R, X, C, create three <code>Parameter</code> objects</li>
+            <li>Set <code>bra.a_Bus = {from; to}</code> and <code>bra.a_PowerNetwork = net</code> (writable only by <code>PowerNetwork</code>)</li>
+            <li>Append to <code>a_Branch</code></li>
+            <li><code>Circuit</code> (default 2) is the number of parallel circuits. R, X and C are the values of all circuits together, so the closed admittance matrix does not depend on it; only the states that act on one circuit (<code>Branch.get_admittance_matrix(Status="3LG")</code>, <code>"3open"</code>) use it, and a branch with <code>Circuit=1</code> has neither</li>
+          </ul><ul lang="ja">
+            <li>変更前に検査します。<code>Key</code> を生成済みのキー一覧で検査し、<code>from_to</code>（<code>a_Bus</code> の番号またはタグ）を解決し、両端が同じもの・<code>R = X = 0</code> を拒否します。</li>
+            <li>キーのクラスを作成します（<code>mkInst</code>）。</li>
+            <li><code>Branch</code> のコンストラクタは、タグ <code>header</code> + 3 桁を設定し、R・X・C が実数であることを assert し、3 つの <code>Parameter</code> を作成します。</li>
+            <li><code>bra.a_Bus = {from; to}</code> と <code>bra.a_PowerNetwork = net</code> を代入します（書き込めるのは <code>PowerNetwork</code> だけです）。</li>
+            <li><code>a_Branch</code> に追加します。</li>
+            <li><code>Circuit</code>（既定 2）は並列の回線数です。R・X・C は全回線をまとめた値なので、閉じた状態のアドミタンス行列は回線数によりません。回線数を使うのは 1 回線に作用する状態（<code>Branch.get_admittance_matrix(Status="3LG")</code>、<code>"3open"</code>）だけで、<code>Circuit=1</code> のブランチにはこの 2 つの状態がありません。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><span lang="en">options (defaults: R 0, X 1, C 0, Tap 1, Phase 0, Circuit 2, Smax/Imax/Pmax/Qmax Inf, Vargmax π/2, Path "", FromOffset/ToOffset NaN, Style "line"), <code>a_Bus</code>, tags of <code>a_Branch</code></span><span lang="ja">オプション（既定値: R 0, X 1, C 0, Tap 1, Phase 0, Circuit 2, Smax/Imax/Pmax/Qmax Inf, Vargmax π/2, Path "", FromOffset/ToOffset NaN, Style "line"）、<code>a_Bus</code>、<code>a_Branch</code> のタグ</span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>br</code>; <code>tab_parameter.dynamics</code> (R, X, C, tap, phase, circuit; <span lang="en">tap and phase are NaN for the lines <code>"pi"</code> and <code>"T"</code>, which ignore Tap and Phase and warn <code>GUILDA:Branch:LineTapIgnored</code> unless Tap is 0 or 1 and Phase is 0</span><span lang="ja">線路の <code>"pi"</code> と <code>"T"</code> では tap と phase は NaN で、Tap と Phase は使いません。Tap が 0 か 1 以外、または Phase が 0 以外のときは <code>GUILDA:Branch:LineTapIgnored</code> の警告を出します</span>), <code>tab_parameter.operation</code> (Smax, Imax, Pmax, Qmax, Vargmax), <code>tab_parameter.graph</code> (Path, FromOffset, ToOffset, Style; <span lang="en">a Path given as an n×2 matrix is stored as its text</span><span lang="ja">n×2 の行列で与えた Path は文字列にして保存</span>); <code>br.a_Bus</code> (2×1 cell), <code>br.a_PowerNetwork</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-04">
+        <p class="fs-head"><b class="fs-id">MB-04</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Bus.add_component</code> → <code>Component</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Tag: bus tag + class prefix + next number among the components of this bus (e.g. <code>B001SG1</code>)</li>
+            <li>Subclass constructor calls <code>Component(s_tag, opt)</code>: creates five <code>Parameter</code> objects; replaces a NaN cost <code>HP</code> / <code>fP</code> by 0 for a load or a grid-following inverter, 1 otherwise</li>
+            <li>Subclass adds <code>sv_para</code> to the <code>dynamics</code> container of <code>a_Parameter</code></li>
+            <li>Generator and grid-forming inverter: force <code>Q = NaN</code></li>
+            <li>Load: a load without dynamic parameters (<code>load-impedance</code>, <code>load-power</code>, <code>load-current</code>) ignores <code>parameter</code>; <code>load-ZIP</code> reads it in its own constructor (a one-row table or a struct; a missing name or NaN takes the default, another name stops with <code>GUILDA:Component:UnknownParameter</code>)</li>
+            <li><code>load-current</code>: constant-current load; inputs <code>Ip</code>, <code>Iq</code> are the current in phase / in quadrature with the bus voltage (injection sign), so P and Q are proportional to |V|</li>
+            <li>Set <code>comp.a_Bus = bus</code> (writable only by <code>Bus</code>), then report a <code>"Topology"</code> edit on the component (<code>comp.log_edit("connected to &lt;bus&gt;", "Topology")</code>): its <code>equilibrium</code> becomes stale; a new component already holds "initialize has not been run" in <code>equilibrium</code> and <code>odefcn</code></li>
+            <li>Append to <code>a_Component</code></li>
+          </ul><ul lang="ja">
+            <li>タグは、母線のタグ + クラスの接頭辞 + この母線の機器の中での次の番号です（例: <code>B001SG1</code>）。</li>
+            <li>サブクラスのコンストラクタが <code>Component(s_tag, opt)</code> を呼び出します。5 つの <code>Parameter</code> を作成し、NaN のコスト <code>HP</code> / <code>fP</code> を負荷と系統追従インバータなら 0、それ以外は 1 に置き換えます。</li>
+            <li>サブクラスが <code>sv_para</code> を <code>a_Parameter</code> の <code>dynamics</code> コンテナに追加します。</li>
+            <li>発電機と系統形成インバータでは <code>Q = NaN</code> に固定します。</li>
+            <li>負荷: 動的パラメータを持たない負荷（<code>load-impedance</code>、<code>load-power</code>、<code>load-current</code>）は <code>parameter</code> を使いません。<code>load-ZIP</code> は自身のコンストラクタで読みます（1 行の table か構造体。ない名前と NaN は既定値になり、ほかの名前は <code>GUILDA:Component:UnknownParameter</code> で止まります）。</li>
+            <li><code>load-current</code> は定電流負荷です。入力 <code>Ip</code>, <code>Iq</code> は母線電圧と同相・直交の電流（注入の向き、消費は負）です。電流の大きさと力率が一定で、P, Q は |V| に比例します。</li>
+            <li><code>comp.a_Bus = bus</code> を代入し（書き込めるのは <code>Bus</code> だけです）、機器の <code>"Topology"</code> の編集として報告します（<code>comp.log_edit("connected to &lt;bus&gt;", "Topology")</code>）。これで機器の <code>equilibrium</code> が古くなります。新しい機器は <code>equilibrium</code> と <code>odefcn</code> に "initialize has not been run" をすでに保持しています。</li>
+            <li><code>a_Component</code> に追加します。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><span lang="en">options (P 0, Q 0, baseMVA 100, Pmin/Qmin −Inf, Pmax/Qmax Inf, OPF P0/Q0 0, HP/fP NaN, HQ/fQ/c 0, DX/DY NaN, Shape "circle", Path "", Offset/MarkerSize NaN, Color ""), <code>parameter</code>, class <code>parameter.csv</code></span><span lang="ja">オプション（P 0, Q 0, baseMVA 100, Pmin/Qmin −Inf, Pmax/Qmax Inf, OPF P0/Q0 0, HP/fP NaN, HQ/fQ/c 0, DX/DY NaN, Shape "circle", Path "", Offset/MarkerSize NaN, Color ""）、<code>parameter</code>、クラスの <code>parameter.csv</code></span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>comp</code>; <code>tab_parameter.operation</code> (baseMVA, Pmin, Pmax, Qmin, Qmax), <code>tab_parameter.powerflow</code> (P, Q), <code>tab_parameter.OPF</code> (P0, Q0, HP, HQ, fP, fQ, c, startup, shutdown), <code>tab_parameter.graph</code> (DX, DY, Shape, Path, Offset, MarkerSize, Color), <code>tab_parameter.dynamics</code>; <code>comp.a_Bus</code>; <code>sct_stale.equilibrium</code>, <code>.odefcn</code> = "initialize has not been run"; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-05">
+        <p class="fs-head"><b class="fs-id">MB-05</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Component.add_local_controller</code> → <code>LocalController.resolve_observe</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Build one controller per call: the class of <code>Key</code> (checked against the generated key list) with the constructor <code>(tag, Name=Value)</code>; <code>parameter</code> (struct or one-row table) gives the Name=Value, omitted ones keep the class defaults</li>
+            <li>Tag: component tag + class header + next number among the controllers of this component (nested ones included), e.g. <code>B001SG1CA1</code> (header <code>CA</code> AVR, <code>CP</code> PSS, <code>CG</code> governor, <code>CL</code> LQR)</li>
+            <li>Check the new controller before any change:
+              <ul>
+                <li>role <code>s_role</code> <code>"avr"</code>, <code>"pss"</code>, <code>"local"</code> or <code>"governor"</code></li>
+                <li>outputs <code>sv_y</code> match inputs of the target (the component, or the AVR for a PSS)</li>
+                <li>the AVR or <code>"local"</code> controller and the governor drive different inputs (<code>GUILDA:Component:ControllerOutputOverlap</code>)</li>
+              </ul>
+            </li>
+            <li><code>s_role</code> decides the slot:
+              <ul>
+                <li>AVR or <code>"local"</code> controller: becomes <code>a_LocalController{1}</code>; an existing one is deleted with a warning, and its PSS moves to a new AVR (deleted when the new controller is not an AVR)</li>
+                <li>PSS: goes under the AVR</li>
+                <li>Governor: placed after the AVR in <code>a_LocalController</code>; an existing governor is deleted with a warning</li>
+              </ul>
+            </li>
+            <li>Attach: set <code>con.a_Component</code> (writable only by <code>Component</code> and <code>LocalController</code>), resolve the observed signals (<code>resolve_observe</code>: expand <code>"Xall"</code> / <code>"Yall"</code>, set <code>iv_obsY</code> / <code>iv_obsX</code>), report a <code>"Topology"</code> edit on the controller ("attached to &lt;parent&gt;"): its <code>equilibrium</code> becomes stale. A replaced controller is deleted (<code>tools.delete_layers</code>)</li>
+            <li>When a global controller controls the component: compare the <code>"global"</code> rows of the connection map (<code>net.get_variable_map()</code>) before and after the edit, and list the outputs that go elsewhere now in an INFO message (<code>GUILDA:Component:GconRouteChanged</code>; <code>-&gt; (no input)</code> when none)</li>
+            <li>Return the new controller</li>
+          </ul><ul lang="ja">
+            <li>1 回の呼び出しで制御器を 1 つ作成します。<code>Key</code>（生成済みのキー一覧で検査）のクラスをコンストラクタ <code>(tag, Name=Value)</code> で作成します。Name=Value は <code>parameter</code>（struct または 1 行の table）から取り、省略したものはクラスの既定値になります。</li>
+            <li>タグは、機器のタグ + クラスの接頭辞 + この機器の制御器（入れ子も含む）の中での次の番号です（例: <code>B001SG1CA1</code>。接頭辞は AVR <code>CA</code>、PSS <code>CP</code>、ガバナ <code>CG</code>、LQR <code>CL</code>）。</li>
+            <li>変更する前に、新しい制御器が次の条件を満たすか検査します:
+              <ul>
+                <li>役割 <code>s_role</code> が <code>"avr"</code>・<code>"pss"</code>・<code>"local"</code>・<code>"governor"</code> のいずれかであること</li>
+                <li>出力 <code>sv_y</code> が接続先（機器、PSS なら AVR）の入力と一致すること</li>
+                <li>AVR または <code>"local"</code> の制御器とガバナが異なる入力を駆動すること（<code>GUILDA:Component:ControllerOutputOverlap</code>）</li>
+              </ul>
+            </li>
+            <li>配置先は <code>s_role</code> で決まります:
+              <ul>
+                <li>AVR・<code>"local"</code> の制御器: <code>a_LocalController{1}</code> に配置します。既存のものは警告を出して削除し、その PSS は新しい AVR へ移します（新しい制御器が AVR でなければ削除します）。</li>
+                <li>PSS: AVR の下に配置します。</li>
+                <li>ガバナ: <code>a_LocalController</code> で AVR の後ろに配置します。既存のガバナは警告を出して削除します。</li>
+              </ul>
+            </li>
+            <li>接続では、<code>con.a_Component</code> を代入し（書き込めるのは <code>Component</code> と <code>LocalController</code> だけです）、観測する信号を解決し（<code>resolve_observe</code>: <code>"Xall"</code> / <code>"Yall"</code> を展開し、<code>iv_obsY</code> / <code>iv_obsX</code> を設定）、制御器の <code>"Topology"</code> の編集として報告します（"attached to &lt;parent&gt;"）。これで制御器の <code>equilibrium</code> が古くなります。置き換えた制御器は削除します（<code>tools.delete_layers</code>）。</li>
+            <li>グローバル制御器がこの機器を制御する場合: 接続マップ（<code>net.get_variable_map()</code>）の <code>"global"</code> の行を編集の前後で比較し、接続先が変わった出力を INFO で表示します（<code>GUILDA:Component:GconRouteChanged</code>。接続先がなければ <code>-&gt; (no input)</code>）。</li>
+            <li>新しい制御器を返します。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><code>Key</code>, <code>parameter</code>, <span lang="en">tags of the controllers of <code>comp</code></span><span lang="ja"><code>comp</code> の制御器のタグ</span>, <code>con.s_role</code>, <code>con.sv_y</code>, <code>con.sv_u</code>, <code>comp.sv_u</code>, <code>comp.sv_x</code>, <code>comp.sv_y</code></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>con</code>; <code>comp.a_LocalController</code>, <code>avr.a_LocalController</code>, <code>con.a_Component</code>, <code>comp.l_hasController</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code> <span lang="en">per controller</span><span lang="ja">（制御器ごと）</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-06">
+        <p class="fs-head"><b class="fs-id">MB-06</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.add_global_controller</code> → <code>GlobalController</code> <span lang="en">(subclass constructor)</span><span lang="ja">（サブクラスのコンストラクタ）</span></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Build one controller per call: the class of <code>Key</code> (checked against the generated key list) with the constructor <code>(net, tag, units..., Name=Value)</code>; <code>parameter</code> (struct or one-row table) gives the Name=Value, omitted ones keep the class defaults</li>
+            <li>Tag: network tag (for the bundled networks <code>"PowerNetwork"</code>) + class header + next number among the global controllers of this network, e.g. <code>PowerNetworkAGC1</code></li>
+            <li>Resolve each controlled unit of <code>a_Unit</code> (component object or tag) among the components of <code>net.a_Bus</code></li>
+            <li>Network only read: <code>a_PowerNetwork</code> stays empty until MB-07</li>
+          </ul><ul lang="ja">
+            <li>1 回の呼び出しで制御器を 1 つ作成します。<code>Key</code>（生成済みのキー一覧で検査）のクラスをコンストラクタ <code>(net, tag, units..., Name=Value)</code> で作成します。Name=Value は <code>parameter</code>（struct または 1 行の table）から取り、省略したものはクラスの既定値になります。</li>
+            <li>タグは、ネットワークのタグ（同梱の系統では <code>"PowerNetwork"</code>）+ クラスの接頭辞 + このネットワークのグローバル制御器の中での次の番号です（例: <code>PowerNetworkAGC1</code>）。</li>
+            <li><code>a_Unit</code> の制御対象（機器のオブジェクトまたはタグ）を <code>net.a_Bus</code> の機器から解決します。</li>
+            <li>ここではネットワークを読むだけで、<code>a_PowerNetwork</code> は MB-07 まで空のままです。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><code>Key</code>, <code>a_Unit</code>, <code>parameter</code>, <span lang="en">tags of <code>net.a_GlobalController</code></span><span lang="ja"><code>net.a_GlobalController</code> のタグ</span>, <code>net.a_Bus{:}.a_Component</code></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>gc</code>; <code>gc.controlledUnits</code> <span lang="en">(cell of components)</span><span lang="ja">（機器の cell）</span>, <code>tab_parameter.dynamics</code> <span lang="en">(rows named by <code>controlledUnits</code>)</span><span lang="ja">（行名は <code>controlledUnits</code>）</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-07">
+        <p class="fs-head"><b class="fs-id">MB-07</b> <span class="fs-call"><code>PowerNetwork.add_global_controller</code> → <code>GlobalController.log_edit</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Check:
+              <ul>
+                <li>the tag is unused</li>
+                <li>every unit belongs to this network (handle comparison through <code>unit.a_Bus.a_PowerNetwork</code>)</li>
+              </ul>
+            </li>
+            <li>Append the controller</li>
+            <li>Set <code>gc.a_PowerNetwork = net</code> (writable only by <code>PowerNetwork</code>)</li>
+            <li>Check in the connection map of <code>net.get_variable_map()</code> that, for every unit, each input of the controller has an <code>"observe"</code> connection (an output or state of the unit) and each output a <code>"global"</code> connection (an input of a local controller of the unit, else of the unit); otherwise remove the controller again and stop with <code>GUILDA:PowerNetwork:GconPorts</code></li>
+            <li>Report a <code>"Topology"</code> edit on the controller (not on the network): its <code>equilibrium</code> becomes stale, the power flow stays up to date</li>
+            <li>Show the <code>"global"</code> connections of the controller as <code>Source -&gt; Target</code> (labels) in an INFO message (<code>GUILDA:PowerNetwork:GconRoute</code>); nothing is stored on the controller</li>
+            <li>Return the controller</li>
+          </ul><ul lang="ja">
+            <li>次の条件を満たすか検査します:
+              <ul>
+                <li>タグが未使用であること</li>
+                <li>すべての制御対象がこのネットワークに所属していること（<code>unit.a_Bus.a_PowerNetwork</code> によるハンドル比較）</li>
+              </ul>
+            </li>
+            <li>制御器を追加します。</li>
+            <li><code>gc.a_PowerNetwork = net</code> を代入します（書き込めるのは <code>PowerNetwork</code> だけです）。</li>
+            <li><code>net.get_variable_map()</code> の接続マップで、各対象について制御器の各入力に <code>"observe"</code> の接続（対象の出力または状態）、各出力に <code>"global"</code> の接続（対象のローカル制御器の入力、ない場合は対象の入力）があるか確認します。なければ制御器を外して <code>GUILDA:PowerNetwork:GconPorts</code> で停止します。</li>
+            <li>制御器（ネットワークではない）の <code>"Topology"</code> の編集として報告します。制御器の <code>equilibrium</code> が古くなり、潮流は最新のままです。</li>
+            <li>制御器の <code>"global"</code> の接続を <code>Source -&gt; Target</code>（ラベル）で INFO に表示します（<code>GUILDA:PowerNetwork:GconRoute</code>）。制御器には保存しません。</li>
+            <li>制御器を返します。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><code>gc.s_tag</code>, <code>gc.controlledUnits</code>, <code>gc.sv_u</code>, <code>gc.sv_y</code>, <code>net.get_variable_map()</code> (<code>tab</code>, <code>c_idxGC</code>, <code>tab_connection</code>)</dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>gc</code>; <code>net.a_GlobalController</code>, <code>gc.a_PowerNetwork</code>, <code>gc.sct_stale</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-08">
+        <p class="fs-head"><b class="fs-id">MB-08</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Bus.set.l_isSlack</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>No-op when the value is unchanged</li>
+            <li><code>true</code>: needs a component</li>
+            <li>Print the component that takes the remaining power (the first with <code>Q = NaN</code>, else the first)</li>
+            <li>Warn when no component has <code>Q = NaN</code></li>
+            <li>Log a <code>"Slack"</code> edit</li>
+            <li><code>PowerNetwork.handle_edit</code>: set <code>l_isSlack = false</code> on every other bus, so at most one slack bus</li>
+          </ul><ul lang="ja">
+            <li>値が変わらなければ何もしません。</li>
+            <li><code>true</code> にするには機器が必要です。</li>
+            <li>残りの電力を受け持つ機器（<code>Q = NaN</code> の最初の機器、なければ最初の機器）を表示します。</li>
+            <li><code>Q = NaN</code> の機器がなければ警告します。</li>
+            <li><code>"Slack"</code> の編集を記録します。</li>
+            <li><code>PowerNetwork.handle_edit</code>: 他のすべての母線を <code>l_isSlack = false</code> に設定します。slack 母線は高々 1 つです。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><code>a_Component</code>, <span lang="en">component</span><span lang="ja">機器の</span> <code>tab_parameter.powerflow.Q</code>, <span lang="en">other buses</span><span lang="ja">他の母線の</span> <code>l_isSlack</code></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>l_isSlack</code> <span lang="en">of this and other buses</span><span lang="ja">（この母線と他の母線）</span>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Slack"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-09">
+        <p class="fs-head"><b class="fs-id">MB-09</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Parameter</code> <span lang="en">(set method of <code>tab_parameter</code>)</span><span lang="ja">（<code>tab_parameter</code> の set メソッド）</span></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li><code>obj.tab_parameter = tab</code> (<code>PowerSystemModel</code>): each column goes to the container of <code>a_Parameter</code> whose <code>s_tag</code> is the column name; an unknown column is an error (<code>GUILDA:PowerSystemModel:UnknownParameterGroup</code>) and nothing is written</li>
+            <li><code>obj.tab_parameter.&lt;group&gt;.&lt;name&gt; = v</code>: reads the table and writes it back, so only that value changes</li>
+            <li><code>Parameter.set.tab_parameter</code>: the stored table and the new one must have the same parameter names (any order), height and row names, else <code>GUILDA:Parameter:TableMismatch</code></li>
+            <li>A column is changed when <code>isequaln</code> fails or its class differs; a changed class is <code>GUILDA:Parameter:ClassNameMismatch</code></li>
+            <li>Every column is checked before anything is stored: an error stores nothing and logs nothing</li>
+            <li>A container made with a check function (<code>Parameter.f_validate</code>; the <code>graph</code> containers of buses, branches and components) runs it on the new table before storing; see <a href="#layout-checks">Diagram layout: Checks</a></li>
+            <li>Stores the new table, then calls <code>log_edit</code> for each changed column, in column order</li>
+          </ul><ul lang="ja">
+            <li><code>obj.tab_parameter = tab</code>（<code>PowerSystemModel</code>）: 各列を <code>s_tag</code> が列名と同じ <code>a_Parameter</code> のコンテナへ書き込みます。未知の列はエラー（<code>GUILDA:PowerSystemModel:UnknownParameterGroup</code>）となり、何も書き込みません。</li>
+            <li><code>obj.tab_parameter.&lt;group&gt;.&lt;name&gt; = v</code>: 表を読んで書き戻すため、変わるのはその値だけです。</li>
+            <li><code>Parameter.set.tab_parameter</code>: 保持する表と新しい表で、パラメータ名（順序は問いません）、行数、行名が同じである必要があります。違えば <code>GUILDA:Parameter:TableMismatch</code> になります。</li>
+            <li><code>isequaln</code> が偽、またはクラスが違う列を変更とみなします。クラスの変更は <code>GUILDA:Parameter:ClassNameMismatch</code> になります。</li>
+            <li>保存の前にすべての列を検査します。エラーなら保存も記録もしません。</li>
+            <li>検査の関数（<code>Parameter.f_validate</code>）を持つコンテナ（母線、ブランチ、機器の <code>graph</code>）は、保存の前に新しい表にその関数を実行します。<a href="#layout-checks">図の配置: 検査</a>を参照してください。</li>
+            <li>新しい表を保存し、変わった列ごとに列の順で <code>log_edit</code> を呼び出します。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><span lang="en">new table, stored table (names, height, row names, classes, values)</span><span lang="ja">新しい表、保持している表（名前、行数、行名、クラス、値）</span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><span lang="en">the stored table, <code>Parameter.s_lastEdited</code>; for each changed column, an edit with the tag</span><span lang="ja">保持する表、<code>Parameter.s_lastEdited</code>、変わった列ごとのタグ</span> <code>"&lt;group&gt;"</code> <span lang="en">(e.g. <code>"dynamics"</code>) and log <code>"edit &lt;name&gt;: &lt;old&gt; -&gt; &lt;new&gt;"</code> (short values, <code>tools.value_text</code>)</span><span lang="ja">（例 <code>"dynamics"</code>）とログ <code>"edit &lt;name&gt;: &lt;old&gt; -&gt; &lt;new&gt;"</code>（短い値の表記、<code>tools.value_text</code>）の編集</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-10">
+        <p class="fs-head"><b class="fs-id">MB-10</b> <span class="fs-call"><span lang="en">any layer</span><span lang="ja">各層</span> → <code>LayerPackage.log_edit</code> → <code>handle_edit</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Message: the tag of the edited layer (for a parameter, the group and the owner tag) and the log, e.g. <code>powerflow/B005SG1: edit P: 0.5 -&gt; 0.6</code></li>
+            <li>Call <code>handle_edit(a_layer, tag, log)</code> on every layer from the edited one up the <code>parent</code> chain, also before the first initialize; <code>a_layer</code> is the edited layer (the owner for a <code>Parameter</code> container)</li>
+            <li>Each layer compares <code>a_layer == obj</code> and the tag, and appends the message to its own stale tags that the edit affects (e.g. <code>obj.sct_stale.equilibrium(end+1,1) = log</code>)</li>
+            <li>Network (<code>PowerNetwork.handle_edit</code>): keep one slack bus; mark <code>powerflow</code> for baseMVA, topology of buses and branches, bus parameters (powerflow, dynamics), the slack bus, components connected / replaced / removed, branch dynamics, component powerflow</li>
+            <li>Component, local and global controller: mark <code>equilibrium</code> and <code>odefcn</code> for their own dynamics, <code>equilibrium</code> for their own <code>"Topology"</code> (a controller added, replaced or removed)</li>
+            <li>A network <code>Hz</code> edit marks the network <code>odefcn</code> only (told from baseMVA by <code>s_lastEdited</code> of the <code>base</code> container); in <code>initialize</code> each model compares <code>r_odefcnHz</code> with <code>get_Hz()</code></li>
+          </ul><ul lang="ja">
+            <li>メッセージは、編集した層のタグ（パラメータの場合は区分と所有者のタグ）とログからなります。例: <code>powerflow/B005SG1: edit P: 0.5 -&gt; 0.6</code></li>
+            <li>編集した層から <code>parent</code> を順にたどり、各層の <code>handle_edit(a_layer, tag, log)</code> を呼び出します（最初の initialize の前でも同じです）。<code>a_layer</code> は編集した層（<code>Parameter</code> コンテナの場合は所有者）です。</li>
+            <li>各層は <code>a_layer == obj</code> とタグを比べ、編集が影響する自分の stale タグにメッセージを追加します（例: <code>obj.sct_stale.equilibrium(end+1,1) = log</code>）。</li>
+            <li>ネットワーク（<code>PowerNetwork.handle_edit</code>）は slack 母線を 1 つに保ちます。また、baseMVA、母線とブランチのトポロジー、母線のパラメータ（powerflow、dynamics）、slack 母線、機器の接続・置き換え・削除、ブランチの dynamics、機器の powerflow のいずれかが編集されると、<code>powerflow</code> に印を付けます。</li>
+            <li>機器とローカル制御器・グローバル制御器は、自分の dynamics が編集されると <code>equilibrium</code> と <code>odefcn</code> に、自分の <code>"Topology"</code>（制御器の追加・置き換え・削除）が編集されると <code>equilibrium</code> に印を付けます。</li>
+            <li>ネットワークの <code>Hz</code> の編集は、ネットワークの <code>odefcn</code> だけに印を付けます（baseMVA とは <code>base</code> コンテナの <code>s_lastEdited</code> で区別します）。<code>initialize</code> で各モデルが <code>r_odefcnHz</code> と <code>get_Hz()</code> を比較します。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><span lang="en">log and tag, <code>parent</code> chain, <code>Parameter.s_lastEdited</code> (baseMVA or Hz)</span><span lang="ja">ログとタグ、<code>parent</code> の連鎖、<code>Parameter.s_lastEdited</code>（baseMVA か Hz か）</span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>sct_stale</code> <span lang="en">of the layers on the path</span><span lang="ja">（経路上の層）</span>, <span lang="en">slack flags of the other buses</span><span lang="ja">他の母線の slack フラグ</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-11">
+        <p class="fs-head"><b class="fs-id">MB-11</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>network.IEEE9bus</code> <span lang="en">(constructor)</span><span lang="ja">（コンストラクタ）</span></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Shipped network: a <code>PowerNetwork</code> subclass in <code>+network/@&lt;Name&gt;/</code></li>
+            <li>Constructor: build itself from the CSV folders next to the class file with <code>PowerNetwork.import(dir, Network=obj, Initialize=false)</code> (runs MB-02 to MB-05 and MB-08), the controllers included (IEEE9bus: <code>"avr-ST1"</code>, <code>"pss-PSS1"</code> and <code>"gov-static"</code> per generator, in <code>local_controller/</code>)</li>
+            <li>Apply its options (IEEE9bus: <code>LocalController=false</code> removes every controller)</li>
+            <li>Call <code>initialize</code></li>
+          </ul><ul lang="ja">
+            <li>同梱のネットワークは、<code>+network/@&lt;Name&gt;/</code> にある <code>PowerNetwork</code> のサブクラスです。</li>
+            <li>コンストラクタは、クラスファイルの隣にある CSV フォルダから <code>PowerNetwork.import(dir, Network=obj, Initialize=false)</code> で、制御器も含めて自身を構築します（MB-02〜MB-05、MB-08 を実行。IEEE9bus では発電機ごとに <code>local_controller/</code> の <code>"avr-ST1"</code>、<code>"pss-PSS1"</code>、<code>"gov-static"</code>）。</li>
+            <li>オプションを反映します（IEEE9bus: <code>LocalController=false</code> はすべての制御器を外します）。</li>
+            <li>最後に <code>initialize</code> を呼び出します。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><span lang="en">CSV folders of the class (see <a href="feature-data-io.html">Data Import and Export</a>)</span><span lang="ja">クラスの CSV フォルダ（<a href="feature-data-io.html">データの入出力</a>を参照）</span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><span lang="en">an initialized network: every <code>sct_stale</code> field empty, handles built</span><span lang="ja">初期化済みのネットワーク。すべての <code>sct_stale</code> のフィールドが空で、ハンドルも構築済みです。</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-12">
+        <p class="fs-head"><b class="fs-id">MB-12</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.remove_bus</code> / <code>remove_branch</code> / <code>remove_global_controller</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Check the tags first</li>
+            <li>Bus not removable while a global controller controls one of its components</li>
+            <li>Bus not removable while branches end at it, unless <code>RemoveBranches=true</code> (then <code>remove_branch</code> runs first)</li>
+            <li>Take the removed objects out of the cell and delete them (<code>tools.delete_layers</code>): a removed bus with its components and their local controllers</li>
+          </ul><ul lang="ja">
+            <li>先にタグを検査します。</li>
+            <li>グローバル制御器が母線の機器を制御している間は、母線を削除できません。</li>
+            <li>ブランチがその母線につながっている間は、母線を削除できません（<code>RemoveBranches=true</code> なら先に <code>remove_branch</code> を実行します）。</li>
+            <li>削除したオブジェクトを cell から外して削除します（<code>tools.delete_layers</code>）。母線は、機器とそのローカル制御器ごと削除します。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><span lang="en">tags, <code>gc.controlledUnits</code>, <code>br.a_Bus</code></span><span lang="ja">タグ、<code>gc.controlledUnits</code>、<code>br.a_Bus</code></span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code>; <span lang="en">removed objects deleted; edit</span><span lang="ja">削除したオブジェクトは無効なハンドル、編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-13">
+        <p class="fs-head"><b class="fs-id">MB-13</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Bus.remove_component</code> / <code>Bus.replace_component</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Refuse a component that a global controller controls (<code>private/controlling_gcon</code>, handle comparison)</li>
+            <li><code>remove_component</code>: take it out and delete it with its local controllers (<code>tools.delete_layers</code>)</li>
+            <li><code>replace_component</code>:
+              <ul>
+                <li>create the new type with the powerflow, operation, graph and OPF settings and the number of the old one, and attach it (<code>a_Bus</code>, then a <code>"Topology"</code> edit on it)</li>
+                <li>give it a placeholder equilibrium (the bus voltage and the old current)</li>
+                <li><code>Controllers="keep"</code>: move the local controllers, after checking that the new component has their ports</li>
+                <li><code>"drop"</code>: delete them with the old component, with a warning</li>
+                <li>delete the old component</li>
+              </ul>
+            </li>
+          </ul><ul lang="ja">
+            <li>グローバル制御器が制御している機器は拒否します（<code>private/controlling_gcon</code>、ハンドル比較）。</li>
+            <li><code>remove_component</code>: 機器を外し、ローカル制御器ごと削除します（<code>tools.delete_layers</code>）。</li>
+            <li><code>replace_component</code>:
+              <ul>
+                <li>元の機器の powerflow・operation・graph・OPF の設定と番号で新しい種類を作成して接続します（<code>a_Bus</code> の代入、続いてその機器の <code>"Topology"</code> の編集）。</li>
+                <li>仮の平衡点（母線電圧と元の電流）を与えます。</li>
+                <li><code>Controllers="keep"</code>: ローカル制御器を移します（新しい機器にそのポートがあることを先に検査します）。</li>
+                <li><code>"drop"</code>: 警告を出し、元の機器と一緒に削除します。</li>
+                <li>元の機器を削除します。</li>
+              </ul>
+            </li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><code>a_Component</code>, <code>net.a_GlobalController</code>, <span lang="en">old component parameters and controllers</span><span lang="ja">元の機器のパラメータと制御器</span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>bus.a_Component</code>; <span lang="en">new component (replace)</span><span lang="ja">新しい機器（replace）</span>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-14">
+        <p class="fs-head"><b class="fs-id">MB-14</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Component.remove_local_controller</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Remove by tag the top controller (with its PSS only when <code>RemoveNested=true</code>) or the PSS alone</li>
+            <li>Delete the removed controllers (<code>tools.delete_layers</code>); <code>add_local_controller</code> builds a new controller</li>
+            <li>When a global controller controls the component: INFO <code>GUILDA:Component:GconRouteChanged</code> for the outputs that go elsewhere now, as in MB-05</li>
+          </ul><ul lang="ja">
+            <li>タグで最上位の制御器（<code>RemoveNested=true</code> のときだけその PSS も）または PSS だけを削除します。</li>
+            <li>削除した制御器を削除します（<code>tools.delete_layers</code>）。付け直すときは <code>add_local_controller</code> で新しい制御器を作成します。</li>
+            <li>グローバル制御器がこの機器を制御する場合は、接続先が変わった出力を INFO <code>GUILDA:Component:GconRouteChanged</code> で表示します（MB-05 と同じです）。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><code>a_LocalController</code>, <span lang="en">tags</span><span lang="ja">タグ</span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>a_LocalController</code>, <code>l_hasController</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-15">
+        <p class="fs-head"><b class="fs-id">MB-15</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>LayerPackage.set.s_tag</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li>Tag that is not a valid MATLAB variable name (<code>isvarname</code>), before or after the suffix: stop with <code>GUILDA:LayerPackage:InvalidTag</code>; the tag does not change</li>
+            <li>Tag already used by a sibling (<code>parent.children</code>): add a three-digit suffix starting at 002, with an Info line</li>
+            <li>Log the rename</li>
+            <li>Tags of child layers do not follow</li>
+          </ul><ul lang="ja">
+            <li>MATLAB の変数名として無効なタグ（<code>isvarname</code>、接尾辞を付ける前と後の両方で判定）を指定すると、<code>GUILDA:LayerPackage:InvalidTag</code> で停止します。タグは変わりません。</li>
+            <li>兄弟（<code>parent.children</code>）が使っているタグを指定すると、002 から始まる 3 桁の接尾辞を付け、Info を表示します。</li>
+            <li>名前の変更を記録します。</li>
+            <li>子の層のタグは追従しません。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><span lang="en">sibling tags</span><span lang="ja">兄弟のタグ</span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>s_tag</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Tag"</code> <span lang="en">(nothing becomes stale)</span><span lang="ja">（何も古くなりません）</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-16">
+        <p class="fs-head"><b class="fs-id">MB-16</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.get_layout</code> / <code>set_layout</code> → <code>Parameter</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
+          <dd><ul lang="en">
+            <li><code>L = net.get_layout()</code>: collects the graph tables of all elements into one struct with the tables <code>tab_bus</code>, <code>tab_branch</code>, <code>tab_component</code>; the tag is the column <code>Tag</code> (a component by its full tag), the rows are in the order of <code>a_Bus</code>, <code>a_Branch</code> and the components bus by bus; the network is not changed</li>
+            <li>Read-only columns: <code>From</code>, <code>To</code> (tags of the end buses) in <code>tab_branch</code>, <code>Bus</code> in <code>tab_component</code></li>
+            <li><code>net.set_layout(L, IgnoreUnknown=false)</code>: finds each row's element by <code>Tag</code> and writes the given columns into its graph table. Any part can be given (one or two tables, some rows, <code>Tag</code> and some columns); what is not given stays. <code>From</code>, <code>To</code>, <code>Bus</code> are ignored</li>
+            <li>A tag not in the network: <code>GUILDA:PowerNetwork:LayoutUnknownTag</code>, or skipped with <code>IgnoreUnknown=true</code> (to copy a layout to a network with the same tags); a table or column that is not part of the layout: <code>LayoutUnknownColumn</code>; a table without <code>Tag</code>: <code>LayoutNoTag</code></li>
+            <li>Every row is checked with the check function of the element's graph container before anything is written; one wrong value writes nothing. A row is checked as a whole, so one call can set <code>Shape="hbar"</code> and <code>Length</code> together</li>
+            <li>Writes each new table through <code>tab_parameter</code> (MB-09)</li>
+          </ul><ul lang="ja">
+            <li><code>L = net.get_layout()</code>: 全要素の graph の表を、表 <code>tab_bus</code>、<code>tab_branch</code>、<code>tab_component</code> を持つ 1 つの構造体にまとめます。タグは列 <code>Tag</code> です（機器は完全なタグ）。行は <code>a_Bus</code>、<code>a_Branch</code>、母線ごとの機器の順です。ネットワークは変えません。</li>
+            <li>読むだけの列: <code>tab_branch</code> の <code>From</code>、<code>To</code>（端の母線のタグ）、<code>tab_component</code> の <code>Bus</code></li>
+            <li><code>net.set_layout(L, IgnoreUnknown=false)</code>: 各行の要素を <code>Tag</code> で探し、与えた列をその graph の表に書きます。一部だけを与えられます（表は 1 つか 2 つ、行は一部、列は <code>Tag</code> と一部の列）。与えなかったものは変わりません。<code>From</code>、<code>To</code>、<code>Bus</code> は無視します。</li>
+            <li>ネットワークにないタグは <code>GUILDA:PowerNetwork:LayoutUnknownTag</code> です。<code>IgnoreUnknown=true</code> なら飛ばします（同じタグを持つ別のネットワークに配置を写すとき）。配置にない表や列は <code>LayoutUnknownColumn</code>、<code>Tag</code> のない表は <code>LayoutNoTag</code> です。</li>
+            <li>書く前に、すべての行を要素の graph コンテナの検査の関数で検査します。1 つでも誤りがあれば何も書きません。行は全体で検査するので、1 回の呼び出しで <code>Shape="hbar"</code> と <code>Length</code> を一緒に設定できます。</li>
+            <li>新しい表は <code>tab_parameter</code> を通して書きます（MB-09）。</li>
+          </ul></dd>
+          <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
+          <dd><span lang="en">tags and graph tables of all buses, branches and components</span><span lang="ja">全母線、ブランチ、機器のタグと graph の表</span></dd>
+          <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
+          <dd><code>get_layout</code>: <code>sct_layout</code>; <code>set_layout</code>: <span lang="en">the graph tables; for each changed column an edit with the tag</span><span lang="ja">graph の表、変わった列ごとにタグ</span> <code>"graph"</code> <span lang="en">(nothing becomes stale)</span><span lang="ja">の編集（何も古くなりません）</span></dd>
+        </dl>
+      </li>
+    </ol>
+
+    <!-- ============================== 4. DATA ============================== -->
+    <h2 id="data"><span lang="en">4. Data the feature produces</span><span lang="ja">4. この機能が生成するデータ</span></h2>
+    <p lang="en">The result is the object tree itself. All model classes derive from <code>LayerPackage &lt; handle</code>, so a variable holds a reference: <code>gen = net.a_Bus{1}.a_Component{1}</code> is the same object as the one in the network.</p>
+    <p lang="ja">結果はオブジェクトの木そのものです。すべてのモデルクラスは <code>LayerPackage &lt; handle</code> を継承するため、変数が持つのは参照です。<code>gen = net.a_Bus{1}.a_Component{1}</code> はネットワーク内と同じオブジェクトです。</p>
+    <figure class="dg-figure">
+      <svg class="dg-svg dg-sv fmb-ref dg-only-wide" viewBox="0 0 760 500" role="img" aria-labelledby="fmb-ref-title">
+        <title id="fmb-ref-title">Object references of a built network: net holds buses B001 and B002, branch EL001 and global controller PowerNetworkAGC1; B001 holds B001SG1, which holds B001SG1CA1, which holds B001SG1CP2; B002 holds B002LPQ1. Each child refers back to its parent. EL001 refers to its two end buses and PowerNetworkAGC1 to the components it controls without being their parent.</title>
+        <defs>
+          <marker id="fmb-own" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
+          <marker id="fmb-back" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="fmb-open" d="M1 1L10 6L1 11"/></marker>
+          <marker id="fmb-as" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head is-muted" d="M0 0L10 5L0 10z"/></marker>
+        </defs>
+        <!-- network -->
+        <rect class="dg-sv-box is-solid" x="300" y="16" width="160" height="54" rx="8"/>
+        <text class="dg-mono is-b is-inv" x="380" y="39" text-anchor="middle">net</text>
+        <text class="is-sm is-inv" x="380" y="58" text-anchor="middle">PowerNetwork</text>
+        <!-- owning connectors from net (end: child, start: back-reference) -->
+        <path class="dg-sv-line" d="M342 72L106 143" marker-start="url(#fmb-back)" marker-end="url(#fmb-own)"/>
+        <path class="dg-sv-line" d="M368 72L306 143" marker-start="url(#fmb-back)" marker-end="url(#fmb-own)"/>
+        <path class="dg-sv-line" d="M392 72L482 143" marker-start="url(#fmb-back)" marker-end="url(#fmb-own)"/>
+        <path class="dg-sv-line" d="M418 72L662 143" marker-start="url(#fmb-back)" marker-end="url(#fmb-own)"/>
+        <text class="dg-mono is-accent fmb-l" x="226" y="96" text-anchor="end">a_Bus{1}</text>
+        <text class="dg-mono is-muted fmb-l" x="196" y="112" text-anchor="end">a_PowerNetwork</text>
+        <text class="dg-mono is-accent fmb-l" x="330" y="118" text-anchor="end">a_Branch{1}</text>
+        <text class="dg-mono is-muted fmb-l" x="314" y="134" text-anchor="end">a_PowerNetwork</text>
+        <text class="dg-mono is-accent fmb-l" x="452" y="110">a_Bus{2}</text>
+        <text class="dg-mono is-muted fmb-l" x="472" y="130">a_PowerNetwork</text>
+        <text class="dg-mono is-accent fmb-l" x="518" y="92">a_GlobalController{1}</text>
+        <text class="dg-mono is-muted fmb-l" x="568" y="108">a_PowerNetwork</text>
+        <!-- row 2 -->
+        <rect class="dg-sv-box" x="20" y="145" width="136" height="50" rx="8"/>
+        <text class="dg-mono is-b" x="88" y="166" text-anchor="middle">B001</text>
+        <text class="is-sm is-muted" x="88" y="184" text-anchor="middle">Bus</text>
+        <rect class="dg-sv-box" x="224" y="145" width="136" height="50" rx="8"/>
+        <text class="dg-mono is-b" x="292" y="166" text-anchor="middle">EL001</text>
+        <text class="is-sm is-muted" x="292" y="184" text-anchor="middle">branch.pi</text>
+        <rect class="dg-sv-box" x="428" y="145" width="136" height="50" rx="8"/>
+        <text class="dg-mono is-b" x="496" y="166" text-anchor="middle">B002</text>
+        <text class="is-sm is-muted" x="496" y="184" text-anchor="middle">Bus</text>
+        <rect class="dg-sv-box" x="612" y="145" width="136" height="50" rx="8"/>
+        <text class="dg-mono is-b" x="680" y="166" text-anchor="middle">PowerNetworkAGC1</text>
+        <text class="is-sm is-muted" x="680" y="184" text-anchor="middle">GlobalController</text>
+        <!-- branch end buses (association) -->
+        <path class="fmb-assoc" d="M222 170H160" marker-end="url(#fmb-as)"/>
+        <path class="fmb-assoc" d="M362 170H424" marker-end="url(#fmb-as)"/>
+        <text class="dg-mono is-muted fmb-l" x="191" y="214" text-anchor="middle">a_Bus{1}</text>
+        <text class="dg-mono is-muted fmb-l" x="394" y="214" text-anchor="middle">a_Bus{2}</text>
+        <!-- row 3 -->
+        <path class="dg-sv-line" d="M88 197V263" marker-start="url(#fmb-back)" marker-end="url(#fmb-own)"/>
+        <text class="dg-mono is-accent fmb-l" x="98" y="226">a_Component{1}</text>
+        <text class="dg-mono is-muted fmb-l" x="98" y="242">a_Bus</text>
+        <path class="dg-sv-line" d="M496 197V263" marker-start="url(#fmb-back)" marker-end="url(#fmb-own)"/>
+        <text class="dg-mono is-accent fmb-l" x="506" y="226">a_Component{1}</text>
+        <text class="dg-mono is-muted fmb-l" x="506" y="242">a_Bus</text>
+        <rect class="dg-sv-box" x="20" y="265" width="136" height="50" rx="8"/>
+        <text class="dg-mono is-b" x="88" y="286" text-anchor="middle">B001SG1</text>
+        <text class="is-sm is-muted" x="88" y="304" text-anchor="middle">Component</text>
+        <rect class="dg-sv-box" x="428" y="265" width="136" height="50" rx="8"/>
+        <text class="dg-mono is-b" x="496" y="286" text-anchor="middle">B002LPQ1</text>
+        <text class="is-sm is-muted" x="496" y="304" text-anchor="middle">Component</text>
+        <!-- global controller units (association) -->
+        <path class="fmb-assoc" d="M680 197V372H132V319" marker-end="url(#fmb-as)"/>
+        <text class="dg-mono is-muted fmb-l" x="420" y="366" text-anchor="middle">controlledUnits{1}</text>
+        <!-- row 4 -->
+        <path class="dg-sv-line" d="M88 317V383" marker-start="url(#fmb-back)" marker-end="url(#fmb-own)"/>
+        <text class="dg-mono is-accent fmb-l" x="98" y="340">a_LocalController{1}</text>
+        <text class="dg-mono is-muted fmb-l" x="98" y="356">a_Component</text>
+        <rect class="dg-sv-box" x="20" y="385" width="136" height="50" rx="8"/>
+        <text class="dg-mono is-b" x="88" y="406" text-anchor="middle">B001SG1CA1</text>
+        <text class="is-sm is-muted" x="88" y="424" text-anchor="middle">LocalController</text>
+        <path class="dg-sv-line" d="M158 410H290" marker-start="url(#fmb-back)" marker-end="url(#fmb-own)"/>
+        <text class="dg-mono is-accent fmb-l" x="224" y="400" text-anchor="middle">a_LocalController{1}</text>
+        <text class="dg-mono is-muted fmb-l" x="224" y="428" text-anchor="middle">a_Component</text>
+        <rect class="dg-sv-box" x="292" y="385" width="136" height="50" rx="8"/>
+        <text class="dg-mono is-b" x="360" y="406" text-anchor="middle">B001SG1CP2</text>
+        <text class="is-sm is-muted" x="360" y="424" text-anchor="middle">LocalController</text>
+        <!-- legend -->
+        <path class="dg-sv-line" d="M24 470H62" marker-start="url(#fmb-back)" marker-end="url(#fmb-own)"/>
+        <text class="is-sm" lang="en" x="70" y="474">filled head: holds the child (a_*); open head: the child's back-reference</text>
+        <text class="is-sm" lang="ja" x="70" y="474">塗りの矢印: 子を保持（a_*）、白抜きの矢印: 子から親への逆参照</text>
+        <path class="fmb-assoc" d="M24 490H62" marker-end="url(#fmb-as)"/>
+        <text class="is-sm" lang="en" x="70" y="494">dotted: reference to an object that is not the parent</text>
+        <text class="is-sm" lang="ja" x="70" y="494">点線: 親ではないオブジェクトへの参照</text>
+      </svg>
+      <p class="dg-only-narrow" lang="en">The references of a built network are listed in the table below.</p>
+      <p class="dg-only-narrow" lang="ja">構築したネットワークの参照は、下の表を参照してください。</p>
+      <figcaption lang="en">A two-bus network with a generator (AVR and PSS), a load, a line and an AGC. Not drawn: every model object also holds its <code>Parameter</code> containers (<code>a_Parameter</code>), whose parent is that object.</figcaption>
+      <figcaption lang="ja">発電機（AVR と PSS）、負荷、送電線、AGC を持つ 2 母線のネットワークです。図には記載していませんが、すべてのモデルオブジェクトは <code>Parameter</code> のコンテナ（<code>a_Parameter</code>）も保持し、その親はそのオブジェクトです。</figcaption>
+    </figure>
+    <table class="dg-table fmb-refs">
+      <thead><tr><th><span lang="en">Holder.property</span><span lang="ja">保持側.プロパティ</span></th><th><span lang="en">Refers to</span><span lang="ja">参照先</span></th><th><span lang="en">Kind</span><span lang="ja">種類</span></th><th><span lang="en">Set / cleared by</span><span lang="ja">設定・解除</span></th></tr></thead>
+      <tbody>
+        <tr><td><code>PowerNetwork.a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">buses, branches, global controllers (n×1 cell)</span><span lang="ja">母線・ブランチ・グローバル制御器（n×1 cell）</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">child</span><span lang="ja">子</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_*</code> / <code>remove_*</code></td></tr>
+        <tr><td><code>Bus.a_Component</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">components</span><span lang="ja">機器</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">child</span><span lang="ja">子</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_component</code>, <code>replace_component</code> / <code>remove_component</code></td></tr>
+        <tr><td><code>Component.a_LocalController</code>, <code>LocalController.a_LocalController</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">the AVR or <code>"local"</code> controller, then the governor; the PSS under the AVR</span><span lang="ja">AVR または <code>"local"</code> の制御器、続いてガバナ。AVR の下の PSS</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">child</span><span lang="ja">子</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_local_controller</code> / <code>remove_local_controller</code></td></tr>
+        <tr><td><code>Bus.a_PowerNetwork</code>, <code>Branch.a_PowerNetwork</code>, <code>GlobalController.a_PowerNetwork</code></td><td data-label="Refers to" data-label-ja="参照先"><code>net</code></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><span lang="en"><code>Bus</code> constructor, <code>add_branch</code>, <code>add_global_controller</code> / <code>remove_*</code> (<code>[]</code>)</span><span lang="ja"><code>Bus</code> のコンストラクタ・<code>add_branch</code>・<code>add_global_controller</code> / <code>remove_*</code>（<code>[]</code>）</span></td></tr>
+        <tr><td><code>Component.a_Bus</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">its bus</span><span lang="ja">接続先の母線</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_component</code>, <code>replace_component</code> / <code>remove_component</code>, <code>replace_component</code> (<code>[]</code>)</td></tr>
+        <tr><td><code>LocalController.a_Component</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">the component, or the AVR for a PSS</span><span lang="ja">機器、PSS の場合は AVR</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>Component.add_local_controller</code> / <code>remove_local_controller</code>, <code>add_local_controller</code> (<code>[]</code>)</td></tr>
+        <tr><td><span lang="en">parent of each</span><span lang="ja">各</span> <code>Parameter</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">the object that owns it</span><span lang="ja">それを所有するオブジェクト</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><span lang="en"><code>Parameter</code> constructor</span><span lang="ja"><code>Parameter</code> のコンストラクタ</span></td></tr>
+        <tr><td><code>Branch.a_Bus</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">{from; to} buses (2×1 cell)</span><span lang="ja">{from; to} の母線（2×1 cell）</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">reference, not a parent</span><span lang="ja">参照（親ではない）</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_branch</code> / <code>remove_branch</code> (<code>cell(0,1)</code>)</td></tr>
+        <tr><td><code>GlobalController.controlledUnits</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">controlled components</span><span lang="ja">制御対象の機器</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">reference, not a parent</span><span lang="ja">参照（親ではない）</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><span lang="en">constructor</span><span lang="ja">コンストラクタ</span></td></tr>
+      </tbody>
+    </table>
+    <ul lang="en">
+      <li>Protected property <code>children</code>: the children that <code>disp_tree</code> and <code>struct</code> walk</li>
+      <li>Values derived from several owners: <code>Dependent</code> properties that read the owner each time, e.g. <code>Component.c_Vequilibrium</code> (= <code>a_Bus.c_Vequilibrium</code>), <code>Bus.c_Iequilibrium</code> (sum of the component currents), <code>PowerNetwork.cv_Vequilibrium</code></li>
+      <li><code>net.disp_tree()</code>: prints the tree</li>
+    </ul>
+    <ul lang="ja">
+      <li>protected プロパティ <code>children</code> は、<code>disp_tree</code> や <code>struct</code> がたどる子の一覧です。</li>
+      <li>複数の所有者から決まる値は、そのつど所有者を読みにいく <code>Dependent</code> プロパティにしています。例: <code>Component.c_Vequilibrium</code>（= <code>a_Bus.c_Vequilibrium</code>）、<code>Bus.c_Iequilibrium</code>（機器の電流の和）、<code>PowerNetwork.cv_Vequilibrium</code></li>
+      <li><code>net.disp_tree()</code> で木を表示できます。</li>
+    </ul>
+
+    <h3 id="layout"><span lang="en">Diagram layout</span><span lang="ja">図の配置</span></h3>
+    <p lang="en">The <code>graph</code> parameters of the buses, branches and components place them in the network diagrams. Each column has one meaning. <code>GraphNetDiagram</code> (<code>net.plot_diagram</code>) reads the positions, shapes, paths, offsets and styles; <code>GraphNetMap</code> (<code>res.plot_network</code>) reads only the bus positions; <code>GraphSpring</code> (<code>plot_spring_model</code>) reads <code>Shape</code>, <code>MarkerSize</code> and <code>Color</code>. How the diagrams draw them (2D and 3D, sizes in pt) is in <a href="feature-graphs.html">Graphs</a>.</p>
+    <p lang="ja">母線、ブランチ、機器の <code>graph</code> パラメータは、ネットワーク図での配置です。1 つの列が 1 つの意味を持ちます。<code>GraphNetDiagram</code>（<code>net.plot_diagram</code>）は位置、形、経路、接続位置、線の種類を、<code>GraphNetMap</code>（<code>res.plot_network</code>）は母線の位置だけを、<code>GraphSpring</code>（<code>plot_spring_model</code>）は <code>Shape</code>、<code>MarkerSize</code>、<code>Color</code> を読みます。図での描き方（2D と 3D、pt の大きさ）は<a href="feature-graphs.html">図</a>にあります。</p>
+    <ul lang="en">
+      <li><b>Coordinates</b>: diagram units without a physical unit; x to the right, y up (as the MATLAB axes); no fixed range</li>
+      <li>Bus <code>X</code>, <code>Y</code>: the <b>center</b> of the shape, also of a bar</li>
+      <li>Component <code>DX</code>, <code>DY</code> and its <code>Path</code>: <b>relative</b> to the center of its bus, so moving a bus moves its components and their lines with it</li>
+      <li>Positions on a bar (<code>FromOffset</code>, <code>ToOffset</code>, <code>Offset</code>): signed distance from the center of the bar along it, positive to the right on a horizontal bar and up on a vertical bar, in the same units</li>
+      <li>Height (z) is a setting of the diagram (<code>BusHeightMode</code>, in 2D and 3D), not part of the layout</li>
+    </ul>
+    <ul lang="ja">
+      <li><b>座標</b>: 物理的な単位のない図の座標です。x は右、y は上（MATLAB の軸と同じ）で、範囲は決まっていません。</li>
+      <li>母線の <code>X</code>、<code>Y</code>: 図形の<b>中心</b>です。棒も中心で表します。</li>
+      <li>機器の <code>DX</code>、<code>DY</code> と機器の <code>Path</code>: 母線の中心からの<b>相対</b>位置です。母線を動かすと、機器と接続線もついてきます。</li>
+      <li>棒の上の位置（<code>FromOffset</code>、<code>ToOffset</code>、<code>Offset</code>）: 棒の中心から棒に沿った符号付きの距離です。水平の棒は右、縦の棒は上が正で、座標と同じ単位です。</li>
+      <li>高さ（z）は図の設定（<code>BusHeightMode</code>。2D と 3D の両方）で、配置には含みません。</li>
+    </ul>
+    <table class="dg-table">
+      <thead><tr><th><span lang="en">Element</span><span lang="ja">要素</span></th><th><span lang="en">Column (class, default)</span><span lang="ja">列（クラス、既定値）</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th></tr></thead>
+      <tbody>
+        <tr><td><span lang="en">Bus</span><span lang="ja">母線</span></td><td data-label="Column" data-label-ja="列"><code>X</code>, <code>Y</code> (double, NaN)</td><td data-label="Meaning" data-label-ja="意味"><span lang="en">center of the shape; NaN in either: placed automatically (see below)</span><span lang="ja">図形の中心。どちらかが NaN なら自動で置きます（下記）。</span></td></tr>
+        <tr><td></td><td data-label="Column" data-label-ja="列"><code>Shape</code> (string, <code>"square"</code>)</td><td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>"hbar"</code>, <code>"vbar"</code> (horizontal and vertical bars), or a MATLAB marker name: <code>"circle"</code>, <code>"square"</code>, <code>"^"</code>, <code>"v"</code>, <code>"&lt;"</code>, <code>"&gt;"</code>, <code>"none"</code>. Short names such as <code>"o"</code>, <code>"s"</code> are not accepted</span><span lang="ja"><code>"hbar"</code>、<code>"vbar"</code>（水平と縦の棒）、または MATLAB のマーカー名 <code>"circle"</code>、<code>"square"</code>、<code>"^"</code>、<code>"v"</code>、<code>"&lt;"</code>、<code>"&gt;"</code>、<code>"none"</code> です。<code>"o"</code>、<code>"s"</code> などの短い名前は受け付けません。</span></td></tr>
+        <tr><td></td><td data-label="Column" data-label-ja="列"><code>Length</code> (double, NaN)</td><td data-label="Meaning" data-label-ja="意味"><span lang="en">length of a bar: a positive finite number for <code>"hbar"</code> and <code>"vbar"</code>; not used by the other shapes</span><span lang="ja">棒の長さです。<code>"hbar"</code>、<code>"vbar"</code> では正の有限値が必須で、ほかの形では使いません。</span></td></tr>
+        <tr><td></td><td data-label="Column" data-label-ja="列"><code>MarkerSize</code> (double, NaN), <code>Color</code> (string, <code>""</code>)</td><td data-label="Meaning" data-label-ja="意味"><span lang="en">marker size and color (a MATLAB color name or <code>"#RRGGBB"</code>); NaN and <code>""</code>: default of the drawer</span><span lang="ja">マーカーの大きさと色（MATLAB の色の名前か <code>"#RRGGBB"</code>）です。NaN と <code>""</code> は描画側の既定です。</span></td></tr>
+        <tr><td><span lang="en">Branch</span><span lang="ja">ブランチ</span></td><td data-label="Column" data-label-ja="列"><code>Path</code> (string, <code>""</code>)</td><td data-label="Meaning" data-label-ja="意味"><span lang="en">bend points <code>"x y; x y"</code> (points separated by <code>;</code>, x and y by a space); <code>""</code>: a straight line. <code>add_branch</code> also takes an n×2 matrix and stores its text</span><span lang="ja">折れ点 <code>"x y; x y"</code>（点を <code>;</code>、x と y を空白で区切る）です。<code>""</code> は直線です。<code>add_branch</code> は n×2 の行列も受け付け、文字列にして保存します。</span></td></tr>
+        <tr><td></td><td data-label="Column" data-label-ja="列"><code>FromOffset</code>, <code>ToOffset</code> (double, NaN)</td><td data-label="Meaning" data-label-ja="意味"><span lang="en">where the line meets the bar of the from and to bus; NaN: the first (last) bend point pushed onto the bar, or the bar center without bend points. Not used at a bus that is not a bar (the line meets its center); a value beyond the end of the bar is drawn at that end</span><span lang="ja">from・to 母線の棒の上で線がつながる位置です。NaN なら最初（最後）の折れ点を棒の範囲に押し込んだ点、折れ点がなければ棒の中心です。棒でない母線では使いません（中心につなぎます）。棒の端を越える値は、その端に描きます。</span></td></tr>
+        <tr><td></td><td data-label="Column" data-label-ja="列"><code>Style</code> (string, <code>"line"</code>)</td><td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>"line"</code> or <code>"transformer"</code>: the transformer symbol is drawn near the <b>From</b> end, the side of the tap in the GUILDA branch model</span><span lang="ja"><code>"line"</code> か <code>"transformer"</code> です。変圧器の記号は、GUILDA のブランチのモデルでタップがある <b>From</b> 端の近くに描きます。</span></td></tr>
+        <tr><td><span lang="en">Component</span><span lang="ja">機器</span></td><td data-label="Column" data-label-ja="列"><code>DX</code>, <code>DY</code> (double, NaN)</td><td data-label="Meaning" data-label-ja="意味"><span lang="en">position from the center of the bus; NaN: placed around the bus</span><span lang="ja">母線の中心からの位置です。NaN なら母線のまわりに置きます。</span></td></tr>
+        <tr><td></td><td data-label="Column" data-label-ja="列"><code>Shape</code> (string, <code>"circle"</code>)</td><td data-label="Meaning" data-label-ja="意味"><span lang="en">the bus shapes without the bars</span><span lang="ja">母線の形から棒を除いたもの</span></td></tr>
+        <tr><td></td><td data-label="Column" data-label-ja="列"><code>Path</code> (string, <code>""</code>)</td><td data-label="Meaning" data-label-ja="意味"><span lang="en">bend points of the connection line, relative to the bus center</span><span lang="ja">接続線の折れ点です。母線の中心からの相対で表します。</span></td></tr>
+        <tr><td></td><td data-label="Column" data-label-ja="列"><code>Offset</code> (double, NaN)</td><td data-label="Meaning" data-label-ja="意味"><span lang="en">where the connection line meets the bar of the bus; NaN: the last bend point, else the component, pushed onto the bar</span><span lang="ja">接続線が母線の棒につながる位置です。NaN なら最後の折れ点、なければ機器の位置を棒の範囲に押し込んだ点です。</span></td></tr>
+        <tr><td></td><td data-label="Column" data-label-ja="列"><code>MarkerSize</code>, <code>Color</code></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">as for a bus</span><span lang="ja">母線と同じ</span></td></tr>
+      </tbody>
+    </table>
+<pre><code>b1 = net.add_bus(X=0.25, Y=0.56, Shape="hbar", Length=0.1);
+b2 = net.add_bus(X=0.6,  Y=0.56, Shape="vbar", Length=0.08);
+net.add_branch("pi", [b1.s_tag, b2.s_tag], X=0.1, Path="0.4 0.56", FromOffset=0.03, Style="transformer");
+b1.add_component("load-power", P=-0.5, DX=0, DY=-0.06, Shape="v");</code></pre>
+
+    <h4 id="layout-checks"><span lang="en">Checks</span><span lang="ja">検査</span></h4>
+    <p lang="en">A wrong layout value stops when it is written, not when it is drawn.</p>
+    <p lang="ja">誤った配置の値は、描くときではなく書いたときに止まります。</p>
+    <ul lang="en">
+      <li><code>add_bus</code>, <code>add_branch</code>, <code>add_component</code>: argument validation (<code>Shape</code> and <code>Style</code> by <code>mustBeMember</code>, <code>Path</code> by <code>tools.layout_mustBePath</code>, positive <code>Length</code> and <code>MarkerSize</code> or NaN)</li>
+      <li>Every write of a graph table, also a direct one (<code>bus.tab_parameter.graph.Length = 0.1</code>, the GUI, <code>net.set_layout</code>, <code>import</code>): the check function of the container (MB-09). <code>X</code>, <code>Y</code>, <code>DX</code>, <code>DY</code> and the offsets: finite or NaN; <code>Shape</code>, <code>Style</code>: one of the values above; <code>Path</code>: <code>""</code> or points of two finite numbers (<code>tools.layout_parse_path</code>, which also turns the text into an n×2 matrix for the drawers); <code>Color</code>: <code>""</code> or a color that <code>validatecolor</code> accepts</li>
+      <li>A bar needs a positive <code>Length</code>. The check sees the whole row, so when a bus becomes a bar one cell at a time, set <code>Length</code> first and <code>Shape</code> after it: <code>bus.tab_parameter.graph.Length = 0.1</code>, then <code>bus.tab_parameter.graph.Shape = "hbar"</code>. Setting <code>Shape</code> first stops with <code>GUILDA:Bus:BarLength</code> and changes nothing. <code>add_bus</code> and <code>set_layout</code> take both in one call</li>
+      <li>The old argument names (<code>Xaxis</code>, <code>Yaxis</code>, <code>Marker</code>, <code>MidXaxis</code>, <code>MidYaxis</code>) are not arguments: MATLAB stops with its unknown-argument error</li>
+    </ul>
+    <ul lang="ja">
+      <li><code>add_bus</code>、<code>add_branch</code>、<code>add_component</code>: 引数の検証です（<code>Shape</code> と <code>Style</code> は <code>mustBeMember</code>、<code>Path</code> は <code>tools.layout_mustBePath</code>、<code>Length</code> と <code>MarkerSize</code> は正の値か NaN）。</li>
+      <li>graph の表への書き込みはすべて、直接の書き込み（<code>bus.tab_parameter.graph.Length = 0.1</code>、GUI、<code>net.set_layout</code>、<code>import</code>）も含めて、コンテナの検査の関数で検査します（MB-09）。<code>X</code>、<code>Y</code>、<code>DX</code>、<code>DY</code> とオフセットは有限値か NaN、<code>Shape</code> と <code>Style</code> は上の値のどれか、<code>Path</code> は <code>""</code> か 2 つの有限の数からなる点の並び（<code>tools.layout_parse_path</code>。描画側のために文字列を n×2 の行列にもします）、<code>Color</code> は <code>""</code> か <code>validatecolor</code> が受け付ける色です。</li>
+      <li>棒には正の <code>Length</code> が必要です。検査は行全体を見るので、1 セルずつ母線を棒にするときは、先に <code>Length</code>、その後に <code>Shape</code> を設定します: <code>bus.tab_parameter.graph.Length = 0.1</code>、続けて <code>bus.tab_parameter.graph.Shape = "hbar"</code>。先に <code>Shape</code> を設定すると <code>GUILDA:Bus:BarLength</code> で止まり、何も変わりません。<code>add_bus</code> と <code>set_layout</code> は 1 回の呼び出しで両方を受け付けます。</li>
+      <li>古い引数名（<code>Xaxis</code>、<code>Yaxis</code>、<code>Marker</code>、<code>MidXaxis</code>、<code>MidYaxis</code>）は引数ではないので、MATLAB の未知の引数のエラーで止まります。</li>
+    </ul>
+
+    <h4 id="layout-auto"><span lang="en">Elements without coordinates</span><span lang="ja">座標のない要素</span></h4>
+    <ul lang="en">
+      <li>A bus with a coordinate never moves. The diagram places only the buses whose <code>X</code> or <code>Y</code> is NaN (<code>tools.layout_place_buses</code>, shared by <code>GraphNetDiagram</code> and <code>GraphNetMap</code>): a bus connected to placed buses goes near them, away from the other buses and lines, and a short relaxation moves only these new buses; a bus with no connection to placed buses goes to the right of the drawing</li>
+      <li>A position drawn before in the same diagram counts as a coordinate (<code>set_position</code>, redrawing with <code>Graph=G</code>)</li>
+      <li>No bus has a coordinate: all buses are placed by the <code>"force"</code> layout</li>
+      <li>The placement has no randomness: the same network gives the same drawing</li>
+      <li>A component with <code>DX</code> or <code>DY</code> NaN is placed around its bus, at equal angles in the order of the components</li>
+      <li>The diagram does not write these positions into the model (a <code>plot_</code> call does not change it). To keep them: <code>net.set_layout(G.get_layout())</code></li>
+    </ul>
+    <ul lang="ja">
+      <li>座標のある母線は動きません。図は <code>X</code> か <code>Y</code> が NaN の母線だけを置きます（<code>tools.layout_place_buses</code>。<code>GraphNetDiagram</code> と <code>GraphNetMap</code> が共通に使います）。置いてある母線につながる母線は、その近くの、ほかの母線や線から離れた所に置き、短い緩和でこの新しい母線だけを動かします。置いてある母線とつながらない母線は、図の右に置きます。</li>
+      <li>同じ図で前に描いた位置も座標として扱います（<code>set_position</code>、<code>Graph=G</code> での描き直し）。</li>
+      <li>どの母線にも座標がなければ、全母線を <code>"force"</code> レイアウトで置きます。</li>
+      <li>配置に乱数は使いません。同じネットワークなら同じ図になります。</li>
+      <li><code>DX</code> か <code>DY</code> が NaN の機器は、母線のまわりに機器の順に等しい角度で置きます。</li>
+      <li>図はこれらの位置をモデルに書きません（<code>plot_</code> の呼び出しはモデルを変えません）。保存するときは <code>net.set_layout(G.get_layout())</code> を呼びます。</li>
+    </ul>
+<pre><code>L = net.get_layout();                                  % edit the whole layout
+L.tab_bus.Length(L.tab_bus.Shape == "hbar") = 0.12;
+net.set_layout(L);
+
+net2.set_layout(net.get_layout(), IgnoreUnknown=true);  % copy to a network with the same tags
+
+G = net.plot_diagram();                                % keep the drawn positions
+G.set_position("B001", [0.1 0.9]);
+net.set_layout(G.get_layout());</code></pre>
+    <p lang="en">Old model folders: convert their CSV files once with <code>tools.layout_convert_columns</code> (see <a href="feature-data-io.html#layout-columns">Data Import and Export: Layout columns</a>).</p>
+    <p lang="ja">古いモデルフォルダの CSV ファイルは、<code>tools.layout_convert_columns</code> で 1 回変換します（<a href="feature-data-io.html#layout-columns">データの入出力: 配置の列</a>を参照）。</p>
+
+    <!-- ============================== 5. SIDE EFFECTS ============================== -->
+    <h2 id="side-effects"><span lang="en">5. Side effects on the model and caches</span><span lang="ja">5. モデルへの副作用とキャッシュ</span></h2>
+    <ul lang="en">
+      <li><b>Before the first <code>initialize</code></b>: every stale tag holds "initialize has not been run" from the constructor, so edits add no message. <code>handle_edit</code> still keeps a single slack bus</li>
+      <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: Handling of model edits</a> appends its message to the stale tags it affects; <code>simulate</code> and <code>get_sys</code> then stop with their stale errors (e.g. <code>GUILDA:PowerNetwork:SimulateStale</code>) until <code>initialize</code> runs again. Operation, OPF, graph and tag edits: nothing stale</li>
+      <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (they stay empty). <code>initialize</code> builds the stale ones (<code>set_odefcn</code>, see <a href="feature-initialize.html">Initialization</a>); analyses only check, and nothing else builds handles. After an edit without <code>initialize</code>, a <code>get_sys</code> at a given point uses the previous ones</li>
+      <li><b>Removed objects</b>: the removal is a <code>"Topology"</code> edit of the parent (a removed global controller: nothing), and the removed object is deleted (<a href="class-design.html#parents">Class Design: parent references</a>), so it cannot be edited or attached again; <code>add_*</code> builds a new one</li>
+      <li><b>Copies</b>: no deep-copy method; <code>b = a</code> copies a handle. For an independent network, save and load through a MAT file or CSV export. A loaded network, or a lower layer saved alone, keeps its parameter tables, so its edits are checked and logged as before saving</li>
+    </ul>
+    <ul lang="ja">
+      <li><b>最初の <code>initialize</code> の前</b>: すべての stale タグがコンストラクタの "initialize has not been run" を保持するため、編集はメッセージを追加しません。<code>handle_edit</code> は slack 母線を 1 つに保ちます。</li>
+      <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>で古くなるとされる編集は、影響する stale タグにメッセージを追加します。<code>simulate</code>・<code>get_sys</code> は、再び <code>initialize</code> を実行するまでそれぞれの stale のエラー（例: <code>GUILDA:PowerNetwork:SimulateStale</code>）で停止します。operation・OPF・graph・タグの編集は何も古くしません。</li>
+      <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作りません（空のままです）。古いものは <code>initialize</code> が作成し（<code>set_odefcn</code>、<a href="feature-initialize.html">初期化</a>を参照）、解析は確認するだけで、ほかにハンドルを作るものはありません。<code>initialize</code> を挟まない編集の後、点を与えた <code>get_sys</code> は以前のハンドルを使います。</li>
+      <li><b>削除したオブジェクト</b>: 削除は親の <code>"Topology"</code> の編集です（グローバル制御器の削除では編集はありません）。削除したオブジェクトは <code>delete</code> されるため（<a href="class-design.html#parents">クラス設計: 親への参照</a>）、編集も再接続もできません。<code>add_*</code> で新しく作成します。</li>
+      <li><b>コピー</b>: ディープコピーのメソッドはありません。<code>b = a</code> はハンドルのコピーです。独立したネットワークには、MAT ファイルへの保存と読み込み、または CSV への書き出しを使います。読み込んだネットワークや単独で保存した下の層もパラメータの表を保持し、編集の検査と記録は保存前と同じです。</li>
+    </ul>
+
+    <!-- ============================== 6. FAILURES ============================== -->
+    <h2 id="failures"><span lang="en">6. Failure behavior and result flags</span><span lang="ja">6. 失敗時の動作と結果フラグ</span></h2>
+    <p lang="en">The <code>add_*</code>, <code>remove_*</code> and <code>replace_*</code> methods check before they change anything, so a rejected call leaves the network as it was.</p>
+    <p lang="ja"><code>add_*</code>・<code>remove_*</code>・<code>replace_*</code> は変更前に検査するため、拒否された呼び出しの後もネットワークは元のままです。</p>
+    <table class="dg-table fmb-fail">
+      <thead><tr><th><span lang="en">Call</span><span lang="ja">呼び出し</span></th><th><span lang="en">What the caller sees</span><span lang="ja">呼び出し側に見えるもの</span></th></tr></thead>
+      <tbody>
+        <tr><td><code>add_bus</code>, <code>add_branch</code>, <code>add_component</code> <span lang="en">options</span><span lang="ja">のオプション</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en">MATLAB argument validation errors (unknown key, wrong size or class); bus option <code>baseMVA</code> (ignored): <code>GUILDA:Deprecated:BusBaseMVA</code> / <code>BusBaseMVAMismatch</code></span><span lang="ja">MATLAB の引数検証エラー（未知のキー、サイズやクラスの誤り）。母線のオプション <code>baseMVA</code>（無視）: <code>GUILDA:Deprecated:BusBaseMVA</code> / <code>BusBaseMVAMismatch</code></span></td></tr>
+        <tr><td><code>add_branch</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:PowerNetwork:BranchBusIndex</code>, <code>BusNotFound</code>, <code>BranchSelfLoop</code>, <code>BranchZeroImpedance</code>; <span lang="en">complex R, X or C: an <code>assert</code> without identifier</span><span lang="ja">R・X・C が複素数: 識別子のない <code>assert</code></span></td></tr>
+        <tr><td><code>add_component</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:Component:MissingParameter</code>, <code>UnknownParameter</code> (<span lang="en">error</span><span lang="ja">エラー</span>); <code>GeneratorQIgnored</code> (<span lang="en">warning</span><span lang="ja">警告</span>)</td></tr>
+        <tr><td><code>add_local_controller</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:Component:InvalidControllerKey</code> (<span lang="en">role <code>s_role</code></span><span lang="ja">役割 <code>s_role</code></span>), <code>ControllerOutput</code>, <code>NotExtAvr</code>, <code>PssParentKey</code>; <code>ReplaceController</code> (<span lang="en">warning</span><span lang="ja">警告</span>); <code>GUILDA:LocalController:ReservedInputNames</code>, <code>ReservedInputNoOverride</code></td></tr>
+        <tr><td><span lang="en">global controller</span><span lang="ja">グローバル制御器</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:GlobalController:InvalidComponent</code>; <code>GUILDA:PowerNetwork:GconTagInUse</code>, <code>GconPorts</code>, <code>GconNotFound</code></td></tr>
+        <tr><td><code>l_isSlack = true</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:Bus:NonUnitBus</code> (<span lang="en">no component</span><span lang="ja">機器がない</span>); <code>SlackWithoutQnan</code> (<span lang="en">warning</span><span lang="ja">警告</span>)</td></tr>
+        <tr><td><span lang="en">parameter assignment</span><span lang="ja">パラメータの代入</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:Parameter:ClassNameMismatch</code></td></tr>
+        <tr><td><span lang="en">graph values (any write)</span><span lang="ja">graph の値（すべての書き込み）</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:Bus:BarLength</code>, <code>InvalidShape</code>, <code>InvalidGraphNumber</code>, <code>InvalidGraphPositive</code>, <code>InvalidColor</code>; <code>GUILDA:Branch:InvalidStyle</code>, <code>InvalidGraphNumber</code>; <code>GUILDA:Component:InvalidShape</code>, <code>InvalidGraphNumber</code>, <code>InvalidGraphPositive</code>, <code>InvalidColor</code>; <code>GUILDA:layout_parse_path:InvalidPath</code></td></tr>
+        <tr><td><code>set_layout</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:PowerNetwork:LayoutUnknownTag</code>, <code>LayoutUnknownColumn</code>, <code>LayoutNoTag</code>; <span lang="en">the graph errors above (nothing is written)</span><span lang="ja">上の graph のエラー（何も書きません）</span></td></tr>
+        <tr><td><code>remove_*</code>, <code>replace_component</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:PowerNetwork:BusNotFound</code>, <code>BranchNotFound</code>, <code>BusHasBranches</code>, <code>BusHasControlledUnits</code>; <code>GUILDA:Bus:ComponentNotFound</code>, <code>ComponentControlled</code>, <code>ControllersNotKept</code>, <code>ControllersDropped</code> (<span lang="en">warning</span><span lang="ja">警告</span>); <code>GUILDA:Component:ControllerNotFound</code>, <code>ControllerHasNested</code></td></tr>
+      </tbody>
+    </table>
+    <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <p lang="en">The IDs name the entries of <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> that <code>msg</code> reads. <code>error(msg(...))</code> passes only the text, so the MATLAB exception has an empty identifier.</p>
+      <p lang="ja">ID は <code>msg</code> が読む <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のエントリ名です。<code>error(msg(...))</code> は本文だけを渡すため、MATLAB の例外の識別子は空です。</p>
+    </div>
+
+    <!-- ============================== 7. EXTENSION ============================== -->
+    <h2 id="extension"><span lang="en">7. Where to extend the feature</span><span lang="ja">7. 機能を拡張する箇所</span></h2>
+    <ul lang="en">
+      <li><b>Component</b>: a class in <code>+component</code> with the constants <code>key</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <code>sv_para</code>, and a constructor <code>(index, parameter, opt)</code> that calls the <code>Component</code> constructor with the tag and replaces the <code>dynamics</code> container with one that holds every <code>sv_para</code> (<code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", sct)</code>, <code>sct</code>: a struct of the defaults), declared with <code>Access={?Bus}</code>. Run <code>GUILDA</code> again so that <code>add_component</code> knows the key</li>
+      <li><b>Branch</b>: a class in <code>+branch</code> with the constants <code>key</code> and <code>header</code> and <code>get_admittance_matrix</code>, and a constructor <code>(index, opt)</code> with <code>Access={?PowerNetwork}</code> that calls the <code>Branch</code> constructor</li>
+      <li><b>Local controller</b>: the constant <code>key</code>, the model key of a concrete class (e.g. <code>"avr-ST1"</code>), and the constant <code>s_role</code> <code>"avr"</code>, <code>"pss"</code>, <code>"local"</code> or <code>"governor"</code>, which decides where it goes; a constructor <code>(tag, Name=Value)</code> with <code>Access={?Component}</code>; outputs named after the inputs they drive; inputs named after the outputs or states they observe (<code>"Xall"</code> / <code>"Yall"</code> need an override of <code>set_inputs</code>; <code>resolve_ports</code> may adapt the ports to the component). Run <code>GUILDA</code> again so that <code>add_local_controller</code> knows the key</li>
+      <li><b>Global controller</b>: the constants <code>key</code> (model key, e.g. <code>"agc-PI"</code>) and <code>s_role</code> (e.g. <code>"agc"</code>); constructor <code>(net, tag, units..., Name=Value)</code> with <code>Access={?PowerNetwork}</code>, calling the <code>GlobalController</code> constructor. <code>sv_u</code> must be outputs or states of every unit, and <code>sv_y</code> inputs of every unit or of one of its local controllers. Run <code>GUILDA</code> again so that <code>add_global_controller</code> knows the key</li>
+      <li><b>Network class</b>: a <code>PowerNetwork</code> subclass in <code>+network/@&lt;Name&gt;/</code> with the CSV folders, whose constructor calls <code>PowerNetwork.import(dir, Network=obj)</code>. <code>net.export(".../@&lt;Name&gt;")</code> writes such a class</li>
+    </ul>
+    <ul lang="ja">
+      <li><b>機器</b>: <code>+component</code> のクラスです。定数 <code>key</code>・<code>sv_x</code>・<code>sv_u</code>・<code>sv_y</code>・<code>sv_para</code> と、タグを付けて <code>Component</code> のコンストラクタを呼び、すべての <code>sv_para</code> を持つ <code>dynamics</code> コンテナに置き換えるコンストラクタ（<code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", sct)</code>、<code>sct</code> は既定値の struct） <code>(index, parameter, opt)</code> を <code>Access={?Bus}</code> で持ちます。<code>add_component</code> がキーを認識するよう <code>GUILDA</code> を再実行します。</li>
+      <li><b>ブランチ</b>: <code>+branch</code> のクラスです。定数 <code>key</code>・<code>header</code> と <code>get_admittance_matrix</code>、<code>Branch</code> のコンストラクタを呼ぶコンストラクタ <code>(index, opt)</code> を <code>Access={?PowerNetwork}</code> で持ちます。</li>
+      <li><b>ローカル制御器</b>: 定数 <code>key</code> は具象クラスのモデルのキー（例: <code>"avr-ST1"</code>）、定数 <code>s_role</code> は配置先を決める役割 <code>"avr"</code>・<code>"pss"</code>・<code>"local"</code>・<code>"governor"</code> です。コンストラクタは <code>(tag, Name=Value)</code> で、<code>Access={?Component}</code> にします。出力名は駆動する入力の名前、入力名は観測する出力または状態の名前です（<code>"Xall"</code> / <code>"Yall"</code> には <code>set_inputs</code> のオーバーライドが必要です。<code>resolve_ports</code> でポートを機器に合わせることもできます）。<code>add_local_controller</code> がキーを認識するよう <code>GUILDA</code> を再実行します。</li>
+      <li><b>グローバル制御器</b>: 定数 <code>key</code>（モデルのキー、例: <code>"agc-PI"</code>）と <code>s_role</code>（例: <code>"agc"</code>）を持ちます。コンストラクタ <code>(net, tag, units..., Name=Value)</code> は <code>Access={?PowerNetwork}</code> で、<code>GlobalController</code> のコンストラクタを呼び出します。<code>sv_u</code> は各対象の出力または状態、<code>sv_y</code> は各対象またはそのローカル制御器の入力である必要があります。<code>add_global_controller</code> がキーを認識するよう <code>GUILDA</code> を再実行します。</li>
+      <li><b>ネットワーククラス</b>: CSV フォルダを持つ <code>+network/@&lt;Name&gt;/</code> の <code>PowerNetwork</code> サブクラスです。コンストラクタが <code>PowerNetwork.import(dir, Network=obj)</code> を呼び出します。<code>net.export(".../@&lt;Name&gt;")</code> はこの形のクラスを書き出します。</li>
+    </ul>
+    <p lang="en">Step-by-step instructions and the model contracts: <a href="model-implementation.html">Model Implementation</a> (<a href="model-implementation.html#steps">steps</a>, <a href="model-implementation.html#contracts">contracts</a>, <a href="model-implementation.html#controller">controller</a>, <a href="model-implementation.html#other">branches and networks</a>).</p>
+    <p lang="ja">手順とモデルの約束は <a href="model-implementation.html">モデルの実装</a>（<a href="model-implementation.html#steps">手順</a>、<a href="model-implementation.html#contracts">約束</a>、<a href="model-implementation.html#controller">制御器</a>、<a href="model-implementation.html#other">ブランチとネットワーク</a>）にあります。</p>
+
+    <!-- ============================== 8. RELATED ============================== -->
+    <h2 id="related"><span lang="en">8. Related pages</span><span lang="ja">8. 関連ページ</span></h2>
+    <ul lang="en">
+      <li>Classes: <a href="../class.html#class=PowerNetwork">PowerNetwork</a>, <a href="../class.html#class=Bus">Bus</a>, <a href="../class.html#class=Branch">Branch</a>, <a href="../class.html#class=Component">Component</a>, <a href="../class.html#class=LocalController">LocalController</a>, <a href="../class.html#class=GlobalController">GlobalController</a></li>
+      <li>Features: <a href="feature-data-io.html">Data Import and Export</a>, <a href="feature-power-flow.html">Power Flow</a>, <a href="feature-initialize.html">Initialization</a>, <a href="feature-opf.html">Optimal Power Flow</a>, <a href="feature-cpf.html">Continuation Power Flow</a>, <a href="feature-simulation.html">Time-Domain Simulation</a>, <a href="feature-linearization.html">Linearization</a></li>
+      <li>Rules: <a href="class-design.html#parents">Class Design: parent references</a>, <a href="class-design.html#identity">identifying objects</a>, <a href="class-design.html#edits">handling of model edits</a>; <a href="api-design.html#side-effects">API Design: side effects</a></li>
+    </ul>
+    <ul lang="ja">
+      <li>クラス: <a href="../class.html#class=PowerNetwork">PowerNetwork</a>、<a href="../class.html#class=Bus">Bus</a>、<a href="../class.html#class=Branch">Branch</a>、<a href="../class.html#class=Component">Component</a>、<a href="../class.html#class=LocalController">LocalController</a>、<a href="../class.html#class=GlobalController">GlobalController</a></li>
+      <li>機能: <a href="feature-data-io.html">データの入出力</a>、<a href="feature-power-flow.html">潮流計算</a>、<a href="feature-initialize.html">初期化</a>、<a href="feature-opf.html">最適潮流計算</a>、<a href="feature-cpf.html">連続潮流計算</a>、<a href="feature-simulation.html">時間応答シミュレーション</a>、<a href="feature-linearization.html">近似線形化</a></li>
+      <li>規則: <a href="class-design.html#parents">クラス設計: 親への参照</a>、<a href="class-design.html#identity">オブジェクトの識別</a>、<a href="class-design.html#edits">モデル編集の扱い</a>、<a href="api-design.html#side-effects">API 設計: 副作用</a></li>
+    </ul>
+  </main>
+</body>
+</html>
