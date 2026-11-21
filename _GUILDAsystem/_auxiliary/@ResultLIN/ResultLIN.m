@@ -328,6 +328,7 @@ classdef ResultLIN < ResultBase
         G = plot_kernel(obj, opt)
         sct_graph = plot_participation(obj, opt)
         sct_graph = plot_eigenvector(obj, opt)
+        [G, tab_coupling] = plot_reduced_matrix(obj, target, opt)
         cv_lambda = get_eigenvalue(obj, Type, opt)
         sct_vector = get_eigenvector(obj, Type, opt)
         sct_kernel = get_kernel(obj, opt)
