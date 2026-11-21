@@ -79,6 +79,18 @@ classdef DrawerOptionDialog < auxiliary
 % are unique there. A trip (Scenario.add_trip, EventTrip.edit) names its units by tag only:
 % when a tag chosen names several elements of the network, the form says so.
 %
+% gui_forms.json "pick" gives an input a "Select..." button. A list of element kinds is for an
+% input without choices that takes tags (`"pick": {"LoadBus": ["Bus"]}` of the CPF), and needs
+% the network of the call. An object `{"table": "<expression on obj>"}` is for an input with
+% choices (a list or a dropdown, which then becomes a text field with the tags, as for the
+% elements), and needs no network: the button is shown whenever the entry is there, and the
+% expression is evaluated on the object of the call only when the button is pressed. It gives a
+% table with a Tag column; its other columns are shown beside the tags. One row is taken for an
+% input of type "scalar", several otherwise. When the expression fails or gives no rows, an
+% alert (a warning in a hidden window) says so and the field stays as it is. The target of
+% ResultLIN.get_contribution, get_reduced_matrix and plot_reduced_matrix lists so the elements
+% of the result (Kind "element") and their classes (Kind "class").
+%
 % <@Examples>
 % ```matlab
 % fig = uifigure();

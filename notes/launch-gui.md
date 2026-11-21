@@ -652,7 +652,28 @@
 
 - 窓を閉じたとき、`G_net` の流れの timer が一度だけ `GUILDA:GraphNetDiagram:FlowTimer` の警告(「double 型の変数では、ドット インデックスはサポートされていません」)を出して止まります。`flow_tick` が消えた図を読むためです。timer は残りません。`GraphNetDiagram` の範囲なので、このブランチでは直していません。
 
-## 残りの事項
+## 結果のフォームの表のピッカー(2026-11-22、`fix/gui-result-target-picker`)
+
+利用者の依頼(2026-11-22): 結果の GUI の `ResultLIN.get_contribution`、`get_reduced_matrix`、`plot_reduced_matrix` のフォームで、`target` の横に Select... を付け、要素とクラスの一覧から選べるようにする。`target` には結果の `choices` 式があるのでタグの一覧の欄になっていましたが、`ResultLIN` には `a_network` がないので Select... が付きませんでした。GUI の調整役の決定で、`ResultLIN` の特例ではなく一般の仕組みとし、公開のメンバーは加えません。
+
+### 変更
+
+- `gui_forms.json` の `pick` は、要素の種類の一覧の代わりにオブジェクト `{"table": "<obj の式>"}` も取ります。`choices` のある入力(欄が一覧またはドロップダウン)に使います。
+  - `build_form`: この項目があれば `s_pick = "table"`、式を `s_table` に置きます。一覧の欄は要素のピッカーと同じくタグの文字の欄(`tagtext`)にします。`a_network` を見ません。フォームを作るときには式を評価しません(開く速さを保つため)。`History` がなく選択肢を評価できない欄(文字列の欄)には付きません。
+  - `form_event` の `"select"`: 式を `a_object` で評価し(`eval_text`。エラーの文を返す 3 つ目の出力を加えました)、`Tag` 列のある表なら `DrawerTagPicker.pick` を開きます。`Multiple` は欄に従い(`"scalar"` なら 1 行)、`Selected` は今の値です。選んだタグは要素のピッカーと同じく欄に書きます。式がエラー、`Tag` 列がない、行がないときは、`GUILDA:DrawerOptionDialog:NoPickTable`(「<入力>: nothing to select (<理由>).」)を、表示中の窓では `uialert`、非表示の窓では警告で出し、欄は変えません。エラーは出しません。
+  - 要素の種類の一覧の `pick`(`choices` のない入力)は、これまでどおり `a_network` があるときだけです。
+- `gui_forms.json` の 3 つの項目の `target` の表: `obj.sct_model.sct_sys.tab_owner` の要素ごとの行(Tag = Owner、Class、Kind = `"element"`)と、Class ごとの行(Tag = クラス名、Class、Kind = `"class"`)。`plot_reduced_matrix` は既存の項目に加え、`get_contribution`(main: Index)と `get_reduced_matrix`(main: State、Index、Time)は新しい項目で、これまでの名前による分類(`_fallback`)と同じ配置です。Mode と Group は加えていません。
+- パッケージ名(`controller.avr` など)は `choices` にありますが、表には入れていません(依頼の範囲は要素とクラス)。手で入れれば使えます。
+
+### 公開したメンバー
+
+- ありません。private の欄の構造体に `s_table` を、private 関数 `eval_text` に 3 つ目の出力 `s_error` を加えました。メッセージ `GUILDA:DrawerOptionDialog:NoPickTable` を加えました。
+
+### 試験
+
+- F113 `test_F113_gui_table_picker`(分類 gui、4 件): 3 つのフォームの `target` が文字の欄と Select... になること(History がなければ付かない)、表に要素の行とクラスの行があり複数選択であること、2 行選ぶと欄と `get_code()` に書かれ、開き直すと選んだ状態であること、モデルのない `ResultLIN()` では式がエラーになり警告だけで欄が変わらないこと、`Scenario.add_trip` の `unit` の要素のピッカーがそのまま動くこと。
+- 段階(`test_levels.m`、small での時間): 式のエラーの節(0.09 秒)は small、フォームの節(1.7 秒)と `add_trip` の節(1.2 秒)は medium、ピッカーを 4 回開く節(4.8 秒)は large。
+- フォームの開く時間(IEEE9bus、新しい非表示の uifigure、`drawnow` まで、2〜6 回目の中央値): `get_contribution` 0.484 秒、`get_reduced_matrix` 0.480 秒、`plot_reduced_matrix` 0.481 秒。Select... のない `get_eigenvalue` は 0.464〜0.499 秒で、差はありません。
 
 - 失敗した実行が、ハンドルのオブジェクト(`net`)の一部をすでに変えている場合があります。その記録は失敗としてスクリプトから除かれるので、書き出したスクリプトを実行しても、その途中までの変更は再現されません。`HistoryGUILDA` は失敗時にワークスペースの変数を戻しますが、ハンドルの中身は戻せません。モデルの GUI は失敗した後も描き直して、実際の状態を表示します。
 - `launch_gui` が作る既定の実行記録は `net` を変数として持つだけで、それを作る行はスクリプトに入りません。スクリプトを何もない状態から実行できるようにするには、先にネットワークを実行記録で作ります(第2a段階で対応: `GUILDA.launch_gui()` の開始画面の選択がスクリプトの最初の行になります。`GUILDA.launch_gui(net)` は、ヘッダーに `net` が起動時の系統であると書きます)。
