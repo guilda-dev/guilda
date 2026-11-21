@@ -22,7 +22,8 @@ function create_scene(obj)
     cla(ax);
     hold(ax, "on");
     plt = struct("Image", gobjects(1), "Pattern", gobjects(1), "Separator", gobjects(n_elem, 1), ...
-        "Colorbar", gobjects(1), "Selection", gobjects(0, 1), "Listener", event.listener.empty);
+        "Colorbar", gobjects(1), "Selection", gobjects(0, 1), "Listener", event.listener.empty, ...
+        "Frame", gobjects(0, 1), "Text", gobjects(0, 1));
     plt.Image = image(ax, "XData", [1 max(n_col, 1)], "YData", [1 max(n_row, 1)], "CData", NaN, ...
         "CDataMapping", "scaled", "AlphaData", 0, "Visible", "off");
     r_size = max(4, min(15, 1500 / max([n_row, n_col, 1])));     % dots shrink with the size of the matrix
@@ -42,6 +43,30 @@ function create_scene(obj)
             plt.Separator(i) = line(ax, rv_a, rv_b);
         end
     end
+
+    % Frames (l_frame): a box around each block of a group that is both a row and a column group
+    if d.l_frame
+        iv_row = find(d.sv_kind == "rowgroup");
+        iv_col = find(d.sv_kind == "colgroup");
+        for i = iv_row'
+            j = iv_col(d.sv_tag(iv_col) == d.sv_tag(i));
+            if isempty(j)
+                continue
+            end
+            for rv_r = d.c_block{i}'
+                for rv_c = d.c_block{j}'
+                    rv_x = [rv_c(1) - 0.5, rv_c(2) + 0.5];
+                    rv_y = [rv_r(1) - 0.5, rv_r(2) + 0.5];
+                    plt.Frame(end+1, 1) = line(ax, rv_x([1 2 2 1 1]), rv_y([1 1 2 2 1]), "Color", [0.15 0.15 0.15], ...
+                        "LineWidth", 1.2, "HitTest", "off", "PickableParts", "none", "Tag", "Frame");
+                end
+            end
+        end
+    end
+
+    % Clicks on the matrix (a dot, the image or the background): the group of the row clicked
+    wr = matlab.lang.WeakReference(obj);
+    set([plt.Image, plt.Pattern, ax], "ButtonDownFcn", @(~, ~) click_matrix(wr));
 
     % Axes, labels, ticks and colorbar
     set(ax, "YDir", "reverse", "XLim", [0.5, max(n_col, 1) + 0.5], "YLim", [0.5, max(n_row, 1) + 0.5], ...
@@ -63,7 +88,6 @@ function create_scene(obj)
     end
 
     % Data tips: names and value; separators are clicks on their group
-    wr  = matlab.lang.WeakReference(obj);
     dcm = datacursormode(fig);
     fcn_prev = dcm.UpdateFcn;
     while isa(fcn_prev, "function_handle") && contains(func2str(fcn_prev), "hover_text(")
@@ -78,6 +102,24 @@ function create_scene(obj)
 
     obj.sct_plt = plt;
     obj.apply_style((1:n_elem)');
+end
+
+
+function click_matrix(wr)
+% Click on the matrix of the graph held by wr: the element of the group of the row under CurrentPoint of the axes.
+    arguments (Input)
+        wr  % Weak reference to the graph. <@Type> matlab.lang.WeakReference
+    end
+    G = wr.Handle;
+    if isempty(G) || ~isvalid(G) || isempty(G.sct_plt)
+        return
+    end
+    d = G.sct_data;
+    i = round(G.ax(1).CurrentPoint(1, 2));
+    if i < 1 || i > numel(d.sv_rowGroup)
+        return
+    end
+    G.click_element(find(d.sv_kind == "rowgroup" & d.sv_tag == d.sv_rowGroup(i), 1));
 end
 
 

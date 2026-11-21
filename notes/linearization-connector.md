@@ -651,3 +651,80 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 
 - 安定度制約付き OPF の `sct_stability.tab_mode` の列は `Owner` のままです(今回の範囲外)。`test_F74` は列名の違いを読み替えて比べます。
 - `test_F52_result_gui/ResultCPF_Plot_pvcurveAndExport` は、CPF のメソッド一覧の期待値が古いため失敗します(この変更の前から)。
+
+## 21. 結果の図: `plot_matrix`、`plot_kernel`、`plot_participation`(2026-11-21)
+
+ブランチ `feature/linearization-plots`(分岐元 `8d8432ef`、未 push)。テストはサブモジュール `_GUILDAverification` の同名のブランチです。
+
+### 21.1 実装 [事実]
+
+- `plot_matrix(Matrix, Display, Type, Port, Form, Index, Parent)` → `GraphMatrix`。`Matrix="J"`(既定)は `get_ss("DAE", Port)` の `A`(`[x; v]` 全体、ネットワークのみ)、`"A"`〜`"E"` は `get_sys` の `Input`/`Output` での `get_ss(Type)` の行列です。行と列の名前は `StateName`/`InputName`/`OutputName`(名前のない出力は `y1`, `y2`, …)、グループは所有者(状態は private の `state_owner`、入力と出力は `tab_variable.Owner`、見つからなければ `"(other)"`)。`Display` は `"pattern"`/`"magnitude"`(`GraphMatrix` の `"value"` は `G.Display` で選べます)。モデルを作れない断面(例: `"ODE"` で Avv が特異)は NaN の行列で描き、すべての断面で作れなければ `get_ss` のエラーを出します。
+- `GraphMatrix` の最小の拡張: データの `s_sampleName`/`sv_sampleText` を `load_sample_label` で読み、タイトルを `sample_text` で書きます(標本の文字がなければ従来どおり `t = … s`)。F82 は変更なしで通ります。
+- `plot_kernel(Kernel, Label, Index, Parent)` → `GraphNetDiagram`(状態は NaN の接続図、`ColorMode="user"`、`FlowMode="none"`)。色は島 `Kernel` の左核の母線の `theta` の成分(`tab_phase.Left`)、ほかの島の母線とその核のない断面の母線は NaN(灰色)。`Label="value"`(既定: 母線 `"B001: 0.117"`、位相の変数を持つ機器 `"δ 0.0019"`)、`"tag"`(`LabelMode="tag"`)、`"none"`。色の範囲は全断面の `theta` の成分の `[min max]` に固定します。断面の切り替えは `TimeChangedFcn` で `BusColorData`/`BusLabel`/`ComponentLabel` を書き直します。最初の断面に回転の形の核がなければ `GUILDA:ResultLIN:NoKernel`、島の数を超える `Kernel` は `GUILDA:ResultLIN:KernelRange`。
+- `plot_participation(Mode, Type, Index, Parent)` → 構造体 `Eigenvalue`(GraphChart、`plot_eigenvalue` のもの)、`Diagram`(GraphNetDiagram)、`Table`(uitable)。Parent の中に枠なしの uipanel を作り、左に固有値、右上に図、右下に表を置きます(正規化位置。figure と uifigure の両方で動きます)。
+  - 母線の色は `tab_bus.Participation(:, Mode)`。状態を持たない母線(`get_participation` の状態の母線にない母線)は NaN で灰色。色の範囲は `[0, そのモードの最大値]`。タイトルにモード番号、λ、周波数、減衰比。
+  - 固有値のクリック: 印の集合(`stable`/`unstable`)の `ElementClicked` で、軸の `CurrentPoint` に固有値か共役が最も近いモード(`get_participation` の列)を選びます。選んだモードは黒い輪(Tag `GUILDA:ResultLIN:PickedMode`、クリックを受けない line)で示します。
+  - 母線のクリック(機器・リンクならその母線): `Diagram.select` で選択し、表にその母線の状態の名前とそのモードでの参加率、パネルのタイトルに「タグ in mode k (sum …)」。
+  - 複数断面: 2 つの図を `link` し、図の `TimeChangedFcn` で色・輪・表・タイトルを書き直します。断面のモード数が `Mode` より少なければ灰色で「not in this section」。`Mode` が最初の断面のモード数を超えると `GUILDA:ResultLIN:ModeRange`。
+  - 状態(選んだモード、母線、各断面の母線ごとの参加率)は外側の uipanel の `UserData` に置き、公開のメンバーは増やしていません。
+- 共有の private 関数 `section_diagram`(plot_kernel と plot_participation の接続図と断面の標本)と `default_port`(`get_ss` の局所関数を private に移し、`plot_matrix` と共有)。
+- 新しいメッセージ `KernelRange`、`NoKernel`、`ModeRange`(`ResultLIN.xml`)。
+- GUI: `@GUILDA/update_keymap.m` の結果のメソッドの一覧に 3 つを加え、`gui_forms.json` に配置、`functionSignatures.json`(2 か所)を作り直しました。F52 の期待する一覧も更新しました。
+
+### 21.2 クリックの API [事実]
+
+- `GraphEventData.Index` は `tab_element` の要素の位置で、印の集合の中の点は示しません(`GraphChart/create_scene.m` の印の `ButtonDownFcn` は行番号だけを渡します)。
+- 軸の `CurrentPoint` はクリックで更新され、図の `CurrentPoint` を設定しても追従します [計測、R2026a、見えない figure]。そのため GraphChart を変えずに、クリックした点に最も近い固有値を選べます。テストは図の `CurrentPoint` を固有値の画素位置にして、印の line の `ButtonDownFcn` を呼びます。
+
+### 21.3 色の決め方の所見 [計測]
+
+- IEEE9(Port `"PQ"`)の左核は `theta` の行だけでなく `rho`(Q の釣り合い)の行にも同程度の成分を持ちます(例: θ1 0.117、ρ1 0.085)。発電機の `delta` の成分は小さく(〜1e-3)、§19 のとおり `omega` の成分の `D/ω0` 倍です。
+- `tab_phase.Left` の和は島全体で 1(`rm_leftᵀ rm_right = I`)なので、「母線の `theta` の成分 + その母線の機器の `delta` の成分」は 1 を母線に分けた値になり、母線の色として比べやすい可能性があります。今回は指示どおり `theta` の成分で色を付け、`delta` はラベルに出しています(ユーザーの判断待ち)。
+- 故障中の断面(B008 の地絡、t = 1.02)では電圧 0 の B008 の `theta8` と `rho8` が別の核になり、核 1 では B008 が灰色になります。
+
+### 21.4 テスト [事実]
+
+- `+DebugScript/test_F112_linearization_plots.m`(8 件、`linearize` と `graph`)。0.3 s を超える 7 件を `test_levels.m` に medium で登録しました(small に残る 1 件が共通設定の時間を含みます)。
+
+## 22. 図の追加仕様: `plot_matrix` の表示、`plot_eigenvector`、`plot_reduced_matrix`、`plot_contribution`(2026-11-21)
+
+ユーザーの追加の仕様(コーディネーター経由、2026-11-21)。同じブランチ `feature/linearization-plots` で続けました。
+
+### 22.1 `plot_matrix` の変更 [事実]
+
+- 署名は `[G, G_block] = plot_matrix(Matrix, Display, Group, Type, Port, Form, Index, Parent)`。既定の `Matrix` を `"A"` に変えました(`"J"`、`"B"`〜`"E"` も選べます)。
+- `Group="class"`(既定)は所有者のクラス(`tab_owner.Class`、例 `component.generator.one_axis`、`controller.avr.AVR_ST1`、`Bus`)、`"element"` は所有者のタグでまとめます。行と列はグループ順(各グループの最初の変数の順、グループ内はモデルの順)に並べ替えます。
+- 対角のブロック(行と列の同じグループ)を枠で囲み、グループの間に区切り線を引きます。ゼロの成分は描きません(点は非ゼロだけ)。
+- 行列をクリックすると、その行のグループ × その列のグループのブロックを右側の `G_block`(GraphMatrix、`Display "value"`、セルに `%.3g` の数値)に表示します。最初は最初の対角ブロックです。`G` と `G_block` はリンクし、再生バーで両方が切り替わります。`Parent` が軸なら行列だけで、`G_block` は空です。
+- `GraphMatrix` の最小の拡張: データの任意のフィールド `l_frame`(対角のブロックの枠)と `l_valueText`(セルの数値。閾値を超える成分が 900 以下のとき)、行列(点・画像・背景)のクリックをその行のグループの要素のクリック(`ElementClicked`)にしました。列は `G.ax.CurrentPoint` で求めます。F82 は変更なしで通ります。
+
+### 22.2 共有の private 関数 `mode_diagram` [事実]
+
+- `plot_participation`、`plot_eigenvector`、`plot_contribution` の図(固有値マップ・接続図・表、固有値のクリックでモードを選ぶ、母線のクリックで表、断面のリンク)を `private/mode_diagram.m` にまとめました。各メソッドは断面ごとのデータ(固有値、母線・機器・ブランチの色の値、母線のラベル、表の行)を作る関数を渡します。
+- 機器・リンクのクリックからその母線を求める処理に、`startsWith(タグ, 母線タグの配列)` がスカラーを返すための誤りがありました(最初の母線になる)。`mode_diagram` で直し、F112 で機器のクリックを確かめています。
+
+### 22.3 `plot_eigenvector(Side, Mode, Type, Index, Parent)` [事実]
+
+- `Side="right"`(既定、モードの形 `cm_right`)か `"left"`(`cm_left`)。モードは `get_participation` の列で、固有値の列は最も近い固有値で選びます。
+- 母線の代表の変数: その母線の最初の発電機の `delta`(`tab_variable.Name == "delta"`)、なければ母線の `theta`(Type `"DAE"` のみ)、どちらもなければ灰色。
+- 色は |成分| / 代表の変数の中の最大値(0〜1)、位相はラベル `"B001: 0.82∠-34°"`(最大の成分を 0° とする相対位相)で示します。矢印は GraphNetDiagram の変更が要るので使っていません。表はクリックした母線のすべての状態の大きさと位相 [deg] です。
+
+### 22.4 `plot_reduced_matrix(target, State, Block, Index, Parent)` → `[G, tab_coupling]` [事実]
+
+- `get_reduced_matrix(target, State)` の母線の変数どうしのブロック `K`: `Block="P"`(既定、P の釣り合い × `theta`)か `"Q"`(Q の釣り合い × 2 つ目の変数)。母線の変数の母線と種類は全体の DAE の `StateName` から決めます(縮約後の名前だけでは母線の対応が崩れるため)。
+- 母線の色とラベルは `K(i,i)`、ブランチの太さ(`BranchLineWidth`)は両端の結合 `(|K(i,j)| + |K(j,i)|)/2` を 0.5〜6 pt(全断面の最大で 6 pt)にしたものです。色にしなかったのは、対角と非対角の大きさが違い 1 つのカラーマップでは非対角が潰れるためです。
+- ブランチのない母線の結合は描けないので、`tab_coupling`(Bus1、Bus2、Coupling、Branch。ブランチがなければ `""`)に最初の断面のすべての組を降順で返します。IEEE9 で `["Component","B004"]` を消去すると B001-B005、B001-B006、B005-B006 がブランチなしの結合になります [計測]。
+
+### 22.5 `plot_contribution(Quantity, State, Mode, Index, Parent)` [事実]
+
+- ユーザーの決定(2026-11-21、コーディネーター経由): `Quantity="damping"|"synchronizing"|"voltage"`(既定 `"damping"`)。最初に実装した `Quantity="real"|"imag"|"abs"` は廃止しました。
+- `"damping"`: DAE の右と左の固有ベクトル `v`、`w` と `get_contribution` の `A_e` から `λ_e = wᴴ A_e v / (wᴴ E v)`。`A = Σ A_e` なので `Σ λ_e = λ`(IEEE9 + 制御器で相対 1e-8 以内 [計測])。色は `Re(λ_e)`(0 について対称、負は減衰を加える)。機器はその局所制御器(タグがその機器のタグで始まる)の分担を足し、ラベルに「(with controllers)」と書きます。ブランチと母線(シャント)はそれぞれの分担、グローバル制御器は表だけです。表は Re と Im(Im は表だけ)。IEEE9 では母線のシャントの分担は 0 でした [計測]。
+- `"synchronizing"`/`"voltage"`: 各機器と局所制御器の `A_e`(`get_contribution` の要素ごとの項)を、その状態と母線の 2 つの変数に限り、`get_reduced_matrix` と同じ規則で状態を消去して 2 × 2 の `K` にします(`State="settled"` は全状態、`"fixed"` は `E` の行が 0 の代数的な状態だけを消去)。`"synchronizing"` は `K(1,1) = ∂P/∂θ`、`"voltage"` は `K(2,2)`(Port `"PQ"` で `∂Q/∂ρ`、`"PI"` で `∂(Q/V)/∂V`)。Port `"I"` は新しいエラー `GUILDA:ResultLIN:PortQuantity` で止めます。
+  - 符号: 母線の釣り合いの行の機器の項は、角が進むと機器の注入が減る向きで正です。IEEE9 の B001 の発電機は `"fixed"` で `∂P/∂θ = 1.63`(回転子角を固定した古典的な同期化力係数)、`"settled"` では -0.27 でした [計測]。
+  - 色: 機器はその値、母線はその母線の機器の和(機器のない母線は灰色)、ブランチは自身の `A_e` の両端の変数の結合 `−(K_ij + K_ji)/2`(同期化の結合)。同じカラーバーなので、ブランチ(IEEE9 で 6〜18)が機器(0.3〜4)より強く出ます。
+  - 固有値マップは参考に表示するだけで、クリックしても何も変わりません(`mode_diagram` の `l_modeFree`)。表は各機器の K11、K12、K21、K22 です。
+- `mode_diagram` に `l_modeFree`、`s_quantity`、機器のラベル `sm_compLabel` を加えました。
+
+### 22.6 テスト [事実]
+
+- `test_F112_linearization_plots.m` は 15 件(`linearize`、`graph`)。すべて 0.3 s を超えるので `test_levels.m` に medium で登録しました。

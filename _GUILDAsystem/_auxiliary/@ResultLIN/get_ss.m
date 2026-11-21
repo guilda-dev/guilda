@@ -315,14 +315,6 @@ function sys = input_by_index(sys, iv)
 end
 
 
-function str = default_port(obj)
-    str = "PQ";
-    if isfield(obj.options, "Port")
-        str = obj.options.Port;
-    end
-end
-
-
 function [filt_o, filt_i, sv_busvar] = port_filter(Vc_st, s_port)
 % Bus port of "DAE": [Vre...; Vim...] = filt_i * v (columns), w = filt_o * (current balance) (rows)
     n_v = 2*numel(Vc_st);
