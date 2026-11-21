@@ -59,7 +59,7 @@ classdef vsm < component.GFM.ReferenceModel.AbstractClass
             L_g  = obj.converter.parameter.L_g / obj.converter.Lbase;
                 
             % Calculation of steady state values of angle difference and converter terminal voltage
-                delta_st = Varg + atan((P * L_g) / (Vabs^2 + Q * L_g));
+                delta_st = Varg + atan2(P * L_g, Vabs^2 + Q * L_g);
                 omega_st = 0;
                 v_st = P * L_g / (Vabs * sin(delta_st - Varg));
                 zeta_st = v_st / 2;

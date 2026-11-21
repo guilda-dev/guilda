@@ -1,3 +1,6 @@
+% Developer script: needs Symbolic Math Toolbox (syms, jacobian, matlabFunction).
+% It checks hand-written Jacobians against symbolic ones and is not part of the GUILDA runtime.
+
 % V = 0.54 + 1j*0.19;
 % I = 0.12 + 1j*0.32;
 % 

@@ -2,7 +2,7 @@ classdef AbstractClass < LocalController
 
     properties
         %parameter  % Property for storing parameter(table)
-        converter  % Address of connected GFMI class
+        converter         % Address of connected GFMI class
     end
 
     properties(Dependent)
