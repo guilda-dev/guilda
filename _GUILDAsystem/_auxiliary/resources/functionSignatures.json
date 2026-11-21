@@ -1,0 +1,811 @@
+{
+  "_schemaVersion": "1.0.0",
+  "PowerSystemModel.get_sys": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"PowerSystemModel"},
+      {"name":"point","kind":"ordered","purpose":"Point: [] (the equilibrium), a vector in the order of get_variable_map(), a matrix (one point per column), {sim, rv_t} or {sim, rv_t, Side}. Default: []."},
+      {"name":"Type","kind":"namevalue","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model of the network: \"ODE\" (the bus voltages eliminated) or \"DAE\" (the connected model). Default: GUILDA.config(\"ApproximateLinearization\",\"Type\")."},
+      {"name":"Port","kind":"namevalue","type":["string","scalar","choices=cellstr([\"PI\",\"PQ\",\"I\"])"],"purpose":"Bus port of \"DAE\" (v, w): \"PI\" ([theta,V], [P,Q/V]), \"PQ\" ([theta,rho], [P,Q]) or \"I\" ([Vre,Vim], [-Iim,Ire]). Default: GUILDA.config(\"ApproximateLinearization\",\"Port\")."},
+      {"name":"PlotFcn","kind":"namevalue","purpose":"Live display: \"none\" (checked by tools.check_plotfcn; draw the eigenvalue map with result.plot_eigenvalue()). Default: GUILDA.config(\"ApproximateLinearization\",\"PlotFcn\")."},
+      {"name":"Input","kind":"namevalue","type":["string"],"purpose":"Inputs of the model: \"u\" or Labels (see ResultLIN.get_ss). Default: all inputs."},
+      {"name":"Output","kind":"namevalue","type":["string"],"purpose":"Outputs of the model: \"x\", \"V\", \"I\", \"y\" or names (see ResultLIN.get_ss). Default: as in get_ss."},
+      {"name":"Format","kind":"namevalue","type":["string","scalar","choices=cellstr([\"GUILDAorigin\",\"struct\",\"ss\"])"],"purpose":"Form of sys: GUILDAorigin (a ResultLIN), struct or ss (dss). Default: \"GUILDAorigin\"."},
+      {"name":"Form","kind":"namevalue","type":["string","scalar","choices=cellstr([\"descriptor\",\"absorbed\",\"hessian\"])"],"purpose":"View of A ... E: \"descriptor\" (E holds the time constants), \"absorbed\" (E^-1 in A and B) or \"hessian\" (the energy-function form; network, Port PI or PQ). Default: \"descriptor\"."}
+    ],
+    "outputs": [
+      {"name":"sys","purpose":"Linear model in the form of Format, with state, input and output names (1 x n_t struct or ss array for several sections)."},
+      {"name":"flag","purpose":"True when the result is usable: all entries are finite and Avv is invertible, in every section."},
+      {"name":"output","purpose":"message, s_issue (\"\", \"NotFinite\" or \"SingularAvv\"), l_equilibrium, n_x, n_v, n_u, rcond_Avv, sv_faultBus, s_layer; per section lv_flag, sv_issue, sv_message, rv_rcond_Avv; result (the ResultLIN)."}
+    ]
+  },
+  "Scenario.add_fault": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"Scenario"},
+      {"name":"target","kind":"required","type":[["string","choices=cellstr([string(obj.a_PowerNetwork.a_Bus); string(obj.a_PowerNetwork.a_Branch)])"],["string"]],"purpose":"Tags of the faulted buses, or of the faulted branches."},
+      {"name":"time","kind":"required","type":["double"],"purpose":"[s] [t_start, t_end] of the fault."},
+      {"name":"Status","kind":"namevalue","type":["string","scalar","choices=cellstr([\"BG\",\"3LG\",\"6LG\"])"],"purpose":"\"BG\" for buses; \"3LG\" or \"6LG\" for branches (required there). Default: \"BG\"."},
+      {"name":"Point","kind":"namevalue","type":["double","scalar"],"purpose":"Fault position along a branch, 0 < Point < 1 (required for branches, NaN for buses). Default: NaN."}
+    ],
+    "outputs": [
+      {"name":"ev","purpose":"The added event (a handle: edit it with ev.edit)."}
+    ]
+  },
+  "Scenario.add_trip": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"Scenario"},
+      {"name":"unit","kind":"required","type":[["string","choices=cellstr([strings(0,1); tools.vcellfun(@(b) string(b.a_Component(:)), obj.a_PowerNetwork.a_Bus); string(obj.a_PowerNetwork.a_GlobalController(:)); tools.vcellfun(@(c) string(c.a_LocalController(:)), tools.vcellfun(@(b) b.a_Component(:), obj.a_PowerNetwork.a_Bus))])"],["string"]],"purpose":"Tags of components, global controllers or local controllers."},
+      {"name":"time","kind":"required","type":["double","scalar"],"purpose":"[s] Time of the trip."}
+    ],
+    "outputs": [
+      {"name":"ev","purpose":"The added event (a handle: edit it with ev.edit)."}
+    ]
+  },
+  "Scenario.add_open_branch": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"Scenario"},
+      {"name":"branch","kind":"required","type":[["string","choices=cellstr(string(obj.a_PowerNetwork.a_Branch))"],["string"]],"purpose":"Tags of the branches (see string(net.a_Branch))."},
+      {"name":"time","kind":"required","type":["double","scalar"],"purpose":"[s] Time of the opening."},
+      {"name":"Status","kind":"namevalue","type":["string","scalar","choices=cellstr([\"6open\",\"3open\"])"],"purpose":"All circuits or one circuit. Default: \"6open\"."}
+    ],
+    "outputs": [
+      {"name":"ev","purpose":"The added event (a handle: edit it with ev.edit)."}
+    ]
+  },
+  "Scenario.add_offset": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"Scenario"},
+      {"name":"unit","kind":"required","type":[["string","scalar","choices=cellstr([strings(0,1); tools.vcellfun(@(b) string(b.a_Component(:)), obj.a_PowerNetwork.a_Bus)])"],["string","scalar"]],"purpose":"Tag of the component."},
+      {"name":"state","kind":"required","type":["string"],"purpose":"Names of the states (e.g. \"delta\")."},
+      {"name":"value","kind":"required","type":["double"],"purpose":"Offsets, one per state or one for all."},
+      {"name":"time","kind":"ordered","type":["double","scalar"],"purpose":"[s] Time of the offset. Default: 0."},
+      {"name":"Tag","kind":"namevalue","type":["string","scalar"],"purpose":"Tag of the offset; \"\" for offset<n> (not Fault or Parallel followed by digits). Default: \"\"."}
+    ],
+    "outputs": [
+      {"name":"ev","purpose":"The added event (a handle: edit it with ev.edit)."}
+    ]
+  },
+  "Scenario.add_input": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"Scenario"},
+      {"name":"unit","kind":"required","type":[["string","scalar","choices=cellstr([strings(0,1); tools.vcellfun(@(b) string(b.a_Component(:)), obj.a_PowerNetwork.a_Bus)])"],["string","scalar"]],"purpose":"Tag of the component."},
+      {"name":"name","kind":"required","type":[["string","choices=cellstr(obj.a_PowerNetwork.get_element(unit).sv_u)"],["string"]],"purpose":"Names of the inputs (e.g. \"Pmech\", \"Vfield\")."},
+      {"name":"value","kind":"required","purpose":"Constants (one per input or one for all), or a time series [t, v_1, ..., v_n] or table."},
+      {"name":"time","kind":"required","type":["double"],"purpose":"[s] [t_start, t_end] of the input."},
+      {"name":"Method","kind":"namevalue","type":["string","scalar","choices=cellstr([\"zoh\",\"foh\",\"spline\"])"],"purpose":"Interpolation of a time series: \"zoh\", \"foh\" or \"spline\". Default: \"foh\"."},
+      {"name":"Tag","kind":"namevalue","type":["string","scalar"],"purpose":"Tag of the input; \"\" for input<n> (not Fault or Parallel followed by digits). Default: \"\"."}
+    ],
+    "outputs": [
+      {"name":"ev","purpose":"The added event (a handle: edit it with ev.edit)."}
+    ]
+  },
+  "Scenario.remove_event": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"Scenario"},
+      {"name":"tag","kind":"required","type":[["string","choices=cellstr(unique([obj.tab_event.Tag; obj.tab_offset.Tag; obj.tab_input.Tag], \"stable\"))"],["string"]],"purpose":"Tags of the events to remove."}
+    ]
+  },
+  "EventFault": {
+    "inputs": [
+      {"name":"target","kind":"required","type":["string"],"purpose":"Tags of the faulted buses, or of the faulted branches."},
+      {"name":"time","kind":"required","type":["double"],"purpose":"[s] [t_start, t_end] of the fault."},
+      {"name":"Status","kind":"namevalue","type":["string","scalar","choices=cellstr([\"BG\",\"3LG\",\"6LG\"])"],"purpose":"\"BG\" for buses; \"3LG\" or \"6LG\" for branches (required there). Default: \"BG\"."},
+      {"name":"Point","kind":"namevalue","type":["double","scalar"],"purpose":"Fault position along a branch, 0 < Point < 1 (required for branches, NaN for buses). Default: NaN."}
+    ],
+    "outputs": [
+      {"name":"obj","purpose":"The new event."}
+    ]
+  },
+  "EventTrip": {
+    "inputs": [
+      {"name":"unit","kind":"required","type":["string"],"purpose":"Tags of components, global controllers or local controllers."},
+      {"name":"time","kind":"required","type":["double","scalar"],"purpose":"[s] Time of the trip."}
+    ],
+    "outputs": [
+      {"name":"obj","purpose":"The new event."}
+    ]
+  },
+  "EventOpenBranch": {
+    "inputs": [
+      {"name":"branch","kind":"required","type":["string"],"purpose":"Tags of the branches (see string(net.a_Branch))."},
+      {"name":"time","kind":"required","type":["double","scalar"],"purpose":"[s] Time of the opening."},
+      {"name":"Status","kind":"namevalue","type":["string","scalar","choices=cellstr([\"6open\",\"3open\"])"],"purpose":"All circuits or one circuit. Default: \"6open\"."}
+    ],
+    "outputs": [
+      {"name":"obj","purpose":"The new event."}
+    ]
+  },
+  "EventOffset": {
+    "inputs": [
+      {"name":"unit","kind":"required","type":["string","scalar"],"purpose":"Tag of the component."},
+      {"name":"state","kind":"required","type":["string"],"purpose":"Names of the states (e.g. \"delta\")."},
+      {"name":"value","kind":"required","type":["double"],"purpose":"Offsets, one per state or one for all."},
+      {"name":"time","kind":"ordered","type":["double","scalar"],"purpose":"[s] Time of the offset. Default: 0."},
+      {"name":"Tag","kind":"namevalue","type":["string","scalar"],"purpose":"Tag of the offset; \"\" for offset<n> (not Fault or Parallel followed by digits). Default: \"\"."}
+    ],
+    "outputs": [
+      {"name":"obj","purpose":"The new event."}
+    ]
+  },
+  "EventInput": {
+    "inputs": [
+      {"name":"unit","kind":"required","type":["string","scalar"],"purpose":"Tag of the component."},
+      {"name":"name","kind":"required","type":["string"],"purpose":"Names of the inputs (e.g. \"Pmech\", \"Vfield\")."},
+      {"name":"value","kind":"required","purpose":"Constants (one per input or one for all), or a time series [t, v_1, ..., v_n] or table."},
+      {"name":"time","kind":"required","type":["double"],"purpose":"[s] [t_start, t_end] of the input."},
+      {"name":"Method","kind":"namevalue","type":["string","scalar","choices=cellstr([\"zoh\",\"foh\",\"spline\"])"],"purpose":"Interpolation of a time series: \"zoh\", \"foh\" or \"spline\". Default: \"foh\"."},
+      {"name":"Tag","kind":"namevalue","type":["string","scalar"],"purpose":"Tag of the input; \"\" for input<n> (not Fault or Parallel followed by digits). Default: \"\"."}
+    ],
+    "outputs": [
+      {"name":"obj","purpose":"The new event."}
+    ]
+  },
+  "EventFault.edit": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"EventFault"},
+      {"name":"Target","kind":"namevalue","type":[["string","choices=cellstr([string(obj.a_Scenario.a_PowerNetwork.a_Bus); string(obj.a_Scenario.a_PowerNetwork.a_Branch)])"],["string"]],"purpose":"Tags of the faulted buses, or of the faulted branches. Default: obj.sv_target."},
+      {"name":"Time","kind":"namevalue","type":["double"],"purpose":"[s] [t_start, t_end] of the fault. Default: obj.rr_time."},
+      {"name":"Status","kind":"namevalue","type":["string","scalar","choices=cellstr([\"BG\",\"3LG\",\"6LG\"])"],"purpose":"\"BG\" for buses; \"3LG\" or \"6LG\" for branches. Default: obj.s_status."},
+      {"name":"Point","kind":"namevalue","type":["double","scalar"],"purpose":"Fault position along a branch, 0 < Point < 1 (NaN for buses). Default: obj.r_point."}
+    ]
+  },
+  "EventTrip.edit": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"EventTrip"},
+      {"name":"Unit","kind":"namevalue","type":[["string","choices=cellstr([strings(0,1); tools.vcellfun(@(b) string(b.a_Component(:)), obj.a_Scenario.a_PowerNetwork.a_Bus); string(obj.a_Scenario.a_PowerNetwork.a_GlobalController(:)); tools.vcellfun(@(c) string(c.a_LocalController(:)), tools.vcellfun(@(b) b.a_Component(:), obj.a_Scenario.a_PowerNetwork.a_Bus))])"],["string"]],"purpose":"Tags of components, global controllers or local controllers. Default: obj.sv_unit."},
+      {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time of the trip. Default: obj.r_time."}
+    ]
+  },
+  "EventOpenBranch.edit": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"EventOpenBranch"},
+      {"name":"Branch","kind":"namevalue","type":[["string","choices=cellstr(string(obj.a_Scenario.a_PowerNetwork.a_Branch))"],["string"]],"purpose":"Tags of the branches (see string(net.a_Branch)). Default: obj.sv_branch."},
+      {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time of the opening. Default: obj.r_time."},
+      {"name":"Status","kind":"namevalue","type":["string","scalar","choices=cellstr([\"6open\",\"3open\"])"],"purpose":"All circuits or one circuit. Default: obj.s_status."}
+    ]
+  },
+  "EventOffset.edit": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"EventOffset"},
+      {"name":"Unit","kind":"namevalue","type":[["string","scalar","choices=cellstr([strings(0,1); tools.vcellfun(@(b) string(b.a_Component(:)), obj.a_Scenario.a_PowerNetwork.a_Bus)])"],["string","scalar"]],"purpose":"Tag of the component. Default: obj.s_unit."},
+      {"name":"State","kind":"namevalue","type":["string"],"purpose":"Names of the states (e.g. \"delta\"). Default: obj.sv_state."},
+      {"name":"Value","kind":"namevalue","type":["double"],"purpose":"Offsets, one per state or one for all. Default: obj.rv_value."},
+      {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time of the offset. Default: obj.r_time."},
+      {"name":"Tag","kind":"namevalue","type":["string","scalar"],"purpose":"Tag of the offset (not Fault or Parallel followed by digits). Default: obj.s_tag."}
+    ]
+  },
+  "EventInput.edit": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"EventInput"},
+      {"name":"Unit","kind":"namevalue","type":[["string","scalar","choices=cellstr([strings(0,1); tools.vcellfun(@(b) string(b.a_Component(:)), obj.a_Scenario.a_PowerNetwork.a_Bus)])"],["string","scalar"]],"purpose":"Tag of the component. Default: obj.s_unit."},
+      {"name":"Name","kind":"namevalue","type":[["string","choices=cellstr(obj.a_Scenario.a_PowerNetwork.get_element(obj.s_unit).sv_u)"],["string"]],"purpose":"Names of the inputs (e.g. \"Pmech\"). Default: obj.sv_name."},
+      {"name":"Value","kind":"namevalue","purpose":"Constants, or a time series [t, v_1, ..., v_n] or table. Default: obj.rm_value."},
+      {"name":"Time","kind":"namevalue","type":["double"],"purpose":"[s] [t_start, t_end] of the input. Default: obj.rr_time."},
+      {"name":"Method","kind":"namevalue","type":["string","scalar","choices=cellstr([\"zoh\",\"foh\",\"spline\"])"],"purpose":"Interpolation of a time series: \"zoh\", \"foh\" or \"spline\". Default: obj.s_method."},
+      {"name":"Tag","kind":"namevalue","type":["string","scalar"],"purpose":"Tag of the input (not Fault or Parallel followed by digits). Default: obj.s_tag."}
+    ]
+  },
+  "ResultPF.plot_voltage": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultPF"},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout), or axes/uiaxes for one panel; [] for a new figure. Default: []."},
+      {"name":"Quantity","kind":"namevalue","type":["string","scalar","choices=cellstr([\"magnitude\",\"angle\",\"both\"])"],"purpose":"Panels drawn: |V|, the angle, or both. Default: \"both\"."},
+      {"name":"Limit","kind":"namevalue","type":["logical","scalar"],"purpose":"Draw the finite Vmin and Vmax of each bus on the magnitude. Default: true."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The chart (GraphChart): panels magnitude, then angle."}
+    ]
+  },
+  "ResultPF.plot_branch": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultPF"},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."},
+      {"name":"Quantity","kind":"namevalue","type":["string","scalar","choices=cellstr([\"P\",\"Q\",\"S\",\"loading\",\"loss\"])"],"purpose":"Value of the bars (see the table). Default: \"P\"."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The chart (GraphChart), one bar per branch."}
+    ]
+  },
+  "ResultPF.plot_convergence": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultPF"},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout), or axes/uiaxes without Bus; [] for a new figure. Default: []."},
+      {"name":"Bus","kind":"namevalue","type":["string"],"purpose":"Tags of the buses whose |V| is also drawn; empty draws the residual only. Default: strings(1,0)."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The chart (GraphChart): panels residual, then |V| when Bus is given."}
+    ]
+  },
+  "ResultPF.plot_network": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultPF"},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; a new figure when empty. Default: []."},
+      {"name":"Color","kind":"namevalue","type":["string","scalar","choices=cellstr([\"V\",\"angle\"])"],"purpose":"Node color: |V| [pu] or the angle [deg]. Default: \"V\"."},
+      {"name":"Arrow","kind":"namevalue","type":["string","scalar","choices=cellstr([\"P\",\"Q\",\"none\"])"],"purpose":"Edge arrows along the P or Q flow, or plain lines. Default: \"P\"."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"Map of the network (tab_element: buses and branches)."}
+    ]
+  },
+  "ResultPF.plot_spring_model": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultPF"},
+      {"name":"Dimension","kind":"namevalue","type":["double","scalar","choices=cellstr([2,3])"],"purpose":"2: phasor plane (GraphSpring2D); 3: surface z = log|V| (GraphSpring3D). Default: 2."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The picture: a GraphSpring2D or GraphSpring3D object."}
+    ]
+  },
+  "ResultPF.plot_diagram": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultPF"},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."},
+      {"name":"Dimension","kind":"namevalue","type":["string","scalar","choices=cellstr([\"2D\",\"3D\"])"]},
+      {"name":"ColorLimits","kind":"namevalue","type":["double"]},
+      {"name":"Colormap","kind":"namevalue","type":["double"]},
+      {"name":"ColorMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"Loss\",\"I\",\"P\",\"Q\",\"user\"])"]},
+      {"name":"LabelFontSize","kind":"namevalue","type":["double","scalar"]},
+      {"name":"LabelFontWeight","kind":"namevalue","type":["string","scalar"]},
+      {"name":"BranchWidthMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"I\",\"G\",\"B\",\"Y\",\"Ysvd\"])"]},
+      {"name":"BranchWidthRange","kind":"namevalue","type":["double"]},
+      {"name":"MarkerSizeMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"S\"])"]},
+      {"name":"MarkerSizeRange","kind":"namevalue","type":["double"]},
+      {"name":"LinkWidth","kind":"namevalue","type":["double","scalar"]},
+      {"name":"BusHeightMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"V\",\"angle\",\"Vimag\",\"P\",\"Q\"])"]},
+      {"name":"BusColorData","kind":"namevalue","type":["double"]},
+      {"name":"ComponentColorData","kind":"namevalue","type":["double"]},
+      {"name":"BranchColorData","kind":"namevalue","type":["double"]},
+      {"name":"LinkColorData","kind":"namevalue","type":["double"]},
+      {"name":"BusLabel","kind":"namevalue","type":["string"]},
+      {"name":"ComponentLabel","kind":"namevalue","type":["string"]},
+      {"name":"LabelMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"bus\",\"tag\",\"value\",\"user\"])"]},
+      {"name":"BranchDirection","kind":"namevalue","type":["double"]},
+      {"name":"LinkDirection","kind":"namevalue","type":["double"]},
+      {"name":"GridSpacing","kind":"namevalue","type":["double","scalar"]},
+      {"name":"TitleFormat","kind":"namevalue","type":["string","scalar"]},
+      {"name":"ColorbarLabel","kind":"namevalue","type":["string","scalar"]},
+      {"name":"FlowMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"I\"])"]},
+      {"name":"FlowAnimation","kind":"namevalue","type":["logical","scalar"]},
+      {"name":"FlowSpeed","kind":"namevalue","type":["double","scalar"]},
+      {"name":"BusColor","kind":"namevalue","type":["double"]},
+      {"name":"ComponentColor","kind":"namevalue","type":["double"]},
+      {"name":"BranchColor","kind":"namevalue","type":["double"]},
+      {"name":"LinkColor","kind":"namevalue","type":["double"]},
+      {"name":"BusMarkerSize","kind":"namevalue","type":["double"]},
+      {"name":"ComponentMarkerSize","kind":"namevalue","type":["double"]},
+      {"name":"BranchLineWidth","kind":"namevalue","type":["double"]},
+      {"name":"PlaySpeed","kind":"namevalue","type":["double","scalar"]},
+      {"name":"ElementClickedFcn","kind":"namevalue"},
+      {"name":"TimeChangedFcn","kind":"namevalue"},
+      {"name":"SelectionColor","kind":"namevalue"}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"GraphNetDiagram object of the drawing."}
+    ]
+  },
+  "ResultPF.disp_summary": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultPF"}
+    ],
+    "outputs": [
+      {"name":"varargout","purpose":"Summary text when one output is requested; displayed otherwise."}
+    ]
+  },
+  "ResultPF.disp_bus": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultPF"},
+      {"name":"Bus","kind":"namevalue","type":["string"],"purpose":"Tags of the buses to show; empty shows all. Default: strings(1,0)."},
+      {"name":"Unit","kind":"namevalue","type":["string","scalar","choices=cellstr([\"pu\",\"SI\"])"],"purpose":"\"pu\", or \"SI\" for kV, MW and Mvar. Default: \"pu\"."},
+      {"name":"Sort","kind":"namevalue","type":["string","scalar","choices=cellstr([\"tag\",\"V\"])"],"purpose":"\"tag\" keeps the bus order; \"V\" sorts by |V|, lowest first. Default: \"tag\"."}
+    ],
+    "outputs": [
+      {"name":"varargout","purpose":"Table text when one output is requested; displayed otherwise."}
+    ]
+  },
+  "ResultPF.disp_branch": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultPF"},
+      {"name":"Branch","kind":"namevalue","type":["string"],"purpose":"Tags of the branches to show; empty shows all. Default: strings(1,0)."},
+      {"name":"Unit","kind":"namevalue","type":["string","scalar","choices=cellstr([\"pu\",\"SI\"])"],"purpose":"\"pu\", or \"SI\" for MW and Mvar. Default: \"pu\"."},
+      {"name":"Sort","kind":"namevalue","type":["string","scalar","choices=cellstr([\"tag\",\"loss\",\"loading\"])"],"purpose":"\"tag\" keeps the branch order; \"loss\" (Ploss) and \"loading\" sort the largest first. Default: \"tag\"."}
+    ],
+    "outputs": [
+      {"name":"varargout","purpose":"Table text when one output is requested; displayed otherwise."}
+    ]
+  },
+  "ResultPF.disp_violation": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultPF"},
+      {"name":"Class","kind":"namevalue","type":["string","choices=cellstr([\"Bus\",\"Component\",\"Branch\"])"],"purpose":"Kinds of object shown. Default: [\"Bus\",\"Component\",\"Branch\"]."}
+    ],
+    "outputs": [
+      {"name":"varargout","purpose":"Text when one output is requested; displayed otherwise."}
+    ]
+  },
+  "ResultPF.get_summary": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultPF"}
+    ],
+    "outputs": [
+      {"name":"sct","purpose":"Summary values (see the table of the help)."}
+    ]
+  },
+  "ResultPF.export": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultPF"},
+      {"name":"filename","kind":"ordered","type":["string","scalar"],"purpose":"Output file; its extension selects the format. Default: string(datetime(\"now\",\"Format\",\"uuMMdd_HHmmss\"))+\"_PowerFlow.csv\"."},
+      {"name":"Table","kind":"namevalue","type":["string","scalar","choices=cellstr([\"bus\",\"branch\"])"],"purpose":"Table written to a CSV or Excel file. Default: \"bus\"."}
+    ],
+    "outputs": [
+      {"name":"s_file","purpose":"Path of the written file."}
+    ]
+  },
+  "ResultOPF.plot_dispatch": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultOPF"},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The chart (GraphChart): component power, then the voltage magnitude (AC OPF) and angle (DC/AC OPF)."}
+    ]
+  },
+  "ResultOPF.plot_lmp": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultOPF"},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."},
+      {"name":"Dimension","kind":"namevalue","type":["string","scalar","choices=cellstr([\"2D\",\"3D\"])"]},
+      {"name":"ColorLimits","kind":"namevalue","type":["double"]},
+      {"name":"Colormap","kind":"namevalue","type":["double"]},
+      {"name":"ColorMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"Loss\",\"I\",\"P\",\"Q\",\"user\"])"]},
+      {"name":"LabelFontSize","kind":"namevalue","type":["double","scalar"]},
+      {"name":"LabelFontWeight","kind":"namevalue","type":["string","scalar"]},
+      {"name":"BranchWidthMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"I\",\"G\",\"B\",\"Y\",\"Ysvd\"])"]},
+      {"name":"BranchWidthRange","kind":"namevalue","type":["double"]},
+      {"name":"MarkerSizeMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"S\"])"]},
+      {"name":"MarkerSizeRange","kind":"namevalue","type":["double"]},
+      {"name":"LinkWidth","kind":"namevalue","type":["double","scalar"]},
+      {"name":"BusHeightMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"V\",\"angle\",\"Vimag\",\"P\",\"Q\"])"]},
+      {"name":"BusColorData","kind":"namevalue","type":["double"]},
+      {"name":"ComponentColorData","kind":"namevalue","type":["double"]},
+      {"name":"BranchColorData","kind":"namevalue","type":["double"]},
+      {"name":"LinkColorData","kind":"namevalue","type":["double"]},
+      {"name":"BusLabel","kind":"namevalue","type":["string"]},
+      {"name":"ComponentLabel","kind":"namevalue","type":["string"]},
+      {"name":"LabelMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"bus\",\"tag\",\"value\",\"user\"])"]},
+      {"name":"BranchDirection","kind":"namevalue","type":["double"]},
+      {"name":"LinkDirection","kind":"namevalue","type":["double"]},
+      {"name":"GridSpacing","kind":"namevalue","type":["double","scalar"]},
+      {"name":"TitleFormat","kind":"namevalue","type":["string","scalar"]},
+      {"name":"ColorbarLabel","kind":"namevalue","type":["string","scalar"]},
+      {"name":"FlowMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"I\"])"]},
+      {"name":"FlowAnimation","kind":"namevalue","type":["logical","scalar"]},
+      {"name":"FlowSpeed","kind":"namevalue","type":["double","scalar"]},
+      {"name":"BusColor","kind":"namevalue","type":["double"]},
+      {"name":"ComponentColor","kind":"namevalue","type":["double"]},
+      {"name":"BranchColor","kind":"namevalue","type":["double"]},
+      {"name":"LinkColor","kind":"namevalue","type":["double"]},
+      {"name":"BusMarkerSize","kind":"namevalue","type":["double"]},
+      {"name":"ComponentMarkerSize","kind":"namevalue","type":["double"]},
+      {"name":"BranchLineWidth","kind":"namevalue","type":["double"]},
+      {"name":"PlaySpeed","kind":"namevalue","type":["double","scalar"]},
+      {"name":"ElementClickedFcn","kind":"namevalue"},
+      {"name":"TimeChangedFcn","kind":"namevalue"},
+      {"name":"SelectionColor","kind":"namevalue"}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"GraphNetDiagram object of the drawing."}
+    ]
+  },
+  "ResultOPF.plot_iteration": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultOPF"},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G_chart","purpose":"The four panels of the iterations (GraphChart)."},
+      {"name":"G_net","purpose":"The network diagram of the iteration shown (GraphNetDiagram)."}
+    ]
+  },
+  "ResultOPF.disp_summary": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultOPF"}
+    ],
+    "outputs": [
+      {"name":"varargout","purpose":"Summary text when one output is requested; displayed otherwise."}
+    ]
+  },
+  "ResultOPF.disp_binding": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultOPF"},
+      {"name":"Kind","kind":"namevalue","type":["string","choices=cellstr([\"Bound\",\"Branch\",\"Other\"])"],"purpose":"Kinds shown: bounds of the variables, branch limits, other inequalities. Default: [\"Bound\",\"Branch\",\"Other\"]."}
+    ],
+    "outputs": [
+      {"name":"varargout","purpose":"Text when one output is requested; displayed otherwise."}
+    ]
+  },
+  "ResultOPF.get_lmp": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultOPF"}
+    ],
+    "outputs": [
+      {"name":"tab","purpose":"Table: LMP, Energy, Congestion, Loss (cost per pu), one row per bus (row names = bus tags)."}
+    ]
+  },
+  "ResultOPF.get_summary": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultOPF"}
+    ],
+    "outputs": [
+      {"name":"sct","purpose":"Summary values (see the table of the help)."}
+    ]
+  },
+  "ResultOPF.export": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultOPF"},
+      {"name":"filename","kind":"ordered","type":["string","scalar"],"purpose":"Output file; its extension selects the format. Default: string(datetime(\"now\",\"Format\",\"uuMMdd_HHmmss\"))+\"_OPF.csv\"."},
+      {"name":"Table","kind":"namevalue","type":["string","scalar","choices=cellstr([\"bus\",\"cub\",\"branch\"])"],"purpose":"Table to write. Default: \"bus\"."}
+    ],
+    "outputs": [
+      {"name":"s_file","purpose":"Path of the written file."}
+    ]
+  },
+  "ResultCPF.plot_pvcurve": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultCPF"},
+      {"name":"Bus","kind":"namevalue","purpose":"Tags of the buses to draw; \"all\" for every bus. Default: default_bus(obj)."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The chart (GraphChart), one line per bus."}
+    ]
+  },
+  "ResultCPF.plot_diagram": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultCPF"},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."},
+      {"name":"Dimension","kind":"namevalue","type":["string","scalar","choices=cellstr([\"2D\",\"3D\"])"]},
+      {"name":"ColorLimits","kind":"namevalue","type":["double"]},
+      {"name":"Colormap","kind":"namevalue","type":["double"]},
+      {"name":"ColorMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"Loss\",\"I\",\"P\",\"Q\",\"user\"])"]},
+      {"name":"LabelFontSize","kind":"namevalue","type":["double","scalar"]},
+      {"name":"LabelFontWeight","kind":"namevalue","type":["string","scalar"]},
+      {"name":"BranchWidthMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"I\",\"G\",\"B\",\"Y\",\"Ysvd\"])"]},
+      {"name":"BranchWidthRange","kind":"namevalue","type":["double"]},
+      {"name":"MarkerSizeMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"S\"])"]},
+      {"name":"MarkerSizeRange","kind":"namevalue","type":["double"]},
+      {"name":"LinkWidth","kind":"namevalue","type":["double","scalar"]},
+      {"name":"BusHeightMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"V\",\"angle\",\"Vimag\",\"P\",\"Q\"])"]},
+      {"name":"BusColorData","kind":"namevalue","type":["double"]},
+      {"name":"ComponentColorData","kind":"namevalue","type":["double"]},
+      {"name":"BranchColorData","kind":"namevalue","type":["double"]},
+      {"name":"LinkColorData","kind":"namevalue","type":["double"]},
+      {"name":"BusLabel","kind":"namevalue","type":["string"]},
+      {"name":"ComponentLabel","kind":"namevalue","type":["string"]},
+      {"name":"LabelMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"bus\",\"tag\",\"value\",\"user\"])"]},
+      {"name":"BranchDirection","kind":"namevalue","type":["double"]},
+      {"name":"LinkDirection","kind":"namevalue","type":["double"]},
+      {"name":"GridSpacing","kind":"namevalue","type":["double","scalar"]},
+      {"name":"TitleFormat","kind":"namevalue","type":["string","scalar"]},
+      {"name":"ColorbarLabel","kind":"namevalue","type":["string","scalar"]},
+      {"name":"FlowMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"I\"])"]},
+      {"name":"FlowAnimation","kind":"namevalue","type":["logical","scalar"]},
+      {"name":"FlowSpeed","kind":"namevalue","type":["double","scalar"]},
+      {"name":"BusColor","kind":"namevalue","type":["double"]},
+      {"name":"ComponentColor","kind":"namevalue","type":["double"]},
+      {"name":"BranchColor","kind":"namevalue","type":["double"]},
+      {"name":"LinkColor","kind":"namevalue","type":["double"]},
+      {"name":"BusMarkerSize","kind":"namevalue","type":["double"]},
+      {"name":"ComponentMarkerSize","kind":"namevalue","type":["double"]},
+      {"name":"BranchLineWidth","kind":"namevalue","type":["double"]},
+      {"name":"PlaySpeed","kind":"namevalue","type":["double","scalar"]},
+      {"name":"ElementClickedFcn","kind":"namevalue"},
+      {"name":"TimeChangedFcn","kind":"namevalue"},
+      {"name":"SelectionColor","kind":"namevalue"}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"GraphNetDiagram object of the drawing."}
+    ]
+  },
+  "ResultCPF.plot_spring_model": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultCPF"},
+      {"name":"Dimension","kind":"namevalue","type":["double","scalar","choices=cellstr([2,3])"],"purpose":"2: phasor plane (GraphSpring2D); 3: surface z = log|V| (GraphSpring3D). Default: 2."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The picture: a GraphSpring2D or GraphSpring3D object."}
+    ]
+  },
+  "ResultCPF.plot_stability_index": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultCPF"},
+      {"name":"TopBus","kind":"namevalue","type":["double","scalar"],"purpose":"Number of weak buses drawn in the lower panel (0: no lower panel). Default: 10."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout), or axes/uiaxes when there is one panel; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The chart (GraphChart): the line \"sigmaMin\", then the bars of the weak buses."}
+    ]
+  },
+  "ResultCPF.plot_generator": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultCPF"},
+      {"name":"Quantity","kind":"namevalue","type":["string","scalar","choices=cellstr([\"P\",\"Q\",\"Qmargin\"])"],"purpose":"Value of the lines (see the list). Default: \"Q\"."},
+      {"name":"Generator","kind":"namevalue","purpose":"Tags of the generators (components with Q = NaN in powerflow) to draw; \"all\" for every one. Default: \"all\"."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The chart (GraphChart), one line per generator."}
+    ]
+  },
+  "ResultCPF.plot_branch": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultCPF"},
+      {"name":"Quantity","kind":"namevalue","type":["string","scalar","choices=cellstr([\"P\",\"S\",\"loading\",\"loss\"])"],"purpose":"Value of the lines (see the list). Default: \"P\"."},
+      {"name":"Branch","kind":"namevalue","purpose":"Tags of the branches to draw, or \"all\"; \"\" (default) every branch, or the total loss for \"loss\". Default: \"\"."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The chart (GraphChart), one line per branch."}
+    ]
+  },
+  "ResultCPF.get_point": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultCPF"},
+      {"name":"Step","kind":"required","type":["double","scalar"],"purpose":"Step: an integer from 1 to numel(rv_lambda)."},
+      {"name":"tab_map","kind":"ordered","type":["table"],"purpose":"Rows to return (a variable map or a part of it). Default: obj.tab_variable."}
+    ],
+    "outputs": [
+      {"name":"rv","purpose":"Values in the order of the rows of tab_map (column)."}
+    ]
+  },
+  "ResultCPF.export": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultCPF"},
+      {"name":"filename","kind":"ordered","type":["string","scalar"],"purpose":"Output file; its extension selects the format. Default: string(datetime(\"now\",\"Format\",\"uuMMdd_HHmmss\"))+\"_CPF.csv\"."}
+    ],
+    "outputs": [
+      {"name":"s_file","purpose":"Path of the written file."}
+    ]
+  },
+  "ResultODE.plot_trajectory": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultODE"},
+      {"name":"Quantity","kind":"namevalue","type":[["string","scalar","choices=cellstr([\"Vabs\"; \"Vangle\"; \"P\"; \"Q\"; unique([strings(0,1); tools.vcellfun(@(T) T.Name(ismember(T.Kind, [\"x\", \"u\", \"y\"]) & ismember(T.Owner, [strings(0,1); vertcat(obj.c_component{:})])), repmat({[obj.tab_variable; obj.tab_output]}, height(obj.tab_variable) > 0, 1))], \"stable\")])"],["string","scalar"]],"purpose":"\"Vabs\", \"Vangle\", \"P\", \"Q\", or a state, input or output name of the components. Default: \"Vabs\"."},
+      {"name":"Bus","kind":"namevalue","type":[["string","choices=cellstr([\"all\"; obj.sv_bus])"],["string"]],"purpose":"Tags of the buses to draw (for a component quantity: the buses of the components); \"all\" for every bus. Default: \"all\"."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The chart (GraphChart), one line per bus or component."}
+    ]
+  },
+  "ResultODE.get_trajectory": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultODE"},
+      {"name":"Quantity","kind":"ordered","type":[["string","scalar","choices=cellstr([\"Vabs\"; \"Vangle\"; \"P\"; \"Q\"; unique([strings(0,1); tools.vcellfun(@(T) T.Name(ismember(T.Kind, [\"x\", \"u\", \"y\"]) & ismember(T.Owner, [strings(0,1); vertcat(obj.c_component{:})])), repmat({[obj.tab_variable; obj.tab_output]}, height(obj.tab_variable) > 0, 1))], \"stable\")])"],["string","scalar"]],"purpose":"\"Vabs\", \"Vangle\", \"P\", \"Q\", or a state, input or output name of the components. Default: \"Vabs\"."},
+      {"name":"Bus","kind":"namevalue","type":[["string","choices=cellstr([\"all\"; obj.sv_bus])"],["string"]],"purpose":"Tags of the buses (for a component quantity: the buses of the components); \"all\" for every bus. Default: \"all\"."},
+      {"name":"Owner","kind":"namevalue","type":[["string","choices=cellstr([\"all\"; obj.sv_bus; vertcat(strings(0,1), obj.c_component{:})])"],["string"]],"purpose":"Tags of the owners to keep (buses or components); \"all\" for every owner. Default: \"all\"."},
+      {"name":"Reference","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"COI\"])"],"purpose":"\"none\": the values; \"COI\": relative to the center of inertia, with a column COI. Default: \"none\"."}
+    ],
+    "outputs": [
+      {"name":"tab","purpose":"Column t [s], then one column per owner named by its tag (and COI with Reference=\"COI\")."}
+    ]
+  },
+  "ResultODE.plot_spring_model": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultODE"},
+      {"name":"Dimension","kind":"namevalue","type":["double","scalar","choices=cellstr([2,3])"],"purpose":"2: phasor plane (GraphSpring2D); 3: surface z = log|V| (GraphSpring3D). Default: 2."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The picture: a GraphSpring2D or GraphSpring3D object."}
+    ]
+  },
+  "ResultODE.plot_diagram": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultODE"},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."},
+      {"name":"Dimension","kind":"namevalue","type":["string","scalar","choices=cellstr([\"2D\",\"3D\"])"]},
+      {"name":"ColorLimits","kind":"namevalue","type":["double"]},
+      {"name":"Colormap","kind":"namevalue","type":["double"]},
+      {"name":"ColorMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"Loss\",\"I\",\"P\",\"Q\",\"user\"])"]},
+      {"name":"LabelFontSize","kind":"namevalue","type":["double","scalar"]},
+      {"name":"LabelFontWeight","kind":"namevalue","type":["string","scalar"]},
+      {"name":"BranchWidthMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"I\",\"G\",\"B\",\"Y\",\"Ysvd\"])"]},
+      {"name":"BranchWidthRange","kind":"namevalue","type":["double"]},
+      {"name":"MarkerSizeMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"S\"])"]},
+      {"name":"MarkerSizeRange","kind":"namevalue","type":["double"]},
+      {"name":"LinkWidth","kind":"namevalue","type":["double","scalar"]},
+      {"name":"BusHeightMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"V\",\"angle\",\"Vimag\",\"P\",\"Q\"])"]},
+      {"name":"BusColorData","kind":"namevalue","type":["double"]},
+      {"name":"ComponentColorData","kind":"namevalue","type":["double"]},
+      {"name":"BranchColorData","kind":"namevalue","type":["double"]},
+      {"name":"LinkColorData","kind":"namevalue","type":["double"]},
+      {"name":"BusLabel","kind":"namevalue","type":["string"]},
+      {"name":"ComponentLabel","kind":"namevalue","type":["string"]},
+      {"name":"LabelMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"bus\",\"tag\",\"value\",\"user\"])"]},
+      {"name":"BranchDirection","kind":"namevalue","type":["double"]},
+      {"name":"LinkDirection","kind":"namevalue","type":["double"]},
+      {"name":"GridSpacing","kind":"namevalue","type":["double","scalar"]},
+      {"name":"TitleFormat","kind":"namevalue","type":["string","scalar"]},
+      {"name":"ColorbarLabel","kind":"namevalue","type":["string","scalar"]},
+      {"name":"FlowMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"I\"])"]},
+      {"name":"FlowAnimation","kind":"namevalue","type":["logical","scalar"]},
+      {"name":"FlowSpeed","kind":"namevalue","type":["double","scalar"]},
+      {"name":"BusColor","kind":"namevalue","type":["double"]},
+      {"name":"ComponentColor","kind":"namevalue","type":["double"]},
+      {"name":"BranchColor","kind":"namevalue","type":["double"]},
+      {"name":"LinkColor","kind":"namevalue","type":["double"]},
+      {"name":"BusMarkerSize","kind":"namevalue","type":["double"]},
+      {"name":"ComponentMarkerSize","kind":"namevalue","type":["double"]},
+      {"name":"BranchLineWidth","kind":"namevalue","type":["double"]},
+      {"name":"PlaySpeed","kind":"namevalue","type":["double","scalar"]},
+      {"name":"ElementClickedFcn","kind":"namevalue"},
+      {"name":"TimeChangedFcn","kind":"namevalue"},
+      {"name":"SelectionColor","kind":"namevalue"}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"GraphNetDiagram object of the drawing."}
+    ]
+  },
+  "ResultODE.get_point": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultODE"},
+      {"name":"t","kind":"required","type":["double","scalar"],"purpose":"[s] Time within [rv_t(1), rv_t(end)]."},
+      {"name":"tab_map","kind":"ordered","type":["table"],"purpose":"Rows to return (a variable map or a part of it). Default: obj.tab_variable."},
+      {"name":"Side","kind":"namevalue","type":["string","scalar","choices=cellstr([\"after\",\"before\"])"],"purpose":"Value at a phase boundary: after or before the event. Default: \"after\"."}
+    ],
+    "outputs": [
+      {"name":"rv","purpose":"Values in the order of the rows of tab_map (column)."}
+    ]
+  },
+  "ResultODE.export": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultODE"},
+      {"name":"filename","kind":"ordered","type":["string","scalar"],"purpose":"Output file; its extension selects the format. Default: string(datetime(\"now\",\"Format\",\"uuMMdd_HHmmss\"))+\"_simulation.csv\"."}
+    ],
+    "outputs": [
+      {"name":"s_file","purpose":"Path of the written file."}
+    ]
+  },
+  "ResultLIN.plot_eigenvalue": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"Type","kind":"namevalue","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model whose eigenvalues are drawn: \"ODE\" or \"DAE\"; the Type of the result when omitted. Default: obj.Type."},
+      {"name":"Tolerance","kind":"namevalue","type":["double","scalar"],"purpose":"Real part above which an eigenvalue is drawn as unstable. Default: 1e-6."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."},
+      {"name":"Index","kind":"namevalue","type":["double","scalar"],"purpose":"Section shown first (1 ... numel(rv_t)); res.Index when omitted. Default: obj.Index."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The chart (GraphChart), marker sets \"stable\" and \"unstable\"."}
+    ]
+  },
+  "ResultLIN.plot_eigenvalue_path": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"Type","kind":"namevalue","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model whose eigenvalues are used: \"ODE\" or \"DAE\"; the Type of the result when omitted. Default: obj.Type."},
+      {"name":"Tolerance","kind":"namevalue","type":["double","scalar"],"purpose":"Real part above which a section is unstable. Default: 1e-6."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The chart (GraphChart), lines \"max_real\" and \"min_damping\"."}
+    ]
+  },
+  "ResultLIN.get_mode": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"Type","kind":"namevalue","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model whose modes are returned: \"ODE\" or \"DAE\"; the Type of the result when omitted. Default: obj.Type."},
+      {"name":"MinFrequency","kind":"namevalue","type":["double","scalar"],"purpose":"[Hz] Smallest frequency kept; > 0 keeps the oscillatory modes only. Default: 0."},
+      {"name":"Index","kind":"namevalue","purpose":"Section (1 ... numel(rv_t)) or \"all\" (a struct array, tab_mode with the columns Time and Index); res.Index when omitted. Default: obj.Index."},
+      {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time: the section whose rv_t is nearest; overrides Index."}
+    ],
+    "outputs": [
+      {"name":"sct_mode","purpose":"tab_mode (Eigenvalue, Frequency [Hz], DampingRatio, DominantOwner), rm_participation, cm_shape (states x modes), sv_state, sv_owner (states), s_type (1 x n_t for Index \"all\")."}
+    ]
+  },
+  "ResultLIN.get_participation": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"Type","kind":"namevalue","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model whose modes are used: \"ODE\" or \"DAE\"; the Type of the result when omitted. Default: obj.Type."},
+      {"name":"Index","kind":"namevalue","purpose":"Section (1 ... numel(rv_t)) or \"all\" (a struct array, one per section); res.Index when omitted. Default: obj.Index."},
+      {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time: the section whose rv_t is nearest; overrides Index."}
+    ],
+    "outputs": [
+      {"name":"sct_part","purpose":"rm_value (states x modes), cv_lambda [1/s], sv_state, sv_owner, tab_bus (Bus, Participation), tab_global (Owner, Participation), s_type (1 x n_t for Index \"all\")."}
+    ]
+  },
+  "ResultLIN.get_ss": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"Type","kind":"ordered","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model: \"ODE\" (the bus voltages eliminated) or \"DAE\" (the connected model); the Type of the result when omitted. Default: obj.Type."},
+      {"name":"Port","kind":"namevalue","type":["string","scalar","choices=cellstr([\"PI\",\"PQ\",\"I\"])"],"purpose":"Bus port of \"DAE\" (v, w): \"PI\" ([theta,V], [P,Q/V]), \"PQ\" ([theta,rho], [P,Q]) or \"I\" ([Vre,Vim], [-Iim,Ire]); options.Port of the result when omitted. Default: default_port(obj)."},
+      {"name":"Input","kind":"namevalue","type":["string"],"purpose":"Inputs of the model: \"u\" or Labels. Default: all inputs."},
+      {"name":"Output","kind":"namevalue","type":["string"],"purpose":"Outputs of the model: \"x\", \"V\", \"I\", \"y\" or names. Default: as described for each algorithm."},
+      {"name":"Format","kind":"namevalue","type":["string","scalar","choices=cellstr([\"ss\",\"struct\"])"],"purpose":"Form of the model: \"ss\" (dss; needs the Control System Toolbox) or \"struct\" (A, B, C, D, E and names). Default: \"ss\"."},
+      {"name":"Index","kind":"namevalue","type":["double","scalar"],"purpose":"Section of the model (1 ... numel(rv_t)); res.Index when omitted. Default: obj.Index."},
+      {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time: the section whose rv_t is nearest; overrides Index."},
+      {"name":"Form","kind":"namevalue","type":["string","scalar","choices=cellstr([\"descriptor\",\"absorbed\",\"hessian\"])"],"purpose":"View: \"descriptor\", \"absorbed\" (E^-1 in the dynamic rows) or \"hessian\" (energy-function form); res.Form when omitted. Default: obj.Form."}
+    ],
+    "outputs": [
+      {"name":"sys","purpose":"Linear model in the form of Format, with StateName, InputName and OutputName."}
+    ]
+  },
+  "ResultLIN.get_contribution": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"target","kind":"required","type":["string"],"purpose":"Tags and class (or package) names of the elements; several are summed."},
+      {"name":"Index","kind":"namevalue","type":["double","scalar"],"purpose":"Section of the DAE (1 ... numel(rv_t)); res.Index when omitted. Default: obj.Index."}
+    ],
+    "outputs": [
+      {"name":"sct_value","purpose":"Part of the targets: A, B, C, D, E (the size of the DAE), StateName, InputName, OutputName."},
+      {"name":"sct_mask","purpose":"Entries the targets change: A, B, C, D, E (logical), StateName, InputName, OutputName."}
+    ]
+  },
+  "ResultLIN.get_eigenvalue": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"Type","kind":"ordered","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model: \"ODE\" or \"DAE\"; the Type of the result when omitted. Default: obj.Type."},
+      {"name":"Index","kind":"namevalue","purpose":"Section (1 ... numel(rv_t)) or \"all\" (a table with the columns Time and Index); res.Index when omitted. Default: obj.Index."},
+      {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time: the section whose rv_t is nearest; overrides Index."}
+    ],
+    "outputs": [
+      {"name":"cv_lambda","purpose":"[1/s] Eigenvalues (complex column), or a table Time [s], Index, Eigenvalue for Index \"all\"."}
+    ]
+  },
+  "ResultLIN.get_eigenvector": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"Type","kind":"ordered","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model: \"ODE\" or \"DAE\"; the Type of the result when omitted. Default: obj.Type."},
+      {"name":"Index","kind":"namevalue","purpose":"Section (1 ... numel(rv_t)) or \"all\" (a struct array, one per section); res.Index when omitted. Default: obj.Index."},
+      {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time: the section whose rv_t is nearest; overrides Index."}
+    ],
+    "outputs": [
+      {"name":"sct_vector","purpose":"cm_right, cm_left (states x eigenvalues, complex), cv_lambda [1/s], sv_state (states), s_type (1 x n_t for Index \"all\")."}
+    ]
+  },
+  "ResultLIN.get_kernel": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"Tolerance","kind":"namevalue","type":["double","scalar"],"purpose":"Singular values of J up to Tolerance times the largest are the kernel. Default: 1e-8."},
+      {"name":"Index","kind":"namevalue","purpose":"Section (1 ... numel(rv_t)) or \"all\" (a struct array, one per section); res.Index when omitted. Default: obj.Index."},
+      {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time: the section whose rv_t is nearest; overrides Index."}
+    ],
+    "outputs": [
+      {"name":"sct_kernel","purpose":"rm_right, rm_left (variables x n_dim), sv_state (variables), tab_phase, n_dim, s_port, s_message (1 x n_t for Index \"all\")."}
+    ]
+  },
+  "ResultLIN.get_reduced_matrix": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"target","kind":"required","type":["string"],"purpose":"Tags and class (or package) names of the elements whose variables are eliminated."},
+      {"name":"State","kind":"namevalue","type":["string","scalar","choices=cellstr([\"settled\",\"fixed\"])"],"purpose":"Dynamic states of the targets: \"settled\" (eliminated, E dx/dt = 0) or \"fixed\" (held at the point, removed). Default: \"settled\"."},
+      {"name":"Index","kind":"namevalue","purpose":"Section (1 ... numel(rv_t)) or \"all\" (a struct array, one per section); res.Index when omitted. Default: obj.Index."},
+      {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time: the section whose rv_t is nearest; overrides Index."}
+    ],
+    "outputs": [
+      {"name":"sct_reduced","purpose":"rm_value (the reduced matrix), sv_row, sv_column (names of the kept variables), sv_eliminated (all target variables), sv_held (the held states), s_state (1 x n_t for Index \"all\")."}
+    ]
+  },
+  "ResultLIN.disp_summary": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"Index","kind":"namevalue","purpose":"Section (1 ... numel(rv_t)) or \"all\" (every section); res.Index when omitted. Default: obj.Index."},
+      {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time: the section whose rv_t is nearest; overrides Index."}
+    ],
+    "outputs": [
+      {"name":"varargout","purpose":"Summary text when one output is requested; displayed otherwise."}
+    ]
+  },
+  "ResultLIN.disp_mode": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultLIN"},
+      {"name":"Type","kind":"namevalue","type":["string","scalar","choices=cellstr([\"ODE\",\"DAE\"])"],"purpose":"Model whose modes are shown: \"ODE\" or \"DAE\"; the Type of the result when omitted. Default: obj.Type."},
+      {"name":"MinFrequency","kind":"namevalue","type":["double","scalar"],"purpose":"[Hz] Smallest frequency shown; > 0 keeps the oscillatory modes only. Default: 0."},
+      {"name":"MaxFrequency","kind":"namevalue","type":["double","scalar"],"purpose":"[Hz] Largest frequency shown. Default: Inf."},
+      {"name":"Index","kind":"namevalue","purpose":"Section (1 ... numel(rv_t)) or \"all\" (every section); res.Index when omitted. Default: obj.Index."},
+      {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time: the section whose rv_t is nearest; overrides Index."}
+    ],
+    "outputs": [
+      {"name":"varargout","purpose":"Text of the table when one output is requested; displayed otherwise."}
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class "SolverPF".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="InvalidInitialVoltage">Invalid initial voltage in the power flow conditions: {0}. Give both columns V0 [pu] and Varg0 [rad] with finite values (e.g. tab.V0 = abs(cv_V); tab.Varg0 = angle(cv_V)), or neither for WarmStart or the flat start.</entry>
+    </message>
+</rsccat>

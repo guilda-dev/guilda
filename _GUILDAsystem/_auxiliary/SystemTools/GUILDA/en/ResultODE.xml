@@ -1,0 +1,20 @@
+<!--This is an XML file containing error messages related to the class "ResultODE".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="ExportFormat">Export of ResultODE does not support the extension ''{0}''. Use .csv, .txt, .xlsx, .xls or .mat.</entry>
+        <entry key="UnknownBus">ResultODE has no bus {0}. Use the tags in result.sv_bus.</entry>
+        <entry key="UnknownQuantity">No trajectory ''{0}'' on the selected buses. Use Vabs, Vangle, P, Q, or a state, input or output name of their components (result.odeResults.Bus(i).Component(j).X / U / Y).</entry>
+        <entry key="UnknownOwner">get_trajectory: {0} has no trajectory ''{1}'' on the selected buses. Use Owner="all" or some of: {2}.</entry>
+        <entry key="NoCenterOfInertia">Reference "COI": ''{0}'' has no center of inertia. Use it with delta, Vangle or a quantity of the components with the dynamics parameter M (e.g. omega), or give Reference="none".</entry>
+        <entry key="TrajectoryNoInertia">Reference "COI": the component "{0}" has no dynamics parameter M (inertia) to weight its value. Give Reference="none".</entry>
+        <entry key="PointTime">t = {0} is outside the simulated time [{1}, {2}].</entry>
+        <entry key="InvalidMap">tab_map must be a variable map (columns Kind, Owner, Name, Bus), see get_variable_map.</entry>
+        <entry key="UnknownVariable">The simulation result has no values for {0}. Give rows of result.tab_variable (the network as it was simulated).</entry>
+        <entry key="NoRotorAngle">The result has no component with the state delta, so no rotor angle can be judged. Judge the result with a function of your own (v = my_judge(result)).</entry>
+        <entry key="UnknownReference">Reference "{0}" of judge_out_of_step is not "slack", "COI" or a component of the result with the state delta ({1}).</entry>
+        <entry key="NoSlackGenerator">Reference "slack": the slack bus {0} of network "{1}" has no component with the state delta. Give Reference="COI" or the tag of a generator.</entry>
+        <entry key="NoInertia">Reference "COI": the component "{0}" has no dynamics parameter M (inertia) to weight its rotor angle. Give Reference="slack" or the tag of a generator.</entry>
+        <entry key="NoSpringData">plot_spring_model needs the time points and the network snapshot of a simulation, but this result has none. Use a result of net.simulate that solved at least its first phase.</entry>
+        <entry key="NoDiagramData">plot_diagram needs the time points, the network snapshot and the component currents (rm_Icomponent) of a simulation, but this result has none. Use a result of net.simulate that solved at least its first phase.</entry>
+    </message>
+</rsccat>

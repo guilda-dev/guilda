@@ -1,8 +1,30 @@
 <!--This is an XML file containing error messages related to the class "Component".-->
-<rsccat version="2" locale="en" product="GUILDA">
+<rsccat version="4.0" locale="en" product="GUILDA">
     <message>                        
-        <entry key="NumOfController">Warning: The AVR and PSS are already connected.</entry>         
-        <entry key="AldExtCon">Warning: AVR '' {0} '' already exists.</entry>         
-        <entry key="NotExtAvr">Error: You are attempting to connect a PSS even though there is no AVR.</entry>         
+        <entry key="ReplaceController">{0} ''{1}'' replaces ''{2}'' of ''{3}''.</entry>         
+        <entry key="NotExtAvr">You are attempting to connect a PSS even though there is no AVR. Attach an AVR with add_local_controller first.</entry>         
+        <entry key="PssParentKey">PSS ''{0}'' cannot go under ''{1}'' of ''{3}'', whose role (s_role) is ''{2}''. A PSS needs a parent with the role ''avr'': attach an AVR in its place first.</entry>
+        <entry key="ControllerRoleMismatch">{0} of ''{3}'' takes a key with the role (s_role) ''{4}'', but ''{1}'' has the role ''{2}''. Use add_local_controller for it.</entry>
+        <entry key="ControllerSlots">''{0}'' cannot hold the local controllers {1} (roles {2}). A component holds at most one AVR or ''local'' controller, then at most one governor, in this order, and a PSS goes under the AVR. Attach them with add_local_controller.</entry>
+        <entry key="InputDrivenTwice">Input ''{0}'' of ''{1}'' is driven by more than one local controller: {2}. Each input takes the output of one controller only.</entry>
+        <entry key="InvalidControllerKey">Local controller ''{0}'' has the role (s_role) ''{1}''. The role must be ''avr'', ''pss'', ''local'' or ''governor''.</entry>
+        <entry key="ControllerOutput">Output ''{0}'' of ''{1}'' matches no input of ''{2}'' (inputs: {3}).</entry>
+        <entry key="ControllerOutputOverlap">Governor ''{0}'' and ''{1}'' of ''{3}'' both drive {2}. The top-level controllers of a component must drive different inputs: give the local controller other inputs (e.g. local_LQR with Input="Vfield"), or remove one of them first.</entry>
+        <entry key="GconRouteChanged">The outputs of the global controller ''{0}'' go elsewhere now: {1}.</entry>
+        <entry key="ControllerNotFound">No local controller with the tag ''{0}'' was found in ''{1}''.</entry>
+        <entry key="ControllerHasNested">Local controller ''{0}'' still has ''{1}'' under it.&#xA;Remove it first with comp.remove_local_controller(TAG), or remove them together with&#xA;  &gt;&gt; comp.remove_local_controller(CONTROLLER_TAG, "RemoveNested", true)</entry>
+        <entry key="MissingParameter">Parameter ''{0}'' of ''{1}'' is missing from {2}. Pass a table with these columns as the parameter argument.</entry>
+        <entry key="UnknownParameter">Parameter name ''{0}'' of ''{1}'' is unknown. Use one of {2}, or pass a table.</entry>
+        <entry key="GeneratorQIgnored">Generator ''{0}'' ignores Q = {1}: a generator is a PV source, so the power flow decides its Q. Leave Q out or set it to NaN.</entry>
+        <entry key="GFMInverterQIgnored">Grid-forming inverter ''{0}'' ignores Q = {1}: a grid-forming inverter is a PV source, so the power flow decides its Q. Leave Q out or set it to NaN.</entry>
+        <entry key="HessianNotSupported">{0} has no energy-function Hessian: {1} (see Component.get_hessian for the contract).</entry>
+        <entry key="InputSize">comp.set_input of ''{0}'' needs {2} inputs ({3}), but {1} were given.</entry>
+        <entry key="InvalidGraphNumber">Component ''{0}'': graph {1} = {2} must be a finite number, or NaN for none. Nothing was changed.</entry>
+        <entry key="InvalidGraphPositive">Component ''{0}'': graph {1} = {2} must be a positive finite number, or NaN for none. Nothing was changed.</entry>
+        <entry key="InvalidShape">Component ''{0}'': graph Shape = {1} is not a component shape. Use one of {2}. Nothing was changed.</entry>
+        <entry key="InvalidColor">Component ''{0}'': graph Color = {1} is not a color. Use "" (drawer default), a MATLAB color name such as "red", or "#RRGGBB". Nothing was changed.</entry>
+        <entry key="ZIPParameterValue">ZIP load ''{0}'': {1}. Nothing was changed.</entry>
+        <entry key="ZIPCoefficientSum">ZIP load ''{0}'': the coefficients sum to {1} (kPZ + kPI + kPP) and {2} (kQZ + kQI + kQP), not 1, so Pload and Qload are not the power at 1 pu. The power flow is still met.</entry>
+        <entry key="ZIPNoPower">ZIP load ''{0}'' cannot take {1} = {2} at |V| = {3}: its voltage factor is 0 there (zero voltage or zero coefficients). Change the coefficients or the power-flow setting.</entry>
     </message>
 </rsccat>

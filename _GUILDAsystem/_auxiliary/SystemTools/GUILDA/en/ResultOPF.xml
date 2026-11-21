@@ -1,0 +1,7 @@
+<!--This is an XML file containing error messages related to the class "ResultOPF".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NoIteration">The OPF result has no recorded iterations: only fmincon ("AC OPF") records them; linprog and quadprog ({0}) have no OutputFcn.</entry>
+        <entry key="ExportFormat">Export of ResultOPF does not support the extension ''{0}''. Use .csv, .txt, .xlsx or .xls.</entry>
+    </message>
+</rsccat>

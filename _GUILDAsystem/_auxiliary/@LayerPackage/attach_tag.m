@@ -1,46 +1,24 @@
-function out = attach_tag(obj,str_name_list)
-% <@Desc> 
-% Appends this class tag to each input name.
-% <@Role>
-% Tag
-% <@Summary>
+function out = attach_tag(obj,sm_name_list)
 % Generate names with layer tag suffix.
-% <@Signatures>
-% [
-%   "out = attach_tag(obj, str_name_list)"
-% ]
-% <@Parameters>
-% [
-%   {
-%     "Name": "obj",
-%     "Type": "LayerPackage",
-%     "Description": "Target layer object.",
-%     "Required": true,
-%     "Default": "-"
-%   },
-%   {
-%     "Name": "str_name_list",
-%     "Type": "string array",
-%     "Description": "Base names to be tagged.",
-%     "Required": true,
-%     "Default": "-"
-%   }
-% ]
-% <@Returns>
-% [
-%   {
-%     "Name": "out",
-%     "Type": "string array",
-%     "Description": "Input names with layer tag suffix."
-%   }
-% ]
+%
+% Appends "_" and the tag of this layer to each input name. A generated tag already
+% contains the tags of the parents (B001SG1 on bus B001, B001SG1CA1 under it,
+% PowerNetworkAGC1 on the network), which keeps the labels unique within a network.
+%
 % <@Examples>
-% [
-%   ">> obj.attach_tag([\"V\", \"P\"])\nans =\n    [\"V_Tag\", \"P_Tag\"]"
-% ]
-    arguments
-        obj 
-        str_name_list (:,:) string
+% ```matlab
+% >> net = network.Tutorial10bus();
+% >> gen = net.a_Bus{1}.a_Component{1};
+% >> gen.attach_tag(["delta", "omega"])
+% ans =
+%     "delta_B001SG1"    "omega_B001SG1"
+% ```
+    arguments (Input)
+        obj                        % Target layer object.
+        sm_name_list (:,:) string  % Base names to be tagged.
     end
-    out = str_name_list +"_"+ obj.get_tag(true,"_");
+    arguments (Output)
+        out  % Input names with layer tag suffix.
+    end
+    out = sm_name_list + "_" + obj.s_tag;
 end

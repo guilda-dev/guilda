@@ -1,0 +1,18 @@
+<!--This is an XML file containing error messages related to the class "ResultLIN".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NotFinite">{0}</entry>
+        <entry key="SingularAvv">{0} Type "{1}" eliminates the bus voltages; use Type "DAE" to keep them.</entry>
+        <entry key="UnknownOutput">Output "{0}" is not "x", "V", "I", "y" or a name of those outputs of this model.</entry>
+        <entry key="UnknownTarget">Target "{0}" is not a tag, a class name or a package name of an element of this model (see res.sct_model.sct_sys.tab_owner).</entry>
+        <entry key="IndexRange">Index must be an integer from 1 to {0}, the number of sections of the result (numel(res.rv_t)).</entry>
+        <entry key="OneSection">{0} needs a result with two or more sections (numel(res.rv_t) > 1), e.g. net.get_sys of a simulation result at several times; this result has {1}.</entry>
+        <entry key="IndexForm">Index must be a positive integer (a section of the result) or "all" (every section).</entry>
+        <entry key="NetworkOnly">{0} needs a result of the network (output.s_layer "PowerNetwork"), whose DAE has the bus variables.</entry>
+        <entry key="SingularReduction">The variables to eliminate have a singular Jacobian Jxx (rcond {0}); keep more of them, e.g. the variables of a rotation (an island without a bus variable left).</entry>
+        <entry key="UnknownInput">Input "{0}" is not "u" or a Label of an input of this model.</entry>
+        <entry key="NoHessianForm">Form "hessian" needs the energy-function blocks of every section: make the result with net.get_sys(Form="hessian").</entry>
+        <entry key="HessianPort">Form "hessian" is written in Port "PI" ([theta, V], [P, Q/V]) or "PQ" ([theta, rho], [P, Q]); Port "I" has no energy-function form.</entry>
+        <entry key="SingularE">Form "absorbed" needs a mass matrix E whose nonzero rows of the states form an invertible block that does not couple to the other states (rcond {0}).</entry>
+    </message>
+</rsccat>

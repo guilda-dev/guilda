@@ -1,0 +1,7 @@
+<!--This is an XML file containing error messages related to the class 'EventInput'.-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="InvalidInputTable">Input "{0}" of scenario "{1}": the InputValue table is invalid: {2}. Give a table with the variable Time and one numeric column per input name, or a matrix [t, v_1, ..., v_n].</entry>
+        <entry key="MethodWithoutSeries">Input "{0}" of scenario "{1}": InputMethod "{2}" is given for a constant InputValue. The method interpolates a time series [t, v]; leave it out for a constant.</entry>
+    </message>
+</rsccat>
