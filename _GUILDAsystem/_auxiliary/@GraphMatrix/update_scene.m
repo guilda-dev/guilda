@@ -17,6 +17,10 @@ function update_scene(obj, k)
     if obj.Display == "pattern"
         [iv_i, iv_j] = find(abs(M) > r_tol);
         set(plt.Pattern, "XData", reshape(iv_j, 1, []), "YData", reshape(iv_i, 1, []), "Visible", "on");
+        if d.s_pattern == "circle"     % the zero entries (not NaN) as hollow circles
+            [iv_i, iv_j] = find(~(abs(M) > r_tol) & ~isnan(M));
+            set(plt.Zero, "XData", reshape(iv_j, 1, []), "YData", reshape(iv_i, 1, []), "Visible", "on");
+        end
         set(plt.Image, "Visible", "off");
         set(plt.Colorbar, "Visible", "off");
     else
@@ -66,7 +70,7 @@ function update_scene(obj, k)
         else
             set(plt.Image, "CData", C, "AlphaData", double(l_show), "Visible", "on");
         end
-        set(plt.Pattern, "Visible", "off");
+        set([plt.Pattern, plt.Zero], "Visible", "off");
         colormap(ax, rm_map);
         ax.CLim = rv_lim;
         set(plt.Colorbar, "Visible", "on");

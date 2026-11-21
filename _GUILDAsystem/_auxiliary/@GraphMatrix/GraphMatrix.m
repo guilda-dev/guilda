@@ -20,6 +20,11 @@ classdef GraphMatrix < GraphBase
 %   both a row group and a column group (the diagonal blocks of a square matrix).
 % - `l_valueText` (optional, default false): the values of the sample shown are written
 %   in their cells ("%.3g"; the entries above Tolerance, when there are at most 900).
+% - `l_groupTicks` (optional, default false): one tick label per block of a group (its
+%   tag, at the middle of the block) instead of the names of the rows and columns.
+% - `l_cellGrid` (optional, default false): a thin line around every cell.
+% - `s_pattern` (optional): "dot" (default: a dot per entry above Tolerance) or "circle"
+%   (a red filled circle per entry above Tolerance and a hollow circle per zero entry).
 % - `s_sampleName`, `sv_sampleText` (optional): the name of the samples (e.g. "Section")
 %   and the text of each sample (1 x n_t), shown in the title and the playback bar
 %   instead of the time (see GraphBase).
@@ -50,9 +55,10 @@ classdef GraphMatrix < GraphBase
 % rows has a horizontal line before each block of its rows (the first one on the edge of
 % the axes), a group of columns a vertical line before each block of its columns.
 % `select(tag)` highlights the rows and the columns of the group; a data tip on a
-% separator line is a click on its group (ElementClicked). A click on the matrix (a dot,
-% the image or the empty background) is a click on the group of the row clicked; the
-% column is in G.ax.CurrentPoint. set_style options by kind:
+% separator line is a click on its group (ElementClicked). A click on any cell of the
+% matrix (a dot, an empty cell: a transparent image covers them all) or a data tip on it
+% (the data cursor mode, which the graph turns on, makes a click a data tip) sets
+% ClickedCell to [row column] and is a click on the group of its row. set_style options by kind:
 %
 % | Kind | Options |
 % |---|---|
@@ -92,6 +98,9 @@ classdef GraphMatrix < GraphBase
     properties % Appearance of each element (one row per element, see tab_element)
         SeparatorColor (:,3) double = zeros(0, 3)                                                 % RGB color of the separator lines of each group.
         SeparatorLineWidth (:,1) double {mustBePositive} = zeros(0, 1)                            % [pt] Width of the separator lines of each group.
+    end
+    properties (SetAccess = private) % Interaction
+        ClickedCell (1,2) double = [NaN NaN]                                                      % [row column] of the last click (or data tip) on the matrix; NaN before one.
     end
     properties (Access = protected) % Data
         sct_data                                                                                  % Data of the graph with the optional fields filled, the element tags and kinds and the blocks of each group. <@Type> struct
@@ -173,6 +182,21 @@ classdef GraphMatrix < GraphBase
     end
 
     methods (Access = protected)
+        function click_cell(obj, rv_xy)
+        % Click on the cell at the point [x y] of the axes: ClickedCell, then a click on the group of its row.
+            arguments (Input)
+                obj
+                rv_xy (1,2) double  % Point of the axes (x: column, y: row).
+            end
+            d = obj.sct_data;
+            i = round(rv_xy(2));
+            j = round(rv_xy(1));
+            if i < 1 || i > numel(d.sv_rowGroup) || j < 1 || j > numel(d.sv_colGroup)
+                return
+            end
+            obj.ClickedCell = [i j];
+            obj.click_element(find(d.sv_kind == "rowgroup" & d.sv_tag == d.sv_rowGroup(i), 1));
+        end
         load_data(obj, sct_data)
         create_scene(obj)
         update_scene(obj, k)
