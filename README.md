@@ -15,10 +15,10 @@ Through these efforts, we aim to establish power systems as an accessible benchm
 ---
 
 ## Requirement
-- MATLAB
-- Control system toolbox
-- Optimization toolbox
-- Symboric Math toolbox
+- MATLAB: enough for the power flow, the continuation power flow, `simulate` and the linearization
+- Optimization Toolbox: needed for the power flow with `Solver="fsolve"` and for the optimal power flow (OPF)
+- Control System Toolbox: needed for the `ss` output of the linearization and for the LQR controllers
+- Symbolic Math Toolbox: optional
 ---
 
 ## Setup
@@ -30,7 +30,7 @@ First, run `GUILDA` to set up the environment and add necessary paths.
 In this process, the following steps are automatically executed:
 - If cloned from Git, the latest version is pulled.
 - Paths for functions and class files necessary for analysis are added.
-- The installation of toolboxes that support functions used in GUILDA is checked.
+- The optional toolboxes are checked; for each missing one, the features unavailable without it are shown.
 - A live editor for tutorials is opened.
 If you do not want to pull every time you start, or if you do not want the tutorial to open every time, you can change the settings from the environment settings.
 ```matlab
@@ -63,11 +63,12 @@ Power flow calculations can be done using the `calculate_powerflow(obj)` method.
 But if you want to set the operating points easily, it is recommended to use the `initialize(obj)` method, which not only performs power flow calculations but also sets up equilibrium points for dynamic simulations.
 
 ### 3. Analysis
-After setting up the power flow conditions, you can perform various analyses such as dynamic simulations using the `simulate(obj)` method, or optimal power flow calculations using the `optimize_powerflow(obj)` method.
+After setting up the power flow conditions, you can perform various analyses such as dynamic simulations using the `simulate` method, or optimal power flow calculations using the `calculate_optimal_powerflow(obj)` method.
 
 #### _**・Dynamic Simulation**_
-Dynamic simulations can be performed using the `simulate(obj)` method, which simulates the time-domain
-response of the system to various disturbances or inputs.
+Dynamic simulations simulate the time-domain response of the system to various disturbances or inputs.
+First create a scenario with `net.add_scenario("tag", Time=[0, 20])` and add disturbances to it (e.g. `add_fault`), then run it with `net.simulate("tag")`.
+The solver options come from `GUILDA.setting` and can be overridden in the call (e.g. `net.simulate("tag", Solver="ode23t")`).
 
 #### _**・Linearization**_
 Linearization around an operating point can be performed using the `get_sys(obj)` method, whichreturns the linearized state-space representation of the system. 
@@ -120,6 +121,12 @@ See the quick reference [**[here]**](./NamingConventions.md).
 
 Many students from the Ishizaki Laboratory have also contributed to this project.
 
+## Third-party software
+GUILDA itself is licensed under the [MIT License](./LICENSE).
+The documentation site bundles [KaTeX](https://katex.org) to render math, unchanged, under its own licenses
+(KaTeX: MIT License; KaTeX fonts: SIL Open Font License 1.1).
+See [`_GUILDAdoc/vendor/README.md`](./_GUILDAdoc/vendor/README.md) for versions, sources, copyright holders and license files.
+
 
 
 <!-- <img src="https://github.com/guilda-dev/guilda/assets/54563775/20094d9b-22f5-4fb8-aff8-d80dc3cde31b" width="800">
@@ -134,10 +141,10 @@ GUILDAは、本研究室と川口助教（群馬大）を中心に開発を進�
 このような活動を通して、電力システムを身近なベンチマークモデルとしてシステム制御分野に定着させることにより、本分野の技術や知見が電力システム改革を推進する一助となることを目指しています。
 
 ## Requirement
-- MATLAB
-- Control system toolbox
-- Optimization toolbox
-- Symboric Math toolbox
+- MATLAB: 潮流計算、連続潮流計算、`simulate`、線形化は MATLAB 本体だけで実行可能
+- Optimization Toolbox: `Solver="fsolve"` の潮流計算と最適潮流計算（OPF）に必要
+- Control System Toolbox: 線形化の `ss` 出力と LQR 制御器に必要
+- Symbolic Math Toolbox: 任意
 
 ## Usage
 
@@ -148,7 +155,7 @@ GUILDAは、本研究室と川口助教（群馬大）を中心に開発を進�
 これにより、GUILDAが起動されます。起動時に以下の処理が自動的に実行されます。
 - Gitからcloneしている場合、最新バージョンをpull
 - 解析に必要な関数・クラスファイルのパスを追加
-- GUILDA内で使用する関数をサポートするtoolboxのインストールの確認
+- 任意のtoolboxのインストールの確認(無いものは、使えない機能を表示)
 - Tutorial用のライブエディタを開く
 
 ※起動するたびにpullをしたくない場合、またTutorialが毎回開くのが不要である場合は環境設定から変更できます。
