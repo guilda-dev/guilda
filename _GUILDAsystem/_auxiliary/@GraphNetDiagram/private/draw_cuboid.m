@@ -1,0 +1,28 @@
+function h = draw_cuboid(ax, x0, y0, z0, radius, color)
+arguments (Input)
+    ax      % Axes to draw in.
+    x0      % X coordinate of the center.
+    y0      % Y coordinate of the center.
+    z0      % Z coordinate of the center.
+    radius  % Size of the solid.
+    color   % Face color.
+end
+arguments (Output)
+    h  % Patch drawn.
+end
+w = 1.6*radius;
+hgt = 1.4*radius;
+x = x0 + 0.5*w*[-1 -1  1  1 -1 -1  1  1];
+y = y0 + 0.5*w*[-1  1  1 -1 -1  1  1 -1];
+z = z0 + 0.5*hgt*[-1 -1 -1 -1 1 1 1 1];
+f = [1 2 3 4; 5 6 7 8; 1 2 6 5; 2 3 7 6; 3 4 8 7; 4 1 5 8];
+h = patch(ax, 'Vertices', [x(:) y(:) z(:)], 'Faces', f, ...
+    'FaceColor', color, ...
+    'EdgeColor', 'none', ...                % edges: drawn as axis-wide lines in captures (MATLAB)
+    'AmbientStrength', 0.22, ...
+    'DiffuseStrength', 0.68, ...
+    'SpecularStrength', 0.88, ...
+    'SpecularExponent', 30, ...
+    'BackFaceLighting', 'reverselit', ...
+    'HandleVisibility', 'off');
+end
