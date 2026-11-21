@@ -8,10 +8,15 @@ function publish_doc()
 % change with the code. Home, About, Getting Started, Tutorial and the
 % lecture notes are a separate site, guilda-dev/guilda-doc (the submodule
 % _GUILDAdocPages), and are not touched here.
+% Before running it, fetch origin in a terminal (not needed while gh-pages
+% does not exist on origin yet):
+%   git fetch origin
 % Run it on any branch with no uncommitted changes. It rebuilds the class
-% reference without user classes, writes the site into gh-pages through a
+% reference without user classes, brings the local gh-pages up to date with
+% origin/gh-pages as fetched, writes the site into gh-pages through a
 % temporary git worktree, and commits "docs: publish <branch>@<sha>". It
-% never pushes: the push command is printed at the end.
+% never contacts the remote and never pushes: the push command is printed
+% at the end.
 % gh-pages layout: _GUILDAdoc/, LICENSE, index.html (redirect), .nojekyll.
 % User classes (database/User), database/manifest.json and
 % database/callgraph_cache.mat are local data and are never published.
@@ -25,6 +30,7 @@ function publish_doc()
     fprintf('  Source : %s@%s\n', s_source, s_sha)
 
     % 2. Rebuild the class reference (without user classes)
+    fprintf('  Rebuilding the class reference ...\n')
     sct_summary = export_class_database(find_doc_classes("user", false), "strict", false, "full", true);
     if sct_summary.ErrorCount > 0
         error(msg("GUILDA:publish_doc:ExportErrors", string(sct_summary.ErrorCount)));
@@ -47,12 +53,14 @@ function publish_doc()
     end
 
     % 4. Replace the contents
+    fprintf('  Writing the site into %s ...\n', s_branch)
     write_site(s_root, s_tmp);
     if ~bln_new
         keep_published_index(s_tmp);
     end
 
     % 5. Commit
+    fprintf('  Committing ...\n')
     run_git(s_tmp, 'add -A');
     s_changes = run_git(s_tmp, 'status --porcelain');
     if strlength(strtrim(s_changes)) == 0
@@ -96,22 +104,12 @@ end
 
 
 function bln_new = prepare_branch(s_root, s_branch)
-    % Bring the local branch up to date with origin when origin can be read.
-    % Returns true when the branch exists neither locally nor on origin.
-    bln_remote = false;
-    [r_status, ~] = system(sprintf('git --no-pager -C %s remote get-url origin', quote(s_root)));
-    if r_status == 0
-        [r_status, s_out] = system(sprintf('git --no-pager -C %s ls-remote --exit-code --heads origin %s', quote(s_root), s_branch));
-        if r_status == 0
-            bln_remote = true;
-        elseif r_status ~= 2
-            warning("%s", msg("GUILDA:publish_doc:RemoteUnreachable", string(s_out)));
-        end
-    end
+    % Bring the local branch up to date with origin/<branch> as last fetched.
+    % Never contacts the remote. Returns true when the branch exists neither
+    % locally nor as a remote-tracking ref.
     s_remote_ref = "refs/remotes/origin/" + s_branch;
-    if bln_remote
-        run_git(s_root, sprintf('fetch -q origin +refs/heads/%s:%s', s_branch, s_remote_ref));
-    end
+    [r_status, ~] = system(sprintf('git --no-pager -C %s show-ref --verify --quiet %s', quote(s_root), s_remote_ref));
+    bln_remote = r_status == 0;
 
     [r_status, ~] = system(sprintf('git --no-pager -C %s show-ref --verify --quiet refs/heads/%s', quote(s_root), s_branch));
     bln_local = r_status == 0;
