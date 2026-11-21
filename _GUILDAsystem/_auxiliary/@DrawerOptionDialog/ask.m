@@ -17,7 +17,9 @@ function s_code = ask(h_parent_figure, s_signature, opt)
 % need other widgets now (e.g. other choices) is drawn again. Between calls the window is
 % hidden and has no name; it is deleted with its parent.
 %
-% A visible dialog waits for the user (uiwait). A hidden dialog (hidden parent) or one in
+% A visible dialog waits for the user, with no time limit, in uiwait steps of 1 s that read
+% UserData again, so a button pressed before the wait (its uiresume came too early) is not lost;
+% hiding the dialog while it waits ends it as a cancel. A hidden dialog (hidden parent) or one in
 % `matlab -batch` has no user: it waits at most 10 s for a program (a test) to press its
 % buttons and then returns "" as a cancel, so it never blocks indefinitely.
 %
@@ -141,7 +143,13 @@ function s_code = ask(h_parent_figure, s_signature, opt)
     h_fig.Name = s_signature;    % last: a program (a test) finds the dialog by its name
     h_fig.Visible = l_visible;
     if l_visible && ~batchStartupOptionUsed
-        uiwait(h_fig)    % a user answers
+        % A user answers. A button pressed before the wait (a program, while the Visible change
+        % runs the callbacks and timers) has set UserData already and its uiresume came too
+        % early: wait in steps of 1 s and read UserData again. A hidden dialog has nobody to
+        % answer it: the wait ends as a cancel
+        while isvalid(h_fig) && isempty(h_fig.UserData) && h_fig.Visible
+            uiwait(h_fig, 1)
+        end
     else
         % Nobody can answer a hidden dialog: wait at most 10 s for a program to press a button
         % (pause runs the callbacks and timers), then cancel. The loop ends by itself even when

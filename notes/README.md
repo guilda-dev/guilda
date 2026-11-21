@@ -10,6 +10,7 @@
 - [v4-migration.md](v4-migration.md): スクリプト作者とモデル作者向けの移行ガイド、非推奨の形、互換性の方針。
 - [naming-struct-string.md](naming-struct-string.md): 構造体(`sct_`)と文字列(`s_`/`sv_`/`sr_`)の接頭辞への改名の対応表。
 - [test-categories.md](test-categories.md): デバッグテストの分類(`DebugScript.test_categories`、`run_all` の `Category`)、重複テストの整理の対応表、small を 1 分以内にする段階の見直しと計測。
+- [medium-speedup.md](medium-speedup.md): medium を `-batch` で 20 分以内にする段階の見直し(large へ移したテストの一覧)と、F91 が止まった原因(ask.m の uiresume の取りこぼし)。
 
 ## コードの問題の記録
 
