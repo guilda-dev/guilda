@@ -3,13 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GUILDA Documentation - Home</title>
+  <title data-title-ja="GUILDA ドキュメント - リファレンスと開発者向け">GUILDA Documentation - Reference and For Developer</title>
+  <script src="doc-lang.js"></script>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="reference.css">
+  <style>
+    /* Header links to the other site (Home, About, Getting Started, Tutorial on guilda-doc) */
+    a.tab-button.tab-link { text-decoration: none; }
+    a.tab-button.tab-link::after { content: " \2197"; font-weight: 400; }
+  </style>
+  <script>
+    // Home, About, Getting Started, Tutorial and the lecture notes moved to the site guilda-doc.
+    // An old link to one of their tabs or anchors (#tab-home, #about-..., ...) goes there,
+    // with the same fragment and ?lang=. Ids of this page are left alone.
+    (function () {
+      const id = decodeURIComponent(location.hash.replace(/^#/, ''));
+      if (!id || /^(tab-reference|tab-developer|ref-|reference-|class-|developer-|update-log)/.test(id)) return;
+      document.addEventListener('DOMContentLoaded', () => {
+        if (!document.getElementById(id)) location.replace(`https://guilda-dev.github.io/guilda-doc/${location.search}${location.hash}`);
+      });
+    })();
+  </script>
   
   <script src="./database/list_UpdateLog.js"></script>
+  <script src="./doc-updatelog.js"></script>
   <script src="./database/list_Classes.js"></script>
   <script src="./doc-loader.js"></script>
-  <script src="./database/list_Tutorials.js"></script>
+  <script src="./doc-tree.js"></script>
   <script src="./database/list_developer.js"></script>
 </head>
 <body class="home-layout">
@@ -19,457 +39,135 @@
       <img src="./images/GUILDAicon.png" alt="GUILDA Logo" class="header-logo">
       
       <div class="tabs">
-        <button class="tab-button active" onclick="openTab('tab-home')">Home</button>
-        <button class="tab-button" onclick="openTab('tab-getting-started')">Getting Started</button>
-        <button class="tab-button" onclick="openTab('tab-tutorial')">Tutorial</button>
-        <button class="tab-button" onclick="openTab('tab-reference')">Reference</button>
-        <button class="tab-button" onclick="openTab('tab-developer')">For Developer</button>
+        <a class="tab-button tab-link" href="https://guilda-dev.github.io/guilda-doc/#tab-home"><span lang="en">Home</span><span lang="ja">ホーム</span></a>
+        <a class="tab-button tab-link" href="https://guilda-dev.github.io/guilda-doc/#tab-about"><span lang="en">About</span><span lang="ja">概要</span></a>
+        <a class="tab-button tab-link" href="https://guilda-dev.github.io/guilda-doc/#tab-getting-started"><span lang="en">Getting Started</span><span lang="ja">はじめに</span></a>
+        <a class="tab-button tab-link" href="https://guilda-dev.github.io/guilda-doc/#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span></a>
+        <button class="tab-button active" onclick="openTab('tab-reference')"><span lang="en">Reference</span><span lang="ja">リファレンス</span></button>
+        <button class="tab-button" onclick="openTab('tab-developer')"><span lang="en">For Developer</span><span lang="ja">開発者向け</span></button>
       </div>
     </div>
   </header>
 
   <main>
-    <div id="tab-home" class="tab-content active">
-      <div style="height: 8px; background-color: var(--primary-color); border-radius: 4px; margin-bottom: 25px;"></div>
-
-      <div class="hero-section">
-        <div class="hero-text">
-          <h1 class="hero-title">GUILDA</h1>
-          <h2 class="hero-subtitle">Grid & Utility Infrastructure Linkage Dynamics Analyzer</h2>
-        </div>
-        <div class="hero-canvas-container">
-          <canvas id="power-grid-animation"></canvas>
-        </div>
-      </div>
-      
-      <div style="height: 8px; background-color: var(--primary-color); border-radius: 4px; margin-top: 15px; margin-bottom: 35px;"></div>
-
-      <h2>Install Now</h2>
-      <div class="install-buttons">
-        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn">From GitHub</a>
-        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn">Open in MATLAB Online</a>
-      </div>
-
-      <h2>About GUILDA</h2>
-      
-      <div class="demo-gif-container">
-        <img src="./images/movie.gif" alt="GUILDA Animation Demo" class="demo-gif">
-      </div>
-
-      <p>
-        <strong>GUILDA (Grid & Utility Infrastructure Linkage Dynamics Analyzer)</strong> is a numerical simulator for smart energy management, developed primarily by our laboratory in collaboration with Assistant Professor Takahiro Kawaguchi (Gunma University).
-      </p>
-      <p>
-        Its goal is to provide an advanced simulation environment that students and researchers in systems and control can use with only minimal background knowledge of power systems.
-      </p>
-
-      <h3>Supported Analyses</h3>
-      <ul class="feature-list">
-        <li><strong>RMS Analysis:</strong> Phasor models, three-phase balanced systems.</li>
-        <li><strong>Time-Domain Simulation:</strong> Initial value perturbations, load variations, input adjustments, ground faults, and controller design.</li>
-        <li><strong>Linearization:</strong> Derivation of approximate linear models, Hessian calculations of energy functions.</li>
-        <li><strong>Optimal Power Flow (OPF):</strong> General formulation of OPF problems.</li>
-        <li><strong>Graph Plotting:</strong> Animation generation using coupled oscillator systems.</li>
-      </ul>
-
-      <h2>Update Log</h2>
-      <div id="update-log-container"></div>
-
-      <h2>Related Book</h2>
-      <p>
-        GUILDA is closely linked with the textbook
-        <a href="https://lim.ishizaki-lab.jp/guilda#h.66rvn04iyvio" target="_blank">"Systems Control Engineering of Power Systems - System Mathematics and MATLAB Simulation -" (Published in November 2022)</a>,
-        which explains related concepts in the language of systems and control.
-      </p>
-      <p>
-        <a href="https://www.jstage.jst.go.jp/article/sicejl/62/10/62_640/_pdf/-char/ja" target="_blank">Introductory Article (Japanese)</a>
-      </p>
-
-      <h2>License</h2>
-      <p>
-        GUILDA is released under the MIT License. For more details, please refer to the 
-        <a href="../LICENSE" target="_blank"><code>LICENSE</code></a> file located in the root directory of the repository.
-      </p>
-
-    </div>
-
-    <div id="tab-getting-started" class="tab-content">
-      <h1>Getting Started</h1>
-
-      <h2>Install Now</h2>
-      <div class="install-buttons">
-        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn">From GitHub</a>
-        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn">Open in MATLAB Online</a>
-      </div>
-
-      <h2>Requirements</h2>
-      <p>GUILDA runs on MATLAB and requires the following products:</p>
-      <ul>
-        <li>MATLAB</li>
-        <li>Control System Toolbox</li>
-        <li>Symbolic Math Toolbox</li>
-        <li>Optimization Toolbox</li>
-      </ul>
-
-      <h2>Start GUILDA</h2>
-      <p>Open the GUILDA repository folder in MATLAB and run the constructor at the beginning of a session.</p>
-<pre><code>&gt;&gt; GUILDA;</code></pre>
-      <p>The constructor prepares the environment by performing the configured startup tasks:</p>
-      <ul>
-        <li>Print the GUILDA logo.</li>
-        <li>Pull the latest revision when Git update is enabled.</li>
-        <li>Add the required GUILDA folders to the MATLAB path. This step is always performed.</li>
-        <li>Check the required MATLAB products.</li>
-        <li>Update the generated documentation database and class signature map when enabled.</li>
-        <li>Display the update log and open the tutorial when enabled.</li>
-      </ul>
-
-      <h2>Startup Settings</h2>
-      <p>Use the settings window to enable or disable optional startup tasks. Path setup cannot be disabled because it is required to use GUILDA.</p>
-<pre><code>&gt;&gt; GUILDA.setting();</code></pre>
-      
-      <img src="./images/setting_startup.png" alt="GUILDA Environment Settings" style="width: 50%; max-width: 100%; height: auto; display: block; margin: 20px 0; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-
-      <h2>Utility Functions</h2>
-<pre><code>&gt;&gt; GUILDA.pwd()         % Get the GUILDA repository path
-&gt;&gt; GUILDA.rmpath()      % Remove GUILDA folders from the MATLAB path
-&gt;&gt; GUILDA.addpath()     % Add the required folders again
-&gt;&gt; GUILDA.gitpull()     % Pull the latest revision from GitHub
-&gt;&gt; GUILDA.setting()     % Open environment and startup settings
-&gt;&gt; GUILDA.tutorial()    % Open the tutorial
-&gt;&gt; GUILDA.doc()         % Open this documentation
-&gt;&gt; GUILDA.dictionary()  % Search the implemented class hierarchy
-&gt;&gt; GUILDA.newclass()    % Open the class creation tool (under development)</code></pre>
-
-      <h2>Managed GUILDA Folders</h2>
-      <p>The following folders under <code>@GUILDA</code> are managed by GUILDA and should not be edited directly:</p>
-      <table>
-        <tr><th>Folder</th><th>Purpose</th></tr>
-        <tr><td><code>@GUILDA/private</code></td><td>Internal functions used by GUILDA class methods.</td></tr>
-        <tr><td><code>@GUILDA/config</code></td><td>Configuration values used during startup and internal analyses.</td></tr>
-        <tr><td><code>@GUILDA/user</code></td><td>User settings and tags associated with instantiated objects.</td></tr>
-      </table>
-    </div>
-
-    <div id="tab-tutorial" class="tab-content">
-      <h1>Basic Workflow</h1>
-      <p>A typical GUILDA analysis proceeds from environment setup and network construction to operating-point initialization, followed by simulation, linearization, or controller evaluation. The examples below follow the verification flow in <code>+DebugScript</code> and use the current API names.</p>
-      <p>For users who want to learn through hands-on experience, please refer to the <a href="#hands-on-tutorial" style="font-weight: bold;">Hands-on Tutorial</a> section below.</p>
-      
-      <h2>1. Prepare the Environment</h2>
-      <p>Run GUILDA once per MATLAB session. The constructor adds the required folders and performs the enabled startup checks.</p>
-<pre><code>&gt;&gt; GUILDA;</code></pre>
-
-      <h2>2. Build or Load a Network</h2>
-      <p>For a quick analysis, load one of the packaged networks. To build a model manually, create a <code>PowerNetwork</code> and add buses, branches, and components in that order.</p>
-<pre><code>% Load a packaged test network
-net = network.IEEE14bus;
-
-% Minimal structure of a manually assembled network
-net = PowerNetwork("TestSystem");
-net.add_bus();
-net.add_bus();
-net.add_branch("pi", [1, 2]);
-net.a_Bus{1}.add_component("gen-park");
-net.a_Bus{2}.add_component("load-power");</code></pre>
-
-      <h2>3. Set and Initialize the Operating Point</h2>
-      <p>Set the power-flow parameters on buses and components, inspect the power-flow solution when needed, and then initialize the model. Initialization distributes the equilibrium voltage, current, active power, and reactive power to each object.</p>
-<pre><code>% Example power-flow settings
-net.a_Bus{1}.tab_parameter.powerflow{:, ["V", "Varg"]} = [1.05, 0.00];
-net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow{:, ["P", "Q"]} = [nan, nan];
-
-powerflow = net.calculate_powerflow();
-net.initialize();</code></pre>
-
-      <h2>4. Run a Time-Domain Simulation</h2>
-      <p>Use <code>odeEventSet</code> to describe disturbances. Events can represent state offsets, input changes, bus faults, and unit trips.</p>
-<pre><code>net = network.IEEE14bus;
-fault = odeEventSet("fault", net, ...
-    "FaultBus", "B008", ...
-    "TimeSpan", [3, 3.1]);
-
-sol = net.simulate([0, 50], fault);
-xsol = sol.odeResults;
-
-figure;
-hold on;
-arrayfun(@(i) plot(xsol.t, xsol.Bus(i).Component(1).X.omega), [1, 2, 3, 6, 8]);</code></pre>
-
-      <h2>5. Obtain a Linear Model</h2>
-      <p>After initialization, obtain the linearized interconnected model. Buses without dynamic units can be specified with the <code>NonUnit</code> option.</p>
-<pre><code>net = network.IEEE14bus;
-net.initialize();
-
-sys = net.get_sys();
-sysReduced = net.get_sys("NonUnit", 7);
-eig(sys.A)</code></pre>
-
-      <h2>6. Add and Evaluate Controllers</h2>
-      <p>Local controllers are attached to components; global controllers are attached to the network. Reinitialize the network after changing its controller structure, then repeat the simulation or linearization.</p>
-<pre><code>avr = controller.avr.AVR_ST1("avr1");
-pss = controller.pss.PSS1("pss1");
-net.a_Bus{1}.a_Component{1}.add_local_controller(avr, pss);
-net.initialize();
-
-fault = odeEventSet("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.01]);
-sol = net.simulate([0, 50], fault);</code></pre>
-
-      <hr style="margin: 50px 0; border: 0; border-top: 2px dashed #dee2e6;">
-      
-      <h1 id="hands-on-tutorial">Hands-on Tutorial for GUILDA</h1>
-      <p>Tutorials in Live Script format, which explain how to implement various analyses, are provided in the <code>_GUILDAtutorial</code> folder of the source files.</p>
-      
-      <div id="tutorial-toc-container"></div>
-      <h2>Abstract</h2>
-      <div id="tutorial-abstract-container"></div>
-    </div>
-
-    <div id="tab-reference" class="tab-content">
-      <h1>Class Reference</h1>
-
-      <div class="reference-section">
-        <h2>Core Components of the System Model</h2>
-        <p>In GUILDA, the system model is primarily constructed using the following elements. The <code>PowerNetwork</code> class acts as a container, and by setting other classes within it, the system model is completed and ready for analysis.</p>
-        
-        <div class="intro-cards-wrapper">
-          <div class="intro-cards-grid" id="core-class-cards"></div>
-        </div>
+    <div id="tab-reference" class="tab-content active">
+      <div class="ref-layout">
+      <aside class="ref-aside">
+        <div id="reference-source-tree"></div>
+        <h3><span lang="en">On this page</span><span lang="ja">このページの内容</span></h3>
+        <ul class="ref-toc">
+          <li><a href="#ref-inherited" onclick="document.getElementById('ref-inherited')?.scrollIntoView(); return false;"><span lang="en">Inherited Classes</span><span lang="ja">継承クラス</span></a></li>
+          <li><a href="#ref-auxiliary" onclick="document.getElementById('ref-auxiliary')?.scrollIntoView(); return false;"><span lang="en">Auxiliary Classes</span><span lang="ja">補助クラス</span></a></li>
+        </ul>
+      </aside>
+      <div class="ref-main">
+      <h1><span lang="en">Class Reference</span><span lang="ja">クラスリファレンス</span></h1>
+      <div class="ref-status" id="reference-status"></div>
+      <div id="reference-empty" class="ref-empty" hidden>
+        <p><strong><span lang="en">The class reference has not been generated yet.</span><span lang="ja">クラスリファレンスはまだ生成されていません。</span></strong></p>
+        <p lang="en">Run <code>GUILDA.doc</code> in MATLAB. It builds <code>_GUILDAdoc/database</code> from the source code and reopens this page.</p>
+        <p lang="ja">MATLAB で <code>GUILDA.doc</code> を実行してください。ソースコードから <code>_GUILDAdoc/database</code> を生成し、このページを再表示します。</p>
       </div>
 
       <div class="reference-section">
-        <div class="class-diagram-header" style="margin-top: 0;">
-          <h2 style="margin: 0; padding-bottom: 0; border: none;">Class Diagram</h2>
-          <div class="uml-notation-horizontal">
-            <span class="notation-title">UML NOTATION</span>
-            <span class="notation-item"><strong>◇──</strong> Composition (Has-a)</span>
-            <span class="notation-item"><strong>1</strong> Owner (Parent)</span>
-            <span class="notation-item"><strong>0..*</strong> Multiplicity (Children)</span>
-          </div>
-        </div>
-
-        <p style="margin-top: 10px;">The has-a relationships of each component class are shown in the class diagram below.</p>
-        
-        <div class="uml-lr-scroll">
-          <div class="uml-lr-canvas">
-            <svg class="uml-links" viewBox="0 0 940 420" preserveAspectRatio="none">
-              <defs>
-                <marker id="diamond" markerWidth="14" markerHeight="10" refX="0" refY="5" orient="auto">
-                  <polygon points="0,5 7,0 14,5 7,10" fill="#fff" stroke="#8ea6bd" stroke-width="1.5" />
-                </marker>
-              </defs>
-
-              <line x1="220" y1="160" x2="280" y2="80" class="uml-link-line" marker-start="url(#diamond)" />
-              <text x="230" y="140" class="uml-link-text">1</text>
-              <text x="250" y="85" class="uml-link-text">0..*</text>
-              
-              <line x1="220" y1="185" x2="280" y2="200" class="uml-link-line" marker-start="url(#diamond)" />
-              <text x="235" y="175" class="uml-link-text">1</text>
-              <text x="250" y="195" class="uml-link-text">0..*</text>
-              
-              <line x1="220" y1="210" x2="280" y2="320" class="uml-link-line" marker-start="url(#diamond)" />
-              <text x="230" y="240" class="uml-link-text">1</text>
-              <text x="250" y="315" class="uml-link-text">0..*</text>
-              
-              <line x1="460" y1="80" x2="520" y2="120" class="uml-link-line" marker-start="url(#diamond)" />
-              <text x="475" y="85" class="uml-link-text">1</text>
-              <text x="495" y="115" class="uml-link-text">0..*</text>
-              
-              <line x1="700" y1="135" x2="760" y2="135" class="uml-link-line" marker-start="url(#diamond)" />
-              <text x="710" y="125" class="uml-link-text">1</text>
-              <text x="735" y="125" class="uml-link-text">0..*</text>
-            </svg>
-
-            <div class="uml-node uml-pos-pn">
-              <div class="uml-class-name">PowerNetwork</div>
-              <div class="uml-divider"></div>
-              <ul class="uml-prop-list">
-                <li><strong>a_Bus</strong> : Bus [0..*]</li>
-                <li><strong>a_Branch</strong> : Branch [0..*]</li>
-                <li><strong>a_GlobalController</strong> : GlobalController [0..*]</li>
-              </ul>
-            </div>
-
-            <div class="uml-node uml-pos-bus">
-              <div class="uml-class-name">Bus</div>
-              <div class="uml-divider"></div>
-              <ul class="uml-prop-list">
-                <li><strong>a_Component</strong> : Component [0..*]</li>
-              </ul>
-            </div>
-
-            <div class="uml-node uml-pos-branch"><div class="uml-class-name">Branch</div></div>
-            <div class="uml-node uml-pos-gc"><div class="uml-class-name">GlobalController</div></div>
-
-            <div class="uml-node uml-pos-component">
-              <div class="uml-class-name">Component</div>
-              <div class="uml-divider"></div>
-              <ul class="uml-prop-list">
-                <li><strong>a_LocalController</strong> : LocalController [0..*]</li>
-              </ul>
-            </div>
-
-            <div class="uml-node uml-pos-lc"><div class="uml-class-name">LocalController</div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="reference-section">
-        <h2>Inherited Classes</h2>
-        <p>The first column shows the inheritance hierarchy generated from each class's <code>Parent</code> metadata. Select a category to focus on one subtree, or select a class name to open its reference page.</p>
+        <h2 id="ref-inherited"><span lang="en">Inherited Classes</span><span lang="ja">継承クラス</span></h2>
         
         <div class="view-panel">
           <div class="view-panel-row view-panel-row-stacked">
-            <div class="view-panel-label">Display Classes</div>
+            <div class="view-panel-label"><span lang="en">Display Classes</span><span lang="ja">表示するクラス</span></div>
             <div class="view-panel-controls">
               <div class="filter-toggles" id="class-filter-toggles"></div>
             </div>
           </div>
         </div>
 
-        <input type="search" id="class-search" class="search-box" placeholder="Search for a class, role, or summary..." autocomplete="off">
-        <div class="inheritance-legend" aria-label="Class marker legend">
-          <span class="inheritance-legend-item"><span class="tree-node-marker" aria-hidden="true"></span>Concrete class</span>
-          <span class="inheritance-legend-item"><span class="tree-node-marker is-abstract" aria-hidden="true"></span>Abstract class</span>
+        <div class="ref-toolbar">
+          <input type="search" id="class-search" class="search-box" placeholder="Search all classes by name, package, or summary..." data-placeholder-ja="クラス名、パッケージ、概要で全クラスを検索..." autocomplete="off">
+          <label class="ref-check"><input type="checkbox" id="class-undocumented-only"> <span lang="en">Not documented only</span><span lang="ja">ドキュメント未整備のみ</span></label>
+        </div>
+        <div class="inheritance-legend" aria-label="Class marker legend" data-aria-label-ja="クラスの記号の凡例">
+          <span class="inheritance-legend-item"><span class="tree-node-marker" aria-hidden="true"></span><span lang="en">Concrete class</span><span lang="ja">具象クラス</span></span>
+          <span class="inheritance-legend-item"><span class="tree-node-marker is-abstract" aria-hidden="true"></span><span lang="en">Abstract class</span><span lang="ja">抽象クラス</span></span>
+          <span class="inheritance-legend-item"><span class="ref-badge is-undocumented is-small"><span lang="en">no docs</span><span lang="ja">説明なし</span></span><span lang="en">No documentation comments yet</span><span lang="ja">ドキュメントコメント未記入</span></span>
         </div>
 
-        <table class="compact-table inheritance-table" aria-live="polite">
-          <thead id="inherited-list-thead"></thead>
-          <tbody id="class-list-tbody"></tbody>
-        </table>
+        <div class="ref-table-scroll">
+          <table class="compact-table inheritance-table" aria-live="polite">
+            <thead id="inherited-list-thead"></thead>
+            <tbody id="class-list-tbody"></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="reference-section">
-        <h2>Auxiliary Classes</h2>
-        <p>Although these classes do not directly correspond to the physical components of the power system model, they are essential for various analyses and data management within GUILDA.</p>
+        <h2 id="ref-auxiliary"><span lang="en">Auxiliary Classes</span><span lang="ja">補助クラス</span></h2>
+        <p lang="en">Classes that do not correspond directly to physical components of the model but that GUILDA's analyses and data management rely on. Base classes shared by both trees (such as <code>LayerPackage</code>) are listed here too. The search box and filter above apply to this table as well.</p>
+        <p lang="ja">系統モデルの物理的な構成要素には直接対応しませんが、GUILDA の解析やデータ管理を支えるクラスです。両方の木に共通する基底クラス（<code>LayerPackage</code> など）もここに載せています。上の検索ボックスと絞り込みは、この表にも効きます。</p>
 
-        <table class="compact-table auxiliary-table">
-          <thead id="auxiliary-list-thead">
-            <tr>
-              <th>Class Name</th>
-              <th>Summary</th>
-            </tr>
-          </thead>
-          <tbody id="auxiliary-list-tbody"></tbody>
-        </table>
+        <div class="ref-table-scroll">
+          <table class="compact-table inheritance-table auxiliary-table">
+            <thead id="auxiliary-list-thead"></thead>
+            <tbody id="auxiliary-list-tbody"></tbody>
+          </table>
+        </div>
       </div>
 
+      </div>
+      </div>
     </div>
 
     <div id="tab-developer" class="tab-content">
-      <h1>For Developer</h1>
-      <p class="developer-intro">Guides for contributors and maintainers of GUILDA. Select a topic to open its dedicated page.</p>
+      <h1><span lang="en">For Developer</span><span lang="ja">開発者向け</span></h1>
+      <p class="developer-intro" lang="en">Guides for contributors and maintainers of GUILDA. Select a topic to open its page.</p>
+      <p class="developer-intro" lang="ja">GUILDA の開発や保守に携わる人向けのガイドです。トピックを選ぶと、そのページが開きます。</p>
 
-      <div id="developer-link-container" class="developer-link-grid"></div>
+      <div id="developer-link-container" class="developer-groups"></div>
+
+      <h2><span lang="en">Update Log</span><span lang="ja">更新履歴</span></h2>
+      <div id="update-log-container" class="ulog is-compact"></div>
+      <p class="ulog-more"><a class="btn" href="updatelog.html"><span lang="en">Show more</span><span lang="ja">もっと見る</span> <span aria-hidden="true">→</span></a></p>
     </div>
   </main>
 
   <script>
-    function openTab(tabId) {
+    // Fixed UI text in both languages; style.css shows the one of <html data-lang>.
+    function bilingual(en, ja) {
+      return `<span lang="en">${en}</span><span lang="ja">${ja}</span>`;
+    }
+
+    // Attributes cannot hold both languages: data-placeholder-ja, data-aria-label-ja and
+    // data-alt-ja give the Japanese text, and the original English is kept in data-*-en.
+    function applyLanguageAttributes() {
+      const ja = window.GUILDA_LANG?.get() === 'ja';
+      [['placeholder', 'placeholder'], ['aria-label', 'ariaLabel'], ['alt', 'alt']].forEach(([attr, key]) => {
+        const jaKey = `${key}Ja`;
+        const enKey = `${key}En`;
+        document.querySelectorAll(`[data-${attr}-ja]`).forEach(el => {
+          if (el.dataset[enKey] === undefined) el.dataset[enKey] = el.getAttribute(attr) || '';
+          el.setAttribute(attr, ja ? el.dataset[jaKey] : el.dataset[enKey]);
+        });
+      });
+    }
+
+    // Switch tabs without reloading. With targetId, scroll to that element inside the tab.
+    function openTab(tabId, targetId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
       const btn = document.querySelector(`button[onclick="openTab('${tabId}')"]`);
       if(btn) btn.classList.add('active');
-    }
-
-    function renderPowerGridAnimation() {
-      const canvas = document.getElementById('power-grid-animation');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const resize = () => { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; };
-      window.addEventListener('resize', resize); resize();
-
-      const buses = [
-        { x: 0.1, y: 0.2, type: 'gen', color: 'rgba(15, 76, 129, 0.8)' }, { x: 0.1, y: 0.8, type: 'gen', color: 'rgba(15, 76, 129, 0.8)' },
-        { x: 0.9, y: 0.15, type: 'gen', color: 'rgba(15, 76, 129, 0.8)' }, { x: 0.25, y: 0.5, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' },
-        { x: 0.4, y: 0.2, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' }, { x: 0.4, y: 0.8, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' },
-        { x: 0.55, y: 0.5, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' }, { x: 0.7, y: 0.3, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' },
-        { x: 0.75, y: 0.7, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' }, { x: 0.45, y: 0.45, type: 'load', color: 'rgba(51, 51, 51, 0.6)' },
-        { x: 0.6, y: 0.8, type: 'load', color: 'rgba(51, 51, 51, 0.6)' }, { x: 0.85, y: 0.45, type: 'load', color: 'rgba(51, 51, 51, 0.6)' },
-        { x: 0.9, y: 0.85, type: 'load', color: 'rgba(51, 51, 51, 0.6)' }
-      ];
-      const branches = [
-        { from: 0, to: 3 }, { from: 1, to: 3 }, { from: 3, to: 4 }, { from: 3, to: 5 }, { from: 4, to: 6 }, { from: 5, to: 6 }, 
-        { from: 4, to: 9 }, { from: 5, to: 9 }, { from: 6, to: 7 }, { from: 6, to: 8 }, { from: 7, to: 2 }, { from: 7, to: 11 },
-        { from: 8, to: 10 }, { from: 8, to: 12 }, { from: 2, to: 11 }, { from: 1, to: 5 }, { from: 0, to: 4 }, { from: 7, to: 8, opacity: 0.2 }
-      ];
-      const particles = [];
-      branches.forEach((b, i) => { for (let j=0; j<4; j++) particles.push({ bIdx: i, p: j/4, s: 0.0015 + Math.random()*0.002 }); });
-
-      function loop() {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        const w = canvas.width, h = canvas.height;
-        ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(15,76,129,0.15)';
-        branches.forEach(b => {
-          const f = buses[b.from], t = buses[b.to];
-          ctx.beginPath(); ctx.moveTo(f.x*w, f.y*h); ctx.lineTo(t.x*w, t.y*h);
-          if (b.opacity) ctx.strokeStyle = `rgba(15,76,129,${b.opacity})`;
-          ctx.stroke();
-        });
-        particles.forEach(pt => {
-          const b = branches[pt.bIdx], f = buses[b.from], t = buses[b.to];
-          const x = (f.x + pt.p*(t.x-f.x))*w, y = (f.y + pt.p*(t.y-f.y))*h;
-          pt.p += pt.s; if(pt.p>1) pt.p=0;
-          ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fillStyle="#fff";
-          ctx.shadowBlur=8; ctx.shadowColor="#fff"; ctx.fill(); ctx.shadowBlur=0;
-        });
-        buses.forEach(bus => {
-          ctx.beginPath(); ctx.arc(bus.x*w, bus.y*h, bus.type==='gen'?7:5, 0, Math.PI*2);
-          ctx.fillStyle = bus.color; ctx.fill();
-        });
-        requestAnimationFrame(loop);
+      // Keep the open tab in the fragment (and ?lang= in the query) so a reload on Back reopens it
+      if (location.hash !== `#${tabId}`) {
+        try { history.replaceState(history.state, '', `${location.pathname}${location.search}#${tabId}`); } catch (e) {}
       }
-      loop();
+      const target = targetId ? document.getElementById(targetId) : null;
+      if (target) target.scrollIntoView({ block: 'start' });
+      else window.scrollTo(0, 0);
     }
 
+    // The For Developer tab shows the newest entries; updatelog.html lists all (doc-updatelog.js).
     function renderUpdateLog() {
-      const container = document.getElementById('update-log-container');
-      if (!container) return;
-      
-      const data = typeof updateLogData !== 'undefined' ? updateLogData : (typeof update_log !== 'undefined' ? update_log : null);
-      
-      if (data && Array.isArray(data) && data.length > 0) {
-        container.innerHTML = data.map(u => `
-          <div class="update-log-item">
-            <div class="update-date">${u.date || ''}</div>
-            <h3 class="update-title">${u.title || ''}</h3>
-            <div class="update-text">${u.content || ''}</div>
-          </div>
-        `).join('');
-      } else {
-        container.innerHTML = '<p style="color:#888;">No update log data found.</p>';
-      }
-    }
-
-    function renderTutorials() {
-      const toc = document.getElementById('tutorial-toc-container');
-      const abs = document.getElementById('tutorial-abstract-container');
-      if (!toc || !abs) return;
-
-      const data = typeof tutorialData !== 'undefined' ? tutorialData : (typeof tutorial !== 'undefined' ? tutorial : null);
-      
-      if (data && Array.isArray(data) && data.length > 0) {
-        toc.innerHTML = '<table><tr><th>File Name</th><th>Analysis Type</th></tr>' + 
-          data.map(t => {
-            const safeId = (t.filename || 'unknown').replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
-            return `<tr><td><a href="#${safeId}"><code>${t.filename || ''}</code></a></td><td>${t.analysis || ''}</td></tr>`;
-          }).join('') + '</table>';
-          
-        abs.innerHTML = data.map(t => {
-          const safeId = (t.filename || 'unknown').replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
-          return `
-            <h3 id="${safeId}"><code>${t.filename || ''}</code></h3>
-            <table><tr><th style="width:25%">Item</th><th>Description</th></tr>
-            <tr><td>Power System</td><td>${t.system || ''}</td></tr>
-            <tr><td>Analysis Type</td><td>${t.analysis || ''}</td></tr>
-            <tr><td>Description</td><td>${t.description || ''}</td></tr></table>
-          `;
-        }).join('');
-      } else {
-        toc.innerHTML = '<p style="color:#888;">No tutorial data found.</p>';
-        abs.innerHTML = '';
-      }
+      window.GuildaUpdateLog?.render(document.getElementById('update-log-container'), { limit: 4 });
     }
 
     function renderDeveloperLinks() {
@@ -478,7 +176,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
 
       const data = typeof developerData !== 'undefined' ? developerData : null;
       if (!Array.isArray(data) || data.length === 0) {
-        container.innerHTML = '<p style="color:#888;">No developer guides found.</p>';
+        container.innerHTML = '<p style="color: var(--muted);">No developer guides found.</p>';
         return;
       }
 
@@ -488,15 +186,40 @@ sol = net.simulate([0, 50], fault);</code></pre>
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 
-      container.innerHTML = data.map((item, index) => `
-        <a class="developer-link-card" href="${escapeHtml(item.link)}">
-          <span class="developer-link-number">${String(index + 1).padStart(2, '0')}</span>
-          <span class="developer-link-content">
-            <span class="developer-link-title">${escapeHtml(item.title)}</span>
-            <span class="developer-link-description">${escapeHtml(item.description)}</span>
-          </span>
-          <span class="developer-link-action">View guide <span aria-hidden="true">→</span></span>
-        </a>
+      const ja = window.GUILDA_LANG?.get() === 'ja';
+      const splitTitle = (value, fallback) => {
+        const match = /^([^:]+):\s*(.*)$/.exec(value || '');
+        return match ? { label: match[1].trim(), title: match[2] } : { label: fallback, title: value };
+      };
+
+      // "Process: Git Workflow" -> group "Process", title "Git Workflow".
+      // Groups are keyed on the English prefix so they match in both languages.
+      const groups = [];
+      data.forEach((item, index) => {
+        const en = splitTitle(item.title, 'Guides');
+        const shown = ja && item.title_ja ? splitTitle(item.title_ja, 'ガイド') : en;
+        let group = groups.find((g) => g.key === en.label);
+        if (!group) { group = { key: en.label, label: shown.label, items: [] }; groups.push(group); }
+        const description = ja && item.description_ja ? item.description_ja : item.description;
+        group.items.push({ ...item, title: shown.title, description, number: index + 1 });
+      });
+
+      container.innerHTML = groups.map((group) => `
+        <section class="developer-group is-${escapeHtml(group.key.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}" aria-label="${escapeHtml(group.label)}">
+          <h2 class="developer-group-label"><span>${escapeHtml(group.label)}</span></h2>
+          <div class="developer-link-grid">
+            ${group.items.map((item) => `
+              <a class="developer-link-card" href="${escapeHtml(item.link)}">
+                <span class="developer-link-number">${String(item.number).padStart(2, '0')}</span>
+                <span class="developer-link-content">
+                  <span class="developer-link-title">${escapeHtml(item.title)}</span>
+                  <span class="developer-link-description">${escapeHtml(item.description)}</span>
+                </span>
+                <span class="developer-link-action">${item.link.startsWith('class.html') ? (ja ? 'リファレンスを見る' : 'View reference') : (ja ? 'ガイドを見る' : 'View guide')} <span aria-hidden="true">→</span></span>
+              </a>
+            `).join('')}
+          </div>
+        </section>
       `).join('');
     }
 
@@ -509,35 +232,28 @@ sol = net.simulate([0, 50], fault);</code></pre>
       return window.GuildaDocLoader ? window.GuildaDocLoader.getClasses() : [];
     }
 
+    // A power system model class: Type in schema v4, the ancestor list otherwise.
+    function isModelClass(c) {
+      if (c.Type) return c.Type === 'PowerSystemModel';
+      return c.Name === 'PowerSystemModel' || (Array.isArray(c.Ancestors) && c.Ancestors.includes('PowerSystemModel'));
+    }
+
     function getModelCategories(data) {
       const configured = window.GuildaDocLoader?.getSchema()?.modelCategories;
       if (Array.isArray(configured) && configured.length) return configured;
-      return [...new Set(data.filter(c => c.Type === 'PowerSystemModel').map(c => c.Model).filter(Boolean))];
+      const fromModel = [...new Set(data.filter(isModelClass).map(c => c.Model).filter(Boolean))];
+      if (fromModel.length) return fromModel;
+      return data.filter(c => isModelClass(c) && window.GuildaDocLoader.parentNames(c).includes('PowerSystemModel')).map(c => c.Name);
     }
 
     function renderReferenceNavigation() {
       const data = getClassReferenceData();
-      const schema = window.GuildaDocLoader?.getSchema() || {};
       const categories = getModelCategories(data);
-      const coreClassNames = Array.isArray(schema.coreClasses) && schema.coreClasses.length
-        ? schema.coreClasses
-        : categories;
-
-      const cards = document.getElementById('core-class-cards');
-      if (cards) {
-        cards.innerHTML = coreClassNames.map(name => data.find(c => c.Name === name)).filter(Boolean).map(c => `
-          <a href="${window.GuildaDocLoader.pageUrl('class.html', { class: c.Name })}" class="core-class-card">
-            <span class="core-class-icon">📄</span>
-            <h3>${c.Name}</h3>
-            <p>${firstLineText(c.Summary || c.Desc) || c.Role || `Reference for ${c.Name}.`}</p>
-          </a>
-        `).join('');
-      }
 
       const toggles = document.getElementById('class-filter-toggles');
       if (toggles) {
         toggles.innerHTML = ['All', ...categories].map(name => `
-          <button class="filter-btn${name === activeFilter ? ' active' : ''}" data-filter="${name}">${name}</button>
+          <button class="filter-btn${name === activeFilter ? ' active' : ''}" data-filter="${name}">${name === 'All' ? bilingual('All', 'すべて') : name}</button>
         `).join('');
         toggles.querySelectorAll('.filter-btn').forEach(btn => {
           btn.addEventListener('click', () => filterClasses(btn.dataset.filter, btn));
@@ -557,7 +273,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
     }
 
     function classSearchText(classData) {
-      return `${classData.Name || ''} ${classData.Parent || ''} ${classData.Model || ''} ${classData.Role || ''} ${classData.Summary || ''} ${classData.Desc || ''} ${classData.Notes || ''}`.toLowerCase();
+      return `${classData.Name || ''} ${classData.Category || classData.Package || ''} ${classData.Origin || ''} ${classData.Parent || ''} ${classData.Model || ''} ${classData.Summary || ''} ${classData.Desc || ''}`.toLowerCase();
     }
 
     function escapeHtml(value) {
@@ -569,143 +285,169 @@ sol = net.simulate([0, 50], fault);</code></pre>
         .replace(/'/g, '&#039;');
     }
 
-    function renderInheritanceTree() {
-      const thead = document.getElementById('inherited-list-thead');
-      const tbody = document.getElementById('class-list-tbody');
+    function isDocumented(classData) {
+      return classData.Documented ?? Boolean(firstLineText(classData.Summary || classData.Desc));
+    }
+
+    function renderReferenceStatus() {
+      const status = document.getElementById('reference-status');
+      const empty = document.getElementById('reference-empty');
+      const loader = window.GuildaDocLoader;
+      if (!loader?.hasIndex()) {
+        if (empty) empty.hidden = false;
+        if (status) status.textContent = '';
+        return;
+      }
+      const classes = getClassReferenceData();
+      const coverage = loader.getCoverage();
+      const validation = loader.getValidation();
+      const generatedAt = loader.getSchema()?.generatedAt;
+      if (!status) return;
+      // One tile per figure: a count, a documented/total share with a bar, or an issue count.
+      const label = (en, ja) => `<span class="ref-stat-label"><span lang="en">${en}</span><span lang="ja">${ja}</span></span>`;
+      const tile = (body, modifier = '') => `<div class="ref-stat${modifier}">${body}</div>`;
+      const share = (en, ja, part) => {
+        const pct = part.Total ? Math.round(100 * part.Documented / part.Total) : 100;
+        return tile(`${label(en, ja)}
+          <span class="ref-stat-value">${part.Documented}<span class="ref-stat-total">/${part.Total}</span><span class="ref-stat-pct">${pct}%</span></span>
+          <span class="ref-stat-bar" role="presentation"><span style="width: ${pct}%"></span></span>`, pct < 100 ? ' is-partial' : '');
+      };
+      const issues = (en, ja, count, kind) => tile(`${label(en, ja)}<span class="ref-stat-value">${count}</span>`, count > 0 ? ` is-${kind}` : ' is-clear');
+      const tiles = [
+        tile(`${label('Classes', 'クラス')}<span class="ref-stat-value">${classes.length}</span>`),
+        ...(coverage ? [
+          share('Documented classes', '説明ありのクラス', coverage.Classes),
+          share('Documented public methods', '説明ありの public メソッド', coverage.Methods),
+          share('Documented public properties', '説明ありの public プロパティ', coverage.Properties)
+        ] : []),
+        issues('Warnings', '警告', validation.warningCount || 0, 'warn'),
+        issues('Errors', 'エラー', validation.errorCount || 0, 'err')
+      ];
+      status.innerHTML = `<div class="ref-stats">${tiles.join('')}</div>`
+        + (generatedAt ? `<p class="ref-stat-caption"><span lang="en">Generated</span><span lang="ja">生成日時</span> ${escapeHtml(generatedAt.replace('T', ' ').slice(0, 16))}</p>` : '');
+    }
+
+    // Draw one inheritance tree into a table. `classes` is the set to show;
+    // a class whose parents are not in the set becomes a top-level row.
+    function renderClassTree({ thead, tbody, classes, subtreeRootName, emptyText }) {
       if (!thead || !tbody) return;
-
-      thead.innerHTML = '<tr><th>Class Hierarchy</th><th>Summary</th></tr>';
-
-      const classes = getClassReferenceData().filter(c => c.Type === 'PowerSystemModel');
+      thead.innerHTML = `<tr><th>${bilingual('Class Hierarchy', 'クラス階層')}</th><th>${bilingual('Summary', '概要')}</th></tr>`;
       if (!classes.length) {
-        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No class reference data found.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="2" class="tree-empty">${emptyText}</td></tr>`;
         return;
       }
 
-      const root = { Name: 'PowerSystemModel', Synthetic: true, Children: [] };
       const nodes = new Map(classes.map(c => [c.Name, { ...c, Children: [] }]));
+      const root = { Name: '', Synthetic: true, Children: [] };
       const parentOf = new Map();
-
       nodes.forEach(node => {
-        const parentNames = (node.Parent || '').split(',').map(name => name.trim()).filter(Boolean);
-        const parentName = parentNames.find(name => nodes.has(name)) || 'PowerSystemModel';
-        const parent = parentName === 'PowerSystemModel' ? root : nodes.get(parentName);
+        const parentName = window.GuildaDocLoader.parentNames(node).find(name => nodes.has(name));
+        const parent = parentName ? nodes.get(parentName) : root;
         parent.Children.push(node);
         parentOf.set(node.Name, parent);
       });
+      const byName = (a, b) => a.Name.localeCompare(b.Name);
+      nodes.forEach(node => node.Children.sort(byName));
+      root.Children.sort(byName);
 
-      const subtreeRoot = activeFilter === 'All' ? root : nodes.get(activeFilter);
+      const subtreeRoot = subtreeRootName ? nodes.get(subtreeRootName) : root;
       if (!subtreeRoot) {
-        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No classes were found for this category.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="2" class="tree-empty">${bilingual('No classes were found for this category.', 'このカテゴリのクラスはありません。')}</td></tr>`;
         return;
       }
-
-      const subtreeNames = new Set();
-      const collectSubtree = node => {
-        subtreeNames.add(node.Name);
-        node.Children.forEach(collectSubtree);
-      };
-      collectSubtree(subtreeRoot);
 
       const searchBox = document.getElementById('class-search');
       const term = (searchBox?.value || '').trim().toLowerCase();
+      const undocumentedOnly = document.getElementById('class-undocumented-only')?.checked;
       let visibleNames = null;
-
-      if (term) {
+      if (term || undocumentedOnly) {
         visibleNames = new Set();
-        if (subtreeRoot.Name.toLowerCase().includes(term)) visibleNames.add(subtreeRoot.Name);
+        const inSubtree = node => {
+          for (let current = node; current; current = parentOf.get(current.Name)) {
+            if (current === subtreeRoot) return true;
+          }
+          return false;
+        };
         nodes.forEach(node => {
-          if (!subtreeNames.has(node.Name)) return;
-          if (!classSearchText(node).includes(term)) return;
-          let current = node;
-          while (current) {
+          if (!inSubtree(node)) return;
+          if (term && !classSearchText(node).includes(term)) return;
+          if (undocumentedOnly && isDocumented(node)) return;
+          for (let current = node; current && current !== root; current = parentOf.get(current.Name)) {
             visibleNames.add(current.Name);
             if (current === subtreeRoot) break;
-            current = parentOf.get(current.Name);
           }
         });
-      }
-
-      if (visibleNames && !visibleNames.size) {
-        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No matching classes found.</td></tr>';
-        return;
+        if (!visibleNames.size) {
+          tbody.innerHTML = `<tr><td colspan="2" class="tree-empty">${bilingual('No matching classes found.', '該当するクラスはありません。')}</td></tr>`;
+          return;
+        }
       }
 
       const rows = [];
-      const flattenTree = (node, guides = []) => {
-        if (visibleNames && !visibleNames.has(node.Name)) return;
-        rows.push({ node, guides });
+      const flattenTree = (node, guides) => {
+        if (visibleNames && !node.Synthetic && !visibleNames.has(node.Name)) return;
+        if (!node.Synthetic) rows.push({ node, guides });
         const children = node.Children.filter(child => !visibleNames || visibleNames.has(child.Name));
         children.forEach((child, index) => {
-          flattenTree(child, [...guides, index < children.length - 1]);
+          flattenTree(child, node.Synthetic ? [] : [...guides, index < children.length - 1]);
         });
       };
-      flattenTree(subtreeRoot);
+      flattenTree(subtreeRoot, []);
 
       const renderGuides = guides => guides.map((hasNext, index) => {
         const isBranch = index === guides.length - 1;
-        const classes = [
+        const guideClasses = [
           'tree-guide',
           isBranch ? 'tree-branch' : 'tree-ancestor',
           hasNext ? 'has-next' : 'is-last'
         ];
-        return `<span class="${classes.join(' ')}" style="--tree-level:${index}" aria-hidden="true"></span>`;
+        return `<span class="${guideClasses.join(' ')}" style="--tree-level:${index}" aria-hidden="true"></span>`;
       }).join('');
 
       tbody.innerHTML = rows.map(({ node, guides }) => {
-        const summary = firstLineText(node.Summary) || '';
-        const isCategoryRoot = !node.Synthetic && (
-          (activeFilter === 'All' && guides.length === 1) ||
-          (activeFilter !== 'All' && guides.length === 0)
-        );
+        const summary = firstLineText(node.Summary || node.Desc) || '';
         const rowClasses = [
-          node.Synthetic ? 'tree-root-row' : '',
-          isCategoryRoot ? 'tree-category-row' : ''
+          guides.length === 0 ? 'tree-root-row' : '',
+          guides.length === 1 ? 'tree-category-row' : ''
         ].filter(Boolean).join(' ');
         const rowAttributes = `${rowClasses ? ` class="${rowClasses}"` : ''} data-tree-depth="${guides.length}"`;
-        const classLabel = node.Synthetic
-          ? '<span class="tree-root-label">PowerSystemModel</span>'
-          : `<a class="tree-class-link${node.Abstract ? ' is-abstract' : ''}" href="${window.GuildaDocLoader.pageUrl('class.html', { class: node.Name })}" title="${escapeHtml(summary || node.Role || '')}">${escapeHtml(node.Name)}</a>`;
-        const nodeMarker = `<span class="tree-node-marker${node.Abstract ? ' is-abstract' : ''}${node.Synthetic ? ' is-root' : ''}" aria-hidden="true"></span>`;
+        const classLabel = `<a class="tree-class-link${node.Abstract ? ' is-abstract' : ''}" href="${window.GuildaDocLoader.pageUrl('class.html', { class: node.Name })}" title="${escapeHtml(summary)}">${escapeHtml(node.Name)}</a>`;
+        const nodeMarker = `<span class="tree-node-marker${node.Abstract ? ' is-abstract' : ''}${guides.length === 0 ? ' is-root' : ''}" aria-hidden="true"></span>`;
         const hierarchyCell = `<div class="tree-table-name" style="--tree-depth:${guides.length}">${renderGuides(guides)}${nodeMarker}${classLabel}</div>`;
+        const summaryCell = isDocumented(node)
+          ? escapeHtml(summary)
+          : `<span class="ref-badge is-undocumented is-small">${bilingual('no docs', '説明なし')}</span>`;
 
         return `<tr${rowAttributes}>
           <td>${hierarchyCell}</td>
-          <td>${node.Synthetic ? 'Root of the power-system model class hierarchy.' : escapeHtml(summary)}</td>
+          <td>${summaryCell}</td>
         </tr>`;
       }).join('');
     }
 
-    function renderAuxiliaryClassList() {
-      const auxTbody = document.getElementById('auxiliary-list-tbody');
-      const auxThead = document.getElementById('auxiliary-list-thead');
-      if (!auxTbody) return;
-
+    function renderInheritanceTree() {
       const data = getClassReferenceData();
-      if (!data || !Array.isArray(data)) return;
+      const modelClasses = data.filter(isModelClass);
+      const hasRealRoot = modelClasses.some(c => c.Name === 'PowerSystemModel');
+      renderClassTree({
+        thead: document.getElementById('inherited-list-thead'),
+        tbody: document.getElementById('class-list-tbody'),
+        classes: modelClasses,
+        subtreeRootName: activeFilter !== 'All' ? activeFilter : (hasRealRoot ? 'PowerSystemModel' : ''),
+        emptyText: bilingual('No class reference data found.', 'クラスリファレンスのデータがありません。')
+      });
+      renderAuxiliaryClassList();
+    }
 
-      const auxData = data.filter(c => c.Type === 'auxiliary');
-
-      if (auxData.length === 0) {
-        if (auxThead) auxThead.innerHTML = '';
-        auxTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#888;">No auxiliary classes found.</td></tr>';
-        return;
-      }
-
-      if (auxThead) {
-        auxThead.innerHTML = `
-          <tr>
-            <th>Class Name</th>
-            <th>Summary</th>
-          </tr>
-        `;
-      }
-      auxTbody.innerHTML = auxData.map(c => `
-        <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('class.html', { class: '${c.Name || ''}' })" title="View details for ${c.Name || ''}">
-          <td><span class="row-link">${c.Name || ''}</span></td>
-          <td>${firstLineText(c.Summary || '')}</td>
-        </tr>
-      `).join('');
+    function renderAuxiliaryClassList() {
+      const data = getClassReferenceData();
+      renderClassTree({
+        thead: document.getElementById('auxiliary-list-thead'),
+        tbody: document.getElementById('auxiliary-list-tbody'),
+        classes: data.filter(c => !isModelClass(c)),
+        subtreeRootName: '',
+        emptyText: bilingual('No auxiliary classes found.', '補助クラスはありません。')
+      });
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -713,19 +455,23 @@ sol = net.simulate([0, 50], fault);</code></pre>
       if (requestedTab && document.getElementById(requestedTab)?.classList.contains('tab-content')) {
         openTab(requestedTab);
       }
-      renderPowerGridAnimation(); 
-      renderUpdateLog(); 
-      renderTutorials(); 
+      renderUpdateLog();
       renderDeveloperLinks();
+      document.addEventListener('guilda-langchange', renderDeveloperLinks);
+      applyLanguageAttributes();
+      document.addEventListener('guilda-langchange', applyLanguageAttributes);
+      renderReferenceStatus();
+      document.addEventListener('guilda-langchange', renderReferenceStatus);
       renderReferenceNavigation();
-      
+      window.GuildaDocTree?.mount(document.getElementById('reference-source-tree'), null);
       renderInheritanceTree();
-      renderAuxiliaryClassList();
 
-      const searchBox = document.getElementById('class-search');
-      if(searchBox) {
-        searchBox.addEventListener('input', renderInheritanceTree);
-      }
+      window.addEventListener('hashchange', () => {
+        const tab = location.hash.replace(/^#/, '');
+        if (document.getElementById(tab)?.classList.contains('tab-content')) openTab(tab);
+      });
+      document.getElementById('class-search')?.addEventListener('input', renderInheritanceTree);
+      document.getElementById('class-undocumented-only')?.addEventListener('change', renderInheritanceTree);
     });
   </script>
 </body>
