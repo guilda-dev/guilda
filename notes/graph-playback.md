@@ -21,7 +21,8 @@
 ## 1. 作り
 
 - 部品は `uipanel` の中の `uigridlayout` に `uibutton`(state)、`uislider`、`uilabel`、`uidropdown` です。R2026a では `figure` の中にも UI 部品を置けるので(確かめました)、`figure` と uifigure の容器で同じ部品を使います。`uicontrol` は使いません。
-- バーは tiledlayout の容器(`ax(1).Parent.Parent`)に置きます。tiledlayout の `OuterPosition` を `[x b w 1−b]`、バーを `[x 0 w b]` にします(b = 34 px ÷ 容器の高さ、上限 0.4)。x と w は tiledlayout のものを使うので、`show_controls` を軸の横に出すとバーも軸の幅になります。容器の `SizeChanged` のリスナーで置き直します。
+- バーは tiledlayout の容器(`ax(1).Parent.Parent`)に置きます。tiledlayout の `OuterPosition` を `[x b w 1−b]`、バーを `[x 0 w b]` にします(b = 34 px ÷ 容器の高さ、上限 0.9)。x と w は tiledlayout のものを使うので、`show_controls` を軸の横に出すとバーも軸の幅になります。容器の `SizeChanged` と tiledlayout の `MarkedClean` のリスナーで置き直します(単位・位置・表示が同じなら設定しません。設定すると描画が繰り返されます)。
+- 図の大きさを変えるとバーが縦に伸びることがありました(`fix/playback-bar-fixed-height`)。原因は、正規化単位の b を `SizeChanged` でしか置き直さなかったのに、見えない figure、uifigure・uipanel(`AutoResizeChildren` が on)、uigridlayout のセルのパネルでは `SizeChanged` が来ず、さらに uigridlayout ではセルの配置前の仮の高さで b を決めていたことです。描くたびに来る tiledlayout の `MarkedClean` でも置き直すようにし、描画時に読んだ大きさが古いときは後の `SizeChanged` で直ります。F100 に大きさを小→大→小と変える節を足しました。
 - 軸を渡した図(`Parent` が axes)にはバーを付けません。使う人の軸の配置を変えないためです。
 - private のメソッド: `refresh_bar`(作る・消す・合わせる)、`place_bar(l_hide)`(置く・隠す)、`play_bar(l_play)`(timer の開始・停止)。protected の `has_playback`(基底は 2 標本以上、GraphChart は時刻で変わる図だけ。前の `control_list` の時刻の条件と同じ)。
 - 呼ぶ所: `build` の最後、`set_time` の各図、`set_data` の最後、`animate` の前後、`PlaySpeed` の setter、再生の 1 こま。
