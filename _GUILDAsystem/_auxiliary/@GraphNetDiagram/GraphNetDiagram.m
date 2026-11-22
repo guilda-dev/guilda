@@ -28,7 +28,10 @@ classdef GraphNetDiagram < GraphBase
 % Both put each bus at its height (BusHeightMode; 0 for "none"), a branch climbs linearly
 % along its path between the heights of its ends, and a component and its link stay at
 % the height of its bus. The first drawing looks from the top; a later drawing (Dimension,
-% BusHeightMode, set_position, set_data) keeps the view the user rotated to.
+% BusHeightMode, set_position, set_data) keeps the view the user rotated to. When the 3D
+% drawing gets heights (the first drawing too) while it looks from the top, it turns to
+% an oblique view (azimuth -37.5, elevation 30), and back to the top when the heights go
+% away in that view.
 %
 % Sizes and widths are in points (pt), as LineWidth and MarkerSize of MATLAB, so they do
 % not depend on the coordinates. The value of the quantity of BranchWidthMode is mapped
@@ -122,7 +125,16 @@ classdef GraphNetDiagram < GraphBase
 % - `MarkerSizeMode`: "none" (default), "P", "Q" or "S" (|P|, |Q|, |P + jQ| of the
 %   injection of a component, and of the sum of the components of a bus).
 % - `BusHeightMode`: "V" (|V|), "angle" (angle of V), "Vimag" (imaginary part of V), "P",
-%   "Q" (power injections) or "none".
+%   "Q" (power injections) or "none". In 2D the height is the value. In 3D it is scaled
+%   about the reference value (1 pu for "V", 0 for the others) so that the values of all
+%   samples and the reference span a quarter of the drawing, and the heights are drawn
+%   readable: a light floor with a grid below the lowest value of all samples, the
+%   shadows of the bars, branches and links on it, a thin post from each bus down to it,
+%   a translucent reference plane labeled with its value ("|V| = 1"), and a z axis with
+%   the values and the quantity ("|V| [pu]", "∠V [rad]", "Im V [pu]", "P [pu]", "Q
+%   [pu]"). The floor and the scale are the same at every sample (set_time), so the posts
+%   compare across times. None of these can be clicked or has a data tip. "none" draws
+%   none of them.
 % - `LabelMode`: "bus" (default: the tags of the buses), "tag" (the tags of the buses and
 %   components), "value" (the tags and the values: ∠V and |V| of a bus, P and Q of a
 %   component, and the line "<name>=<value>" of its color value with the name and format
