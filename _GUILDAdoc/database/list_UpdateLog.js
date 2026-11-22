@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Bus heights of 3D network diagrams stand on a floor",
+    "date": "2026-11-22",
+    "type": "feature",
+    "content": "In a 3D network diagram (plot_diagram with Dimension=\"3D\") with a BusHeightMode other than \"none\", the heights are now easy to read. Each bus stands on a thin post down to a light floor with a grid, the branches and links cast shadows on the floor, a translucent plane marks the reference value (|V| = 1 pu for \"V\", 0 for \"angle\", \"Vimag\", \"P\" and \"Q\"), and the z axis shows the values and the quantity, for example \"|V| [pu]\". The heights are scaled about the reference so that the values of all times fill a quarter of the drawing, and the floor and the scale stay the same while you move the time of a simulation result, so the posts can be compared across times. The diagram first looks at the heights from an oblique angle instead of from the top. The floor, posts, shadows and plane cannot be clicked and have no data tips. 2D diagrams and 3D diagrams with BusHeightMode \"none\" do not change."
+  },
+  {
     "title": "Network diagrams show the value behind each color",
     "date": "2026-11-22",
     "type": "feature",

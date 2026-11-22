@@ -775,3 +775,43 @@ IEEE68 の 1 回の新しい描画(変更前、実時間の目安):
 - ResultLIN: `section_diagram` の `datatip_wrap`(`bus_text`)が母線の行「`<s_value>: <値>`」を末尾に足すので、plot_kernel と plot_participation の母線のデータチップには同じ値が 2 回出ます(例: `left kernel at \theta = 0.1167` と `Left kernel at \theta: 0.1167`、`participation = 0.8121` と `Participation in the mode: 0.8121`)。ResultLIN は編集していません。線形化の調整役が wrapper を外し `ColorbarLabel` を設定すれば 1 行になります。
 - 結果メソッドの既定: `ColorMode="user"` や `BusColorData` で母線・機器を塗るのは ResultOPF(plot_lmp、plot_iteration)と ResultLIN だけでした。ほかに変えたメソッドはありません。plot_lmp・plot_iteration の `LabelMode="value"` の既定は OPF の調整役が変えます。
 - テスト: F59 `TheDataTipOfABusGivesItsColorValueNamedByColorbarLabel`、`TheDataTipOfABranchWithColorModeLossGivesTheColoredLoss`、`TheNameOfTheColorValueFallsBackToTheLabelOfColorMode`、`LabelModeValueLabelsEndWithTheColorValueOfBusesAndComponents`、`LabelModeValueLabelsFollowBusColorDataSetByATimeChangedFcn`(すべて medium)。
+
+## 19. 3D の母線の高さを読めるようにする(2026-11-22、`feature/bus-height-readable`)
+
+ユーザーの指摘: `Dimension="3D"` で `BusHeightMode` を使うと、母線が宙に浮いているように見え、高さを直感的に読めない。`BusHeightMode="none"` の図は今のまま変えない。
+
+### 19.1 原因(確認済み)
+
+- 最初の描画が真上から見るので、高さがまったく見えない(変更前の画像は `"V"` でも `"none"` とほぼ同じ)。
+- z が量の値そのもの(|V| ≈ 1)で、`daspect [1 1 1]` のため、IEEE9 の |V| の差(約 0.08)は配置の幅(約 1)に比べて小さすぎる。逆に P は数十 pu で、配置より何十倍も高い塔になる。
+- 地面も目盛りもないので、どの高さが基準か分からない。
+
+### 19.2 設計(採用)
+
+- **尺度(3D だけ):** 基準 ref(`"V"` は 1 pu、`"angle"`・`"Vimag"`・`"P"`・`"Q"` は 0)を中心に `z = ref + scale·(値 − ref)`。scale は全標本の値と ref が span の 4 分の 1 に収まるように決める(全部同じなら 1)。`diagram_geometry` が 3D のときだけ掛け、`sct_g.sct_height`(Ref、Scale、Lim)を返す。2D の z は値のまま(Q9、F59 の 2D の高さのテストはそのまま通る)。
+- **床:** 全標本と ref の最小より、その幅の 15%(少なくとも span の 3%)下。負の値があっても床はすべての母線の下にあり、柱は必ず下向き(床を 0 に置いて上下に棒を立てる案は、床の下の母線が床に隠れるので採らなかった)。床は全標本で同じ高さなので、柱の長さを時刻の間で比べられる。
+- **描くもの(`draw_graph_network`、`sct_plt.HeightGuide`):** 薄い灰色の床(patch、Tag `HeightFloor`)、約 10 本の 1-2-5 の刻みの格子(`HeightGrid`)、棒・ブランチ・リンクの影(`HeightShadow`、床のすぐ上)、母線の中心から床までの柱(`HeightPost`)、半透明の青い基準面とその値の文字(`HeightReference`、例 `|V| = 1`)。それぞれ NaN で区切った 1 つの line か patch なので、IEEE68 でも 6 個しか増えない。
+- **z 軸(`create_scene`):** 3D で高さがあるときだけ `ZColor` を出し、目盛りは値の 1-2-5 の刻み(位置は z、文字は値)、ラベルは量と単位(`|V| [pu]`、`∠V [rad]`、`Im V [pu]`、`P [pu]`、`Q [pu]`)。軸の範囲(`DrawBox`)は床と全標本の最大を含むので、時刻を動かしても範囲が変わらない。
+- **視点:** 3D の図に高さが付いたとき(最初の描画も含む)に真上から見ていれば、方位角 −37.5、仰角 30 にする。その視点のまま高さがなくなると真上に戻す。利用者が回した視点は残す。前の描画に案内があったかは、描き直す前の `sct_plt`(`set_data` では `sct_pltPrevious`)の `HeightGuide` で判断する(新しい私用プロパティは作らない)。
+- **選べない:** 案内はすべて `PickableParts="none"`、`HitTest="off"`、`HandleVisibility="off"`。`ButtonDownFcn` も `UserData` も持たないので、クリック(`ElementClicked`)にもデータチップにもならない。
+- **時刻:** 3D の高さのある図は今も標本ごとに `create_scene` で作り直すので、案内も標本ごとに描き直す。
+
+### 19.3 採らなかった案
+
+- **高さを色でも示す:** 色は `ColorMode` の量と色の棒に使っているので、もう 1 つのカラーマップは読み違いのもとになる。基準面と z 軸の目盛りで足りると判断した。
+- **`daspect` の z だけを変える:** 立体(球、直方体、円錐)が縦に伸びる。
+- **縦の倍率を利用者が決めるプロパティ:** 公開メンバーを増やさない指示のため入れていない。自動の尺度で足りないときの提案として残す。
+
+### 19.4 速さ
+
+案内は 6 個のグラフィックスオブジェクトと全標本の高さの計算(n_bus × 標本数)だけで、作り直しの時間に比べて小さい。IEEE68 の 3D(`"V"`)の `set_time` の測定値は §19.6 に書く。
+
+### 19.5 テスト
+
+F59 に 4 件: `test3DBusHeightModeNoneDrawsNoHeightGuide`(medium)、`test3DHeightsStandOnPostsDownToAFloor`(large。母線ごとに 1 本の柱、上は母線の中心、下は床、基準面は 1、z の目盛り、視点の規則、angle の負の値)、`test3DPostsFollowSet_timeOnTwoSamples`(large。2 標本で尺度と床が 1 つ、柱が新しい高さに)、`TheHeightGuideIsNotPickable`(medium。母線のクリックはそのまま)。
+
+### 19.6 画像と測定
+
+- 画像(コーディネーター向け、セッションの作業フォルダ `scratchpad/busheight/`): `before_*` と `after_*` の IEEE9bus・IEEE68bus の `"V"`・`"angle"`(潮流)、IEEE9bus の地絡の ODE(`"V"`、t = 0.05 s と 0.12 s)、IEEE9bus の `"none"`(変更前後で画素が一致することを確かめた)。
+- IEEE68 の 3D の `set_time`(0.5 s の地絡の ODE、隠れた figure、6 標本の平均): `"V"` 1.69 s/標本、`"none"` 0.12 s/標本。`"V"` の時間は標本ごとの作り直し(§14 の以前の測定は 1.5 s)がほとんどで、案内の分は小さい。作り直しをやめる(立体の `ZData` だけ動かす)のは別の課題。
+- テスト: graph small・gui small 38 件、graph medium 108 件、F44・F47・F59 の large 57 件がすべて PASS。

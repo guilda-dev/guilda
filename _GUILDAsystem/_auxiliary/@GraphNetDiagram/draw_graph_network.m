@@ -7,6 +7,15 @@ function draw_graph_network(obj, sct_g, fcn_click)
 % scales them to the size of each element (BusScale, CompScale, EdgeScale). A bar is a
 % box of its Length, as deep as the bus radius. The arrow cones of each branch and link
 % (Tag "From" and "To") show the direction (BranchDirection, LinkDirection).
+%
+% With BusHeightMode other than "none", the heights are made readable (sct_plt.HeightGuide):
+% a light floor with a grid (Tag "HeightFloor", "HeightGrid") below the lowest height of
+% every sample and of the reference (by 15% of that range, at least 3% of span), the
+% shadows of the bars, branches and links on it ("HeightShadow"), a vertical post from
+% each bus center down to it ("HeightPost", one line for all buses), and the reference
+% plane with its value ("HeightReference": |V| = 1 for "V", 0 for the other modes). The
+% floor stays at one level for all samples, so a post compares across times. None of
+% them is pickable (PickableParts "none": no click, no data tip).
     arguments (Input)
         obj
         sct_g (1,1) struct      % Geometry of diagram_geometry.
@@ -117,6 +126,71 @@ function draw_graph_network(obj, sct_g, fcn_click)
         rm_clabel(i_comp, :) = comp_pos + node_radius*1.5;
     end
 
+    % Height guide (BusHeightMode other than "none"): a floor below every bus over all
+    % samples, a grid and the shadows of the buses, branches and links on it, a post from
+    % each bus down to it, and the reference plane of the quantity (|V| = 1, else 0). One
+    % line or patch each, not pickable (no clicks, no data tips).
+    sct_guide = struct.empty;
+    if ~isempty(sct_g.sct_height)
+        sct_h   = sct_g.sct_height;
+        r_ref   = sct_h.Ref;
+        rv_lim  = sct_h.Ref + sct_h.Scale*(sct_h.Lim - sct_h.Ref);       % drawn heights of the values
+        r_top   = rv_lim(2);
+        r_floor = rv_lim(1) - max(0.15*diff(rv_lim), 0.03*sct_g.r_span);
+        r_lift  = 2e-3*(r_top - r_floor);           % lines just above the floor (no z-fighting)
+
+        % Box of the floor: the drawing with a margin of 2% of its larger side
+        rv_half = obj.tab_bus.graph.Length/2;
+        rv_half(~isfinite(rv_half)) = 0;
+        rm_bar = [rv_half.*(obj.tab_bus.graph.Shape == "hbar"), rv_half.*(obj.tab_bus.graph.Shape == "vbar")];
+        rm_xy  = [rm_bus(:, 1:2) - rm_bar; rm_bus(:, 1:2) + rm_bar; sct_g.rm_comp(:, 1:2); ...
+                  vertcat(sct_g.c_branch{:}, zeros(0, 3)) * [1 0; 0 1; 0 0]; vertcat(sct_g.c_link{:}, zeros(0, 3)) * [1 0; 0 1; 0 0]];
+        rm_xy  = rm_xy(all(isfinite(rm_xy), 2), :);
+        r_pad  = 0.02*sct_g.r_span;
+        rv_x   = [min(rm_xy(:, 1)) - r_pad, max(rm_xy(:, 1)) + r_pad];
+        rv_y   = [min(rm_xy(:, 2)) - r_pad, max(rm_xy(:, 2)) + r_pad];
+        rm_corner = [rv_x([1 2 2 1])', rv_y([1 1 2 2])'];
+
+        c_guide = {"PickableParts", "none", "HitTest", "off", "HandleVisibility", "off"};
+        h_floor = patch(ax, "XData", rm_corner(:, 1), "YData", rm_corner(:, 2), "ZData", repmat(r_floor, 4, 1), ...
+            "FaceColor", [0.95 0.95 0.95], "EdgeColor", [0.75 0.75 0.75], "FaceLighting", "none", "Tag", "HeightFloor", c_guide{:});
+
+        % Grid of about 10 lines along the larger side, at a 1-2-5 step
+        rv_step = 10^floor(log10(sct_g.r_span/10))*[1 2 5 10];
+        r_step  = rv_step(find(rv_step >= sct_g.r_span/10, 1));
+        rv_gx  = (ceil(rv_x(1)/r_step):floor(rv_x(2)/r_step))*r_step;
+        rv_gy  = (ceil(rv_y(1)/r_step):floor(rv_y(2)/r_step))*r_step;
+        rm_grid = [reshape([rv_gx; rv_gx; nan(size(rv_gx))], [], 1), reshape(repmat([rv_y'; NaN], 1, numel(rv_gx)), [], 1); ...
+                   reshape(repmat([rv_x'; NaN], 1, numel(rv_gy)), [], 1), reshape([rv_gy; rv_gy; nan(size(rv_gy))], [], 1)];
+        h_grid = line(ax, rm_grid(:, 1), rm_grid(:, 2), repmat(r_floor + r_lift/2, size(rm_grid, 1), 1), ...
+            "Color", [0.86 0.86 0.86], "LineWidth", 0.5, "Tag", "HeightGrid", c_guide{:});
+
+        % Shadows of the bars, branches and links, and the posts of the buses
+        lv_bar   = any(rm_bar ~= 0, 2);
+        rm_bars  = reshape(permute(cat(3, rm_bus(lv_bar, 1:2) - rm_bar(lv_bar, :), rm_bus(lv_bar, 1:2) + rm_bar(lv_bar, :), ...
+                   nan(sum(lv_bar), 2)), [3 1 2]), [], 2);
+        c_shadow = cellfun(@(p) [p(:, 1:2); NaN NaN], [sct_g.c_branch; sct_g.c_link], "UniformOutput", false);
+        rm_shadow = [rm_bars; vertcat(c_shadow{:}, zeros(0, 2))];
+        h_shadow = line(ax, rm_shadow(:, 1), rm_shadow(:, 2), repmat(r_floor + r_lift, size(rm_shadow, 1), 1), ...
+            "Color", [0.72 0.72 0.72], "LineWidth", 1, "Tag", "HeightShadow", c_guide{:});
+        rm_post = reshape(permute(cat(3, rm_bus, [rm_bus(:, 1:2), repmat(r_floor, n_node, 1)], nan(n_node, 3)), [3 1 2]), [], 3);
+        h_post = line(ax, rm_post(:, 1), rm_post(:, 2), rm_post(:, 3), ...
+            "Color", [0.45 0.45 0.45], "LineWidth", 0.75, "Tag", "HeightPost", c_guide{:});
+
+        % Reference plane and its value
+        h_ref = patch(ax, "XData", rm_corner(:, 1), "YData", rm_corner(:, 2), "ZData", repmat(r_ref, 4, 1), ...
+            "FaceColor", [0.30 0.55 0.85], "FaceAlpha", 0.10, "EdgeColor", [0.30 0.55 0.85], "EdgeAlpha", 0.6, ...
+            "FaceLighting", "none", "Tag", "HeightReference", c_guide{:});
+        sv_name = dictionary(["V", "angle", "Vimag", "P", "Q"], ["|V| [pu]", "∠V [rad]", "Im V [pu]", "P [pu]", "Q [pu]"]);
+        s_name  = sv_name(obj.BusHeightMode);
+        h_refText = text(ax, rv_x(2), rv_y(2), r_ref, " " + extractBefore(s_name, " [") + " = " + r_ref + " ", ...
+            "Color", [0.20 0.40 0.70], "FontSize", max(obj.LabelFontSize - 1, 6), "VerticalAlignment", "bottom", ...
+            "HorizontalAlignment", "right", "Tag", "HeightReference", c_guide{:});
+        sct_guide = struct("Floor", h_floor, "Grid", h_grid, "Shadow", h_shadow, "Post", h_post, ...
+            "Reference", h_ref, "ReferenceText", h_refText, "ZFloor", r_floor, "ZReference", r_ref, ...
+            "ZTop", r_top, "Scale", sct_h.Scale, "Name", s_name);
+    end
+
     obj.sct_plt = struct(         ...
         'EdgeMain', h_edge,   ...
         'EdgeArrow', h_arrow, ...
@@ -151,6 +225,7 @@ function draw_graph_network(obj, sct_g, fcn_click)
         'BusScale', ones(n_node, 1), ...
         'CompScale', ones(n_comp, 1), ...
         'EdgeScale', ones(n_edge, 1), ...
+        'HeightGuide', {sct_guide}, ...
         'BusColor0', default_color(h_node, n_node), ...
         'CompColor0', default_color(comp_handles, n_comp), ...
         'Selection', gobjects(0, 1));

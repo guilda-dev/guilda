@@ -7,7 +7,11 @@ function create_scene(obj)
 % when they overlap). 2D looks with an orthographic projection and draws the children
 % in their order (SortMethod "childorder", no depth sorting of the flat symbols); 3D with
 % a perspective projection, a fixed view angle (vis3d) and lights. The first drawing
-% looks from the top; later drawings keep the view of the axes. The colorbar is shown by
+% looks from the top; later drawings keep the view of the axes. In 3D with BusHeightMode
+% other than "none" (the height guide of draw_graph_network), the z axis shows the
+% quantity and its unit, the limits take in the floor and the top of every sample, and
+% the view turns to az -37.5, el 30 when the heights appear while the axes look from the
+% top (back to the top when they go away and that view was kept). The colorbar is shown by
 % apply_style when an element has a color value. The callbacks (clicks, data tips) hold
 % the diagram by a weak reference only, so that saving the figure does not save it.
 %
@@ -31,6 +35,13 @@ function create_scene(obj)
     if l_keepView
         [r_az, r_el] = view(ax);
     end
+    % Whether the drawing before had the height guide (3D with BusHeightMode): the view
+    % turns to the oblique default only when the guide appears or goes away
+    plt_before = obj.sct_plt;
+    if isempty(plt_before)
+        plt_before = obj.sct_pltPrevious;
+    end
+    l_guideBefore = isscalar(plt_before) && isfield(plt_before, "HeightGuide") && ~isempty(plt_before.HeightGuide);
     % A 2D redraw by set_data keeps the objects of the drawing before when what they show
     % stays: the geometry, the tags, the shapes and styles, the link width and the label font
     sct_g = obj.diagram_geometry();
@@ -101,6 +112,13 @@ function create_scene(obj)
     if isempty(rm_p)
         rm_p = [0 0 0; 1 1 0];
     end
+    sct_guide = struct.empty;
+    if isfield(obj.sct_plt, "HeightGuide")
+        sct_guide = obj.sct_plt.HeightGuide;
+    end
+    if ~isempty(sct_guide)                  % the floor and the top of every sample: limits that stay over time
+        rm_p = [rm_p; rm_p(1, 1:2), sct_guide.ZFloor; rm_p(1, 1:2), sct_guide.ZTop];
+    end
     obj.sct_plt.DrawBox = [min(rm_p, [], 1); max(rm_p, [], 1)];
 
     clim(ax, obj.color_limits());
@@ -130,8 +148,27 @@ function create_scene(obj)
         light(ax, "Position", [0 0 1], "Style", "infinite", "Color", [0.20 0.20 0.20]);
         lighting(ax, "gouraud");
         material(ax, "shiny");
+        if ~isempty(sct_guide)              % the z axis tells the values (1-2-5 steps), the quantity and its unit
+            r_ref   = sct_guide.ZReference;
+            rv_val  = r_ref + ([sct_guide.ZFloor, sct_guide.ZTop] - r_ref)/sct_guide.Scale;
+            rv_step = 10^floor(log10(diff(rv_val)/5))*[1 2 5 10];
+            r_step  = rv_step(find(rv_step >= diff(rv_val)/5, 1));
+            rv_tick = (ceil(rv_val(1)/r_step):floor(rv_val(2)/r_step))*r_step;
+            ax.ZColor = [0.35 0.35 0.35];
+            zticks(ax, r_ref + sct_guide.Scale*(rv_tick - r_ref));
+            zticklabels(ax, compose("%g", round(rv_tick/r_step)*r_step + 0));   % + 0: no "-0"
+            zlabel(ax, sct_guide.Name);
+        end
     end
-    if l_keepView
+    % The first 3D drawing with heights looks obliquely (from the top, the heights could
+    % not be seen); the view goes back to the top when the heights go away and it was
+    % still that oblique view. A view the user rotated to stays.
+    rv_oblique = [-37.5 30];
+    if ~isempty(sct_guide) && ~l_guideBefore && (~l_keepView || all(abs([r_az r_el] - [0 90]) < 1e-9))
+        view(ax, rv_oblique);
+    elseif isempty(sct_guide) && l_guideBefore && l_keepView && all(abs([r_az r_el] - rv_oblique) < 1e-9)
+        view(ax, 0, 90);
+    elseif l_keepView
         view(ax, r_az, r_el);
     end
     obj.l_viewSet = true;

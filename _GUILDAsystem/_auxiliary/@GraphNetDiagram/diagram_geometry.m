@@ -10,13 +10,19 @@ function sct_g = diagram_geometry(obj)
 % (relative to the bus center) to the point on its bus, all at the height of its bus. A
 % branch or a link meets a bar on its center line at its offset (NaN: the nearest bend
 % point, or the component, projected onto the bar; no hint: the center), within the bar.
+% In 3D (Dimension "3D", BusHeightMode other than "none") the heights are scaled about
+% the reference value ref (|V| = 1 for "V", else 0): z = ref + scale*(value - ref), with
+% scale such that the values of every sample of the state and ref span a quarter of span
+% (1 when they are all equal). The heights then read the same at every sample and in any
+% network, small (|V|) or large (P); the z axis of create_scene is labeled in the values.
+% 2D keeps z = value.
 % d0 is the median length of the branch paths (no branch: 0.1 times the larger side of
 % the box of the bus centers, or 0.1); span is that larger side (at least eps).
     arguments (Input)
         obj
     end
     arguments (Output)
-        sct_g (1,1) struct  % Fields rm_bus (n_bus x 3), rm_comp (n_comp x 3), c_branch, c_branchFrac (n_branch x 1 cells), c_link (n_comp x 1 cell), d0, r_span.
+        sct_g (1,1) struct  % Fields rm_bus (n_bus x 3), rm_comp (n_comp x 3), c_branch, c_branchFrac (n_branch x 1 cells), c_link (n_comp x 1 cell), d0, r_span, sct_height (3D heights: Ref, Scale, Lim; empty otherwise).
     end
     tab_g = obj.tab_bus.graph;
     n_bus = obj.n_bus;
@@ -38,6 +44,37 @@ function sct_g = diagram_geometry(obj)
     rv_z(isnan(rv_z)) = 0;             % no state (topology only): flat
     if isempty(rv_z)
         rv_z = zeros(n_bus, 1);
+    end
+    r_span = max([max(rm_xy(:, 1), [], 1) - min(rm_xy(:, 1), [], 1), ...
+                  max(rm_xy(:, 2), [], 1) - min(rm_xy(:, 2), [], 1), eps]);
+
+    % 3D: the heights over all samples and the reference (|V| = 1, else 0) span a quarter
+    % of span, about the reference: z = ref + scale*(value - ref)
+    sct_height = struct.empty;
+    if obj.Dimension == "3D" && obj.BusHeightMode ~= "none"
+        r_ref = double(obj.BusHeightMode == "V");
+        cm_V  = obj.sct_state.cm_Vbus;
+        switch obj.BusHeightMode
+            case "V";     rm_z = abs(cm_V);
+            case "angle"; rm_z = angle(cm_V);
+            case "Vimag"; rm_z = imag(cm_V);
+            otherwise
+                cm_I0 = obj.sct_state.cm_Icomp;
+                cm_I0(isnan(cm_I0)) = 0;
+                cm_S  = cm_V .* conj(full(sparse(obj.tab_component.bus, 1:obj.n_component, 1, n_bus, obj.n_component) * cm_I0));
+                rm_z  = real(cm_S);
+                if obj.BusHeightMode == "Q"
+                    rm_z = imag(cm_S);
+                end
+        end
+        rv_all  = [real(rm_z(isfinite(rm_z))); rv_z; r_ref];
+        rv_lim  = [min(rv_all), max(rv_all)];
+        r_scale = 1;
+        if diff(rv_lim) > 0
+            r_scale = 0.25*r_span/diff(rv_lim);
+        end
+        rv_z = r_ref + r_scale*(rv_z - r_ref);
+        sct_height = struct("Ref", r_ref, "Scale", r_scale, "Lim", rv_lim);
     end
     rm_bus = [rm_xy, rv_z];
 
@@ -96,8 +133,6 @@ function sct_g = diagram_geometry(obj)
         c_link{c} = [rm_p, repmat(rv_z(i_bus), size(rm_p, 1), 1)];
     end
 
-    r_span = max([max(rm_xy(:, 1), [], 1) - min(rm_xy(:, 1), [], 1), ...
-                  max(rm_xy(:, 2), [], 1) - min(rm_xy(:, 2), [], 1), eps]);
     if n_br > 0
         d0 = median(rv_len);
     else
@@ -107,7 +142,8 @@ function sct_g = diagram_geometry(obj)
         d0 = 0.1;
     end
     sct_g = struct("rm_bus", rm_bus, "rm_comp", rm_comp, "c_branch", {c_branch}, ...
-                   "c_branchFrac", {c_frac}, "c_link", {c_link}, "d0", d0, "r_span", r_span);
+                   "c_branchFrac", {c_frac}, "c_link", {c_link}, "d0", d0, "r_span", r_span, ...
+                   "sct_height", {sct_height});
 
     function rv_p = attach(i_bus, r_offset, rm_hint)
     % Point [x y] where a branch or a link meets bus i_bus (see above).
