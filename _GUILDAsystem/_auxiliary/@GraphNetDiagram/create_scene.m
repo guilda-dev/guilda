@@ -163,6 +163,13 @@ end
 
 function txt = customhover(event_obj, wr)
 % Data tip text of the element under the cursor; the data tip is also a click on it.
+%
+% Under the first line (the tag), the color value of the element at the sample shown gets
+% one line "<name> = <value>" (color_readout: the name of the colorbar, %.4g) after a
+% square of its color, when it is finite: BusColorData of a bus, BranchColorData of a
+% branch (the quantity of ColorMode, or the values of "user"), ComponentColorData of a
+% component and LinkColorData of a link. It is the line of the colored value even when the
+% tip lists the same quantity (|I| of the "from" end with "I", P_loss with "Loss").
     arguments (Input)
         event_obj  % Event data of the data tip.
         wr         % Weak reference to the diagram. <@Type> matlab.lang.WeakReference
@@ -196,6 +203,11 @@ function txt = customhover(event_obj, wr)
             i_row = G.n_bus + G.n_component + G.n_branch + i;
         otherwise
             return
+    end
+    [s_line, r_value] = G.color_readout(lower(string(sct_ud.Type)), i);
+    if ~ismissing(s_line)
+        s_line = sprintf('\\fontname{SansSerif}{\\color[rgb]{%.3f,%.3f,%.3f}■} %s', G.color_of_values(r_value), s_line);
+        txt = [txt(1), {s_line}, txt(2:end)];
     end
     G.click_element(i_row);   % a data tip is the click of the data cursor mode
 end

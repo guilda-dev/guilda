@@ -14,7 +14,7 @@ function apply_style(obj, iv_element)
 % as LineWidth; a branch and its transformer circles take the width as LineWidth. In 3D
 % the solids drawn are scaled (no new graphics objects). The colorbar is shown only while
 % an element has a finite color value; its label is ColorbarLabel, or with "" the quantity
-% of ColorMode ("|I| [pu]", "P [pu]", "Q [pu]", "Loss [pu]"; none for "user"). The color
+% of ColorMode ("|I| [pu]", "P [pu]", "Q [pu]", "Loss [pu]"; none for "user"; color_readout). The color
 % limits in use (color_limits) are set to the axes first; when they changed (automatic
 % limits follow the data and ColorMode), every element is drawn again. The flow dots (2D)
 % take the new colors of the branches and links (step_flow).
@@ -143,31 +143,10 @@ function apply_style(obj, iv_element)
         colorbar(ax, "off");
     end
     if l_color
-        s_label = obj.ColorbarLabel;
-        if s_label == ""
-            s_label = color_label(obj.ColorMode);
-        end
+        [~, ~, s_label] = obj.color_readout("bus", zeros(0, 1));
         if string(ax.Colorbar.Label.String) ~= s_label
             ax.Colorbar.Label.String = s_label;
         end
-    end
-end
-
-
-function s_label = color_label(s_mode)
-% Automatic colorbar label of a ColorMode ("" for "user" and "none").
-    arguments (Input)
-        s_mode (1,1) string  % ColorMode.
-    end
-    arguments (Output)
-        s_label (1,1) string  % Label.
-    end
-    switch s_mode
-        case "I";    s_label = "|I| [pu]";
-        case "P";    s_label = "P [pu]";
-        case "Q";    s_label = "Q [pu]";
-        case "Loss"; s_label = "Loss [pu]";
-        otherwise;   s_label = "";
     end
 end
 

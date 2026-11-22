@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Network diagrams show the value behind each color",
+    "date": "2026-11-22",
+    "type": "feature",
+    "content": "On a network diagram (plot_diagram, plot_lmp and the other maps colored by a value), the data tip of a bus, branch or component now has one line with the value that colors it, named as the colorbar, for example \"LMP [cost/pu] = 12.34\" or \"Loss [pu] = 0.04298\", after a small square of its color. With LabelMode \"value\", the labels of the buses and components also end with that value, and they follow the time shown and any color values set while the diagram plays. Elements without a value get no line."
+  },
+  {
     "title": "Select... for the targets of the linearization result forms",
     "date": "2026-11-22",
     "type": "feature",

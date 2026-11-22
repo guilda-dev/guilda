@@ -763,3 +763,15 @@ IEEE68 の 1 回の新しい描画(変更前、実時間の目安):
 - カラーマップを使っているとき(`ColorMode` が `"none"` でなく、有限の色の値を持つ要素があるとき)、値が NaN の機器(`"Loss"`、停止した機器、`"user"` の NaN の行)は黒です(2D の縁も 0.6 倍で黒)。`"none"` では `ComponentColorData` を NaN にし、種類の色(`CompColor0`)のままです。`ComponentColor` の行は今までどおり優先します。
 - この状態が変わったときは `apply_style` がすべての機器を塗り直します(`sct_plt.CompColormap` に前の状態を持つ。公開メンバーは増やしていません)。2D と 3D、`set_time`、`Graph=G` の描き直し(`create_scene` が全要素に `apply_style`)で同じです。
 - テスト: F59 `ComponentsTakeTheColormapColorOfTheirLinksAndAreBlackWithoutAValue`(medium)。
+
+## 18. 色で描いた値を読めるようにする(2026-11-22、`feature/diagram-value-readout`)
+
+- ユーザーの要望: 地図に色で描いた値(LMP、損失、電流など)は、すべてデータチップかラベルで数値として読めること。
+- データチップ: `create_scene` の `customhover` が、タグの行の下に「`<名前> = <値>`」を 1 行加えます(先頭にその色の四角 `\color[rgb]{…}■`)。値は表示中の標本で要素を塗っている値です。母線は `BusColorData`、ブランチは `BranchColorData`(`"I"`/`"P"`/`"Q"`/`"Loss"` では `reflect_color_mode` が入れたその量)、機器は `ComponentColorData`、接続線は `LinkColorData` です。書式は `%.4g`、NaN(行がないときも)なら行を出しません。
+- 名前はカラーバーのラベルです。`ColorbarLabel`、`""` なら `ColorMode` の量(`"|I| [pu]"` など)、どちらもなければ `color`。新しい private メソッド `color_readout` が名前・値・行を作り、`apply_style` のカラーバーのラベルもこれを使います(ローカル関数 `color_label` は削除)。公開メンバーは増やしていません。
+- 重複の扱い(決めたこと): 同じ量がデータチップの下にあっても(`"I"` の from 端の |I|、`"Loss"` の P_loss、機器の P・Q)、この行は省きません。いつもタグの下の同じ場所に、カラーバーと同じ名前と色の四角で「色の値」として出すので、見分けられます。量ごとに省く規則にすると、`"P"` のブランチ(両端の |P| の平均)や `"Q"`(|Q_from + Q_to|)のように下の行と少しだけ違う量で、どれが色の値か分かりにくくなるためです。
+- ラベル: `LabelMode="value"` では、母線(∠V、|V| の後)と機器(P、Q の後)のラベルの最後に「` <名前>=<値>`」を加えます(有限のときだけ)。ブランチにはラベルがありません。`reflect_node_label(obj, iv_bus, iv_comp)` に書く行を渡せるようにしました。
+- 追従: `set.BusColorData` と `set.ComponentColorData` は変わった行だけ、`set.ColorbarLabel` と `set.ColorMode` はすべての `"value"` ラベルを書き直します(ローカル関数 `refresh_value_labels`)。行が増減したラベルがあれば 2D では配置し直します(範囲が `fit_axes` のままなら "fit"、外から設定した範囲なら "labels")。`TimeChangedFcn` で `BusColorData` を変える図(`ResultOPF.plot_iteration`)でもラベルが追従します。
+- ResultLIN: `section_diagram` の `datatip_wrap`(`bus_text`)が母線の行「`<s_value>: <値>`」を末尾に足すので、plot_kernel と plot_participation の母線のデータチップには同じ値が 2 回出ます(例: `left kernel at \theta = 0.1167` と `Left kernel at \theta: 0.1167`、`participation = 0.8121` と `Participation in the mode: 0.8121`)。ResultLIN は編集していません。線形化の調整役が wrapper を外し `ColorbarLabel` を設定すれば 1 行になります。
+- 結果メソッドの既定: `ColorMode="user"` や `BusColorData` で母線・機器を塗るのは ResultOPF(plot_lmp、plot_iteration)と ResultLIN だけでした。ほかに変えたメソッドはありません。plot_lmp・plot_iteration の `LabelMode="value"` の既定は OPF の調整役が変えます。
+- テスト: F59 `TheDataTipOfABusGivesItsColorValueNamedByColorbarLabel`、`TheDataTipOfABranchWithColorModeLossGivesTheColoredLoss`、`TheNameOfTheColorValueFallsBackToTheLabelOfColorMode`、`LabelModeValueLabelsEndWithTheColorValueOfBusesAndComponents`、`LabelModeValueLabelsFollowBusColorDataSetByATimeChangedFcn`(すべて medium)。
