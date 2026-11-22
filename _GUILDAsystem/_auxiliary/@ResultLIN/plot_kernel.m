@@ -31,6 +31,9 @@ function G = plot_kernel(obj, opt)
 % islands with GUILDA:ResultLIN:KernelRange. Only a result of the network has a kernel;
 % another layer stops with GUILDA:ResultLIN:NetworkOnly.
 %
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
+%
 % <@Examples>
 % ```matlab
 % res = net.get_sys();

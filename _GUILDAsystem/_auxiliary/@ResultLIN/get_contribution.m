@@ -1,13 +1,27 @@
-function [sct_value, sct_mask] = get_contribution(obj, target, opt)
-% Get the part of elements in the matrices of the DAE.
+function [res_e, sct_mask] = get_contribution(obj, target)
+% Get the part of elements in the DAE, as a result of its own.
 %
 % The DAE of the result (get_ss("DAE") with the Input, Output and Port of get_sys)
 % is the sum of the parts of its elements: the components, the local and global
 % controllers, the branches and the buses. get_contribution returns the part of the
-% elements in target, summed: sct_value has the fields A, B, C, D and E of the size of the
-% DAE, with its StateName, InputName and OutputName, so that the parts of all the
-% elements sum to the DAE. sct_mask has the same fields as logical matrices: true where
-% the targets change the entry.
+% elements in target, summed, as a ResultLIN res_e with every section of the result: the
+% same rv_t, Index, variable map, points, options (Input, Output, Port), output and
+% sct_network, each section holding the part of the connected model (the terms of the
+% targets over [x; v]). So res_e.A ... res_e.OutputName are the part in the Port of the
+% result for section res_e.Index, res_e.get_ss("DAE", Index=k) the part in section k, and
+% the parts of all the elements sum to the DAE in every section. res_e.sv_target holds the
+% targets.
+%
+% res_e is a part of a DAE, not a model of its own: its Type is "DAE" and cannot be
+% "ODE" (setting it, get_ss("ODE") or a method with Type "ODE" stops with
+% GUILDA:ResultLIN:ContributionDAE), and it has no Form "hessian". Form "absorbed" works.
+% The other methods compute on the matrices of the part (eigenvalues, modes,
+% participation, kernel, reduction, contribution and the plots); on a contribution result
+% the numbers are of the part alone and have no meaning for the whole system.
+%
+% sct_mask is a 1 x n_t struct array, one per section: the fields A, B, C, D and E as
+% logical matrices, true where the targets change the entry, with StateName, InputName
+% and OutputName. sct_mask(res_e.Index) is the section shown by res_e.
 %
 % A term belongs to the element that owns its equation row:
 %
@@ -25,119 +39,97 @@ function [sct_value, sct_mask] = get_contribution(obj, target, opt)
 % branch or bus) and class names. A class name takes every element of that class or of
 % its subclasses (e.g. "LocalController", "component.generator.abstract"); a package
 % name takes every class in it (e.g. "controller.avr"). A target that matches no element
-% stops with GUILDA:ResultLIN:UnknownTarget. The parts are in the Port of the
-% result; they are a deviation model like the DAE. The result of a component, bus or
-% controller has no algebraic variables: the parts split its port model in the same way.
-% Index chooses the section (default res.Index; see ResultLIN).
+% stops with GUILDA:ResultLIN:UnknownTarget. The parts are a deviation model like the
+% DAE. The result of a component, bus or controller has no algebraic variables: the
+% parts split its port model in the same way. A section that is not usable keeps its
+% issue (get_ss of it stops as for the result) and its mask has empty fields.
 %
 % <@Examples>
 % ```matlab
 % res = net.get_sys();
-% sct = res.get_contribution("B001SG1");                  % one generator
-% sct = res.get_contribution(["LocalController","Branch"]);   % all local controllers and branches
-% [sct, msk] = res.get_contribution("controller.avr");
-% spy(msk.A)                                             % the entries the AVRs change
+% res_g = res.get_contribution("B001SG1");                % one generator
+% res_g.A                                                 % its part of the DAE
+% [res_avr, msk] = res.get_contribution("controller.avr");
+% spy(msk(res_avr.Index).A)                               % the entries the AVRs change
+% res_avr.Index = 2;                                      % another section (sct_mask(2))
 % ```
 %
-% See also ResultLIN.get_ss, SolverLIN.solve, PowerSystemModel.get_sys
+% See also ResultLIN.get_ss, ResultLIN.plot_contribution, SolverLIN.solve, PowerSystemModel.get_sys
     arguments (Input)
         obj
         target (1,:) string {mustBeNonempty}  % Tags and class (or package) names of the elements; several are summed.
-        opt.Index (1,1) double {mustBeInteger, mustBePositive} = obj.Index  % Section of the DAE (1 ... numel(rv_t)); res.Index when omitted.
     end
     arguments (Output)
-        sct_value struct  % Part of the targets: A, B, C, D, E (the size of the DAE), StateName, InputName, OutputName.
-        sct_mask struct   % Entries the targets change: A, B, C, D, E (logical), StateName, InputName, OutputName.
+        res_e ResultLIN   % Part of the targets: a result with every section (Type "DAE"), sv_target the targets.
+        sct_mask struct   % Entries the targets change, one per section (1 x n_t): A, B, C, D, E (logical), StateName, InputName, OutputName.
     end
-    i_sec = opt.Index;
     n_t = numel(obj.c_section);
-    if i_sec > n_t
-        error(msg("GUILDA:ResultLIN:IndexRange", string(n_t)))
-    end
-    if obj.output.sv_issue(i_sec) == "NotFinite"
-        error(msg("GUILDA:ResultLIN:NotFinite", obj.output.sv_message(i_sec)))
-    end
-    S = obj.c_section{i_sec};
-    T = S.sct_term;
-    % the tags of the elements that the targets name
-    sv_sel = target_owner(S.tab_owner, target);
-    lv_sel = ismember(T.sv_owner, sv_sel);
-
-    c_nv = cell(1,0);
-    for str = ["Input","Output"]
-        if isfield(obj.options, str)
-            c_nv = [c_nv, {str, obj.options.(str)}]; %#ok<AGROW>
-        end
-    end
     l_net = isfield(obj.output, "s_layer") && obj.output.s_layer == "PowerNetwork";
     s_port = "I";
     if isfield(obj.options, "Port")
         s_port = obj.options.Port;
     end
-
-    % The part of the targets in the connected model, as a model of its own
-    n_xv = size(S.A, 1);
-    S_part = S;
-    S_part.A = gather_terms(T.A, lv_sel, size(S.A));
-    S_part.B = gather_terms(T.B, lv_sel, size(S.B));
-    S_part.C = gather_terms(T.C, lv_sel, size(S.C));
-    S_part.D = gather_terms(T.D, lv_sel, size(S.D));
-    S_part.E = gather_terms(T.E, lv_sel, size(S.E));
-    if isfield(S, "cm_Y")
-        n_v = S.n_v;
-        Yr = gather_terms(T.Y, lv_sel, [n_v, n_v]);
-        S_part.cm_Y = Yr(1:2:end, 1:2:end) + 1j*Yr(2:2:end, 1:2:end);
-    end
     sct_opt = obj.options;
     sct_opt.Type = "DAE";
-    sct_out = obj.output;
-    sct_out.s_issue    = "";
-    sct_out.lv_flag    = true;
-    sct_out.sv_issue   = "";
-    sct_out.sv_message = obj.output.sv_message(i_sec);
-    res_part = ResultLIN(obj.a_PowerNetwork, obj.s_solver, sct_opt, true, sct_out, NaN, obj.tab_variable, obj.rm_point(:,i_sec), S_part, obj.rv_t(i_sec));
-    sct_value = res_part.get_ss("DAE", c_nv{:}, Format="struct");
-    sct_mask  = res_part.get_ss("DAE", c_nv{:}, Port="I", Format="struct");   % no mixing of the voltages
-    for s = ["A","B","C","D","E"]
-        sct_mask.(s) = sct_mask.(s) ~= 0;
+    sct_opt.Form = "descriptor";
+    if obj.Form == "absorbed"
+        sct_opt.Form = "absorbed";
     end
-
-    if l_net
-        % The outputs that are a state or a bus voltage belong to its owner (the DAE writes
-        % them as identity rows, not from the terms)
-        tab = obj.tab_variable;
-        lv_xv = tab.Kind == "x" | tab.Kind == "Vre" | tab.Kind == "Vim";
-        [lv_id, iv_id] = ismember(sct_value.OutputName, tab.Label(lv_xv));
-        if any(lv_id)
-            sv_own = tab.Owner(lv_xv);
-            lv_mine = false(size(lv_id));
-            lv_mine(lv_id) = ismember(sv_own(iv_id(lv_id)), sv_sel);
-            sct_full  = obj.get_ss("DAE", c_nv{:}, Index=i_sec, Format="struct");
-            fullR = obj.get_ss("DAE", c_nv{:}, Index=i_sec, Port="I", Format="struct");
-            sct_value.C(lv_id,:) = sct_full.C(lv_id,:) .* lv_mine(lv_id);
-            sct_value.D(lv_id,:) = sct_full.D(lv_id,:) .* lv_mine(lv_id);
-            sct_mask.C(lv_id,:)  = (fullR.C(lv_id,:) ~= 0) & lv_mine(lv_id);
-            sct_mask.D(lv_id,:)  = (fullR.D(lv_id,:) ~= 0) & lv_mine(lv_id);
-        end
-        if s_port ~= "I"
-            % the polar bus variables mix Vre and Vim of the same bus: theta_i with rho_i
-            n_x = n_xv - S.n_v;
-            n_b = S.n_v/2;
-            sct_mask.A = pair(pair(sct_mask.A, n_x, n_b, 1), n_x, n_b, 2);
-            sct_mask.B = pair(sct_mask.B, n_x, n_b, 1);
-            sct_mask.C = pair(sct_mask.C, n_x, n_b, 2);
+    c_nv = struct();
+    for str = ["Input","Output"]
+        if isfield(obj.options, str)
+            c_nv.(str) = obj.options.(str);
         end
     end
-    for s = ["StateName","InputName","OutputName"]
-        sct_mask.(s) = sct_value.(s);
+
+    % The part of every section (an unusable section stays as it is)
+    c_part = obj.c_section;
+    l_found = false;
+    for k = 1:n_t
+        S = obj.c_section{k};
+        if ~isfield(S, "sct_term")
+            continue
+        end
+        c_part{k} = contribution_part(S, target_owner(S.tab_owner, target));
+        l_found = true;
     end
-end
+    if ~l_found
+        error(msg("GUILDA:ResultLIN:NotFinite", obj.output.sv_message(1)))
+    end
+    res_e = ResultLIN(obj.a_PowerNetwork, obj.s_solver, sct_opt, obj.flag, obj.output, NaN, ...
+        obj.tab_variable, obj.rm_point, c_part, obj.rv_t, obj.sct_network);
+    res_e.sv_target = target;
+    res_e.Index = obj.Index;
 
-
-function M = gather_terms(rm_term, lv_owner, iv_size)
-% Sum of the terms [Row, Column, Owner, Value] of the selected owners
-    lv = lv_owner(rm_term(:,3));
-    M = full(sparse(rm_term(lv,1), rm_term(lv,2), rm_term(lv,4), iv_size(1), iv_size(2)));
+    % The mask of every section: the entries of the part in the Port "I" (no mixing of the voltages)
+    c_mask = cell(1, n_t);
+    for k = 1:n_t
+        sct_m = struct("A", false(0), "B", false(0), "C", false(0), "D", false(0), "E", false(0), ...
+            "StateName", strings(0, 1), "InputName", strings(0, 1), "OutputName", strings(0, 1));
+        S = c_part{k};
+        if isfield(S, "sv_selected") && obj.output.sv_issue(k) ~= "NotFinite"
+            sct_v = section_model(obj, S, obj.output.sv_issue(k), obj.output.sv_message(k), "DAE", ...
+                setfield(setfield(c_nv, "Port", s_port), "Form", "descriptor")); %#ok<SFLD>
+            sct_m = section_model(obj, S, obj.output.sv_issue(k), obj.output.sv_message(k), "DAE", ...
+                setfield(setfield(c_nv, "Port", "I"), "Form", "descriptor")); %#ok<SFLD>
+            for s = ["A","B","C","D","E"]
+                sct_m.(s) = sct_m.(s) ~= 0;
+            end
+            if l_net && s_port ~= "I"
+                % the polar bus variables mix Vre and Vim of the same bus: theta_i with rho_i
+                n_x = size(S.A, 1) - S.n_v;
+                n_b = S.n_v/2;
+                sct_m.A = pair(pair(sct_m.A, n_x, n_b, 1), n_x, n_b, 2);
+                sct_m.B = pair(sct_m.B, n_x, n_b, 1);
+                sct_m.C = pair(sct_m.C, n_x, n_b, 2);
+            end
+            for s = ["StateName","InputName","OutputName"]
+                sct_m.(s) = sct_v.(s);
+            end
+        end
+        c_mask{k} = sct_m;
+    end
+    sct_mask = [c_mask{:}];
 end
 
 

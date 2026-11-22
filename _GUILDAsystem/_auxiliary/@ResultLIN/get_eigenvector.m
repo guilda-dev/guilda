@@ -17,6 +17,9 @@ function sct_vector = get_eigenvector(obj, Type, opt)
 % Index chooses the section (default res.Index; see ResultLIN), and Time, when given, the
 % section whose time rv_t is nearest to it. Index "all" returns a 1 x n_t struct array.
 %
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE9bus();

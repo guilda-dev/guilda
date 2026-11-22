@@ -33,6 +33,9 @@ function sct_kernel = get_kernel(obj, opt)
 % Only a result of the network (output.s_layer "PowerNetwork") has a DAE with bus
 % variables; another layer stops with GUILDA:ResultLIN:NetworkOnly.
 %
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE9bus();

@@ -16,7 +16,8 @@ classdef ResultLIN < ResultBase
 % 0 = (Y v - I of the components), in the order of v. The values are deviations from the
 % point rv_point. Y is the admittance matrix of the model, also at a point inside a fault.
 % get_ss returns the model of a Type ("ODE": the bus voltages eliminated, or "DAE"),
-% get_contribution the part of each element in the DAE, get_mode the modes (eigenvalue,
+% get_contribution the part of elements in the DAE (a ResultLIN of its own, below),
+% get_mode the modes (eigenvalue,
 % frequency, damping ratio, dominant owner and participation), get_participation the
 % participation of the states and of the buses in the modes, and plot_eigenvalue draws the
 % eigenvalue map. get_eigenvalue and get_eigenvector return the eigenvalues and
@@ -75,9 +76,8 @@ classdef ResultLIN < ResultBase
 % rv_t holds the time of each section (the times of {sim, rv_t}, 1:n for a matrix, NaN
 % otherwise), and Index (default 1) chooses the section that rv_point, rm_Axx ... rm_E,
 % sct_model and A ... OutputName show: res.Index = 3 switches all of them. get_ss,
-% get_contribution, get_mode, plot_eigenvalue and the analysis methods (get_eigenvalue ...
-% disp_mode) take Index (default res.Index); all but get_contribution and plot_eigenvalue
-% also take Time (the section of the nearest time), and Index "all" returns every section
+% get_mode, plot_eigenvalue and the analysis methods (get_eigenvalue ... disp_mode) take
+% Index (default res.Index); all but plot_eigenvalue also take Time (the section of the nearest time), and Index "all" returns every section
 % (get_eigenvalue: a table; get_mode and the other getters: a struct array, whose tab_mode
 % are one table by vertcat). plot_eigenvalue of several sections draws all of them in one chart whose
 % set_time shows the section nearest to a time (Index is the section shown first), so it
@@ -87,6 +87,14 @@ classdef ResultLIN < ResultBase
 % is usable; output.lv_flag, sv_issue, sv_message and rv_rcond_Avv describe each section,
 % and the scalar fields (message, s_issue, rcond_Avv, sv_faultBus) the whole run. A
 % result of the network keeps a snapshot of it, sct_network = struct(net, false).
+%
+% A contribution result: res.get_contribution(target) returns a ResultLIN with every
+% section of res whose sections hold the part of the targets in the connected model (the
+% terms of those elements), with sv_target the targets. Its Type is "DAE" only (an "ODE"
+% stops with GUILDA:ResultLIN:ContributionDAE) and it has no Form "hessian"; the parts of
+% all the elements sum to the DAE of res in every section. Its methods compute on the
+% part: on a contribution result (sv_target nonempty) the numbers are of the part alone
+% and have no meaning for the whole system.
 %
 % - `tab_variable` has one row per variable with Index, Kind, Role, Owner, Name, Label, Bus
 %   and Equilibrium: the leading rows x, Vre, Vim, u, uc of the variable map of the layer (for
@@ -108,7 +116,8 @@ classdef ResultLIN < ResultBase
 % result.Type = "DAE";              % A ... OutputName are now the DAE
 % sct = result.get_ss("ODE", Format="struct");   % reduced model as a struct
 % sys = result.get_ss("ODE");       % ss object (Control System Toolbox)
-% sct_gen = result.get_contribution("component.generator.abstract");   % part of the generators in the DAE
+% res_gen = result.get_contribution("component.generator.abstract");   % part of the generators in the DAE (a ResultLIN)
+% res_gen.A                                    % that part of the DAE in the section shown
 % sct = result.get_mode(MinFrequency=0.1);     % oscillatory modes: sct.tab_mode, participation, shapes
 % sct = result.get_participation();            % participation by state and by bus (tab_bus)
 % result.plot_eigenvalue();                    % eigenvalue map
@@ -167,6 +176,7 @@ classdef ResultLIN < ResultBase
     end
     properties (SetAccess=private) % Data of the calculation
         sct_network struct = struct()          % Snapshot of the network at the linearization: struct(net, false) (the network layer only; otherwise empty).
+        sv_target (1,:) string = strings(1,0)  % Targets of a contribution result (get_contribution: its sections are the part of these elements); empty for an ordinary result.
     end
     properties (Dependent, SetAccess=private, Hidden) % Model data
         sct_model  % Data of get_ss for section Index: the connected model sct_sys and, for the network, cm_Y, cv_V, sv_I (see the class help). <@Type> struct
@@ -233,6 +243,14 @@ classdef ResultLIN < ResultBase
             if isfield(options, "Form")
                 obj.Form = options.Form;
             end
+        end
+
+        function set.Type(obj, v)
+            % (a contribution result is a part of the DAE: it has no ODE)
+            if v == "ODE" && ~isempty(obj.sv_target) %#ok<MCSUP>
+                error(msg("GUILDA:ResultLIN:ContributionDAE", join(obj.sv_target, ", "))) %#ok<MCSUP>
+            end
+            obj.Type = v;
         end
 
         function set.Form(obj, v)
@@ -324,7 +342,7 @@ classdef ResultLIN < ResultBase
         end
 
         sys = get_ss(obj, Type, opt)
-        [sct_value, sct_mask] = get_contribution(obj, target, opt)
+        [res_e, sct_mask] = get_contribution(obj, target)
         sct_mode = get_mode(obj, opt)
         sct_part = get_participation(obj, opt)
         G = plot_eigenvalue(obj, opt)

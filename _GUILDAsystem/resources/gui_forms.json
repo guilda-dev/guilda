@@ -168,7 +168,7 @@
   "ResultLIN.plot_eigenvector": {"main": ["Side", "Type"], "groups": [{"name": "Advanced", "members": ["Index", "Parent"]}]},
   "ResultLIN.plot_reduced_matrix": {"main": ["State", "Block"], "groups": [{"name": "Advanced", "members": ["Index", "Parent"]}],
     "pick": {"target": {"table": "feval(@(T) [table(string(T.Owner), string(T.Class), repmat(\"element\", height(T), 1), VariableNames=[\"Tag\", \"Class\", \"Kind\"]); table(unique(string(T.Class), \"stable\"), unique(string(T.Class), \"stable\"), repmat(\"class\", numel(unique(string(T.Class))), 1), VariableNames=[\"Tag\", \"Class\", \"Kind\"])], obj.sct_model.sct_sys.tab_owner)"}}},
-  "ResultLIN.get_contribution": {"main": ["Index"],
+  "ResultLIN.get_contribution": {"main": [],
     "pick": {"target": {"table": "feval(@(T) [table(string(T.Owner), string(T.Class), repmat(\"element\", height(T), 1), VariableNames=[\"Tag\", \"Class\", \"Kind\"]); table(unique(string(T.Class), \"stable\"), unique(string(T.Class), \"stable\"), repmat(\"class\", numel(unique(string(T.Class))), 1), VariableNames=[\"Tag\", \"Class\", \"Kind\"])], obj.sct_model.sct_sys.tab_owner)"}}},
   "ResultLIN.get_reduced_matrix": {"main": ["State", "Index", "Time"],
     "pick": {"target": {"table": "feval(@(T) [table(string(T.Owner), string(T.Class), repmat(\"element\", height(T), 1), VariableNames=[\"Tag\", \"Class\", \"Kind\"]); table(unique(string(T.Class), \"stable\"), unique(string(T.Class), \"stable\"), repmat(\"class\", numel(unique(string(T.Class))), 1), VariableNames=[\"Tag\", \"Class\", \"Kind\"])], obj.sct_model.sct_sys.tab_owner)"}}},

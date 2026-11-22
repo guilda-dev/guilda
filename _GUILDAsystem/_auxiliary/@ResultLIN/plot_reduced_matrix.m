@@ -27,6 +27,9 @@ function [G, tab_coupling] = plot_reduced_matrix(obj, target, opt)
 % by the playback bar (colors, widths and labels follow), starting at Index. Only a result
 % of the network has it; another layer stops with GUILDA:ResultLIN:NetworkOnly.
 %
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
+%
 % <@Examples>
 % ```matlab
 % res = net.get_sys();

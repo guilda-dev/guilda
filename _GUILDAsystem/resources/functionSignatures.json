@@ -1150,12 +1150,11 @@
   "ResultLIN.get_contribution": {
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultLIN"},
-      {"name":"target","kind":"required","type":[["string","choices=cellstr(unique([strings(0,1); tools.vcellfun(@(S) [S.tab_owner.Owner; unique(S.tab_owner.Class); unique(regexprep(S.tab_owner.Class(contains(S.tab_owner.Class, \".\")), \"\\.[^.]+$\", \"\"))], repmat({obj.sct_model.sct_sys}, isfield(obj.sct_model.sct_sys, \"tab_owner\"), 1)); [\"Component\"; \"LocalController\"; \"GlobalController\"; \"Branch\"; \"Bus\"]], \"stable\"))"],["string"]],"purpose":"Tags and class (or package) names of the elements; several are summed."},
-      {"name":"Index","kind":"namevalue","type":["double","scalar"],"purpose":"Section of the DAE (1 ... numel(rv_t)); res.Index when omitted. Default: obj.Index."}
+      {"name":"target","kind":"required","type":[["string","choices=cellstr(unique([strings(0,1); tools.vcellfun(@(S) [S.tab_owner.Owner; unique(S.tab_owner.Class); unique(regexprep(S.tab_owner.Class(contains(S.tab_owner.Class, \".\")), \"\\.[^.]+$\", \"\"))], repmat({obj.sct_model.sct_sys}, isfield(obj.sct_model.sct_sys, \"tab_owner\"), 1)); [\"Component\"; \"LocalController\"; \"GlobalController\"; \"Branch\"; \"Bus\"]], \"stable\"))"],["string"]],"purpose":"Tags and class (or package) names of the elements; several are summed."}
     ],
     "outputs": [
-      {"name":"sct_value","purpose":"Part of the targets: A, B, C, D, E (the size of the DAE), StateName, InputName, OutputName."},
-      {"name":"sct_mask","purpose":"Entries the targets change: A, B, C, D, E (logical), StateName, InputName, OutputName."}
+      {"name":"res_e","purpose":"Part of the targets: a result with every section (Type \"DAE\"), sv_target the targets."},
+      {"name":"sct_mask","purpose":"Entries the targets change, one per section (1 x n_t): A, B, C, D, E (logical), StateName, InputName, OutputName."}
     ]
   },
   "ResultLIN.get_eigenvalue": {

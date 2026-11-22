@@ -58,6 +58,9 @@ function sct_graph = plot_contribution(obj, opt)
 % It returns a struct with Eigenvalue (GraphChart), Diagram (GraphNetDiagram) and Table
 % (uitable).
 %
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
+%
 % <@Examples>
 % ```matlab
 % res = net.get_sys();
@@ -149,7 +152,7 @@ function sct_sec = share_sections(obj, sv_bus, sv_comp, sv_branch)
         [sv_elem, sv_elemBus, iv_comp] = element_places(obj, s, sv_bus, sv_comp);
         cm_share = complex(zeros(numel(sv_elem), n_m));
         for e = 1:numel(sv_elem)
-            A_e = obj.get_contribution(sv_elem(e), Index=s).A;
+            A_e = part_matrix(obj, s, sv_elem(e));
             cm_share(e, :) = sum(conj(W) .* (A_e * R), 1) ./ rv_wEv;
         end
         rm_bus = NaN(numel(sv_bus), n_m);
@@ -207,7 +210,7 @@ function sct_sec = port_sections(obj, s_q, s_state, sv_bus, sv_comp, sv_branch)
             sv_b = sv_bus(arrayfun(@(b) startsWith(sv_comp(i), b), sv_bus));
             [~, ib] = max(strlength(sv_b));
             sv_compBus(i) = sv_b(ib);
-            J = full(obj.get_contribution(sv_own, Index=s).A);
+            J = part_matrix(obj, s, sv_own);
             ix = find(ismember(sys.StateName, tab.Label(ismember(tab.Owner, sv_own) & tab.Kind == "x")));
             iv = [find(sys.StateName == sv_bv(sv_bvBus == sv_compBus(i) & iv_kind == 1)); ...
                   find(sys.StateName == sv_bv(sv_bvBus == sv_compBus(i) & iv_kind == 2))];
@@ -244,7 +247,7 @@ function sct_sec = port_sections(obj, s_q, s_state, sv_bus, sv_comp, sv_branch)
             if ~any(sv_elem == sv_branch(k))
                 continue
             end
-            J = obj.get_contribution(sv_branch(k), Index=s).A;
+            J = part_matrix(obj, s, sv_branch(k));
             i1 = find(sys.StateName == sv_bv(sv_bvBus == sv_end(1) & iv_kind == i_var));
             i2 = find(sys.StateName == sv_bv(sv_bvBus == sv_end(2) & iv_kind == i_var));
             if ~isempty(i1) && ~isempty(i2)
@@ -291,4 +294,22 @@ function [sv_elem, sv_elemBus, iv_comp] = element_places(obj, s, sv_bus, sv_comp
             sv_elemBus(e) = sv_b(ib);
         end
     end
+end
+
+
+function A_e = part_matrix(obj, k, sv_owner)
+% A of the DAE (the Port of the result) of the part of the owners sv_owner in section k:
+% the terms of contribution_part written by section_model, without a result of its own
+    arguments (Input)
+        obj ResultLIN             % The result.
+        k (1,1) double            % Section.
+        sv_owner (:,1) string     % Tags of the owners (tab_owner.Owner).
+    end
+    arguments (Output)
+        A_e double                % Part of A over [x; v] of get_ss("DAE").
+    end
+    sct_opt = struct("Port", default_port(obj), "Form", "descriptor");
+    sct = section_model(obj, contribution_part(obj.c_section{k}, sv_owner), obj.output.sv_issue(k), ...
+        obj.output.sv_message(k), "DAE", sct_opt);
+    A_e = full(sct.A);
 end
