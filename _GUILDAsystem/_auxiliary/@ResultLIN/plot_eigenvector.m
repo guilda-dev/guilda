@@ -34,6 +34,9 @@ function sct_graph = plot_eigenvector(obj, opt)
 % It returns a struct with Eigenvalue (GraphChart), Diagram (GraphNetDiagram) and Table
 % (uitable).
 %
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
+%
 % <@Examples>
 % ```matlab
 % res = net.get_sys();

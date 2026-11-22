@@ -17,5 +17,6 @@
         <entry key="KernelRange">Kernel must be an integer from 1 to {0}, the number of kernels (islands) of the section shown; get_kernel gives them.</entry>
         <entry key="NoKernel">The section shown has no kernel of the rotation form to draw: {0}</entry>
         <entry key="PortQuantity">Quantity "{0}" reads the angle and voltage variables of the bus ports: it needs a result in Port "PQ" or "PI" (net.get_sys(Port="PQ")); this result has Port "I".</entry>
+        <entry key="ContributionDAE">This result is the contribution of {0} (get_contribution): a part of the DAE, whose Type is "DAE". It has no "ODE" model (the bus voltages of a part cannot be eliminated); use Type "DAE".</entry>
     </message>
 </rsccat>

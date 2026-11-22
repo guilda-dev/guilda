@@ -33,6 +33,9 @@ function sct_mode = get_mode(obj, opt)
 % whose tab_mode has the columns Time (rv_t of the section) and Index first, so that
 % vertcat(sct.tab_mode) is one table of the modes of every section.
 %
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE9bus();

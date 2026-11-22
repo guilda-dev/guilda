@@ -24,6 +24,9 @@ function G = plot_eigenvalue(obj, opt)
 % G.animate() and a link to the graphs of the same simulation (G.link(S)) show the
 % eigenvalues move.
 %
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
+%
 % <@Examples>
 % ```matlab
 % G = res.plot_eigenvalue();

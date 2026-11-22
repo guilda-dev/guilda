@@ -38,6 +38,9 @@ function sct_graph = plot_participation(obj, opt)
 % to its UpdateFcn; the ElementClickedFcn of the two graphs are used by the figure: add
 % more with addlistener(G, "ElementClicked", ...).
 %
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
+%
 % <@Examples>
 % ```matlab
 % res = net.get_sys();

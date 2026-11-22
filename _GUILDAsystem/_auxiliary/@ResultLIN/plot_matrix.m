@@ -44,6 +44,9 @@ function [G, G_block] = plot_matrix(obj, opt)
 % Index. A section whose model cannot be formed (e.g. "ODE" with a singular Avv) is drawn
 % empty (NaN); when no section has it, get_ss stops.
 %
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
+%
 % <@Examples>
 % ```matlab
 % res = net.get_sys();

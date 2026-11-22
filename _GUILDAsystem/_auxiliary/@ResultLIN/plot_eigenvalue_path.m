@@ -18,6 +18,9 @@ function G = plot_eigenvalue_path(obj, opt)
 % It returns the chart G (GraphChart) with two lines: "max_real" (panel 1) and
 % "min_damping" (panel 2). A result with one section is an error.
 %
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
+%
 % <@Examples>
 % ```matlab
 % res = net.get_sys({sim, 0:0.05:2});
