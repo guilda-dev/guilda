@@ -11,8 +11,8 @@ function sct_graph = mode_diagram(obj, opt, sct_spec)
 % ring (Tag GUILDA:ResultLIN:PickedMode); the data tip shows lambda, f, zeta and the mode.
 % Clicking a bus (or a component or link: its bus), also by its data tip, selects it and
 % fills the table with the rows at that bus, without drawing the colors again; its data
-% tip gets the value of the bus. The colors, their limits and the ring are drawn only
-% when the mode or the section changes (ColorLimits is set only when it changes). With
+% tip (GraphNetDiagram) shows its color value under the name s_colorbar. The colors,
+% their limits and the ring are drawn only when the mode or the section changes (ColorLimits is set only when it changes). With
 % several sections the two graphs are linked and the TimeChangedFcn of the diagram shows
 % the mode of the same number in the new section.
 %
@@ -36,8 +36,7 @@ function sct_graph = mode_diagram(obj, opt, sct_spec)
 % sv_column; the eigenvalue map is shown for reference and picks nothing.
 %
 % Other fields of sct_spec: s_name (start of the title), s_colorbar (label),
-% s_explain (what the colors are: the subtitle of the diagram), s_value (the name of the
-% value in the data tip of a bus), s_limit ("zero": [0 max] of the mode shown;
+% s_explain (what the colors are: the subtitle of the diagram), s_limit ("zero": [0 max] of the mode shown;
 % "symmetric": [-m m]), sv_column (names of the value columns of the table), l_tableAll
 % (true: the table shows every row until a bus is clicked), l_cartesian (optional: Re and
 % Im of complex rows), l_modeFree and s_quantity (optional: the name of a mode-free
@@ -166,7 +165,7 @@ end
 
 
 function txt = mode_text(h_root, event, txt)
-% Data tip of the figure: an eigenvalue picks its mode and shows it; a bus gets its value
+% Data tip of the figure: an eigenvalue picks its mode and shows it (the data tip of an element of the diagram is that of GraphNetDiagram, with its color value)
     arguments (Input)
         h_root  % Panel of the figure, with the data in UserData.
         event   % Event data of the data tip (Target, Position).
@@ -188,14 +187,6 @@ function txt = mode_text(h_root, event, txt)
             txt{end+1} = sprintf('mode %d (picked)', U.i_mode);
         end
         return
-    end
-    if ~(isprop(h, "UserData") && isstruct(h.UserData) && isfield(h.UserData, "Type") && h.UserData.Type == "Bus")
-        return
-    end
-    i = h.UserData.Index;
-    rv_c = U.G_net.BusColorData;
-    if i <= numel(rv_c)
-        txt = [cellstr(string(txt(:)')), {char(U.sct_spec.s_value + ": " + sprintf("%.4g", rv_c(i)))}];
     end
 end
 

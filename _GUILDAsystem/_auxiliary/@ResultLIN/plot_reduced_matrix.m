@@ -61,8 +61,7 @@ function [G, tab_coupling] = plot_reduced_matrix(obj, target, opt)
     sct_red = obj.get_reduced_matrix(target, State=opt.State, Index="all");
     [G, sv_bus, ~, sv_title] = section_diagram(obj, "Reduced matrix (" + opt.Block + ")", ...
         {"ColorbarLabel", "K(i,i)", "LabelMode", "user", "Parent", opt.Parent}, ...
-        ["Color: self term K(i,i) of the bus; width: coupling of the two buses"; "Gray: eliminated"], ...
-        "K(i,i)");
+        ["Color: self term K(i,i) of the bus; width: coupling of the two buses"; "Gray: eliminated"]);
     n_bus = numel(sv_bus);
     a_branch = reshape(obj.sct_network.a_Branch, [], 1);
     n_br = numel(a_branch);

@@ -836,3 +836,22 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
   - 切り離した HEAD でのコミット
   - `main` への merge
 - そのため、テストは作業ブランチ `test/contribution-result`(`8debac3e` から。このコミットは a9b03c89 を含み、開発ブランチが指していたもの)にコミットしました。`main` への取り込みは検証の担当者に任せます。
+
+## 25. データチップの値を 1 回だけ表示する(2026-11-22)
+
+ブランチは `fix/linearization-datatip-value` で、`refactor/design-alignment`(`1c229bba`)から分けました。
+
+- GraphNetDiagram が、データチップに「<ColorbarLabel> = <値>」の行を常に加えるようになりました(`ae261c1a`)。そのため、ResultLIN の接続図では母線の値が 2 回出ていました。
+- 対応:
+  - `section_diagram` の値の行(`s_value` 引数と `bus_text`)を削除しました。
+  - `mode_diagram` の `mode_text` からも、母線の値の行を削除しました。
+  - 固有値のデータチップでモードを選び、λ、f、ζ を示す包み(`datatip_wrap`)は残しました。
+- ColorbarLabel は、以前に値の行で使っていた名前にそろえました。
+  - "Left kernel at θ"
+  - "K(i,i)"
+  - "Participation in the mode"
+  - "|right eigenvector| / max"(Side が left なら left)
+  - "Re(λ_e)"
+  - "∂P/∂θ"、"∂Q/∂ρ"
+- ラベルは LabelMode "user"(自前の文字)で、"value" は使っていないので、ラベルの重複はありません [事実]。
+- F112: 6 つの図のデータチップで、値の行が 1 つだけで、カラーバーの名前であることを確かめます。値を持たない母線(NaN)には GraphNetDiagram の値の行が出ないので、値を持つ最初の母線で確かめます。
