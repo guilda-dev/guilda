@@ -5,7 +5,9 @@ function create_scene(obj)
 % comes from the vector properties (apply_style). The default color of an element (NaN
 % rows of SeriesColor) follows the color order of its axes: by line or marker set within
 % the panel, and by bar series for the bars. A series with iv_sample and a panel with a
-% title per sample show the rows and the title of the sample i_time.
+% title per sample show the rows and the title of the sample i_time. A 3D panel (l_3d)
+% draws its lines and marker sets with ZData (rm_z) in view(3) (a panel turned by the
+% user keeps its view on a new drawing); a 2D panel is shown in view(2).
     arguments (Input)
         obj
     end
@@ -24,7 +26,7 @@ function create_scene(obj)
         p  = d.sct_panel(i_panel);
         cla(ax);
         legend(ax, "off");
-        set(ax, "XScale", p.s_xscale, "YScale", p.s_yscale, "XLimMode", "auto", "YLimMode", "auto", ...
+        set(ax, "XScale", p.s_xscale, "YScale", p.s_yscale, "XLimMode", "auto", "YLimMode", "auto", "ZLimMode", "auto", ...
             "XTickMode", "auto", "XTickLabelMode", "auto");
         hold(ax, "on");
         rm_order = ax.ColorOrder;
@@ -58,7 +60,11 @@ function create_scene(obj)
                 if ~isempty(s.iv_sample)
                     lv_row = s.iv_sample == k_shown;
                 end
-                plt.Element(i_row) = line(ax, "XData", s.rv_x(lv_row), "YData", s.rm_y(lv_row, i_col), ...   % one object, also without data
+                rv_z = [];
+                if ~isempty(s.rm_z)
+                    rv_z = s.rm_z(lv_row, i_col);
+                end
+                plt.Element(i_row) = line(ax, "XData", s.rv_x(lv_row), "YData", s.rm_y(lv_row, i_col), "ZData", rv_z, ...   % one object, also without data
                     "ButtonDownFcn", @(~, ~) click_weak(wr, i_row));
                 obj.rm_colorAuto(i_row, :) = rm_order(mod(j_color - 1, n_order) + 1, :);
             end
@@ -78,7 +84,11 @@ function create_scene(obj)
             % One marker per line and marker set at its row of the sample (colored by apply_style)
             for i_row = find(tab.Panel == i_panel & tab.Kind ~= "bar")'
                 s = d.sct_series(tab.Series(i_row));
-                plt.CursorMarker(i_row) = line(ax, s.rv_x(1), s.rm_y(1, tab.Item(i_row)), "LineStyle", "none", ...
+                r_z = [];
+                if ~isempty(s.rm_z)
+                    r_z = s.rm_z(1, tab.Item(i_row));
+                end
+                plt.CursorMarker(i_row) = line(ax, "XData", s.rv_x(1), "YData", s.rm_y(1, tab.Item(i_row)), "ZData", r_z, "LineStyle", "none", ...
                     "Marker", "o", "MarkerSize", 8, "LineWidth", 1.5, "MarkerEdgeColor", [0.15 0.15 0.15], ...
                     "HandleVisibility", "off", "PickableParts", "none", "Visible", obj.l_cursor, "Tag", "TimeCursor");
             end
@@ -87,9 +97,10 @@ function create_scene(obj)
                 "HandleVisibility", "off", "PickableParts", "none", "Visible", obj.l_cursor, "Tag", "TimeCursor");
         end
 
-        % Labels, ticks, limits and grid
+        % Labels, ticks, limits, grid and view
         xlabel(ax, p.s_xlabel);
         ylabel(ax, p.s_ylabel);
+        zlabel(ax, p.s_zlabel);
         title(ax, p.s_title(min(k_shown, end)));
         if ~isempty(p.sv_x)
             set(ax, "XTick", 1:numel(p.sv_x), "XTickLabel", p.sv_x, "TickLabelInterpreter", "none");
@@ -101,8 +112,17 @@ function create_scene(obj)
         if ~isempty(p.rv_ylim)
             ylim(ax, p.rv_ylim);
         end
+        if ~isempty(p.rv_zlim)
+            zlim(ax, p.rv_zlim);
+        end
         sv_onOff = ["off", "on"];
         grid(ax, sv_onOff(1 + p.l_grid));
+        [r_az, r_el] = view(ax);
+        if ~p.l_3d
+            view(ax, 2);
+        elseif isequal([r_az, r_el], [0, 90])
+            view(ax, 3);        % turned by the mouse: drag (default interaction) or the rotate button of the axes toolbar
+        end
         hold(ax, "off");
     end
 

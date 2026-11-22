@@ -12,20 +12,29 @@ classdef GraphChart < GraphBase
 % "marker"): set_time puts a marker on each line and marker set at its point of the
 % sample. A chart without time panels ignores set_time (TimeChanged still fires, e.g. to
 % write a title per time; see GraphBase), unless a series is shown by sample (iv_sample)
-% or a panel has a title per sample.
+% or a panel has a title per sample. A 3D panel (l_3d) draws lines and marker sets in x,
+% y and z (e.g. P, Q and |V| per bus), and its time cursor is the marker cursor.
 %
 % The data (constructor and set_data) is a struct with the fields:
 %
 % - `sct_panel` (1 x n_panel struct, optional; one panel when missing): per panel
-%   - `s_title`, `s_xlabel`, `s_ylabel`: title and axis labels ("" none); s_title may
-%     also be one title per sample (1 x n_t), shown with the sample;
-%   - `rv_xlim`, `rv_ylim`: axis limits ([] automatic);
+%   - `s_title`, `s_xlabel`, `s_ylabel`, `s_zlabel`: title and axis labels ("" none;
+%     s_zlabel for a 3D panel); s_title may also be one title per sample (1 x n_t), shown
+%     with the sample;
+%   - `rv_xlim`, `rv_ylim`, `rv_zlim`: axis limits ([] automatic, from the data in x, y and
+%     z);
 %   - `s_xscale`, `s_yscale`: "linear" (default) or "log";
 %   - `l_time`: true for a time panel (default false);
-%   - `s_cursor`: cursor of a time panel, "line" (default; a vertical line at x = t) or
-%     "marker" (a marker in the color of the element at (rv_x(k), rm_y(k, column)) of
-%     each line and marker set of the panel, for sample k; their rm_y must have one row
-%     per sample of rv_t);
+%   - `l_3d`: true for a 3D panel (default false): its series are lines and marker sets
+%     with rm_z, drawn in view(3); no bars and no reference lines. Drag the axes (or use
+%     the rotate button of the axes toolbar) to turn it; clicks on the lines still raise
+%     ElementClicked. A new drawing (set_data) keeps the view the user turned it to;
+%   - `s_cursor`: cursor of a time panel, "line" (default of a 2D panel; a vertical line
+%     at x = t) or "marker" (a marker in the color of the element at (rv_x(k), rm_y(k,
+%     column)), or (rv_x(k), rm_y(k, column), rm_z(k, column)) in a 3D panel, of each line
+%     and marker set of the panel, for sample k; their rm_y must have one row per sample
+%     of rv_t). A 3D time panel takes "marker" only (its default there; "line" is an
+%     error, GUILDA:GraphChart:Panel3D);
 %   - `l_grid`: grid lines (default true);
 %   - `s_legendLocation`: location of the legend (default "best"); "none" hides it.
 % - `sct_series` (1 x n_series struct): per series
@@ -36,6 +45,9 @@ classdef GraphChart < GraphBase
 %     Default x = 1..n_x;
 %   - `rm_y` (n_x x n_col): y values, one column per line or marker set (e.g. time x
 %     lines); a bar series has one column, one bar per row. NaN leaves a gap;
+%   - `rm_z` (n_x x n_col, optional, default []): z values of a line or marker series of a
+%     3D panel, the size of rm_y; required in a 3D panel and an error in a 2D panel
+%     (GUILDA:GraphChart:Panel3D);
 %   - `sv_tag`: tags of the elements, one per column (line, marker) or per bar (bar;
 %     default sv_x);
 %   - `sv_legend`: legend entries, one per column (line, marker; default sv_tag; ""
@@ -46,7 +58,8 @@ classdef GraphChart < GraphBase
 %     for a line, "o" for a marker set), `r_markerSize` (default 6): initial values;
 %   - `iv_sample` (n_x, optional, lines and marker sets): the sample (index in rv_t) of
 %     each row. The series then shows only the rows of the sample shown, e.g. the
-%     eigenvalues of one section of ResultLIN.plot_eigenvalue; set_time(t) changes them.
+%     eigenvalues of one section of ResultLIN.plot_eigenvalue; set_time(t) changes them
+%     (in a 3D panel too).
 % - `sct_refline` (struct array, optional): reference lines, e.g. a limit value. Per line
 %   `i_panel` (default 1), `s_axis` ("x" a vertical line, "y" a horizontal line; default
 %   "y"), `r_value`, `s_label` (default ""), `rv_color` (default [0.85 0.33 0.10]) and
@@ -100,6 +113,20 @@ classdef GraphChart < GraphBase
 % G = GraphChart(sct);
 % G.set_style("s", Color="r", LineWidth=2);   % the same as G.SeriesColor(1, :) = [1 0 0] ...
 % G.set_time(1.0);                           % cursor at t = 1
+% ```
+%
+% A 3D panel: lines in (x, y, z), e.g. (P, Q, |V|) of buses (rv_x is per series: one series
+% per bus when their P differ), with a marker at the point of each sample.
+%
+% ```matlab
+% rv_t = 0:0.1:1;
+% sct = struct("rv_t", rv_t);
+% sct.sct_panel  = struct("s_xlabel", "P [pu]", "s_ylabel", "Q [pu]", "s_zlabel", "|V| [pu]", ...
+%                         "l_3d", true, "l_time", true);       % s_cursor "marker" by default
+% sct.sct_series = struct("rv_x", rv_t, "rm_y", [0.3*rv_t; 0.1*rv_t].', ...
+%                         "rm_z", [1 - 0.2*rv_t.^2; 1 - 0.1*rv_t.^2].', "sv_tag", ["B1"; "B2"]);
+% G = GraphChart(sct);
+% G.set_time(0.5);                           % markers at (rv_x(6), rm_y(6, :), rm_z(6, :))
 % ```
 %
 % See also GraphBase, ResultODE.plot_trajectory

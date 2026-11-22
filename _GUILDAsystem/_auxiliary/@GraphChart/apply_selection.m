@@ -2,7 +2,7 @@ function apply_selection(obj)
 % Draw the selection overlay: a wide line under a selected line, a ring on each marker of a selected marker set, an outline around a selected bar.
 %
 % The overlay is drawn from the graphics shown, takes no clicks and is not in the legend.
-% Hidden elements get no overlay.
+% Hidden elements get no overlay. In a 3D panel the overlay follows the ZData of the line.
     arguments (Input)
         obj
     end
@@ -20,11 +20,11 @@ function apply_selection(obj)
         end
         switch tab.Kind(i_row)
             case "line"
-                hv(end+1, 1) = line(ax, h.XData, h.YData, "Color", rv_c, "LineWidth", h.LineWidth + 4, ...
+                hv(end+1, 1) = line(ax, "XData", h.XData, "YData", h.YData, "ZData", h.ZData, "Color", rv_c, "LineWidth", h.LineWidth + 4, ...
                     "Marker", h.Marker, "MarkerSize", h.MarkerSize + 4, c_off{:}); %#ok<AGROW>
                 uistack(hv(end), "bottom");
             case "marker"
-                hv(end+1, 1) = line(ax, h.XData, h.YData, "LineStyle", "none", "Marker", "o", ...
+                hv(end+1, 1) = line(ax, "XData", h.XData, "YData", h.YData, "ZData", h.ZData, "LineStyle", "none", "Marker", "o", ...
                     "MarkerSize", h.MarkerSize + 8, "MarkerEdgeColor", rv_c, "LineWidth", 2, c_off{:}); %#ok<AGROW>
             case "bar"
                 % Width of one bar: the distance between the groups or between the bars of a group

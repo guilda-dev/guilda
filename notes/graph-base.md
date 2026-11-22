@@ -188,7 +188,7 @@ set_style の規則:
 - 同じパネルの棒の系列は 1 つのグループ化した棒グラフ(`bar(…, "grouped")`)に描くので、x をそろえます(違えば `GUILDA:GraphChart:FieldValue`)。
 - `set_data` はパネルの数も格子も変えられません(`GUILDA:GraphChart:PanelCount`、`GUILDA:GraphChart:GridChange`。軸は `build` で決まるため)。`set_data` の `rv_grid` もコンストラクタと同じ規則で、省くと `[n_panel 1]` なので、格子に並べた図では同じ `rv_grid` を渡します。
 - 時刻ごとの図の題は `TimeChangedFcn` で書きます(例 `G.TimeChangedFcn = @(G, d) title(G.ax(1).Parent, sprintf("iteration %d", d.Index))`)。GraphChart に `TitleFormat` は加えません(2026-11-16 決定)。
-- エラー ID: `GUILDA:GraphChart:MissingField`、`FieldValue`、`FieldSize`、`PanelCount`、`GridChange`、`StyleSize`、`StyleValue`。
+- エラー ID: `GUILDA:GraphChart:MissingField`、`FieldValue`、`FieldSize`、`Panel3D`(3D のパネル、2026-11-22)、`PanelCount`、`GridChange`、`StyleSize`、`StyleValue`。
 
 #### 要素とベクトル
 
@@ -260,6 +260,22 @@ set_style の規則:
 - 凡例は GraphChart の規則で `Interpreter="none"` になります(以前の plot_pvcurve は tex)。母線のタグに `_` があっても添字になりません。
 - 複素平面の縦横比(`axis equal`)は以前も使っていなかったので加えていません。点ごとのデータチップも以前と同じく MATLAB の標準のままです。
 - 呼び出しとテストを `G.ax`、`G.tab_element`、`G.sct_plt` に直しました(F5 の Plot and Export、F7 の Linearization result Plot と Plot draws the algorithm of the options)。
+
+#### 3D のパネル(`feature/chart-3d`、2026-11-22)
+
+`ResultODE.plot_pqv` と `ResultCPF.plot_pqv`(母線ごとに x = P、y = Q、z = |V| の線 1 本、標本でほかの図とリンクしてマーカーのカーソル)のために、データの構造体にフィールドを加えました。公開のメンバーは増やしていません。
+
+| フィールド | 内容 |
+|---|---|
+| パネルの `l_3d`(既定 false) | 3D のパネル。`view(3)` に描き、箱と格子は 2D のパネルと同じ |
+| パネルの `s_zlabel`(既定 `""`)、`rv_zlim`(既定 `[]` は自動) | z の軸ラベルと範囲。自動の範囲は z も含む |
+| 系列の `rm_z`(既定 `[]`) | `rm_y` と同じ大きさの z。線・マーカーの組の `ZData` になる |
+
+- 3D のパネルに置けるのは `rm_z` のある線とマーカーの組だけです。棒、`rm_z` のない系列、基準線(`xline`・`yline` は 2D の表示向けのため)は `GUILDA:GraphChart:Panel3D`。2D のパネルの `rm_z` も同じ ID です。`rm_z` の大きさの誤りは `FieldSize`、`rv_zlim` の誤りは `FieldValue`。
+- **回転:** 3D の軸の既定の操作(ドラッグで回転、ホイールで拡大)と、軸のツールバーの回転ボタンを使います。`rotate3d` のモードは常時オンにしません(モード中は線の `ButtonDownFcn` が呼ばれず `ElementClicked` が出ないため)。`create_scene` は軸の向きが `[0 90]`(2D の既定)のときだけ `view(3)` にするので、ユーザーが回した向きは `set_data` の後も残ります。2D のパネルは毎回 `view(2)`。
+- **時刻のカーソル:** 縦線のカーソルは 3D では意味がないので、`l_3d` かつ `l_time` のパネルでは `s_cursor` の既定を `"marker"` にし、`"line"` を明示すると `Panel3D` の誤りにしました(省いたときに誤りにすると呼ぶ側の手間が増えるため、明示の `"line"` だけを止める)。マーカーは標本 k で `(rv_x(k), rm_y(k, 列), rm_z(k, 列))`。
+- `iv_sample`、凡例、色の順、`set_style`、選択の重ね描き(`ZData` も写す)、`link`、`set_time` は 2D と同じです。`has_playback` は変えていません(時刻のパネルなら再生バーが付く)。データチップは MATLAB の標準(X、Y、Z が出る)のままです。
+- テストは F48 に 6 節(ZData とラベル、範囲、マーカーのカーソルと 2D の図とのリンク、`iv_sample`、誤り、クリック)。
 
 ### 4.5 GraphNetMap(第 2b 段階、`ResultPF.plot_network`)
 
