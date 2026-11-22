@@ -794,3 +794,45 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 - タブ補完でこの式が評価されることは、F34 の既存の仕組みと同じです。F112 では、JSON の式を `obj` に対して評価して確かめました。
 - GUI のフォームでは、`obj` を含む choices は複数選択の欄(widget "tags")になります(`DrawerOptionDialog.build_form`)。
 - 「参照」ボタン(DrawerTagPicker)は、`obj.a_network` があるときだけ出ます。ResultLIN にはネットワークがないので出ません。これは GUI 側のコードの変更が要るため、コーディネーターに最小の変更を伝えました。
+
+## 24. `get_contribution` は ResultLIN を返す(2026-11-22)
+
+ユーザーの決定(総括セッション経由、2026-11-22)。ブランチは `feature/contribution-result` で、`refactor/design-alignment`(`b01cdbb1`)から分けました。
+
+### 24.1 仕様と実装 [事実]
+
+- 署名は `[res_e, sct_mask] = res.get_contribution(target)` です。`Index` は削除しました。`target` の候補と GUI の「pick」の表はそのままです。
+- `res_e` は ResultLIN で、元の結果のすべての断面を持ちます。
+  - 同じ `rv_t`、`Index`(写す)、変数マップ、点、オプション(Input、Output、Port。Type は "DAE")、`output`、`sct_network` を持ちます。
+  - 各断面は、接続したモデルのうち対象の項を足した部分(private の `contribution_part`)です。`res_e.A` … `OutputName` と `get_ss("DAE", Index=k)` は、結果の Port での部分です。
+- 新しい公開メンバーは `sv_target`(SetAccess=private の string)だけです。寄与の結果の対象を持ち、普通の結果では空です。
+- Type は "DAE" に固定します。次はどれも新しいエラー `GUILDA:ResultLIN:ContributionDAE` で止まります(`ResultLIN.xml`)。
+  - `res_e.Type = "ODE"`(`set.Type`)
+  - `get_ss("ODE")`
+  - Type "ODE" を渡したメソッド(get_ss を通るもの)
+  - Form "hessian" は、部分に `sct_hessian` を残さないので `NoHessianForm` で止まります。Form "absorbed" は使えます。
+- ほかのメソッドは部分の行列でそのまま計算します。ResultLIN のヘルプと各メソッドのヘルプに、「寄与の結果(sv_target が空でない)の数値は部分だけのもので、系統全体については意味を持たない」の一文を加えました。`disp_summary` には「Contribution of: …」の行が出ます。
+- `sct_mask` は断面ごとの 1 × n_t の構造体配列で、フィールドは従来と同じです(logical の A〜E と名前)。`sct_mask(res_e.Index)` が表示中の断面です。使えない断面(NotFinite)のマスクは空のフィールドです。
+- 行列を書く経路の変更:
+  - get_ss の断面のモデルを書く部分を、private の `section_model(obj, S, s_issue, s_message, Type, opt)` に移しました。get_ss はこれを呼んで Format にするだけです。
+  - 部分(`S.sv_selected` あり)では、状態や母線電圧である出力(DAE の単位行列の行)を対象の所有者の分だけ残します(以前の get_contribution の後処理を移したもの)。
+- `plot_contribution` の 3 か所は `contribution_part` と `section_model` を使います(private の `part_matrix`)。要素と断面ごとに ResultLIN を作りません。
+- 和: すべての要素の `res_e` を足すと、各断面で元の DAE になります(F7 で 3 断面について確かめました。IEEE9 では 7.5e-15)。
+
+### 24.2 ほかの変更 [事実]
+
+- `gui_forms.json`: get_contribution の `"main": ["Index"]` を `[]` にしました(「pick」はそのまま)。`functionSignatures.json` は 2 か所とも作り直しました。
+- チュートリアル `Step8_Linearization.mlx` の「要素ごとの寄与」:
+  - 呼び出しを `[res_avr, msk_avr] = res.get_contribution("controller.avr"); spy(msk_avr(res_avr.Index).A)` にし、説明を書き換えました。
+  - 編集は document.xml を直接直し、画像はそのままです。
+  - この Step は、以前から `get_mode` の戻り値(構造体)の変更に追従しておらず、7 節で止まっていました。`tab_mode = sct_mode.tab_mode` と `resAGC.get_mode().tab_mode` に直し、注意書きの「2 つ目の出力」も構造体の説明に直しました。
+  - `export` で .m にして `-batch` で最後まで実行できることを確かめました。
+- ドキュメント: `feature-linearization.html`(呼び出しの一覧、要素の寄与、LIN-18、プロパティ表に sv_target、ResultLIN の行)、`api-design.html` の get_sys の説明。
+
+### 24.3 サブモジュール [事実]
+
+- 検証のリポジトリでは、フックが次を止めます。
+  - ローカルの `main` を作ること
+  - 切り離した HEAD でのコミット
+  - `main` への merge
+- そのため、テストは作業ブランチ `test/contribution-result`(`8debac3e` から。このコミットは a9b03c89 を含み、開発ブランチが指していたもの)にコミットしました。`main` への取り込みは検証の担当者に任せます。
