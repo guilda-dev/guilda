@@ -5,8 +5,8 @@ function datatip_wrap(fig, h_owner, fcn_text)
 % click on a graphics object makes a data tip (and calls the UpdateFcn) instead of its
 % ButtonDownFcn. The wrapper calls the UpdateFcn set before (the text of the graph, which
 % also reports the click) and then fcn_text(event, txt) for the text shown, so that the
-% plots of ResultLIN can pick a mode from a data tip on an eigenvalue and explain their
-% values. A figure already wrapped for h_owner (the first in the chain) is not wrapped
+% mode figures of ResultLIN pick a mode from a data tip on an eigenvalue. The color value
+% of an element of a diagram is written by GraphNetDiagram itself. A figure already wrapped for h_owner (the first in the chain) is not wrapped
 % again; a wrapper whose h_owner was deleted passes the text on unchanged.
     arguments (Input)
         fig                      % Figure of the plot.

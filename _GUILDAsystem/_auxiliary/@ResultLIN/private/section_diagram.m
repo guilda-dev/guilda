@@ -1,4 +1,4 @@
-function [G, sv_bus, sv_comp, sv_text] = section_diagram(obj, s_name, c_opt, s_explain, s_value)
+function [G, sv_bus, sv_comp, sv_text] = section_diagram(obj, s_name, c_opt, s_explain)
 % Diagram of the snapshot sct_network with one sample per section (plot_kernel and
 % plot_participation): the topology (a state of NaN), the colors and labels set by the
 % caller ("user").
@@ -6,13 +6,13 @@ function [G, sv_bus, sv_comp, sv_text] = section_diagram(obj, s_name, c_opt, s_e
 % The samples are rv_t when its times are finite and nondecreasing, else the section
 % numbers; with more than one section their text ("<s_name>, section k of n, t = ...") is
 % the title and the text of the playback bar. With s_explain, it is the subtitle (what the
-% colors are); with s_value, the data tip of a bus gets the line "s_value: BusColorData".
+% colors are). The data tip of an element shows its color value under the name of
+% the colorbar (ColorbarLabel of c_opt; GraphNetDiagram writes it).
     arguments (Input)
         obj    ResultLIN          % The result (of the network, with sct_network).
         s_name (1,1) string       % What is shown, the start of the title (e.g. "Left kernel 1").
         c_opt  (1,:) cell         % Name-Value options of GraphNetDiagram (Parent included).
         s_explain (:,1) string = ""   % Subtitle: what the colors are, one line per row ("": none).
-        s_value   (1,1) string = ""   % Name of the bus value in the data tips ("": none).
     end
     arguments (Output)
         G                         % The diagram (GraphNetDiagram).
@@ -47,31 +47,5 @@ function [G, sv_bus, sv_comp, sv_text] = section_diagram(obj, s_name, c_opt, s_e
     sv_comp = tab.Tag(tab.Kind == "component");
     if any(s_explain ~= "")
         subtitle(G.ax(1), s_explain, "FontSize", 8);
-    end
-    if s_value ~= ""
-        datatip_wrap(ancestor(G.ax(1), "figure"), G.ax(1), @(event, txt) bus_text(G, s_value, event, txt));
-    end
-end
-
-
-function txt = bus_text(G, s_value, event, txt)
-% Data tip of a bus of the diagram: its color value
-    arguments (Input)
-        G                       % The diagram.
-        s_value (1,1) string    % Name of the value.
-        event                   % Event data of the data tip (Target, Position).
-        txt                     % Text of the data tip before.
-    end
-    arguments (Output)
-        txt                     % Text of the data tip.
-    end
-    h = event.Target;
-    if ~(isvalid(G) && isequal(ancestor(h, "axes"), G.ax(1)) && isprop(h, "UserData") && isstruct(h.UserData) ...
-            && isfield(h.UserData, "Type") && h.UserData.Type == "Bus")
-        return
-    end
-    i = h.UserData.Index;
-    if i <= numel(G.BusColorData)
-        txt = [cellstr(string(txt(:)')), {char(s_value + ": " + sprintf("%.4g", G.BusColorData(i)))}];
     end
 end
