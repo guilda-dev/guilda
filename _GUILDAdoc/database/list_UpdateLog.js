@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "GraphChart draws 3D panels",
+    "date": "2026-11-22",
+    "type": "feature",
+    "content": "A panel of the data of GraphChart can now be 3D: set l_3d = true in sct_panel (with s_zlabel and rv_zlim if needed) and give each line or marker series of the panel z values in rm_z, the size of rm_y. The panel draws one 3D line per column, for example P, Q and |V| of each bus, in a 3D view that you turn by dragging it or with the rotate button of the axes toolbar; clicking a line still raises ElementClicked. The automatic limits include z. A 3D time panel shows a marker at the point (x, y, z) of each line for the sample shown, so it follows set_time, the playback bar and a linked graph such as a 2D chart. iv_sample, the legend, colors, set_style and select work as in a 2D panel. Bars, reference lines and series without rm_z cannot go in a 3D panel, and rm_z in a 2D panel is an error (GUILDA:GraphChart:Panel3D), as is the line cursor (s_cursor \"line\") in a 3D time panel. Charts without 3D panels do not change."
+  },
+  {
     "title": "Select... for the targets of the linearization result forms",
     "date": "2026-11-22",
     "type": "feature",

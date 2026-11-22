@@ -35,13 +35,13 @@ function load_data(obj, sct_data)
     if ~isempty(obj.ax) && ~isequal(rv_grid, obj.sct_data.rv_grid)
         error(msg("GUILDA:GraphChart:GridChange", obj.sct_data.rv_grid(1), obj.sct_data.rv_grid(2), rv_grid(1), rv_grid(2)));
     end
-    sct_panel = repmat(struct("s_title", "", "s_xlabel", "", "s_ylabel", "", "rv_xlim", [], "rv_ylim", [], ...
-        "s_xscale", "linear", "s_yscale", "linear", "l_time", false, "l_grid", true, ...
+    sct_panel = repmat(struct("s_title", "", "s_xlabel", "", "s_ylabel", "", "s_zlabel", "", "rv_xlim", [], "rv_ylim", [], ...
+        "rv_zlim", [], "s_xscale", "linear", "s_yscale", "linear", "l_time", false, "l_3d", false, "l_grid", true, ...
         "s_legendLocation", "best", "s_cursor", "line", "sv_x", strings(0, 1)), 1, n_panel);
     for i = 1:n_panel
         p = sct_in(i);
         s_at = "sct_panel(" + i + ").";
-        for s_field = ["s_title", "s_xlabel", "s_ylabel", "s_legendLocation"]
+        for s_field = ["s_title", "s_xlabel", "s_ylabel", "s_zlabel", "s_legendLocation"]
             sct_panel(i).(s_field) = string(field_or(p, s_field, sct_panel(i).(s_field)));
         end
         for s_field = ["s_xscale", "s_yscale"]
@@ -51,14 +51,14 @@ function load_data(obj, sct_data)
             end
             sct_panel(i).(s_field) = s;
         end
-        for s_field = ["rv_xlim", "rv_ylim"]
+        for s_field = ["rv_xlim", "rv_ylim", "rv_zlim"]
             rv = field_or(p, s_field, []);
             if ~(isempty(rv) || isnumeric(rv) && numel(rv) == 2 && rv(1) < rv(2))
                 error(msg("GUILDA:GraphChart:FieldValue", s_at + s_field, "[] or two increasing limits"));
             end
             sct_panel(i).(s_field) = double(rv(:)');
         end
-        for s_field = ["l_time", "l_grid"]
+        for s_field = ["l_time", "l_3d", "l_grid"]
             sct_panel(i).(s_field) = logical(field_or(p, s_field, sct_panel(i).(s_field)));
         end
         if ~any(numel(sct_panel(i).s_title) == [1, numel(rv_t)])
@@ -66,7 +66,16 @@ function load_data(obj, sct_data)
                 size_text(sct_panel(i).s_title)));
         end
         sct_panel(i).s_title = reshape(sct_panel(i).s_title, 1, []);
+        % A 3D time panel takes the marker cursor (its default there): a vertical line has no place in 3D
+        l_3dTime = sct_panel(i).l_3d && sct_panel(i).l_time;
         s = string(field_or(p, "s_cursor", "line"));
+        if l_3dTime && ~(isfield(p, "s_cursor") && ~isempty(p.s_cursor))
+            s = "marker";
+        end
+        if l_3dTime && isequal(s, "line")
+            error(msg("GUILDA:GraphChart:Panel3D", "the line cursor (" + s_at + "s_cursor ""line"")", i, ...
+                "a 3D time panel (l_3d true) takes the marker cursor (s_cursor ""marker"", its default there)"));
+        end
         if ~(isscalar(s) && any(s == ["line", "marker"])) || (s == "marker" && ~sct_panel(i).l_time)
             error(msg("GUILDA:GraphChart:FieldValue", s_at + "s_cursor", """line"" or ""marker"" (""marker"" only on a time panel, l_time true)"));
         end
@@ -80,7 +89,7 @@ function load_data(obj, sct_data)
     end
     n_series = numel(sct_in);
     sct_series = repmat(struct("i_panel", 1, "s_type", "line", "rv_x", [], "sv_x", strings(0, 1), ...
-        "rm_y", [], "sv_tag", strings(0, 1), "sv_legend", strings(0, 1), "iv_sample", zeros(0, 1)), 1, n_series);
+        "rm_y", [], "rm_z", [], "sv_tag", strings(0, 1), "sv_legend", strings(0, 1), "iv_sample", zeros(0, 1)), 1, n_series);
     c_tag = cell(n_series, 1);  c_kind = c_tag;  c_series = c_tag;  c_item = c_tag;  c_panel = c_tag;
     c_label = c_tag;  c_color = c_tag;  c_width = c_tag;  c_style = c_tag;  c_marker = c_tag;  c_size = c_tag;
     for i = 1:n_series
@@ -99,6 +108,22 @@ function load_data(obj, sct_data)
         end
         rm_y = double(p.rm_y);
         n_x  = size(rm_y, 1);
+        rm_z = field_or(p, "rm_z", []);
+        if ~isempty(rm_z) && ~(isnumeric(rm_z) && isreal(rm_z) && isequal(size(rm_z), size(rm_y)))
+            error(msg("GUILDA:GraphChart:FieldSize", s_at + "rm_z", "[] or the size of rm_y (" + size_text(rm_y) + ")", size_text(rm_z)));
+        end
+        rm_z = double(rm_z);
+        % A 3D panel takes line and marker series with z; a series with z needs a 3D panel
+        if sct_panel(i_panel).l_3d && s_type == "bar"
+            error(msg("GUILDA:GraphChart:Panel3D", "sct_series(" + i + ") (a bar series)", i_panel, ...
+                "a 3D panel (l_3d true) takes line and marker series with rm_z only"));
+        elseif sct_panel(i_panel).l_3d && isempty(rm_z) && n_x > 0
+            error(msg("GUILDA:GraphChart:Panel3D", "sct_series(" + i + ") (a series without rm_z)", i_panel, ...
+                "a 3D panel (l_3d true) takes line and marker series with rm_z only"));
+        elseif ~sct_panel(i_panel).l_3d && ~isempty(rm_z)
+            error(msg("GUILDA:GraphChart:Panel3D", "sct_series(" + i + ") (a series with rm_z)", i_panel, ...
+                "a series with rm_z needs a 3D panel (l_3d true)"));
+        end
         sv_x = string(field_or(p, "sv_x", strings(0, 1)));
         sv_x = sv_x(:);
         rv_x = field_or(p, "rv_x", []);
@@ -195,7 +220,7 @@ function load_data(obj, sct_data)
         c_marker{i} = repmat(string(field_or(p, "s_marker", s_markerDefault)), n_elem, 1);
         c_size{i}   = repmat(r_size, n_elem, 1);
         sct_series(i) = struct("i_panel", i_panel, "s_type", s_type, "rv_x", rv_x, "sv_x", sv_x, ...
-            "rm_y", rm_y, "sv_tag", sv_tag, "sv_legend", sv_leg(:), "iv_sample", iv_sample);
+            "rm_y", rm_y, "rm_z", rm_z, "sv_tag", sv_tag, "sv_legend", sv_leg(:), "iv_sample", iv_sample);
     end
 
     % A marker cursor puts a marker on each line and marker set at its row of the sample: one row per sample
@@ -236,6 +261,9 @@ function load_data(obj, sct_data)
         i_panel = field_or(p, "i_panel", 1);
         if ~(isscalar(i_panel) && any(i_panel == 1:n_panel))
             error(msg("GUILDA:GraphChart:FieldValue", s_at + "i_panel", "a panel index from 1 to " + n_panel));
+        end
+        if sct_panel(i_panel).l_3d
+            error(msg("GUILDA:GraphChart:Panel3D", "sct_refline(" + i + ")", i_panel, "a 3D panel (l_3d true) has no reference lines"));
         end
         s_axis = string(field_or(p, "s_axis", "y"));
         if ~(isscalar(s_axis) && any(s_axis == ["x", "y"]))
