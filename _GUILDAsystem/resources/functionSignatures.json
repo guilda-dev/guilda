@@ -935,15 +935,18 @@
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultODE"},
       {"name":"Dimension","kind":"namevalue","type":["double","scalar","choices=cellstr([2,3])"],"purpose":"2: phasor plane (GraphSpring2D); 3: surface z = log|V| (GraphSpring3D). Default: 2."},
+      {"name":"Trajectory","kind":"namevalue","type":["string","scalar"],"purpose":"Quantity of the side chart as Quantity of plot_trajectory; \"auto\": omega of the generators; \"none\": no side chart. Default: \"auto\"."},
       {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
     ],
     "outputs": [
-      {"name":"G","purpose":"The picture: a GraphSpring2D or GraphSpring3D object."}
+      {"name":"G","purpose":"The picture: a GraphSpring2D or GraphSpring3D object."},
+      {"name":"G_chart","purpose":"The side chart of the trajectory (GraphChart) linked to G; [] without one."}
     ]
   },
   "ResultODE.plot_diagram": {
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultODE"},
+      {"name":"Trajectory","kind":"namevalue","type":["string","scalar"],"purpose":"Quantity of the side chart as Quantity of plot_trajectory; \"auto\": \"Vabs\" of all buses; \"none\": no side chart. Default: \"auto\"."},
       {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."},
       {"name":"Dimension","kind":"namevalue","type":["string","scalar","choices=cellstr([\"2D\",\"3D\"])"]},
       {"name":"ColorLimits","kind":"namevalue","type":["double"]},
@@ -985,7 +988,8 @@
       {"name":"SelectionColor","kind":"namevalue"}
     ],
     "outputs": [
-      {"name":"G","purpose":"GraphNetDiagram object of the drawing."}
+      {"name":"G","purpose":"GraphNetDiagram object of the drawing."},
+      {"name":"G_chart","purpose":"The side chart of the trajectory (GraphChart) linked to G; [] without one."}
     ]
   },
   "ResultODE.get_point": {

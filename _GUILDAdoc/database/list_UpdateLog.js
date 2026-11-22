@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Time responses beside the animated simulation plots",
+    "date": "2026-11-22",
+    "type": "feature",
+    "content": "plot_diagram and plot_spring_model of a time simulation result now draw a side chart of a time response on the right of the animated figure, with a line that marks the time shown: the voltage magnitude of all buses for plot_diagram and the generator speed (omega) for plot_spring_model. The new option Trajectory chooses another quantity, as Quantity of plot_trajectory (for example \"Vangle\", \"P\" or a state name), and Trajectory=\"none\" draws the figure alone as before; drawing into a given axes also draws the figure alone. Write [G, G_chart] = res.plot_diagram() to get the side chart too. The playback bar of the figure moves the line of the side chart. The playback bar now appears only on figures whose drawing changes with time, such as network diagrams, spring models and eigenvalue plots of several sections; charts in which time only moves a cursor, such as plot_trajectory, the power flow convergence, the continuation power flow charts and the OPF iteration chart, have no bar of their own but still follow set_time, play, animate and the bar of a linked figure. In plot_iteration the bar is now below the network diagram. In the result window (launch_gui), the first figure with a playback bar starts playing by itself, also for the plot shown when the window opens."
+  },
+  {
     "title": "Network diagrams show the value behind each color",
     "date": "2026-11-22",
     "type": "feature",

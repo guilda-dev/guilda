@@ -96,8 +96,11 @@ classdef GraphChart < GraphBase
 % set or a bar raises ElementClicked; a selected line or marker set gets a wide line or
 % ring under it, a selected bar an outline, in SelectionColor.
 %
-% The playback bar below the axes (see GraphBase) is shown when the chart has two or more
-% samples and a time panel, a series with iv_sample or a title per sample (has_playback).
+% The playback bar below the axes (see GraphBase) is shown when the drawing of the chart
+% changes with the time: two or more samples and a series with iv_sample or a title per
+% sample (has_playback). A chart whose time only moves a cursor (a time panel, e.g.
+% ResultODE.plot_trajectory) has no bar: set_time, animate, export_video, link and the bar
+% of a linked graph move its cursor.
 % show_controls has no controls: the appearance is per element.
 %
 % Parent: a container gives a tiled layout of rv_grid with one axes per panel; a

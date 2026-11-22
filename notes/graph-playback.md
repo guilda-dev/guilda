@@ -47,4 +47,35 @@
 ## 3. ほかのセッションへの影響
 
 - `DrawerResultGUI/autoplay.m` と `test_F91_result_gui_autoplay.m`(GUI の取りまとめ): パネルの Play がなくなったので F91 の「Play ボタンが Pause を示す」節は失敗します。`autoplay` は `G.play()` に替える予定です(GUI の取りまとめが行う)。
-- `ResultOPF/plot_iteration.m`: 2 つの uipanel に描く GraphChart と GraphNetDiagram にそれぞれバーが付き、自前の Play とスライダー(uicontrol)と並びます。自前の部品を外してバーに任せるか、どちらかの図だけにバーを残すかは未決です。
+- `ResultOPF/plot_iteration.m`: 2 つの uipanel に描く GraphChart と GraphNetDiagram にそれぞれバーが付き、自前の Play とスライダー(uicontrol)と並びます。自前の部品を外してバーに任せるか、どちらかの図だけにバーを残すかは未決です。(2026-11-22 決着: バーは G_net だけ。§4)
+
+## 4. バーの規則と ResultODE の横のグラフ(2026-11-22、`feature/ode-side-chart-bar-rule`)
+
+利用者の承認(Graph の取りまとめ経由、Q3・Q4)。`refactor/design-alignment` の 1c229bba から分岐。
+
+### Q4 バーの規則
+
+- 再生バーは、描く内容が時刻で変わる図だけに付けます。GraphNetDiagram、GraphSpring2D/3D、GraphMatrix(標本 2 つ以上)と、標本ごとの系列(`iv_sample`。例: `ResultLIN.plot_eigenvalue`)か標本ごとの題名があるパネルを持つ GraphChart です。
+- 時刻でカーソル・線・マーカーが動くだけの GraphChart にはバーを付けません。`plot_trajectory`、`plot_convergence`、CPF の図、`plot_eigenvalue_path`、`plot_iteration` のグラフ、`plot_pqv` の 3D の時刻パネルなどです。
+- 変えたのは `@GraphChart/has_playback.m` だけです(`any([d.sct_panel.l_time])` の条件を外しました)。バーのない図も `set_time`、`play`/`pause`、`animate`、`export_video`、`link`、つないだ図のバーで動きます(`animate` と `export_video` は F100 で確かめました)。
+- `plot_iteration`(OPF の取りまとめの了承): `G_net` を `axes(uipanel(...))` ではなく uipanel(容器)に描くようにし、バーは `G_net` に付きます。`G_chart` にはバーがなく、link はそのままなので、`G_net` のバーで `G_chart` のカーソルも動きます。ヘルプ、`feature-opf.html`、`notes/opf-requirements.md` を直しました。
+
+### Q3 ResultODE の横のグラフ
+
+- `ResultODE.plot_diagram` と `plot_spring_model` は `[G, G_chart]` を返します。左(約 60 %)にバー付きの `G`、右(約 40 %)に `plot_trajectory` で描く `G_chart`(線のカーソル、バーなし)を置き、`G.link(G_chart)` でつなぎます。
+- 新しい公開部分は Name-Value の `Trajectory` と 2 つ目の出力 `G_chart` だけです。`Trajectory` は `plot_trajectory` の `Quantity` と同じ量("Vabs"、"Vangle"、"P"、"Q"、機器の状態・入力・出力の名前)、`"auto"`(既定)は `plot_diagram` で "Vabs"、`plot_spring_model` で "omega"(発電機)、`"none"` は今までどおり図だけです。`Parent` が axes・uiaxes のときも図だけで、`G_chart` は `[]` です。
+- 配置は `plot_iteration` と同じく、容器に枠なしの uipanel を 2 つ置きます(`Parent` が空なら 1400 × 600 px の新しい figure、uigridlayout なら先に uipanel を 1 つ)。区画の背景は容器の色に合わせます。
+- データの取り出しは `plot_trajectory(Quantity=..., Parent=<右の区画>)` を呼んで再利用し、複製していません。2 つのメソッドで共有する処理は private 関数 `@ResultODE/private/draw_with_chart.m` にまとめました(図を描く関数ハンドルを受け取ります)。描画に失敗したとき(知らない量など)は、作った区画(と新しい figure)を消してからエラーを投げ直します。
+- `show_controls` とバーは左の区画の中に収まり、大きさを変えてもバーは 34 px のままです(F100 で figure と uifigure、操作パネルありで確かめました)。
+- `functionSignatures.json` は `GUILDA.update_keymap(Signature=true)` で作り直し、`gui_forms.json` は `ResultODE.plot_spring_model` と `ResultPF.plot_diagram`(`ResultODE.plot_diagram` が `same` で参照)の `main` に `Trajectory` を加えました(ResultPF・ResultCPF には `Trajectory` がないので表示されません)。
+
+### GUI(GUI の取りまとめの了承)
+
+- `DrawerResultGUI.autoplay`: 「同じ呼び出しのほかの出力が GraphChart でない動く図なら GraphChart も再生する」規則をやめ、出力のうち再生バーを持つ最初の図を `play()` します。バーは新しい公開メンバーを使わず、図の容器(`ax(1).Parent.Parent`、tiledlayout の親)の直下を `findall(..., "-depth", 1, "Tag", "GUILDA:GraphBase:PlaybackBar")` で探します。timer は 1 つです。
+- `render.m`: 開いたときの最初の図も、署名の出力の数だけ受け取り、`autoplay(obj, c_output)` に渡します(`run_method` と同じ)。`G_plot`(Display options の対象)は最初の GraphBase の出力で、`[G, G_chart]` なら `G` です。
+
+### 試験
+
+- F100 に 6 節を加えました(既定の量と配置、Trajectory の "Vangle"・"none"、軸を渡すと図だけ、link でカーソルが動く、バーは G だけ(バーのないグラフの animate・export_video・play)、横のグラフありで大きさを変えてもバーが 34 px)。
+- 時刻のパネルにバーがあることを前提にしていた F46(名前のある標本)、F61、F100(置き換え、大きさの変更の図)、F91、F4(`plot_iteration`)を直しました。F112 は `plot_eigenvalue` が `iv_sample` でバーを持つので変えずに通ります。
+- 残り: `ResultLIN/plot_eigenvalue_path.m` のヘルプの「The playback bar shows the section.」はバーがなくなったので直す必要があります(ResultLIN のファイルはこのブランチでは触らない約束)。

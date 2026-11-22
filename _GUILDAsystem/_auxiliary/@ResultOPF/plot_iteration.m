@@ -1,5 +1,5 @@
 function [G_chart, G_net] = plot_iteration(obj, opt)
-% Draw the iterations of the AC optimal power flow, with the playback bar of the chart.
+% Draw the iterations of the AC optimal power flow, with the playback bar of the diagram.
 %
 % Draws sct_iteration (recorded by fmincon at every "AC OPF" run) as two linked graphs.
 % G_chart (GraphChart, on the left) has four panels in a 2-by-2 grid against the iteration
@@ -29,10 +29,11 @@ function [G_chart, G_net] = plot_iteration(obj, opt)
 % after every set_time of either graph (G_chart.set_time, G_net.set_time, the playback bar,
 % play, animate): the title of the chart "OPF iteration k (i of n)" and the colors, sizes,
 % widths, violations and title of the diagram. With two or more iterations, the playback
-% bar of G_chart (below its panels; see GraphBase) moves both graphs: its slider shows any
-% recorded iteration and its Play button (or G_chart.play) plays them from the one shown
-% (from the first when the last is shown) to the last at PlaySpeed iterations per second.
-% G_net is drawn in an axes and has no bar of its own. The graphs are in two panels
+% bar of G_net (below the diagram; see GraphBase) moves both graphs: its slider shows any
+% recorded iteration and its Play button (or G_net.play, G_chart.play) plays them from the
+% one shown (from the first when the last is shown) to the last at PlaySpeed iterations
+% per second. G_chart has no bar of its own: its time only moves the cursor, and the bar
+% of G_net moves it through the link. The graphs are in two panels
 % (uipanel) side by side in the container Parent (a uigridlayout gets a panel first).
 % "ELD" and "DC OPF" (linprog, quadprog) record no iterations and stop with
 % GUILDA:ResultOPF:NoIteration. It reads only the stored result.
@@ -43,8 +44,8 @@ function [G_chart, G_net] = plot_iteration(obj, opt)
 % fig = figure();
 % [G_chart, G_net] = res.plot_iteration(Parent=fig);
 % G_chart.set_time(3);                      % iteration 3 in both graphs, the title and the diagram
-% G_chart.play();                           % play from iteration 3 to the last (playback bar)
-% G_chart.pause();
+% G_net.play();                             % play from iteration 3 to the last (playback bar of G_net)
+% G_net.pause();
 % G_chart.tab_element                       % the lines: Fval, ConstrViolation, generators, buses
 % ```
 %
@@ -144,7 +145,7 @@ function [G_chart, G_net] = plot_iteration(obj, opt)
     end
     sv_tag = [sv_netBus; sv_comp; sv_br];
     lm_out = [lm_bus; lm_comp; lm_br];
-    G_net = GraphNetDiagram(obj.sct_network, sct_state, Parent=axes(uipanel(fig, "Units", "normalized", "Position", [0.64 0 0.36 1], "BorderType", "none")), ColorMode="user", ...
+    G_net = GraphNetDiagram(obj.sct_network, sct_state, Parent=uipanel(fig, "Units", "normalized", "Position", [0.64 0 0.36 1], "BorderType", "none"), ColorMode="user", ...
         ColorLimits=rr_lim, BranchColorData=nan(numel(a_br), 1), LinkColorData=nan(numel(sv_comp), 1), ...
         ColorbarLabel="|V| [pu]", TitleFormat="");     % the title is the number of violations (show)
     G_net.ax.Tag = "Network";
@@ -152,7 +153,7 @@ function [G_chart, G_net] = plot_iteration(obj, opt)
     rm_size  = mean(G_net.MarkerSizeRange) * (0.5 + rm_Pcomp / max([rm_Pcomp(:); eps]));   % [pt]
     rm_width = 1 + 4 * rm_Pbr / max([rm_Pbr(:); eps]);     % from 1 (no flow) to 5 (the largest |P|)
 
-    % the playback bar of the chart calls set_time only; the TimeChanged callback of the
+    % the playback bar of the diagram calls set_time only; the TimeChanged callback of the
     % chart (also when the diagram moves it through the link) draws the iteration in the
     % title and the diagram. The callback reaches the diagram through a weak reference, so
     % that saving the figure does not save the graphs with it.

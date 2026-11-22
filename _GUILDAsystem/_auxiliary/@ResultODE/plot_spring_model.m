@@ -1,4 +1,4 @@
-function G = plot_spring_model(obj, opt)
+function [G, G_chart] = plot_spring_model(obj, opt)
 % Draw the time response as a spring-mass picture that can be animated.
 %
 % The picture holds every output time rv_t: G.set_time(t) shows one time, G.animate()
@@ -11,6 +11,17 @@ function G = plot_spring_model(obj, opt)
 % nodes, at the bus voltage). Marker, MarkerSize and Color of the graph parameters set the
 % appearance. Dimension=2 draws the phasor plane (GraphSpring2D), Dimension=3 the surface
 % z = log|V| (GraphSpring3D).
+%
+% Beside the picture, on its right, the side chart G_chart (GraphChart) draws a trajectory
+% against time as plot_trajectory, with a cursor at the time shown: by default the omega
+% of the generators (the components with the state omega); Trajectory names another
+% quantity as Quantity of plot_trajectory ("Vabs", "Vangle", "P", "Q" or a state, input or
+% output name). The container (a new figure of 1400 x 600 px when Parent is empty; a
+% uigridlayout gets a borderless uipanel first) holds two borderless panels: the picture
+% with its playback bar on the left (60 %) and the chart on the right (40 %). The two are
+% linked (G.link(G_chart)): the bar, G.set_time, G.play and G.animate move the cursor of the
+% chart. The chart has no bar of its own (its time only moves the cursor). Trajectory="none",
+% or an axes or uiaxes as Parent, draws the picture alone, without a side chart (G_chart []).
 %
 % It reads only the stored result: the trajectories of the states, inputs, bus voltages
 % and bus currents, and the network snapshot sct_network (class and dynamic parameters of
@@ -25,19 +36,22 @@ function G = plot_spring_model(obj, opt)
 % sc = net.add_scenario("fault");
 % sc.add_fault("B007", [1, 1.05]);
 % res = net.simulate("fault", Time=[0, 5]);
-% G = res.plot_spring_model(Dimension=3);
-% G.animate(Speed=0.5);
+% [G, G_chart] = res.plot_spring_model(Dimension=3);   % omega of the generators on the right
+% G.animate(Speed=0.5);                                % the cursor of G_chart follows
 % G.export_video("swing.mp4");
+% G = res.plot_spring_model(Trajectory="none");        % the picture alone
 % ```
 %
-% See also PowerNetwork.plot_spring_model, ResultPF.plot_spring_model, GraphSpring2D, GraphSpring3D, Component.get_spring_node
+% See also ResultODE.plot_trajectory, PowerNetwork.plot_spring_model, ResultPF.plot_spring_model, GraphSpring2D, GraphSpring3D, Component.get_spring_node
     arguments (Input)
         obj
         opt.Dimension (1,1) double {mustBeMember(opt.Dimension, [2, 3])} = 2  % 2: phasor plane (GraphSpring2D); 3: surface z = log|V| (GraphSpring3D).
+        opt.Trajectory (1,1) string = "auto"  % Quantity of the side chart as Quantity of plot_trajectory; "auto": omega of the generators; "none": no side chart.
         opt.Parent = []  % Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure.
     end
     arguments (Output)
-        G  % The picture: a GraphSpring2D or GraphSpring3D object.
+        G        % The picture: a GraphSpring2D or GraphSpring3D object.
+        G_chart  % The side chart of the trajectory (GraphChart) linked to G; [] without one.
     end
     if isempty(obj.rv_t) || isempty(obj.c_index) || ~isfield(obj.sct_network, "a_Branch")
         error(msg("GUILDA:ResultODE:NoSpringData"));
@@ -60,8 +74,9 @@ function G = plot_spring_model(obj, opt)
     sct_data = tools.spring_model_data(obj.sct_network, sct_val);
 
     if opt.Dimension == 2
-        G = GraphSpring2D(sct_data, Parent=opt.Parent);
+        fcn_graph = @(h) GraphSpring2D(sct_data, Parent=h);
     else
-        G = GraphSpring3D(sct_data, Parent=opt.Parent);
+        fcn_graph = @(h) GraphSpring3D(sct_data, Parent=h);
     end
+    [G, G_chart] = draw_with_chart(obj, opt.Parent, opt.Trajectory, "omega", fcn_graph);
 end
