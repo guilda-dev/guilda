@@ -15,8 +15,9 @@ function render(obj)
 % its defaults (Parent = the plot panel). The Plot tab is selected when that plot is drawn,
 % the Text tab otherwise. The Log tab gets the view of the log (HistoryGUILDA.attach_view)
 % when it is first opened (show_log), not here. The frame is drawn before the default view,
-% so the window is usable while the first plot is drawn. A first plot that animates starts
-% playing (autoplay).
+% so the window is usable while the first plot is drawn. The first plot is called with all
+% the outputs of its signature, and its outputs go to autoplay, as in run_method: the first
+% output graph with a playback bar starts playing.
     arguments (Input)
         obj
     end
@@ -152,18 +153,28 @@ function render(obj)
     end
     obj.h_tabs.SelectedTab = obj.h_text.Parent.Parent;
     obj.G_plot = [];
-    s_first = sv_method(find(startsWith(sv_method, "plot_"), 1));
-    if ~isempty(s_first)
+    c_value = {};
+    i_first = find(startsWith(sv_method, "plot_"), 1);
+    if ~isempty(i_first)
+        s_first = sv_method(i_first);
+        % all outputs of the signature, so that autoplay sees each graph of the call
+        sct_sig = read_signatures().(replace(sv_signature(i_first), ".", "_"));
+        n_out = 1;
+        if isfield(sct_sig, "outputs")
+            n_out = max(1, numel(sct_sig.outputs));
+        end
         try
-            G = [];
-            evalc("G = a_target.(s_first)(Parent=obj.h_plot);");
-            if isa(G, "GraphBase")
-                obj.G_plot = G;
+            c_value = cell(1, n_out);
+            evalc("[c_value{:}] = a_target.(s_first)(Parent=obj.h_plot);");
+            i_graph = find(cellfun(@(g) isa(g, "GraphBase") && isscalar(g), c_value), 1);
+            if ~isempty(i_graph)
+                obj.G_plot = c_value{i_graph};
             end
             obj.h_tabs.SelectedTab = obj.h_plot.Parent.Parent;
         catch    % a plot that needs more than its defaults: the summary stays in front
             delete(obj.h_plot.Children)
+            c_value = {};
         end
     end
-    obj.autoplay();
+    obj.autoplay(c_value);
 end
