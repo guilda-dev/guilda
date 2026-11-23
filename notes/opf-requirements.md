@@ -298,19 +298,15 @@ Progress details: [status.md](status.md#opf).
     バーの時刻の文字は Graph 側の表記（"t = 18 s"）で、反復番号を秒として表示する。
   - 値のラベル（2026-11-23、ユーザー依頼「LMP をプロットしているときはラベルに LMP を表示」）:
     GraphNetDiagram の値の読み出し（1c229bba。ColorMode "user" で LabelMode "value" のラベルと
-    データチップに「<ColorbarLabel>=<値>」(%.4g) の行が付く）を使い、OPF の 2 つの系統図を
-    LabelMode "value" にした。新しい公開メンバーはない。
+    データチップに「<ColorbarLabel>=<値>」の行が付く）を使い、plot_lmp を LabelMode "value" にした。
+    新しい公開メンバーはない。
     - `plot_lmp`: c_opt に "LabelMode", "value" を入れ、namedargs2cell(opt) より前に置く（利用者が
       渡した LabelMode が優先。`LabelMode="bus"` でタグだけに戻せる）。母線のラベルは
       タグ、∠V、|V|、「LMP [cost/pu]=<値>」の 4 行。機器のラベルはタグ、P、Q。
-    - `plot_iteration`: G_net に LabelMode="value"。show_iteration が BusColorData を書くたびに
-      「|V| [pu]=<値>」がその反復の値になる（∠V・|V| の行も同じ反復）。
     - 確認（IEEE14、DC OPF・AC OPF）: 値は get_lmp と一致。%.4g なので IEEE14 の LMP（約 3900）は
-      整数に丸めて表示される（3901.6 → 3902）。plot_lmp の全画面の図では読めるが、B009・B010・B011
-      付近で母線のラベルと機器のラベル（P、Q）が一部重なる。plot_iteration の系統図は図の幅の
-      36% しかないため、ラベル（母線 4 行 + 機器 3 行）の重なりが多く読みにくい。plot_iteration の
-      母線のラベルは「|V|=1.04」と「|V| [pu]=1.041」が同じ量を 2 回示す。いずれも方式は変えて
-      いない（取りまとめに報告）。
+      整数に丸めて表示される（3901.6 → 3902）。全画面の図では読めるが、B009・B010・B011 付近で
+      母線のラベルと機器のラベル（P、Q）が一部重なる。方式は変えていない（取りまとめに報告）。
+    - plot_iteration は扱いをユーザーと見直し中のため、このブランチでは変えていない。
   - 確認で気づいたこと（GraphNetDiagram 側）: getframe や exportapp で図を取り込むと、系統図の母線の
     立体から軸いっぱいの線が出る（変更していない net.plot_diagram でも同じ。exportgraphics では出ない）。
 

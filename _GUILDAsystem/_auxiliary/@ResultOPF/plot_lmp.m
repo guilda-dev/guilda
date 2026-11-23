@@ -9,7 +9,7 @@ function G = plot_lmp(obj, opt)
 % (Vphasor in "AC OPF"; |V| = 1 and the angle Varg in "DC OPF"; V = 1 in "ELD", which has
 % no angles) and the component powers of tab_cub. The branches and links keep a neutral
 % color. The labels are LabelMode "value": each bus label shows its tag, ∠V, |V| and the
-% line "LMP [cost/pu]=<value>" (%.4g), and each component label its tag, P and Q; the data
+% line "LMP [cost/pu]=<value>", and each component label its tag, P and Q; the data
 % tip of a bus shows the same LMP line. Works for "ELD", "DC OPF" and "AC OPF"; it reads
 % only the stored result. The other Name-Value options set the properties of the
 % GraphNetDiagram (they override the color and label settings above, e.g. LabelMode="bus"
