@@ -17,7 +17,7 @@ function G = plot_diagram(obj, opt)
 % G = res.plot_diagram(ColorMode="P", LabelMode="value");
 % ```
 %
-% See also PowerNetwork.plot_diagram, ResultODE.plot_diagram, GraphNetDiagram, ResultPF.plot_network
+% See also PowerNetwork.plot_diagram, ResultODE.plot_diagram, GraphNetDiagram, ResultPF.plot_single_line_diagram
     arguments (Input)
         obj
         opt.?GraphNetDiagram  % Name-Value options; each sets the property of the same name of the GraphNetDiagram.

@@ -11,7 +11,8 @@ function create_scene(obj)
 % other than "none" (the height guide of draw_graph_network), the z axis shows the
 % quantity and its unit, the limits take in the floor and the top of every sample, and
 % the view turns to az -37.5, el 30 when the heights appear while the axes look from the
-% top (back to the top when they go away and that view was kept). The colorbar is shown by
+% top (back to the top when they go away and that view was kept); the tiled layout of the
+% axes then has a loose padding, so that the z label stays inside the figure. The colorbar is shown by
 % apply_style when an element has a color value. The callbacks (clicks, data tips) hold
 % the diagram by a weak reference only, so that saving the figure does not save it.
 %
@@ -47,7 +48,7 @@ function create_scene(obj)
     sct_g = obj.diagram_geometry();
     sct_key = struct("g", sct_g, "bus", {obj.sv_bus}, "component", {obj.sv_componentTag}, "branch", {obj.sv_branch}, ...
         "busGraph", obj.tab_bus.graph, "branchGraph", obj.tab_branch.graph, "componentGraph", [], ...
-        "font", {{obj.LinkWidth, obj.LabelFontSize, obj.LabelFontWeight}});
+        "font", {{obj.LinkWidth, obj.LabelFontSize, obj.LabelFontWeight, obj.l_singleLine}});
     if obj.n_component > 0
         sct_key.componentGraph = obj.tab_component.graph;
     end
@@ -97,7 +98,7 @@ function create_scene(obj)
     obj.apply_style((1:height(obj.element_table()))');
     obj.reflect_arrow_forward();
 
-    % Box of the drawing (bus centers and bar ends, components, paths) for fit_axes
+    % Box of the drawing (bus centers and bar ends, components, generator circles, paths) for fit_axes
     tab_g = obj.tab_bus.graph;
     rv_h  = tab_g.Length/2;
     rv_h(~isfinite(rv_h)) = 0;
@@ -107,6 +108,10 @@ function create_scene(obj)
         lv_v = tab_g.Shape == "vbar";
         rm_d = [rv_h.*lv_h, rv_h.*lv_v, zeros(obj.n_bus, 1)];
         rm_p = [rm_p; sct_g.rm_bus - rm_d; sct_g.rm_bus + rm_d];
+    end
+    hv_glyph = findobj(obj.sct_plt.CompMain(isgraphics(obj.sct_plt.CompMain)), "flat", "Tag", "GeneratorGlyph");
+    for h = reshape(hv_glyph, 1, [])    % the generator circles of the single-line diagram
+        rm_p = [rm_p; h.XData(:), h.YData(:), h.ZData(:)]; %#ok<AGROW>
     end
     rm_p = rm_p(all(isfinite(rm_p), 2), :);
     if isempty(rm_p)
@@ -173,6 +178,20 @@ function create_scene(obj)
     end
     obj.l_viewSet = true;
     hold(ax, "off");
+    % The z label of the height guide lies left of the plot box, where a compact tiled
+    % layout (make_axes) leaves no room (3D axes report no tight inset): the layout takes
+    % a loose padding while the guide is drawn, a compact one otherwise. The single-line
+    % diagram keeps the padding of plot_single_line_diagram.
+    tl = ax.Parent;
+    if isa(tl, "matlab.graphics.layout.TiledChartLayout") && ~obj.l_singleLine
+        s_pad = "compact";
+        if ~isempty(sct_guide)
+            s_pad = "loose";
+        end
+        if tl.Padding ~= s_pad
+            tl.Padding = s_pad;
+        end
+    end
 
     fig = ancestor(ax, "figure");
     try                                 % a uifigure may not take these settings

@@ -107,12 +107,23 @@ classdef GraphNetDiagram < GraphBase
 %   color value) a component without a value ("Loss", a tripped unit, a NaN row of "user")
 %   is black; with "none" the components keep their class colors. ComponentColor rows
 %   override both.
+% - `BusColorMode`: "none" (default), "V" (|V| [pu]) or "angle" (the angle of V in
+%   degrees, as in the data tip of a bus). With "V" or "angle" the buses are colored by
+%   that quantity at the sample shown (BusColorData, written again at every sample) on the
+%   colormap, and the quantity takes the colorbar: its label is "|V| [pu]" or "∠V [deg]"
+%   (or ColorbarLabel) and the automatic limits are the smallest and the largest value
+%   over the buses and all samples. The colors of ColorMode are not drawn meanwhile: the
+%   branches, links and components have no color value (as with ColorMode "none"; the
+%   components keep their class colors), since one colorbar cannot show two quantities.
+%   ColorMode keeps its value and colors them again when BusColorMode is "none". The data
+%   tip and the "value" label of a bus show the line of its color value.
 % - `ColorLimits`: [NaN NaN] (default) takes the limits from the data of all samples,
 %   leaving out the top outliers: with m the 95th percentile of |value| over the branches,
 %   the links and all samples (nearest rank), [0, m] for a magnitude ("I", "Loss") and
 %   [-m, m] for a signed quantity ("P", "Q"; the injections of the components are
 %   signed); the 5th to 95th percentiles with "user". Values beyond take the end colors.
 %   With fewer than 20 values, or a percentile of 0, the largest (smallest) value is used.
+%   With BusColorMode "V" or "angle", the smallest to the largest bus value instead.
 %   A numeric [cmin cmax] fixes them.
 %   Limits closer than 1e-6 of their size (a field constant up to rounding) are shown as
 %   c(1 -/+ 1e-3) around their middle c, so that the colorbar ticks stay readable.
@@ -186,6 +197,8 @@ classdef GraphNetDiagram < GraphBase
 % net.initialize();
 % G = net.plot_diagram();
 % G.ColorMode = "P";
+% G.BusColorMode = "V";                   % the buses by |V| (it takes the colorbar)
+% G.BusColorMode = "none";                % the branches by P again
 % G.BusHeightMode = "V";
 % G.MarkerSizeMode = "P";
 % G.BranchWidthRange = [0.5 6];
@@ -211,6 +224,7 @@ classdef GraphNetDiagram < GraphBase
     end
     properties (SetObservable) % Appearance (controls of show_controls)
         ColorMode (1,1) string {mustBeMember(ColorMode, ["none","Loss","I","P","Q","user"])} = "I"     % Quantity that colors the branches and links (see the class help).
+        BusColorMode (1,1) string {mustBeMember(BusColorMode, ["none","V","angle"])} = "none"          % Quantity that colors the buses: "V" (|V|), "angle" (∠V [deg]) or "none"; it takes the colorbar (see the class help).
         LabelFontSize (1,1) double = 5                                                                  % Font size of the labels.
     end
     properties % Appearance
@@ -299,6 +313,9 @@ classdef GraphNetDiagram < GraphBase
         l_labelBusy (1,1) logical = false                                                               % fit_axes is laying the labels out: the listener does nothing.
         l_labelAuto (1,1) logical = false                                                               % reflect_node_label is writing the labels of LabelMode: set.ComponentLabel makes no text objects.
     end
+    properties (Access = {?PowerNetwork, ?ResultPF}) % Single-line diagram for papers
+        l_singleLine (1,1) logical = false                                                              % Black-and-white symbols of plot_single_line_diagram (generator circles with a sine, load triangles, plain labels); setting it draws the diagram again.
+    end
     properties (Access = private) % Flow animation
         sct_flow = struct("rm_q", zeros(0, 1), "r_qmax", NaN, "rv_v", zeros(0, 1), "rv_dir", zeros(0, 1), "rv_phase", zeros(0, 1)) % Flow values (elements x samples, branches then links), speeds, directions and phases of the dots.
         sct_flowPath = struct.empty                                                                     % Paths of the dots of the branches and of the links (flow_paths).
@@ -374,7 +391,7 @@ classdef GraphNetDiagram < GraphBase
         make_component_labels(obj, iv_comp)
         reflect_arrow_forward(obj)
         rm_color = color_of_values(obj, rv_value)
-        [rm_branch, rm_link] = color_values(obj, iv_k)
+        [rm_branch, rm_link, rm_bus] = color_values(obj, iv_k)
         rv_lim = color_limits(obj)
         [sv_line, rv_value, s_label] = color_readout(obj, s_kind, iv_index, s_sep)
         update_color_scale(obj)
@@ -406,6 +423,23 @@ classdef GraphNetDiagram < GraphBase
             if validate(obj); return; end
             obj.reflect_color_mode();
             refresh_value_labels(obj);     % the name of the color values follows the quantity
+        end
+
+        function set.BusColorMode(obj, s_mode)
+            l_clear = s_mode == "none" && obj.BusColorMode ~= "none";
+            obj.BusColorMode = s_mode;
+            obj.update_color_scale();      % the automatic limits of the new quantity
+            if l_clear                     % the bus values written by the mode go
+                obj.BusColorData = nan(obj.n_bus, 1);                       %#ok<MCSUP>
+            end
+            if validate(obj); return; end
+            obj.reflect_color_mode();
+            refresh_value_labels(obj);     % the name of the color values follows the quantity
+        end
+
+        function set.l_singleLine(obj, val)
+            obj.l_singleLine = val;
+            redraw(obj);
         end
 
         % Setters of the label appearance

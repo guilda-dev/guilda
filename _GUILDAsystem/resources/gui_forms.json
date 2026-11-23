@@ -149,7 +149,6 @@
   "ResultPF.plot_voltage": {"main": ["Quantity", "Limit"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultPF.plot_branch": {"main": ["Quantity"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultPF.plot_convergence": {"main": ["Bus"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
-  "ResultPF.plot_network": {"main": ["Color", "Arrow"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultPF.plot_spring_model": {"main": ["Dimension"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultODE.plot_spring_model": {"main": ["Dimension", "Trajectory"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultODE.plot_trajectory": {"main": ["Quantity", "Bus"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
