@@ -8,7 +8,7 @@ function [sv_line, rv_value, s_label] = color_readout(obj, s_kind, iv_index, s_s
 % "" the quantity of BusColorMode ("|V| [pu]", "∠V [deg]") when it is not "none", else
 % that of ColorMode ("|I| [pu]", "P [pu]", "Q [pu]", "Loss [pu]"; "" for "user" and
 % "none"). The name of the lines is that label,
-% or "color" when it is "". The value is written with %.4g; an element without a finite
+% or "color" when it is "". The value is written with %.5g (5 significant digits); an element without a finite
 % value (NaN, no row) has a missing line. Used by the data tips (create_scene), the labels
 % of LabelMode "value" (reflect_node_label) and the colorbar (apply_style).
     arguments (Input)
@@ -52,5 +52,5 @@ function [sv_line, rv_value, s_label] = color_readout(obj, s_kind, iv_index, s_s
     end
     sv_line = string(nan(numel(iv_index), 1));
     lv = isfinite(rv_value);
-    sv_line(lv) = s_name + s_sep + compose("%.4g", rv_value(lv));
+    sv_line(lv) = s_name + s_sep + compose("%.5g", rv_value(lv));
 end

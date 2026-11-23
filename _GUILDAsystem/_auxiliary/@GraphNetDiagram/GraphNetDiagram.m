@@ -15,7 +15,7 @@ classdef GraphNetDiagram < GraphBase
 % its color: the value that colors it at the sample shown (BusColorData of a bus; the
 % quantity of ColorMode, or BranchColorData and LinkColorData under "user", of a branch
 % and a link; ComponentColorData or the value of ColorMode of a component), written with
-% %.4g, e.g. "LMP [cost/pu] = 12.34". The name is the colorbar label: ColorbarLabel, or
+% %.5g, e.g. "LMP [cost/pu] = 3901.6". The name is the colorbar label: ColorbarLabel, or
 % with "" the quantity of ColorMode ("|I| [pu]", "Loss [pu]", ...), or "color" when there
 % is none ("user"). The line is there even when the tip lists the same quantity below (|I|
 % of the "from" end with "I", P_loss with "Loss"): it is always the colored value, named as
@@ -149,7 +149,10 @@ classdef GraphNetDiagram < GraphBase
 % - `LabelMode`: "bus" (default: the tags of the buses), "tag" (the tags of the buses and
 %   components), "value" (the tags and the values: ∠V and |V| of a bus, P and Q of a
 %   component, and the line "<name>=<value>" of its color value with the name and format
-%   of the data tip, when it is finite; branches have no labels), "user" (the texts set in
+%   of the data tip, when it is finite; branches have no labels; when the color value of
+%   a bus is |V| or ∠V (BusColorMode "V" or "angle", or ColorMode "user" with a
+%   ColorbarLabel that starts with "|V|" or "∠V", spaces ignored), the label has only
+%   that line and not the fixed "|V|=" or "∠V=" line, so |V| is written once), "user" (the texts set in
 %   BusLabel and ComponentLabel are kept) or "none". With "bus", "tag" and "value" the
 %   labels are written again at every sample; the "value" labels also follow
 %   BusColorData, ComponentColorData, ColorbarLabel and ColorMode set from outside (e.g.

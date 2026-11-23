@@ -221,7 +221,7 @@ function txt = customhover(event_obj, wr)
 % Data tip text of the element under the cursor; the data tip is also a click on it.
 %
 % Under the first line (the tag), the color value of the element at the sample shown gets
-% one line "<name> = <value>" (color_readout: the name of the colorbar, %.4g) after a
+% one line "<name> = <value>" (color_readout: the name of the colorbar, %.5g) after a
 % square of its color, when it is finite: BusColorData of a bus, BranchColorData of a
 % branch (the quantity of ColorMode, or the values of "user"), ComponentColorData of a
 % component and LinkColorData of a link. It is the line of the colored value even when the
