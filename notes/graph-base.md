@@ -276,6 +276,7 @@ set_style の規則:
 - **時刻のカーソル:** 縦線のカーソルは 3D では意味がないので、`l_3d` かつ `l_time` のパネルでは `s_cursor` の既定を `"marker"` にし、`"line"` を明示すると `Panel3D` の誤りにしました(省いたときに誤りにすると呼ぶ側の手間が増えるため、明示の `"line"` だけを止める)。マーカーは標本 k で `(rv_x(k), rm_y(k, 列), rm_z(k, 列))`。
 - `iv_sample`、凡例、色の順、`set_style`、選択の重ね描き(`ZData` も写す)、`link`、`set_time` は 2D と同じです。`has_playback` は変えていません(時刻のパネルなら再生バーが付く)。データチップは MATLAB の標準(X、Y、Z が出る)のままです。
 - テストは F48 に 6 節(ZData とラベル、範囲、マーカーのカーソルと 2D の図とのリンク、`iv_sample`、誤り、クリック)。
+- **データチップ(2026-11-23、`feature/chart-datatip-tag`):** 線とマーカーの組は `plot` で作る chart の Line(`line` の primitive には `DataTipTemplate` がない)にし、`DataTipRows` を「要素の名前(凡例の項目、`""` ならタグ。TeX の文字をエスケープ。`apply_style` で設定)/X/Y(3D は Z)」にしました。X/Y/Z の行のラベルはパネルの `s_xlabel`/`s_ylabel`/`s_zlabel`(空なら "X"/"Y"/"Z")で、値は `XData` などを読むので `update_scene` の後も正しく、棒は 1 行目に棒ごとのタグを出します。行の設定で 1 本あたり約 3 ms 遅くなります(136 本 × 2000 点で約 0.4 s)。
 
 ### 4.5 GraphNetMap(第 2b 段階、`ResultPF.plot_network`)
 
