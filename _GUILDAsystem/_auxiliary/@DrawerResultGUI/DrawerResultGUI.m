@@ -29,8 +29,8 @@ classdef DrawerResultGUI < auxiliary
 %   Play button had been pressed (autoplay; never under matlab -batch or in a hidden
 %   window): the first output graph of the call with a playback bar gets G.play(), so one
 %   timer plays (ResultODE.plot_diagram: G plays and its linked side chart G_chart
-%   follows; ResultOPF.plot_iteration: G_net plays and G_chart follows). A chart whose time
-%   only moves a cursor has no bar and does not play (plot_trajectory). This holds for the
+%   follows). A chart whose time only moves a cursor has no bar and does not play
+%   (plot_trajectory, ResultOPF.plot_iteration). This holds for the
 %   first plot of the default view too. It does not block the window, and stops when the
 %   window closes, when another plot replaces it, or with Pause of the playback bar.
 %   Network diagrams run their flow animation (FlowAnimation). The control panel of
@@ -42,7 +42,7 @@ classdef DrawerResultGUI < auxiliary
 % options runs at once. The code is what the log and the script show:
 %
 % - plot_*: `G = res.plot_voltage(Quantity="angle", Parent=h_parent);` with the outputs named
-%   as in the signature (`[G_chart, G_net] = res.plot_iteration(Parent=h_parent);`). Before
+%   as in the signature (`[G, G_chart] = res.plot_diagram(Parent=h_parent);`). Before
 %   each run the GUI sets h_parent of the workspace to its plot panel and clears the panel.
 %   The history gets the entry `h_parent = [];` once, before the first plot of any result
 %   GUI, so the exported script draws every plot in a new figure.
