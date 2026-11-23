@@ -172,8 +172,8 @@ classdef ResultODE < ResultBase
         rv = get_point(obj, t, tab_map, opt)
         tab = get_trajectory(obj, Quantity, opt)
         G = plot_trajectory(obj, opt)
-        G = plot_spring_model(obj, opt)
-        G = plot_diagram(obj, opt)
+        [G, G_chart] = plot_spring_model(obj, opt)
+        [G, G_chart] = plot_diagram(obj, opt)
         s_file = export(obj, filename)
         verdict = judge_out_of_step(obj, opt)
     end

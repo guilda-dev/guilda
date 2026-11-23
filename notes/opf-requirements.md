@@ -287,6 +287,11 @@ Progress details: [status.md](status.md#opf).
     反復が 2 つ以上あると、G_chart の 4 パネルの下に再生バー（Play/Pause、スライダー、表示中の時刻、
     速さ）が付く。スライダーと Play（`G_chart.play()`、`G_chart.pause()`、`animate` も同じ）は set_time を
     呼ぶだけで、link により系統図も同じ反復に動く。G_net は右のパネルの axes に描くので、バーは付かない。
+    → 2026-11-22 に変更（`feature/ode-side-chart-bar-rule`、OPF の取りまとめの了承）: バーは描く内容が
+    時刻で変わる図だけに付く規則（Graph の Q4）になり、カーソルが動くだけの G_chart にはバーがない。
+    G_net を `axes(uipanel(...))` ではなく uipanel（容器）に描くようにし、バーは G_net の下の 1 本だけ。
+    そのスライダーと Play（`G_net.play()`、`G_chart.play()` も同じ）が link で G_chart のカーソルと題も
+    動かす。link と TimeChangedFcn は変えていない。結果の GUI の自動再生は G_net を再生する。
     2 つのパネルは図の高さいっぱい（以前は下の 8% を uicontrol に空けていた）。TimeChangedFcn は弱い
     参照で G_net をたどるので、savefig で警告が出ず、出力を受け取らなくても動く。
     バーの時刻の文字は Graph 側の表記（"t = 18 s"）で、反復番号を秒として表示する。

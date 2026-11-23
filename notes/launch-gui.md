@@ -675,6 +675,31 @@
 - 段階(`test_levels.m`、small での時間): 式のエラーの節(0.09 秒)は small、フォームの節(1.7 秒)と `add_trip` の節(1.2 秒)は medium、ピッカーを 4 回開く節(4.8 秒)は large。
 - フォームの開く時間(IEEE9bus、新しい非表示の uifigure、`drawnow` まで、2〜6 回目の中央値): `get_contribution` 0.484 秒、`get_reduced_matrix` 0.480 秒、`plot_reduced_matrix` 0.481 秒。Select... のない `get_eigenvalue` は 0.464〜0.499 秒で、差はありません。
 
+## 自動再生はバーを持つ最初の出力(2026-11-22、`feature/ode-side-chart-bar-rule`)
+
+Graph の Q4(再生バーは描く内容が時刻で変わる図だけ)と Q3(ResultODE の `plot_diagram`・`plot_spring_model` の横のグラフ、`[G, G_chart]`)に合わせて結果の GUI を変えました。GUI の取りまとめの了承済みです。
+
+### 変更
+
+- `DrawerResultGUI.autoplay(obj, c_output)`: 「`GraphChart` の `G_plot` は、同じ呼び出しのほかの出力が `GraphChart` でない動く図のときだけ再生する」規則をやめました。出力(`c_output`。空なら `{G_plot}`)を順に見て、再生バーを持つ最初の図を `play()` します。timer は 1 つです。
+- バーは新しい公開メンバーを使わずに探します。図の `ax(1).Parent` が tiledlayout のとき、その親(図の容器)の直下を `findall(..., "-depth", 1, "Tag", "GUILDA:GraphBase:PlaybackBar")` で探します。横のグラフは別の uipanel に入るので、`G` のバーを横のグラフのものと取り違えません。
+- autoplay がバーを探すのは `ax(1).Parent` が TiledChartLayout の図だけです。今の GraphBase ではいつもそうですが、将来、軸を直接 Parent に渡す図にバーを付ける場合は、ここも見直します。
+- `plot_diagram`・`plot_spring_model` は `G` が再生し、link した `G_chart` が動きます。`plot_iteration` はバーが `G_net` に移ったので `G_net` が再生し、`G_chart` が動きます。`plot_trajectory` はバーがなく再生しません。
+- `FlowAnimation` を true にするのは今までどおり `G_plot` が系統図のときです。
+- `render.m`: 開いたときの最初の図も、署名の出力の数だけ受け取り(`[c_value{:}] = ...`)、`autoplay(obj, c_value)` に渡します(`run_method` と同じ)。`G_plot` は最初の GraphBase の出力です。
+- `G_plot`(Display options の対象)は最初の GraphBase の出力のままで、`[G, G_chart]` なら `G` です。操作パネルは `G` の区画ではなく GUI の 2 列目に出ます(`show_plot_controls` は変えていません)。
+- ヘルプ(`DrawerResultGUI.m`、`autoplay.m`、`render.m`)と `feature-gui.html`(EN/JA)を直しました。
+
+### 公開したメンバー
+
+- ありません。
+
+### 試験
+
+- F91: Display options の節で、時刻のグラフ(`plot_trajectory`)に再生バーがないことを確かめるように直しました。見える窓の節に、`plot_diagram` で `G` が再生し(timer 1 つ、バーが Pause)、横のグラフ `G_chart` が同じ時刻に動くことを加えました。OPF の節は「`G_net` が再生し、グラフが動く」に直し、名前を `TheIterationsOfAnOPFPlay_TheNetworkDiagramPlaysByOneTimerAndTheLinkedChartFollows_ClosingTheWindowLeavesNoTimer` に変えました(`test_levels.m` も)。
+- F52: ResultODE の節で `plot_diagram` を `Trajectory="Vangle"` で実行し、コードが `[G, G_chart] = res.plot_diagram(Trajectory="Vangle", Parent=h_parent);` になることと、書き出したスクリプトで図が 2 つできることを確かめます。
+
+
 - 失敗した実行が、ハンドルのオブジェクト(`net`)の一部をすでに変えている場合があります。その記録は失敗としてスクリプトから除かれるので、書き出したスクリプトを実行しても、その途中までの変更は再現されません。`HistoryGUILDA` は失敗時にワークスペースの変数を戻しますが、ハンドルの中身は戻せません。モデルの GUI は失敗した後も描き直して、実際の状態を表示します。
 - `launch_gui` が作る既定の実行記録は `net` を変数として持つだけで、それを作る行はスクリプトに入りません。スクリプトを何もない状態から実行できるようにするには、先にネットワークを実行記録で作ります(第2a段階で対応: `GUILDA.launch_gui()` の開始画面の選択がスクリプトの最初の行になります。`GUILDA.launch_gui(net)` は、ヘッダーに `net` が起動時の系統であると書きます)。
 - `ResultLIN.get_ss` と `plot_eigenvalue` の引数のコメントの `Default:` が 2 回入る件は、第1b段階で直しました(`c20d935e`)。
