@@ -37,9 +37,17 @@ classdef ResultCPF < ResultBase
 % a model whose get_equilibrium stops at a step (a limit of its range) are NaN at that
 % step. Step 1 is the equilibrium of net.initialize.
 %
-% Voltage stability: `rv_sigmaMin` is the smallest singular value of the power flow
-% Jacobian with respect to the unknowns (without the lambda column) at each step; it goes
-% to 0 at the nose. `tab_weakbus` ranks the buses at the nose: Participation is |V| of each
+% Voltage stability: `rv_sigmaMin` is, at each step, the smallest singular value of the
+% finite-difference Jacobian J of the CPF equations with respect to the unknowns, without
+% the lambda column. The equations are the P and Q mismatches of the buses [pu] (with
+% UseInternalState, also the state equations of the components), the unknowns |V| and
+% theta of the buses (with UseInternalState, also the states of the components). At the
+% saddle-node nose J is singular, so sigma_min = 0 there. It has no physical unit and no
+% absolute threshold: near the nose it falls roughly like sqrt(lambda_max - lambda), so
+% read it against its first value, or read lambda_max - lambda instead. It jumps where
+% Limits "Q" switches a PV bus to PQ, and a path stopped by a "V" or "S" limit ends with
+% a value far from 0 (Löf et al., IEEE Trans. Power Systems 7(1), 1992; Gao, Morison,
+% Kundur, IEEE Trans. Power Systems 7(4), 1992; see plot_stability_index). `tab_weakbus` ranks the buses at the nose: Participation is |V| of each
 % bus in the right singular vector of that singular value (largest 1), dVdLambda the
 % average d|V|/dlambda [pu] from the first point to the nose (NaN when the nose is the
 % first point). `r_marginP` [pu] is r_lambdaMax times the initial active power of every
@@ -66,11 +74,18 @@ classdef ResultCPF < ResultBase
 %   tab_variable, rm_variable, cm_Icomponent and sct_network.
 % - plot_stability_index: rv_sigmaMin against lambda, and the participation of the weak
 %   buses at the nose (tab_weakbus).
+% - plot_pqv: P, Q and |V| of the buses as 3D lines over the steps (P + jQ = V conj(Y V)).
 % - plot_generator: P, Q or the Q margin (to the nearer of Qmin, Qmax) of the generators
 %   (components with Q = NaN in powerflow) against lambda, the switches of tab_switch
 %   marked.
 % - plot_branch: P, |S|, loading |S|/Smax or the loss of the branches (or the total loss)
 %   against lambda.
+%
+% plot_diagram, plot_spring_model, plot_stability_index, plot_generator and plot_branch
+% draw the PV curves with them by default (PVCurve true, buses PVBus) and return the PV
+% chart as a second output G_pv, linked: on the right (1/3 of the width) of the diagram
+% and the spring-mass picture, as an extra panel on top of the lambda-axis charts (G_pv =
+% G). PVCurve=false draws the plot alone.
 %
 % The plots other than plot_pvcurve read the data of the steps; a result without it (a
 % ResultCPF built by hand) stops with GUILDA:ResultCPF:NoStepData.
@@ -93,9 +108,9 @@ classdef ResultCPF < ResultBase
 % x = result.get_point(result.r_noseStep);          % point for net.get_sys(x)
 % lin = net.get_sys({result, [1 result.r_noseStep]});   % one section per step
 % result.plot_pvcurve(Bus="all");  % PV curves of every bus
-% G = result.plot_diagram();        % network diagram of each step
-% G.link(result.plot_pvcurve());    % markers on the PV curves follow the diagram
+% [G, G_pv] = result.plot_diagram();   % network diagram of each step, PV curves on the right
 % G.set_time(result.r_noseStep);    % both at the nose
+% result.plot_pqv();                % P-Q-V paths of the load buses
 % result.plot_generator(Quantity="Qmargin");
 % lin.plot_eigenvalue_path();       % eigenvalues over the two steps
 % result.export("cpf.csv");
@@ -117,7 +132,7 @@ classdef ResultCPF < ResultBase
         rm_variable double = zeros(0,0)     % Operating point of each step: row k at step k (index in rv_lambda), column m the variable tab_variable(m,:). <@Type> double (n_step x (n_x + n_v + n_u + n_uc))
         cm_Icomponent double = zeros(0,0)   % [pu] Current each component injects into its bus at each step: one row per component (network order: sv_bus, then a_Component), one column per step. <@Type> complex double (n_component x n_step)
         sct_network struct = struct()       % Snapshot of the network at the calculation: struct(net, false).
-        rv_sigmaMin double = zeros(1,0)     % Smallest singular value of the power flow Jacobian (unknowns, without lambda) at each step: voltage stability index, 0 at the nose.
+        rv_sigmaMin double = zeros(1,0)     % Voltage stability index at each step: smallest singular value of the Jacobian of the CPF equations (unknowns, without lambda); no unit, 0 at the nose, falls like sqrt(lambda_max - lambda) (see the class help).
         tab_weakbus table = table()         % Weak buses at the nose, one row per bus sorted by Participation (descending): Bus, Participation (largest 1), dVdLambda [pu] (see the class help).
         r_marginP (1,1) double = NaN        % [pu] Loading margin: r_lambdaMax times the initial active power of every component scaled by (1 + lambda); with UseInternalState that power is minus the network losses, so it is usually negative (see the class help).
     end
@@ -188,11 +203,12 @@ classdef ResultCPF < ResultBase
 
         rv = get_point(obj, Step, tab_map)
         G = plot_pvcurve(obj, opt)
-        G = plot_diagram(obj, opt)
-        G = plot_spring_model(obj, opt)
-        G = plot_stability_index(obj, opt)
-        G = plot_generator(obj, opt)
-        G = plot_branch(obj, opt)
+        G = plot_pqv(obj, opt)
+        [G, G_pv] = plot_diagram(obj, opt)
+        [G, G_pv] = plot_spring_model(obj, opt)
+        [G, G_pv] = plot_stability_index(obj, opt)
+        [G, G_pv] = plot_generator(obj, opt)
+        [G, G_pv] = plot_branch(obj, opt)
         s_file = export(obj, filename)
     end
 end

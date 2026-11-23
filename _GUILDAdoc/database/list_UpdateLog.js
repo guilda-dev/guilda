@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "PV curves beside the continuation power flow plots, and P-Q-V plots",
+    "date": "2026-11-23",
+    "type": "feature",
+    "content": "The network diagram, the spring model, the stability index, the generator and the branch plots of a continuation power flow result now draw the PV curves with them by default, already linked, so the step shown is marked on the curves: on the right third of the window for the network diagram and the spring model, and as an extra panel on top that shares the lambda axis for the other three charts. The options PVCurve (false draws the plot alone as before) and PVBus (the buses of the curves, by default the load buses) control them, and a second output returns the PV chart. The stability index plot now says what it shows: the smallest singular value of the power flow Jacobian, which is 0 at the nose, with the participation of the buses in the critical mode; the help explains how to read it. The new plot_pqv of continuation power flow and time simulation results draws the path of each bus in active power, reactive power and voltage magnitude as 3D lines, with a marker at the step or time shown."
+  },
+  {
     "title": "Chart data tips name the line they belong to",
     "date": "2026-11-23",
     "type": "feature",

@@ -1,4 +1,4 @@
-function G = plot_branch(obj, opt)
+function [G, G_pv] = plot_branch(obj, opt)
 % Plot the branch flows along the path.
 %
 % The flows of each step come from the bus voltages cm_Vbus and the admittance matrix
@@ -24,6 +24,15 @@ function G = plot_branch(obj, opt)
 % It returns the chart G (GraphChart): one line per branch, tagged with the branch tag
 % (or "total").
 %
+% With PVCurve true (default), the PV curves of PVBus (|V| [pu] against lambda, as
+% plot_pvcurve, with the nose line) are an extra panel on top of the chart: it shares the
+% lambda axis (the x axes of the lambda panels are linked) and is a time panel with the
+% marker cursor, so set_time(k) puts a marker on each PV curve at step k too. Its lines
+% are tagged "V_" + bus tag (legend: the bus tag) and come after the elements above in
+% tab_element, so their tags and rows stay. G_pv is then G. PVCurve false, or an axes or
+% uiaxes Parent, draws the chart alone as before (G_pv []). A PVBus tag that is not in
+% sv_bus stops with GUILDA:ResultCPF:UnknownBus.
+%
 % <@Examples>
 % ```matlab
 % res = net.calculate_continuation_powerflow(LoadBus=["B009","B014"]);
@@ -37,10 +46,13 @@ function G = plot_branch(obj, opt)
         obj
         opt.Quantity (1,1) string {mustBeMember(opt.Quantity, ["P","S","loading","loss"])} = "P"  % Value of the lines (see the list).
         opt.Branch {mustBeText} = ""  % Tags of the branches to draw, or "all"; "" (default) every branch, or the total loss for "loss".
+        opt.PVCurve (1,1) logical = true  % Draw the PV curves with the plot (see the help); false: the plot alone.
+        opt.PVBus {mustBeText} = ""       % Buses of the PV curves: "" those of plot_pvcurve (options.LoadBus; every bus when none), "all" every bus, or bus tags.
         opt.Parent = []  % Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure.
     end
     arguments (Output)
-        G  % The chart (GraphChart), one line per branch.
+        G     % The chart (GraphChart), one line per branch.
+        G_pv  % The chart with the PV panel: G itself; [] with PVCurve false or an axes Parent.
     end
     check_step_data(obj, "plot_branch", ["cm_Vbus", "sct_network"]);
 
@@ -126,5 +138,5 @@ function G = plot_branch(obj, opt)
         "s_ylabel", s_ylabel, "l_time", true, "s_cursor", "marker", "s_legendLocation", "best");
     sct.sct_series = struct("rv_x", reshape(obj.rv_lambda, 1, []), "rm_y", rm_y, ...
         "sv_tag", sv_tag, "r_lineWidth", 1.2);
-    G = GraphChart(sct, Parent=opt.Parent);
+    [G, G_pv] = pair_pvcurve(obj, opt, sct);
 end

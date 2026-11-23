@@ -21,6 +21,7 @@ classdef ResultODE < ResultBase
 % trajectory of the buses or components as a table (one column per bus or component, also
 % relative to the center of inertia) and plot_trajectory draws it, plot_spring_model an animated spring-mass
 % picture of the phasors and plot_diagram a 3D network diagram of every output time.
+% plot_pqv draws the path of each bus in (P, Q, |V|) as a 3D line over the output times.
 % export writes all trajectories as a table (CSV, Excel) or as a MAT-file.
 % judge_out_of_step judges the rotor angles (stable, out of step).
 %
@@ -172,6 +173,7 @@ classdef ResultODE < ResultBase
         rv = get_point(obj, t, tab_map, opt)
         tab = get_trajectory(obj, Quantity, opt)
         G = plot_trajectory(obj, opt)
+        G = plot_pqv(obj, opt)
         [G, G_chart] = plot_spring_model(obj, opt)
         [G, G_chart] = plot_diagram(obj, opt)
         s_file = export(obj, filename)
