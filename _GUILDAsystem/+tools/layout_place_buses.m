@@ -23,8 +23,8 @@ function [rm_xy, d0] = layout_place_buses(rm_xy, im_edge, opt)
 % When no bus has a position, every bus takes the "force" layout of MATLAB (a graph plot
 % in a figure that is not shown; the layouts of the last graphs are kept, so drawing the
 % same network again makes no figure) and d0 comes from that layout. No random number is used:
-% the same input gives the same output. Parallel branches count once. GraphNetDiagram and
-% GraphNetMap place the buses with this function; the positions stay in the graph.
+% the same input gives the same output. Parallel branches count once. GraphNetDiagram places
+% the buses with this function; the positions stay in the graph.
 %
 % <@Examples>
 % ```matlab
@@ -32,7 +32,7 @@ function [rm_xy, d0] = layout_place_buses(rm_xy, im_edge, opt)
 % rm_xy = tools.layout_place_buses(rm_xy, [1 2; 2 3]);   % bus 3 near bus 2
 % ```
 %
-% See also GraphNetDiagram, GraphNetMap, PowerNetwork.set_layout
+% See also GraphNetDiagram, PowerNetwork.set_layout
     arguments (Input)
         rm_xy (:,2) double                 % Bus centers [x, y]; a row with a NaN: no position.
         im_edge (:,2) double               % Rows in rm_xy of the "from" and "to" buses of each branch.

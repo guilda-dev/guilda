@@ -215,17 +215,6 @@
       {"name":"G","purpose":"The chart (GraphChart): panels residual, then |V| when Bus is given."}
     ]
   },
-  "ResultPF.plot_network": {
-    "inputs": [
-      {"name":"obj","kind":"required","type":"ResultPF"},
-      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; a new figure when empty. Default: []."},
-      {"name":"Color","kind":"namevalue","type":["string","scalar","choices=cellstr([\"V\",\"angle\"])"],"purpose":"Node color: |V| [pu] or the angle [deg]. Default: \"V\"."},
-      {"name":"Arrow","kind":"namevalue","type":["string","scalar","choices=cellstr([\"P\",\"Q\",\"none\"])"],"purpose":"Edge arrows along the P or Q flow, or plain lines. Default: \"P\"."}
-    ],
-    "outputs": [
-      {"name":"G","purpose":"Map of the network (tab_element: buses and branches)."}
-    ]
-  },
   "ResultPF.plot_spring_model": {
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultPF"},
@@ -244,6 +233,7 @@
       {"name":"ColorLimits","kind":"namevalue","type":["double"]},
       {"name":"Colormap","kind":"namevalue","type":["double"]},
       {"name":"ColorMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"Loss\",\"I\",\"P\",\"Q\",\"user\"])"]},
+      {"name":"BusColorMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"V\",\"angle\"])"]},
       {"name":"LabelFontSize","kind":"namevalue","type":["double","scalar"]},
       {"name":"LabelFontWeight","kind":"namevalue","type":["string","scalar"]},
       {"name":"BranchWidthMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"I\",\"G\",\"B\",\"Y\",\"Ysvd\"])"]},
@@ -278,6 +268,15 @@
       {"name":"ElementClickedFcn","kind":"namevalue"},
       {"name":"TimeChangedFcn","kind":"namevalue"},
       {"name":"SelectionColor","kind":"namevalue"}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"GraphNetDiagram object of the drawing."}
+    ]
+  },
+  "ResultPF.plot_single_line_diagram": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultPF"},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure of 8.5 cm width. Default: []."}
     ],
     "outputs": [
       {"name":"G","purpose":"GraphNetDiagram object of the drawing."}
@@ -357,6 +356,7 @@
       {"name":"ColorLimits","kind":"namevalue","type":["double"]},
       {"name":"Colormap","kind":"namevalue","type":["double"]},
       {"name":"ColorMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"Loss\",\"I\",\"P\",\"Q\",\"user\"])"]},
+      {"name":"BusColorMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"V\",\"angle\"])"]},
       {"name":"LabelFontSize","kind":"namevalue","type":["double","scalar"]},
       {"name":"LabelFontWeight","kind":"namevalue","type":["string","scalar"]},
       {"name":"BranchWidthMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"I\",\"G\",\"B\",\"Y\",\"Ysvd\"])"]},
@@ -466,6 +466,7 @@
       {"name":"ColorLimits","kind":"namevalue","type":["double"]},
       {"name":"Colormap","kind":"namevalue","type":["double"]},
       {"name":"ColorMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"Loss\",\"I\",\"P\",\"Q\",\"user\"])"]},
+      {"name":"BusColorMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"V\",\"angle\"])"]},
       {"name":"LabelFontSize","kind":"namevalue","type":["double","scalar"]},
       {"name":"LabelFontWeight","kind":"namevalue","type":["string","scalar"]},
       {"name":"BranchWidthMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"I\",\"G\",\"B\",\"Y\",\"Ysvd\"])"]},
@@ -610,6 +611,7 @@
       {"name":"ColorLimits","kind":"namevalue","type":["double"]},
       {"name":"Colormap","kind":"namevalue","type":["double"]},
       {"name":"ColorMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"Loss\",\"I\",\"P\",\"Q\",\"user\"])"]},
+      {"name":"BusColorMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"V\",\"angle\"])"]},
       {"name":"LabelFontSize","kind":"namevalue","type":["double","scalar"]},
       {"name":"LabelFontWeight","kind":"namevalue","type":["string","scalar"]},
       {"name":"BranchWidthMode","kind":"namevalue","type":["string","scalar","choices=cellstr([\"none\",\"P\",\"Q\",\"I\",\"G\",\"B\",\"Y\",\"Ysvd\"])"]},

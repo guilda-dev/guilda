@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Bus voltage colors in plot_diagram and a single-line diagram for papers",
+    "date": "2026-11-23",
+    "type": "feature",
+    "content": "ResultPF.plot_network is replaced by plot_diagram. The new option BusColorMode of plot_diagram colors the buses by the voltage magnitude (\"V\") or the voltage angle in degrees (\"angle\"); the colorbar then shows that quantity, and the branch colors of ColorMode return when BusColorMode is \"none\" again (the default). For the map plot_network drew, write res.plot_diagram(BusColorMode=\"V\", ColorMode=\"none\"): the buses are colored by |V| and the dots and widths of the branches show the power flow. BusColorMode follows the time of a simulation result, can be chosen in the panel of show_controls, and the data tips and the \"value\" labels of the buses show the colored value. The new plot_single_line_diagram of a network or of a power flow result draws a black-and-white single-line diagram for a paper with the layout of plot_diagram: buses as thick bars or dots, thin lines, transformers as two circles, generators as a circle with a sine wave, loads as triangles and the bus names as labels, without colors, colorbar, title or controls. Without Parent it opens a figure 8.5 cm wide, the width of one column of a two-column paper, ready for exportgraphics. In a 3D diagram with bus heights, the z axis label is no longer cut at the left edge of the figure."
+  },
+  {
     "title": "plot_iteration of an OPF result draws one chart",
     "date": "2026-11-23",
     "type": "feature",

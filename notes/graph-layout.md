@@ -2,6 +2,8 @@
 
 基準: ブランチ `docs/graph-layout-spec`(`refactor/design-alignment` の c6307b7d から分岐)、2026-11-16。仕様です。2026-11-16 にユーザーが §9 の D1〜D10 を決め、座標のない要素の配置(§4.7)を承認しました。
 
+**2026-11-23 更新:** `ResultPF.plot_network` と `GraphNetMap` は削除しました(`feature/single-line-diagram`)。母線を |V| で塗る地図は `res.plot_diagram(BusColorMode="V", ColorMode="none")`、論文用の白黒の図は `plot_single_line_diagram` です(notes/graph-diagram-2d.md §20)。この文書の GraphNetMap の記述は履歴です。
+
 状態(2026-11-16): §8.1 の A(モデルの列、検査、`get_layout`/`set_layout`、変換スクリプト、同梱 CSV の変換)をブランチ `refactor/graph-layout-columns` で実装しました。B・C・D はまだです。図のクラスは古い列名を読むので、A は読む所に一時的な橋渡しを置きました(`@GraphNetDiagram/set_network.m` の `old_graph_columns` で新しい列を古い列に戻す、`+tools/spring_model_data.m` は `Shape` を読み、棒を `""`、`"circle"` を `"o"` にする(MATLAB のマーカーに `"square"` はあるが `"circle"` はないため。§4.6 の「そのまま渡す」は C で見直す)。どちらも `BRIDGE(graph-layout A)` の印)。B・C はこれを外します。`@ResultPF/plot_network.m` は母線の `X`、`Y`(中心)を読むように直しました(§4.6 の最終の形)。
 
 B の状態(2026-11-16): ブランチ `refactor/graph-layout-netdiagram` で実装しました。GraphNetDiagram は新しい列を直接読み(`old_graph_columns` の橋渡しは削除)、§4.6 のとおり棒を中心 `(X, Y)` に描き、ブランチと機器の接続を棒の中心線の上に置き、`Style="transformer"` の記号を From 端に描きます。座標のない母線は新しい `tools.layout_place_buses`(§4.7)で置き、GraphNetDiagram と GraphNetMap(`load_data`)の両方が使います。`GraphBase`・`GraphNetDiagram`・`GraphNetMap` の `get_layout`(§5.4)を足しました。座標のない機器の半径は 0.3·d0 にしました(§4.7「機器とブランチ」、§9 の最後)。実装で決めた細部: (1) `tools.layout_place_buses` は 2 つ目の出力に d0 を返す(機器の半径に使う)。全母線に座標がないときの d0 は `"force"` の結果から同じ規則で求める。(2) GraphNetMap のデータに省略可の `rv_length`、`c_path` を足し、`plot_network` が渡す(§4.7 のテスト 6 で両方の図の位置を一致させるため)。(3) 変圧器の 2 つの球は From 端から 0.05 の位置が基準だが、経路の長さの 1/4 がそれより短ければそちらにする(IEEE14 の B004→B007 は経路が 0.075 しかなく、0.05 では球が To 端の近くに出ていた)。(4) 点の形の母線では接続は中心(§4.6 どおり。以前は立体の外接箱に押し込んだ点)。

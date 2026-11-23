@@ -6,7 +6,11 @@ function reflect_node_label(obj, iv_bus, iv_comp)
 % kept (the tags fill labels that were never set); "none" hides all. With "value" a bus
 % label is its tag, ∠V and |V|, and a component label its tag, P and Q, each followed by
 % the line "<name>=<value>" of its color value (BusColorData, ComponentColorData) when it
-% is finite, with the name and format of the data tips (color_readout). iv_bus and iv_comp
+% is finite, with the name and format of the data tips (color_readout). When the color
+% value of a bus is |V| or ∠V (BusColorMode "V" or "angle"; or ColorMode "user" with a
+% ColorbarLabel that starts with "|V|" or "∠V", spaces ignored, as plot_iteration of
+% ResultOPF sets it), a bus with that line drops its fixed "|V|=" or "∠V=" line, so the
+% quantity is written once (with the digits of the color line). iv_bus and iv_comp
 % are the rows written with "value" (the others keep their labels; the setters of the
 % color values pass the rows that changed); the other modes write every row. The text
 % objects of the component labels are made the first time they are shown, or when a label
@@ -48,10 +52,19 @@ function reflect_node_label(obj, iv_bus, iv_comp)
                 iv_comp = (1:n_com)';
             end
             c_Vbus = obj.cv_Vbus(iv_bus);
-            sv_bus(iv_bus) = reshape(obj.sv_bus(iv_bus), [], 1) + newline + ...
-                compose(" ∠V=%.2f°", angle(c_Vbus(:))*180/pi) + newline + compose(" |V|=%.2f", abs(c_Vbus(:)));
+            sv_angle = newline + compose(" ∠V=%.2f°", angle(c_Vbus(:))*180/pi);
+            sv_abs   = newline + compose(" |V|=%.2f", abs(c_Vbus(:)));
             sv_line = obj.color_readout("bus", iv_bus, "=");
             lv = ~ismissing(sv_line);
+            % The color line of |V| or ∠V takes the place of the fixed line of that quantity
+            s_label = erase(obj.ColorbarLabel, " ");
+            l_user  = obj.BusColorMode == "none" && obj.ColorMode == "user";
+            if obj.BusColorMode == "V" || (l_user && startsWith(s_label, "|V|"))
+                sv_abs(lv) = "";
+            elseif obj.BusColorMode == "angle" || (l_user && startsWith(s_label, "∠V"))
+                sv_angle(lv) = "";
+            end
+            sv_bus(iv_bus) = reshape(obj.sv_bus(iv_bus), [], 1) + sv_angle + sv_abs;
             sv_bus(iv_bus(lv)) = sv_bus(iv_bus(lv)) + newline + " " + sv_line(lv);
             sv_com(iv_comp) = reshape(obj.sv_component(iv_comp), [], 1) + newline + ...
                 compose(" P=%.2f", reshape(obj.rv_Pcomp(iv_comp), [], 1)) + newline + ...
