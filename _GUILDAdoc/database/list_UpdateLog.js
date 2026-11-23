@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "plot_iteration of an OPF result draws one chart",
+    "date": "2026-11-23",
+    "type": "feature",
+    "content": "plot_iteration of an AC OPF result now draws only the chart of the iterations and returns it: write G = res.plot_iteration() instead of [G_chart, G_net] = res.plot_iteration(). The four panels (objective, largest constraint violation, generator P and bus |V|) are as before; the network diagram of each iteration and its playback bar are gone. G.set_time(k) moves the cursor of every panel and the title to iteration k, and each line is found by its tag in G.tab_element. In the result window (launch_gui), plot_iteration no longer plays by itself."
+  },
+  {
     "title": "Every GUILDA object opens its class reference page",
     "date": "2026-11-23",
     "type": "feature",

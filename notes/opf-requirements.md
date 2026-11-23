@@ -237,9 +237,9 @@ Progress details: [status.md](status.md#opf).
   sct_network の母線アドミタンス行列（ブランチの cm_Y とシャント）から作る潮流のヤコビアン
   （基準母線の位相角を固定、無効電力の注入を一定）で求める。内訳は基準母線の選び方で変わる。
   DC は損失分 0、ELD は全母線同じ値。
-- `ResultOPF.plot_iteration(Parent=...)`: AC OPF の反復の過程。目的関数・制約違反量の最大値
-  （対数）・発電機（P の上下限が異なる機器）の P・母線の |V| の 4 つのタイルと系統図。反復は再生バー
-  1 本で切り替える（今の形は下の「フェーズ 2a」と「再生バー」）。ELD・DC OPF は
+- `G = ResultOPF.plot_iteration(Parent=...)`: AC OPF の反復の過程。目的関数・制約違反量の最大値
+  （対数）・発電機（P の上下限が異なる機器）の P・母線の |V| の 4 つのパネルの GraphChart 1 つ
+  （2026-11-23 から。系統図はない。下の「チャート 1 つに」）。ELD・DC OPF は
   GUILDA:ResultOPF:NoIteration。
 - 反復の記録: AC OPF（fmincon）では常に、`SolverOPF.solve` の入れ子関数 `record` を fmincon の
   OutputFcn にして、反復ごとに x、目的関数値、制約違反量を記録し、`ResultOPF.sct_iteration`
@@ -306,7 +306,22 @@ Progress details: [status.md](status.md#opf).
     - 確認（IEEE14、DC OPF・AC OPF）: 値は get_lmp と一致。%.4g なので IEEE14 の LMP（約 3900）は
       整数に丸めて表示される（3901.6 → 3902）。全画面の図では読めるが、B009・B010・B011 付近で
       母線のラベルと機器のラベル（P、Q）が一部重なる。方式は変えていない（取りまとめに報告）。
-    - plot_iteration は扱いをユーザーと見直し中のため、このブランチでは変えていない。
+    - plot_iteration はこのブランチでは変えていない（次の項目）。
+  - チャート 1 つに（2026-11-23、ユーザー決定の案 A、`refactor/opf-iteration-chart`）:
+    plot_iteration は系統図をやめ、`G = plot_iteration(Parent=...)` で GraphChart 1 つを返す。
+    - 理由（調査、IEEE14・IEEE14 で EL001 の Pmax=1・IEEE39・IEEE68 の AC OPF）: 系統図の「違反」は
+      変数の上下限とブランチの制限だけを数えるが、fmincon（interior-point）は上下限の内側を保つので
+      ほぼ常に 0 だった（線の制限を効かせた例で反復 7・13 に EL001 が 1 件だけ）。チャートの最大違反は
+      電力のつり合い（balancedP/Q）の違反で、系統図には出ない。|V| の色、P の大きさ・太さは
+      チャートと最終の解（disp_binding、disp_summary）以上の情報をほぼ持たなかった。
+    - 今の形: 4 パネル（2×2）は時刻のパネルで、時刻は反復番号。set_time でカーソルが動き、
+      TimeChangedFcn で題「OPF iteration k (i of n)」を書く（最後の反復から）。カーソルが動くだけ
+      なので再生バーはなく、結果の GUI でも自動再生しない。Parent の容器にそのまま描く。
+    - 線は tab_element の Tag で特定する。データチップの線の名前（タグ）は Graph 側
+      （feature/chart-datatip-tag）で GraphChart に入る。凡例は出さない（IEEE68 では 68 本）。
+    - 削除: G_net とその計算（diagram_state・branch_ends の呼び出し、違反の判定、大きさ・太さ、
+      弱い参照、show_iteration、link）。private の diagram_state（plot_lmp）と branch_ends（get_lmp）は
+      まだ使う。新しい公開メンバーはない。
   - 確認で気づいたこと（GraphNetDiagram 側）: getframe や exportapp で図を取り込むと、系統図の母線の
     立体から軸いっぱいの線が出る（変更していない net.plot_diagram でも同じ。exportgraphics では出ない）。
 
