@@ -66,14 +66,16 @@
 
 ## テスト
 
-- 新規 `+DebugScript/test_F114_cpf_pvcurve_pairing.m`(分類 cpf, graph, simulate)。7 件(large 3、medium 4 を `test_levels.m` に登録)。
-  単独実行で 7/7 合格。
-- 実行結果(ad121422 をマージした後、submodule 8cd37ff6、R2026a、分類 cpf, graph, gui, env, simulate):
-  - small: PASS 198 / FAIL 1。
-  - medium: PASS 539 / FAIL 1(F114 の medium 4 件は合格)。
-  - F114 + F97 を large で: F114 7/7 合格、F97 は 5 合格・3 失敗。
-- 失敗はすべて `test_F97_cpf_analysis_plots`(指示により編集していません)。原因は PVCurve の既定が true になったこと:
-  - `plot_stability_indexDrawsSigmaMin...`(small): `numel(G.ax) == 2` とタグの完全一致、`TopBus=0` で `isscalar(G.ax)` を確認している。
-  - `plot_generatorDraws...` / `plot_branchDraws...`(large): `tab_element.Tag` の完全一致(PV の `V_B003` が加わる)。
-  - 直し方: これらの呼び出しに `PVCurve=false` を加える(既存の行・タグ・値は変わらないので、ほかの assert はそのまま通る)。
-- 競合: `list_UpdateLog.js`(bd4b52fb の doc の項目と本件の項目)は両方を残しました。functionSignatures.json は再生成して差分なし。
+- 新規 `+DebugScript/test_F115_cpf_pvcurve_pairing.m`(分類 cpf, graph, simulate)。7 件(large 3、medium 4 を `test_levels.m` に登録)。
+  当初 F114 でしたが、single-line diagram の F114 が先に入ったため F115 に改番しました。
+- `test_F97_cpf_analysis_plots`: 旧レイアウト(軸の数、タグ一覧、TopBus=0 で軸 1 つ)を確かめる plot_stability_index /
+  plot_generator / plot_branch の 11 か所の呼び出しに `PVCurve=false` を追加しました(ほかは変更なし)。
+- 最終結果(本体 c163d0fe 以降 = a8b7cb58 をマージ、submodule db4de1a6 = 39e6c02e の上、R2026a):
+  - F97 + F115 を large で: 15/15 合格。
+  - small(cpf, graph, gui, env, simulate): 154/154 合格。
+  - medium(同じ分類): 477/478 合格。失敗 1 件は `F100 PlayPlaysTheSamplesByATimerAndPauseStopsIt`(「0.5 s で途中まで: 21」)。
+    タイマーで再生する時間依存のテストで、ResultCPF の図は使いません。F100 を単独で再実行するとこの件は合格し、
+    代わりに large の `TheBarKeepsItsHeightInPixels…`(バーの高さ 11 px)が失敗しました。ほかの MATLAB の負荷による
+    時間・描画依存の揺れと判断しています(本件の変更は GraphBase / GraphChart に触れていません)。
+- 競合: `list_UpdateLog.js` は 2 回とも両方の項目を残しました。gui_forms.json の `ResultCPF.plot_diagram` に、
+  `ResultPF.plot_diagram` と同じく `BusColorMode` を加えました。functionSignatures.json は再生成して差分なし。
