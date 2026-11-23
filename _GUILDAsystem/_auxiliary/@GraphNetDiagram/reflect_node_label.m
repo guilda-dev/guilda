@@ -8,9 +8,9 @@ function reflect_node_label(obj, iv_bus, iv_comp)
 % the line "<name>=<value>" of its color value (BusColorData, ComponentColorData) when it
 % is finite, with the name and format of the data tips (color_readout). When the color
 % value of a bus is |V| or ∠V (BusColorMode "V" or "angle"; or ColorMode "user" with a
-% ColorbarLabel that starts with "|V|" or "∠V", spaces ignored, as plot_iteration of
-% ResultOPF sets it), a bus with that line drops its fixed "|V|=" or "∠V=" line, so the
-% quantity is written once (with the digits of the color line). iv_bus and iv_comp
+% ColorbarLabel that starts with "|V|" or "∠V", spaces ignored, as a TimeChangedFcn may
+% set it), a bus with that line drops its fixed "|V|=" or "∠V=" line, so the quantity is
+% written once (with the digits of the color line). iv_bus and iv_comp
 % are the rows written with "value" (the others keep their labels; the setters of the
 % color values pass the rows that changed); the other modes write every row. The text
 % objects of the component labels are made the first time they are shown, or when a label
