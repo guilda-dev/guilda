@@ -19,6 +19,7 @@ which are the source of truth (`project-management.html`, `git-workflow.html`,
 - Version number `X.Y`: increase X for changes that break existing scripts, Y otherwise.
 - When a public name changes, keep the old name working through a wrapper in `_GUILDAsystem/_VersionSupport/` for at least one major version.
 - Do not commit directly to `main` or `versionX.Y`, force-push to `main`, `versionX.Y` or the development branch, or use other branch prefixes such as `dev/` or `develop/`.
+- Exception: the submodules `_GUILDAslides` and `_GUILDAverification` use `main` only. Commit directly on `main` there (no work branches, no `--no-ff` merges); never force-push or delete their `main`.
 - Snapshot the development branch into `versionX.Y` only with `bash .claude/release/integrate.sh X.Y`: one commit whose only parent is the `versionX.Y` tip, tree = development tip minus `INTEGRATION_EXCLUDE` in `common.sh` (assistant config, `notes/`, `.vscode/`). It never pushes; the maintainer runs `git push origin versionX.Y`.
 - Release only with `bash .claude/release/release.sh X.Y` from a clean checkout of the development branch; never merge or cherry-pick into `main` by hand or on GitHub. Then create the next version branch with `bash .claude/release/start-version.sh X.Y`.
 - Assistant config (`.claude/`, `.codex/`, `.github/copilot-instructions.md`) is tracked on the development and work branches only and never lands in `versionX.Y` or `main`: `integrate.sh` leaves it out of snapshots, `release.sh` removes any that reaches a release merge.
