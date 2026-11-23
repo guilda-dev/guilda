@@ -8,9 +8,12 @@ function G = plot_lmp(obj, opt)
 % drawn in SelectionColor. The state of the diagram is the solution: the bus voltages
 % (Vphasor in "AC OPF"; |V| = 1 and the angle Varg in "DC OPF"; V = 1 in "ELD", which has
 % no angles) and the component powers of tab_cub. The branches and links keep a neutral
-% color. Works for "ELD", "DC OPF" and "AC OPF"; it reads only the stored result. The
-% other Name-Value options set the properties of the GraphNetDiagram (they override the
-% color settings above).
+% color. The labels are LabelMode "value": each bus label shows its tag, ∠V, |V| and the
+% line "LMP [cost/pu]=<value>" (%.4g), and each component label its tag, P and Q; the data
+% tip of a bus shows the same LMP line. Works for "ELD", "DC OPF" and "AC OPF"; it reads
+% only the stored result. The other Name-Value options set the properties of the
+% GraphNetDiagram (they override the color and label settings above, e.g. LabelMode="bus"
+% for the bus tags only).
 %
 % <@Examples>
 % ```matlab
@@ -19,6 +22,8 @@ function G = plot_lmp(obj, opt)
 % res = net.calculate_optimal_powerflow(Method="DC OPF");
 % G = res.plot_lmp();
 % G.Selection                 % the branches with a binding limit
+% G.BusLabel(1)               % the tag, ∠V, |V| and "LMP [cost/pu]=<the LMP>" of the first bus
+% G = res.plot_lmp(LabelMode="bus");   % the bus tags only
 % ```
 %
 % See also ResultOPF.get_lmp, ResultOPF.disp_binding, GraphNetDiagram
@@ -51,7 +56,7 @@ function G = plot_lmp(obj, opt)
     end
     n_br = numel(obj.sct_network.a_Branch);
     c_opt = [{"ColorMode", "user", "BusColorData", rv_lmp, "ColorLimits", rr_lim, "ColorbarLabel", "LMP [cost/pu]", ...
-              "BranchColorData", nan(n_br, 1), "LinkColorData", nan(numel(sv_comp), 1)}, namedargs2cell(opt)];
+              "BranchColorData", nan(n_br, 1), "LinkColorData", nan(numel(sv_comp), 1), "LabelMode", "value"}, namedargs2cell(opt)];
     G = GraphNetDiagram(obj.sct_network, sct_state, c_opt{:});
     title(G.ax, "LMP of " + obj.s_network + " (" + s_method + ")");
 
