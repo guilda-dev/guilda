@@ -6,12 +6,19 @@
 - No `git merge` / `git cherry-pick` on main: releases go through
   .claude/release/release.sh, which keeps assistant config out of main (git-workflow.html#release)
 
+Exception: the internal submodule repositories guilda-slides (_GUILDAslides) and
+guilda-verification (_GUILDAverification) use main only. There, commits on main or a
+detached HEAD and merge/cherry-pick on main are allowed; force-pushing or deleting
+main is still blocked. The repository is recognised by its origin URL
+(gitcmd.is_main_only_repo); without a readable URL the strict rules apply.
+
 Rules are documented in _GUILDAdoc/developer/git-workflow.html.
 Other merges are not checked: integrating branches is the coordinator's job.
 """
 import re
 
-from gitcmd import PROTECTED_BRANCH, WORK_BRANCH, block, current_branch, git, git_commands, read_input
+from gitcmd import (PROTECTED_BRANCH, WORK_BRANCH, block, current_branch, git, git_commands,
+                    is_main_only_repo, read_input)
 
 NAME_HELP = (
     "Rule (_GUILDAdoc/developer/git-workflow.html#branch-names): work branches are named\n"
@@ -85,6 +92,8 @@ def check_commit(branch, cwd):
         return  # concluding a merge is allowed
     if branch and WORK_BRANCH.match(branch):
         return
+    if branch in (None, "main") and is_main_only_repo(cwd):
+        return  # guilda-slides / guilda-verification: commit directly on main
     if branch is None:
         block("Blocked: HEAD is detached. Commit on a work branch instead.\n" + NAME_HELP)
     if PROTECTED_BRANCH.match(branch):
@@ -118,9 +127,11 @@ def check_push(args, branch):
                   "Fix: push without --force/-f/--force-with-lease/'+'; integrate changes by merging.")
 
 
-def check_main_merge(sub, args, branch):
+def check_main_merge(sub, args, branch, cwd):
     if branch != "main" or any(a in ("--abort", "--quit") for a in args):
         return
+    if is_main_only_repo(cwd):
+        return  # guilda-slides / guilda-verification have no release branches
     block(f"Blocked: do not run `git {sub}` on main (_GUILDAdoc/developer/git-workflow.html#release).\n"
           "A merge into main would bring .claude/, .codex/ and .github/copilot-instructions.md with it.\n"
           "Fix: release from a clean versionX.Y with `bash .claude/release/release.sh X.Y`.")
@@ -149,7 +160,7 @@ def main():
         elif sub == "push":
             check_push(args, branch)
         elif sub in ("merge", "cherry-pick"):
-            check_main_merge(sub, args, branch)
+            check_main_merge(sub, args, branch, cwd)
 
 
 if __name__ == "__main__":

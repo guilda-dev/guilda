@@ -16,6 +16,10 @@ import sys
 WORK_BRANCH = re.compile(r"^(feature|fix|refactor|docs|test)/([0-9]+-)?[a-z0-9]+(-[a-z0-9]+)*$")
 # Long-lived branches: main (releases) and the version branch versionX.Y (snapshots).
 PROTECTED_BRANCH = re.compile(r"^(main|version[0-9]+\.[0-9]+)$")
+# Internal repositories that use a single main branch (no work branches): the
+# submodules _GUILDAslides and _GUILDAverification. Matched on the repository
+# name at the end of the origin URL, SSH or HTTPS, with or without ".git".
+MAIN_ONLY_REPO = re.compile(r"(^|[/:])guilda-(slides|verification)(\.git)?/*$")
 
 SEPARATORS = {"&&", "||", ";", "|", "&", "(", ")", ";;", "|&"}
 # git options that take a separate value before the subcommand.
@@ -101,6 +105,15 @@ def git(cwd, *args):
 
 def current_branch(cwd):
     return git(cwd, "symbolic-ref", "--short", "-q", "HEAD")
+
+
+def is_main_only_repo(cwd):
+    """True if cwd is in a main-only repository (decided by its origin URL).
+
+    An unreadable or missing origin URL returns False, so the strict rules apply.
+    """
+    url = git(cwd, "config", "--get", "remote.origin.url")
+    return bool(url and MAIN_ONLY_REPO.search(url))
 
 
 def block(message):

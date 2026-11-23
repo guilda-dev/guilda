@@ -25,6 +25,9 @@ only covers how Claude sessions split the work.
   `bash .claude/release/integrate.sh X.Y` (see `git-workflow.html#integration`);
   never merge into or commit on `versionX.Y` directly.
 - Nothing is pushed without the user's approval.
+- Exception: the submodules `_GUILDAslides` and `_GUILDAverification` use `main`
+  only. Commit directly on `main` (no work branches, no `--no-ff` merges), and
+  Claude may push them, but never force-push or delete their `main`.
 
 ## Assistant files
 - No assistant files at the repository root. Assistant config lives in
