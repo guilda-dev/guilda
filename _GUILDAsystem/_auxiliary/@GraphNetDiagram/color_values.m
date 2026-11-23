@@ -1,5 +1,10 @@
-function [rm_branch, rm_link] = color_values(obj, iv_k)
-% Color values of ColorMode for the branches and links at samples iv_k of the state.
+function [rm_branch, rm_link, rm_bus] = color_values(obj, iv_k)
+% Color values of ColorMode for the branches and links, and of BusColorMode for the buses, at samples iv_k of the state.
+%
+% BusColorMode "V" gives |V| and "angle" the angle of V in degrees of each bus; then the
+% branches and links have no value (NaN), whatever ColorMode is: the bus quantity takes
+% the colorbar. With BusColorMode "none" the buses have no value (NaN) and the branches
+% and links take the values of ColorMode below.
 %
 % "Loss": the active-power loss P_from + P_to of each branch, with S_end = V_end*conj(I_end)
 % the power into the branch at each end, so the line charging and the tap are included (no
@@ -17,11 +22,23 @@ function [rm_branch, rm_link] = color_values(obj, iv_k)
     arguments (Output)
         rm_branch (:,:) double  % Values of the branches (n_branch x n_k).
         rm_link (:,:) double    % Values of the links (n_comp x n_k).
+        rm_bus (:,:) double     % Values of the buses (n_bus x n_k).
     end
     n_k  = numel(iv_k);
     n_br = obj.n_branch;
     n_c  = obj.n_component;
     s_mode = obj.ColorMode;
+    rm_bus = nan(obj.n_bus, n_k);
+    if obj.BusColorMode ~= "none" && ~isempty(obj.sct_state)
+        cm_V = obj.sct_state.cm_Vbus(:, iv_k);
+        if obj.BusColorMode == "V"
+            rm_bus = abs(cm_V);
+        else
+            rm_bus = rad2deg(angle(cm_V));
+        end
+        rm_bus = reshape(rm_bus, obj.n_bus, n_k);
+        s_mode = "none";                                       % one colorbar: the bus quantity
+    end
     if ~any(s_mode == ["Loss", "I", "P", "Q"]) || isempty(obj.sct_state)
         rm_branch = nan(n_br, n_k);
         rm_link   = nan(n_c, n_k);

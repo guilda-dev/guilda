@@ -1401,6 +1401,7 @@ of its parent, so the labels stay unique within a network.
 - `net.plot_diagram()` の既定が変わりました: 初期化前や編集で古くなった系統はエラーではなく構成だけを描きます。エラーで止めたいスクリプトは `State="equilibrium"` を渡してください。
 - `GraphNetDiagram` のリンクの立体の `UserData.Type` は `"Link"` になりました(以前は `"Component"`)。
 - `Parent` に `uigridlayout` を渡すと、次の空いたセルに枠のない `uipanel` を置き、その中に tiledlayout を作ります(GridLayout は tiledlayout を持てず、MATLAB が警告を出していたため)。セルを選ぶときは `G.ax(1).Parent.Parent.Layout.Row/Column` を設定します(以前は `G.ax(1).Parent.Layout`)。
+- (2026-11-23)`res.plot_network()` と `GraphNetMap` は削除しました。`res.plot_diagram(BusColorMode="V", ColorMode="none")`(`"angle"` で位相)を使います。母線の色はカラーバーの量、P の流れは流れの点と `BranchWidthMode="P"` の幅で示します。下の 2 行は削除前の記録です。
 - `res.plot_network()`(`ResultPF`)は `GraphPlot` の `h` ではなく `GraphNetMap` の `G` を返します。描く図は同じで、`GraphPlot` は `G.sct_plt.Graph`(`XData`、`NodeCData`、`LineWidth`、辺ごとのブランチのタグ `UserData` はそのまま)です。母線とブランチの見た目は `G.set_style` かベクトル(`BusColor`、`BusLabel`、`BusMarkerSize`、`BusMarker`、`BranchColor`、`BranchLineWidth`、`BranchLineStyle`)で、位置は `G.set_position` で変えます。`Parent` は figure などの容器(中に tiledlayout を作る)か axes / uiaxes です。
 
 ### 1.31 ネットワーク図の配置データ(graph パラメータ)の列、`net.get_layout` / `net.set_layout`

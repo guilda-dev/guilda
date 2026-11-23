@@ -149,8 +149,8 @@
   "ResultPF.plot_voltage": {"main": ["Quantity", "Limit"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultPF.plot_branch": {"main": ["Quantity"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultPF.plot_convergence": {"main": ["Bus"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
-  "ResultPF.plot_network": {"main": ["Color", "Arrow"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultPF.plot_spring_model": {"main": ["Dimension"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
+  "ResultPF.plot_single_line_diagram": {"main": [], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultODE.plot_spring_model": {"main": ["Dimension", "Trajectory"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultODE.plot_trajectory": {"main": ["Quantity", "Bus"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultODE.plot_pqv": {"main": ["Bus"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
@@ -177,7 +177,7 @@
   "ResultLIN.plot_contribution": {"main": ["Quantity", "State"], "groups": [{"name": "Advanced", "members": ["Index", "Parent"]}]},
   "ResultPF.plot_diagram": {
     "propertyDefaults": "GraphNetDiagram",
-    "main": ["Dimension", "Trajectory", "ColorMode", "BranchWidthMode", "MarkerSizeMode", "BusHeightMode", "LabelMode", "FlowMode"],
+    "main": ["Dimension", "Trajectory", "ColorMode", "BusColorMode", "BranchWidthMode", "MarkerSizeMode", "BusHeightMode", "LabelMode", "FlowMode"],
     "groups": [
       {"name": "Colors", "members": ["ColorLimits", "Colormap", "ColorbarLabel", "BusColor", "ComponentColor", "BranchColor", "LinkColor", "SelectionColor"]},
       {"name": "Labels", "members": ["LabelFontSize", "LabelFontWeight", "BusLabel", "ComponentLabel", "TitleFormat"]},
@@ -190,7 +190,7 @@
   "ResultCPF.plot_diagram": {
     "propertyDefaults": "GraphNetDiagram",
     "labels": {"PVBus": {"hint": "empty: the buses of plot_pvcurve (LoadBus)"}},
-    "main": ["PVCurve", "PVBus", "Dimension", "ColorMode", "BranchWidthMode", "MarkerSizeMode", "BusHeightMode", "LabelMode", "FlowMode"],
+    "main": ["PVCurve", "PVBus", "Dimension", "ColorMode", "BusColorMode", "BranchWidthMode", "MarkerSizeMode", "BusHeightMode", "LabelMode", "FlowMode"],
     "groups": [
       {"name": "Colors", "members": ["ColorLimits", "Colormap", "ColorbarLabel", "BusColor", "ComponentColor", "BranchColor", "LinkColor", "SelectionColor"]},
       {"name": "Labels", "members": ["LabelFontSize", "LabelFontWeight", "BusLabel", "ComponentLabel", "TitleFormat"]},

@@ -1,19 +1,31 @@
 function update_color_scale(obj)
-% Compute the automatic color limits of ColorMode over all samples of the state.
+% Compute the automatic color limits of BusColorMode or ColorMode over all samples of the state.
+%
+% With BusColorMode "V" or "angle" they are the smallest and the largest value of the
+% quantity over the buses and all samples ([0 1] without a finite value; equal limits are
+% widened by color_limits). Otherwise they follow ColorMode:
 %
 % With m the 95th percentile of |value| over the branches, the links and all samples
 % (color_percentile; the largest |value| with fewer than 20 values, or when it is 0), a
 % magnitude ("I", "Loss") gives [0, m] and a signed quantity ("P", "Q": the injections of
 % the components are signed) gives [-m, m]; the values above m take the end colors.
 % Without a finite value (or a largest value of 0) the limits are [0 1] or [-1 1]. "none" and "user" keep [0 1] here: the limits of "user" come from
-% the color data set (color_limits). Called when the state or ColorMode changes.
+% the color data set (color_limits). Called when the state, BusColorMode or ColorMode changes.
     arguments (Input)
         obj
     end
     if isempty(obj.sct_state)
         return
     end
-    [rm_branch, rm_link] = obj.color_values(1:numel(obj.sct_state.rv_t));
+    [rm_branch, rm_link, rm_bus] = obj.color_values(1:numel(obj.sct_state.rv_t));
+    if obj.BusColorMode ~= "none"      % the bus quantity: its smallest to largest value
+        rv_v = rm_bus(isfinite(rm_bus));
+        obj.rv_climAuto = [0 1];
+        if ~isempty(rv_v)
+            obj.rv_climAuto = [min(rv_v), max(rv_v)];
+        end
+        return
+    end
     rv_v  = [rm_branch(:); rm_link(:)];
     rv_a  = abs(rv_v(isfinite(rv_v)));
     r_max = GraphNetDiagram.color_percentile(rv_a, 0.95);   % the top 5% (outliers) take the top color

@@ -3,8 +3,8 @@ function fit_axes(obj, s_mode)
 %
 % "fit" (default): the limits are the box of the drawing (DrawBox: bus centers and bar
 % ends, components and the points of the branch and link paths) with a padding of 3% of
-% its larger side (a side shorter than 2% of it is widened to that). In 2D the labels
-% shown go back to their places (NodeLabelXYZ, CompLabelXYZ), the overlapping ones are
+% its larger side, 1% in the single-line diagram (a side shorter than 2% of it is widened
+% to that). In 2D the labels shown go back to their places (NodeLabelXYZ, CompLabelXYZ), the overlapping ones are
 % moved apart vertically (GraphBase.resolve_overlap) and the limits grow to take in their
 % boxes. Called by create_scene and when the labels change (LabelMode, LabelFontSize).
 % "labels" (2D): the limits stay; the labels go back to their places and are moved apart
@@ -39,7 +39,7 @@ function fit_axes(obj, s_mode)
         rv_c = mean(rm_box, 1);
         lv_thin = rv_span < 0.02*r_ref;
         rm_box(:, lv_thin) = rv_c(lv_thin) + [-1; 1]*0.01*r_ref;
-        r_pad = 0.03*r_ref;
+        r_pad = 0.03*r_ref*(1 - 2/3*obj.l_singleLine);   % 1% for the single-line diagram (tight)
         rv_x = rm_box(:, 1)' + [-r_pad, r_pad];
         rv_y = rm_box(:, 2)' + [-r_pad, r_pad];
         xlim(ax, rv_x);

@@ -249,6 +249,7 @@ Progress details: [status.md](status.md#opf).
   （利用者が案 A を承認。ResultBase の説明も更新）。
 - 実装済み（2026-11-15、GraphNetDiagram の要素ごとの大きさ・太さが入ったあと）:
   - `plot_lmp`: 母線の色 = LMP（BusColorData、ColorMode "user"、カラーバーは最低〜最高価格）。
+    ラベルは LabelMode "value" で LMP の値も示す（下の「値のラベル」）。
     disp_binding と同じ判定（binding_table）で効いているブランチを `select` する。ELD・DC・AC で使える。
     戻り値は GraphNetDiagram（plot_diagram と同じ。フェーズ 2a で結果クラスの plot_* が Graph を返す形に
     そろえるとき、ほかと合わせて見直す）。
@@ -295,6 +296,17 @@ Progress details: [status.md](status.md#opf).
     2 つのパネルは図の高さいっぱい（以前は下の 8% を uicontrol に空けていた）。TimeChangedFcn は弱い
     参照で G_net をたどるので、savefig で警告が出ず、出力を受け取らなくても動く。
     バーの時刻の文字は Graph 側の表記（"t = 18 s"）で、反復番号を秒として表示する。
+  - 値のラベル（2026-11-23、ユーザー依頼「LMP をプロットしているときはラベルに LMP を表示」）:
+    GraphNetDiagram の値の読み出し（1c229bba。ColorMode "user" で LabelMode "value" のラベルと
+    データチップに「<ColorbarLabel>=<値>」の行が付く）を使い、plot_lmp を LabelMode "value" にした。
+    新しい公開メンバーはない。
+    - `plot_lmp`: c_opt に "LabelMode", "value" を入れ、namedargs2cell(opt) より前に置く（利用者が
+      渡した LabelMode が優先。`LabelMode="bus"` でタグだけに戻せる）。母線のラベルは
+      タグ、∠V、|V|、「LMP [cost/pu]=<値>」の 4 行。機器のラベルはタグ、P、Q。
+    - 確認（IEEE14、DC OPF・AC OPF）: 値は get_lmp と一致。%.4g なので IEEE14 の LMP（約 3900）は
+      整数に丸めて表示される（3901.6 → 3902）。全画面の図では読めるが、B009・B010・B011 付近で
+      母線のラベルと機器のラベル（P、Q）が一部重なる。方式は変えていない（取りまとめに報告）。
+    - plot_iteration は扱いをユーザーと見直し中のため、このブランチでは変えていない。
   - 確認で気づいたこと（GraphNetDiagram 側）: getframe や exportapp で図を取り込むと、系統図の母線の
     立体から軸いっぱいの線が出る（変更していない net.plot_diagram でも同じ。exportgraphics では出ない）。
 
