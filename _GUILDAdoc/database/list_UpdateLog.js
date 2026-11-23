@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Every GUILDA object opens its class reference page",
+    "date": "2026-11-23",
+    "type": "feature",
+    "content": "The doc method of a network, bus, branch, component or controller, which opens the GUILDA reference page of its class in the browser, now works on the other GUILDA objects too: analysis results, solvers, solver methods, graphs, GUI windows, scenarios, events and parameter groups. For example, the result of a power flow calculation opens the page of its result class."
+  },
+  {
     "title": "Time responses beside the animated simulation plots",
     "date": "2026-11-22",
     "type": "feature",

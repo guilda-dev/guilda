@@ -8,6 +8,10 @@ classdef LayerPackage < handle
 % Parameter containers derive from it. `launch_gui` shows any layer (DrawerModelGUI) with the
 % pages of `gui_content`.
 %
+% `doc` (the class reference page) is a method of PowerSystemModel and auxiliary, not of
+% LayerPackage: Parameter and Scenario inherit from both auxiliary and LayerPackage, so a
+% doc defined here too would make them fail with MATLAB:class:methodAmbiguous.
+%
 % Stale state:
 %
 % - `sct_stale` holds one field per stale tag of the class, each a string column of
@@ -78,7 +82,6 @@ classdef LayerPackage < handle
     end
     methods
         varargout = disp_tree(obj, sr_ignore)
-        doc(obj)
         h = launch_gui(obj, h_container, opt)
 
         function set.s_tag(obj,s_newtag)
