@@ -8,6 +8,12 @@ function create_scene(obj)
 % title per sample show the rows and the title of the sample i_time. A 3D panel (l_3d)
 % draws its lines and marker sets with ZData (rm_z) in view(3) (a panel turned by the
 % user keeps its view on a new drawing); a 2D panel is shown in view(2).
+%
+% The data tip of each line, marker set and bar series starts with the name of the element
+% (a line or marker set: a first row whose label apply_style sets; a bar: the tag of each
+% bar), then the X and Y rows (and Z in a 3D panel), labeled with the axis labels of the
+% panel, or "X", "Y" and "Z" when these are empty. The rows read XData, YData and ZData, so
+% they stay right when update_scene changes the data.
     arguments (Input)
         obj
     end
@@ -21,6 +27,7 @@ function create_scene(obj)
     k_shown = min(obj.i_time, numel(d.rv_t));      % the rows of iv_sample and the title of the sample shown
     iv_seriesPanel = [d.sct_series.i_panel];
     sv_seriesType  = [strings(1, 0), d.sct_series.s_type];
+    sv_xyz = ["X", "Y", "Z"];                       % data tip rows of axes without a label
     for i_panel = 1:numel(obj.ax)
         ax = obj.ax(i_panel);
         p  = d.sct_panel(i_panel);
@@ -31,6 +38,12 @@ function create_scene(obj)
         hold(ax, "on");
         rm_order = ax.ColorOrder;
         n_order  = height(rm_order);
+        sv_axis = [join(p.s_xlabel, " "), join(p.s_ylabel, " "), join(p.s_zlabel, " ")];
+        sv_axis(sv_axis == "") = sv_xyz(sv_axis == "");
+        rv_rowAxis = [dataTipTextRow(sv_axis(1), "XData"); dataTipTextRow(sv_axis(2), "YData")];
+        if p.l_3d
+            rv_rowAxis(3, 1) = dataTipTextRow(sv_axis(3), "ZData");
+        end
 
         % Bar series of the panel: one grouped bar chart
         iv_bar = find(iv_seriesPanel == i_panel & sv_seriesType == "bar");
@@ -42,6 +55,7 @@ function create_scene(obj)
                 set(h, "DisplayName", d.sct_series(iv_bar(j)).sv_legend(1), "ButtonDownFcn", ...
                     @(h, e) click_weak(wr, iv_row(find(abs(h.XEndPoints - e.IntersectionPoint(1)) == ...
                     min(abs(h.XEndPoints - e.IntersectionPoint(1))), 1))));
+                h.DataTipTemplate.DataTipRows = [dataTipTextRow("", regexprep(tab.Tag(iv_row), "([\\_^{}])", "\\$1")); rv_rowAxis];
                 plt.Bar(iv_bar(j)) = h;
                 plt.Element(iv_row) = h;
                 obj.rm_colorAuto(iv_row, :) = repmat(rm_order(mod(j - 1, n_order) + 1, :), numel(iv_row), 1);
@@ -64,8 +78,10 @@ function create_scene(obj)
                 if ~isempty(s.rm_z)
                     rv_z = s.rm_z(lv_row, i_col);
                 end
-                plt.Element(i_row) = line(ax, "XData", s.rv_x(lv_row), "YData", s.rm_y(lv_row, i_col), "ZData", rv_z, ...   % one object, also without data
+                h = plot(ax, NaN, NaN, "XData", s.rv_x(lv_row), "YData", s.rm_y(lv_row, i_col), "ZData", rv_z, ...   % one object, also without data
                     "ButtonDownFcn", @(~, ~) click_weak(wr, i_row));
+                h.DataTipTemplate.DataTipRows = [dataTipTextRow(tab.Tag(i_row), ""); rv_rowAxis];   % name row: apply_style
+                plt.Element(i_row) = h;
                 obj.rm_colorAuto(i_row, :) = rm_order(mod(j_color - 1, n_order) + 1, :);
             end
         end

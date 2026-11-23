@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Chart data tips name the line they belong to",
+    "date": "2026-11-23",
+    "type": "feature",
+    "content": "The data tips of the charts returned by plot_trajectory, plot_voltage, plot_iteration and the other chart plot methods, and of the side chart of plot_diagram and plot_spring_model, now start with the name of the element: the legend entry of the line or marker set, or its tag (for example the bus or generator) when it has none, and the tag of each bar. The x and y values below it, and z in a 3D panel, are labeled with the axis labels of the panel, for example \"t [s]\" and \"|V| [pu]\", instead of X and Y. The data tips stay right while the time shown changes or the chart is drawn again. Clicking a line still raises ElementClicked as before."
+  },
+  {
     "title": "Bus voltage colors in plot_diagram and a single-line diagram for papers",
     "date": "2026-11-23",
     "type": "feature",
