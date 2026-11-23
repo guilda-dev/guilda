@@ -210,7 +210,7 @@ SVG で使えるクラス（色はドキュメントページの変数に従い�
 
   | 結果 | 使える関数 |
   |---|---|
-  | 潮流計算（`ResultPF`） | `plot_voltage`、`plot_branch`、`plot_network`、`plot_convergence`、`plot_diagram`、`plot_spring_model` |
+  | 潮流計算（`ResultPF`） | `plot_voltage`、`plot_branch`、`plot_convergence`、`plot_diagram`、`plot_single_line_diagram`、`plot_spring_model` |
   | 時間シミュレーション（`ResultODE`） | `plot_trajectory`、`plot_diagram`、`plot_spring_model` |
   | 近似線形化（`ResultLIN`） | `plot_eigenvalue` |
   | 最適潮流計算（`ResultOPF`） | `plot_dispatch`、`plot_lmp`、`plot_iteration`（4 パネルのチャート。`Parent` は容器） |
