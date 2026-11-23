@@ -6,6 +6,12 @@ const updateLogData = [
     "content": "ResultPF.plot_network is replaced by plot_diagram. The new option BusColorMode of plot_diagram colors the buses by the voltage magnitude (\"V\") or the voltage angle in degrees (\"angle\"); the colorbar then shows that quantity, and the branch colors of ColorMode return when BusColorMode is \"none\" again (the default). For the map plot_network drew, write res.plot_diagram(BusColorMode=\"V\", ColorMode=\"none\"): the buses are colored by |V| and the dots and widths of the branches show the power flow. BusColorMode follows the time of a simulation result, can be chosen in the panel of show_controls, and the data tips and the \"value\" labels of the buses show the colored value. The new plot_single_line_diagram of a network or of a power flow result draws a black-and-white single-line diagram for a paper with the layout of plot_diagram: buses as thick bars or dots, thin lines, transformers as two circles, generators as a circle with a sine wave, loads as triangles and the bus names as labels, without colors, colorbar, title or controls. Without Parent it opens a figure 8.5 cm wide, the width of one column of a two-column paper, ready for exportgraphics. In a 3D diagram with bus heights, the z axis label is no longer cut at the left edge of the figure."
   },
   {
+    "title": "plot_iteration of an OPF result draws one chart",
+    "date": "2026-11-23",
+    "type": "feature",
+    "content": "plot_iteration of an AC OPF result now draws only the chart of the iterations and returns it: write G = res.plot_iteration() instead of [G_chart, G_net] = res.plot_iteration(). The four panels (objective, largest constraint violation, generator P and bus |V|) are as before; the network diagram of each iteration and its playback bar are gone. G.set_time(k) moves the cursor of every panel and the title to iteration k, and each line is found by its tag in G.tab_element. In the result window (launch_gui), plot_iteration no longer plays by itself."
+  },
+  {
     "title": "Every GUILDA object opens its class reference page",
     "date": "2026-11-23",
     "type": "feature",

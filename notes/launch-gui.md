@@ -684,7 +684,8 @@ Graph の Q4(再生バーは描く内容が時刻で変わる図だけ)と Q3(Re
 - `DrawerResultGUI.autoplay(obj, c_output)`: 「`GraphChart` の `G_plot` は、同じ呼び出しのほかの出力が `GraphChart` でない動く図のときだけ再生する」規則をやめました。出力(`c_output`。空なら `{G_plot}`)を順に見て、再生バーを持つ最初の図を `play()` します。timer は 1 つです。
 - バーは新しい公開メンバーを使わずに探します。図の `ax(1).Parent` が tiledlayout のとき、その親(図の容器)の直下を `findall(..., "-depth", 1, "Tag", "GUILDA:GraphBase:PlaybackBar")` で探します。横のグラフは別の uipanel に入るので、`G` のバーを横のグラフのものと取り違えません。
 - autoplay がバーを探すのは `ax(1).Parent` が TiledChartLayout の図だけです。今の GraphBase ではいつもそうですが、将来、軸を直接 Parent に渡す図にバーを付ける場合は、ここも見直します。
-- `plot_diagram`・`plot_spring_model` は `G` が再生し、link した `G_chart` が動きます。`plot_iteration` はバーが `G_net` に移ったので `G_net` が再生し、`G_chart` が動きます。`plot_trajectory` はバーがなく再生しません。
+- `plot_diagram`・`plot_spring_model` は `G` が再生し、link した `G_chart` が動きます。`plot_trajectory` はバーがなく再生しません。
+- 2026-11-23 plot_iteration はチャート 1 つになり、自動再生しない（ユーザー決定）。`G = res.plot_iteration(...)` で、系統図 `G_net` と再生バーはなくなり、`plot_trajectory` と同じく時刻でカーソルが動くだけのグラフです（`refactor/opf-iteration-chart`）。上の「OPF の反復を自動再生する」の節は、その時点の記録です。
 - `FlowAnimation` を true にするのは今までどおり `G_plot` が系統図のときです。
 - `render.m`: 開いたときの最初の図も、署名の出力の数だけ受け取り(`[c_value{:}] = ...`)、`autoplay(obj, c_value)` に渡します(`run_method` と同じ)。`G_plot` は最初の GraphBase の出力です。
 - `G_plot`(Display options の対象)は最初の GraphBase の出力のままで、`[G, G_chart]` なら `G` です。操作パネルは `G` の区画ではなく GUI の 2 列目に出ます(`show_plot_controls` は変えていません)。
