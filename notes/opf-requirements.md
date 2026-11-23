@@ -317,8 +317,9 @@ Progress details: [status.md](status.md#opf).
     - 今の形: 4 パネル（2×2）は時刻のパネルで、時刻は反復番号。set_time でカーソルが動き、
       TimeChangedFcn で題「OPF iteration k (i of n)」を書く（最後の反復から）。カーソルが動くだけ
       なので再生バーはなく、結果の GUI でも自動再生しない。Parent の容器にそのまま描く。
-    - 線は tab_element の Tag で特定する。データチップの線の名前（タグ）は Graph 側
-      （feature/chart-datatip-tag）で GraphChart に入る。凡例は出さない（IEEE68 では 68 本）。
+    - 線は tab_element の Tag で特定する。データチップの 1 行目に線の名前（タグ。発電機・母線）が
+      出る（Graph 側の feature/chart-datatip-tag、358c6e6d でマージ。2026-11-24 に IEEE14 で確認）。
+      凡例は出さない（IEEE68 では 68 本）。
     - 削除: G_net とその計算（diagram_state・branch_ends の呼び出し、違反の判定、大きさ・太さ、
       弱い参照、show_iteration、link）。private の diagram_state（plot_lmp）と branch_ends（get_lmp）は
       まだ使う。新しい公開メンバーはない。
