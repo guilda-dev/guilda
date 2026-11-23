@@ -4,7 +4,7 @@ function [sct_state, sv_bus, sv_comp] = diagram_state(obj, cm_V, cm_S)
 % cm_V holds the bus voltage phasors in the rows of tab_bus and cm_S the injected powers
 % P + jQ in the rows of tab_cub (the branch-end rows are not read), one column per sample.
 % The state follows the a_Bus and a_Component order of sct_network; the current of a
-% component is conj(S / V) at the voltage of its bus. Called by plot_lmp and plot_iteration.
+% component is conj(S / V) at the voltage of its bus. Called by plot_lmp.
     arguments (Input)
         obj
         cm_V double  % [pu] Bus voltage phasors: one row per row of tab_bus, one column per sample.

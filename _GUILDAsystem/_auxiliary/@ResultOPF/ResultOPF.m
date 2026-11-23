@@ -14,7 +14,7 @@ classdef ResultOPF < ResultBase
 % branch table (CSV, Excel). disp_summary (get_summary as a struct), disp_binding and get_lmp show what the solution
 % is made of (the binding constraints and the nodal prices with their components);
 % plot_lmp draws the prices on the network diagram, and plot_iteration the iterations of
-% an "AC OPF" (sct_iteration) with the network diagram of each iteration.
+% an "AC OPF" (sct_iteration) as a chart.
 %
 % - `tab_bus`: row names = bus tags. "AC OPF": Varg [rad], V [pu], P, Q (injections into
 %   the network) [pu], Vphasor, Iphasor [pu]; "DC OPF": Varg, V, P; "ELD": P.
@@ -55,8 +55,7 @@ classdef ResultOPF < ResultBase
 %   Frequency [Hz], DampingRatio (NaN for a real mode), Owner: the tag of the component or
 %   controller with the largest participation). It is an empty struct otherwise.
 % - `sct_network` is the snapshot of the network at the calculation (struct(net, false)),
-%   as in ResultPF; get_lmp reads its branch admittances and bus shunts, plot_lmp and
-%   plot_iteration draw it.
+%   as in ResultPF; get_lmp reads its branch admittances and bus shunts, plot_lmp draws it.
 %
 % <@Examples>
 % ```matlab
@@ -71,7 +70,7 @@ classdef ResultOPF < ResultBase
 % sct = result.get_summary();  % the same values as a struct
 % result.get_lmp()         % nodal prices and their energy, congestion and loss components
 % result.plot_lmp();       % nodal prices on the network diagram
-% [G_chart, G_net] = result.plot_iteration(); % iterations of the AC OPF and the network of each
+% G = result.plot_iteration();   % iterations of the AC OPF (GraphChart)
 % ```
 %
 % See also SolverOPF, ResultBase
@@ -125,7 +124,7 @@ classdef ResultOPF < ResultBase
         varargout = disp_binding(obj, opt)
         tab = get_lmp(obj)
         G = plot_lmp(obj, opt)
-        [G_chart, G_net] = plot_iteration(obj, opt)
+        G = plot_iteration(obj, opt)
     end
 
     methods (Access=protected)
