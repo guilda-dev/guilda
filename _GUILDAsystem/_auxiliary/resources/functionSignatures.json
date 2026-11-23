@@ -462,6 +462,8 @@
   "ResultCPF.plot_diagram": {
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultCPF"},
+      {"name":"PVCurve","kind":"namevalue","type":["logical","scalar"],"purpose":"Draw the PV curves with the plot (see the help); false: the plot alone. Default: true."},
+      {"name":"PVBus","kind":"namevalue","purpose":"Buses of the PV curves: \"\" those of plot_pvcurve (options.LoadBus; every bus when none), \"all\" every bus, or bus tags. Default: \"\"."},
       {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."},
       {"name":"Dimension","kind":"namevalue","type":["string","scalar","choices=cellstr([\"2D\",\"3D\"])"]},
       {"name":"ColorLimits","kind":"namevalue","type":["double"]},
@@ -503,27 +505,34 @@
       {"name":"SelectionColor","kind":"namevalue"}
     ],
     "outputs": [
-      {"name":"G","purpose":"GraphNetDiagram object of the drawing."}
+      {"name":"G","purpose":"GraphNetDiagram object of the drawing."},
+      {"name":"G_pv","purpose":"The PV chart (GraphChart, plot_pvcurve) on the right, linked to G; [] with PVCurve false or an axes Parent."}
     ]
   },
   "ResultCPF.plot_spring_model": {
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultCPF"},
       {"name":"Dimension","kind":"namevalue","type":["double","scalar","choices=cellstr([2,3])"],"purpose":"2: phasor plane (GraphSpring2D); 3: surface z = log|V| (GraphSpring3D). Default: 2."},
+      {"name":"PVCurve","kind":"namevalue","type":["logical","scalar"],"purpose":"Draw the PV curves with the plot (see the help); false: the plot alone. Default: true."},
+      {"name":"PVBus","kind":"namevalue","purpose":"Buses of the PV curves: \"\" those of plot_pvcurve (options.LoadBus; every bus when none), \"all\" every bus, or bus tags. Default: \"\"."},
       {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
     ],
     "outputs": [
-      {"name":"G","purpose":"The picture: a GraphSpring2D or GraphSpring3D object."}
+      {"name":"G","purpose":"The picture: a GraphSpring2D or GraphSpring3D object."},
+      {"name":"G_pv","purpose":"The PV chart (GraphChart, plot_pvcurve) on the right, linked to G; [] with PVCurve false or an axes Parent."}
     ]
   },
   "ResultCPF.plot_stability_index": {
     "inputs": [
       {"name":"obj","kind":"required","type":"ResultCPF"},
       {"name":"TopBus","kind":"namevalue","type":["double","scalar"],"purpose":"Number of weak buses drawn in the lower panel (0: no lower panel). Default: 10."},
+      {"name":"PVCurve","kind":"namevalue","type":["logical","scalar"],"purpose":"Draw the PV curves with the plot (see the help); false: the plot alone. Default: true."},
+      {"name":"PVBus","kind":"namevalue","purpose":"Buses of the PV curves: \"\" those of plot_pvcurve (options.LoadBus; every bus when none), \"all\" every bus, or bus tags. Default: \"\"."},
       {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout), or axes/uiaxes when there is one panel; [] for a new figure. Default: []."}
     ],
     "outputs": [
-      {"name":"G","purpose":"The chart (GraphChart): the line \"sigmaMin\", then the bars of the weak buses."}
+      {"name":"G","purpose":"The chart (GraphChart): the line \"sigmaMin\", then the bars of the weak buses (and the PV curves)."},
+      {"name":"G_pv","purpose":"The chart with the PV panel: G itself; [] with PVCurve false or an axes Parent."}
     ]
   },
   "ResultCPF.plot_generator": {
@@ -531,10 +540,13 @@
       {"name":"obj","kind":"required","type":"ResultCPF"},
       {"name":"Quantity","kind":"namevalue","type":["string","scalar","choices=cellstr([\"P\",\"Q\",\"Qmargin\"])"],"purpose":"Value of the lines (see the list). Default: \"Q\"."},
       {"name":"Generator","kind":"namevalue","purpose":"Tags of the generators (components with Q = NaN in powerflow) to draw; \"all\" for every one. Default: \"all\"."},
+      {"name":"PVCurve","kind":"namevalue","type":["logical","scalar"],"purpose":"Draw the PV curves with the plot (see the help); false: the plot alone. Default: true."},
+      {"name":"PVBus","kind":"namevalue","purpose":"Buses of the PV curves: \"\" those of plot_pvcurve (options.LoadBus; every bus when none), \"all\" every bus, or bus tags. Default: \"\"."},
       {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
     ],
     "outputs": [
-      {"name":"G","purpose":"The chart (GraphChart), one line per generator."}
+      {"name":"G","purpose":"The chart (GraphChart), one line per generator."},
+      {"name":"G_pv","purpose":"The chart with the PV panel: G itself; [] with PVCurve false or an axes Parent."}
     ]
   },
   "ResultCPF.plot_branch": {
@@ -542,10 +554,23 @@
       {"name":"obj","kind":"required","type":"ResultCPF"},
       {"name":"Quantity","kind":"namevalue","type":["string","scalar","choices=cellstr([\"P\",\"S\",\"loading\",\"loss\"])"],"purpose":"Value of the lines (see the list). Default: \"P\"."},
       {"name":"Branch","kind":"namevalue","purpose":"Tags of the branches to draw, or \"all\"; \"\" (default) every branch, or the total loss for \"loss\". Default: \"\"."},
+      {"name":"PVCurve","kind":"namevalue","type":["logical","scalar"],"purpose":"Draw the PV curves with the plot (see the help); false: the plot alone. Default: true."},
+      {"name":"PVBus","kind":"namevalue","purpose":"Buses of the PV curves: \"\" those of plot_pvcurve (options.LoadBus; every bus when none), \"all\" every bus, or bus tags. Default: \"\"."},
       {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
     ],
     "outputs": [
-      {"name":"G","purpose":"The chart (GraphChart), one line per branch."}
+      {"name":"G","purpose":"The chart (GraphChart), one line per branch."},
+      {"name":"G_pv","purpose":"The chart with the PV panel: G itself; [] with PVCurve false or an axes Parent."}
+    ]
+  },
+  "ResultCPF.plot_pqv": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultCPF"},
+      {"name":"Bus","kind":"namevalue","purpose":"Tags of the buses to draw; \"all\" for every bus. Default: default_bus(obj)."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The chart (GraphChart), one 3D line per bus."}
     ]
   },
   "ResultCPF.get_point": {
@@ -649,6 +674,16 @@
     "outputs": [
       {"name":"G","purpose":"GraphNetDiagram object of the drawing."},
       {"name":"G_chart","purpose":"The side chart of the trajectory (GraphChart) linked to G; [] without one."}
+    ]
+  },
+  "ResultODE.plot_pqv": {
+    "inputs": [
+      {"name":"obj","kind":"required","type":"ResultODE"},
+      {"name":"Bus","kind":"namevalue","purpose":"Tags of the buses to draw; \"all\" for every bus. Default: \"all\"."},
+      {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure. Default: []."}
+    ],
+    "outputs": [
+      {"name":"G","purpose":"The chart (GraphChart), one 3D line per bus."}
     ]
   },
   "ResultODE.get_point": {

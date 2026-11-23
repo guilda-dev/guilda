@@ -153,13 +153,15 @@
   "ResultPF.plot_spring_model": {"main": ["Dimension"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultODE.plot_spring_model": {"main": ["Dimension", "Trajectory"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultODE.plot_trajectory": {"main": ["Quantity", "Bus"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
+  "ResultODE.plot_pqv": {"main": ["Bus"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultOPF.plot_dispatch": {"main": [], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultOPF.plot_iteration": {"main": [], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultCPF.plot_pvcurve": {"main": ["Bus"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
-  "ResultCPF.plot_spring_model": {"main": ["Dimension"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
-  "ResultCPF.plot_stability_index": {"main": ["TopBus"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
-  "ResultCPF.plot_generator": {"main": ["Quantity", "Generator"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
-  "ResultCPF.plot_branch": {"main": ["Quantity", "Branch"], "labels": {"Branch": {"hint": "empty: every branch (loss: the total)"}}, "groups": [{"name": "Advanced", "members": ["Parent"]}]},
+  "ResultCPF.plot_pqv": {"main": ["Bus"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
+  "ResultCPF.plot_spring_model": {"main": ["Dimension", "PVCurve", "PVBus"], "labels": {"PVBus": {"hint": "empty: the buses of plot_pvcurve (LoadBus)"}}, "groups": [{"name": "Advanced", "members": ["Parent"]}]},
+  "ResultCPF.plot_stability_index": {"main": ["TopBus", "PVCurve", "PVBus"], "labels": {"PVBus": {"hint": "empty: the buses of plot_pvcurve (LoadBus)"}}, "groups": [{"name": "Advanced", "members": ["Parent"]}]},
+  "ResultCPF.plot_generator": {"main": ["Quantity", "Generator", "PVCurve", "PVBus"], "labels": {"PVBus": {"hint": "empty: the buses of plot_pvcurve (LoadBus)"}}, "groups": [{"name": "Advanced", "members": ["Parent"]}]},
+  "ResultCPF.plot_branch": {"main": ["Quantity", "Branch", "PVCurve", "PVBus"], "labels": {"Branch": {"hint": "empty: every branch (loss: the total)"}, "PVBus": {"hint": "empty: the buses of plot_pvcurve (LoadBus)"}}, "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultLIN.plot_eigenvalue": {"main": ["Type", "Tolerance"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultLIN.plot_eigenvalue_path": {"main": ["Type", "Tolerance"], "groups": [{"name": "Advanced", "members": ["Parent"]}]},
   "ResultLIN.plot_matrix": {"main": ["Matrix", "Display", "Type"], "groups": [{"name": "Advanced", "members": ["Port", "Form", "Index", "Parent"]}]},
@@ -185,7 +187,19 @@
       {"name": "Advanced", "members": ["Parent", "ElementClickedFcn", "TimeChangedFcn"]}
     ]
   },
+  "ResultCPF.plot_diagram": {
+    "propertyDefaults": "GraphNetDiagram",
+    "labels": {"PVBus": {"hint": "empty: the buses of plot_pvcurve (LoadBus)"}},
+    "main": ["PVCurve", "PVBus", "Dimension", "ColorMode", "BranchWidthMode", "MarkerSizeMode", "BusHeightMode", "LabelMode", "FlowMode"],
+    "groups": [
+      {"name": "Colors", "members": ["ColorLimits", "Colormap", "ColorbarLabel", "BusColor", "ComponentColor", "BranchColor", "LinkColor", "SelectionColor"]},
+      {"name": "Labels", "members": ["LabelFontSize", "LabelFontWeight", "BusLabel", "ComponentLabel", "TitleFormat"]},
+      {"name": "Sizes", "members": ["BranchWidthRange", "MarkerSizeRange", "LinkWidth", "BusMarkerSize", "ComponentMarkerSize", "BranchLineWidth", "GridSpacing"]},
+      {"name": "Flow", "members": ["FlowAnimation", "FlowSpeed", "BranchDirection", "LinkDirection"]},
+      {"name": "Data", "members": ["BusColorData", "ComponentColorData", "BranchColorData", "LinkColorData"]},
+      {"name": "Advanced", "members": ["Parent", "ElementClickedFcn", "TimeChangedFcn"]}
+    ]
+  },
   "ResultODE.plot_diagram": {"same": "ResultPF.plot_diagram"},
-  "ResultCPF.plot_diagram": {"same": "ResultPF.plot_diagram"},
   "ResultOPF.plot_lmp": {"same": "ResultPF.plot_diagram"}
 }
