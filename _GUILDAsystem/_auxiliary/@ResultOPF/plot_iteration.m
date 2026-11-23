@@ -22,7 +22,10 @@ function [G_chart, G_net] = plot_iteration(obj, opt)
 %   an end, |Varg_from - Varg_to|), by more than 1e-6.
 %
 % The diagram has the color bar "|V| [pu]" and the title "violations: n" of the iteration
-% shown (TitleFormat "": set_time does not write the time).
+% shown (TitleFormat "": set_time does not write the time). Its labels are LabelMode
+% "value": each bus label shows its tag, ∠V, |V| and the line "|V| [pu]=<value>" (%.4g) of
+% the iteration shown, and each component label its tag, P and Q; the data tips show the
+% same lines. Every set_time writes them again.
 %
 % The times of both graphs are the iteration numbers (sct_iteration.Iteration) and they
 % are linked (G_chart.link(G_net)). The TimeChangedFcn of G_chart draws the iteration shown
@@ -147,7 +150,7 @@ function [G_chart, G_net] = plot_iteration(obj, opt)
     lm_out = [lm_bus; lm_comp; lm_br];
     G_net = GraphNetDiagram(obj.sct_network, sct_state, Parent=uipanel(fig, "Units", "normalized", "Position", [0.64 0 0.36 1], "BorderType", "none"), ColorMode="user", ...
         ColorLimits=rr_lim, BranchColorData=nan(numel(a_br), 1), LinkColorData=nan(numel(sv_comp), 1), ...
-        ColorbarLabel="|V| [pu]", TitleFormat="");     % the title is the number of violations (show)
+        ColorbarLabel="|V| [pu]", TitleFormat="", LabelMode="value");     % the title is the number of violations (show)
     G_net.ax.Tag = "Network";
     G_chart.link(G_net);
     rm_size  = mean(G_net.MarkerSizeRange) * (0.5 + rm_Pcomp / max([rm_Pcomp(:); eps]));   % [pt]
