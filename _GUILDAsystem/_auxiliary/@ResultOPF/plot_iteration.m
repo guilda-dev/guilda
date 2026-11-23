@@ -10,9 +10,9 @@ function G = plot_iteration(obj, opt)
 % panel to iteration k, and the TimeChangedFcn of the chart writes the title "OPF
 % iteration k (i of n)" of the iteration shown (the last one at first). The chart has no
 % playback bar, as its time only moves the cursor (see GraphChart). A line is found by
-% its tag in G.tab_element, and the data tip of a line shows its name (tag). The chart is
-% drawn in the container Parent. "ELD" and "DC OPF" (linprog, quadprog) record no
-% iterations and stop with GUILDA:ResultOPF:NoIteration. It reads only the stored result.
+% its tag in G.tab_element. The chart is drawn in the container Parent. "ELD" and
+% "DC OPF" (linprog, quadprog) record no iterations and stop with
+% GUILDA:ResultOPF:NoIteration. It reads only the stored result.
 %
 % <@Examples>
 % ```matlab
