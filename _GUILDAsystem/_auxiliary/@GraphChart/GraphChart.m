@@ -96,6 +96,13 @@ classdef GraphChart < GraphBase
 % set or a bar raises ElementClicked; a selected line or marker set gets a wide line or
 % ring under it, a selected bar an outline, in SelectionColor.
 %
+% The data tip of a line or marker set starts with the name of the element: its legend
+% entry (SeriesLabel), or its tag when the entry is "". The data tip of a bar starts with
+% the tag of the bar. The next rows are the X and Y values (and Z in a 3D panel), labeled
+% with s_xlabel, s_ylabel and s_zlabel of the panel ("X", "Y" and "Z" when these are "").
+% The cursors, the reference lines and the selection overlay take no clicks and no data
+% tips.
+%
 % The playback bar below the axes (see GraphBase) is shown when the drawing of the chart
 % changes with the time: two or more samples and a series with iv_sample or a title per
 % sample (has_playback). A chart whose time only moves a cursor (a time panel, e.g.

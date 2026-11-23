@@ -2,7 +2,7 @@ function im_end = branch_ends(sct_network)
 % End buses of every branch of a network snapshot, as indices into its a_Bus.
 %
 % A branch end of the snapshot is "net.a_Bus{i}" (text) or the struct of the bus. Called by
-% get_lmp and plot_iteration.
+% get_lmp.
     arguments (Input)
         sct_network (1,1) struct  % Snapshot of the network (struct(net, false)).
     end

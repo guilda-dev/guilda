@@ -743,8 +743,7 @@
       {"name":"Parent","kind":"namevalue","purpose":"Container (figure, uifigure, uipanel, uitab, uigridlayout) to draw in; [] for a new figure. Default: []."}
     ],
     "outputs": [
-      {"name":"G_chart","purpose":"The four panels of the iterations (GraphChart)."},
-      {"name":"G_net","purpose":"The network diagram of the iteration shown (GraphNetDiagram)."}
+      {"name":"G","purpose":"The four panels of the iterations (GraphChart)."}
     ]
   },
   "ResultOPF.disp_summary": {

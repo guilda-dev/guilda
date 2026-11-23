@@ -5,7 +5,7 @@ function autoplay(obj, c_output)
 % order. The first scalar GraphBase among them whose container holds a playback bar (Tag
 % "GUILDA:GraphBase:PlaybackBar"; the container is ax(1).Parent.Parent, the parent of its
 % tiled layout) plays: a graph whose drawing changes with time (e.g. ResultODE.plot_diagram,
-% plot_spring_model, ResultOPF.plot_iteration: G_net). A chart whose time only moves a
+% plot_spring_model). A chart whose time only moves a
 % cursor has no bar and does not play by itself (ResultODE.plot_trajectory); a chart linked
 % to the graph that plays follows it (the side chart G_chart of ResultODE.plot_diagram).
 % Only one graph gets G.play(), so one timer plays. G.play() starts the timer playback of
