@@ -3,10 +3,12 @@ function apply_style(obj, iv_element)
 %
 % The color of an element is its fixed color (BusColor, ...) when that row is not NaN;
 % otherwise the color of its color data (BusColorData, ...) on the colormap (NaN: gray);
-% otherwise, when there is no color data for it, the color it was drawn with. A component
+% otherwise, when there is no color data for it, the color it was drawn with. A bus,
+% branch or link with a NaN value is gray (0.2), black in the single-line diagram
+% (l_singleLine). A component
 % whose color value is NaN (no value: "Loss", a tripped unit, a NaN row of "user") is
-% black while a colormap is in use (ColorMode is not "none" and an element has a finite
-% color value), else its class color; when that changes, every component is drawn again.
+% black while a colormap of ColorMode is in use (ColorMode is not "none", BusColorMode is
+% "none" and an element has a finite color value), else its class color; when that changes, every component is drawn again.
 % The size of
 % a bus or a component and the width of a branch is its finite row of BusMarkerSize,
 % ComponentMarkerSize or BranchLineWidth [pt], else the value of its quantity in the
@@ -14,7 +16,7 @@ function apply_style(obj, iv_element)
 % as LineWidth; a branch and its transformer circles take the width as LineWidth. In 3D
 % the solids drawn are scaled (no new graphics objects). The colorbar is shown only while
 % an element has a finite color value; its label is ColorbarLabel, or with "" the quantity
-% of ColorMode ("|I| [pu]", "P [pu]", "Q [pu]", "Loss [pu]"; none for "user"; color_readout). The color
+% of BusColorMode or ColorMode ("|V| [pu]", "|I| [pu]", ...; none for "user"; color_readout). The color
 % limits in use (color_limits) are set to the axes first; when they changed (automatic
 % limits follow the data and ColorMode), every element is drawn again. The flow dots (2D)
 % take the new colors of the branches and links (step_flow).
@@ -31,19 +33,21 @@ function apply_style(obj, iv_element)
         iv_element = (1:height(tab))';
     end
     % Colormap in use: components without a value are black, else they keep their class colors
-    l_map = obj.ColorMode ~= "none" && any(isfinite([obj.BusColorData; obj.ComponentColorData; obj.BranchColorData; obj.LinkColorData]));
+    l_map = obj.ColorMode ~= "none" && obj.BusColorMode == "none" && any(isfinite([obj.BusColorData; obj.ComponentColorData; obj.BranchColorData; obj.LinkColorData]));
     if ~isfield(plt, "CompColormap") || plt.CompColormap ~= l_map
         iv_element = union(iv_element, find(tab.Kind == "component"));
         obj.sct_plt.CompColormap = l_map;
     end
     l_2d = obj.Dimension == "2D";
+    % Color of an element without a color value: gray, black in the single-line diagram
+    rv_nan = [0.2 0.2 0.2]*~obj.l_singleLine;
     sv_kind = tab.Kind(iv_element);
     iv_idx  = tab.Index(iv_element);
 
     % Buses
     iv = iv_idx(sv_kind == "bus");
     if ~isempty(iv)
-        rm_c = pick_colors(obj, obj.BusColor, obj.BusColorData, iv, plt.BusColor0);
+        rm_c = pick_colors(obj, obj.BusColor, obj.BusColorData, iv, plt.BusColor0, repmat(rv_nan, obj.n_bus, 1));
         rv_s = pick_sizes(obj.BusMarkerSize, plt.BusSize0, iv);
         set_labels(plt.NodeLabel, obj.BusLabel, iv);
         if l_2d
@@ -94,7 +98,7 @@ function apply_style(obj, iv_element)
     % Branches
     iv = iv_idx(sv_kind == "branch");
     if ~isempty(iv)
-        rm_c = pick_colors(obj, obj.BranchColor, obj.BranchColorData, iv, repmat([0.2 0.2 0.2], obj.n_branch, 1));
+        rm_c = pick_colors(obj, obj.BranchColor, obj.BranchColorData, iv, repmat(rv_nan, obj.n_branch, 1), repmat(rv_nan, obj.n_branch, 1));
         rv_w = pick_sizes(obj.BranchLineWidth, plt.BranchWidth0, iv);
         if l_2d
             c_c = num2cell(rm_c, 2);
@@ -119,7 +123,7 @@ function apply_style(obj, iv_element)
     % Links
     iv = iv_idx(sv_kind == "link");
     if ~isempty(iv)
-        rm_c = pick_colors(obj, obj.LinkColor, obj.LinkColorData, iv, repmat([0.2 0.2 0.2], obj.n_component, 1));
+        rm_c = pick_colors(obj, obj.LinkColor, obj.LinkColorData, iv, repmat(rv_nan, obj.n_component, 1), repmat(rv_nan, obj.n_component, 1));
         if l_2d
             set(plt.CompEdge(iv), {"Color"}, num2cell(rm_c, 2));
         else

@@ -73,6 +73,7 @@
 | `plot_convergence` | `cm_Vhistory` の各点での電力方程式の最大残差(対数軸、横軸は `rv_step`。dynamic では仮想時間)と `Tolerance` の破線。残差は `SolverPF` の方程式と同じ定義で、保存した `tab_PFcondition` と `cm_Y` から計算します(最後の点は `output.residual` と一致) | `Parent`、`Bus`(指定すると、その母線の \|V\| の推移を 2 段目に描く) | 実装 |
 | `plot_network` | MATLAB の graph plot で、母線の色を \|V\|(または位相)、枝を P(または Q)が入る端からの矢印にし、線幅を \|P\|(\|Q\|)に比例させる | `Parent`、`Color`(`"V"` / `"angle"`)、`Arrow`(`"P"` / `"Q"` / `"none"`) | 実装 |
 
+- **2026-11-23 更新:** `ResultPF.plot_network` と `GraphNetMap` は削除しました(`feature/single-line-diagram`)。母線を |V| で塗る地図は `res.plot_diagram(BusColorMode="V", ColorMode="none")`、論文用の白黒の図は `plot_single_line_diagram` です(notes/graph-diagram-2d.md §20)。下の `plot_network` の記述は履歴です。
 - **`plot_network` の座標:** スナップショットの各母線の `graph` パラメータの `Xaxis`・`Yaxis` を使います。1 つでも NaN の母線があると、与えられた座標は使わず、全母線を MATLAB の graph plot の `"force"` レイアウトで置きます(一部だけ座標を補う方法は、座標の尺度が系統ごとに違うため採りませんでした)。各枝の向きは `Pfrom`(`Qfrom`)の符号で決め、`digraph` の辺の並びから枝を対応づけ、返す `GraphPlot` の `UserData` に辺ごとの枝タグを入れています。
 - 3 つの図(`plot_branch`・`plot_convergence`・`plot_network`)は 2026-11-12 に追加しました(ユーザーの依頼)。結果のない値には `GUILDA:ResultPF:NoHistory`(条件・Y・履歴のない結果での `plot_convergence`)と `GUILDA:ResultPF:NoNetworkSnapshot`(スナップショットのない結果での `plot_network`)で止まります。
 - 未知のタグは `GUILDA:ResultPF:UnknownTag`、スナップショットのない結果での `Unit="SI"` は `GUILDA:ResultPF:NoBase` です。

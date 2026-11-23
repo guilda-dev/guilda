@@ -22,7 +22,7 @@ classdef (Abstract) GraphBase < auxiliary
 %   NodeColor). `set_style(sr_tag, Name=Value)` writes the same vectors by tag, so the two
 %   forms stay in sync, and only the changed elements are drawn again.
 % - Positions: `set_position(sr_tag, rm_xy)` moves elements of a free layout
-%   (GraphNetDiagram, GraphNetMap) and `get_layout()` returns the drawn positions in the
+%   (GraphNetDiagram) and `get_layout()` returns the drawn positions in the
 %   form of net.get_layout, so that net.set_layout(G.get_layout()) saves them. Other graphs
 %   raise an error.
 % - `reset_style(sr_tag)` returns the appearance of those elements (all with no argument)
