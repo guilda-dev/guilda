@@ -77,5 +77,5 @@
 ### 試験
 
 - F100 に 6 節を加えました(既定の量と配置、Trajectory の "Vangle"・"none"、軸を渡すと図だけ、link でカーソルが動く、バーは G だけ(バーのないグラフの animate・export_video・play)、横のグラフありで大きさを変えてもバーが 34 px)。
-- 時刻のパネルにバーがあることを前提にしていた F46(名前のある標本)、F61、F100(置き換え、大きさの変更の図)、F91、F4(`plot_iteration`)を直しました。F112 は `plot_eigenvalue` が `iv_sample` でバーを持つので変えずに通ります。
+- 時刻のパネルにバーがあることを前提にしていた F46(名前のある標本)、F61、F97(`plot_pvcurve` の再生バーの文字の確かめをバーなしの確かめに)、F100(置き換え、大きさの変更の図)、F91、F4(`plot_iteration`)を直しました。F112 は `plot_eigenvalue` が `iv_sample` でバーを持つので変えずに通ります。
 - 残り: `ResultLIN/plot_eigenvalue_path.m` のヘルプの「The playback bar shows the section.」はバーがなくなったので直す必要があります(ResultLIN のファイルはこのブランチでは触らない約束)。
