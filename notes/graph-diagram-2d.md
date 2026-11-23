@@ -816,3 +816,41 @@ F59 に 4 件: `test3DBusHeightModeNoneDrawsNoHeightGuide`(medium)、`test3DHeig
 - 画像(コーディネーター向け、セッションの作業フォルダ `scratchpad/busheight/`): `before_*` と `after_*` の IEEE9bus・IEEE68bus の `"V"`・`"angle"`(潮流)、IEEE9bus の地絡の ODE(`"V"`、t = 0.05 s と 0.12 s)、IEEE9bus の `"none"`(変更前後で画素が一致することを確かめた)。
 - IEEE68 の 3D の `set_time`(0.5 s の地絡の ODE、隠れた figure、6 標本の平均): `"V"` 1.69 s/標本、`"none"` 0.12 s/標本。`"V"` の時間は標本ごとの作り直し(§14 の以前の測定は 1.5 s)がほとんどで、案内の分は小さい。作り直しをやめる(立体の `ZData` だけ動かす)のは別の課題。
 - テスト: graph small・gui small 38 件、graph medium 108 件、F44・F47・F59 の large 57 件がすべて PASS。
+
+### 19.7 z 軸のラベルの切れ(2026-11-23 修正、`feature/single-line-diagram`)
+
+- 症状: 幅 900 px の figure で、3D の高さの図の z 軸のラベル「|V| [pu]」の左が figure の端で切れる(ラベルの左端が figure の左端より 8 px 外)。
+- 原因: `make_axes` の tiledlayout は `Padding="compact"`。3D(`vis3d`)の軸は `TightInset` が 0 なので、レイアウトは z ラベルの場所を取らない。
+- 修正: `create_scene` で、高さの案内を描くとき tiledlayout の `Padding` を `"loose"`、それ以外は `"compact"` にする(変わるときだけ設定)。軸の親が tiledlayout でないとき(軸を Parent に渡したとき)と単線結線図では触らない。`Position` などはタイルの中の軸には設定できない(警告)ので使わない。
+- 確かめ: 修正後のラベルの左端は figure の左から 51 px。画像 `scratchpad/singleline/zlabel_before.png`、`zlabel_after.png`。
+
+## 20. 母線の色(BusColorMode)と論文用の単線結線図(2026-11-23、`feature/single-line-diagram`)
+
+ユーザーが承認した公開メンバーは 3 つだけ: `PowerNetwork.plot_single_line_diagram`、`ResultPF.plot_single_line_diagram`、`GraphNetDiagram.BusColorMode`。`ResultPF.plot_network` と `GraphNetMap` は削除した。
+
+### 20.1 BusColorMode
+
+- 値: `"none"`(既定)、`"V"`(|V| [pu])、`"angle"`(V の位相 [deg]。データチップの ∠V と同じ度)。`SetObservable` で、`show_controls` の Color のグループに dropdown(Bus color)を足した。
+- 色の値: `color_values` の 3 つ目の出力 `rm_bus` が母線の量を返し、`reflect_color_mode` が表示中の標本の値を `BusColorData` に書く(標本ごと。ODE・CPF の `set_time` でも追従)。`"none"` に戻すと setter が `BusColorData` を NaN にする。
+- **ColorMode との組み合わせ(決めたこと):** `BusColorMode` が `"none"` でなければ、母線の量がカラーバーを使い、ブランチ・接続線・機器には色の値を入れない(`ColorMode="none"` と同じ扱い。機器はクラスの色のまま)。`ColorMode` は値を保ち、`BusColorMode="none"` に戻すとまたその量で塗る。理由: |V| と |I|・P は単位が同じ pu でも別の量で、1 つのカラーマップと範囲に載せると色が読めない。単位が同じときだけ共有する案は、pu どうしでも意味が違うので採らなかった。2 本のカラーバーは公開メンバーが増えるので採らなかった。
+- 範囲: 自動の範囲(`update_color_scale`)は全標本・全母線の最小〜最大(等しければ `color_limits` が広げる)。|V| は 1 付近に集まるので、`ColorMode` の 95 パーセンタイルや ±m の規則は使わない。`ColorLimits` の数値は今までどおり優先。
+- ラベル: `ColorbarLabel` が `""` なら `"|V| [pu]"` か `"∠V [deg]"`(`color_readout`)。データチップの色の行と `LabelMode="value"` の行も同じ名前。`"value"` のラベルは固定の `|V|=`(または `∠V=`)の行を省く(§18 の修正、2026-11-23)。
+- 機器の黒: `apply_style` の「カラーマップ使用中は値のない機器を黒」は `ColorMode` の色のときだけにした(`BusColorMode` が `"none"` のとき)。
+- `plot_network` の置き換え: `res.plot_diagram(BusColorMode="V", ColorMode="none")`。P の流れは流れの点(`FlowMode="P"`、既定)と `BranchWidthMode="P"` の幅で示す。矢印はないが、流れの点の向きが同じ情報を持つ。
+
+### 20.2 plot_single_line_diagram
+
+- 引数は `Parent` だけ。`PowerNetwork` 版は `plot_diagram(State="topology", …)`、`ResultPF` 版は `plot_diagram(…)`(解の状態はデータチップにだけ出る)を固定の公開設定で呼ぶ: `Dimension="2D"`、`ColorMode="none"`、`BusColorMode="none"`、`FlowMode="none"`、`FlowAnimation=false`、`BranchWidthMode="none"`、`BranchWidthRange=[0.6 0.6]`、`MarkerSizeMode="none"`、`MarkerSizeRange=[4 4]`(棒は 2 pt、点と三角は 4 pt)、`LinkWidth=0.6`、`LabelMode="bus"`、`LabelFontWeight="normal"`、`TitleFormat=""`。
+- 非公開のプロパティ 1 つ: `GraphNetDiagram.l_singleLine`(`Access = {?PowerNetwork, ?ResultPF}`)。setter が描き直す。そのため描画は 2 回(通常の図 → 単線結線図)。IEEE68 でも 1〜2 s。
+- `draw_diagram_2d` の単線結線図モード: すべて黒、ラベルは枠なし・Helvetica。発電機(`component.generator.*` のクラス)は円と正弦波 1 周期を NaN で区切った 1 本の line(Tag `GeneratorGlyph`、UserData は機器なのでクリックとデータチップはそのまま)。半径は `min(0.025·span, 0.8·接続線の最初の区間)`(d0 基準では IEEE68 で小さすぎた)。接続線は円の縁で止める(点の数は変えないので `update_heights` もそのまま)。負荷(`component.load.*`)は接続線の向き(母線から離れる向き)の塗った三角のマーカー(`<`、`>`、`v`、`^`)。ほかの機器(インバータなど)は `Shape` のマーカーを黒で。
+- `apply_style`: 色の値のない母線・ブランチ・接続線を灰色(0.2)ではなく黒に。`set_style` の色は今までどおり優先。
+- `create_scene`: 発電機の円を `DrawBox` に含める(IEEE14 の B003 の発電機が切れていた)。`fit_axes` の余白は 3% → 1%。
+- 図の大きさ(Parent が空のとき): `figure("Units","centimeters")` の幅 8.5 cm(2 段組の 1 段)、高さは描いた範囲の縦横比 × 8.5 cm を 3〜12 cm に収める。tiledlayout の `Padding="tight"`。ラベルは 8 pt、30 母線を超えると `8·sqrt(30/n_bus)`(最小 5 pt、IEEE68 は 5 pt)。8 pt のままでは IEEE68 のラベルが重なって読めなかった。
+- 画像(600 dpi、`exportgraphics(G.ax, …)`): `scratchpad/singleline/IEEE{9bus,14bus,68bus}_{net,res}.png`。
+
+### 20.3 置き換えたもの
+
+- テスト: F2(plot_network の節 → `plot_diagram` の BusColorMode の節)、F49 を削除(`test_categories.m`・`test_levels.m` からも)、F53(`get_layout` の比較)、F61(GraphNetMap の節 → BusColorMode の dropdown の節、dropdown 8 個)、F52(結果 GUI のメソッド一覧)、新規 F114(単線結線図と BusColorMode)。
+- コード: `@GUILDA/update_keymap.m`(結果 GUI の一覧)、`resources/gui_forms.json`(plot_network を削除、plot_single_line_diagram と BusColorMode を追加)、両方の `functionSignatures.json`(`GUILDA.update_keymap(Signature=true)` で再生成)、`ResultPF.xml` の `NoNetworkSnapshot`、ヘルプ(`ResultPF.m`、`plot_diagram.m`、`GraphBase`、`GraphSpringBase.get_layout`、`tools.layout_place_buses`)。
+- 文書: feature-graphs(表、母線の色、単線結線図の節、操作パネル)、feature-data-io、feature-model-building、feature-power-flow、folder-structure、Update log(2026-11-23)。
+

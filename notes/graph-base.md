@@ -12,7 +12,7 @@ GUILDA のすべての図をオブジェクトにし、後からの変更(デー
 GraphBase(抽象、< auxiliary)
 ├─ GraphSpringBase ─ GraphSpring2D / GraphSpring3D   (plot_spring_model)
 ├─ GraphNetDiagram   (旧 DrawerNetDiagram。plot_diagram。2D が既定、Dimension="3D" で立体)
-├─ GraphNetMap       (第 2b 段階。ResultPF.plot_network。§4.5)
+├─ (GraphNetMap      第 2b 段階。ResultPF.plot_network。§4.5。2026-11-23 削除)
 └─ GraphChart        (第 2a 段階: 結果の折れ線・棒グラフ。§4.4。ResultODE.plot_trajectory)
 ```
 
@@ -278,6 +278,8 @@ set_style の規則:
 - テストは F48 に 6 節(ZData とラベル、範囲、マーカーのカーソルと 2D の図とのリンク、`iv_sample`、誤り、クリック)。
 
 ### 4.5 GraphNetMap(第 2b 段階、`ResultPF.plot_network`)
+
+**2026-11-23 更新:** `ResultPF.plot_network` と `GraphNetMap` は削除しました(`feature/single-line-diagram`)。母線を |V| で塗る地図は `res.plot_diagram(BusColorMode="V", ColorMode="none")`、論文用の白黒の図は `plot_single_line_diagram` です(notes/graph-diagram-2d.md §20)。この節は履歴として残します。
 
 基準: ブランチ `feature/graph-netmap`(`refactor/design-alignment` の 9d8e964d から分岐)、2026-11-16。§1 の「未実装」と §3.1 の見通しの記述は、GraphChart の節と合流させやすいようにこの節では書き換えず、ここに実装を記録します。
 
