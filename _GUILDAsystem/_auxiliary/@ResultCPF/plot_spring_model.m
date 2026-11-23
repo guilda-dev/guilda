@@ -1,4 +1,4 @@
-function G = plot_spring_model(obj, opt)
+function [G, G_pv] = plot_spring_model(obj, opt)
 % Draw the continuation power flow path as a spring-mass picture with every step.
 %
 % The picture holds every step of the path as a sample (rv_t = 1 ... n_step, named
@@ -15,13 +15,19 @@ function G = plot_spring_model(obj, opt)
 % step with plot_pvcurve, plot_diagram and the other plots of the steps. A result without
 % the data of the steps stops with GUILDA:ResultCPF:NoStepData.
 %
+% With PVCurve true (default), the container (Parent, or a new figure of 1400 x 600 px) is
+% split: the picture on the left (2/3 of the width) and plot_pvcurve(Bus=PVBus) on the
+% right (1/3), linked with G.link(G_pv), so the playback of the picture moves the markers on
+% the PV curves. A uigridlayout Parent gets a borderless uipanel first. PVCurve false, or
+% an axes or uiaxes Parent, draws the picture alone as before (G_pv []). A PVBus tag that is
+% not in sv_bus stops with GUILDA:ResultCPF:UnknownBus.
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE9bus();
 % net.initialize();
 % res = net.calculate_continuation_powerflow(LoadBus="B005");
-% G = res.plot_spring_model();
-% G.link(res.plot_pvcurve());
+% [G, G_pv] = res.plot_spring_model(PVBus="all");   % PV curves of every bus on the right
 % G.animate();
 % ```
 %
@@ -29,10 +35,13 @@ function G = plot_spring_model(obj, opt)
     arguments (Input)
         obj
         opt.Dimension (1,1) double {mustBeMember(opt.Dimension, [2, 3])} = 2  % 2: phasor plane (GraphSpring2D); 3: surface z = log|V| (GraphSpring3D).
+        opt.PVCurve (1,1) logical = true  % Draw the PV curves with the plot (see the help); false: the plot alone.
+        opt.PVBus {mustBeText} = ""       % Buses of the PV curves: "" those of plot_pvcurve (options.LoadBus; every bus when none), "all" every bus, or bus tags.
         opt.Parent = []  % Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure.
     end
     arguments (Output)
-        G  % The picture: a GraphSpring2D or GraphSpring3D object.
+        G     % The picture: a GraphSpring2D or GraphSpring3D object.
+        G_pv  % The PV chart (GraphChart, plot_pvcurve) on the right, linked to G; [] with PVCurve false or an axes Parent.
     end
     check_step_data(obj, "plot_spring_model", ["tab_variable", "rm_variable", "cm_Vbus", "cm_Icomponent", "sct_network"]);
 
@@ -69,8 +78,9 @@ function G = plot_spring_model(obj, opt)
     sct_data.sv_sampleText = sct_val.sv_sampleText;
 
     if opt.Dimension == 2
-        G = GraphSpring2D(sct_data, Parent=opt.Parent);
+        fcn_graph = @(h) GraphSpring2D(sct_data, Parent=h);
     else
-        G = GraphSpring3D(sct_data, Parent=opt.Parent);
+        fcn_graph = @(h) GraphSpring3D(sct_data, Parent=h);
     end
+    [G, G_pv] = pair_pvcurve(obj, opt, fcn_graph);
 end
