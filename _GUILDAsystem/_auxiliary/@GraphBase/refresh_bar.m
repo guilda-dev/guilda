@@ -36,7 +36,7 @@ function refresh_bar(obj)
         return
     end
     if ~l_has
-        h_bar = make_bar(obj, tl.Parent);
+        h_bar = make_bar(obj, tl);
         obj.h_bar = h_bar;
         obj.place_bar();
     end
@@ -77,15 +77,18 @@ function refresh_bar(obj)
 end
 
 
-function h_bar = make_bar(obj, h_host)
-% The bar with its widgets in the container h_host; it follows the size of h_host.
+function h_bar = make_bar(obj, tl)
+% The bar with its widgets in the container of the tiled layout tl; it is placed again
+% (place_bar, hidden or shown as it is) when the container sends SizeChanged and each time tl
+% is drawn, so that it keeps its height in pixels when the container is resized.
     arguments (Input)
         obj
-        h_host  % Container of the tiled layout of the axes.
+        tl  % Tiled layout of the axes. <@Type> matlab.graphics.layout.TiledChartLayout
     end
     arguments (Output)
         h_bar  % The bar. <@Type> matlab.ui.container.Panel
     end
+    h_host = tl.Parent;
     rv_speed = [0.1 0.25 0.5 1 2 5 10];
     wr = matlab.lang.WeakReference(obj);     % the callbacks hold the graph weakly (savefig; build keeps it alive)
     h_bar = uipanel(h_host, "Units", "normalized", "Position", [0 0 1 0.05], "BorderType", "none", ...
@@ -109,9 +112,10 @@ function h_bar = make_bar(obj, h_host)
     h_speed = uidropdown(gl, "Items", speed_text(rv_speed), "ItemsData", rv_speed, "Value", 1, ...
         "Tag", "GUILDA:GraphBase:PlaySpeed", "Tooltip", "Playback speed (PlaySpeed)", ...
         "ValueChangedFcn", @(h, ~) call_weak(wr, @(G) on_speed(G, h)));
-    lis = listener(h_host, "SizeChanged", @(~, ~) call_weak(wr, @(G) G.place_bar()));
+    fcn_place = @(~, ~) call_weak(wr, @(G) G.place_bar(isvalid(h_bar) && h_bar.Visible == "off"));
+    lis = [listener(h_host, "SizeChanged", fcn_place), listener(tl, "MarkedClean", fcn_place)];
     h_bar.UserData = struct("button", h_button, "slider", h_slider, "text", h_text, "speed", h_speed, ...
-        "rv_speed", rv_speed, "lis_size", lis);
+        "rv_speed", rv_speed, "lis_place", lis);
 end
 
 

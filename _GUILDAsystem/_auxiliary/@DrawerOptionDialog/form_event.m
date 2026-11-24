@@ -4,7 +4,10 @@ function form_event(obj, s_event, k)
 % - "change": a field changed (k = 0 when the form is drawn).
 % - "reset": field k goes back to its default.
 % - "select": field k opens DrawerTagPicker.pick with the table of its elements or keys, built
-%   now from the network of the call, and takes the tags chosen (nothing on cancel).
+%   now from the network of the call, or (s_pick "table") the table that its gui_forms.json
+%   expression gives on the object now, and takes the tags chosen (nothing on cancel). An
+%   expression that fails or gives no rows leaves the field as it is and says so (an alert,
+%   a warning in a hidden window).
 % - "toggle": group k opens or closes; its fields are drawn when it opens first.
 %
 % A change, reset or selection of field k first evaluates again the choices and defaults of
@@ -64,6 +67,26 @@ function form_event(obj, s_event, k)
                 tab = DrawerTagPicker.key_table(sct.s_category);
                 s_column = "Key";
                 s_title = "Select " + sct.s_label + " (" + sct.s_category + " keys)";
+            elseif sct.s_pick == "table"
+                s_title = "Select " + sct.s_label;
+                [tab, l_tab, s_reason] = eval_text(sct.s_table, obj.a_object);
+                if ~l_tab && s_reason == ""
+                    s_reason = "no expression";
+                elseif l_tab && (~istable(tab) || ~ismember("Tag", string(tab.Properties.VariableNames)))
+                    s_reason = "no table with a Tag column";
+                elseif l_tab && height(tab) == 0
+                    s_reason = "the table has no rows";
+                end
+                if s_reason ~= ""
+                    s_alert = string(msg("GUILDA:DrawerOptionDialog:NoPickTable", sct.name, s_reason));
+                    h_fig = ancestor(obj.h_grid, "figure");
+                    if h_fig.Visible == "on"
+                        uialert(h_fig, s_alert, s_title, "Icon", "warning");
+                    else
+                        warning("GUILDA:DrawerOptionDialog:NoPickTable", "%s", s_alert);
+                    end
+                    return    % the field stays as it is
+                end
             else
                 % The elements of each kind that the choices list (all of them for gui_forms.json
                 % "pick"); a local controller of a component call only of that component

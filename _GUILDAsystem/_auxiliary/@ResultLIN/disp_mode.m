@@ -12,6 +12,9 @@ function varargout = disp_mode(obj, opt)
 % section whose time rv_t is nearest to it; Index "all" shows every section, the blocks
 % separated by an empty line. With one output it returns the text instead of displaying it.
 %
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
+%
 % <@Examples>
 % ```matlab
 % res = network.IEEE9bus().get_sys();

@@ -14,5 +14,9 @@
         <entry key="NoHessianForm">Form "hessian" needs the energy-function blocks of every section: make the result with net.get_sys(Form="hessian").</entry>
         <entry key="HessianPort">Form "hessian" is written in Port "PI" ([theta, V], [P, Q/V]) or "PQ" ([theta, rho], [P, Q]); Port "I" has no energy-function form.</entry>
         <entry key="SingularE">Form "absorbed" needs a mass matrix E whose nonzero rows of the states form an invertible block that does not couple to the other states (rcond {0}).</entry>
+        <entry key="KernelRange">Kernel must be an integer from 1 to {0}, the number of kernels (islands) of the section shown; get_kernel gives them.</entry>
+        <entry key="NoKernel">The section shown has no kernel of the rotation form to draw: {0}</entry>
+        <entry key="PortQuantity">Quantity "{0}" reads the angle and voltage variables of the bus ports: it needs a result in Port "PQ" or "PI" (net.get_sys(Port="PQ")); this result has Port "I".</entry>
+        <entry key="ContributionDAE">This result is the contribution of {0} (get_contribution): a part of the DAE, whose Type is "DAE". It has no "ODE" model (the bus voltages of a part cannot be eliminated); use Type "DAE".</entry>
     </message>
 </rsccat>

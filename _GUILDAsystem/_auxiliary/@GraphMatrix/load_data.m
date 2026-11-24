@@ -97,6 +97,24 @@ function load_data(obj, sct_data)
         end
         sct.(s_field) = s;
     end
+    s_pattern = "dot";
+    if isfield(sct_data, "s_pattern") && ~isempty(sct_data.s_pattern)
+        s_pattern = string(sct_data.s_pattern);
+    end
+    if ~(isscalar(s_pattern) && ismember(s_pattern, ["dot", "circle"]))
+        error(msg("GUILDA:GraphMatrix:FieldValue", "s_pattern", """dot"" or ""circle"""));
+    end
+    sct.s_pattern = s_pattern;
+    for s_field = ["l_frame", "l_valueText", "l_groupTicks", "l_cellGrid"]
+        l = false;
+        if isfield(sct_data, s_field) && ~isempty(sct_data.(s_field))
+            l = sct_data.(s_field);
+        end
+        if ~((islogical(l) || isnumeric(l)) && isscalar(l))
+            error(msg("GUILDA:GraphMatrix:FieldValue", s_field, "true or false"));
+        end
+        sct.(s_field) = logical(l);
+    end
     sct.sv_tag  = sv_tag;
     sct.sv_kind = sv_kind;
     sct.c_block = c_block;
@@ -104,6 +122,7 @@ function load_data(obj, sct_data)
     obj.sct_limitAuto = struct.empty;
     obj.rv_t   = sct.rv_t;
     obj.i_time = 1;
+    obj.load_sample_label(sct_data);
     n_elem = numel(sv_tag);
     obj.SeparatorColor     = repmat([0.6 0.6 0.6], n_elem, 1);
     obj.SeparatorLineWidth = repmat(0.5, n_elem, 1);

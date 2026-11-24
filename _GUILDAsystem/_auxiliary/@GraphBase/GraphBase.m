@@ -22,7 +22,7 @@ classdef (Abstract) GraphBase < auxiliary
 %   NodeColor). `set_style(sr_tag, Name=Value)` writes the same vectors by tag, so the two
 %   forms stay in sync, and only the changed elements are drawn again.
 % - Positions: `set_position(sr_tag, rm_xy)` moves elements of a free layout
-%   (GraphNetDiagram, GraphNetMap) and `get_layout()` returns the drawn positions in the
+%   (GraphNetDiagram) and `get_layout()` returns the drawn positions in the
 %   form of net.get_layout, so that net.set_layout(G.get_layout()) saves them. Other graphs
 %   raise an error.
 % - `reset_style(sr_tag)` returns the appearance of those elements (all with no argument)
@@ -82,9 +82,10 @@ classdef (Abstract) GraphBase < auxiliary
 % with several panels stops with GUILDA:GraphBase:ParentNeedsContainer), or empty (a new
 % figure).
 %
-% Playback bar: a graph whose data has two or more samples (see has_playback) gets a bar
-% below its axes when they are made in a container (a new figure, or the container given
-% by Parent; not when Parent is an axes). The bar has a Play/Pause button, a time slider,
+% Playback bar: a graph whose drawing changes with its two or more samples (see
+% has_playback; a chart whose time only moves a cursor has none) gets a bar below its axes
+% when they are made in a container (a new figure, or the container given by Parent; not
+% when Parent is an axes). The bar has a Play/Pause button, a time slider,
 % the text of the sample shown (sample_text) and a dropdown of the playback speed
 % (0.1x to 10x, the same as PlaySpeed; another value of PlaySpeed shows as an item of its
 % own). The axes keep the space above it. The bar follows set_time (also through link),

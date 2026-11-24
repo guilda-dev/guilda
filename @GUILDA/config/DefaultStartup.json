@@ -5,6 +5,11 @@
         "Type": "logical",
         "Description": "Print the GUILDA logo at startup"
     },
+    "PrintPathLog":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Print the log lines of GUILDA.addpath (run at startup) and GUILDA.rmpath in the Command Window. A failure to add a folder is printed either way"
+    },
     "CheckRequirement":{
         "Value": true,
         "Type": "logical",
@@ -30,10 +35,5 @@
         "Value": true,
         "Type": "logical",
         "Description": "Open the tutorial at startup"
-    },
-    "DeveloperPath":{
-        "Value": false,
-        "Type": "logical",
-        "Description": "Add the developer folder _GUILDAsystem/_admin to the MATLAB path (scripts for developers, such as those that draw the figures of the documentation). Applied by GUILDA.addpath, which runs at startup"
     }
 }

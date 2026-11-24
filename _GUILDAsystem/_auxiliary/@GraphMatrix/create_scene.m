@@ -22,12 +22,30 @@ function create_scene(obj)
     cla(ax);
     hold(ax, "on");
     plt = struct("Image", gobjects(1), "Pattern", gobjects(1), "Separator", gobjects(n_elem, 1), ...
-        "Colorbar", gobjects(1), "Selection", gobjects(0, 1), "Listener", event.listener.empty);
+        "Colorbar", gobjects(1), "Selection", gobjects(0, 1), "Listener", event.listener.empty, ...
+        "Frame", gobjects(0, 1), "Text", gobjects(0, 1), "Zero", gobjects(1), "HitArea", gobjects(1), "Grid", gobjects(1));
+    % A transparent image over every cell takes the clicks and data tips of the empty cells
+    plt.HitArea = image(ax, "XData", [1 max(n_col, 1)], "YData", [1 max(n_row, 1)], "CData", ones(max(n_row, 1), max(n_col, 1)), ...
+        "CDataMapping", "direct", "AlphaData", 0, "PickableParts", "all", "Tag", "HitArea");
     plt.Image = image(ax, "XData", [1 max(n_col, 1)], "YData", [1 max(n_row, 1)], "CData", NaN, ...
         "CDataMapping", "scaled", "AlphaData", 0, "Visible", "off");
     r_size = max(4, min(15, 1500 / max([n_row, n_col, 1])));     % dots shrink with the size of the matrix
     plt.Pattern = line(ax, NaN, NaN, "LineStyle", "none", "Marker", ".", "MarkerSize", r_size, ...
         "Color", [0 0.25 0.6], "Visible", "off");
+    plt.Zero = line(ax, NaN, NaN, "LineStyle", "none", "Marker", "o", "Visible", "off", "Tag", "Zero");
+    if d.s_pattern == "circle"     % nonzero: red filled circles; zero: hollow circles
+        r_size = max(3, min(10, 600 / max([n_row, n_col, 1])));
+        set(plt.Pattern, "Marker", "o", "MarkerSize", r_size, "Color", [0.75 0 0], "MarkerFaceColor", [0.85 0.1 0.1]);
+        set(plt.Zero, "MarkerSize", r_size, "Color", [0.6 0.6 0.6], "MarkerFaceColor", "w");
+    end
+    if d.l_cellGrid                % a line around every cell
+        rv_x = [reshape([repmat([0.5; n_col + 0.5], 1, n_row + 1); NaN(1, n_row + 1)], 1, []), ...
+                reshape([(0.5:1:n_col + 0.5); (0.5:1:n_col + 0.5); NaN(1, n_col + 1)], 1, [])];
+        rv_y = [reshape([(0.5:1:n_row + 0.5); (0.5:1:n_row + 0.5); NaN(1, n_row + 1)], 1, []), ...
+                reshape([repmat([0.5; n_row + 0.5], 1, n_col + 1); NaN(1, n_col + 1)], 1, [])];
+        plt.Grid = line(ax, rv_x, rv_y, "Color", [0.8 0.8 0.8], "LineWidth", 0.5, "HitTest", "off", ...
+            "PickableParts", "none", "Tag", "CellGrid");
+    end
 
     % Separators: a segment before each block of a group (the first one on the edge of the axes)
     for i = 1:n_elem
@@ -43,6 +61,30 @@ function create_scene(obj)
         end
     end
 
+    % Frames (l_frame): a box around each block of a group that is both a row and a column group
+    if d.l_frame
+        iv_row = find(d.sv_kind == "rowgroup");
+        iv_col = find(d.sv_kind == "colgroup");
+        for i = iv_row'
+            j = iv_col(d.sv_tag(iv_col) == d.sv_tag(i));
+            if isempty(j)
+                continue
+            end
+            for rv_r = d.c_block{i}'
+                for rv_c = d.c_block{j}'
+                    rv_x = [rv_c(1) - 0.5, rv_c(2) + 0.5];
+                    rv_y = [rv_r(1) - 0.5, rv_r(2) + 0.5];
+                    plt.Frame(end+1, 1) = line(ax, rv_x([1 2 2 1 1]), rv_y([1 1 2 2 1]), "Color", [0.15 0.15 0.15], ...
+                        "LineWidth", 1.2, "HitTest", "off", "PickableParts", "none", "Tag", "Frame");
+                end
+            end
+        end
+    end
+
+    % Clicks on the matrix (a dot, the image or the background): the group of the row clicked
+    wr = matlab.lang.WeakReference(obj);
+    set([plt.HitArea, plt.Image, plt.Pattern, plt.Zero, ax], "ButtonDownFcn", @(~, ~) click_matrix(wr));
+
     % Axes, labels, ticks and colorbar
     set(ax, "YDir", "reverse", "XLim", [0.5, max(n_col, 1) + 0.5], "YLim", [0.5, max(n_row, 1) + 0.5], ...
         "TickLabelInterpreter", "none", "TickLength", [0 0], "Box", "on", "Layer", "top", ...
@@ -55,15 +97,20 @@ function create_scene(obj)
     ylabel(ax, d.s_rowLabel, "Interpreter", "none");
     hold(ax, "off");
     plt.Colorbar = colorbar(ax);
-    set_ticks(ax, d.sv_rowName, d.sv_colName);
+    if d.l_groupTicks              % one label per group, at the middle of each of its blocks
+        set_group_ticks(ax, d);
+    else
+        set_ticks(ax, d.sv_rowName, d.sv_colName);
+    end
     fig = ancestor(ax, "figure");
     try                                 % the tick labels follow the size of the axes
-        plt.Listener = listener(fig, "SizeChanged", @(~, ~) set_ticks(ax, d.sv_rowName, d.sv_colName));
+        if ~d.l_groupTicks
+            plt.Listener = listener(fig, "SizeChanged", @(~, ~) set_ticks(ax, d.sv_rowName, d.sv_colName));
+        end
     catch
     end
 
     % Data tips: names and value; separators are clicks on their group
-    wr  = matlab.lang.WeakReference(obj);
     dcm = datacursormode(fig);
     fcn_prev = dcm.UpdateFcn;
     while isa(fcn_prev, "function_handle") && contains(func2str(fcn_prev), "hover_text(")
@@ -78,6 +125,45 @@ function create_scene(obj)
 
     obj.sct_plt = plt;
     obj.apply_style((1:n_elem)');
+end
+
+
+function click_matrix(wr)
+% Click on the matrix of the graph held by wr: the cell under CurrentPoint of the axes (click_cell).
+    arguments (Input)
+        wr  % Weak reference to the graph. <@Type> matlab.lang.WeakReference
+    end
+    G = wr.Handle;
+    if isempty(G) || ~isvalid(G) || isempty(G.sct_plt)
+        return
+    end
+    G.click_cell(G.ax(1).CurrentPoint(1, 1:2));
+end
+
+
+function set_group_ticks(ax, d)
+% Tick labels of the groups: one at the middle of each block of a group of rows or columns.
+    arguments (Input)
+        ax          % Axes of the matrix.
+        d struct    % Data of the graph (sv_tag, sv_kind, c_block).
+    end
+    rv_row = zeros(1, 0);  sv_row = strings(1, 0);
+    rv_col = zeros(1, 0);  sv_col = strings(1, 0);
+    for i = 1:numel(d.sv_tag)
+        rv_mid = mean(d.c_block{i}, 2)';
+        if d.sv_kind(i) == "rowgroup"
+            rv_row = [rv_row, rv_mid];                                  %#ok<AGROW>
+            sv_row = [sv_row, repmat(d.sv_tag(i), 1, numel(rv_mid))];   %#ok<AGROW>
+        else
+            rv_col = [rv_col, rv_mid];                                  %#ok<AGROW>
+            sv_col = [sv_col, repmat(d.sv_tag(i), 1, numel(rv_mid))];   %#ok<AGROW>
+        end
+    end
+    [rv_row, iv] = sort(rv_row);
+    sv_row = sv_row(iv);
+    [rv_col, iv] = sort(rv_col);
+    sv_col = sv_col(iv);
+    set(ax, "YTick", rv_row, "YTickLabel", sv_row, "XTick", rv_col, "XTickLabel", sv_col);
 end
 
 
@@ -124,13 +210,14 @@ function txt = hover_text(src, event_obj, wr, fcn_prev)
     if ~isempty(G) && isvalid(G) && ~isempty(G.sct_plt) && isgraphics(hObj)
         plt = G.sct_plt;
         d   = G.sct_data;
-        if hObj == plt.Image || hObj == plt.Pattern
+        if any(hObj == [plt.Image, plt.Pattern, plt.Zero, plt.HitArea])
             i = min(max(round(rv_p(2)), 1), numel(d.sv_rowName));
             j = min(max(round(rv_p(1)), 1), numel(d.sv_colName));
             v = full(d.c_matrix{G.i_time}(i, j));
             txt = {char("Row: " + d.sv_rowName(i) + " (" + d.sv_rowGroup(i) + ")"), ...
                    char("Column: " + d.sv_colName(j) + " (" + d.sv_colGroup(j) + ")"), ...
                    sprintf('Value: %.6g', v)};
+            G.click_cell([j i]);       % a data tip is the click of the data cursor mode
             return
         end
         i_row = find(plt.Separator == hObj, 1);

@@ -177,9 +177,11 @@ function [rm_pf, flag, output] = initialize(obj, opt)
             end
         catch ME
             % building the OPF problem of a split network can stop with an internal error (it has an
-            % identifier; GUILDA errors and the option errors of the arguments block are passed on)
+            % identifier; GUILDA errors and the option errors of the arguments block are passed on),
+            % or with the ProblemMismatch of SolverOPF (a bus without variables, e.g. one with no branch)
             if s_method == "OPF" && ~isempty(ME.identifier) && network_islands(obj) > 1 ...
-                    && ~startsWith(ME.identifier, ["GUILDA:","MATLAB:TooManyInputs","MATLAB:validators:","MATLAB:validation:"])
+                    && (~startsWith(ME.identifier, ["GUILDA:","MATLAB:TooManyInputs","MATLAB:validators:","MATLAB:validation:"]) ...
+                        || ME.identifier == "GUILDA:SolverOPF:ProblemMismatch")
                 stop_analysis(obj, ME.message, "GUILDA:PowerNetwork:InitializeOPFFailed", "GUILDA:PowerNetwork:InitializeOPFIsland")
             end
             rethrow(ME)

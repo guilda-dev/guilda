@@ -14,6 +14,13 @@ function draw_diagram_2d(obj, sct_g, fcn_click)
 % LabelMode shows them (from CompLabelXYZ and CompLabelArgs), on top. NodeLabelXYZ keeps
 % the places of the bus labels before fit_axes pushes overlapping ones apart. The colors,
 % sizes and widths are set afterwards by apply_style.
+%
+% The single-line diagram of plot_single_line_diagram (l_singleLine) draws everything in
+% black, its labels without a box in Helvetica, a generator (a class of component.generator) as a
+% circle with one period of a sine inside (one line object, Tag "GeneratorGlyph", radius
+% min(0.025*span, 0.8 times the first segment of its link); the link stops at the circle) and
+% a load (a class of component.load) as a filled triangle marker pointing away from its
+% bus along the first segment of its link.
     arguments (Input)
         obj
         sct_g (1,1) struct      % Geometry of diagram_geometry.
@@ -25,6 +32,29 @@ function draw_diagram_2d(obj, sct_g, fcn_click)
     n_e = obj.n_branch;
     d0  = sct_g.d0;
     rv_gray = [0.2 0.2 0.2];
+    l_sld = obj.l_singleLine;
+    if l_sld
+        rv_gray = [0 0 0];
+    end
+    % Single-line diagram: kind of each component (generator glyph, load triangle) and the
+    % first segment of its link (from the component towards the bus)
+    lv_gen  = false(n_c, 1);
+    lv_load = false(n_c, 1);
+    rm_dir  = zeros(n_c, 2);
+    rv_seg  = zeros(n_c, 1);
+    if l_sld && n_c > 0
+        lv_gen  = startsWith(obj.tab_component.class, "component.generator.");
+        lv_load = startsWith(obj.tab_component.class, "component.load.");
+        for c = 1:n_c
+            p = sct_g.c_link{c};
+            if size(p, 1) > 1
+                rm_dir(c, :) = p(1, 1:2) - p(2, 1:2);
+                rv_seg(c)    = norm(rm_dir(c, :));
+            end
+        end
+    end
+    rv_rg = min(0.025*sct_g.r_span, 0.8*rv_seg);    % radius of the generator circles
+    rv_rg(~(rv_rg > 0)) = 0.025*sct_g.r_span;
 
     % Branches and links
     h_edge = gobjects(n_e, 1);
@@ -36,6 +66,9 @@ function draw_diagram_2d(obj, sct_g, fcn_click)
     h_link = gobjects(n_c, 1);
     for c = 1:n_c
         p = sct_g.c_link{c};
+        if lv_gen(c) && rv_seg(c) > rv_rg(c)       % the link stops at the circle of the generator
+            p(1, 1:2) = p(1, 1:2) - rv_rg(c)*rm_dir(c, :)/rv_seg(c);
+        end
         h_link(c) = line(ax, p(:, 1), p(:, 2), p(:, 3), "Color", rv_gray, "LineWidth", obj.LinkWidth, ...
             "UserData", struct("Type", "Link", "Index", c), "ButtonDownFcn", fcn_click(n_b + n_c + n_e + c));
     end
@@ -81,15 +114,38 @@ function draw_diagram_2d(obj, sct_g, fcn_click)
     rm_comp0 = repmat(0.15, n_c, 3);
     for c = 1:n_c
         s_shape = obj.tab_component.graph.Shape(c);
-        if s_shape == "circle"
+        c_arg = {"UserData", struct("Type", "Component", "Index", c), "ButtonDownFcn", fcn_click(n_b + c)};
+        if l_sld
+            rm_comp0(c, :) = 0;
+        elseif s_shape == "circle"
             rm_comp0(c, :) = [0.611 0.466 0.125];
         elseif any(s_shape == ["^", "v", "<", ">"])
             rm_comp0(c, :) = [0.717 0.192 0.172];
         end
+        if lv_gen(c)                               % circle and one period of a sine, one line
+            r_g   = rv_rg(c);
+            rv_s  = linspace(-1, 1, 25);
+            rv_x  = rm_comp(c, 1) + [r_g*cos(rv_th), NaN, 0.7*r_g*rv_s];
+            rv_y  = rm_comp(c, 2) + [r_g*sin(rv_th), NaN, 0.4*r_g*sin(pi*rv_s)];
+            h_comp(c) = line(ax, rv_x, rv_y, rm_comp(c, 3) + zeros(size(rv_x)), "Color", rv_gray, ...
+                "LineWidth", obj.LinkWidth, "Tag", "GeneratorGlyph", c_arg{:});
+            continue
+        end
+        s_marker = marker_of(s_shape);
+        if lv_load(c)                              % a triangle pointing away from the bus
+            rv_d = rm_dir(c, :);
+            sv_dir = ["<", ">", "v", "^"];          % -x, +x, -y, +y
+            if rv_seg(c) == 0
+                s_marker = "v";
+            elseif abs(rv_d(1)) > abs(rv_d(2))
+                s_marker = sv_dir(1 + (rv_d(1) > 0));
+            else
+                s_marker = sv_dir(3 + (rv_d(2) > 0));
+            end
+        end
         h_comp(c) = line(ax, rm_comp(c, 1), rm_comp(c, 2), rm_comp(c, 3), "LineStyle", "none", ...
-            "Marker", marker_of(s_shape), "MarkerSize", 6, "MarkerFaceColor", rm_comp0(c, :), ...
-            "Color", rm_comp0(c, :), "Visible", s_shape ~= "none", ...
-            "UserData", struct("Type", "Component", "Index", c), "ButtonDownFcn", fcn_click(n_b + c));
+            "Marker", s_marker, "MarkerSize", 6, "MarkerFaceColor", rm_comp0(c, :), ...
+            "Color", rm_comp0(c, :), "Visible", s_shape ~= "none" || lv_load(c), c_arg{:});
     end
 
     % Buses: a bar is a segment, the other shapes a marker (over the components next to them)
@@ -118,6 +174,10 @@ function draw_diagram_2d(obj, sct_g, fcn_click)
     % Labels
     c_text  = {"FontSize", obj.LabelFontSize, "BackgroundColor", [0.98 0.98 0.98], ...
                "EdgeColor", [0.75 0.75 0.75], "Margin", 1, "PickableParts", "none"};
+    if l_sld                                       % plain text for a paper
+        c_text(4:2:6) = {"none", "none"};
+        c_text = [c_text, {"FontName", "Helvetica"}];
+    end
     r_gap   = 0.05*d0;
     h_label = gobjects(n_b, 1);
     for i = 1:n_b

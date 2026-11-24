@@ -4,6 +4,8 @@ function varargout = disp_summary(obj, opt)
 % Shows one block per section: a title line with the network, the layer, the section and
 % whether it is usable (output.lv_flag), and one bullet per item:
 %
+% - Contribution of (a result of get_contribution only): its targets sv_target. The
+%   numbers below are of the part alone and have no meaning for the whole system.
 % - Model: the Type and Port of the result (a port model for a layer other than the
 %   network), the point (the equilibrium, a given point, or the section at its rv_t: the
 %   time of {sim, rv_t}, the column of a matrix of points) and the Form.
@@ -59,6 +61,9 @@ function varargout = disp_summary(obj, opt)
             s_state = "usable";
         end
         sv = "Linearization of " + obj.s_network + " (layer " + s_layer + s_sec + "): " + s_state;
+        if ~isempty(obj.sv_target)
+            sv(end+1) = "- Contribution of: " + join(obj.sv_target, ", ") + " (the part alone; its numbers do not describe the whole system)"; %#ok<AGROW>
+        end
 
         s_point = "a given point";
         if isfield(obj.output, "l_equilibrium") && obj.output.l_equilibrium

@@ -12,6 +12,9 @@ function G = plot_eigenvalue(obj, opt)
 % It returns the chart G (GraphChart) with two marker sets of filled dots ("." markers,
 % MarkerSize 16): "stable" (the eigenvalues with a real part up to Tolerance, blue) and
 % "unstable" (red; a set without points when the model is stable). The imaginary axis is fixed drawing, not an element.
+% The subtitle says what the map shows: each eigenvalue lambda is a mode e^(lambda t) of
+% the linear model; Re lambda < 0 decays (its decay rate), Im lambda / 2 pi is its
+% frequency [Hz], and the damping ratio is -Re lambda / |lambda|.
 %
 % A result with several sections (numel(rv_t) > 1) gives a chart of every section: its
 % samples are the sections, at the times rv_t (the section numbers when rv_t is not
@@ -20,6 +23,9 @@ function G = plot_eigenvalue(obj, opt)
 % starts at Index. The axis limits hold the eigenvalues of every section, so that
 % G.animate() and a link to the graphs of the same simulation (G.link(S)) show the
 % eigenvalues move.
+%
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
 %
 % <@Examples>
 % ```matlab
@@ -54,6 +60,7 @@ function G = plot_eigenvalue(obj, opt)
         s_title = s_title + " at the given point";
     end
 
+    s_explain = "Each dot is a mode e^{\lambda t}: Re \lambda < 0 decays, Im \lambda/2\pi is its frequency; red: Re \lambda > " + opt.Tolerance;
     sct = struct();
     sct.sct_refline = struct("s_axis", "x", "r_value", 0, "rv_color", [0.15 0.15 0.15], "s_lineStyle", ":");
     if n_t == 1
@@ -68,6 +75,7 @@ function G = plot_eigenvalue(obj, opt)
             "sv_tag",   {"stable", "unstable"}, ...
             "rm_color", {[0 0.30 0.80], [0.85 0 0]});
         G = GraphChart(sct, Parent=opt.Parent);
+        subtitle(G.ax(1), s_explain, "FontSize", 8);
         return
     end
 
@@ -90,6 +98,7 @@ function G = plot_eigenvalue(obj, opt)
         "sv_tag",    {"stable", "unstable"}, ...
         "rm_color",  {[0 0.30 0.80], [0.85 0 0]});
     G = GraphChart(sct, Parent=opt.Parent);
+    subtitle(G.ax(1), s_explain, "FontSize", 8);
     G.set_time(rv_sample(opt.Index));
 end
 

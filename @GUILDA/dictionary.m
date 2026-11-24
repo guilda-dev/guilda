@@ -101,13 +101,8 @@ function data = make_classlist(data, cell_dirlist, l_disp)
             continue
         end
 
-        % テスト用のパッケージ：スキップ (テスト用のスタブをモデルのキーとして出さない)
-        if  list(idx).isdir && strcmp(char_name, '+DebugScript')
-            continue
-        end
-
-        % 開発者向けのフォルダ：スキップ (_GUILDAsystem/_admin、既定ではパス外)
-        if  list(idx).isdir && strcmp(char_name, '_admin')
+        % 検証・教科書のフォルダ：スキップ (ルートの _GUILDAverification、_GUILDAtextbook)
+        if  list(idx).isdir && ismember(char_name, {'_GUILDAverification', '_GUILDAtextbook'})
             continue
         end
 

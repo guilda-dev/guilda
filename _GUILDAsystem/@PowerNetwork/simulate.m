@@ -55,11 +55,11 @@ function [result, flag, output] = simulate(obj, s_scenario, opt)
 %
 % ```matlab
 % res = net.simulate("fault", Time=[0, 20]);                   % sc.Time is not changed
-% res = net.simulate("fault", Tolerance=1e-6, MaxStep=0.01);   % this call only
+% res = net.simulate("fault", Tolerance=1e-8, MaxStep=0.01);   % this call only
 % res = net.simulate("fault", SampleTime=0.01);                % t = 0, 0.01, 0.02, ...
 % [res, flag, output] = net.simulate("fault", StopOnOutOfStep=true, StopAngle=180);
 % output.outOfStep                                             % when flag == 2
-% GUILDA.setting("TimeSimulation", Tolerance=1e-6)             % every later run
+% GUILDA.setting("TimeSimulation", Tolerance=1e-8)             % every later run
 % res.export("fault.csv");
 % ```
 %

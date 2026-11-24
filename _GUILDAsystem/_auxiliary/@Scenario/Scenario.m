@@ -1,4 +1,4 @@
-classdef (Sealed = true) Scenario < LayerPackage
+classdef (Sealed = true) Scenario < auxiliary & LayerPackage
 % Simulation scenario: the time, the timed disturbances and a description of one time simulation.
 %
 % A scenario holds its disturbances as events (a_Event, in the order added), and the

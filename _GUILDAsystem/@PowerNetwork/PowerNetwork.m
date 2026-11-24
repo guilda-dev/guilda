@@ -38,7 +38,7 @@ classdef PowerNetwork < PowerSystemModel
 % - equilibrium (`initialize`), time simulation (`simulate`) of the scenarios it holds
 %   (`add_scenario`, `remove_scenario`, `a_Scenario`)
 % - linearization and eigenvalue analysis (`get_sys`)
-% - network diagrams (`plot_diagram`) and their layout (`get_layout`, `set_layout`), spring-mass pictures of the equilibrium
+% - network diagrams (`plot_diagram`, the black-and-white `plot_single_line_diagram`) and their layout (`get_layout`, `set_layout`), spring-mass pictures of the equilibrium
 %   (`plot_spring_model`), the signal connections of the controllers
 %   (`disp_connection`) and CSV / MATPOWER import and export
 %
@@ -194,6 +194,7 @@ classdef PowerNetwork < PowerSystemModel
         varargout = disp_powerflow(obj)
         varargout = disp_connection(obj, opt)
         G = plot_diagram(obj, opt)
+        G = plot_single_line_diagram(obj, opt)
         G = plot_spring_model(obj, opt)
 
         % Layout of the network diagrams (graph parameters of all elements)

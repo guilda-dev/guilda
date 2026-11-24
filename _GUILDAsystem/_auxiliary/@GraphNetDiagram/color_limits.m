@@ -2,7 +2,7 @@ function rv_lim = color_limits(obj)
 % Color limits in use: ColorLimits when it is finite, else the automatic limits.
 %
 % The automatic limits (ColorLimits with a NaN) are those of ColorMode over all samples
-% (update_color_scale); with "user" they are the 5th to 95th percentiles of the finite
+% (update_color_scale), or of BusColorMode when it is not "none"; with "user" they are the 5th to 95th percentiles of the finite
 % color data set (BusColorData, ComponentColorData, BranchColorData, LinkColorData;
 % color_percentile: [min, max] with fewer than 20 values or when they are equal), [0 1]
 % without one.
@@ -18,7 +18,7 @@ function rv_lim = color_limits(obj)
     end
     rv_lim = obj.ColorLimits;
     if any(isnan(rv_lim))
-        if obj.ColorMode == "user"
+        if obj.ColorMode == "user" && obj.BusColorMode == "none"
             rv_v = [obj.BusColorData; obj.ComponentColorData; obj.BranchColorData; obj.LinkColorData];
             rv_v = real(rv_v(isfinite(rv_v)));
             rv_lim = [0 1];

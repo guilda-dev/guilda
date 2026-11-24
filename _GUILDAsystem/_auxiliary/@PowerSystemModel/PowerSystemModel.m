@@ -27,6 +27,7 @@ classdef PowerSystemModel < LayerPackage
     methods
         Hz = get_Hz(obj)
         [sys, flag, output] = get_sys(obj, point, opt)
+        doc(obj)
     end
 
     methods

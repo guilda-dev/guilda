@@ -8,6 +8,7 @@
         <entry key="Required">{0} is required.</entry>
         <entry key="UnknownSignature">functionSignatures.json has no method "{0}" (GUILDA.update_keymap(Signature=true) writes it).</entry>
         <entry key="SharedTag">{0}: the tag {1} names {2} elements of the network ({3}); the call uses the tag only.</entry>
+        <entry key="NoPickTable">{0}: nothing to select ({1}).</entry>
         <entry key="UnknownTag">{0}: no element has the tag "{1}".</entry>
         <entry key="UnknownValue">{0} has no input "{1}" in its form (Value).</entry>
     </message>

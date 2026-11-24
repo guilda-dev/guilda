@@ -12,6 +12,9 @@ function cv_lambda = get_eigenvalue(obj, Type, opt)
 % section whose time rv_t is nearest to it. Index "all" returns a table with the columns
 % Time (rv_t of the section), Index and Eigenvalue, one row per eigenvalue of every section.
 %
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE9bus();

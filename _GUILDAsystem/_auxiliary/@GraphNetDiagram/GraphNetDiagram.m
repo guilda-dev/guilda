@@ -10,6 +10,17 @@ classdef GraphNetDiagram < GraphBase
 % components MarkerSizeMode and the heights of the buses BusHeightMode. Changing a
 % property updates the drawing; hovering over an element shows its values.
 %
+% Every value drawn by color can be read. The data tip of an element (hover, or a click in
+% the data cursor mode) has, under its tag, one line "<name> = <value>" after a square of
+% its color: the value that colors it at the sample shown (BusColorData of a bus; the
+% quantity of ColorMode, or BranchColorData and LinkColorData under "user", of a branch
+% and a link; ComponentColorData or the value of ColorMode of a component), written with
+% %.5g, e.g. "LMP [cost/pu] = 3901.6". The name is the colorbar label: ColorbarLabel, or
+% with "" the quantity of ColorMode ("|I| [pu]", "Loss [pu]", ...), or "color" when there
+% is none ("user"). The line is there even when the tip lists the same quantity below (|I|
+% of the "from" end with "I", P_loss with "Loss"): it is always the colored value, named as
+% the colorbar. An element without a finite color value (NaN) has no such line.
+%
 % Dimension chooses the drawing. "2D" (default) draws flat symbols, lines and markers
 % without lighting: a bar bus is a line segment, a point bus and a component a marker, a
 % branch and a link a polyline, and a transformer two overlapping circles near the "from"
@@ -17,7 +28,10 @@ classdef GraphNetDiagram < GraphBase
 % Both put each bus at its height (BusHeightMode; 0 for "none"), a branch climbs linearly
 % along its path between the heights of its ends, and a component and its link stay at
 % the height of its bus. The first drawing looks from the top; a later drawing (Dimension,
-% BusHeightMode, set_position, set_data) keeps the view the user rotated to.
+% BusHeightMode, set_position, set_data) keeps the view the user rotated to. When the 3D
+% drawing gets heights (the first drawing too) while it looks from the top, it turns to
+% an oblique view (azimuth -37.5, elevation 30), and back to the top when the heights go
+% away in that view.
 %
 % Sizes and widths are in points (pt), as LineWidth and MarkerSize of MATLAB, so they do
 % not depend on the coordinates. The value of the quantity of BranchWidthMode is mapped
@@ -93,12 +107,23 @@ classdef GraphNetDiagram < GraphBase
 %   color value) a component without a value ("Loss", a tripped unit, a NaN row of "user")
 %   is black; with "none" the components keep their class colors. ComponentColor rows
 %   override both.
+% - `BusColorMode`: "none" (default), "V" (|V| [pu]) or "angle" (the angle of V in
+%   degrees, as in the data tip of a bus). With "V" or "angle" the buses are colored by
+%   that quantity at the sample shown (BusColorData, written again at every sample) on the
+%   colormap, and the quantity takes the colorbar: its label is "|V| [pu]" or "∠V [deg]"
+%   (or ColorbarLabel) and the automatic limits are the smallest and the largest value
+%   over the buses and all samples. The colors of ColorMode are not drawn meanwhile: the
+%   branches, links and components have no color value (as with ColorMode "none"; the
+%   components keep their class colors), since one colorbar cannot show two quantities.
+%   ColorMode keeps its value and colors them again when BusColorMode is "none". The data
+%   tip and the "value" label of a bus show the line of its color value.
 % - `ColorLimits`: [NaN NaN] (default) takes the limits from the data of all samples,
 %   leaving out the top outliers: with m the 95th percentile of |value| over the branches,
 %   the links and all samples (nearest rank), [0, m] for a magnitude ("I", "Loss") and
 %   [-m, m] for a signed quantity ("P", "Q"; the injections of the components are
 %   signed); the 5th to 95th percentiles with "user". Values beyond take the end colors.
 %   With fewer than 20 values, or a percentile of 0, the largest (smallest) value is used.
+%   With BusColorMode "V" or "angle", the smallest to the largest bus value instead.
 %   A numeric [cmin cmax] fixes them.
 %   Limits closer than 1e-6 of their size (a field constant up to rounding) are shown as
 %   c(1 -/+ 1e-3) around their middle c, so that the colorbar ticks stay readable.
@@ -111,21 +136,39 @@ classdef GraphNetDiagram < GraphBase
 % - `MarkerSizeMode`: "none" (default), "P", "Q" or "S" (|P|, |Q|, |P + jQ| of the
 %   injection of a component, and of the sum of the components of a bus).
 % - `BusHeightMode`: "V" (|V|), "angle" (angle of V), "Vimag" (imaginary part of V), "P",
-%   "Q" (power injections) or "none".
+%   "Q" (power injections) or "none". In 2D the height is the value. In 3D it is scaled
+%   about the reference value (1 pu for "V", 0 for the others) so that the values of all
+%   samples and the reference span a quarter of the drawing, and the heights are drawn
+%   readable: a light floor with a grid below the lowest value of all samples, the
+%   shadows of the bars, branches and links on it, a thin post from each bus down to it,
+%   a translucent reference plane labeled with its value ("|V| = 1"), and a z axis with
+%   the values and the quantity ("|V| [pu]", "∠V [rad]", "Im V [pu]", "P [pu]", "Q
+%   [pu]"). The floor and the scale are the same at every sample (set_time), so the posts
+%   compare across times. None of these can be clicked or has a data tip. "none" draws
+%   none of them.
 % - `LabelMode`: "bus" (default: the tags of the buses), "tag" (the tags of the buses and
-%   components), "value" (the tags and the values), "user" (the texts set in BusLabel and
-%   ComponentLabel are kept) or "none". With "bus", "tag" and "value" the labels are
-%   written again at every sample. In 2D, labels that overlap are moved apart vertically
-%   and the axes take them in. The labels are laid out again whenever the limits or the
-%   pixel size of the axes change (a GUI setting the limits or resizing its panels, a
-%   resized figure, a hidden tab shown): limits set from outside then stay.
+%   components), "value" (the tags and the values: ∠V and |V| of a bus, P and Q of a
+%   component, and the line "<name>=<value>" of its color value with the name and format
+%   of the data tip, when it is finite; branches have no labels; when the color value of
+%   a bus is |V| or ∠V (BusColorMode "V" or "angle", or ColorMode "user" with a
+%   ColorbarLabel that starts with "|V|" or "∠V", spaces ignored), the label has only
+%   that line and not the fixed "|V|=" or "∠V=" line, so |V| is written once), "user" (the texts set in
+%   BusLabel and ComponentLabel are kept) or "none". With "bus", "tag" and "value" the
+%   labels are written again at every sample; the "value" labels also follow
+%   BusColorData, ComponentColorData, ColorbarLabel and ColorMode set from outside (e.g.
+%   in a TimeChangedFcn), row by row for the color values. In 2D, labels that overlap are
+%   moved apart vertically and the axes take them in. The labels are laid out again
+%   whenever the limits or the pixel size of the axes change (a GUI setting the limits or
+%   resizing its panels, a resized figure, a hidden tab shown): limits set from outside
+%   then stay.
 % - `TitleFormat`: with more than one sample, the title is sprintf(TitleFormat, t) at every
 %   sample, with t the time of the sample shown (default "t = %.2f s"); for samples named
 %   by the state (s_sampleName, sv_sampleText) the title is the text of the sample
 %   instead. With "" the title is never written, so a title set by title(G.ax, ...) stays.
 % - `ColorbarLabel`: label of the colorbar; it stays when the diagram is drawn again. With
 %   "" (default) the label is the quantity of ColorMode: "|I| [pu]", "P [pu]", "Q [pu]" or
-%   "Loss [pu]" (none for "user").
+%   "Loss [pu]" (none for "user"). It is also the name of the color value in the data tips
+%   and the "value" labels ("color" when there is none).
 %
 % A title set by title(G.ax, ...) also stays when the diagram is drawn again (Dimension,
 % set_position, set_data, or in 3D BusHeightMode and LinkWidth). The colorbar is shown
@@ -157,6 +200,8 @@ classdef GraphNetDiagram < GraphBase
 % net.initialize();
 % G = net.plot_diagram();
 % G.ColorMode = "P";
+% G.BusColorMode = "V";                   % the buses by |V| (it takes the colorbar)
+% G.BusColorMode = "none";                % the branches by P again
 % G.BusHeightMode = "V";
 % G.MarkerSizeMode = "P";
 % G.BranchWidthRange = [0.5 6];
@@ -182,6 +227,7 @@ classdef GraphNetDiagram < GraphBase
     end
     properties (SetObservable) % Appearance (controls of show_controls)
         ColorMode (1,1) string {mustBeMember(ColorMode, ["none","Loss","I","P","Q","user"])} = "I"     % Quantity that colors the branches and links (see the class help).
+        BusColorMode (1,1) string {mustBeMember(BusColorMode, ["none","V","angle"])} = "none"          % Quantity that colors the buses: "V" (|V|), "angle" (∠V [deg]) or "none"; it takes the colorbar (see the class help).
         LabelFontSize (1,1) double = 5                                                                  % Font size of the labels.
     end
     properties % Appearance
@@ -270,6 +316,9 @@ classdef GraphNetDiagram < GraphBase
         l_labelBusy (1,1) logical = false                                                               % fit_axes is laying the labels out: the listener does nothing.
         l_labelAuto (1,1) logical = false                                                               % reflect_node_label is writing the labels of LabelMode: set.ComponentLabel makes no text objects.
     end
+    properties (Access = {?PowerNetwork, ?ResultPF}) % Single-line diagram for papers
+        l_singleLine (1,1) logical = false                                                              % Black-and-white symbols of plot_single_line_diagram (generator circles with a sine, load triangles, plain labels); setting it draws the diagram again.
+    end
     properties (Access = private) % Flow animation
         sct_flow = struct("rm_q", zeros(0, 1), "r_qmax", NaN, "rv_v", zeros(0, 1), "rv_dir", zeros(0, 1), "rv_phase", zeros(0, 1)) % Flow values (elements x samples, branches then links), speeds, directions and phases of the dots.
         sct_flowPath = struct.empty                                                                     % Paths of the dots of the branches and of the links (flow_paths).
@@ -341,12 +390,13 @@ classdef GraphNetDiagram < GraphBase
         update_scale(obj)
         iv_row = update_sizes(obj)
         reflect_color_mode(obj)
-        reflect_node_label(obj)
+        reflect_node_label(obj, iv_bus, iv_comp)
         make_component_labels(obj, iv_comp)
         reflect_arrow_forward(obj)
         rm_color = color_of_values(obj, rv_value)
-        [rm_branch, rm_link] = color_values(obj, iv_k)
+        [rm_branch, rm_link, rm_bus] = color_values(obj, iv_k)
         rv_lim = color_limits(obj)
+        [sv_line, rv_value, s_label] = color_readout(obj, s_kind, iv_index, s_sep)
         update_color_scale(obj)
         fit_axes(obj, s_mode)
         flag = validate(obj)
@@ -375,6 +425,24 @@ classdef GraphNetDiagram < GraphBase
             obj.update_color_scale();      % the automatic limits of the new quantity
             if validate(obj); return; end
             obj.reflect_color_mode();
+            refresh_value_labels(obj);     % the name of the color values follows the quantity
+        end
+
+        function set.BusColorMode(obj, s_mode)
+            l_clear = s_mode == "none" && obj.BusColorMode ~= "none";
+            obj.BusColorMode = s_mode;
+            obj.update_color_scale();      % the automatic limits of the new quantity
+            if l_clear                     % the bus values written by the mode go
+                obj.BusColorData = nan(obj.n_bus, 1);                       %#ok<MCSUP>
+            end
+            if validate(obj); return; end
+            obj.reflect_color_mode();
+            refresh_value_labels(obj);     % the name of the color values follows the quantity
+        end
+
+        function set.l_singleLine(obj, val)
+            obj.l_singleLine = val;
+            redraw(obj);
         end
 
         % Setters of the label appearance
@@ -459,11 +527,17 @@ classdef GraphNetDiagram < GraphBase
             iv = changed_rows(obj.BusColorData, rv_value);
             obj.BusColorData = rv_value;
             restyle(obj, "bus", iv);
+            if ~isempty(iv)
+                refresh_value_labels(obj, iv, zeros(0, 1));
+            end
         end
         function set.ComponentColorData(obj, rv_value)
             iv = changed_rows(obj.ComponentColorData, rv_value);
             obj.ComponentColorData = rv_value;
             restyle(obj, "component", iv);
+            if ~isempty(iv)
+                refresh_value_labels(obj, zeros(0, 1), iv);
+            end
         end
         function set.BranchColorData(obj, rv_value)
             iv = changed_rows(obj.BranchColorData, rv_value);
@@ -584,10 +658,13 @@ classdef GraphNetDiagram < GraphBase
         end
         function set.ColorbarLabel(obj, s_label)
             obj.ColorbarLabel = s_label;
-            if validate(obj) || ~isscalar(obj.ax(1).Colorbar)               %#ok<MCSUP>
+            if validate(obj)
                 return
             end
-            obj.apply_style(zeros(0, 1));  % the colorbar part only: the label ("": that of ColorMode)
+            refresh_value_labels(obj);     % the name of the color values in the labels
+            if isscalar(obj.ax(1).Colorbar)                                 %#ok<MCSUP>
+                obj.apply_style(zeros(0, 1));  % the colorbar part only: the label ("": that of ColorMode)
+            end
         end
     end
 end
@@ -678,6 +755,33 @@ function restyle_all(obj)
         return
     end
     obj.apply_style((1:height(obj.element_table()))');
+end
+
+
+function refresh_value_labels(obj, iv_bus, iv_comp)
+% Write the labels of LabelMode "value" again after a color value or its name changed.
+%
+% Only the rows iv_bus and iv_comp are written (reflect_node_label; default: all). In 2D,
+% when a label gained or lost its line of the color value, the labels are laid out again:
+% the limits are fit again while they are still the ones fit_axes set, else they stay.
+    arguments (Input)
+        obj                                           % The diagram.
+        iv_bus (:,1) double = (1:obj.n_bus)'          % Buses whose color value changed.
+        iv_comp (:,1) double = (1:obj.n_component)'   % Components whose color value changed.
+    end
+    if obj.LabelMode ~= "value" || obj.l_drawing || validate(obj)
+        return
+    end
+    rv_lines = [count(obj.BusLabel, newline); count(obj.ComponentLabel, newline)];
+    obj.reflect_node_label(iv_bus, iv_comp);
+    if obj.Dimension == "2D" && ~isequaln(rv_lines, [count(obj.BusLabel, newline); count(obj.ComponentLabel, newline)])
+        ax = obj.ax(1);
+        if isfield(obj.sct_plt, "FitLim") && isequal([ax.XLim, ax.YLim], obj.sct_plt.FitLim)
+            obj.fit_axes("fit");
+        else
+            obj.fit_axes("labels");
+        end
+    end
 end
 
 

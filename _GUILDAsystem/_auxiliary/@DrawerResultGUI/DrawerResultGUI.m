@@ -25,14 +25,16 @@ classdef DrawerResultGUI < auxiliary
 %   GraphBase (G.show_controls) stands right of the plot panel. Its changes only set
 %   properties of the graph and are not logged: they change no variable, and the script
 %   draws the plots with their defaults.
-% - A plot that animates (a GraphBase with two or more samples other than a time chart,
-%   e.g. ResultODE.plot_diagram) starts playing once it is drawn in a visible window, as if
-%   its Play button had been pressed (autoplay, G.play(); never under matlab -batch or in a
-%   hidden window). A time chart plays only when another output of the same call is a
-%   graph that animates (ResultOPF.plot_iteration: the chart plays and the linked network
-%   diagram follows it, one playback); a plain time chart (plot_trajectory) does not. It does not block the window, and stops when the window closes, when
-%   another plot replaces it, or with Pause of the playback bar. Network diagrams run their
-%   flow animation (FlowAnimation).
+% - A plot that animates starts playing once it is drawn in a visible window, as if its
+%   Play button had been pressed (autoplay; never under matlab -batch or in a hidden
+%   window): the first output graph of the call with a playback bar gets G.play(), so one
+%   timer plays (ResultODE.plot_diagram: G plays and its linked side chart G_chart
+%   follows). A chart whose time only moves a cursor has no bar and does not play
+%   (plot_trajectory, ResultOPF.plot_iteration). This holds for the
+%   first plot of the default view too. It does not block the window, and stops when the
+%   window closes, when another plot replaces it, or with Pause of the playback bar.
+%   Network diagrams run their flow animation (FlowAnimation). The control panel of
+%   "Display options" belongs to the first graph output (for [G, G_chart]: G).
 %
 % A button runs its method as a line of MATLAB code through the history (HistoryGUILDA.run),
 % on the result variable of its workspace. A method with options first asks for them
@@ -40,7 +42,7 @@ classdef DrawerResultGUI < auxiliary
 % options runs at once. The code is what the log and the script show:
 %
 % - plot_*: `G = res.plot_voltage(Quantity="angle", Parent=h_parent);` with the outputs named
-%   as in the signature (`[G_chart, G_net] = res.plot_iteration(Parent=h_parent);`). Before
+%   as in the signature (`[G, G_chart] = res.plot_diagram(Parent=h_parent);`). Before
 %   each run the GUI sets h_parent of the workspace to its plot panel and clears the panel.
 %   The history gets the entry `h_parent = [];` once, before the first plot of any result
 %   GUI, so the exported script draws every plot in a new figure.

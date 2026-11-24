@@ -49,7 +49,8 @@ function [sct_solution, flag, output] = solve(obj, prob, x0, tab_bus, tab_compon
         sv_bad = [sv_bad; c_name{k}(lv_bad)]; %#ok<AGROW>
     end
     if ~isempty(sv_bad)
-        error(msg("GUILDA:SolverOPF:ProblemMismatch", s_method, join(sort(sv_bad), ", ")))
+        % with its identifier, so that initialize(Method="OPF") can read it as a split network
+        error("GUILDA:SolverOPF:ProblemMismatch", "%s", msg("GUILDA:SolverOPF:ProblemMismatch", s_method, join(sort(sv_bad), ", ")))
     end
 
     if sct_options.WarmStart && ~isempty(obj.sv_warmBus) && isequal(obj.sv_warmBus, sv_bus)

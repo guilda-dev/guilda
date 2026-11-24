@@ -17,6 +17,10 @@ function update_scene(obj, k)
     if obj.Display == "pattern"
         [iv_i, iv_j] = find(abs(M) > r_tol);
         set(plt.Pattern, "XData", reshape(iv_j, 1, []), "YData", reshape(iv_i, 1, []), "Visible", "on");
+        if d.s_pattern == "circle"     % the zero entries (not NaN) as hollow circles
+            [iv_i, iv_j] = find(~(abs(M) > r_tol) & ~isnan(M));
+            set(plt.Zero, "XData", reshape(iv_j, 1, []), "YData", reshape(iv_i, 1, []), "Visible", "on");
+        end
         set(plt.Image, "Visible", "off");
         set(plt.Colorbar, "Visible", "off");
     else
@@ -66,17 +70,29 @@ function update_scene(obj, k)
         else
             set(plt.Image, "CData", C, "AlphaData", double(l_show), "Visible", "on");
         end
-        set(plt.Pattern, "Visible", "off");
+        set([plt.Pattern, plt.Zero], "Visible", "off");
         colormap(ax, rm_map);
         ax.CLim = rv_lim;
         set(plt.Colorbar, "Visible", "on");
         plt.Colorbar.Label.String = s_label;
     end
 
-    % Title: the title of the data and the time (not for one sample at t = 0)
+    % Values written in the cells (l_valueText): the entries above Tolerance, up to 900
+    delete(plt.Text(isgraphics(plt.Text)));
+    obj.sct_plt.Text = gobjects(0, 1);
+    if d.l_valueText
+        [iv_i, iv_j] = find(abs(M) > r_tol);
+        rv_v = M(sub2ind(size(M), iv_i, iv_j));
+        if numel(rv_v) <= 900
+            obj.sct_plt.Text = text(ax, iv_j, iv_i, compose("%.3g", full(rv_v)), "HorizontalAlignment", "center", ...
+                "FontSize", 8, "HitTest", "off", "PickableParts", "none", "Interpreter", "none", "Tag", "Value");
+        end
+    end
+
+    % Title: the title of the data and the sample (not for one sample at t = 0 without a text)
     s_title = d.s_title;
-    if numel(obj.rv_t) > 1 || obj.rv_t(1) ~= 0
-        s_time = sprintf("t = %.4g s", obj.rv_t(k));
+    if numel(obj.rv_t) > 1 || obj.rv_t(1) ~= 0 || ~isempty(obj.sv_sampleText)
+        s_time = obj.sample_text(k, "t = %.4g s");
         s_title = join([s_title(s_title ~= ""), s_time], ", ");
     end
     title(ax, s_title, "Interpreter", "none");

@@ -7,7 +7,12 @@ function create_scene(obj)
 % when they overlap). 2D looks with an orthographic projection and draws the children
 % in their order (SortMethod "childorder", no depth sorting of the flat symbols); 3D with
 % a perspective projection, a fixed view angle (vis3d) and lights. The first drawing
-% looks from the top; later drawings keep the view of the axes. The colorbar is shown by
+% looks from the top; later drawings keep the view of the axes. In 3D with BusHeightMode
+% other than "none" (the height guide of draw_graph_network), the z axis shows the
+% quantity and its unit, the limits take in the floor and the top of every sample, and
+% the view turns to az -37.5, el 30 when the heights appear while the axes look from the
+% top (back to the top when they go away and that view was kept); the tiled layout of the
+% axes then has a loose padding, so that the z label stays inside the figure. The colorbar is shown by
 % apply_style when an element has a color value. The callbacks (clicks, data tips) hold
 % the diagram by a weak reference only, so that saving the figure does not save it.
 %
@@ -31,12 +36,19 @@ function create_scene(obj)
     if l_keepView
         [r_az, r_el] = view(ax);
     end
+    % Whether the drawing before had the height guide (3D with BusHeightMode): the view
+    % turns to the oblique default only when the guide appears or goes away
+    plt_before = obj.sct_plt;
+    if isempty(plt_before)
+        plt_before = obj.sct_pltPrevious;
+    end
+    l_guideBefore = isscalar(plt_before) && isfield(plt_before, "HeightGuide") && ~isempty(plt_before.HeightGuide);
     % A 2D redraw by set_data keeps the objects of the drawing before when what they show
     % stays: the geometry, the tags, the shapes and styles, the link width and the label font
     sct_g = obj.diagram_geometry();
     sct_key = struct("g", sct_g, "bus", {obj.sv_bus}, "component", {obj.sv_componentTag}, "branch", {obj.sv_branch}, ...
         "busGraph", obj.tab_bus.graph, "branchGraph", obj.tab_branch.graph, "componentGraph", [], ...
-        "font", {{obj.LinkWidth, obj.LabelFontSize, obj.LabelFontWeight}});
+        "font", {{obj.LinkWidth, obj.LabelFontSize, obj.LabelFontWeight, obj.l_singleLine}});
     if obj.n_component > 0
         sct_key.componentGraph = obj.tab_component.graph;
     end
@@ -86,7 +98,7 @@ function create_scene(obj)
     obj.apply_style((1:height(obj.element_table()))');
     obj.reflect_arrow_forward();
 
-    % Box of the drawing (bus centers and bar ends, components, paths) for fit_axes
+    % Box of the drawing (bus centers and bar ends, components, generator circles, paths) for fit_axes
     tab_g = obj.tab_bus.graph;
     rv_h  = tab_g.Length/2;
     rv_h(~isfinite(rv_h)) = 0;
@@ -97,9 +109,20 @@ function create_scene(obj)
         rm_d = [rv_h.*lv_h, rv_h.*lv_v, zeros(obj.n_bus, 1)];
         rm_p = [rm_p; sct_g.rm_bus - rm_d; sct_g.rm_bus + rm_d];
     end
+    hv_glyph = findobj(obj.sct_plt.CompMain(isgraphics(obj.sct_plt.CompMain)), "flat", "Tag", "GeneratorGlyph");
+    for h = reshape(hv_glyph, 1, [])    % the generator circles of the single-line diagram
+        rm_p = [rm_p; h.XData(:), h.YData(:), h.ZData(:)]; %#ok<AGROW>
+    end
     rm_p = rm_p(all(isfinite(rm_p), 2), :);
     if isempty(rm_p)
         rm_p = [0 0 0; 1 1 0];
+    end
+    sct_guide = struct.empty;
+    if isfield(obj.sct_plt, "HeightGuide")
+        sct_guide = obj.sct_plt.HeightGuide;
+    end
+    if ~isempty(sct_guide)                  % the floor and the top of every sample: limits that stay over time
+        rm_p = [rm_p; rm_p(1, 1:2), sct_guide.ZFloor; rm_p(1, 1:2), sct_guide.ZTop];
     end
     obj.sct_plt.DrawBox = [min(rm_p, [], 1); max(rm_p, [], 1)];
 
@@ -130,12 +153,45 @@ function create_scene(obj)
         light(ax, "Position", [0 0 1], "Style", "infinite", "Color", [0.20 0.20 0.20]);
         lighting(ax, "gouraud");
         material(ax, "shiny");
+        if ~isempty(sct_guide)              % the z axis tells the values (1-2-5 steps), the quantity and its unit
+            r_ref   = sct_guide.ZReference;
+            rv_val  = r_ref + ([sct_guide.ZFloor, sct_guide.ZTop] - r_ref)/sct_guide.Scale;
+            rv_step = 10^floor(log10(diff(rv_val)/5))*[1 2 5 10];
+            r_step  = rv_step(find(rv_step >= diff(rv_val)/5, 1));
+            rv_tick = (ceil(rv_val(1)/r_step):floor(rv_val(2)/r_step))*r_step;
+            ax.ZColor = [0.35 0.35 0.35];
+            zticks(ax, r_ref + sct_guide.Scale*(rv_tick - r_ref));
+            zticklabels(ax, compose("%g", round(rv_tick/r_step)*r_step + 0));   % + 0: no "-0"
+            zlabel(ax, sct_guide.Name);
+        end
     end
-    if l_keepView
+    % The first 3D drawing with heights looks obliquely (from the top, the heights could
+    % not be seen); the view goes back to the top when the heights go away and it was
+    % still that oblique view. A view the user rotated to stays.
+    rv_oblique = [-37.5 30];
+    if ~isempty(sct_guide) && ~l_guideBefore && (~l_keepView || all(abs([r_az r_el] - [0 90]) < 1e-9))
+        view(ax, rv_oblique);
+    elseif isempty(sct_guide) && l_guideBefore && l_keepView && all(abs([r_az r_el] - rv_oblique) < 1e-9)
+        view(ax, 0, 90);
+    elseif l_keepView
         view(ax, r_az, r_el);
     end
     obj.l_viewSet = true;
     hold(ax, "off");
+    % The z label of the height guide lies left of the plot box, where a compact tiled
+    % layout (make_axes) leaves no room (3D axes report no tight inset): the layout takes
+    % a loose padding while the guide is drawn, a compact one otherwise. The single-line
+    % diagram keeps the padding of plot_single_line_diagram.
+    tl = ax.Parent;
+    if isa(tl, "matlab.graphics.layout.TiledChartLayout") && ~obj.l_singleLine
+        s_pad = "compact";
+        if ~isempty(sct_guide)
+            s_pad = "loose";
+        end
+        if tl.Padding ~= s_pad
+            tl.Padding = s_pad;
+        end
+    end
 
     fig = ancestor(ax, "figure");
     try                                 % a uifigure may not take these settings
@@ -163,6 +219,13 @@ end
 
 function txt = customhover(event_obj, wr)
 % Data tip text of the element under the cursor; the data tip is also a click on it.
+%
+% Under the first line (the tag), the color value of the element at the sample shown gets
+% one line "<name> = <value>" (color_readout: the name of the colorbar, %.5g) after a
+% square of its color, when it is finite: BusColorData of a bus, BranchColorData of a
+% branch (the quantity of ColorMode, or the values of "user"), ComponentColorData of a
+% component and LinkColorData of a link. It is the line of the colored value even when the
+% tip lists the same quantity (|I| of the "from" end with "I", P_loss with "Loss").
     arguments (Input)
         event_obj  % Event data of the data tip.
         wr         % Weak reference to the diagram. <@Type> matlab.lang.WeakReference
@@ -196,6 +259,11 @@ function txt = customhover(event_obj, wr)
             i_row = G.n_bus + G.n_component + G.n_branch + i;
         otherwise
             return
+    end
+    [s_line, r_value] = G.color_readout(lower(string(sct_ud.Type)), i);
+    if ~ismissing(s_line)
+        s_line = sprintf('\\fontname{SansSerif}{\\color[rgb]{%.3f,%.3f,%.3f}■} %s', G.color_of_values(r_value), s_line);
+        txt = [txt(1), {s_line}, txt(2:end)];
     end
     G.click_element(i_row);   % a data tip is the click of the data cursor mode
 end

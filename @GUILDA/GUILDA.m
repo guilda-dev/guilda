@@ -37,7 +37,7 @@ classdef GUILDA < handle
             % The following operations are executed:
             %
             %   o Print the GUILDA logo
-            %   x Add paths (the developer folder _GUILDAsystem/_admin only when DeveloperPath is true)
+            %   x Add paths (also _GUILDAverification and _GUILDAtextbook when they exist; the log only when PrintPathLog is true)
             %   o Check version requirements
             %   o Update the documentation database
             %   o Update the model key map (UpdateKeyMap: "none", "silent" or "disp")

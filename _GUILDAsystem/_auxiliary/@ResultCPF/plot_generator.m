@@ -1,4 +1,4 @@
-function G = plot_generator(obj, opt)
+function [G, G_pv] = plot_generator(obj, opt)
 % Plot the active or reactive power of the generators along the path.
 %
 % The generators are the components with Q = NaN in the powerflow parameters of the
@@ -24,6 +24,15 @@ function G = plot_generator(obj, opt)
 % It returns the chart G (GraphChart): one line per generator, tagged with the component
 % tag.
 %
+% With PVCurve true (default), the PV curves of PVBus (|V| [pu] against lambda, as
+% plot_pvcurve, with the nose line) are an extra panel on top of the chart: it shares the
+% lambda axis (the x axes of the lambda panels are linked) and is a time panel with the
+% marker cursor, so set_time(k) puts a marker on each PV curve at step k too. Its lines
+% are tagged "V_" + bus tag (legend: the bus tag) and come after the elements above in
+% tab_element, so their tags and rows stay. G_pv is then G. PVCurve false, or an axes or
+% uiaxes Parent, draws the chart alone as before (G_pv []). A PVBus tag that is not in
+% sv_bus stops with GUILDA:ResultCPF:UnknownBus.
+%
 % <@Examples>
 % ```matlab
 % res = net.calculate_continuation_powerflow(LoadBus=["B009","B014"], Limits="Q");
@@ -36,10 +45,13 @@ function G = plot_generator(obj, opt)
         obj
         opt.Quantity (1,1) string {mustBeMember(opt.Quantity, ["P","Q","Qmargin"])} = "Q"  % Value of the lines (see the list).
         opt.Generator {mustBeText} = "all"  % Tags of the generators (components with Q = NaN in powerflow) to draw; "all" for every one.
+        opt.PVCurve (1,1) logical = true  % Draw the PV curves with the plot (see the help); false: the plot alone.
+        opt.PVBus {mustBeText} = ""       % Buses of the PV curves: "" those of plot_pvcurve (options.LoadBus; every bus when none), "all" every bus, or bus tags.
         opt.Parent = []  % Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure.
     end
     arguments (Output)
-        G  % The chart (GraphChart), one line per generator.
+        G     % The chart (GraphChart), one line per generator.
+        G_pv  % The chart with the PV panel: G itself; [] with PVCurve false or an axes Parent.
     end
     check_step_data(obj, "plot_generator", ["cm_Vbus", "cm_Icomponent", "sct_network"]);
 
@@ -124,5 +136,5 @@ function G = plot_generator(obj, opt)
         sct.sct_refline(end+1) = struct("s_axis", "y", "r_value", 0, "s_label", "", ...
             "rv_color", [0.15 0.15 0.15], "s_lineStyle", ":");
     end
-    G = GraphChart(sct, Parent=opt.Parent);
+    [G, G_pv] = pair_pvcurve(obj, opt, sct);
 end

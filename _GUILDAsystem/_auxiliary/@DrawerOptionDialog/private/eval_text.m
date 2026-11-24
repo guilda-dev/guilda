@@ -1,5 +1,5 @@
-function [value, l_ok] = eval_text(s_expr, obj, arg)
-% Value of an expression of functionSignatures.json (a default or a choices list), if it can be evaluated here.
+function [value, l_ok, s_error] = eval_text(s_expr, obj, arg)
+% Value of an expression of functionSignatures.json (a default, a choices list or a picker table), if it can be evaluated here.
 %
 % The expression is evaluated in this function, whose only variables for it are obj and arg
 % (the values of other inputs of the method, `arg.unit`, see eval_depend): an expression on
@@ -12,15 +12,18 @@ function [value, l_ok] = eval_text(s_expr, obj, arg)
     arguments (Output)
         value               % Value of the expression ([] when it cannot be evaluated).
         l_ok (1,1) logical  % True when the expression was evaluated.
+        s_error (1,1) string  % Message of the error of the expression ("" when it was evaluated or is empty).
     end
     value = [];
     l_ok  = false;
+    s_error = "";
     if isempty(s_expr) || strtrim(s_expr) == ""
         return
     end
     try
         value = eval(char(s_expr));
         l_ok  = true;
-    catch
+    catch ME
+        s_error = string(ME.message);
     end
 end

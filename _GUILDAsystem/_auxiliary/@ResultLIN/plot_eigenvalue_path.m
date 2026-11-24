@@ -13,10 +13,15 @@ function G = plot_eigenvalue_path(obj, opt)
 % The x axis is rv_t when its times are finite and nondecreasing, else the section numbers
 % 1 ... n_t. Both panels are time panels: set_time(t) draws the cursor at the section
 % nearest to t, so the chart links with plot_eigenvalue of the same result and with the
-% graphs of the simulation (G.link). The playback bar shows the section.
+% graphs of the simulation (G.link). The chart has no playback bar, as its lines do not
+% change with time: only the cursor moves, by set_time, animate and the graphs it is
+% linked to (e.g. the playback bar of plot_eigenvalue).
 %
 % It returns the chart G (GraphChart) with two lines: "max_real" (panel 1) and
 % "min_damping" (panel 2). A result with one section is an error.
+%
+% On a contribution result (sv_target nonempty, see get_contribution) the numbers are of
+% the part alone and have no meaning for the whole system.
 %
 % <@Examples>
 % ```matlab
