@@ -29,7 +29,7 @@ function apply_style(obj, iv_element)
                 set(plt.LabelNode(i), "String", obj.NodeLabel(i), "Color", 0.7*rv_c, ...
                     "Visible", l_vis && obj.ShowLabel);
                 if isgraphics(plt.Circle(i))
-                    set(plt.Circle(i), "Color", rv_c, "Visible", l_vis);
+                    set(plt.Circle(i), "Color", rv_c, "Visible", l_vis && ~isnan(obj.sct_data.cm_V(i, obj.i_time)));   % hidden while disconnected
                 end
             case "edge"
                 set(plt.Spring(i), "Color", obj.EdgeColor(i, :), "LineWidth", obj.EdgeLineWidth(i), ...
