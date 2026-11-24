@@ -10,7 +10,8 @@ Exception: the internal submodule repositories guilda-slides (_GUILDAslides) and
 guilda-verification (_GUILDAverification) use main only. There, commits on main or a
 detached HEAD and merge/cherry-pick on main are allowed; force-pushing or deleting
 main is still blocked. The repository is recognised by its origin URL
-(gitcmd.is_main_only_repo); without a readable URL the strict rules apply.
+(gitcmd.is_main_only_repo); a local-path origin (a local clone) is followed to that
+clone's own origin. Without a readable URL the strict rules apply.
 
 Rules are documented in _GUILDAdoc/developer/git-workflow.html.
 Other merges are not checked: integrating branches is the coordinator's job.
