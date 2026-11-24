@@ -27,7 +27,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 107,
+      "Line": 122,
       "Summary": "Bus tags, in the order of the rows of cm_Vbus.",
       "Desc": "",
       "SeeAlso": [],
@@ -55,7 +55,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 108,
+      "Line": 123,
       "Summary": "Load parameter lambda at each point of the path (the first point is the equilibrium).",
       "Desc": "",
       "SeeAlso": [],
@@ -83,7 +83,7 @@
       },
       "Unit": "pu",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 109,
+      "Line": 124,
       "Summary": "Bus voltage phasors at each point of the path, one row per bus.",
       "Desc": "",
       "SeeAlso": [],
@@ -111,7 +111,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 110,
+      "Line": 125,
       "Summary": "Largest lambda on the path (the nose of the PV curve: maximum loading).",
       "Desc": "",
       "SeeAlso": [],
@@ -139,7 +139,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 111,
+      "Line": 126,
       "Summary": "Index of the nose point in rv_lambda and the columns of cm_Vbus.",
       "Desc": "",
       "SeeAlso": [],
@@ -167,7 +167,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 112,
+      "Line": 127,
       "Summary": "Full variable vector at each point of the path, lambda in the last row (see the class help).",
       "Desc": "",
       "SeeAlso": [],
@@ -195,7 +195,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 113,
+      "Line": 128,
       "Summary": "Predicted points of the predictor-corrector method, in the layout of rm_x (first column NaN).",
       "Desc": "",
       "SeeAlso": [],
@@ -223,7 +223,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 114,
+      "Line": 129,
       "Summary": "PV buses switched to PQ by Limits \"Q\", one row per switch: lambda, Step, Bus, Limit, Bound (see the class help).",
       "Desc": "",
       "SeeAlso": [],
@@ -251,7 +251,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 115,
+      "Line": 130,
       "Summary": "Limit of Limits \"V\" or \"S\" that ended the path (0 or 1 row): lambda, Step, Class, Object, Limit, Bound (see the class help).",
       "Desc": "",
       "SeeAlso": [],
@@ -279,7 +279,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 116,
+      "Line": 131,
       "Summary": "Variable map at the calculation (rows x, Vre, Vim, u, uc of net.get_variable_map()): its rows are the columns of rm_variable.",
       "Desc": "",
       "SeeAlso": [],
@@ -307,7 +307,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 117,
+      "Line": 132,
       "Summary": "Operating point of each step: row k at step k (index in rv_lambda), column m the variable tab_variable(m,:).",
       "Desc": "",
       "SeeAlso": [],
@@ -335,7 +335,7 @@
       },
       "Unit": "pu",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 118,
+      "Line": 133,
       "Summary": "Current each component injects into its bus at each step: one row per component (network order: sv_bus, then a_Component), one column per step.",
       "Desc": "",
       "SeeAlso": [],
@@ -363,7 +363,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 119,
+      "Line": 134,
       "Summary": "Snapshot of the network at the calculation: struct(net, false).",
       "Desc": "",
       "SeeAlso": [],
@@ -391,8 +391,8 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 120,
-      "Summary": "Smallest singular value of the power flow Jacobian (unknowns, without lambda) at each step: voltage stability index, 0 at the nose.",
+      "Line": 135,
+      "Summary": "Voltage stability index at each step: smallest singular value of the Jacobian of the CPF equations (unknowns, without lambda); no unit, 0 at the nose, falls like sqrt(lambda_max - lambda) (see the class help).",
       "Desc": "",
       "SeeAlso": [],
       "Type": "",
@@ -419,7 +419,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 121,
+      "Line": 136,
       "Summary": "Weak buses at the nose, one row per bus sorted by Participation (descending): Bus, Participation (largest 1), dVdLambda [pu] (see the class help).",
       "Desc": "",
       "SeeAlso": [],
@@ -447,7 +447,7 @@
       },
       "Unit": "pu",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 122,
+      "Line": 137,
       "Summary": "Loading margin: r_lambdaMax times the initial active power of every component scaled by (1 + lambda); with UseInternalState that power is minus the network losses, so it is usually negative (see the class help).",
       "Desc": "",
       "SeeAlso": [],
@@ -475,7 +475,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 126,
+      "Line": 141,
       "Summary": "Bus voltages at the nose point, one row per bus: V [pu], Varg [rad], Vphasor [pu].",
       "Desc": "",
       "SeeAlso": [],
@@ -503,7 +503,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 127,
+      "Line": 142,
       "Summary": "The path, one row per point: lambda, then V_<bus> [pu] and Varg_<bus> [rad] of each bus.",
       "Desc": "",
       "SeeAlso": [],
@@ -823,7 +823,8 @@
         "opt"
       ],
       "OutputNames": [
-        "G"
+        "G",
+        "G_pv"
       ],
       "Arguments": [
         {
@@ -867,6 +868,32 @@
           "Description": "Tags of the branches to draw, or \"all\"; \"\" (default) every branch, or the total loss for \"loss\"."
         },
         {
+          "Name": "PVCurve",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "(1,1)",
+          "Class": "logical",
+          "Validators": [],
+          "Default": "true",
+          "Required": false,
+          "Unit": "",
+          "Description": "Draw the PV curves with the plot (see the help); false: the plot alone."
+        },
+        {
+          "Name": "PVBus",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "",
+          "Class": "",
+          "Validators": [
+            "mustBeText"
+          ],
+          "Default": "\"\"",
+          "Required": false,
+          "Unit": "",
+          "Description": "Buses of the PV curves: \"\" those of plot_pvcurve (options.LoadBus; every bus when none), \"all\" every bus, or bus tags."
+        },
+        {
           "Name": "Parent",
           "Kind": "NameValue",
           "Struct": "opt",
@@ -891,9 +918,21 @@
           "Required": false,
           "Unit": "",
           "Description": "The chart (GraphChart), one line per branch."
+        },
+        {
+          "Name": "G_pv",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "The chart with the PV panel: G itself; [] with PVCurve false or an axes Parent."
         }
       ],
-      "Signature": "G = plot_branch(obj, Name=Value)",
+      "Signature": "[G, G_pv] = plot_branch(obj, Name=Value)",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/plot_branch.m",
       "Line": 1,
       "ImplementedIn": "file",
@@ -903,7 +942,7 @@
         "GUILDA:ResultCPF:NoLimit"
       ],
       "Summary": "Plot the branch flows along the path.",
-      "Desc": "The flows of each step come from the bus voltages cm_Vbus and the admittance matrix\ncm_Y of each branch in the snapshot sct_network: [I_from; I_to] = cm_Y [V_from; V_to],\nS = V conj(I) at each end. Drawn against lambda by Quantity:\n\n- \"P\": P_from, the active power into the branch at its first bus [pu].\n- \"S\": the larger apparent power |S| of the two ends [pu].\n- \"loading\": that apparent power over Smax of the branch (operating limits in the\n  snapshot), with a dotted line at 1; a branch with an infinite or NaN Smax has no line.\n- \"loss\": the active power loss P_from + P_to [pu]: with no Branch given, one line\n  \"total\", the loss of the whole network (the sum over the branches); with Branch, one\n  line per branch.\n\nBranch selects the branches (tags of the branches of sct_network, or \"all\"); with no\nBranch every branch is drawn (for \"loss\": the total). A dashed line marks the nose. The\nsamples of the chart are the steps (rv_t = 1 ... n_step, named \"Step\"): G.set_time(k)\nputs a marker on each line at step k, and G.link(G2) keeps it in step with\nplot_pvcurve, plot_diagram and the other plots of the steps. A result without the\nsnapshot stops with GUILDA:ResultCPF:NoStepData; \"loading\" with no finite Smax stops\nwith GUILDA:ResultCPF:NoLimit.\n\nIt returns the chart G (GraphChart): one line per branch, tagged with the branch tag\n(or \"total\").",
+      "Desc": "The flows of each step come from the bus voltages cm_Vbus and the admittance matrix\ncm_Y of each branch in the snapshot sct_network: [I_from; I_to] = cm_Y [V_from; V_to],\nS = V conj(I) at each end. Drawn against lambda by Quantity:\n\n- \"P\": P_from, the active power into the branch at its first bus [pu].\n- \"S\": the larger apparent power |S| of the two ends [pu].\n- \"loading\": that apparent power over Smax of the branch (operating limits in the\n  snapshot), with a dotted line at 1; a branch with an infinite or NaN Smax has no line.\n- \"loss\": the active power loss P_from + P_to [pu]: with no Branch given, one line\n  \"total\", the loss of the whole network (the sum over the branches); with Branch, one\n  line per branch.\n\nBranch selects the branches (tags of the branches of sct_network, or \"all\"); with no\nBranch every branch is drawn (for \"loss\": the total). A dashed line marks the nose. The\nsamples of the chart are the steps (rv_t = 1 ... n_step, named \"Step\"): G.set_time(k)\nputs a marker on each line at step k, and G.link(G2) keeps it in step with\nplot_pvcurve, plot_diagram and the other plots of the steps. A result without the\nsnapshot stops with GUILDA:ResultCPF:NoStepData; \"loading\" with no finite Smax stops\nwith GUILDA:ResultCPF:NoLimit.\n\nIt returns the chart G (GraphChart): one line per branch, tagged with the branch tag\n(or \"total\").\n\nWith PVCurve true (default), the PV curves of PVBus (|V| [pu] against lambda, as\nplot_pvcurve, with the nose line) are an extra panel on top of the chart: it shares the\nlambda axis (the x axes of the lambda panels are linked) and is a time panel with the\nmarker cursor, so set_time(k) puts a marker on each PV curve at step k too. Its lines\nare tagged \"V_\" + bus tag (legend: the bus tag) and come after the elements above in\ntab_element, so their tags and rows stay. G_pv is then G. PVCurve false, or an axes or\nuiaxes Parent, draws the chart alone as before (G_pv []). A PVBus tag that is not in\nsv_bus stops with GUILDA:ResultCPF:UnknownBus.",
       "SeeAlso": [],
       "Examples": "```matlab\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\nG = res.plot_branch(Quantity=\"S\");\nres.plot_branch(Quantity=\"loss\");                       % total loss\nres.plot_branch(Quantity=\"P\", Branch=[\"B004_B009\", \"B007_B009\"]);\n```\n\nSee also ResultPF.plot_branch, ResultCPF.plot_diagram, ResultCPF.plot_pvcurve",
       "Deprecated": ""
@@ -923,7 +962,8 @@
         "opt"
       ],
       "OutputNames": [
-        "G"
+        "G",
+        "G_pv"
       ],
       "Arguments": [
         {
@@ -967,6 +1007,32 @@
           "Description": "Tags of the generators (components with Q = NaN in powerflow) to draw; \"all\" for every one."
         },
         {
+          "Name": "PVCurve",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "(1,1)",
+          "Class": "logical",
+          "Validators": [],
+          "Default": "true",
+          "Required": false,
+          "Unit": "",
+          "Description": "Draw the PV curves with the plot (see the help); false: the plot alone."
+        },
+        {
+          "Name": "PVBus",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "",
+          "Class": "",
+          "Validators": [
+            "mustBeText"
+          ],
+          "Default": "\"\"",
+          "Required": false,
+          "Unit": "",
+          "Description": "Buses of the PV curves: \"\" those of plot_pvcurve (options.LoadBus; every bus when none), \"all\" every bus, or bus tags."
+        },
+        {
           "Name": "Parent",
           "Kind": "NameValue",
           "Struct": "opt",
@@ -991,9 +1057,21 @@
           "Required": false,
           "Unit": "",
           "Description": "The chart (GraphChart), one line per generator."
+        },
+        {
+          "Name": "G_pv",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "The chart with the PV panel: G itself; [] with PVCurve false or an axes Parent."
         }
       ],
-      "Signature": "G = plot_generator(obj, Name=Value)",
+      "Signature": "[G, G_pv] = plot_generator(obj, Name=Value)",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/plot_generator.m",
       "Line": 1,
       "ImplementedIn": "file",
@@ -1004,7 +1082,7 @@
         "GUILDA:ResultCPF:NoLimit"
       ],
       "Summary": "Plot the active or reactive power of the generators along the path.",
-      "Desc": "The generators are the components with Q = NaN in the powerflow parameters of the\nsnapshot sct_network (the components that take the free Q of their bus, and the free P\nof the slack bus). At each step their power is S = V conj(I), from cm_Vbus and\ncm_Icomponent, drawn against lambda by Quantity:\n\n- \"P\": the active power [pu] of each generator.\n- \"Q\": the reactive power [pu] of each generator.\n- \"Qmargin\": the distance of Q to the nearer of Qmin and Qmax (operating limits of the\n  generator in the snapshot) [pu]; it is 0 at a limit and negative beyond it. A\n  generator with no finite limit (Inf or NaN Qmin and Qmax) has no line; a dotted line\n  marks 0.\n\nA dotted vertical line marks the lambda of each switch of tab_switch (a PV bus fixed at\nQmin or Qmax by Limits \"Q\"), labelled with the bus and the limit, and a dashed line the\nnose. The samples of the chart are the steps (rv_t = 1 ... n_step, named \"Step\"):\nG.set_time(k) puts a marker on each line at step k, and G.link(G2) keeps it in step with\nplot_pvcurve, plot_diagram and the other plots of the steps. A result without the data\nof the steps stops with GUILDA:ResultCPF:NoStepData; Quantity \"Qmargin\" with no finite\nlimit stops with GUILDA:ResultCPF:NoLimit.\n\nIt returns the chart G (GraphChart): one line per generator, tagged with the component\ntag.",
+      "Desc": "The generators are the components with Q = NaN in the powerflow parameters of the\nsnapshot sct_network (the components that take the free Q of their bus, and the free P\nof the slack bus). At each step their power is S = V conj(I), from cm_Vbus and\ncm_Icomponent, drawn against lambda by Quantity:\n\n- \"P\": the active power [pu] of each generator.\n- \"Q\": the reactive power [pu] of each generator.\n- \"Qmargin\": the distance of Q to the nearer of Qmin and Qmax (operating limits of the\n  generator in the snapshot) [pu]; it is 0 at a limit and negative beyond it. A\n  generator with no finite limit (Inf or NaN Qmin and Qmax) has no line; a dotted line\n  marks 0.\n\nA dotted vertical line marks the lambda of each switch of tab_switch (a PV bus fixed at\nQmin or Qmax by Limits \"Q\"), labelled with the bus and the limit, and a dashed line the\nnose. The samples of the chart are the steps (rv_t = 1 ... n_step, named \"Step\"):\nG.set_time(k) puts a marker on each line at step k, and G.link(G2) keeps it in step with\nplot_pvcurve, plot_diagram and the other plots of the steps. A result without the data\nof the steps stops with GUILDA:ResultCPF:NoStepData; Quantity \"Qmargin\" with no finite\nlimit stops with GUILDA:ResultCPF:NoLimit.\n\nIt returns the chart G (GraphChart): one line per generator, tagged with the component\ntag.\n\nWith PVCurve true (default), the PV curves of PVBus (|V| [pu] against lambda, as\nplot_pvcurve, with the nose line) are an extra panel on top of the chart: it shares the\nlambda axis (the x axes of the lambda panels are linked) and is a time panel with the\nmarker cursor, so set_time(k) puts a marker on each PV curve at step k too. Its lines\nare tagged \"V_\" + bus tag (legend: the bus tag) and come after the elements above in\ntab_element, so their tags and rows stay. G_pv is then G. PVCurve false, or an axes or\nuiaxes Parent, draws the chart alone as before (G_pv []). A PVBus tag that is not in\nsv_bus stops with GUILDA:ResultCPF:UnknownBus.",
       "SeeAlso": [],
       "Examples": "```matlab\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"], Limits=\"Q\");\nG = res.plot_generator(Quantity=\"Q\");\nres.plot_generator(Quantity=\"Qmargin\", Generator=[\"B002SG1\",\"B003SG1\"]);\n```\n\nSee also ResultCPF.tab_switch, ResultCPF.plot_pvcurve, SolverCPF",
       "Deprecated": ""
@@ -1024,7 +1102,8 @@
         "opt"
       ],
       "OutputNames": [
-        "G"
+        "G",
+        "G_pv"
       ],
       "Arguments": [
         {
@@ -1055,6 +1134,32 @@
           "Description": "Number of weak buses drawn in the lower panel (0: no lower panel)."
         },
         {
+          "Name": "PVCurve",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "(1,1)",
+          "Class": "logical",
+          "Validators": [],
+          "Default": "true",
+          "Required": false,
+          "Unit": "",
+          "Description": "Draw the PV curves with the plot (see the help); false: the plot alone."
+        },
+        {
+          "Name": "PVBus",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "",
+          "Class": "",
+          "Validators": [
+            "mustBeText"
+          ],
+          "Default": "\"\"",
+          "Required": false,
+          "Unit": "",
+          "Description": "Buses of the PV curves: \"\" those of plot_pvcurve (options.LoadBus; every bus when none), \"all\" every bus, or bus tags."
+        },
+        {
           "Name": "Parent",
           "Kind": "NameValue",
           "Struct": "opt",
@@ -1078,19 +1183,31 @@
           "Default": "",
           "Required": false,
           "Unit": "",
-          "Description": "The chart (GraphChart): the line \"sigmaMin\", then the bars of the weak buses."
+          "Description": "The chart (GraphChart): the line \"sigmaMin\", then the bars of the weak buses (and the PV curves)."
+        },
+        {
+          "Name": "G_pv",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "The chart with the PV panel: G itself; [] with PVCurve false or an axes Parent."
         }
       ],
-      "Signature": "G = plot_stability_index(obj, Name=Value)",
+      "Signature": "[G, G_pv] = plot_stability_index(obj, Name=Value)",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/plot_stability_index.m",
       "Line": 1,
       "ImplementedIn": "file",
       "Overrides": "",
       "Throws": [],
       "Summary": "Plot the voltage stability index along the path and the weak buses at the nose.",
-      "Desc": "The upper panel draws rv_sigmaMin, the smallest singular value of the power flow\nJacobian at each step, against lambda: it goes to 0 at the nose, which a dashed line\nmarks (r_lambdaMax). The lower panel, when tab_weakbus has rows, draws the participation\nof the buses at the nose (largest 1) as bars, for the TopBus buses of tab_weakbus with\nthe largest participation. The samples of the chart are the steps (rv_t = 1 ...\nn_step, named \"Step\"): G.set_time(k) puts a marker on the curve at step k, and G.link(G2)\nkeeps it in step with plot_pvcurve, plot_diagram and the other plots of the steps. A\nresult without rv_sigmaMin stops with GUILDA:ResultCPF:NoStepData.\n\nIt returns the chart G (GraphChart): the line \"sigmaMin\" and one bar per bus (the bus\ntag).",
+      "Desc": "The index is rv_sigmaMin: at each step, the smallest singular value of the Jacobian J of\nthe CPF equations with respect to the unknowns, without the lambda column,\n\n  sigma_min(J) = min over |v| = 1 of |J v|,   J = d f / d [|V|; theta; x]  (lambda fixed).\n\nThe equations f are the P and Q mismatches of the buses [pu] (with UseInternalState,\nalso the state equations of the components), and the unknowns are |V| and theta of the\nbuses (with UseInternalState, also the states of the components), as the corrector\nsolves them (SolverCPF; J by finite differences). At the saddle-node nose J is\nsingular, so sigma_min = 0 there. The participation of a bus is the |V| part of the\nright singular vector of sigma_min, scaled to a largest value of 1 (tab_weakbus at the\nnose).\n\nHow to read it: it has no physical unit and no absolute threshold. Near the nose it\nfalls roughly like sqrt(lambda_max - lambda), so read it against its first value (the\nequilibrium), or read lambda_max - lambda instead. It jumps where Limits \"Q\" switches a\nPV bus to PQ (the equations change). When a \"V\" or \"S\" limit stops the path\n(tab_stop), it ends far from 0: the value at the stop.\n\nSources: P.-A. Löf, T. Smed, G. Andersson, D. J. Hill, \"Fast calculation of a voltage\nstability index\", IEEE Trans. Power Systems 7(1), 1992; B. Gao, G. K. Morison,\nP. Kundur, \"Voltage stability evaluation using modal analysis\", IEEE Trans. Power\nSystems 7(4), 1992.\n\nThe panel of the index draws rv_sigmaMin against lambda, with a dashed line at the nose\n(r_lambdaMax). The lower panel, when tab_weakbus has rows, draws the participation of\nthe buses in the critical mode at the nose (largest 1) as bars, for the TopBus buses of\ntab_weakbus with the largest participation. The samples of the chart are the steps\n(rv_t = 1 ... n_step, named \"Step\"): G.set_time(k) puts a marker on the curve at step\nk, and G.link(G2) keeps it in step with plot_pvcurve, plot_diagram and the other plots\nof the steps. A result without rv_sigmaMin stops with GUILDA:ResultCPF:NoStepData.\n\nWith PVCurve true (default), the PV curves of PVBus (|V| [pu] against lambda, as\nplot_pvcurve, with the nose line) are an extra panel on top of the chart: it shares the\nlambda axis (the x axes of the lambda panels are linked) and is a time panel with the\nmarker cursor, so set_time(k) puts a marker on each PV curve at step k too. Its lines\nare tagged \"V_\" + bus tag (legend: the bus tag) and come after the elements above in\ntab_element, so their tags and rows stay. G_pv is then G. PVCurve false, or an axes or\nuiaxes Parent, draws the chart alone as before (G_pv []). A PVBus tag that is not in\nsv_bus stops with GUILDA:ResultCPF:UnknownBus.\n\nIt returns the chart G (GraphChart): the line \"sigmaMin\", one bar per bus (the bus\ntag), then the PV curves (\"V_\" + bus tag).",
       "SeeAlso": [],
-      "Examples": "```matlab\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\nG = res.plot_stability_index(TopBus=5);\nG.link(res.plot_pvcurve());\n```\n\nSee also ResultCPF.rv_sigmaMin, ResultCPF.tab_weakbus, ResultCPF.plot_pvcurve",
+      "Examples": "```matlab\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\nG = res.plot_stability_index(TopBus=5);       % PV curves on top, index, weak buses\nres.plot_stability_index(PVCurve=false);      % the index and the weak buses only\n```\n\nSee also ResultCPF.rv_sigmaMin, ResultCPF.tab_weakbus, ResultCPF.plot_pvcurve",
       "Deprecated": ""
     },
     {
@@ -1108,7 +1225,8 @@
         "opt"
       ],
       "OutputNames": [
-        "G"
+        "G",
+        "G_pv"
       ],
       "Arguments": [
         {
@@ -1138,6 +1256,32 @@
           "Description": "2: phasor plane (GraphSpring2D); 3: surface z = log|V| (GraphSpring3D)."
         },
         {
+          "Name": "PVCurve",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "(1,1)",
+          "Class": "logical",
+          "Validators": [],
+          "Default": "true",
+          "Required": false,
+          "Unit": "",
+          "Description": "Draw the PV curves with the plot (see the help); false: the plot alone."
+        },
+        {
+          "Name": "PVBus",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "",
+          "Class": "",
+          "Validators": [
+            "mustBeText"
+          ],
+          "Default": "\"\"",
+          "Required": false,
+          "Unit": "",
+          "Description": "Buses of the PV curves: \"\" those of plot_pvcurve (options.LoadBus; every bus when none), \"all\" every bus, or bus tags."
+        },
+        {
           "Name": "Parent",
           "Kind": "NameValue",
           "Struct": "opt",
@@ -1162,22 +1306,154 @@
           "Required": false,
           "Unit": "",
           "Description": "The picture: a GraphSpring2D or GraphSpring3D object."
+        },
+        {
+          "Name": "G_pv",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "The PV chart (GraphChart, plot_pvcurve) on the right, linked to G; [] with PVCurve false or an axes Parent."
         }
       ],
-      "Signature": "G = plot_spring_model(obj, Name=Value)",
+      "Signature": "[G, G_pv] = plot_spring_model(obj, Name=Value)",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/plot_spring_model.m",
       "Line": 1,
       "ImplementedIn": "file",
       "Overrides": "",
       "Throws": [],
       "Summary": "Draw the continuation power flow path as a spring-mass picture with every step.",
-      "Desc": "The picture holds every step of the path as a sample (rv_t = 1 ... n_step, named\n\"Step\"): G.set_time(k) shows step k, G.animate() plays the steps (one frame per step)\nand G.export_video(file) writes them as a video; the title shows \"Step k (λ = ...)\".\nThe nodes, springs and arrows are those of ResultODE.plot_spring_model\n(tools.spring_model_data): every bus, and the own node of each component whose class\nreturns one from its Static get_spring_node (e.g. the internal voltage of a generator),\nwith the states x and inputs u of the components at each step (tab_variable,\nrm_variable), the bus voltages cm_Vbus and the component currents cm_Icomponent.\nDimension=2 draws the phasor plane (GraphSpring2D), Dimension=3 the surface z = log|V|\n(GraphSpring3D). A component whose values are NaN at a step (its get_equilibrium\nstopped there) has no own node, spring or arrows at that step. G.link(G2) keeps it in\nstep with plot_pvcurve, plot_diagram and the other plots of the steps. A result without\nthe data of the steps stops with GUILDA:ResultCPF:NoStepData.",
+      "Desc": "The picture holds every step of the path as a sample (rv_t = 1 ... n_step, named\n\"Step\"): G.set_time(k) shows step k, G.animate() plays the steps (one frame per step)\nand G.export_video(file) writes them as a video; the title shows \"Step k (λ = ...)\".\nThe nodes, springs and arrows are those of ResultODE.plot_spring_model\n(tools.spring_model_data): every bus, and the own node of each component whose class\nreturns one from its Static get_spring_node (e.g. the internal voltage of a generator),\nwith the states x and inputs u of the components at each step (tab_variable,\nrm_variable), the bus voltages cm_Vbus and the component currents cm_Icomponent.\nDimension=2 draws the phasor plane (GraphSpring2D), Dimension=3 the surface z = log|V|\n(GraphSpring3D). A component whose values are NaN at a step (its get_equilibrium\nstopped there) has no own node, spring or arrows at that step. G.link(G2) keeps it in\nstep with plot_pvcurve, plot_diagram and the other plots of the steps. A result without\nthe data of the steps stops with GUILDA:ResultCPF:NoStepData.\n\nWith PVCurve true (default), the container (Parent, or a new figure of 1400 x 600 px) is\nsplit: the picture on the left (2/3 of the width) and plot_pvcurve(Bus=PVBus) on the\nright (1/3), linked with G.link(G_pv), so the playback of the picture moves the markers on\nthe PV curves. A uigridlayout Parent gets a borderless uipanel first. PVCurve false, or\nan axes or uiaxes Parent, draws the picture alone as before (G_pv []). A PVBus tag that is\nnot in sv_bus stops with GUILDA:ResultCPF:UnknownBus.",
       "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE9bus();\nnet.initialize();\nres = net.calculate_continuation_powerflow(LoadBus=\"B005\");\nG = res.plot_spring_model();\nG.link(res.plot_pvcurve());\nG.animate();\n```\n\nSee also ResultODE.plot_spring_model, GraphSpring2D, GraphSpring3D, Component.get_spring_node, ResultCPF.plot_diagram",
+      "Examples": "```matlab\nnet = network.IEEE9bus();\nnet.initialize();\nres = net.calculate_continuation_powerflow(LoadBus=\"B005\");\n[G, G_pv] = res.plot_spring_model(PVBus=\"all\");   % PV curves of every bus on the right\nG.animate();\n```\n\nSee also ResultODE.plot_spring_model, GraphSpring2D, GraphSpring3D, Component.get_spring_node, ResultCPF.plot_diagram",
       "Deprecated": ""
     },
     {
       "Name": "plot_diagram",
+      "Defining": "ResultCPF",
+      "Group": "plot",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj",
+        "opt"
+      ],
+      "OutputNames": [
+        "G",
+        "G_pv"
+      ],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": ""
+        },
+        {
+          "Name": "opt",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Name-Value options; each sets the property of the same name of the GraphNetDiagram."
+        },
+        {
+          "Name": "PVCurve",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "(1,1)",
+          "Class": "logical",
+          "Validators": [],
+          "Default": "true",
+          "Required": false,
+          "Unit": "",
+          "Description": "Draw the PV curves with the plot (see the help); false: the plot alone."
+        },
+        {
+          "Name": "PVBus",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "",
+          "Class": "",
+          "Validators": [
+            "mustBeText"
+          ],
+          "Default": "\"\"",
+          "Required": false,
+          "Unit": "",
+          "Description": "Buses of the PV curves: \"\" those of plot_pvcurve (options.LoadBus; every bus when none), \"all\" every bus, or bus tags."
+        },
+        {
+          "Name": "Parent",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "[]",
+          "Required": false,
+          "Unit": "",
+          "Description": "Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure."
+        }
+      ],
+      "Outputs": [
+        {
+          "Name": "G",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "GraphNetDiagram object of the drawing."
+        },
+        {
+          "Name": "G_pv",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "The PV chart (GraphChart, plot_pvcurve) on the right, linked to G; [] with PVCurve false or an axes Parent."
+        }
+      ],
+      "Signature": "[G, G_pv] = plot_diagram(obj, opt, Name=Value)",
+      "File": "_GUILDAsystem/_auxiliary/@ResultCPF/plot_diagram.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Draw the continuation power flow path as a network diagram (GraphNetDiagram) with every step.",
+      "Desc": "The diagram holds every step of the path as a sample (rv_t = 1 ... n_step, named\n\"Step\"; lambda is not monotonic past the nose): G.set_time(k) shows step k (the first\none, the equilibrium, is shown at first), and the title and the control panel show\n\"Step k (λ = ...)\". G.animate() plays the steps, one frame per step. The bus voltages\ncome from cm_Vbus, the current of each component from cm_Icomponent, and the branch\nflows from these voltages and the admittance matrices of the branches in the snapshot\nsct_network, so the colors, labels and arrows show the operating point of each step.\nG.link(G2) keeps it in step with plot_pvcurve, plot_spring_model and the other plots of\nthe steps. It reads only the stored result. A result without the data of the steps\n(e.g. a ResultCPF built by hand) stops with GUILDA:ResultCPF:NoStepData. The other\nName-Value options set the properties of the GraphNetDiagram.\n\nWith PVCurve true (default), the container (Parent, or a new figure of 1400 x 600 px) is\nsplit: the diagram on the left (2/3 of the width) and plot_pvcurve(Bus=PVBus) on the\nright (1/3), linked with G.link(G_pv), so the playback of the diagram moves the markers on\nthe PV curves. A uigridlayout Parent gets a borderless uipanel first. PVCurve false, or\nan axes or uiaxes Parent, draws the diagram alone as before (G_pv []). A PVBus tag that is\nnot in sv_bus stops with GUILDA:ResultCPF:UnknownBus.",
+      "SeeAlso": [],
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.initialize();\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\n[G, G_pv] = res.plot_diagram(ColorMode=\"P\", LabelMode=\"value\");   % PV curves on the right\nG.set_time(res.r_noseStep);       % both at the nose\nG2 = res.plot_diagram(PVCurve=false);   % the diagram alone\n```\n\nSee also ResultODE.plot_diagram, ResultPF.plot_diagram, GraphNetDiagram, ResultCPF.plot_spring_model",
+      "Deprecated": ""
+    },
+    {
+      "Name": "plot_pqv",
       "Defining": "ResultCPF",
       "Group": "plot",
       "Access": "public",
@@ -1207,16 +1483,18 @@
           "Description": ""
         },
         {
-          "Name": "opt",
-          "Kind": "Positional",
-          "Struct": "",
+          "Name": "Bus",
+          "Kind": "NameValue",
+          "Struct": "opt",
           "Size": "",
           "Class": "",
-          "Validators": [],
-          "Default": "",
-          "Required": true,
+          "Validators": [
+            "mustBeText"
+          ],
+          "Default": "default_bus(obj)",
+          "Required": false,
           "Unit": "",
-          "Description": "Name-Value options; each sets the property of the same name of the GraphNetDiagram."
+          "Description": "Tags of the buses to draw; \"all\" for every bus."
         },
         {
           "Name": "Parent",
@@ -1242,19 +1520,21 @@
           "Default": "",
           "Required": false,
           "Unit": "",
-          "Description": "GraphNetDiagram object of the drawing."
+          "Description": "The chart (GraphChart), one 3D line per bus."
         }
       ],
-      "Signature": "G = plot_diagram(obj, opt, Name=Value)",
-      "File": "_GUILDAsystem/_auxiliary/@ResultCPF/plot_diagram.m",
+      "Signature": "G = plot_pqv(obj, Name=Value)",
+      "File": "_GUILDAsystem/_auxiliary/@ResultCPF/plot_pqv.m",
       "Line": 1,
       "ImplementedIn": "file",
       "Overrides": "",
-      "Throws": [],
-      "Summary": "Draw the continuation power flow path as a network diagram (GraphNetDiagram) with every step.",
-      "Desc": "The diagram holds every step of the path as a sample (rv_t = 1 ... n_step, named\n\"Step\"; lambda is not monotonic past the nose): G.set_time(k) shows step k (the first\none, the equilibrium, is shown at first), and the title and the control panel show\n\"Step k (λ = ...)\". G.animate() plays the steps, one frame per step. The bus voltages\ncome from cm_Vbus, the current of each component from cm_Icomponent, and the branch\nflows from these voltages and the admittance matrices of the branches in the snapshot\nsct_network, so the colors, labels and arrows show the operating point of each step.\nG.link(G2) keeps it in step with plot_pvcurve, plot_spring_model and the other plots of\nthe steps. It reads only the stored result. A result without the data of the steps\n(e.g. a ResultCPF built by hand) stops with GUILDA:ResultCPF:NoStepData. The other\nName-Value options set the properties of the GraphNetDiagram.",
+      "Throws": [
+        "GUILDA:ResultCPF:UnknownBus"
+      ],
+      "Summary": "Plot the P-Q-V path of the buses in 3D: P, Q and |V| of each bus at every step.",
+      "Desc": "Draws one 3D line per bus through (P, Q, |V|) [pu] of its steps: P + jQ is the total\npower the bus injects into the network, S = V conj(sum of the currents of its\ncomponents), from cm_Vbus and cm_Icomponent; it equals V conj(Y V) of the bus (a load\nbus has negative P). A bus without components has P = Q = 0. By default it draws the\nbuses of plot_pvcurve (options.LoadBus; every bus when it is empty); Bus selects other\nbuses (\"all\" for every bus), and a tag that is not in sv_bus stops with\nGUILDA:ResultCPF:UnknownBus. Drag the axes to turn the view.\n\nThe samples of the chart are the steps (rv_t = 1 ... n_step, named \"Step\", text \"Step k\n(λ = ...)\"): G.set_time(k) puts a marker on each line at its point of step k (none\nbefore the first set_time), and G.link(G2) keeps it in step with the other plots of the\nsteps (plot_pvcurve, plot_diagram, ...). A result without the data of the steps stops\nwith GUILDA:ResultCPF:NoStepData.\n\nIt returns the chart G (GraphChart, one 3D panel): one line per bus, tagged with the\nbus tag.",
       "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.initialize();\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\nG  = res.plot_diagram(ColorMode=\"P\", LabelMode=\"value\");\nGv = res.plot_pvcurve();\nG.link(Gv);\nG.set_time(res.r_noseStep);       % both at the nose\n```\n\nSee also ResultODE.plot_diagram, ResultPF.plot_diagram, GraphNetDiagram, ResultCPF.plot_spring_model",
+      "Examples": "```matlab\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\nG = res.plot_pqv();\nG.set_time(res.r_noseStep);       % markers at the nose\nres.plot_pqv(Bus=\"all\");\n```\n\nSee also ResultCPF.plot_pvcurve, ResultODE.plot_pqv, GraphChart",
       "Deprecated": ""
     },
     {
@@ -1645,7 +1925,7 @@
       ],
       "Signature": "obj = ResultCPF(net, solver, options, flag, output, elapsed, sv_bus, rv_lambda, cm_Vbus, rm_x, rm_xPredicted, tab_switch, tab_stop, sct_point)",
       "File": "_GUILDAsystem/_auxiliary/@ResultCPF/ResultCPF.m",
-      "Line": 131,
+      "Line": 146,
       "ImplementedIn": "classdef",
       "Overrides": "",
       "Throws": [],
@@ -1720,6 +2000,103 @@
       ],
       "Summary": "Stop with GUILDA:ResultCPF:NoStepData when the result lacks the data of the steps.",
       "Desc": "The plots of the steps read the data that net.calculate_continuation_powerflow stores\nfor every step (tab_variable, rm_variable, cm_Icomponent, sct_network, rv_sigmaMin). A\nResultCPF built by hand, or by a solver that does not give them, has empty fields.",
+      "SeeAlso": [],
+      "Examples": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "pair_pvcurve",
+      "Defining": "ResultCPF",
+      "Group": "pair",
+      "Access": "private",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj",
+        "opt",
+        "target"
+      ],
+      "OutputNames": [
+        "G",
+        "G_pv"
+      ],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "ResultCPF",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "The result."
+        },
+        {
+          "Name": "opt",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "struct",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Options of the calling method: PVCurve, PVBus, Parent."
+        },
+        {
+          "Name": "target",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Chart data (struct) or fcn_graph (function handle) of the plot."
+        }
+      ],
+      "Outputs": [
+        {
+          "Name": "G",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "The plot (GraphChart, GraphNetDiagram, GraphSpring2D or GraphSpring3D)."
+        },
+        {
+          "Name": "G_pv",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "The PV chart (GraphChart) linked to G; G itself for a lambda-axis chart; [] without one."
+        }
+      ],
+      "Signature": "[G, G_pv] = pair_pvcurve(obj, opt, target)",
+      "File": "_GUILDAsystem/_auxiliary/@ResultCPF/private/pair_pvcurve.m",
+      "Line": 1,
+      "ImplementedIn": "private",
+      "Overrides": "",
+      "Throws": [
+        "GUILDA:ResultCPF:UnknownBus"
+      ],
+      "Summary": "Draw a plot of the steps with the PV curve: on top of a lambda-axis chart, or on the right of a picture.",
+      "Desc": "opt holds PVCurve, PVBus and Parent of the calling method. PVBus \"\" takes the buses of\nplot_pvcurve (options.LoadBus; every bus when it is empty), \"all\" every bus; a tag that\nis not in sv_bus stops with GUILDA:ResultCPF:UnknownBus before anything is drawn.\n\n- target a struct (data of a GraphChart whose time panels have lambda as x, from\n  plot_stability_index, plot_generator, plot_branch): the PV curves become panel 1 on\n  top (|V| against lambda, a dashed line at the nose, time panel with the marker\n  cursor), the panels of the data follow it, and the x axes of the lambda panels are\n  linked. The PV series is added after the series of the data, so the elements of the\n  data keep their rows of tab_element; its lines are tagged \"V_\" + bus tag (legend: the\n  bus tag). G_pv is G.\n- target a function handle (fcn_graph(h) draws the picture of plot_diagram or\n  plot_spring_model in a parent h): the container Parent (a new figure of 1400 x 600 px\n  when it is empty; a uigridlayout gets a borderless uipanel first) holds two\n  borderless panels side by side, the picture on the left (2/3 of the width) and\n  plot_pvcurve(Bus=PVBus) on the right (1/3), linked with G.link(G_pv). A drawing that\n  fails removes the panels (and the new figure) it made.\n\nPVCurve false, or an axes or uiaxes Parent, draws the plot alone as before (G_pv []).",
       "SeeAlso": [],
       "Examples": "",
       "Deprecated": ""
@@ -1988,6 +2365,47 @@
       "Desc": "Success test behind l_success: a logical flag as it is, a numeric flag when\npositive (as for exitflag of fsolve or fmincon). Override it when an analysis\nuses another convention.",
       "SeeAlso": [],
       "Examples": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "doc",
+      "Defining": "auxiliary",
+      "Group": "Other",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj"
+      ],
+      "OutputNames": [],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Object whose class page is opened."
+        }
+      ],
+      "Outputs": [],
+      "Signature": "doc(obj)",
+      "File": "_GUILDAsystem/_auxiliary/@auxiliary/doc.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Open the class reference page of the object's class.",
+      "Desc": "Opens the GUILDA class reference (English page) of class(obj) in the browser, as\nGUILDA.doc(\"class\", class(obj)). doc with a class name (doc ResultPF) is MATLAB's\ndoc.",
+      "SeeAlso": [],
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nres = net.calculate_powerflow();\nres.doc()                       % page of ResultPF\ndoc(res)                        % same as res.doc()\nsc = net.add_scenario(\"CASE1\");\nsc.doc()                        % page of Scenario\n```",
       "Deprecated": ""
     }
   ],

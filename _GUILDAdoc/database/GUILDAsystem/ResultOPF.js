@@ -27,7 +27,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultOPF/ResultOPF.m",
-      "Line": 80,
+      "Line": 79,
       "Summary": "Bus values of the solution, one row per bus; columns by method (see the class help).",
       "Desc": "",
       "SeeAlso": [],
@@ -55,7 +55,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultOPF/ResultOPF.m",
-      "Line": 81,
+      "Line": 80,
       "Summary": "Injection into the bus of each connection (components, then branch ends), in bus order (see the class help).",
       "Desc": "",
       "SeeAlso": [],
@@ -83,7 +83,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultOPF/ResultOPF.m",
-      "Line": 82,
+      "Line": 81,
       "Summary": "Branch flows into the branch at each end, one row per branch; columns by method (see the class help).",
       "Desc": "",
       "SeeAlso": [],
@@ -111,7 +111,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultOPF/ResultOPF.m",
-      "Line": 83,
+      "Line": 82,
       "Summary": "Optimal value of the objective (total generation cost of tab_parameter.OPF).",
       "Desc": "",
       "SeeAlso": [],
@@ -139,7 +139,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultOPF/ResultOPF.m",
-      "Line": 84,
+      "Line": 83,
       "Summary": "Lagrange multipliers of the solution, by constraint and variable name (see the class help).",
       "Desc": "",
       "SeeAlso": [],
@@ -167,7 +167,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultOPF/ResultOPF.m",
-      "Line": 85,
+      "Line": 84,
       "Summary": "Optimization problem that was solved; its Description shows the OPF settings of the run.",
       "Desc": "",
       "SeeAlso": [],
@@ -195,7 +195,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultOPF/ResultOPF.m",
-      "Line": 86,
+      "Line": 85,
       "Summary": "Iterations of fmincon: Iteration, Fval, ConstrViolation, X (see the class help); empty struct for linprog and quadprog.",
       "Desc": "",
       "SeeAlso": [],
@@ -223,7 +223,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultOPF/ResultOPF.m",
-      "Line": 87,
+      "Line": 86,
       "Summary": "Stability-constrained OPF: tab_iteration and tab_mode (see the class help); empty struct without MinDampingRatio and MaxRealPart.",
       "Desc": "",
       "SeeAlso": [],
@@ -251,7 +251,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultOPF/ResultOPF.m",
-      "Line": 90,
+      "Line": 89,
       "Summary": "Snapshot of the network at the calculation: struct(net, false), a nested struct without handles.",
       "Desc": "",
       "SeeAlso": [],
@@ -500,8 +500,7 @@
         "opt"
       ],
       "OutputNames": [
-        "G_chart",
-        "G_net"
+        "G"
       ],
       "Arguments": [
         {
@@ -531,7 +530,7 @@
       ],
       "Outputs": [
         {
-          "Name": "G_chart",
+          "Name": "G",
           "Kind": "Output",
           "Struct": "",
           "Size": "",
@@ -541,21 +540,9 @@
           "Required": false,
           "Unit": "",
           "Description": "The four panels of the iterations (GraphChart)."
-        },
-        {
-          "Name": "G_net",
-          "Kind": "Output",
-          "Struct": "",
-          "Size": "",
-          "Class": "",
-          "Validators": [],
-          "Default": "",
-          "Required": false,
-          "Unit": "",
-          "Description": "The network diagram of the iteration shown (GraphNetDiagram)."
         }
       ],
-      "Signature": "[G_chart, G_net] = plot_iteration(obj, Name=Value)",
+      "Signature": "G = plot_iteration(obj, Name=Value)",
       "File": "_GUILDAsystem/_auxiliary/@ResultOPF/plot_iteration.m",
       "Line": 1,
       "ImplementedIn": "file",
@@ -563,10 +550,10 @@
       "Throws": [
         "GUILDA:ResultOPF:NoIteration"
       ],
-      "Summary": "Draw the iterations of the AC optimal power flow, with the playback bar of the chart.",
-      "Desc": "Draws sct_iteration (recorded by fmincon at every \"AC OPF\" run) as two linked graphs.\nG_chart (GraphChart, on the left) has four panels in a 2-by-2 grid against the iteration\nnumber, in rows: the\nobjective (line tag \"Fval\"), the largest constraint violation on a log scale (tag\n\"ConstrViolation\"), P of each generator (a component whose P bounds differ; tags of the\ngenerators) and |V| of each bus (tags of the buses); its time cursor marks the iteration\nshown, and the title of the chart names it. G_net (GraphNetDiagram of sct_network, on\nthe right, axes Tag \"Network\") is the network diagram of the iteration shown:\n\n- the color of a bus is its |V| (color limits: the lowest lower and the highest upper\n  bound of V), the size of a component its |P| (the middle of MarkerSizeRange times 0.5\n  to 1.5, in pt) and the width of a branch its |P| (the mean of the two ends; 1 to 5 pt),\n  from the V, Varg, P and Q of the iteration in\n  sct_iteration.X; the branch flows come from the admittance matrix cm_Y of each branch\n  in sct_network, as in the problem;\n- the buses, components and branches that violate a limit at that iteration are selected\n  (drawn in SelectionColor): V, P or Q outside the bounds of the variable, or a branch\n  value over the limit of tab_parameter.operation of the branch (|P|, |Q|, |I|, |S| at\n  an end, |Varg_from - Varg_to|), by more than 1e-6.\n\nThe diagram has the color bar \"|V| [pu]\" and the title \"violations: n\" of the iteration\nshown (TitleFormat \"\": set_time does not write the time).\n\nThe times of both graphs are the iteration numbers (sct_iteration.Iteration) and they\nare linked (G_chart.link(G_net)). The TimeChangedFcn of G_chart draws the iteration shown\nafter every set_time of either graph (G_chart.set_time, G_net.set_time, the playback bar,\nplay, animate): the title of the chart \"OPF iteration k (i of n)\" and the colors, sizes,\nwidths, violations and title of the diagram. With two or more iterations, the playback\nbar of G_chart (below its panels; see GraphBase) moves both graphs: its slider shows any\nrecorded iteration and its Play button (or G_chart.play) plays them from the one shown\n(from the first when the last is shown) to the last at PlaySpeed iterations per second.\nG_net is drawn in an axes and has no bar of its own. The graphs are in two panels\n(uipanel) side by side in the container Parent (a uigridlayout gets a panel first).\n\"ELD\" and \"DC OPF\" (linprog, quadprog) record no iterations and stop with\nGUILDA:ResultOPF:NoIteration. It reads only the stored result.",
+      "Summary": "Draw the iterations of the AC optimal power flow as a chart of four panels.",
+      "Desc": "Draws sct_iteration (recorded by fmincon at every \"AC OPF\" run) as one GraphChart with\nfour panels in a 2-by-2 grid against the iteration number, in rows: the objective (line\ntag \"Fval\"), the largest constraint violation on a log scale (tag \"ConstrViolation\"),\nP of each generator (a component whose P bounds differ; tags of the generators) and |V|\nof each bus (tags of the buses). The four panels are time panels whose times are the\niteration numbers (sct_iteration.Iteration): set_time(k) moves the cursor of every\npanel to iteration k, and the TimeChangedFcn of the chart writes the title \"OPF\niteration k (i of n)\" of the iteration shown (the last one at first). The chart has no\nplayback bar, as its time only moves the cursor (see GraphChart). A line is found by\nits tag in G.tab_element, and the first row of the data tip of a line is its name (the\ntag, e.g. the generator or bus). The chart is drawn in the container Parent. \"ELD\" and\n\"DC OPF\" (linprog, quadprog) record no iterations and stop with\nGUILDA:ResultOPF:NoIteration. It reads only the stored result.",
       "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE14bus().calculate_optimal_powerflow(Method=\"AC OPF\");\nfig = figure();\n[G_chart, G_net] = res.plot_iteration(Parent=fig);\nG_chart.set_time(3);                      % iteration 3 in both graphs, the title and the diagram\nG_chart.play();                           % play from iteration 3 to the last (playback bar)\nG_chart.pause();\nG_chart.tab_element                       % the lines: Fval, ConstrViolation, generators, buses\n```\n\nSee also ResultOPF.sct_iteration, ResultOPF.plot_lmp, ResultPF.plot_convergence, GraphChart, GraphNetDiagram",
+      "Examples": "```matlab\nres = network.IEEE14bus().calculate_optimal_powerflow(Method=\"AC OPF\");\nG = res.plot_iteration();\nG.set_time(3);                      % cursor and title at iteration 3\nG.tab_element                       % the lines: Fval, ConstrViolation, generators, buses\nG.set_style(\"B001\", LineWidth=3);   % pick out the |V| of bus B001\n```\n\nSee also ResultOPF.sct_iteration, ResultOPF.plot_lmp, ResultPF.plot_convergence, GraphChart",
       "Deprecated": ""
     },
     {
@@ -645,9 +632,9 @@
       "Overrides": "",
       "Throws": [],
       "Summary": "Draw the locational marginal prices on the network diagram (GraphNetDiagram).",
-      "Desc": "Each bus is colored by its LMP (get_lmp, cost per pu), with a color bar (ColorbarLabel\n\"LMP [cost/pu]\") and the title \"LMP of <network> (<Method>)\"; the color limits\nare the lowest and the highest LMP. The branches with a binding limit (the branch\nconstraints of disp_binding: Pmax, Qmax, Imax, Smax, VargMax) are selected, so they are\ndrawn in SelectionColor. The state of the diagram is the solution: the bus voltages\n(Vphasor in \"AC OPF\"; |V| = 1 and the angle Varg in \"DC OPF\"; V = 1 in \"ELD\", which has\nno angles) and the component powers of tab_cub. The branches and links keep a neutral\ncolor. Works for \"ELD\", \"DC OPF\" and \"AC OPF\"; it reads only the stored result. The\nother Name-Value options set the properties of the GraphNetDiagram (they override the\ncolor settings above).",
+      "Desc": "Each bus is colored by its LMP (get_lmp, cost per pu), with a color bar (ColorbarLabel\n\"LMP [cost/pu]\") and the title \"LMP of <network> (<Method>)\"; the color limits\nare the lowest and the highest LMP. The branches with a binding limit (the branch\nconstraints of disp_binding: Pmax, Qmax, Imax, Smax, VargMax) are selected, so they are\ndrawn in SelectionColor. The state of the diagram is the solution: the bus voltages\n(Vphasor in \"AC OPF\"; |V| = 1 and the angle Varg in \"DC OPF\"; V = 1 in \"ELD\", which has\nno angles) and the component powers of tab_cub. The branches and links keep a neutral\ncolor. The labels are LabelMode \"value\": each bus label shows its tag, ∠V, |V| and the\nline \"LMP [cost/pu]=<value>\", and each component label its tag, P and Q; the data\ntip of a bus shows the same LMP line. Works for \"ELD\", \"DC OPF\" and \"AC OPF\"; it reads\nonly the stored result. The other Name-Value options set the properties of the\nGraphNetDiagram (they override the color and label settings above, e.g. LabelMode=\"bus\"\nfor the bus tags only).",
       "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.a_Branch{1}.tab_parameter.operation.Pmax = 1;\nres = net.calculate_optimal_powerflow(Method=\"DC OPF\");\nG = res.plot_lmp();\nG.Selection                 % the branches with a binding limit\n```\n\nSee also ResultOPF.get_lmp, ResultOPF.disp_binding, GraphNetDiagram",
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.a_Branch{1}.tab_parameter.operation.Pmax = 1;\nres = net.calculate_optimal_powerflow(Method=\"DC OPF\");\nG = res.plot_lmp();\nG.Selection                 % the branches with a binding limit\nG.BusLabel(1)               % the tag, ∠V, |V| and \"LMP [cost/pu]=<the LMP>\" of the first bus\nG = res.plot_lmp(LabelMode=\"bus\");   % the bus tags only\n```\n\nSee also ResultOPF.get_lmp, ResultOPF.disp_binding, GraphNetDiagram",
       "Deprecated": ""
     },
     {
@@ -1116,7 +1103,7 @@
       ],
       "Signature": "obj = ResultOPF(sct_network, sct_solution, sct_solver)",
       "File": "_GUILDAsystem/_auxiliary/@ResultOPF/ResultOPF.m",
-      "Line": 94,
+      "Line": 93,
       "ImplementedIn": "classdef",
       "Overrides": "",
       "Throws": [],
@@ -1289,7 +1276,7 @@
       "Overrides": "",
       "Throws": [],
       "Summary": "End buses of every branch of a network snapshot, as indices into its a_Bus.",
-      "Desc": "A branch end of the snapshot is \"net.a_Bus{i}\" (text) or the struct of the bus. Called by\nget_lmp and plot_iteration.",
+      "Desc": "A branch end of the snapshot is \"net.a_Bus{i}\" (text) or the struct of the bus. Called by\nget_lmp.",
       "SeeAlso": [],
       "Examples": "",
       "Deprecated": ""
@@ -1397,7 +1384,7 @@
       "Overrides": "",
       "Throws": [],
       "Summary": "State of GraphNetDiagram from bus voltages and component powers in the order of the result tables.",
-      "Desc": "cm_V holds the bus voltage phasors in the rows of tab_bus and cm_S the injected powers\nP + jQ in the rows of tab_cub (the branch-end rows are not read), one column per sample.\nThe state follows the a_Bus and a_Component order of sct_network; the current of a\ncomponent is conj(S / V) at the voltage of its bus. Called by plot_lmp and plot_iteration.",
+      "Desc": "cm_V holds the bus voltage phasors in the rows of tab_bus and cm_S the injected powers\nP + jQ in the rows of tab_cub (the branch-end rows are not read), one column per sample.\nThe state follows the a_Bus and a_Component order of sct_network; the current of a\ncomponent is conj(S / V) at the voltage of its bus. Called by plot_lmp.",
       "SeeAlso": [],
       "Examples": "",
       "Deprecated": ""
@@ -1554,6 +1541,47 @@
       "Desc": "Stops with GUILDA:ResultBase:Unsupported for a method of the export\ncontract that this result class does not provide.",
       "SeeAlso": [],
       "Examples": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "doc",
+      "Defining": "auxiliary",
+      "Group": "Other",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj"
+      ],
+      "OutputNames": [],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Object whose class page is opened."
+        }
+      ],
+      "Outputs": [],
+      "Signature": "doc(obj)",
+      "File": "_GUILDAsystem/_auxiliary/@auxiliary/doc.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Open the class reference page of the object's class.",
+      "Desc": "Opens the GUILDA class reference (English page) of class(obj) in the browser, as\nGUILDA.doc(\"class\", class(obj)). doc with a class name (doc ResultPF) is MATLAB's\ndoc.",
+      "SeeAlso": [],
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nres = net.calculate_powerflow();\nres.doc()                       % page of ResultPF\ndoc(res)                        % same as res.doc()\nsc = net.add_scenario(\"CASE1\");\nsc.doc()                        % page of Scenario\n```",
       "Deprecated": ""
     }
   ],

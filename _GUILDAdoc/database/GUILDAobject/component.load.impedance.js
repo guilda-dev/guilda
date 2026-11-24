@@ -839,7 +839,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@LayerPackage/LayerPackage.m",
-      "Line": 63,
+      "Line": 67,
       "Summary": "Messages per stale tag of the class (string column each; empty: up to date). See the class help.",
       "Desc": "",
       "SeeAlso": [],
@@ -867,7 +867,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@LayerPackage/LayerPackage.m",
-      "Line": 66,
+      "Line": 70,
       "Summary": "Initial message of every stale tag.",
       "Desc": "",
       "SeeAlso": [],
@@ -895,7 +895,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@LayerPackage/LayerPackage.m",
-      "Line": 71,
+      "Line": 75,
       "Summary": "User-defined tag of the layer: a valid variable name (isvarname), unique among its siblings (see the class help).",
       "Desc": "",
       "SeeAlso": [],
@@ -3236,6 +3236,47 @@
       "Deprecated": ""
     },
     {
+      "Name": "doc",
+      "Defining": "PowerSystemModel",
+      "Group": "Other",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj"
+      ],
+      "OutputNames": [],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Model whose class page is opened."
+        }
+      ],
+      "Outputs": [],
+      "Signature": "doc(obj)",
+      "File": "_GUILDAsystem/_auxiliary/@PowerSystemModel/doc.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Open the class reference page of the model's class.",
+      "Desc": "Opens the GUILDA class reference (English page) of class(obj) in the browser, as\nGUILDA.doc(\"class\", class(obj)). doc with a class name (doc PowerNetwork) is\nMATLAB's doc.",
+      "SeeAlso": [],
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.doc()                          % page of the network class\nnet.a_Bus{1}.doc()                 % page of the class of the first bus\nnet.a_Bus{1}.a_Component{1}.doc()  % page of the class of its component\ndoc(net)                           % same as net.doc()\n```",
+      "Deprecated": ""
+    },
+    {
       "Name": "get_sys",
       "Defining": "PowerSystemModel",
       "Group": "Linearization",
@@ -3632,47 +3673,6 @@
       "Desc": "With no container it opens a new uifigure; with a container (uifigure, uipanel, uitab or\nuigridlayout) it fills it, so that the GUI can be embedded in another app. The breadcrumb\nruns from the root to this model, and the cards show its children by kind; a click on\neither shows that model in the same container. The Docs button opens the reference page\nof the class. The add buttons and the Remove item of the card menus add and remove\nmodels (and the disturbances of a Scenario), and the parameter tables are editable; the\nabstract classes provide the other tables (gui_content), so a model class needs no GUI\ncode. A Scenario has no parameter tab, only its pages (Disturbances, Settings).\n\nEvery action runs as a line of MATLAB code in History (HistoryGUILDA.run), from the root\nvariable of the model tree (`net` for a network): the code is logged, and\n`h.history.get_script()` returns a script that repeats the actions. The default history\nprints each `>> code` in the Command Window. See DrawerModelGUI.",
       "SeeAlso": [],
       "Examples": "```matlab\nnet = network.IEEE14bus();\nh = net.a_Bus{1}.launch_gui();                % new window\nfig = uifigure();\np = uipanel(uigridlayout(fig, [1 1]));\nh = net.launch_gui(p);                        % embedded in a panel\nhist = HistoryGUILDA();\nh = net.launch_gui(History=hist);             % log the actions in hist\n```",
-      "Deprecated": ""
-    },
-    {
-      "Name": "doc",
-      "Defining": "LayerPackage",
-      "Group": "Other",
-      "Access": "public",
-      "Static": false,
-      "Abstract": false,
-      "Sealed": false,
-      "Hidden": false,
-      "IsConstructor": false,
-      "InputNames": [
-        "obj"
-      ],
-      "OutputNames": [],
-      "Arguments": [
-        {
-          "Name": "obj",
-          "Kind": "Positional",
-          "Struct": "",
-          "Size": "(1,1)",
-          "Class": "",
-          "Validators": [],
-          "Default": "",
-          "Required": true,
-          "Unit": "",
-          "Description": "Layer whose class page is opened."
-        }
-      ],
-      "Outputs": [],
-      "Signature": "doc(obj)",
-      "File": "_GUILDAsystem/_auxiliary/@LayerPackage/doc.m",
-      "Line": 1,
-      "ImplementedIn": "file",
-      "Overrides": "",
-      "Throws": [],
-      "Summary": "Open the class reference page of the layer's class.",
-      "Desc": "Opens the GUILDA class reference (English page) of class(obj) in the browser, as\nGUILDA.doc(\"class\", class(obj)). doc with a class name (doc PowerNetwork) is\nMATLAB's doc.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet.doc()             % page of the network class\nnet.a_Bus{1}.doc()    % page of the class of the first bus\ndoc(net)              % same as net.doc()\n```",
       "Deprecated": ""
     },
     {

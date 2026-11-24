@@ -27,7 +27,7 @@
       },
       "Unit": "s",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 81,
+      "Line": 82,
       "Summary": "Output times, ascending; a phase boundary appears twice (end of one phase, start of the next).",
       "Desc": "",
       "SeeAlso": [],
@@ -55,7 +55,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 82,
+      "Line": 83,
       "Summary": "Variable map at the time of the simulation: its rows are the columns of rm_variable.",
       "Desc": "",
       "SeeAlso": [],
@@ -83,7 +83,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 83,
+      "Line": 84,
       "Summary": "Trajectory of all variables: row k at rv_t(k), column m the variable tab_variable(m,:).",
       "Desc": "",
       "SeeAlso": [],
@@ -111,7 +111,7 @@
       },
       "Unit": "pu",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 84,
+      "Line": 85,
       "Summary": "Currents injected into the buses: Ireal, Iimag of each bus in the order of sv_bus.",
       "Desc": "",
       "SeeAlso": [],
@@ -139,7 +139,7 @@
       },
       "Unit": "pu",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 85,
+      "Line": 86,
       "Summary": "Current each component injects into its bus (its f_I): Ireal, Iimag of each component in the order of sv_bus and c_component; NaN while it is tripped.",
       "Desc": "",
       "SeeAlso": [],
@@ -167,7 +167,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 86,
+      "Line": 87,
       "Summary": "Outputs y and yc of the variable map: its rows are the columns of rm_output; columns as tab_variable.",
       "Desc": "",
       "SeeAlso": [],
@@ -195,7 +195,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 87,
+      "Line": 88,
       "Summary": "Trajectory of the outputs: row k at rv_t(k), column m the output tab_output(m,:); NaN while the unit is tripped.",
       "Desc": "",
       "SeeAlso": [],
@@ -223,7 +223,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 88,
+      "Line": 89,
       "Summary": "Bus tags, in the order of odeResults.Bus.",
       "Desc": "",
       "SeeAlso": [],
@@ -251,7 +251,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 89,
+      "Line": 90,
       "Summary": "Component tags of each bus, in the order of odeResults.Bus(i).Component.",
       "Desc": "",
       "SeeAlso": [],
@@ -279,7 +279,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 90,
+      "Line": 91,
       "Summary": "Snapshot of the network at the simulation: struct(net, false).",
       "Desc": "",
       "SeeAlso": [],
@@ -307,7 +307,7 @@
       },
       "Unit": "pu",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 91,
+      "Line": 92,
       "Summary": "Branch admittances the run used: iv_Y (n_t x 1) is the position in c_Ybranch at each time of rv_t, c_Ybranch{k} the 2x2 matrix of each branch of sct_network.a_Branch in the k-th set of branch states (2 x 2 x n_branch; k = 1: all closed).",
       "Desc": "",
       "SeeAlso": [],
@@ -335,7 +335,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 95,
+      "Line": 96,
       "Summary": "Trajectories per bus and component: a view of rv_t, rm_variable, rm_I, rm_Icomponent and rm_output (see the class help).",
       "Desc": "",
       "SeeAlso": [],
@@ -363,7 +363,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 99,
+      "Line": 100,
       "Summary": "Columns for odeResults: c_index{i}.iv_V, .c_x{j}, .c_u{j} (rm_variable) and .c_y{j} (rm_output) of component j of bus i.",
       "Desc": "",
       "SeeAlso": [],
@@ -391,7 +391,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 100,
+      "Line": 101,
       "Summary": "odeResults, built on first access.",
       "Desc": "",
       "SeeAlso": [],
@@ -798,7 +798,8 @@
         "opt"
       ],
       "OutputNames": [
-        "G"
+        "G",
+        "G_chart"
       ],
       "Arguments": [
         {
@@ -826,6 +827,18 @@
           "Description": "Name-Value options; each sets the property of the same name of the GraphNetDiagram."
         },
         {
+          "Name": "Trajectory",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "(1,1)",
+          "Class": "string",
+          "Validators": [],
+          "Default": "\"auto\"",
+          "Required": false,
+          "Unit": "",
+          "Description": "Quantity of the side chart as Quantity of plot_trajectory; \"auto\": \"Vabs\" of all buses; \"none\": no side chart."
+        },
+        {
           "Name": "Parent",
           "Kind": "NameValue",
           "Struct": "opt",
@@ -850,9 +863,21 @@
           "Required": false,
           "Unit": "",
           "Description": "GraphNetDiagram object of the drawing."
+        },
+        {
+          "Name": "G_chart",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "The side chart of the trajectory (GraphChart) linked to G; [] without one."
         }
       ],
-      "Signature": "G = plot_diagram(obj, opt, Name=Value)",
+      "Signature": "[G, G_chart] = plot_diagram(obj, opt, Name=Value)",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/plot_diagram.m",
       "Line": 1,
       "ImplementedIn": "file",
@@ -861,9 +886,9 @@
         "GUILDA:ResultODE:NoDiagramData"
       ],
       "Summary": "Draw the time response as a network diagram (GraphNetDiagram; 2D, or Dimension=\"3D\") with every output time.",
-      "Desc": "The diagram holds every output time rv_t; G.set_time(t) shows the sample nearest to t\n(the first one is shown at first). The bus voltages come from the variables Vre, Vim of\nthe buses (rm_variable) and the current of each component from rm_Icomponent, so the\ncolors, labels and arrows of the components and branches show the simulated values.\nThe current injection of a bus is the sum of the currents of its components: during a\nfault it does not hold the fault current. The branch flows use the admittance matrix\nof each branch in the branch states of the phase of each time (sct_branchY; a result\nbuilt without it: the closed matrices cm_Y of sct_network): an opened\nbranch (\"6open\") carries no current, a branch with one circuit open (\"3open\") the\ncurrent of the other circuits, and during a fault inside a branch the two ends carry\nthe currents of the faulted branch into the fault point (both ends feed it). At a phase\nboundary the end of one phase takes the states of that phase and the start of the\nnext those of the next. While a unit is tripped its current is\nNaN: its link is gray, its values are NaN and its bus counts its current as 0. A result\nwithout component currents (rm_Icomponent all NaN, e.g. a result built without them)\nstops with GUILDA:ResultODE:NoDiagramData. It reads only the stored result. The other\nName-Value options set the properties of the GraphNetDiagram.",
+      "Desc": "The diagram holds every output time rv_t; G.set_time(t) shows the sample nearest to t\n(the first one is shown at first). The bus voltages come from the variables Vre, Vim of\nthe buses (rm_variable) and the current of each component from rm_Icomponent, so the\ncolors, labels and arrows of the components and branches show the simulated values.\nThe current injection of a bus is the sum of the currents of its components: during a\nfault it does not hold the fault current. The branch flows use the admittance matrix\nof each branch in the branch states of the phase of each time (sct_branchY; a result\nbuilt without it: the closed matrices cm_Y of sct_network): an opened\nbranch (\"6open\") carries no current, a branch with one circuit open (\"3open\") the\ncurrent of the other circuits, and during a fault inside a branch the two ends carry\nthe currents of the faulted branch into the fault point (both ends feed it). At a phase\nboundary the end of one phase takes the states of that phase and the start of the\nnext those of the next. While a unit is tripped its current is\nNaN: its link is gray, its values are NaN and its bus counts its current as 0. A result\nwithout component currents (rm_Icomponent all NaN, e.g. a result built without them)\nstops with GUILDA:ResultODE:NoDiagramData. It reads only the stored result. The other\nName-Value options set the properties of the GraphNetDiagram.\n\nBeside the diagram, on its right, the side chart G_chart (GraphChart) draws a trajectory\nagainst time as plot_trajectory, with a cursor at the time shown: by default |V| of all\nbuses (\"Vabs\"); Trajectory names another quantity as Quantity of plot_trajectory\n(\"Vangle\", \"P\", \"Q\" or a state, input or output name such as \"omega\"). The container (a\nnew figure of 1400 x 600 px when Parent is empty; a uigridlayout gets a borderless\nuipanel first) holds two borderless panels: the diagram with its playback bar on the\nleft (60 %) and the chart on the right (40 %). The two are linked (G.link(G_chart)): the\nbar, G.set_time, G.play and G.animate move the cursor of the chart. The chart has no bar\nof its own (its time only moves the cursor). Trajectory=\"none\", or an axes or uiaxes as\nParent, draws the diagram alone, without a side chart (G_chart []).",
       "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE9bus();\nsc = net.add_scenario(\"fault\");\nsc.add_fault(\"B007\", [1, 1.05]);\nres = net.simulate(\"fault\", Time=[0, 5]);\nG = res.plot_diagram(ColorMode=\"P\", LabelMode=\"value\");\nG.set_time(1.02);       % during the fault\n```\n\nSee also PowerNetwork.plot_diagram, ResultPF.plot_diagram, GraphNetDiagram, ResultODE.plot_spring_model",
+      "Examples": "```matlab\nnet = network.IEEE9bus();\nsc = net.add_scenario(\"fault\");\nsc.add_fault(\"B007\", [1, 1.05]);\nres = net.simulate(\"fault\", Time=[0, 5]);\n[G, G_chart] = res.plot_diagram(ColorMode=\"P\", LabelMode=\"value\");   % |V| of the buses on the right\nG.set_time(1.02);       % during the fault; the cursor of G_chart moves too\nG = res.plot_diagram(Trajectory=\"none\");    % the diagram alone\n```\n\nSee also ResultODE.plot_trajectory, PowerNetwork.plot_diagram, ResultPF.plot_diagram, GraphNetDiagram, ResultODE.plot_spring_model",
       "Deprecated": ""
     },
     {
@@ -881,7 +906,8 @@
         "opt"
       ],
       "OutputNames": [
-        "G"
+        "G",
+        "G_chart"
       ],
       "Arguments": [
         {
@@ -911,6 +937,18 @@
           "Description": "2: phasor plane (GraphSpring2D); 3: surface z = log|V| (GraphSpring3D)."
         },
         {
+          "Name": "Trajectory",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "(1,1)",
+          "Class": "string",
+          "Validators": [],
+          "Default": "\"auto\"",
+          "Required": false,
+          "Unit": "",
+          "Description": "Quantity of the side chart as Quantity of plot_trajectory; \"auto\": omega of the generators; \"none\": no side chart."
+        },
+        {
           "Name": "Parent",
           "Kind": "NameValue",
           "Struct": "opt",
@@ -935,9 +973,21 @@
           "Required": false,
           "Unit": "",
           "Description": "The picture: a GraphSpring2D or GraphSpring3D object."
+        },
+        {
+          "Name": "G_chart",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "The side chart of the trajectory (GraphChart) linked to G; [] without one."
         }
       ],
-      "Signature": "G = plot_spring_model(obj, Name=Value)",
+      "Signature": "[G, G_chart] = plot_spring_model(obj, Name=Value)",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/plot_spring_model.m",
       "Line": 1,
       "ImplementedIn": "file",
@@ -946,9 +996,95 @@
         "GUILDA:ResultODE:NoSpringData"
       ],
       "Summary": "Draw the time response as a spring-mass picture that can be animated.",
-      "Desc": "The picture holds every output time rv_t: G.set_time(t) shows one time, G.animate()\nplays it and G.export_video(file) writes it as a video. The nodes are voltage phasors:\nevery bus, and the own node of each component whose class returns one from its Static\nget_spring_node (the internal voltage of a generator, joined to its bus by the machine\nreactance). The springs are the branches and these reactances. Arrow pairs show the\nactive power P and the reactive-current magnitude Iq: on each own node, and on each bus\nwith a component without an own node (the bus injection minus the currents of the own\nnodes, at the bus voltage). Marker, MarkerSize and Color of the graph parameters set the\nappearance. Dimension=2 draws the phasor plane (GraphSpring2D), Dimension=3 the surface\nz = log|V| (GraphSpring3D).\n\nIt reads only the stored result: the trajectories of the states, inputs, bus voltages\nand bus currents, and the network snapshot sct_network (class and dynamic parameters of\neach component). While a unit is tripped its states are NaN: its own node, its spring\nand its arrows are not drawn at those times, and the arrow of its bus counts its current\nas 0. The dashed circle |E| of an own node is drawn when |E| stays constant over the\ntimes (e.g. a classical generator without AVR).",
+      "Desc": "The picture holds every output time rv_t: G.set_time(t) shows one time, G.animate()\nplays it and G.export_video(file) writes it as a video. The nodes are voltage phasors:\nevery bus, and the own node of each component whose class returns one from its Static\nget_spring_node (the internal voltage of a generator, joined to its bus by the machine\nreactance). The springs are the branches and these reactances. Arrow pairs show the\nactive power P and the reactive-current magnitude Iq: on each own node, and on each bus\nwith a component without an own node (the bus injection minus the currents of the own\nnodes, at the bus voltage). Marker, MarkerSize and Color of the graph parameters set the\nappearance. Dimension=2 draws the phasor plane (GraphSpring2D), Dimension=3 the surface\nz = log|V| (GraphSpring3D).\n\nBeside the picture, on its right, the side chart G_chart (GraphChart) draws a trajectory\nagainst time as plot_trajectory, with a cursor at the time shown: by default the omega\nof the generators (the components with the state omega); Trajectory names another\nquantity as Quantity of plot_trajectory (\"Vabs\", \"Vangle\", \"P\", \"Q\" or a state, input or\noutput name). The container (a new figure of 1400 x 600 px when Parent is empty; a\nuigridlayout gets a borderless uipanel first) holds two borderless panels: the picture\nwith its playback bar on the left (60 %) and the chart on the right (40 %). The two are\nlinked (G.link(G_chart)): the bar, G.set_time, G.play and G.animate move the cursor of the\nchart. The chart has no bar of its own (its time only moves the cursor). Trajectory=\"none\",\nor an axes or uiaxes as Parent, draws the picture alone, without a side chart (G_chart []).\n\nIt reads only the stored result: the trajectories of the states, inputs, bus voltages\nand bus currents, and the network snapshot sct_network (class and dynamic parameters of\neach component). While a unit is tripped its states are NaN: its own node, its spring\nand its arrows are not drawn at those times, and the arrow of its bus counts its current\nas 0. The dashed circle |E| of an own node is drawn when |E| stays constant over the\ntimes (e.g. a classical generator without AVR).",
       "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE9bus();\nsc = net.add_scenario(\"fault\");\nsc.add_fault(\"B007\", [1, 1.05]);\nres = net.simulate(\"fault\", Time=[0, 5]);\nG = res.plot_spring_model(Dimension=3);\nG.animate(Speed=0.5);\nG.export_video(\"swing.mp4\");\n```\n\nSee also PowerNetwork.plot_spring_model, ResultPF.plot_spring_model, GraphSpring2D, GraphSpring3D, Component.get_spring_node",
+      "Examples": "```matlab\nnet = network.IEEE9bus();\nsc = net.add_scenario(\"fault\");\nsc.add_fault(\"B007\", [1, 1.05]);\nres = net.simulate(\"fault\", Time=[0, 5]);\n[G, G_chart] = res.plot_spring_model(Dimension=3);   % omega of the generators on the right\nG.animate(Speed=0.5);                                % the cursor of G_chart follows\nG.export_video(\"swing.mp4\");\nG = res.plot_spring_model(Trajectory=\"none\");        % the picture alone\n```\n\nSee also ResultODE.plot_trajectory, PowerNetwork.plot_spring_model, ResultPF.plot_spring_model, GraphSpring2D, GraphSpring3D, Component.get_spring_node",
+      "Deprecated": ""
+    },
+    {
+      "Name": "plot_pqv",
+      "Defining": "ResultODE",
+      "Group": "plot",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj",
+        "opt"
+      ],
+      "OutputNames": [
+        "G"
+      ],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": ""
+        },
+        {
+          "Name": "Bus",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "",
+          "Class": "",
+          "Validators": [
+            "mustBeText"
+          ],
+          "Default": "\"all\"",
+          "Required": false,
+          "Unit": "",
+          "Description": "Tags of the buses to draw; \"all\" for every bus."
+        },
+        {
+          "Name": "Parent",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "[]",
+          "Required": false,
+          "Unit": "",
+          "Description": "Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure."
+        }
+      ],
+      "Outputs": [
+        {
+          "Name": "G",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "The chart (GraphChart), one 3D line per bus."
+        }
+      ],
+      "Signature": "G = plot_pqv(obj, Name=Value)",
+      "File": "_GUILDAsystem/_auxiliary/@ResultODE/plot_pqv.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [
+        "GUILDA:ResultODE:NoDiagramData",
+        "GUILDA:ResultODE:UnknownBus"
+      ],
+      "Summary": "Plot the P-Q-V trajectory of the buses in 3D: P, Q and |V| of each bus at every output time.",
+      "Desc": "Draws one 3D line per bus through (P, Q, |V|) [pu] of its output times: P + jQ is the\ntotal power the bus injects into the network, S = V conj(sum of the currents of its\ncomponents), from the bus voltages (Vre, Vim of rm_variable) and rm_Icomponent; it\nequals V conj(Y V) of the bus (rm_I) within the tolerance of the solver, except at a\nfaulted bus during the fault (the fault current is not a component current). A\ntripped component (NaN current) counts as 0, and a bus without components has\nP = Q = 0. By default it draws every bus; Bus selects some (a tag that is not in sv_bus\nstops with GUILDA:ResultODE:UnknownBus). Drag the axes to turn the view.\n\nThe samples of the chart are the output times rv_t: G.set_time(t) puts a marker on each\nline at its point of the time nearest to t (none before the first set_time), and\nG.link(G2) keeps it in step with plot_diagram, plot_spring_model and plot_trajectory.\nA result without time points or component currents stops with\nGUILDA:ResultODE:NoDiagramData.\n\nIt returns the chart G (GraphChart, one 3D panel): one line per bus, tagged with the\nbus tag.",
+      "SeeAlso": [],
+      "Examples": "```matlab\nnet = network.IEEE9bus();\nsc = net.add_scenario(\"fault\");\nsc.add_fault(\"B007\", [1, 1.05]);\nres = net.simulate(\"fault\", Time=[0, 5]);\nG = res.plot_pqv(Bus=[\"B005\", \"B007\"]);\nG.set_time(1.02);       % markers during the fault\n```\n\nSee also ResultODE.plot_trajectory, ResultCPF.plot_pqv, GraphChart",
       "Deprecated": ""
     },
     {
@@ -1349,7 +1485,7 @@
       ],
       "Signature": "obj = ResultODE(sct_sol, sct_dae, sct_network, sct_solver)",
       "File": "_GUILDAsystem/_auxiliary/@ResultODE/ResultODE.m",
-      "Line": 104,
+      "Line": 105,
       "ImplementedIn": "classdef",
       "Overrides": "",
       "Throws": [],
@@ -1514,6 +1650,127 @@
       "Throws": [],
       "Summary": "Center of inertia of a quantity of some units: the mean weighted by their inertia M.",
       "Desc": "The weight of a unit is the dynamics parameter M of the component in the network\nsnapshot sct_network. A unit whose value is NaN at a time (tripped) is left out of the\nmean at that time. Called by judge_out_of_step (rotor angles) and get_trajectory.",
+      "SeeAlso": [],
+      "Examples": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "draw_with_chart",
+      "Defining": "ResultODE",
+      "Group": "draw",
+      "Access": "private",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj",
+        "h_parent",
+        "s_trajectory",
+        "s_default",
+        "fcn_graph"
+      ],
+      "OutputNames": [
+        "G",
+        "G_chart"
+      ],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "The result. <@Type> ResultODE"
+        },
+        {
+          "Name": "h_parent",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Parent of the method: a container, an axes or uiaxes, or [] for a new figure."
+        },
+        {
+          "Name": "s_trajectory",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "string",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Quantity of the side chart (as plot_trajectory), \"auto\" or \"none\"."
+        },
+        {
+          "Name": "s_default",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "string",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Quantity drawn for \"auto\"."
+        },
+        {
+          "Name": "fcn_graph",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "function_handle",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Draws the graph in a parent h as fcn_graph(h)."
+        }
+      ],
+      "Outputs": [
+        {
+          "Name": "G",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "The animated graph (GraphBase)."
+        },
+        {
+          "Name": "G_chart",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "The side chart (GraphChart), or [] without one."
+        }
+      ],
+      "Signature": "[G, G_chart] = draw_with_chart(obj, h_parent, s_trajectory, s_default, fcn_graph)",
+      "File": "_GUILDAsystem/_auxiliary/@ResultODE/private/draw_with_chart.m",
+      "Line": 1,
+      "ImplementedIn": "private",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Draw the animated graph of plot_spring_model or plot_diagram, with the side chart of a trajectory on its right.",
+      "Desc": "The graph is drawn by fcn_graph(h) in h. With a side chart, the container h_parent (a\nnew figure of 1400 x 600 px when it is empty; a uigridlayout gets a borderless uipanel\nfirst) holds two borderless panels side by side: the graph on the left (60 %, with its\nplayback bar) and the chart plot_trajectory(Quantity=s_trajectory) on the right (40 %,\nno bar: its time only moves the cursor). The two are linked, so the bar of the graph\nmoves the cursor of the chart. s_trajectory \"auto\" draws s_default; \"none\" and an axes\nor uiaxes h_parent draw the graph alone in h_parent (G_chart []). A drawing that fails\nremoves the panels (and the new figure) it made.",
       "SeeAlso": [],
       "Examples": "",
       "Deprecated": ""
@@ -1890,6 +2147,47 @@
       "Desc": "Success test behind l_success: a logical flag as it is, a numeric flag when\npositive (as for exitflag of fsolve or fmincon). Override it when an analysis\nuses another convention.",
       "SeeAlso": [],
       "Examples": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "doc",
+      "Defining": "auxiliary",
+      "Group": "Other",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj"
+      ],
+      "OutputNames": [],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Object whose class page is opened."
+        }
+      ],
+      "Outputs": [],
+      "Signature": "doc(obj)",
+      "File": "_GUILDAsystem/_auxiliary/@auxiliary/doc.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Open the class reference page of the object's class.",
+      "Desc": "Opens the GUILDA class reference (English page) of class(obj) in the browser, as\nGUILDA.doc(\"class\", class(obj)). doc with a class name (doc ResultPF) is MATLAB's\ndoc.",
+      "SeeAlso": [],
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nres = net.calculate_powerflow();\nres.doc()                       % page of ResultPF\ndoc(res)                        % same as res.doc()\nsc = net.add_scenario(\"CASE1\");\nsc.doc()                        % page of Scenario\n```",
       "Deprecated": ""
     }
   ],

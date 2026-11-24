@@ -927,6 +927,75 @@
       "Deprecated": ""
     },
     {
+      "Name": "plot_single_line_diagram",
+      "Defining": "ResultPF",
+      "Group": "plot",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj",
+        "opt"
+      ],
+      "OutputNames": [
+        "G"
+      ],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": ""
+        },
+        {
+          "Name": "Parent",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "[]",
+          "Required": false,
+          "Unit": "",
+          "Description": "Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure of 8.5 cm width."
+        }
+      ],
+      "Outputs": [
+        {
+          "Name": "G",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "GraphNetDiagram object of the drawing."
+        }
+      ],
+      "Signature": "G = plot_single_line_diagram(obj, Name=Value)",
+      "File": "_GUILDAsystem/_auxiliary/@ResultPF/plot_single_line_diagram.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Draw the network of the power flow as a black-and-white single-line diagram for a paper.",
+      "Desc": "The same drawing as PowerNetwork.plot_single_line_diagram, from the network snapshot of\nthe result (as plot_diagram): the 2D layout of the graph parameters, a bus as a thick\nbar or dot, a branch as a thin line, a transformer as two overlapping circles, a\ngenerator (a class of component.generator) as a circle with a sine inside, a load\n(component.load) as a filled triangle pointing away from its bus, any other component\nas a marker of its Shape, all in black on white, and the bus tags as labels without a\nbox. The solution sets no color, width or size: there are no colors, colorbar, title,\nflow dots or data-dependent widths, and the axes are hidden with tight limits. The data\ntips show the values of the solution.\n\nWith Parent empty, a new white figure for one column of a two-column paper is made:\n8.5 cm wide, as high as the layout needs (3 to 12 cm), with labels of 8 pt (smaller\nbeyond 30 buses: 8*sqrt(30/n_bus), at least 5 pt), so that exportgraphics writes it at\nits size. With a Parent the diagram is drawn in it.",
+      "SeeAlso": [],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nG = res.plot_single_line_diagram();\nexportgraphics(G.ax, \"ieee9.png\", Resolution=600);\n```\n\nSee also ResultPF.plot_diagram, PowerNetwork.plot_single_line_diagram, GraphNetDiagram",
+      "Deprecated": ""
+    },
+    {
       "Name": "plot_diagram",
       "Defining": "ResultPF",
       "Group": "plot",
@@ -1006,7 +1075,7 @@
       "Summary": "Draw the power flow solution as a network diagram (GraphNetDiagram; 2D, or Dimension=\"3D\").",
       "Desc": "The bus voltages are Vphasor of tab_bus. The result holds no current of each component,\nso the bus injection P + jQ is split among the components of the bus as initialize\nwould split it (tools.distribute_power with \"baseMVA\": tab_parameter.powerflow of the\nsnapshot, the remainder at the slack bus (l_isSlack of the snapshot) and the split of\nthe bus Q), and each component current is\nconj((P + jQ) / V). The branch flows come from the admittance matrix cm_Y of each branch\nin the snapshot. It reads only the stored result and its network snapshot. The other\nName-Value options set the properties of the GraphNetDiagram.",
       "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE14bus().calculate_powerflow();\nG = res.plot_diagram();\nG = res.plot_diagram(ColorMode=\"P\", LabelMode=\"value\");\n```\n\nSee also PowerNetwork.plot_diagram, ResultODE.plot_diagram, GraphNetDiagram, ResultPF.plot_network",
+      "Examples": "```matlab\nres = network.IEEE14bus().calculate_powerflow();\nG = res.plot_diagram();\nG = res.plot_diagram(ColorMode=\"P\", LabelMode=\"value\");\n```\n\nSee also PowerNetwork.plot_diagram, ResultODE.plot_diagram, GraphNetDiagram, ResultPF.plot_single_line_diagram",
       "Deprecated": ""
     },
     {
@@ -1092,105 +1161,6 @@
       "Desc": "The nodes are the bus voltage phasors (Vphasor of tab_bus) and the springs are the\nbranches. The result holds no states of the components, so there are no own nodes (such\nas the internal voltage of a generator): each bus with a component gets one arrow pair,\nthe active power P and the reactive-current magnitude Iq of its injection (Iphasor) at\nthe bus voltage. Marker, MarkerSize and Color of the graph parameters of the buses set\nthe appearance. Dimension=2 draws the phasor plane (GraphSpring2D), Dimension=3 the\nsurface z = log|V| (GraphSpring3D). It reads only the stored result and its network\nsnapshot. For the own nodes, draw the equilibrium with PowerNetwork.plot_spring_model.",
       "SeeAlso": [],
       "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nG = res.plot_spring_model();\nG = res.plot_spring_model(Dimension=3);\n```\n\nSee also PowerNetwork.plot_spring_model, ResultODE.plot_spring_model, GraphSpring2D, GraphSpring3D",
-      "Deprecated": ""
-    },
-    {
-      "Name": "plot_network",
-      "Defining": "ResultPF",
-      "Group": "plot",
-      "Access": "public",
-      "Static": false,
-      "Abstract": false,
-      "Sealed": false,
-      "Hidden": false,
-      "IsConstructor": false,
-      "InputNames": [
-        "obj",
-        "opt"
-      ],
-      "OutputNames": [
-        "G"
-      ],
-      "Arguments": [
-        {
-          "Name": "obj",
-          "Kind": "Positional",
-          "Struct": "",
-          "Size": "",
-          "Class": "",
-          "Validators": [],
-          "Default": "",
-          "Required": true,
-          "Unit": "",
-          "Description": ""
-        },
-        {
-          "Name": "Parent",
-          "Kind": "NameValue",
-          "Struct": "opt",
-          "Size": "",
-          "Class": "",
-          "Validators": [],
-          "Default": "[]",
-          "Required": false,
-          "Unit": "",
-          "Description": "Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; a new figure when empty."
-        },
-        {
-          "Name": "Color",
-          "Kind": "NameValue",
-          "Struct": "opt",
-          "Size": "(1,1)",
-          "Class": "string",
-          "Validators": [
-            "mustBeMember(opt.Color, [\"V\",\"angle\"])"
-          ],
-          "Default": "\"V\"",
-          "Required": false,
-          "Unit": "",
-          "Description": "Node color: |V| [pu] or the angle [deg]."
-        },
-        {
-          "Name": "Arrow",
-          "Kind": "NameValue",
-          "Struct": "opt",
-          "Size": "(1,1)",
-          "Class": "string",
-          "Validators": [
-            "mustBeMember(opt.Arrow, [\"P\",\"Q\",\"none\"])"
-          ],
-          "Default": "\"P\"",
-          "Required": false,
-          "Unit": "",
-          "Description": "Edge arrows along the P or Q flow, or plain lines."
-        }
-      ],
-      "Outputs": [
-        {
-          "Name": "G",
-          "Kind": "Output",
-          "Struct": "",
-          "Size": "(1,1)",
-          "Class": "GraphNetMap",
-          "Validators": [],
-          "Default": "",
-          "Required": false,
-          "Unit": "",
-          "Description": "Map of the network (tab_element: buses and branches)."
-        }
-      ],
-      "Signature": "G = plot_network(obj, Name=Value)",
-      "File": "_GUILDAsystem/_auxiliary/@ResultPF/plot_network.m",
-      "Line": 1,
-      "ImplementedIn": "file",
-      "Overrides": "",
-      "Throws": [
-        "GUILDA:ResultPF:NoNetworkSnapshot"
-      ],
-      "Summary": "Plot the network with the bus voltages and the branch flows, as a GraphNetMap.",
-      "Desc": "Draws the buses as nodes and the branches as edges of a MATLAB graph plot. The node\ncolor is |V| [pu] (Color=\"V\") or the angle [deg] (Color=\"angle\"), with a colorbar.\nWith Arrow=\"P\" or \"Q\", each edge is an arrow in the direction of the active or reactive\npower flow (from the end where the power enters the branch) and its width grows with the\nlarger |P| or |Q| of the two ends; Arrow=\"none\" draws plain lines. The node positions\nare X and Y (the centers) of the graph parameters of the buses in the network snapshot.\nThe buses without a position are placed near their neighbours by\ntools.layout_place_buses, as in PowerNetwork.plot_diagram (the buses with a position\nnever move). It reads only the stored result. The returned map changes its buses and branches by tag\n(set_style, set_position) or by its vector properties (BusColor, BranchLineWidth, ...);\nG.sct_plt.Graph is the graph plot.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE14bus().calculate_powerflow();\nG = res.plot_network();                      % |V| colors, P arrows\nG = res.plot_network(Color=\"angle\", Arrow=\"none\");\nG.set_style(\"B001\", Color=\"r\");\n```\n\nSee also GraphNetMap, ResultPF.plot_voltage, ResultPF.plot_branch, PowerNetwork.plot_diagram",
       "Deprecated": ""
     },
     {
@@ -2337,6 +2307,47 @@
       "Desc": "Success test behind l_success: a logical flag as it is, a numeric flag when\npositive (as for exitflag of fsolve or fmincon). Override it when an analysis\nuses another convention.",
       "SeeAlso": [],
       "Examples": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "doc",
+      "Defining": "auxiliary",
+      "Group": "Other",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj"
+      ],
+      "OutputNames": [],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Object whose class page is opened."
+        }
+      ],
+      "Outputs": [],
+      "Signature": "doc(obj)",
+      "File": "_GUILDAsystem/_auxiliary/@auxiliary/doc.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Open the class reference page of the object's class.",
+      "Desc": "Opens the GUILDA class reference (English page) of class(obj) in the browser, as\nGUILDA.doc(\"class\", class(obj)). doc with a class name (doc ResultPF) is MATLAB's\ndoc.",
+      "SeeAlso": [],
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nres = net.calculate_powerflow();\nres.doc()                       % page of ResultPF\ndoc(res)                        % same as res.doc()\nsc = net.add_scenario(\"CASE1\");\nsc.doc()                        % page of Scenario\n```",
       "Deprecated": ""
     }
   ],

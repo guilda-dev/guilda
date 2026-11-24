@@ -541,7 +541,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@LayerPackage/LayerPackage.m",
-      "Line": 63,
+      "Line": 67,
       "Summary": "Messages per stale tag of the class (string column each; empty: up to date). See the class help.",
       "Desc": "",
       "SeeAlso": [],
@@ -569,7 +569,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@LayerPackage/LayerPackage.m",
-      "Line": 66,
+      "Line": 70,
       "Summary": "Initial message of every stale tag.",
       "Desc": "",
       "SeeAlso": [],
@@ -597,7 +597,7 @@
       },
       "Unit": "",
       "File": "_GUILDAsystem/_auxiliary/@LayerPackage/LayerPackage.m",
-      "Line": 71,
+      "Line": 75,
       "Summary": "User-defined tag of the layer: a valid variable name (isvarname), unique among its siblings (see the class help).",
       "Desc": "",
       "SeeAlso": [],
@@ -969,6 +969,75 @@
       "Desc": "The nodes are voltage phasors: every bus, and the own node of each component whose class\nreturns one from its Static get_spring_node (the internal voltage of a generator, joined\nto its bus by the machine reactance). The springs are the branches and these reactances.\nArrow pairs show the active power P and the reactive-current magnitude Iq: on each own\nnode, and on each bus with a component without an own node (the bus injection minus the\ncurrents of the own nodes, at the bus voltage). Marker, MarkerSize and Color of the graph\nparameters of the buses and components set the appearance. Dimension=2 draws the phasor\nplane (GraphSpring2D), Dimension=3 the surface z = log|V| (GraphSpring3D).\n\nThe picture shows the equilibrium of initialize: c_Vequilibrium and c_Iequilibrium of the\nbuses, rv_Xequilibrium and rv_Uequilibrium of the components. It needs an up-to-date\nnetwork: before net.initialize(), or after an edit that made a layer stale, it stops with\nGUILDA:PowerNetwork:SpringModelStale (\"Run net.initialize() first\"). To draw the result of\nan analysis, use ResultODE.plot_spring_model (animation) or ResultPF.plot_spring_model.",
       "SeeAlso": [],
       "Examples": "```matlab\nnet = network.IEEE9bus();\nG = net.plot_spring_model();               % phasor plane\nG = net.plot_spring_model(Dimension=3);    % on the surface z = log|V|\nG.ShowValue = false;\n```\n\nSee also ResultODE.plot_spring_model, ResultPF.plot_spring_model, GraphSpring2D, GraphSpring3D, Component.get_spring_node",
+      "Deprecated": ""
+    },
+    {
+      "Name": "plot_single_line_diagram",
+      "Defining": "PowerNetwork",
+      "Group": "Queries and display",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj",
+        "opt"
+      ],
+      "OutputNames": [
+        "G"
+      ],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": ""
+        },
+        {
+          "Name": "Parent",
+          "Kind": "NameValue",
+          "Struct": "opt",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "[]",
+          "Required": false,
+          "Unit": "",
+          "Description": "Container (figure, uifigure, uipanel, uitab, uigridlayout) or axes/uiaxes to draw in; [] for a new figure of 8.5 cm width."
+        }
+      ],
+      "Outputs": [
+        {
+          "Name": "G",
+          "Kind": "Output",
+          "Struct": "",
+          "Size": "",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": false,
+          "Unit": "",
+          "Description": "GraphNetDiagram object of the drawing."
+        }
+      ],
+      "Signature": "G = plot_single_line_diagram(obj, Name=Value)",
+      "File": "_GUILDAsystem/@PowerNetwork/plot_single_line_diagram.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Draw the topology as a black-and-white single-line diagram for a paper.",
+      "Desc": "The diagram has the 2D layout of plot_diagram (the graph parameters of the elements)\nand the symbols of a single-line diagram, all in black on white: a bus is a thick bar or\ndot, a branch a thin line, a transformer two overlapping circles, a generator (a class\nof component.generator) a circle with a sine inside, a load (component.load) a filled\ntriangle pointing away from its bus, any other component a marker of its Shape. The\nlabels are the bus tags, without a box. There are no colors, colorbar, title, flow dots\nor data-dependent widths, and the axes are hidden with tight limits. No power flow is\nneeded: it draws the topology (plot_diagram with State=\"topology\").\n\nWith Parent empty, a new white figure for one column of a two-column paper is made:\n8.5 cm wide, as high as the layout needs (3 to 12 cm), with labels of 8 pt (smaller\nbeyond 30 buses: 8*sqrt(30/n_bus), at least 5 pt), so that exportgraphics writes it at\nits size. With a Parent the diagram is drawn in it.\nThe returned GraphNetDiagram works as any diagram: a click on an element or its data\ntip selects it, and set_style changes colors and sizes.",
+      "SeeAlso": [],
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nG = net.plot_single_line_diagram();\nexportgraphics(G.ax, \"ieee14.pdf\", ContentType=\"vector\");\nexportgraphics(G.ax, \"ieee14.png\", Resolution=600);\n```\n\nSee also PowerNetwork.plot_diagram, ResultPF.plot_single_line_diagram, GraphNetDiagram",
       "Deprecated": ""
     },
     {
@@ -1943,7 +2012,7 @@
       "Summary": "Simulate one scenario of the network over time and return a ResultODE (or a struct).",
       "Desc": "Time simulation of the network from its equilibrium: the DAE of the buses, components\nand controllers is integrated over time, with the disturbances of the scenario\ns_scenario (Scenario: bus faults, unit trips, branch openings, state offsets, input\nchanges). The scenario is chosen by its tag among the scenarios of the network\n(net.add_scenario); a tag that is not one stops with GUILDA:PowerNetwork:ScenarioNotFound,\nwhich lists the tags. A run without disturbance uses a scenario without disturbances.\n\nThe time is the Time of the scenario ([0, 10] unless set), or the Time option of the\ncall. The settings are the TimeSimulation section of GUILDA.setting, the defaults of the\nName-Value options; an option given in the call replaces one setting for this call only\n(the settings file and the scenario are not changed). The options go to net.solver_ODE as\nthey are (Progress true/false as \"dialog\"/\"none\"). A name that is not an option stops\nwith the error of the MATLAB arguments block.\nIt stops with an error naming the remedy when the network is not initialized or was\nedited after net.initialize. flag is 1 when the simulation reached the end time, 0 when\nit stopped by TimeLimit and -1 when the solver stopped early; then result holds the\ntrajectories up to output.tEnd, and a warning GUILDA:PowerNetwork:SimulationIncomplete\ntells it, whether or not flag is requested. To write the result to a file, call\nresult.export(...). The verdict is not computed here: call result.judge_out_of_step().\n\nWith StopOnOutOfStep=true the run stops when the absolute rotor angle delta of a\ngenerator from that of the generator of the slack bus exceeds StopAngle [deg]: flag is\n2, the trajectories end at that time (output.tEnd), output.outOfStep holds Time, Unit,\nReference and Angle, and no warning is given (output.outOfStep is empty otherwise). A\ntripped generator is not compared, and while the reference is tripped the run does not\nstop. A network without such generators stops with GUILDA:PowerNetwork:StopNoRotorAngle.\nWith SampleTime > 0 the times of the result are t0 + k*SampleTime and the start and end\nof each phase (a boundary appears twice), with the values of the solver at those times\n(interpolated); the steps of the solver do not change (use MaxStep), and a run that\nstops early ends at the time it stopped. The progress display does not move during a\nphase with SampleTime. NaN or 0 records the solver steps.\n\nWith Format=\"struct\", result is a struct that mirrors the model hierarchy, for repeated\nruns: result.t (the times, shared by every table), result.a_Bus{i}.V, .I, .P, .Q,\nresult.a_Bus{i}.a_Component{j}.x, .u, .I (the current the component injects),\n.a_LocalController{k}.x, .u (nested as in the model), result.a_GlobalController{k}.x, .u\n(one column <input>_<unit tag> per controlled unit). Each is a table with one variable\nper name, without a Time column; each element has s_tag. The outputs y are not computed\n(use result.rm_output of a ResultODE).",
       "SeeAlso": [],
-      "Examples": "```matlab\nnet.initialize();\nsc = net.add_scenario(\"fault\", Time=[0, 10]);\nsc.add_fault(\"B008\", [1, 1.05]);\n[res, flag] = net.simulate(\"fault\", Progress=\"none\", TimeLimit=Inf);\nres.odeResults.Bus(1).Component(1).X.omega    % frequency deviation of a generator\nres.plot_trajectory(Quantity=\"omega\");\n```\n\nThe time and the settings of one call:\n\n```matlab\nres = net.simulate(\"fault\", Time=[0, 20]);                   % sc.Time is not changed\nres = net.simulate(\"fault\", Tolerance=1e-6, MaxStep=0.01);   % this call only\nres = net.simulate(\"fault\", SampleTime=0.01);                % t = 0, 0.01, 0.02, ...\n[res, flag, output] = net.simulate(\"fault\", StopOnOutOfStep=true, StopAngle=180);\noutput.outOfStep                                             % when flag == 2\nGUILDA.setting(\"TimeSimulation\", Tolerance=1e-6)             % every later run\nres.export(\"fault.csv\");\n```\n\nRepeated runs without a ResultODE:\n\n```matlab\nsol = net.simulate(\"fault\", Format=\"struct\");\nplot(sol.t, sol.a_Bus{1}.a_Component{1}.x.omega)\n```\n\nSee also Scenario, ResultODE, SolverODE, PowerNetwork.add_scenario, PowerNetwork.initialize, GUILDA.setting",
+      "Examples": "```matlab\nnet.initialize();\nsc = net.add_scenario(\"fault\", Time=[0, 10]);\nsc.add_fault(\"B008\", [1, 1.05]);\n[res, flag] = net.simulate(\"fault\", Progress=\"none\", TimeLimit=Inf);\nres.odeResults.Bus(1).Component(1).X.omega    % frequency deviation of a generator\nres.plot_trajectory(Quantity=\"omega\");\n```\n\nThe time and the settings of one call:\n\n```matlab\nres = net.simulate(\"fault\", Time=[0, 20]);                   % sc.Time is not changed\nres = net.simulate(\"fault\", Tolerance=1e-8, MaxStep=0.01);   % this call only\nres = net.simulate(\"fault\", SampleTime=0.01);                % t = 0, 0.01, 0.02, ...\n[res, flag, output] = net.simulate(\"fault\", StopOnOutOfStep=true, StopAngle=180);\noutput.outOfStep                                             % when flag == 2\nGUILDA.setting(\"TimeSimulation\", Tolerance=1e-8)             % every later run\nres.export(\"fault.csv\");\n```\n\nRepeated runs without a ResultODE:\n\n```matlab\nsol = net.simulate(\"fault\", Format=\"struct\");\nplot(sol.t, sol.a_Bus{1}.a_Component{1}.x.omega)\n```\n\nSee also Scenario, ResultODE, SolverODE, PowerNetwork.add_scenario, PowerNetwork.initialize, GUILDA.setting",
       "Deprecated": ""
     },
     {
@@ -5284,6 +5353,47 @@
       "Deprecated": ""
     },
     {
+      "Name": "doc",
+      "Defining": "PowerSystemModel",
+      "Group": "Other",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Sealed": false,
+      "Hidden": false,
+      "IsConstructor": false,
+      "InputNames": [
+        "obj"
+      ],
+      "OutputNames": [],
+      "Arguments": [
+        {
+          "Name": "obj",
+          "Kind": "Positional",
+          "Struct": "",
+          "Size": "(1,1)",
+          "Class": "",
+          "Validators": [],
+          "Default": "",
+          "Required": true,
+          "Unit": "",
+          "Description": "Model whose class page is opened."
+        }
+      ],
+      "Outputs": [],
+      "Signature": "doc(obj)",
+      "File": "_GUILDAsystem/_auxiliary/@PowerSystemModel/doc.m",
+      "Line": 1,
+      "ImplementedIn": "file",
+      "Overrides": "",
+      "Throws": [],
+      "Summary": "Open the class reference page of the model's class.",
+      "Desc": "Opens the GUILDA class reference (English page) of class(obj) in the browser, as\nGUILDA.doc(\"class\", class(obj)). doc with a class name (doc PowerNetwork) is\nMATLAB's doc.",
+      "SeeAlso": [],
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.doc()                          % page of the network class\nnet.a_Bus{1}.doc()                 % page of the class of the first bus\nnet.a_Bus{1}.a_Component{1}.doc()  % page of the class of its component\ndoc(net)                           % same as net.doc()\n```",
+      "Deprecated": ""
+    },
+    {
       "Name": "get_sys",
       "Defining": "PowerSystemModel",
       "Group": "Linearization",
@@ -5680,47 +5790,6 @@
       "Desc": "With no container it opens a new uifigure; with a container (uifigure, uipanel, uitab or\nuigridlayout) it fills it, so that the GUI can be embedded in another app. The breadcrumb\nruns from the root to this model, and the cards show its children by kind; a click on\neither shows that model in the same container. The Docs button opens the reference page\nof the class. The add buttons and the Remove item of the card menus add and remove\nmodels (and the disturbances of a Scenario), and the parameter tables are editable; the\nabstract classes provide the other tables (gui_content), so a model class needs no GUI\ncode. A Scenario has no parameter tab, only its pages (Disturbances, Settings).\n\nEvery action runs as a line of MATLAB code in History (HistoryGUILDA.run), from the root\nvariable of the model tree (`net` for a network): the code is logged, and\n`h.history.get_script()` returns a script that repeats the actions. The default history\nprints each `>> code` in the Command Window. See DrawerModelGUI.",
       "SeeAlso": [],
       "Examples": "```matlab\nnet = network.IEEE14bus();\nh = net.a_Bus{1}.launch_gui();                % new window\nfig = uifigure();\np = uipanel(uigridlayout(fig, [1 1]));\nh = net.launch_gui(p);                        % embedded in a panel\nhist = HistoryGUILDA();\nh = net.launch_gui(History=hist);             % log the actions in hist\n```",
-      "Deprecated": ""
-    },
-    {
-      "Name": "doc",
-      "Defining": "LayerPackage",
-      "Group": "Other",
-      "Access": "public",
-      "Static": false,
-      "Abstract": false,
-      "Sealed": false,
-      "Hidden": false,
-      "IsConstructor": false,
-      "InputNames": [
-        "obj"
-      ],
-      "OutputNames": [],
-      "Arguments": [
-        {
-          "Name": "obj",
-          "Kind": "Positional",
-          "Struct": "",
-          "Size": "(1,1)",
-          "Class": "",
-          "Validators": [],
-          "Default": "",
-          "Required": true,
-          "Unit": "",
-          "Description": "Layer whose class page is opened."
-        }
-      ],
-      "Outputs": [],
-      "Signature": "doc(obj)",
-      "File": "_GUILDAsystem/_auxiliary/@LayerPackage/doc.m",
-      "Line": 1,
-      "ImplementedIn": "file",
-      "Overrides": "",
-      "Throws": [],
-      "Summary": "Open the class reference page of the layer's class.",
-      "Desc": "Opens the GUILDA class reference (English page) of class(obj) in the browser, as\nGUILDA.doc(\"class\", class(obj)). doc with a class name (doc PowerNetwork) is\nMATLAB's doc.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet.doc()             % page of the network class\nnet.a_Bus{1}.doc()    % page of the class of the first bus\ndoc(net)              % same as net.doc()\n```",
       "Deprecated": ""
     },
     {

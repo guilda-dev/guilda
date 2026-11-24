@@ -831,8 +831,8 @@ b1.l_isSlack = true;</code></pre>
     </ul>
 
     <h3 id="layout"><span lang="en">Diagram layout</span><span lang="ja">図の配置</span></h3>
-    <p lang="en">The <code>graph</code> parameters of the buses, branches and components place them in the network diagrams. Each column has one meaning. <code>GraphNetDiagram</code> (<code>net.plot_diagram</code>) reads the positions, shapes, paths, offsets and styles; <code>GraphNetMap</code> (<code>res.plot_network</code>) reads only the bus positions; <code>GraphSpring</code> (<code>plot_spring_model</code>) reads <code>Shape</code>, <code>MarkerSize</code> and <code>Color</code>. How the diagrams draw them (2D and 3D, sizes in pt) is in <a href="feature-graphs.html">Graphs</a>.</p>
-    <p lang="ja">母線、ブランチ、機器の <code>graph</code> パラメータは、ネットワーク図での配置です。1 つの列が 1 つの意味を持ちます。<code>GraphNetDiagram</code>（<code>net.plot_diagram</code>）は位置、形、経路、接続位置、線の種類を、<code>GraphNetMap</code>（<code>res.plot_network</code>）は母線の位置だけを、<code>GraphSpring</code>（<code>plot_spring_model</code>）は <code>Shape</code>、<code>MarkerSize</code>、<code>Color</code> を読みます。図での描き方（2D と 3D、pt の大きさ）は<a href="feature-graphs.html">図</a>にあります。</p>
+    <p lang="en">The <code>graph</code> parameters of the buses, branches and components place them in the network diagrams. Each column has one meaning. <code>GraphNetDiagram</code> (<code>plot_diagram</code>, <code>plot_single_line_diagram</code>) reads the positions, shapes, paths, offsets and styles; <code>GraphSpring</code> (<code>plot_spring_model</code>) reads <code>Shape</code>, <code>MarkerSize</code> and <code>Color</code>. How the diagrams draw them (2D and 3D, sizes in pt) is in <a href="feature-graphs.html">Graphs</a>.</p>
+    <p lang="ja">母線、ブランチ、機器の <code>graph</code> パラメータは、ネットワーク図での配置です。1 つの列が 1 つの意味を持ちます。<code>GraphNetDiagram</code>（<code>plot_diagram</code>、<code>plot_single_line_diagram</code>）は位置、形、経路、接続位置、線の種類を、<code>GraphSpring</code>（<code>plot_spring_model</code>）は <code>Shape</code>、<code>MarkerSize</code>、<code>Color</code> を読みます。図での描き方（2D と 3D、pt の大きさ）は<a href="feature-graphs.html">図</a>にあります。</p>
     <ul lang="en">
       <li><b>Coordinates</b>: diagram units without a physical unit; x to the right, y up (as the MATLAB axes); no fixed range</li>
       <li>Bus <code>X</code>, <code>Y</code>: the <b>center</b> of the shape, also of a bar</li>
@@ -887,7 +887,7 @@ b1.add_component("load-power", P=-0.5, DX=0, DY=-0.06, Shape="v");</code></pre>
 
     <h4 id="layout-auto"><span lang="en">Elements without coordinates</span><span lang="ja">座標のない要素</span></h4>
     <ul lang="en">
-      <li>A bus with a coordinate never moves. The diagram places only the buses whose <code>X</code> or <code>Y</code> is NaN (<code>tools.layout_place_buses</code>, shared by <code>GraphNetDiagram</code> and <code>GraphNetMap</code>): a bus connected to placed buses goes near them, away from the other buses and lines, and a short relaxation moves only these new buses; a bus with no connection to placed buses goes to the right of the drawing</li>
+      <li>A bus with a coordinate never moves. The diagram places only the buses whose <code>X</code> or <code>Y</code> is NaN (<code>tools.layout_place_buses</code>, used by <code>GraphNetDiagram</code>): a bus connected to placed buses goes near them, away from the other buses and lines, and a short relaxation moves only these new buses; a bus with no connection to placed buses goes to the right of the drawing</li>
       <li>A position drawn before in the same diagram counts as a coordinate (<code>set_position</code>, redrawing with <code>Graph=G</code>)</li>
       <li>No bus has a coordinate: all buses are placed by the <code>"force"</code> layout</li>
       <li>The placement has no randomness: the same network gives the same drawing</li>
@@ -895,7 +895,7 @@ b1.add_component("load-power", P=-0.5, DX=0, DY=-0.06, Shape="v");</code></pre>
       <li>The diagram does not write these positions into the model (a <code>plot_</code> call does not change it). To keep them: <code>net.set_layout(G.get_layout())</code></li>
     </ul>
     <ul lang="ja">
-      <li>座標のある母線は動きません。図は <code>X</code> か <code>Y</code> が NaN の母線だけを置きます（<code>tools.layout_place_buses</code>。<code>GraphNetDiagram</code> と <code>GraphNetMap</code> が共通に使います）。置いてある母線につながる母線は、その近くの、ほかの母線や線から離れた所に置き、短い緩和でこの新しい母線だけを動かします。置いてある母線とつながらない母線は、図の右に置きます。</li>
+      <li>座標のある母線は動きません。図は <code>X</code> か <code>Y</code> が NaN の母線だけを置きます（<code>tools.layout_place_buses</code>。<code>GraphNetDiagram</code> が使います）。置いてある母線につながる母線は、その近くの、ほかの母線や線から離れた所に置き、短い緩和でこの新しい母線だけを動かします。置いてある母線とつながらない母線は、図の右に置きます。</li>
       <li>同じ図で前に描いた位置も座標として扱います（<code>set_position</code>、<code>Graph=G</code> での描き直し）。</li>
       <li>どの母線にも座標がなければ、全母線を <code>"force"</code> レイアウトで置きます。</li>
       <li>配置に乱数は使いません。同じネットワークなら同じ図になります。</li>

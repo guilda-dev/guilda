@@ -4,8 +4,8 @@ window.GUILDA_DOC_INDEX = {
     "version": 5,
     "classDocumentVersion": 5,
     "pathBase": "_GUILDAdoc",
-    "generatedAt": "2026-11-22T01:15:02+09:00",
-    "matlabRelease": "2025b",
+    "generatedAt": "2026-11-24T10:01:58+09:00",
+    "matlabRelease": "2026a",
     "modelCategories": [
       "PowerNetwork",
       "Bus",
@@ -96,6 +96,7 @@ window.GUILDA_DOC_INDEX = {
         "Parameter",
         "ProgressGUILDA",
         "ResultBase",
+        "Scenario",
         "SolverCPF",
         "SolverLIN",
         "SolverODE",
@@ -103,13 +104,13 @@ window.GUILDA_DOC_INDEX = {
         "SolverPF"
       ],
       "Package": "",
-      "File": "_GUILDAsystem/_auxiliary/auxiliary.m",
+      "File": "_GUILDAsystem/_auxiliary/@auxiliary/auxiliary.m",
       "Line": 1,
       "Abstract": false,
       "Sealed": false,
       "Hidden": false,
       "Summary": "Base class of the classes that assist analyses (solvers, results, parameters, drawers).",
-      "Desc": "It separates the classes that make up the power system model from those intended for\nanalysis assistance:\n\n- Classes that constitute the power system model inherit from PowerSystemModel.\n- Classes intended for analysis assistance inherit from auxiliary.",
+      "Desc": "It separates the classes that make up the power system model from those intended for\nanalysis assistance:\n\n- Classes that constitute the power system model inherit from PowerSystemModel.\n- Classes intended for analysis assistance inherit from auxiliary.\n\n`obj.doc()` opens the class reference page of the object's class.",
       "SeeAlso": [
         "PowerSystemModel",
         "ResultBase"
@@ -123,8 +124,8 @@ window.GUILDA_DOC_INDEX = {
         "Total": 0
       },
       "MethodCount": {
-        "Own": 1,
-        "Total": 1
+        "Own": 2,
+        "Total": 2
       },
       "path": "./database/GUILDAsystem/auxiliary.js",
       "Image": ""
@@ -1846,7 +1847,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 3,
-        "Total": 3
+        "Total": 4
       },
       "path": "./database/GUILDAsystem/CsvNetHandler.js",
       "Image": ""
@@ -1891,7 +1892,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 33,
-        "Total": 33
+        "Total": 34
       },
       "path": "./database/GUILDAsystem/DrawerGUILDA.js",
       "Image": ""
@@ -1936,7 +1937,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 13,
-        "Total": 13
+        "Total": 14
       },
       "path": "./database/GUILDAsystem/DrawerModelGUI.js",
       "Image": ""
@@ -1964,7 +1965,7 @@ window.GUILDA_DOC_INDEX = {
       "Sealed": false,
       "Hidden": false,
       "Summary": "Option form of one method, generated from functionSignatures.json, that writes the call as code.",
-      "Desc": "The form has one row per input of the method in `_GUILDAsystem/resources/functionSignatures.json`\n(or, for a method missing there, `_GUILDAsystem/_auxiliary/resources/functionSignatures.json`)\n(GUILDA.update_keymap(Signature=true) writes it from the arguments blocks), except obj and\nthe inputs in Exclude.\n\nLayout (`_GUILDAsystem/resources/gui_forms.json`): the required and positional inputs come\nfirst, then the main options, then collapsible groups, closed when the form opens (e.g.\n\"Limits\", \"OPF\", \"Graph\", \"Advanced\"). The entry of a signature lists its main options and\nits groups with their members in order; options it does not list go to \"Advanced\". It can\nalso give English labels and units (`labels`), show options only for some values of another\noption (`visible`, e.g. the OPF options of initialize only for Method=\"OPF\"), and name the\nclass whose property defaults are the defaults of options built from its properties\n(`propertyDefaults`, for `opt.?GraphNetDiagram`). A signature missing from the file is\ngrouped by the names of its options (`_fallback`: OPF*, Stability*, the limits Pmin/Vmax/...,\nthe graph layout names DX/DY/Shape/Path/Offset/MarkerSize/Color, Parent/PlotFcn/Format);\nevery other option is a main option. The fields of a group are created when it is opened\nfirst, so a large form opens fast. An option hidden by `visible` is left out of the call.\n\nThe field of an input follows its \"type\":\n\n- `choices=<expression>`: a dropdown of the values of the expression. An expression on\n  `obj` is evaluated on the object of the call when the History that holds it is given.\n  Tags of the elements of a network (`obj.a_Bus`, `a_Branch`, `a_Component`,\n  `a_LocalController`, `a_GlobalController`, `a_Scenario`) get a text field with the tags\n  (`B001, B002`; commas, spaces or `|` separate them) and a \"Select...\" button that opens\n  DrawerTagPicker.pick with one row per element (an input whose type has \"scalar\" keeps its\n  dropdown next to the button and takes one tag). Other tag lists of the object give a list\n  in which several can be selected. A default of several values (`Default:\n  [\"Bus\",\"Component\",\"Branch\"]`) also gives such a list. Without History, or when the\n  expression cannot be evaluated, it gives a text field.\n  Choices that refer to another input of the method, by its name\n  (`obj.a_PowerNetwork.get_element(unit).sv_u` of Scenario.add_input) or by its default when\n  that is a property of the object (`obj.s_unit`, the default of Unit of EventInput.edit),\n  are evaluated for the current value of that input, and again only when it changes: the\n  dropdown or list takes the new items and keeps the values still among them. While that\n  input is empty or cannot be read, it has no items and the hint \"Select unit first\".\n- a model key (`choices=...GUILDA.keymap(\"Component\")...`): the dropdown of the keys and a\n  \"Select...\" button with the key table (DrawerTagPicker.key_table).\n- `logical`: a checkbox; a dropdown of \"\", \"true\" and \"false\" when the default is written\n  in words, where \"\" leaves the option out.\n- a numeric class: a text field for a number or a numeric array (`[0.1 0.02]`).\n- `string` or `char`: a text field, written as a string literal.\n- anything else (table, cell, struct, function handle, no class): a field for a MATLAB\n  expression, inserted into the code as it is.\n\nEvery field shows its default value (the `Default: <expression>.` at the end of the\npurpose, evaluated, on the object of the call too: a default from GUILDA.config shows the\ncurrent setting; `Default: obj.s_status` shows the value of the object). Special numbers\nare shown in words: NaN as \"auto\" (as \"none\" when the purpose says that NaN means none,\ne.g. \"NaN for none\"), Inf and -Inf as \"none\" when the purpose says so (\"Inf: none\"), else\nas Inf and -Inf; \"\" as an empty field. The field takes these words back. A default written\nin words (e.g. \"the Solver of the analysis that Method runs\") leaves the field empty with\na muted hint beside it. A default of alternatives of which one refers to another input\n(`Default: From.Time, else [0, 10].` of PowerNetwork.add_scenario) shows the first that\nevaluates for the current value of that input, and follows it while the field is unchanged:\n[0 10] while From is empty, the Time of From when From is a variable of the History\nfollowed only by properties and numeric indices (`sc`, `net.a_Scenario{2}`; nothing else is\nevaluated, so no method runs), else an empty field with the words as its hint. Left as\nshown, the option is not written (`sc = net.add_scenario();`). The unit of a purpose that\nstarts with `[pu]` is shown after the label. A field changed from its default is\nhighlighted and gets a reset button (↺). The tooltip is the purpose.\n\nValue gives initial values by input name, written as MATLAB code text (`\"B003\"`, `0.5`,\n`true`, `[\"B001\", \"B002\"]`): the field shows them instead of the default. The call still\ncompares with the default, so an option given this way is written while it differs from\nthe default and left out when it equals it; a required input is always written.\n\nget_code writes the call: the output variables, the object, the required inputs in order,\nthen only the visible options whose value differs from the default. An invalid value shows\na message in the form and get_code returns \"\", so no callback throws an error.\n\nPicker: the tables are built when \"Select...\" is pressed, from the network of the call\n(the root variable of Object when it is a network, else the network of the object), and\nonly the elements that the choices list are shown. The local controllers of\nComponent.remove_local_controller are those of the component of the call, so their tags\nare unique there. A trip (Scenario.add_trip, EventTrip.edit) names its units by tag only:\nwhen a tag chosen names several elements of the network, the form says so.",
+      "Desc": "The form has one row per input of the method in `_GUILDAsystem/resources/functionSignatures.json`\n(or, for a method missing there, `_GUILDAsystem/_auxiliary/resources/functionSignatures.json`)\n(GUILDA.update_keymap(Signature=true) writes it from the arguments blocks), except obj and\nthe inputs in Exclude.\n\nLayout (`_GUILDAsystem/resources/gui_forms.json`): the required and positional inputs come\nfirst, then the main options, then collapsible groups, closed when the form opens (e.g.\n\"Limits\", \"OPF\", \"Graph\", \"Advanced\"). The entry of a signature lists its main options and\nits groups with their members in order; options it does not list go to \"Advanced\". It can\nalso give English labels and units (`labels`), show options only for some values of another\noption (`visible`, e.g. the OPF options of initialize only for Method=\"OPF\"), and name the\nclass whose property defaults are the defaults of options built from its properties\n(`propertyDefaults`, for `opt.?GraphNetDiagram`). A signature missing from the file is\ngrouped by the names of its options (`_fallback`: OPF*, Stability*, the limits Pmin/Vmax/...,\nthe graph layout names DX/DY/Shape/Path/Offset/MarkerSize/Color, Parent/PlotFcn/Format);\nevery other option is a main option. The fields of a group are created when it is opened\nfirst, so a large form opens fast. An option hidden by `visible` is left out of the call.\n\nThe field of an input follows its \"type\":\n\n- `choices=<expression>`: a dropdown of the values of the expression. An expression on\n  `obj` is evaluated on the object of the call when the History that holds it is given.\n  Tags of the elements of a network (`obj.a_Bus`, `a_Branch`, `a_Component`,\n  `a_LocalController`, `a_GlobalController`, `a_Scenario`) get a text field with the tags\n  (`B001, B002`; commas, spaces or `|` separate them) and a \"Select...\" button that opens\n  DrawerTagPicker.pick with one row per element (an input whose type has \"scalar\" keeps its\n  dropdown next to the button and takes one tag). Other tag lists of the object give a list\n  in which several can be selected. A default of several values (`Default:\n  [\"Bus\",\"Component\",\"Branch\"]`) also gives such a list. Without History, or when the\n  expression cannot be evaluated, it gives a text field.\n  Choices that refer to another input of the method, by its name\n  (`obj.a_PowerNetwork.get_element(unit).sv_u` of Scenario.add_input) or by its default when\n  that is a property of the object (`obj.s_unit`, the default of Unit of EventInput.edit),\n  are evaluated for the current value of that input, and again only when it changes: the\n  dropdown or list takes the new items and keeps the values still among them. While that\n  input is empty or cannot be read, it has no items and the hint \"Select unit first\".\n- a model key (`choices=...GUILDA.keymap(\"Component\")...`): the dropdown of the keys and a\n  \"Select...\" button with the key table (DrawerTagPicker.key_table).\n- `logical`: a checkbox; a dropdown of \"\", \"true\" and \"false\" when the default is written\n  in words, where \"\" leaves the option out.\n- a numeric class: a text field for a number or a numeric array (`[0.1 0.02]`).\n- `string` or `char`: a text field, written as a string literal.\n- anything else (table, cell, struct, function handle, no class): a field for a MATLAB\n  expression, inserted into the code as it is.\n\nEvery field shows its default value (the `Default: <expression>.` at the end of the\npurpose, evaluated, on the object of the call too: a default from GUILDA.config shows the\ncurrent setting; `Default: obj.s_status` shows the value of the object). Special numbers\nare shown in words: NaN as \"auto\" (as \"none\" when the purpose says that NaN means none,\ne.g. \"NaN for none\"), Inf and -Inf as \"none\" when the purpose says so (\"Inf: none\"), else\nas Inf and -Inf; \"\" as an empty field. The field takes these words back. A default written\nin words (e.g. \"the Solver of the analysis that Method runs\") leaves the field empty with\na muted hint beside it. A default of alternatives of which one refers to another input\n(`Default: From.Time, else [0, 10].` of PowerNetwork.add_scenario) shows the first that\nevaluates for the current value of that input, and follows it while the field is unchanged:\n[0 10] while From is empty, the Time of From when From is a variable of the History\nfollowed only by properties and numeric indices (`sc`, `net.a_Scenario{2}`; nothing else is\nevaluated, so no method runs), else an empty field with the words as its hint. Left as\nshown, the option is not written (`sc = net.add_scenario();`). The unit of a purpose that\nstarts with `[pu]` is shown after the label. A field changed from its default is\nhighlighted and gets a reset button (↺). The tooltip is the purpose.\n\nValue gives initial values by input name, written as MATLAB code text (`\"B003\"`, `0.5`,\n`true`, `[\"B001\", \"B002\"]`): the field shows them instead of the default. The call still\ncompares with the default, so an option given this way is written while it differs from\nthe default and left out when it equals it; a required input is always written.\n\nget_code writes the call: the output variables, the object, the required inputs in order,\nthen only the visible options whose value differs from the default. An invalid value shows\na message in the form and get_code returns \"\", so no callback throws an error.\n\nPicker: the tables are built when \"Select...\" is pressed, from the network of the call\n(the root variable of Object when it is a network, else the network of the object), and\nonly the elements that the choices list are shown. The local controllers of\nComponent.remove_local_controller are those of the component of the call, so their tags\nare unique there. A trip (Scenario.add_trip, EventTrip.edit) names its units by tag only:\nwhen a tag chosen names several elements of the network, the form says so.\n\ngui_forms.json \"pick\" gives an input a \"Select...\" button. A list of element kinds is for an\ninput without choices that takes tags (`\"pick\": {\"LoadBus\": [\"Bus\"]}` of the CPF), and needs\nthe network of the call. An object `{\"table\": \"<expression on obj>\"}` is for an input with\nchoices (a list or a dropdown, which then becomes a text field with the tags, as for the\nelements), and needs no network: the button is shown whenever the entry is there, and the\nexpression is evaluated on the object of the call only when the button is pressed. It gives a\ntable with a Tag column; its other columns are shown beside the tags. One row is taken for an\ninput of type \"scalar\", several otherwise. When the expression fails or gives no rows, an\nalert (a warning in a hidden window) says so and the field stays as it is. The target of\nResultLIN.get_contribution, get_reduced_matrix and plot_reduced_matrix lists so the elements\nof the result (Kind \"element\") and their classes (Kind \"class\").",
       "SeeAlso": [],
       "Examples": "```matlab\nfig = uifigure();\ndlg = DrawerOptionDialog(\"Bus.add_component\", fig, Object=\"net.a_Bus{3}\", Output=\"comp\");\ns_code = dlg.get_code()   % comp = net.a_Bus{3}.add_component(\"gen-park\");  (first key)\ndlg = DrawerOptionDialog(\"PowerNetwork.simulate\", fig, Object=\"net\", Output=\"res\", Value=struct(\"s_scenario\", \"\"\"case1\"\"\"));\ns_code = dlg.get_code()   % res = net.simulate(\"case1\");\ns_code = DrawerOptionDialog.ask(fig, \"PowerNetwork.calculate_powerflow\", Object=\"net\", Output=\"res_pf\");\nh = HistoryGUILDA();\nh.set_variable(\"net\", network.IEEE9bus());\ns_code = DrawerOptionDialog.ask(fig, \"PowerNetwork.remove_bus\", Object=\"net\", History=h);   % bus tags, with Select...\n```\n\nSee also HistoryGUILDA, DrawerTagPicker, GUILDA.update_keymap, GUILDA.config",
       "Deprecated": "",
@@ -1989,7 +1990,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 16,
-        "Total": 16
+        "Total": 17
       },
       "path": "./database/GUILDAsystem/DrawerOptionDialog.js",
       "Image": ""
@@ -2017,7 +2018,7 @@ window.GUILDA_DOC_INDEX = {
       "Sealed": false,
       "Hidden": false,
       "Summary": "GUI of an analysis result: header, the methods of the result as buttons, and a view area.",
-      "Desc": "ResultBase.launch_gui creates one, in a new uifigure or in a given container (uifigure,\nuipanel, uitab or uigridlayout), so that it can be embedded in another app.\n\n- Header (logo blue band over a lime line): the variable of the result, its class, the\n  success state (l_success), a Docs button that opens the class reference\n  (GUILDA.doc(\"class\", ...)), the toggle \"Display options\" and a summary line (network,\n  solver, flag, elapsed time).\n- Method list: the methods of the result in the two functionSignatures.json files\n  (`_GUILDAsystem/resources` and `_GUILDAsystem/_auxiliary/resources`; entries\n  \"<class>.<method>\" of the class and of its superclasses) with the prefixes plot_, disp_\n  and get_ and the method export, as buttons in the groups Plot, Display, Get and Export.\n  A button shows a readable label (plot_voltage: \"Voltage\", get_lmp: \"LMP\", export:\n  \"Export to file\") and the method in its tooltip. The list comes from the files only, so\n  a result class needs no GUI code.\n- View area: the tabs Plot (a panel the plot_* methods draw in), Text (the text of the\n  disp_* methods, the values of the get_* methods and the file of export) and Log (the\n  log of the history, HistoryGUILDA.attach_view, drawn when the tab is first opened).\n- Default view on open, not logged (it changes no variable of the history): the Text tab\n  shows the summary (disp_summary, or the display of the result) and the Plot tab the\n  first plot_* method of the list with its defaults.\n- While \"Display options\" is pressed, the control panel of the last plot that returned a\n  GraphBase (G.show_controls) stands right of the plot panel. Its changes only set\n  properties of the graph and are not logged: they change no variable, and the script\n  draws the plots with their defaults.\n- A plot that animates (a GraphBase with two or more samples other than a time chart,\n  e.g. ResultODE.plot_diagram) starts playing once it is drawn in a visible window, as if\n  its Play button had been pressed (autoplay, G.play(); never under matlab -batch or in a\n  hidden window). A time chart plays only when another output of the same call is a\n  graph that animates (ResultOPF.plot_iteration: the chart plays and the linked network\n  diagram follows it, one playback); a plain time chart (plot_trajectory) does not. It does not block the window, and stops when the window closes, when\n  another plot replaces it, or with Pause of the playback bar. Network diagrams run their\n  flow animation (FlowAnimation).\n\nA button runs its method as a line of MATLAB code through the history (HistoryGUILDA.run),\non the result variable of its workspace. A method with options first asks for them\n(DrawerOptionDialog.ask; Parent and the file of export are not asked); a method without\noptions runs at once. The code is what the log and the script show:\n\n- plot_*: `G = res.plot_voltage(Quantity=\"angle\", Parent=h_parent);` with the outputs named\n  as in the signature (`[G_chart, G_net] = res.plot_iteration(Parent=h_parent);`). Before\n  each run the GUI sets h_parent of the workspace to its plot panel and clears the panel.\n  The history gets the entry `h_parent = [];` once, before the first plot of any result\n  GUI, so the exported script draws every plot in a new figure.\n- disp_*: `s_text = res.disp_bus(Unit=\"SI\");` and `disp(s_text)`; the Text tab shows\n  s_text without hyperlinks.\n- get_*: `tab = res.get_lmp();`; the Text tab shows each output.\n- export: `s_file = res.export(\"<path>\", Table=\"branch\");`. The path comes from uiputfile\n  when the figure is visible, otherwise it is a file of tempdir (no user can answer).\n\nA failed run stays in the log (not in the script); the Text tab shows its message, and an\nalert too when the figure is visible. The colors are the fixed light palette of the\nGUILDA GUIs (tools.gui_palette).",
+      "Desc": "ResultBase.launch_gui creates one, in a new uifigure or in a given container (uifigure,\nuipanel, uitab or uigridlayout), so that it can be embedded in another app.\n\n- Header (logo blue band over a lime line): the variable of the result, its class, the\n  success state (l_success), a Docs button that opens the class reference\n  (GUILDA.doc(\"class\", ...)), the toggle \"Display options\" and a summary line (network,\n  solver, flag, elapsed time).\n- Method list: the methods of the result in the two functionSignatures.json files\n  (`_GUILDAsystem/resources` and `_GUILDAsystem/_auxiliary/resources`; entries\n  \"<class>.<method>\" of the class and of its superclasses) with the prefixes plot_, disp_\n  and get_ and the method export, as buttons in the groups Plot, Display, Get and Export.\n  A button shows a readable label (plot_voltage: \"Voltage\", get_lmp: \"LMP\", export:\n  \"Export to file\") and the method in its tooltip. The list comes from the files only, so\n  a result class needs no GUI code.\n- View area: the tabs Plot (a panel the plot_* methods draw in), Text (the text of the\n  disp_* methods, the values of the get_* methods and the file of export) and Log (the\n  log of the history, HistoryGUILDA.attach_view, drawn when the tab is first opened).\n- Default view on open, not logged (it changes no variable of the history): the Text tab\n  shows the summary (disp_summary, or the display of the result) and the Plot tab the\n  first plot_* method of the list with its defaults.\n- While \"Display options\" is pressed, the control panel of the last plot that returned a\n  GraphBase (G.show_controls) stands right of the plot panel. Its changes only set\n  properties of the graph and are not logged: they change no variable, and the script\n  draws the plots with their defaults.\n- A plot that animates starts playing once it is drawn in a visible window, as if its\n  Play button had been pressed (autoplay; never under matlab -batch or in a hidden\n  window): the first output graph of the call with a playback bar gets G.play(), so one\n  timer plays (ResultODE.plot_diagram: G plays and its linked side chart G_chart\n  follows). A chart whose time only moves a cursor has no bar and does not play\n  (plot_trajectory, ResultOPF.plot_iteration). This holds for the\n  first plot of the default view too. It does not block the window, and stops when the\n  window closes, when another plot replaces it, or with Pause of the playback bar.\n  Network diagrams run their flow animation (FlowAnimation). The control panel of\n  \"Display options\" belongs to the first graph output (for [G, G_chart]: G).\n\nA button runs its method as a line of MATLAB code through the history (HistoryGUILDA.run),\non the result variable of its workspace. A method with options first asks for them\n(DrawerOptionDialog.ask; Parent and the file of export are not asked); a method without\noptions runs at once. The code is what the log and the script show:\n\n- plot_*: `G = res.plot_voltage(Quantity=\"angle\", Parent=h_parent);` with the outputs named\n  as in the signature (`[G, G_chart] = res.plot_diagram(Parent=h_parent);`). Before\n  each run the GUI sets h_parent of the workspace to its plot panel and clears the panel.\n  The history gets the entry `h_parent = [];` once, before the first plot of any result\n  GUI, so the exported script draws every plot in a new figure.\n- disp_*: `s_text = res.disp_bus(Unit=\"SI\");` and `disp(s_text)`; the Text tab shows\n  s_text without hyperlinks.\n- get_*: `tab = res.get_lmp();`; the Text tab shows each output.\n- export: `s_file = res.export(\"<path>\", Table=\"branch\");`. The path comes from uiputfile\n  when the figure is visible, otherwise it is a file of tempdir (no user can answer).\n\nA failed run stays in the log (not in the script); the Text tab shows its message, and an\nalert too when the figure is visible. The colors are the fixed light palette of the\nGUILDA GUIs (tools.gui_palette).",
       "SeeAlso": [],
       "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nh = res.launch_gui();            % new window, with HistoryGUILDA(Echo=true)\nh.history.get_script()           % the code of the buttons pressed\n```\n\nSee also ResultBase.launch_gui, HistoryGUILDA, DrawerOptionDialog, DrawerModelGUI",
       "Deprecated": "",
@@ -2034,7 +2035,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 7,
-        "Total": 7
+        "Total": 8
       },
       "path": "./database/GUILDAsystem/DrawerResultGUI.js",
       "Image": ""
@@ -2074,7 +2075,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 5,
-        "Total": 5
+        "Total": 6
       },
       "path": "./database/GUILDAsystem/DrawerTagPicker.js",
       "Image": ""
@@ -2127,7 +2128,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 5,
-        "Total": 5
+        "Total": 6
       },
       "path": "./database/GUILDAsystem/EventBase.js",
       "Image": ""
@@ -2169,7 +2170,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 3,
-        "Total": 5
+        "Total": 6
       },
       "path": "./database/GUILDAsystem/EventFault.js",
       "Image": ""
@@ -2211,7 +2212,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 4,
-        "Total": 6
+        "Total": 7
       },
       "path": "./database/GUILDAsystem/EventInput.js",
       "Image": ""
@@ -2253,7 +2254,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 3,
-        "Total": 5
+        "Total": 6
       },
       "path": "./database/GUILDAsystem/EventOffset.js",
       "Image": ""
@@ -2295,7 +2296,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 3,
-        "Total": 5
+        "Total": 6
       },
       "path": "./database/GUILDAsystem/EventOpenBranch.js",
       "Image": ""
@@ -2337,7 +2338,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 3,
-        "Total": 5
+        "Total": 6
       },
       "path": "./database/GUILDAsystem/EventTrip.js",
       "Image": ""
@@ -2409,7 +2410,6 @@ window.GUILDA_DOC_INDEX = {
         "GraphChart",
         "GraphMatrix",
         "GraphNetDiagram",
-        "GraphNetMap",
         "GraphSpringBase"
       ],
       "Package": "",
@@ -2419,7 +2419,7 @@ window.GUILDA_DOC_INDEX = {
       "Sealed": false,
       "Hidden": false,
       "Summary": "Abstract base class of the graphs of GUILDA: every plot_* returns a graph object.",
-      "Desc": "A graph draws data in one or more axes (panels) and keeps every later change in one\nplace: the data and the time shown, the appearance of each element, and, in a free\nlayout, its position. The same code then serves a picture and an animation.\n\n- Data: `set_data(sct_data)` replaces the data (the same contract as the data of the\n  constructor of the subclass) and keeps the appearance of the elements that still\n  exist (matched by tag and kind).\n- Time: `set_time(t)` shows the sample nearest to t; `animate` plays the samples and\n  `export_video` writes them to a video. Graphs joined by `link` follow `set_time`\n  (each at the nearest sample of its own times). The samples are times in seconds\n  unless the data names them: the optional fields `s_sampleName` (e.g. \"Step\") and\n  `sv_sampleText` (one text per sample, e.g. \"Step 12 (λ = 0.734)\") of the data of\n  every graph are shown in the playback bar and in the titles that show the\n  time. rv_t then holds the values of these samples (e.g. the step numbers), which\n  must still be nondecreasing; set_time(t), animate and export_video take them as they\n  take times (TimeStep is then a step of the sample values).\n- Elements: `tab_element` lists the elements (Tag, Kind, Index). Their appearance is held\n  in public vector properties of the subclass, one row per element of a kind (e.g.\n  NodeColor). `set_style(sr_tag, Name=Value)` writes the same vectors by tag, so the two\n  forms stay in sync, and only the changed elements are drawn again.\n- Positions: `set_position(sr_tag, rm_xy)` moves elements of a free layout\n  (GraphNetDiagram, GraphNetMap) and `get_layout()` returns the drawn positions in the\n  form of net.get_layout, so that net.set_layout(G.get_layout()) saves them. Other graphs\n  raise an error.\n- `reset_style(sr_tag)` returns the appearance of those elements (all with no argument)\n  to the defaults of the data.\n- Clicks: a click on an element raises the event ElementClicked and calls\n  ElementClickedFcn as fcn(G, data), with data a GraphEventData (Tag, Kind, Index).\n- Time changes: after set_time has drawn a graph (also a graph moved by link, and every\n  frame of animate and export_video), it raises the event TimeChanged and calls\n  TimeChangedFcn as fcn(G, data), with data a GraphTimeEventData (Time, Index of the\n  sample shown), e.g. to write a title or styles per time. build and set_data raise\n  nothing. A set_time called from these callbacks leaves the graphs of the set_time\n  that is running as they are, so a callback that moves a linked graph does not loop.\n- Selection: `select(sr_tag)` adds tags to Selection and `clear_selection()` empties it.\n  The selected elements (every element with a selected tag) are drawn with an overlay in\n  SelectionColor; the overlay does not change the appearance vectors, so clearing it\n  shows the appearance set before. The selection stays through set_time and set_data\n  (tags that disappear are dropped).\n\nHook contract of a subclass (protected methods):\n\n- `load_data(sct_data)`: check the data, store it, set rv_t (1 x n_t), call\n  load_sample_label(sct_data) (the optional sample name and texts) and set the vector\n  properties of the appearance to the defaults of the data. It draws nothing: sct_plt is\n  empty while it runs, so the setters of the vector properties must not draw then.\n- `create_scene()`: draw the fixed parts in ax and create every graphics object of the\n  elements in sct_plt, with the appearance of the vector properties. Called after the\n  axes are set and after load_data, and again by the subclass when a property changes\n  the fixed parts. Called by set_data, sct_pltPrevious holds the drawing before, whose\n  objects it may reuse when they still fit the new data.\n- `update_scene(k)`: draw sample k (i_time is already k): move the graphics objects and\n  show the time, e.g. in the title or with a cursor line.\n- `apply_style(iv_element)`: draw again the appearance of the elements of the rows\n  iv_element of tab_element from the vector properties. The setters of the vector\n  properties call it with the changed rows once sct_plt exists.\n- `tab = element_table()`: the element table of the current data (columns Tag, Kind,\n  Index); tab_element returns it.\n- `sct_map = style_properties()`: for each kind, the set_style options that apply and the\n  vector property each writes, e.g. sct_map.node.Color = \"NodeColor\". A kind with no\n  options maps to struct().\n- `apply_selection()`: delete the previous selection overlay and draw a new one for the\n  elements whose tag is in Selection, in SelectionColor, at the positions shown. The\n  overlay must not take clicks (PickableParts \"none\"). The base calls it after\n  update_scene (build, set_time, set_data) and when Selection or SelectionColor changes;\n  a subclass that calls create_scene or update_scene itself (e.g. in a property setter)\n  calls it afterwards.\n\nClicks: create_scene sets the ButtonDownFcn of the graphics objects of each element (or\nuses another hit test, such as the data tips) so that a click calls the protected\n`click_element(i_row)` of the base with the row of the element in tab_element.\n\nThe constructor of a subclass loads its data, then calls build(opt, n_panel, rv_grid)\nwith its Name-Value options: build sets ax with make_axes(opt.Parent, n_panel, rv_grid),\ncopies the other options to the properties, calls create_scene and shows the first\nsample. Parent is a container (figure, uifigure, uipanel, uitab, uigridlayout; a tiled\nlayout of rv_grid = [n_row n_col] tiles, default one column, is made in it and the\nn_panel axes fill it row by row), an axes or uiaxes (single-panel graphs only; a graph\nwith several panels stops with GUILDA:GraphBase:ParentNeedsContainer), or empty (a new\nfigure).\n\nPlayback bar: a graph whose data has two or more samples (see has_playback) gets a bar\nbelow its axes when they are made in a container (a new figure, or the container given\nby Parent; not when Parent is an axes). The bar has a Play/Pause button, a time slider,\nthe text of the sample shown (sample_text) and a dropdown of the playback speed\n(0.1x to 10x, the same as PlaySpeed; another value of PlaySpeed shows as an item of its\nown). The axes keep the space above it. The bar follows set_time (also through link),\nset_data (the slider takes the new samples; the bar appears or goes when the number of\nsamples crosses two) and animate. Play (or `G.play()`) plays the samples from the one\nshown (from the first when the last is shown) by a timer, so MATLAB stays usable:\nPlaySpeed times real time (one sample value per second at 1 for samples named by the\ndata). Pause (or `G.pause()`), closing the figure, deleting the axes or deleting the\ngraph stops the timer and deletes it. As for FlowAnimation of GraphNetDiagram, no timer\nis made in matlab -batch or for a figure that is not visible: Play then does nothing\n(the slider still works). While a playback runs (also a blocking animate), the button\nshows Pause and Play starts nothing more.\nexport_video and exportgraphics of the axes do not show the bar.\n\nControls: `G.show_controls()` puts a panel of controls next to the axes (or in a given\ncontainer, e.g. a cell of a GUI) and `G.hide_controls()` removes it. The panel is made\nfrom the declaration `control_list()` of the subclass (one row per control: a property\nand its widget) and only sets these properties: a change in the panel sets the\nproperty, and a change of the property (by code, set_style or another panel) updates\nthe panel. The time is in the playback bar, not in the panel. No plot_* shows the panel\nby itself.\n\n`prepare_frame(r_dt)` (protected) is called by export_video before each frame with the\ntime between frames [s], and with NaN after the last one; the default does nothing.\n`sample_text(k, s_format)` (protected) is the text of sample k for a title or the panel:\nthe text of the data, the sample name and value, or sprintf(s_format, rv_t(k)).\n\nThe protected static helpers set_arrow, place_label, resolve_overlap, write_frame and\nrange_map (sizes and widths normalized into a range) are shared by the subclasses (the\nprivate functions of a class folder are not visible to its subclasses).",
+      "Desc": "A graph draws data in one or more axes (panels) and keeps every later change in one\nplace: the data and the time shown, the appearance of each element, and, in a free\nlayout, its position. The same code then serves a picture and an animation.\n\n- Data: `set_data(sct_data)` replaces the data (the same contract as the data of the\n  constructor of the subclass) and keeps the appearance of the elements that still\n  exist (matched by tag and kind).\n- Time: `set_time(t)` shows the sample nearest to t; `animate` plays the samples and\n  `export_video` writes them to a video. Graphs joined by `link` follow `set_time`\n  (each at the nearest sample of its own times). The samples are times in seconds\n  unless the data names them: the optional fields `s_sampleName` (e.g. \"Step\") and\n  `sv_sampleText` (one text per sample, e.g. \"Step 12 (λ = 0.734)\") of the data of\n  every graph are shown in the playback bar and in the titles that show the\n  time. rv_t then holds the values of these samples (e.g. the step numbers), which\n  must still be nondecreasing; set_time(t), animate and export_video take them as they\n  take times (TimeStep is then a step of the sample values).\n- Elements: `tab_element` lists the elements (Tag, Kind, Index). Their appearance is held\n  in public vector properties of the subclass, one row per element of a kind (e.g.\n  NodeColor). `set_style(sr_tag, Name=Value)` writes the same vectors by tag, so the two\n  forms stay in sync, and only the changed elements are drawn again.\n- Positions: `set_position(sr_tag, rm_xy)` moves elements of a free layout\n  (GraphNetDiagram) and `get_layout()` returns the drawn positions in the\n  form of net.get_layout, so that net.set_layout(G.get_layout()) saves them. Other graphs\n  raise an error.\n- `reset_style(sr_tag)` returns the appearance of those elements (all with no argument)\n  to the defaults of the data.\n- Clicks: a click on an element raises the event ElementClicked and calls\n  ElementClickedFcn as fcn(G, data), with data a GraphEventData (Tag, Kind, Index).\n- Time changes: after set_time has drawn a graph (also a graph moved by link, and every\n  frame of animate and export_video), it raises the event TimeChanged and calls\n  TimeChangedFcn as fcn(G, data), with data a GraphTimeEventData (Time, Index of the\n  sample shown), e.g. to write a title or styles per time. build and set_data raise\n  nothing. A set_time called from these callbacks leaves the graphs of the set_time\n  that is running as they are, so a callback that moves a linked graph does not loop.\n- Selection: `select(sr_tag)` adds tags to Selection and `clear_selection()` empties it.\n  The selected elements (every element with a selected tag) are drawn with an overlay in\n  SelectionColor; the overlay does not change the appearance vectors, so clearing it\n  shows the appearance set before. The selection stays through set_time and set_data\n  (tags that disappear are dropped).\n\nHook contract of a subclass (protected methods):\n\n- `load_data(sct_data)`: check the data, store it, set rv_t (1 x n_t), call\n  load_sample_label(sct_data) (the optional sample name and texts) and set the vector\n  properties of the appearance to the defaults of the data. It draws nothing: sct_plt is\n  empty while it runs, so the setters of the vector properties must not draw then.\n- `create_scene()`: draw the fixed parts in ax and create every graphics object of the\n  elements in sct_plt, with the appearance of the vector properties. Called after the\n  axes are set and after load_data, and again by the subclass when a property changes\n  the fixed parts. Called by set_data, sct_pltPrevious holds the drawing before, whose\n  objects it may reuse when they still fit the new data.\n- `update_scene(k)`: draw sample k (i_time is already k): move the graphics objects and\n  show the time, e.g. in the title or with a cursor line.\n- `apply_style(iv_element)`: draw again the appearance of the elements of the rows\n  iv_element of tab_element from the vector properties. The setters of the vector\n  properties call it with the changed rows once sct_plt exists.\n- `tab = element_table()`: the element table of the current data (columns Tag, Kind,\n  Index); tab_element returns it.\n- `sct_map = style_properties()`: for each kind, the set_style options that apply and the\n  vector property each writes, e.g. sct_map.node.Color = \"NodeColor\". A kind with no\n  options maps to struct().\n- `apply_selection()`: delete the previous selection overlay and draw a new one for the\n  elements whose tag is in Selection, in SelectionColor, at the positions shown. The\n  overlay must not take clicks (PickableParts \"none\"). The base calls it after\n  update_scene (build, set_time, set_data) and when Selection or SelectionColor changes;\n  a subclass that calls create_scene or update_scene itself (e.g. in a property setter)\n  calls it afterwards.\n\nClicks: create_scene sets the ButtonDownFcn of the graphics objects of each element (or\nuses another hit test, such as the data tips) so that a click calls the protected\n`click_element(i_row)` of the base with the row of the element in tab_element.\n\nThe constructor of a subclass loads its data, then calls build(opt, n_panel, rv_grid)\nwith its Name-Value options: build sets ax with make_axes(opt.Parent, n_panel, rv_grid),\ncopies the other options to the properties, calls create_scene and shows the first\nsample. Parent is a container (figure, uifigure, uipanel, uitab, uigridlayout; a tiled\nlayout of rv_grid = [n_row n_col] tiles, default one column, is made in it and the\nn_panel axes fill it row by row), an axes or uiaxes (single-panel graphs only; a graph\nwith several panels stops with GUILDA:GraphBase:ParentNeedsContainer), or empty (a new\nfigure).\n\nPlayback bar: a graph whose drawing changes with its two or more samples (see\nhas_playback; a chart whose time only moves a cursor has none) gets a bar below its axes\nwhen they are made in a container (a new figure, or the container given by Parent; not\nwhen Parent is an axes). The bar has a Play/Pause button, a time slider,\nthe text of the sample shown (sample_text) and a dropdown of the playback speed\n(0.1x to 10x, the same as PlaySpeed; another value of PlaySpeed shows as an item of its\nown). The axes keep the space above it. The bar follows set_time (also through link),\nset_data (the slider takes the new samples; the bar appears or goes when the number of\nsamples crosses two) and animate. Play (or `G.play()`) plays the samples from the one\nshown (from the first when the last is shown) by a timer, so MATLAB stays usable:\nPlaySpeed times real time (one sample value per second at 1 for samples named by the\ndata). Pause (or `G.pause()`), closing the figure, deleting the axes or deleting the\ngraph stops the timer and deletes it. As for FlowAnimation of GraphNetDiagram, no timer\nis made in matlab -batch or for a figure that is not visible: Play then does nothing\n(the slider still works). While a playback runs (also a blocking animate), the button\nshows Pause and Play starts nothing more.\nexport_video and exportgraphics of the axes do not show the bar.\n\nControls: `G.show_controls()` puts a panel of controls next to the axes (or in a given\ncontainer, e.g. a cell of a GUI) and `G.hide_controls()` removes it. The panel is made\nfrom the declaration `control_list()` of the subclass (one row per control: a property\nand its widget) and only sets these properties: a change in the panel sets the\nproperty, and a change of the property (by code, set_style or another panel) updates\nthe panel. The time is in the playback bar, not in the panel. No plot_* shows the panel\nby itself.\n\n`prepare_frame(r_dt)` (protected) is called by export_video before each frame with the\ntime between frames [s], and with NaN after the last one; the default does nothing.\n`sample_text(k, s_format)` (protected) is the text of sample k for a title or the panel:\nthe text of the data, the sample name and value, or sprintf(s_format, rv_t(k)).\n\nThe protected static helpers set_arrow, place_label, resolve_overlap, write_frame and\nrange_map (sizes and widths normalized into a range) are shared by the subclasses (the\nprivate functions of a class folder are not visible to its subclasses).",
       "SeeAlso": [],
       "Examples": "```matlab\nG = net.plot_spring_model();\nG.set_style([\"B001\", \"B002\"], Color=\"r\", MarkerSize=20);\nG.NodeColor(3, :) = [0 0.5 0];       % the same as set_style by tag\nG.tab_element                         % Tag, Kind, Index of every element\n```\n\nSee also GraphSpringBase, GraphNetDiagram, GraphChart, GraphEventData, GraphTimeEventData",
       "Deprecated": "",
@@ -2431,7 +2431,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 41,
-        "Total": 41
+        "Total": 42
       },
       "path": "./database/GUILDAsystem/GraphBase.js",
       "Image": ""
@@ -2460,9 +2460,9 @@ window.GUILDA_DOC_INDEX = {
       "Sealed": false,
       "Hidden": false,
       "Summary": "Chart of analysis results: panels of lines, bars and marker sets.",
-      "Desc": "A chart has one or more panels (axes, one above the other, or in a grid: rv_grid) and a\nlist of series. A series is drawn in one panel: a set of lines, a set of bars or a set\nof markers. Every line, every bar and every marker set is an element of tab_element\nwith its own tag, so set_style, the vector properties, select and the clicks work on\neach of them. On the panels marked as time panels, set_time(t) draws a vertical cursor\nat t (none before the first set_time), so that a chart linked to a GraphSpring2D or\nGraphNetDiagram follows its animation. A time panel whose x is not the time (e.g. a PV\ncurve against lambda, one point per step) takes a marker cursor instead (s_cursor\n\"marker\"): set_time puts a marker on each line and marker set at its point of the\nsample. A chart without time panels ignores set_time (TimeChanged still fires, e.g. to\nwrite a title per time; see GraphBase), unless a series is shown by sample (iv_sample)\nor a panel has a title per sample.\n\nThe data (constructor and set_data) is a struct with the fields:\n\n- `sct_panel` (1 x n_panel struct, optional; one panel when missing): per panel\n  - `s_title`, `s_xlabel`, `s_ylabel`: title and axis labels (\"\" none); s_title may\n    also be one title per sample (1 x n_t), shown with the sample;\n  - `rv_xlim`, `rv_ylim`: axis limits ([] automatic);\n  - `s_xscale`, `s_yscale`: \"linear\" (default) or \"log\";\n  - `l_time`: true for a time panel (default false);\n  - `s_cursor`: cursor of a time panel, \"line\" (default; a vertical line at x = t) or\n    \"marker\" (a marker in the color of the element at (rv_x(k), rm_y(k, column)) of\n    each line and marker set of the panel, for sample k; their rm_y must have one row\n    per sample of rv_t);\n  - `l_grid`: grid lines (default true);\n  - `s_legendLocation`: location of the legend (default \"best\"); \"none\" hides it.\n- `sct_series` (1 x n_series struct): per series\n  - `i_panel`: panel of the series (default 1);\n  - `s_type`: \"line\" (default), \"bar\" or \"marker\";\n  - `rv_x` (n_x): x values, or `sv_x` (n_x): category names (drawn at x = 1..n_x with\n    these tick labels; all series of a panel with categories must have the same ones).\n    Default x = 1..n_x;\n  - `rm_y` (n_x x n_col): y values, one column per line or marker set (e.g. time x\n    lines); a bar series has one column, one bar per row. NaN leaves a gap;\n  - `sv_tag`: tags of the elements, one per column (line, marker) or per bar (bar;\n    default sv_x);\n  - `sv_legend`: legend entries, one per column (line, marker; default sv_tag; \"\"\n    leaves the element out of the legend), or one for a bar series (default \"\": none);\n  - `rm_color`: initial colors (1 x 3 for all, or one row per element; a color name or\n    \"#RRGGBB\" for all); NaN rows (default) use the color order of the axes;\n  - `r_lineWidth` (default 1), `s_lineStyle` (default \"-\"), `s_marker` (default \"none\"\n    for a line, \"o\" for a marker set), `r_markerSize` (default 6): initial values;\n  - `iv_sample` (n_x, optional, lines and marker sets): the sample (index in rv_t) of\n    each row. The series then shows only the rows of the sample shown, e.g. the\n    eigenvalues of one section of ResultLIN.plot_eigenvalue; set_time(t) changes them.\n- `sct_refline` (struct array, optional): reference lines, e.g. a limit value. Per line\n  `i_panel` (default 1), `s_axis` (\"x\" a vertical line, \"y\" a horizontal line; default\n  \"y\"), `r_value`, `s_label` (default \"\"), `rv_color` (default [0.85 0.33 0.10]) and\n  `s_lineStyle` (default \"--\"). They are part of the fixed drawing, not elements.\n- `rv_t` (1 x n_t) [s] (optional, default 0): the times that set_time chooses from (or\n  the values of other samples, e.g. steps, with s_sampleName).\n- `s_sampleName`, `sv_sampleText` (optional): the name of the samples (e.g. \"Step\") and\n  the text of each sample (1 x n_t), shown in the playback bar instead of the time (see\n  GraphBase).\n- `s_title` (optional): title of the whole chart, on the tiled layout (with an axes as\n  Parent, on the axes when its panel has no title).\n- `rv_grid` (1 x 2, optional, default [n_panel 1]): rows and columns of the tiled layout,\n  [n_row n_col] with at least n_panel tiles. The panels fill the tiles row by row (in a\n  2 x 2 grid, panel 2 is at the top right); the tiles after the last panel stay empty.\n\nThe bar series of a panel are drawn as one grouped bar chart. set_data takes the same\nstruct with the same number of panels and the same rv_grid (the axes are made once);\nit keeps the appearance of the elements by tag and kind.\n\nElements: one row per line (\"line\"), per bar (\"bar\") and per marker set (\"marker\"), in\nthe order of the series and of their columns (bars). Index is the row of the element\nin the vector properties, which hold one row per element in this order. set_style\noptions by kind:\n\n| Kind | Options |\n|---|---|\n| line | Color, Label, LineWidth, LineStyle, Marker, MarkerSize, Visible |\n| marker | Color, Label, Marker, MarkerSize, Visible |\n| bar | Color, Visible |\n\nLabel is the legend entry (\"\" leaves it out). A hidden bar keeps its place in the\ngroup. The rows of a kind that has no such option are kept but not used. Changing a\nvector property changes the existing graphics objects only. A click on a line, a marker\nset or a bar raises ElementClicked; a selected line or marker set gets a wide line or\nring under it, a selected bar an outline, in SelectionColor.\n\nThe playback bar below the axes (see GraphBase) is shown when the chart has two or more\nsamples and a time panel, a series with iv_sample or a title per sample (has_playback).\nshow_controls has no controls: the appearance is per element.\n\nParent: a container gives a tiled layout of rv_grid with one axes per panel; a\nsingle-panel chart also draws in an axes or uiaxes (see GraphBase).",
+      "Desc": "A chart has one or more panels (axes, one above the other, or in a grid: rv_grid) and a\nlist of series. A series is drawn in one panel: a set of lines, a set of bars or a set\nof markers. Every line, every bar and every marker set is an element of tab_element\nwith its own tag, so set_style, the vector properties, select and the clicks work on\neach of them. On the panels marked as time panels, set_time(t) draws a vertical cursor\nat t (none before the first set_time), so that a chart linked to a GraphSpring2D or\nGraphNetDiagram follows its animation. A time panel whose x is not the time (e.g. a PV\ncurve against lambda, one point per step) takes a marker cursor instead (s_cursor\n\"marker\"): set_time puts a marker on each line and marker set at its point of the\nsample. A chart without time panels ignores set_time (TimeChanged still fires, e.g. to\nwrite a title per time; see GraphBase), unless a series is shown by sample (iv_sample)\nor a panel has a title per sample. A 3D panel (l_3d) draws lines and marker sets in x,\ny and z (e.g. P, Q and |V| per bus), and its time cursor is the marker cursor.\n\nThe data (constructor and set_data) is a struct with the fields:\n\n- `sct_panel` (1 x n_panel struct, optional; one panel when missing): per panel\n  - `s_title`, `s_xlabel`, `s_ylabel`, `s_zlabel`: title and axis labels (\"\" none;\n    s_zlabel for a 3D panel); s_title may also be one title per sample (1 x n_t), shown\n    with the sample;\n  - `rv_xlim`, `rv_ylim`, `rv_zlim`: axis limits ([] automatic, from the data in x, y and\n    z);\n  - `s_xscale`, `s_yscale`: \"linear\" (default) or \"log\";\n  - `l_time`: true for a time panel (default false);\n  - `l_3d`: true for a 3D panel (default false): its series are lines and marker sets\n    with rm_z, drawn in view(3); no bars and no reference lines. Drag the axes (or use\n    the rotate button of the axes toolbar) to turn it; clicks on the lines still raise\n    ElementClicked. A new drawing (set_data) keeps the view the user turned it to;\n  - `s_cursor`: cursor of a time panel, \"line\" (default of a 2D panel; a vertical line\n    at x = t) or \"marker\" (a marker in the color of the element at (rv_x(k), rm_y(k,\n    column)), or (rv_x(k), rm_y(k, column), rm_z(k, column)) in a 3D panel, of each line\n    and marker set of the panel, for sample k; their rm_y must have one row per sample\n    of rv_t). A 3D time panel takes \"marker\" only (its default there; \"line\" is an\n    error, GUILDA:GraphChart:Panel3D);\n  - `l_grid`: grid lines (default true);\n  - `s_legendLocation`: location of the legend (default \"best\"); \"none\" hides it.\n- `sct_series` (1 x n_series struct): per series\n  - `i_panel`: panel of the series (default 1);\n  - `s_type`: \"line\" (default), \"bar\" or \"marker\";\n  - `rv_x` (n_x): x values, or `sv_x` (n_x): category names (drawn at x = 1..n_x with\n    these tick labels; all series of a panel with categories must have the same ones).\n    Default x = 1..n_x;\n  - `rm_y` (n_x x n_col): y values, one column per line or marker set (e.g. time x\n    lines); a bar series has one column, one bar per row. NaN leaves a gap;\n  - `rm_z` (n_x x n_col, optional, default []): z values of a line or marker series of a\n    3D panel, the size of rm_y; required in a 3D panel and an error in a 2D panel\n    (GUILDA:GraphChart:Panel3D);\n  - `sv_tag`: tags of the elements, one per column (line, marker) or per bar (bar;\n    default sv_x);\n  - `sv_legend`: legend entries, one per column (line, marker; default sv_tag; \"\"\n    leaves the element out of the legend), or one for a bar series (default \"\": none);\n  - `rm_color`: initial colors (1 x 3 for all, or one row per element; a color name or\n    \"#RRGGBB\" for all); NaN rows (default) use the color order of the axes;\n  - `r_lineWidth` (default 1), `s_lineStyle` (default \"-\"), `s_marker` (default \"none\"\n    for a line, \"o\" for a marker set), `r_markerSize` (default 6): initial values;\n  - `iv_sample` (n_x, optional, lines and marker sets): the sample (index in rv_t) of\n    each row. The series then shows only the rows of the sample shown, e.g. the\n    eigenvalues of one section of ResultLIN.plot_eigenvalue; set_time(t) changes them\n    (in a 3D panel too).\n- `sct_refline` (struct array, optional): reference lines, e.g. a limit value. Per line\n  `i_panel` (default 1), `s_axis` (\"x\" a vertical line, \"y\" a horizontal line; default\n  \"y\"), `r_value`, `s_label` (default \"\"), `rv_color` (default [0.85 0.33 0.10]) and\n  `s_lineStyle` (default \"--\"). They are part of the fixed drawing, not elements.\n- `rv_t` (1 x n_t) [s] (optional, default 0): the times that set_time chooses from (or\n  the values of other samples, e.g. steps, with s_sampleName).\n- `s_sampleName`, `sv_sampleText` (optional): the name of the samples (e.g. \"Step\") and\n  the text of each sample (1 x n_t), shown in the playback bar instead of the time (see\n  GraphBase).\n- `s_title` (optional): title of the whole chart, on the tiled layout (with an axes as\n  Parent, on the axes when its panel has no title).\n- `rv_grid` (1 x 2, optional, default [n_panel 1]): rows and columns of the tiled layout,\n  [n_row n_col] with at least n_panel tiles. The panels fill the tiles row by row (in a\n  2 x 2 grid, panel 2 is at the top right); the tiles after the last panel stay empty.\n\nThe bar series of a panel are drawn as one grouped bar chart. set_data takes the same\nstruct with the same number of panels and the same rv_grid (the axes are made once);\nit keeps the appearance of the elements by tag and kind.\n\nElements: one row per line (\"line\"), per bar (\"bar\") and per marker set (\"marker\"), in\nthe order of the series and of their columns (bars). Index is the row of the element\nin the vector properties, which hold one row per element in this order. set_style\noptions by kind:\n\n| Kind | Options |\n|---|---|\n| line | Color, Label, LineWidth, LineStyle, Marker, MarkerSize, Visible |\n| marker | Color, Label, Marker, MarkerSize, Visible |\n| bar | Color, Visible |\n\nLabel is the legend entry (\"\" leaves it out). A hidden bar keeps its place in the\ngroup. The rows of a kind that has no such option are kept but not used. Changing a\nvector property changes the existing graphics objects only. A click on a line, a marker\nset or a bar raises ElementClicked; a selected line or marker set gets a wide line or\nring under it, a selected bar an outline, in SelectionColor.\n\nThe data tip of a line or marker set starts with the name of the element: its legend\nentry (SeriesLabel), or its tag when the entry is \"\". The data tip of a bar starts with\nthe tag of the bar. The next rows are the X and Y values (and Z in a 3D panel), labeled\nwith s_xlabel, s_ylabel and s_zlabel of the panel (\"X\", \"Y\" and \"Z\" when these are \"\").\nThe cursors, the reference lines and the selection overlay take no clicks and no data\ntips.\n\nThe playback bar below the axes (see GraphBase) is shown when the drawing of the chart\nchanges with the time: two or more samples and a series with iv_sample or a title per\nsample (has_playback). A chart whose time only moves a cursor (a time panel, e.g.\nResultODE.plot_trajectory) has no bar: set_time, animate, export_video, link and the bar\nof a linked graph move its cursor.\nshow_controls has no controls: the appearance is per element.\n\nParent: a container gives a tiled layout of rv_grid with one axes per panel; a\nsingle-panel chart also draws in an axes or uiaxes (see GraphBase).",
       "SeeAlso": [],
-      "Examples": "```matlab\nsct = struct();\nsct.rv_t = 0:0.01:2;\nsct.sct_panel  = struct(\"s_xlabel\", \"t [s]\", \"s_ylabel\", \"y\", \"l_time\", true);\nsct.sct_series = struct(\"rv_x\", sct.rv_t, \"rm_y\", [sin(sct.rv_t); cos(sct.rv_t)].', ...\n                        \"sv_tag\", [\"s\"; \"c\"]);\nG = GraphChart(sct);\nG.set_style(\"s\", Color=\"r\", LineWidth=2);   % the same as G.SeriesColor(1, :) = [1 0 0] ...\nG.set_time(1.0);                           % cursor at t = 1\n```\n\nSee also GraphBase, ResultODE.plot_trajectory",
+      "Examples": "```matlab\nsct = struct();\nsct.rv_t = 0:0.01:2;\nsct.sct_panel  = struct(\"s_xlabel\", \"t [s]\", \"s_ylabel\", \"y\", \"l_time\", true);\nsct.sct_series = struct(\"rv_x\", sct.rv_t, \"rm_y\", [sin(sct.rv_t); cos(sct.rv_t)].', ...\n                        \"sv_tag\", [\"s\"; \"c\"]);\nG = GraphChart(sct);\nG.set_style(\"s\", Color=\"r\", LineWidth=2);   % the same as G.SeriesColor(1, :) = [1 0 0] ...\nG.set_time(1.0);                           % cursor at t = 1\n```\n\nA 3D panel: lines in (x, y, z), e.g. (P, Q, |V|) of buses (rv_x is per series: one series\nper bus when their P differ), with a marker at the point of each sample.\n\n```matlab\nrv_t = 0:0.1:1;\nsct = struct(\"rv_t\", rv_t);\nsct.sct_panel  = struct(\"s_xlabel\", \"P [pu]\", \"s_ylabel\", \"Q [pu]\", \"s_zlabel\", \"|V| [pu]\", ...\n                        \"l_3d\", true, \"l_time\", true);       % s_cursor \"marker\" by default\nsct.sct_series = struct(\"rv_x\", rv_t, \"rm_y\", [0.3*rv_t; 0.1*rv_t].', ...\n                        \"rm_z\", [1 - 0.2*rv_t.^2; 1 - 0.1*rv_t.^2].', \"sv_tag\", [\"B1\"; \"B2\"]);\nG = GraphChart(sct);\nG.set_time(0.5);                           % markers at (rv_x(6), rm_y(6, :), rm_z(6, :))\n```\n\nSee also GraphBase, ResultODE.plot_trajectory",
       "Deprecated": "",
       "Documented": true,
       "References": [],
@@ -2472,7 +2472,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 11,
-        "Total": 38
+        "Total": 39
       },
       "path": "./database/GUILDAsystem/GraphChart.js",
       "Image": ""
@@ -2541,19 +2541,19 @@ window.GUILDA_DOC_INDEX = {
       "Sealed": false,
       "Hidden": false,
       "Summary": "Matrix whose rows and columns are named variables: the pattern, the magnitude or the values.",
-      "Desc": "The graph draws one matrix per sample (e.g. a Jacobian at several times) with the\nnames of the variables as tick labels and thin separator lines between the groups of\nrows and of columns (e.g. the owner of each variable). It is built from data only.\n\nThe data (constructor and set_data) is a struct with the fields:\n\n- `c_matrix` (1 x n_t cell): the matrix of each sample, n_row x n_col real (double or\n  logical, sparse allowed). Every sample has the same size.\n- `rv_t` (1 x n_t) [s]: the times of the samples, finite and nondecreasing. It may be\n  left out for one sample (t = 0).\n- `sv_rowName` (n_row), `sv_colName` (n_col): the names of the rows and columns.\n- `sv_rowGroup` (n_row), `sv_colGroup` (n_col): the group (owner tag) of each row and\n  column, nonempty. The rows of a group need not be next to each other.\n- `s_title`, `s_rowLabel`, `s_colLabel` (optional, default \"\"): the title and the\n  labels of the axes.\n- `l_frame` (optional, default false): a box around each block of a group that is\n  both a row group and a column group (the diagonal blocks of a square matrix).\n- `l_valueText` (optional, default false): the values of the sample shown are written\n  in their cells (\"%.3g\"; the entries above Tolerance, when there are at most 900).\n- `s_sampleName`, `sv_sampleText` (optional): the name of the samples (e.g. \"Section\")\n  and the text of each sample (1 x n_t), shown in the title and the playback bar\n  instead of the time (see GraphBase).\n\nDisplay:\n\n- `\"pattern\"` (default): a dot at every entry with |value| > Tolerance.\n- `\"magnitude\"`: an image colored by log10|value|, with a colorbar; the entries with\n  |value| <= Tolerance are blank.\n- `\"value\"`: an image of the signed values with a diverging colormap (blue negative,\n  red positive) and a colorbar; the entries with |value| <= Tolerance are blank.\n\nNaN entries are not drawn. `ColorLimits` sets the limits of the colorbar: of\nlog10|value| for \"magnitude\" and of the value for \"value\". A NaN limit (default\n[NaN NaN]) is automatic: over the entries above Tolerance of all samples, [min max] of\nlog10|value| for \"magnitude\" and [-m m] (m the largest |value|) for \"value\".\n\nThe tick labels are the names. When they would overlap (e.g. 300 variables in a small\naxes), only every k-th name is shown, with k the smallest step that fits; the labels are\nchosen again when the figure is resized. A data tip on the matrix shows the row name,\nthe column name, their groups and the value of the sample shown.\n\nTime: set_time(t) shows the sample nearest to t, and the title shows its time or its\nsample text (not for data of one sample at t = 0 without a text).\n\nElements: one row per group of rows (Kind \"rowgroup\") and per group of columns (Kind\n\"colgroup\"), in the order of their first row or column; the Tag is the group. A group of\nrows has a horizontal line before each block of its rows (the first one on the edge of\nthe axes), a group of columns a vertical line before each block of its columns.\n`select(tag)` highlights the rows and the columns of the group; a data tip on a\nseparator line is a click on its group (ElementClicked). A click on the matrix (a dot,\nthe image or the empty background) is a click on the group of the row clicked; the\ncolumn is in G.ax.CurrentPoint. set_style options by kind:\n\n| Kind | Options |\n|---|---|\n| rowgroup | Color, LineWidth |\n| colgroup | Color, LineWidth |\n\nshow_controls shows Display, ColorLimits (with an Auto checkbox; disabled for\n\"pattern\") and Tolerance; for two or more samples the time is in the playback bar below\nthe axes (see GraphBase).\n\nParent: a container gives a tiled layout with one axes; an axes or uiaxes is used\ndirectly (see GraphBase).",
+      "Desc": "The graph draws one matrix per sample (e.g. a Jacobian at several times) with the\nnames of the variables as tick labels and thin separator lines between the groups of\nrows and of columns (e.g. the owner of each variable). It is built from data only.\n\nThe data (constructor and set_data) is a struct with the fields:\n\n- `c_matrix` (1 x n_t cell): the matrix of each sample, n_row x n_col real (double or\n  logical, sparse allowed). Every sample has the same size.\n- `rv_t` (1 x n_t) [s]: the times of the samples, finite and nondecreasing. It may be\n  left out for one sample (t = 0).\n- `sv_rowName` (n_row), `sv_colName` (n_col): the names of the rows and columns.\n- `sv_rowGroup` (n_row), `sv_colGroup` (n_col): the group (owner tag) of each row and\n  column, nonempty. The rows of a group need not be next to each other.\n- `s_title`, `s_rowLabel`, `s_colLabel` (optional, default \"\"): the title and the\n  labels of the axes.\n- `l_frame` (optional, default false): a box around each block of a group that is\n  both a row group and a column group (the diagonal blocks of a square matrix).\n- `l_valueText` (optional, default false): the values of the sample shown are written\n  in their cells (\"%.3g\"; the entries above Tolerance, when there are at most 900).\n- `l_groupTicks` (optional, default false): one tick label per block of a group (its\n  tag, at the middle of the block) instead of the names of the rows and columns.\n- `l_cellGrid` (optional, default false): a thin line around every cell.\n- `s_pattern` (optional): \"dot\" (default: a dot per entry above Tolerance) or \"circle\"\n  (a red filled circle per entry above Tolerance and a hollow circle per zero entry).\n- `s_sampleName`, `sv_sampleText` (optional): the name of the samples (e.g. \"Section\")\n  and the text of each sample (1 x n_t), shown in the title and the playback bar\n  instead of the time (see GraphBase).\n\nDisplay:\n\n- `\"pattern\"` (default): a dot at every entry with |value| > Tolerance.\n- `\"magnitude\"`: an image colored by log10|value|, with a colorbar; the entries with\n  |value| <= Tolerance are blank.\n- `\"value\"`: an image of the signed values with a diverging colormap (blue negative,\n  red positive) and a colorbar; the entries with |value| <= Tolerance are blank.\n\nNaN entries are not drawn. `ColorLimits` sets the limits of the colorbar: of\nlog10|value| for \"magnitude\" and of the value for \"value\". A NaN limit (default\n[NaN NaN]) is automatic: over the entries above Tolerance of all samples, [min max] of\nlog10|value| for \"magnitude\" and [-m m] (m the largest |value|) for \"value\".\n\nThe tick labels are the names. When they would overlap (e.g. 300 variables in a small\naxes), only every k-th name is shown, with k the smallest step that fits; the labels are\nchosen again when the figure is resized. A data tip on the matrix shows the row name,\nthe column name, their groups and the value of the sample shown.\n\nTime: set_time(t) shows the sample nearest to t, and the title shows its time or its\nsample text (not for data of one sample at t = 0 without a text).\n\nElements: one row per group of rows (Kind \"rowgroup\") and per group of columns (Kind\n\"colgroup\"), in the order of their first row or column; the Tag is the group. A group of\nrows has a horizontal line before each block of its rows (the first one on the edge of\nthe axes), a group of columns a vertical line before each block of its columns.\n`select(tag)` highlights the rows and the columns of the group; a data tip on a\nseparator line is a click on its group (ElementClicked). A click on any cell of the\nmatrix (a dot, an empty cell: a transparent image covers them all) or a data tip on it\n(the data cursor mode, which the graph turns on, makes a click a data tip) sets\nClickedCell to [row column] and is a click on the group of its row. set_style options by kind:\n\n| Kind | Options |\n|---|---|\n| rowgroup | Color, LineWidth |\n| colgroup | Color, LineWidth |\n\nshow_controls shows Display, ColorLimits (with an Auto checkbox; disabled for\n\"pattern\") and Tolerance; for two or more samples the time is in the playback bar below\nthe axes (see GraphBase).\n\nParent: a container gives a tiled layout with one axes; an axes or uiaxes is used\ndirectly (see GraphBase).",
       "SeeAlso": [],
       "Examples": "```matlab\nsct = struct();\nsct.rv_t        = [0 1];\nsct.c_matrix    = {sparse([1 2 0; 0 -3 4; 5 0 6]), sparse([1 0 0; 0 -2 4; 5 0 7])};\nsct.sv_rowName  = [\"delta\"; \"omega\"; \"V\"];\nsct.sv_colName  = [\"delta\"; \"omega\"; \"V\"];\nsct.sv_rowGroup = [\"G1\"; \"G1\"; \"B1\"];\nsct.sv_colGroup = [\"G1\"; \"G1\"; \"B1\"];\nG = GraphMatrix(sct, Display=\"value\");\nG.set_style(\"G1\", Color=\"r\", LineWidth=2);   % the separators of G1 (rows and columns)\nG.select(\"B1\");                              % highlight the rows and columns of B1\nG.set_time(1);                               % the second sample\nG.show_controls();\n```\n\nSee also GraphBase, GraphChart, GraphNetDiagram",
       "Deprecated": "",
       "Documented": true,
       "References": [],
       "PropertyCount": {
-        "Own": 7,
-        "Total": 21
+        "Own": 8,
+        "Total": 22
       },
       "MethodCount": {
-        "Own": 9,
-        "Total": 37
+        "Own": 10,
+        "Total": 39
       },
       "path": "./database/GUILDAsystem/GraphMatrix.js",
       "Image": ""
@@ -2582,62 +2582,21 @@ window.GUILDA_DOC_INDEX = {
       "Sealed": false,
       "Hidden": false,
       "Summary": "Single-line diagram of a network: buses, components and branches, in 2D or 3D.",
-      "Desc": "The diagram is built from data only: a snapshot of the network (struct(net, false)) and\nthe state to show. It never reads or changes a network. net.plot_diagram draws the\nequilibrium of the network, ResultPF.plot_diagram the power flow solution and\nResultODE.plot_diagram every output time of a simulation. The colors\nof the branches and of the links (the lines between a component and its bus) follow\nColorMode, the widths of the branches follow BranchWidthMode, the sizes of the buses and\ncomponents MarkerSizeMode and the heights of the buses BusHeightMode. Changing a\nproperty updates the drawing; hovering over an element shows its values.\n\nDimension chooses the drawing. \"2D\" (default) draws flat symbols, lines and markers\nwithout lighting: a bar bus is a line segment, a point bus and a component a marker, a\nbranch and a link a polyline, and a transformer two overlapping circles near the \"from\"\nend. \"3D\" draws solids (boxes, tubes, spheres, cones) with lighting and arrow cones.\nBoth put each bus at its height (BusHeightMode; 0 for \"none\"), a branch climbs linearly\nalong its path between the heights of its ends, and a component and its link stay at\nthe height of its bus. The first drawing looks from the top; a later drawing (Dimension,\nBusHeightMode, set_position, set_data) keeps the view the user rotated to.\n\nSizes and widths are in points (pt), as LineWidth and MarkerSize of MATLAB, so they do\nnot depend on the coordinates. The value of the quantity of BranchWidthMode is mapped\nlinearly onto BranchWidthRange (default [1 4] pt) from its smallest value to its 95th\npercentile over the branches and all samples of the state, leaving out the top outliers\nas the automatic ColorLimits do: the top 5 % take the largest width (with fewer than 20\nvalues, or a 95th percentile equal to the smallest value, the scale goes to the largest\nvalue). The value of MarkerSizeMode is mapped from its smallest to its largest value\nonto MarkerSizeRange (default [5 10] pt; buses and components each on their own scale).\nOne scale for all samples gives the same pt per unit at every time; set_data computes it\nagain from the new state. A mode of \"none\", or a quantity with one value or no value\n(the topology), gives the middle of the range, and a NaN value the minimum. The links\nare LinkWidth wide. In 3D, 1 pt is span/400 in coordinates (span: the larger side of the\nbox of the bus centers).\n\nIn 2D, dots (small triangles) move along the branches and links in the direction of the\nflow of FlowMode: \"P\" (default), \"Q\" (the flow (X_from - X_to)/2 of the powers into a\nbranch at its two ends, and the injection of a component), \"I\" (the larger |I| of the\ntwo ends, or |I| of a component, in the direction of P) or \"none\" (no dots). A dot\nmoves at FlowSpeed*d0*|q|/q_max per second (d0: the median length of the branch paths;\nq_max: the largest |q| over the branches, links and all samples), and the dots of an\nelement are 0.25*d0 apart, so the speed shows the flow. An element with no flow or a\nflow below 1e-3*q_max has no dots. The dots follow the sample shown (set_time) and the\nheights of the paths, and are white with a thin dark edge. With FlowAnimation\ntrue (default) a timer moves them about 25 times per second while the 2D figure is\nvisible; it is not made in a hidden figure (show the figure, then set FlowAnimation =\ntrue again) nor with matlab -batch, and it stops with FlowAnimation = false, \"3D\",\nFlowMode \"none\", the figure closed, cla, or delete(G). Without it the dots stay where\nthey are, so a still image shows the direction too. export_video moves them by the\ntime between its frames. BranchDirection and LinkDirection are the signs of the flow\n(the cones of 3D point the same way; with FlowMode \"none\", the voltage angles and P).\n\nThe layout comes from the graph parameters of the snapshot (notes/graph-layout.md): the\ncenter X, Y, Shape and Length of each bus (a bar is centered at X, Y), the bend points\nPath, the attachments FromOffset, ToOffset and Style of each branch (\"transformer\": a\nsymbol at the \"from\" end), and the position DX, DY, the bend points Path and the\nattachment Offset of each component, relative to the center of its bus. A branch or a\nlink meets a bar on its center line, at its offset (NaN: the nearest bend point\nprojected onto the bar, or the center). The buses without a position are placed by\ntools.layout_place_buses near their neighbours (the buses with one never move); a\ncomponent without a position is placed around its bus. These positions stay in the\ngraph: nothing is written to the network. set_position moves a bus or a component in\nthe drawing (never in the model); the components of a moved bus move with it.\nget_layout returns the drawn positions, and net.set_layout(G.get_layout()) saves them.\n\nThe state is a struct with the fields:\n\n- `rv_t` (1 x n_t) [s]: times of the samples (or the values of other samples, e.g. the\n  steps of a continuation power flow, with s_sampleName).\n- `cm_Vbus` (n_bus x n_t) [pu]: bus voltage phasors, in the a_Bus order of the snapshot.\n- `cm_Icomp` (n_comp x n_t) [pu]: current phasors injected by the components into their\n  buses, bus by bus in the a_Bus order and in the a_Component order of each bus.\n- `c_Ybranch`, `iv_Ybranch` (optional) [pu]: the admittance matrices of the branches of\n  each sample: c_Ybranch{m} is 2 x 2 x n_branch (page k: branch k of the snapshot) and\n  iv_Ybranch (n_t values) the position in c_Ybranch of each sample, e.g. the branch\n  states of the phases of a simulation (ResultODE.plot_diagram).\n- `s_sampleName`, `sv_sampleText` (optional): the name of the samples (e.g. \"Step\") and\n  the text of each sample (1 x n_t), shown in the title and in the playback bar instead\n  of the time (see GraphBase).\n\nset_time(t) shows the sample nearest to t. The current injection of a bus is the sum of\nthe currents of its components (NaN, a tripped unit, counts as 0), and the branch\ncurrents come from the bus voltages and the admittance matrix of each branch: of\nc_Ybranch at that sample when the state has it, else the field cm_Y of the branch in\nthe snapshot. The stored state sct_state also holds them as cm_Ibranch (2 n_branch x\nn_t: the currents into the branch at its from and to ends).\n\n- `ColorMode`: \"I\" (current), \"P\" (active power), \"Q\" (reactive power), \"Loss\" (the\n  active-power loss Re(S_from + S_to) of each branch, charging and tap included), \"none\",\n  or \"user\" (the values set in BusColorData, ComponentColorData, BranchColorData and\n  LinkColorData are kept). With \"I\", \"P\" and \"Q\" a component takes the color of the\n  value of its link. While a colormap is in use (not \"none\", and an element has a finite\n  color value) a component without a value (\"Loss\", a tripped unit, a NaN row of \"user\")\n  is black; with \"none\" the components keep their class colors. ComponentColor rows\n  override both.\n- `ColorLimits`: [NaN NaN] (default) takes the limits from the data of all samples,\n  leaving out the top outliers: with m the 95th percentile of |value| over the branches,\n  the links and all samples (nearest rank), [0, m] for a magnitude (\"I\", \"Loss\") and\n  [-m, m] for a signed quantity (\"P\", \"Q\"; the injections of the components are\n  signed); the 5th to 95th percentiles with \"user\". Values beyond take the end colors.\n  With fewer than 20 values, or a percentile of 0, the largest (smallest) value is used.\n  A numeric [cmin cmax] fixes them.\n  Limits closer than 1e-6 of their size (a field constant up to rounding) are shown as\n  c(1 -/+ 1e-3) around their middle c, so that the colorbar ticks stay readable.\n- `BranchWidthMode`: \"P\", \"Q\" (|P_from - P_to|/2, |Q_from - Q_to|/2: the flow\n  of active or reactive power through the branch), \"I\" (the larger current of its two\n  ends), \"G\", \"B\", \"Y\" (conductance, susceptance, magnitude of the series admittance of\n  the branch), \"Ysvd\" (default: largest singular value of the admittance matrix of the\n  branch) or \"none\". The widths are on one scale from the smallest value to the 95th\n  percentile over all samples, so the top 5 % take the largest width.\n- `MarkerSizeMode`: \"none\" (default), \"P\", \"Q\" or \"S\" (|P|, |Q|, |P + jQ| of the\n  injection of a component, and of the sum of the components of a bus).\n- `BusHeightMode`: \"V\" (|V|), \"angle\" (angle of V), \"Vimag\" (imaginary part of V), \"P\",\n  \"Q\" (power injections) or \"none\".\n- `LabelMode`: \"bus\" (default: the tags of the buses), \"tag\" (the tags of the buses and\n  components), \"value\" (the tags and the values), \"user\" (the texts set in BusLabel and\n  ComponentLabel are kept) or \"none\". With \"bus\", \"tag\" and \"value\" the labels are\n  written again at every sample. In 2D, labels that overlap are moved apart vertically\n  and the axes take them in. The labels are laid out again whenever the limits or the\n  pixel size of the axes change (a GUI setting the limits or resizing its panels, a\n  resized figure, a hidden tab shown): limits set from outside then stay.\n- `TitleFormat`: with more than one sample, the title is sprintf(TitleFormat, t) at every\n  sample, with t the time of the sample shown (default \"t = %.2f s\"); for samples named\n  by the state (s_sampleName, sv_sampleText) the title is the text of the sample\n  instead. With \"\" the title is never written, so a title set by title(G.ax, ...) stays.\n- `ColorbarLabel`: label of the colorbar; it stays when the diagram is drawn again. With\n  \"\" (default) the label is the quantity of ColorMode: \"|I| [pu]\", \"P [pu]\", \"Q [pu]\" or\n  \"Loss [pu]\" (none for \"user\").\n\nA title set by title(G.ax, ...) also stays when the diagram is drawn again (Dimension,\nset_position, set_data, or in 3D BusHeightMode and LinkWidth). The colorbar is shown\nonly when an element has a color value (none for the topology). The axes fit the\ndrawing (and in 2D its labels) with a padding of 3% of its larger side.\n\nThe elements of tab_element are the buses (kind \"bus\"), the components (\"component\",\ntheir full tags), the branches (\"branch\") and the links (\"link\", the tag of their\ncomponent). set_style sets Color of every kind, Label and MarkerSize of buses and\ncomponents and LineWidth of branches. A color set by Color (the vectors BusColor,\nComponentColor, BranchColor and LinkColor, NaN rows: none) stays over the color of the\ncolor data and of ColorMode at every sample. A size set by MarkerSize or LineWidth (the\nvectors BusMarkerSize, ComponentMarkerSize and BranchLineWidth in pt, NaN rows: none)\nstays over the size of MarkerSizeMode and the width of BranchWidthMode, without being\nmapped onto the range. These vectors change the graphics objects that are drawn and\nnever draw the diagram again. A click on an element (or its data tip in the data cursor\nmode) raises ElementClicked; a selected element is marked by a ring or a wide line in\nSelectionColor. The callbacks of the graphics objects hold the diagram by a weak\nreference, so a saved figure (savefig, a Live Editor output) does not save the diagram.\n\nset_data takes the state; with the extra field sct_network (a new snapshot) it also sets\nthe network again, keeping the positions, appearance and selection of the elements by\ntag (net.plot_diagram(Graph=G) uses it). A state of NaN draws the topology only: the\nhover shows tags and parameters, and the arrows are hidden.",
+      "Desc": "The diagram is built from data only: a snapshot of the network (struct(net, false)) and\nthe state to show. It never reads or changes a network. net.plot_diagram draws the\nequilibrium of the network, ResultPF.plot_diagram the power flow solution and\nResultODE.plot_diagram every output time of a simulation. The colors\nof the branches and of the links (the lines between a component and its bus) follow\nColorMode, the widths of the branches follow BranchWidthMode, the sizes of the buses and\ncomponents MarkerSizeMode and the heights of the buses BusHeightMode. Changing a\nproperty updates the drawing; hovering over an element shows its values.\n\nEvery value drawn by color can be read. The data tip of an element (hover, or a click in\nthe data cursor mode) has, under its tag, one line \"<name> = <value>\" after a square of\nits color: the value that colors it at the sample shown (BusColorData of a bus; the\nquantity of ColorMode, or BranchColorData and LinkColorData under \"user\", of a branch\nand a link; ComponentColorData or the value of ColorMode of a component), written with\n%.5g, e.g. \"LMP [cost/pu] = 3901.6\". The name is the colorbar label: ColorbarLabel, or\nwith \"\" the quantity of ColorMode (\"|I| [pu]\", \"Loss [pu]\", ...), or \"color\" when there\nis none (\"user\"). The line is there even when the tip lists the same quantity below (|I|\nof the \"from\" end with \"I\", P_loss with \"Loss\"): it is always the colored value, named as\nthe colorbar. An element without a finite color value (NaN) has no such line.\n\nDimension chooses the drawing. \"2D\" (default) draws flat symbols, lines and markers\nwithout lighting: a bar bus is a line segment, a point bus and a component a marker, a\nbranch and a link a polyline, and a transformer two overlapping circles near the \"from\"\nend. \"3D\" draws solids (boxes, tubes, spheres, cones) with lighting and arrow cones.\nBoth put each bus at its height (BusHeightMode; 0 for \"none\"), a branch climbs linearly\nalong its path between the heights of its ends, and a component and its link stay at\nthe height of its bus. The first drawing looks from the top; a later drawing (Dimension,\nBusHeightMode, set_position, set_data) keeps the view the user rotated to. When the 3D\ndrawing gets heights (the first drawing too) while it looks from the top, it turns to\nan oblique view (azimuth -37.5, elevation 30), and back to the top when the heights go\naway in that view.\n\nSizes and widths are in points (pt), as LineWidth and MarkerSize of MATLAB, so they do\nnot depend on the coordinates. The value of the quantity of BranchWidthMode is mapped\nlinearly onto BranchWidthRange (default [1 4] pt) from its smallest value to its 95th\npercentile over the branches and all samples of the state, leaving out the top outliers\nas the automatic ColorLimits do: the top 5 % take the largest width (with fewer than 20\nvalues, or a 95th percentile equal to the smallest value, the scale goes to the largest\nvalue). The value of MarkerSizeMode is mapped from its smallest to its largest value\nonto MarkerSizeRange (default [5 10] pt; buses and components each on their own scale).\nOne scale for all samples gives the same pt per unit at every time; set_data computes it\nagain from the new state. A mode of \"none\", or a quantity with one value or no value\n(the topology), gives the middle of the range, and a NaN value the minimum. The links\nare LinkWidth wide. In 3D, 1 pt is span/400 in coordinates (span: the larger side of the\nbox of the bus centers).\n\nIn 2D, dots (small triangles) move along the branches and links in the direction of the\nflow of FlowMode: \"P\" (default), \"Q\" (the flow (X_from - X_to)/2 of the powers into a\nbranch at its two ends, and the injection of a component), \"I\" (the larger |I| of the\ntwo ends, or |I| of a component, in the direction of P) or \"none\" (no dots). A dot\nmoves at FlowSpeed*d0*|q|/q_max per second (d0: the median length of the branch paths;\nq_max: the largest |q| over the branches, links and all samples), and the dots of an\nelement are 0.25*d0 apart, so the speed shows the flow. An element with no flow or a\nflow below 1e-3*q_max has no dots. The dots follow the sample shown (set_time) and the\nheights of the paths, and are white with a thin dark edge. With FlowAnimation\ntrue (default) a timer moves them about 25 times per second while the 2D figure is\nvisible; it is not made in a hidden figure (show the figure, then set FlowAnimation =\ntrue again) nor with matlab -batch, and it stops with FlowAnimation = false, \"3D\",\nFlowMode \"none\", the figure closed, cla, or delete(G). Without it the dots stay where\nthey are, so a still image shows the direction too. export_video moves them by the\ntime between its frames. BranchDirection and LinkDirection are the signs of the flow\n(the cones of 3D point the same way; with FlowMode \"none\", the voltage angles and P).\n\nThe layout comes from the graph parameters of the snapshot (notes/graph-layout.md): the\ncenter X, Y, Shape and Length of each bus (a bar is centered at X, Y), the bend points\nPath, the attachments FromOffset, ToOffset and Style of each branch (\"transformer\": a\nsymbol at the \"from\" end), and the position DX, DY, the bend points Path and the\nattachment Offset of each component, relative to the center of its bus. A branch or a\nlink meets a bar on its center line, at its offset (NaN: the nearest bend point\nprojected onto the bar, or the center). The buses without a position are placed by\ntools.layout_place_buses near their neighbours (the buses with one never move); a\ncomponent without a position is placed around its bus. These positions stay in the\ngraph: nothing is written to the network. set_position moves a bus or a component in\nthe drawing (never in the model); the components of a moved bus move with it.\nget_layout returns the drawn positions, and net.set_layout(G.get_layout()) saves them.\n\nThe state is a struct with the fields:\n\n- `rv_t` (1 x n_t) [s]: times of the samples (or the values of other samples, e.g. the\n  steps of a continuation power flow, with s_sampleName).\n- `cm_Vbus` (n_bus x n_t) [pu]: bus voltage phasors, in the a_Bus order of the snapshot.\n- `cm_Icomp` (n_comp x n_t) [pu]: current phasors injected by the components into their\n  buses, bus by bus in the a_Bus order and in the a_Component order of each bus.\n- `c_Ybranch`, `iv_Ybranch` (optional) [pu]: the admittance matrices of the branches of\n  each sample: c_Ybranch{m} is 2 x 2 x n_branch (page k: branch k of the snapshot) and\n  iv_Ybranch (n_t values) the position in c_Ybranch of each sample, e.g. the branch\n  states of the phases of a simulation (ResultODE.plot_diagram).\n- `s_sampleName`, `sv_sampleText` (optional): the name of the samples (e.g. \"Step\") and\n  the text of each sample (1 x n_t), shown in the title and in the playback bar instead\n  of the time (see GraphBase).\n\nset_time(t) shows the sample nearest to t. The current injection of a bus is the sum of\nthe currents of its components (NaN, a tripped unit, counts as 0), and the branch\ncurrents come from the bus voltages and the admittance matrix of each branch: of\nc_Ybranch at that sample when the state has it, else the field cm_Y of the branch in\nthe snapshot. The stored state sct_state also holds them as cm_Ibranch (2 n_branch x\nn_t: the currents into the branch at its from and to ends).\n\n- `ColorMode`: \"I\" (current), \"P\" (active power), \"Q\" (reactive power), \"Loss\" (the\n  active-power loss Re(S_from + S_to) of each branch, charging and tap included), \"none\",\n  or \"user\" (the values set in BusColorData, ComponentColorData, BranchColorData and\n  LinkColorData are kept). With \"I\", \"P\" and \"Q\" a component takes the color of the\n  value of its link. While a colormap is in use (not \"none\", and an element has a finite\n  color value) a component without a value (\"Loss\", a tripped unit, a NaN row of \"user\")\n  is black; with \"none\" the components keep their class colors. ComponentColor rows\n  override both.\n- `BusColorMode`: \"none\" (default), \"V\" (|V| [pu]) or \"angle\" (the angle of V in\n  degrees, as in the data tip of a bus). With \"V\" or \"angle\" the buses are colored by\n  that quantity at the sample shown (BusColorData, written again at every sample) on the\n  colormap, and the quantity takes the colorbar: its label is \"|V| [pu]\" or \"∠V [deg]\"\n  (or ColorbarLabel) and the automatic limits are the smallest and the largest value\n  over the buses and all samples. The colors of ColorMode are not drawn meanwhile: the\n  branches, links and components have no color value (as with ColorMode \"none\"; the\n  components keep their class colors), since one colorbar cannot show two quantities.\n  ColorMode keeps its value and colors them again when BusColorMode is \"none\". The data\n  tip and the \"value\" label of a bus show the line of its color value.\n- `ColorLimits`: [NaN NaN] (default) takes the limits from the data of all samples,\n  leaving out the top outliers: with m the 95th percentile of |value| over the branches,\n  the links and all samples (nearest rank), [0, m] for a magnitude (\"I\", \"Loss\") and\n  [-m, m] for a signed quantity (\"P\", \"Q\"; the injections of the components are\n  signed); the 5th to 95th percentiles with \"user\". Values beyond take the end colors.\n  With fewer than 20 values, or a percentile of 0, the largest (smallest) value is used.\n  With BusColorMode \"V\" or \"angle\", the smallest to the largest bus value instead.\n  A numeric [cmin cmax] fixes them.\n  Limits closer than 1e-6 of their size (a field constant up to rounding) are shown as\n  c(1 -/+ 1e-3) around their middle c, so that the colorbar ticks stay readable.\n- `BranchWidthMode`: \"P\", \"Q\" (|P_from - P_to|/2, |Q_from - Q_to|/2: the flow\n  of active or reactive power through the branch), \"I\" (the larger current of its two\n  ends), \"G\", \"B\", \"Y\" (conductance, susceptance, magnitude of the series admittance of\n  the branch), \"Ysvd\" (default: largest singular value of the admittance matrix of the\n  branch) or \"none\". The widths are on one scale from the smallest value to the 95th\n  percentile over all samples, so the top 5 % take the largest width.\n- `MarkerSizeMode`: \"none\" (default), \"P\", \"Q\" or \"S\" (|P|, |Q|, |P + jQ| of the\n  injection of a component, and of the sum of the components of a bus).\n- `BusHeightMode`: \"V\" (|V|), \"angle\" (angle of V), \"Vimag\" (imaginary part of V), \"P\",\n  \"Q\" (power injections) or \"none\". In 2D the height is the value. In 3D it is scaled\n  about the reference value (1 pu for \"V\", 0 for the others) so that the values of all\n  samples and the reference span a quarter of the drawing, and the heights are drawn\n  readable: a light floor with a grid below the lowest value of all samples, the\n  shadows of the bars, branches and links on it, a thin post from each bus down to it,\n  a translucent reference plane labeled with its value (\"|V| = 1\"), and a z axis with\n  the values and the quantity (\"|V| [pu]\", \"∠V [rad]\", \"Im V [pu]\", \"P [pu]\", \"Q\n  [pu]\"). The floor and the scale are the same at every sample (set_time), so the posts\n  compare across times. None of these can be clicked or has a data tip. \"none\" draws\n  none of them.\n- `LabelMode`: \"bus\" (default: the tags of the buses), \"tag\" (the tags of the buses and\n  components), \"value\" (the tags and the values: ∠V and |V| of a bus, P and Q of a\n  component, and the line \"<name>=<value>\" of its color value with the name and format\n  of the data tip, when it is finite; branches have no labels; when the color value of\n  a bus is |V| or ∠V (BusColorMode \"V\" or \"angle\", or ColorMode \"user\" with a\n  ColorbarLabel that starts with \"|V|\" or \"∠V\", spaces ignored), the label has only\n  that line and not the fixed \"|V|=\" or \"∠V=\" line, so |V| is written once), \"user\" (the texts set in\n  BusLabel and ComponentLabel are kept) or \"none\". With \"bus\", \"tag\" and \"value\" the\n  labels are written again at every sample; the \"value\" labels also follow\n  BusColorData, ComponentColorData, ColorbarLabel and ColorMode set from outside (e.g.\n  in a TimeChangedFcn), row by row for the color values. In 2D, labels that overlap are\n  moved apart vertically and the axes take them in. The labels are laid out again\n  whenever the limits or the pixel size of the axes change (a GUI setting the limits or\n  resizing its panels, a resized figure, a hidden tab shown): limits set from outside\n  then stay.\n- `TitleFormat`: with more than one sample, the title is sprintf(TitleFormat, t) at every\n  sample, with t the time of the sample shown (default \"t = %.2f s\"); for samples named\n  by the state (s_sampleName, sv_sampleText) the title is the text of the sample\n  instead. With \"\" the title is never written, so a title set by title(G.ax, ...) stays.\n- `ColorbarLabel`: label of the colorbar; it stays when the diagram is drawn again. With\n  \"\" (default) the label is the quantity of ColorMode: \"|I| [pu]\", \"P [pu]\", \"Q [pu]\" or\n  \"Loss [pu]\" (none for \"user\"). It is also the name of the color value in the data tips\n  and the \"value\" labels (\"color\" when there is none).\n\nA title set by title(G.ax, ...) also stays when the diagram is drawn again (Dimension,\nset_position, set_data, or in 3D BusHeightMode and LinkWidth). The colorbar is shown\nonly when an element has a color value (none for the topology). The axes fit the\ndrawing (and in 2D its labels) with a padding of 3% of its larger side.\n\nThe elements of tab_element are the buses (kind \"bus\"), the components (\"component\",\ntheir full tags), the branches (\"branch\") and the links (\"link\", the tag of their\ncomponent). set_style sets Color of every kind, Label and MarkerSize of buses and\ncomponents and LineWidth of branches. A color set by Color (the vectors BusColor,\nComponentColor, BranchColor and LinkColor, NaN rows: none) stays over the color of the\ncolor data and of ColorMode at every sample. A size set by MarkerSize or LineWidth (the\nvectors BusMarkerSize, ComponentMarkerSize and BranchLineWidth in pt, NaN rows: none)\nstays over the size of MarkerSizeMode and the width of BranchWidthMode, without being\nmapped onto the range. These vectors change the graphics objects that are drawn and\nnever draw the diagram again. A click on an element (or its data tip in the data cursor\nmode) raises ElementClicked; a selected element is marked by a ring or a wide line in\nSelectionColor. The callbacks of the graphics objects hold the diagram by a weak\nreference, so a saved figure (savefig, a Live Editor output) does not save the diagram.\n\nset_data takes the state; with the extra field sct_network (a new snapshot) it also sets\nthe network again, keeping the positions, appearance and selection of the elements by\ntag (net.plot_diagram(Graph=G) uses it). A state of NaN draws the topology only: the\nhover shows tags and parameters, and the arrows are hidden.",
       "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.initialize();\nG = net.plot_diagram();\nG.ColorMode = \"P\";\nG.BusHeightMode = \"V\";\nG.MarkerSizeMode = \"P\";\nG.BranchWidthRange = [0.5 6];\nG.LabelMode = \"value\";\nG.ColorLimits = [0 2];                  % fixed; [NaN NaN] is automatic again\nG.FlowMode = \"Q\";\nG.FlowSpeed = 2;\nG.Dimension = \"3D\";\nG.set_style(\"B001\", Color=\"r\");\nG.set_position(\"B001\", [0.1, 0.9]);\n```\n\nSee also GraphBase, PowerNetwork.plot_diagram, ResultPF.plot_diagram, ResultODE.plot_diagram\n\nThe appearance blocks keep the order of the properties (and of the Name-Value options);\nthe SetObservable ones are the controls of show_controls (control_list).",
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.initialize();\nG = net.plot_diagram();\nG.ColorMode = \"P\";\nG.BusColorMode = \"V\";                   % the buses by |V| (it takes the colorbar)\nG.BusColorMode = \"none\";                % the branches by P again\nG.BusHeightMode = \"V\";\nG.MarkerSizeMode = \"P\";\nG.BranchWidthRange = [0.5 6];\nG.LabelMode = \"value\";\nG.ColorLimits = [0 2];                  % fixed; [NaN NaN] is automatic again\nG.FlowMode = \"Q\";\nG.FlowSpeed = 2;\nG.Dimension = \"3D\";\nG.set_style(\"B001\", Color=\"r\");\nG.set_position(\"B001\", [0.1, 0.9]);\n```\n\nSee also GraphBase, PowerNetwork.plot_diagram, ResultPF.plot_diagram, ResultODE.plot_diagram\n\nThe appearance blocks keep the order of the properties (and of the Name-Value options);\nthe SetObservable ones are the controls of show_controls (control_list).",
       "Deprecated": "",
       "Documented": true,
       "References": [],
       "PropertyCount": {
-        "Own": 73,
-        "Total": 87
+        "Own": 75,
+        "Total": 89
       },
       "MethodCount": {
-        "Own": 52,
-        "Total": 77
+        "Own": 53,
+        "Total": 79
       },
       "path": "./database/GUILDAsystem/GraphNetDiagram.js",
-      "Image": ""
-    },
-    {
-      "Name": "GraphNetMap",
-      "Origin": "System",
-      "Folder": "_GUILDAsystem/_auxiliary",
-      "Category": "",
-      "Type": "auxiliary",
-      "Model": "",
-      "Parent": "GraphBase",
-      "Superclasses": [
-        "GraphBase"
-      ],
-      "Ancestors": [
-        "GraphBase",
-        "auxiliary",
-        "handle"
-      ],
-      "Subclasses": [],
-      "Package": "",
-      "File": "_GUILDAsystem/_auxiliary/@GraphNetMap/GraphNetMap.m",
-      "Line": 1,
-      "Abstract": false,
-      "Sealed": false,
-      "Hidden": false,
-      "Summary": "Light 2D map of a power flow: the buses colored by the voltage and the branch flows as arrows.",
-      "Desc": "The map is one MATLAB graph plot (GraphPlot). The buses are its nodes, colored by |V|\n[pu] or the angle of V [deg] with a colorbar, and the branches are its edges: arrows in\nthe direction of the active or reactive power flow, from the end where the power enters\nthe branch, whose width grows with the larger |P| or |Q| of the two ends (mapped\nlinearly from the smallest to the largest of all branches onto BranchWidthRange, in\npt), or plain lines (the middle of the range).\nResultPF.plot_network returns it. It is built from data only and never reads or changes\na network.\n\nThe data is a struct with the fields:\n\n- `sv_bus` (n_bus x 1): bus tags.\n- `rm_xy` (n_bus x 2): positions (x, y) of the bus centers. When a row is NaN, the\n  buses of the earlier data of the map keep their drawn positions (by tag) and the\n  others are placed by tools.layout_place_buses near their neighbours; the buses with a\n  position never move (every bus takes the \"force\" layout only when none has one).\n- `rv_length` (n_bus x 1, optional): bar length of each bus for the placement (positive\n  for a horizontal bar, negative for a vertical one, NaN for a point).\n- `c_path` (n_branch x 1 cell, optional): bend points (m x 2) of each branch for the\n  placement.\n- `cv_V` (n_bus x 1) [pu]: bus voltage phasors.\n- `sv_branch` (n_branch x 1): branch tags.\n- `im_end` (n_branch x 2): rows in sv_bus of the \"from\" and \"to\" buses of each branch.\n- `rm_P`, `rm_Q` (n_branch x 2) [pu]: active and reactive power into each branch at its\n  \"from\" and \"to\" ends.\n- `s_color`: \"V\" (|V|) or \"angle\" (angle of V) for the node colors.\n- `s_arrow`: \"P\", \"Q\" (arrows along that flow) or \"none\" (plain lines).\n\nA power flow has one sample: set_time shows it and changes nothing; animate and\nexport_video stop with GUILDA:GraphBase:OneSample.\n\nThe elements of tab_element are the buses (kind \"bus\") and the branches (\"branch\").\nTheir appearance is in vectors in the order of the data, which set_style writes by tag:\n\n- buses: BusColor (Color; RGB, NaN rows: the color of the voltage on the colormap),\n  BusLabel (Label), BusMarkerSize (MarkerSize) and BusMarker (Marker);\n- branches: BranchColor (Color; NaN rows: the edge color of the graph plot),\n  BranchLineWidth (LineWidth in pt; NaN rows: the width of the flow in BranchWidthRange)\n  and BranchLineStyle (LineStyle).\n\nThey change the properties of the graph plot only; the map is never drawn again.\nset_position moves buses in the drawing only (never in the model); the branches follow\ntheir ends. get_layout returns the drawn bus positions, and\nnet.set_layout(G.get_layout()) saves them. A click on the graph plot is matched to the nearest bus marker, else to the\nnearest branch line (in pixels), and raises ElementClicked; a selected bus is marked by\na ring and a selected branch by a wide line in SelectionColor. The callback of the graph\nplot holds the map by a weak reference, so a saved figure does not save the map.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE14bus().calculate_powerflow();\nG = res.plot_network(Color=\"angle\", Arrow=\"Q\");\nG.set_style(\"B001\", Color=\"r\", MarkerSize=12);\nG.BranchWidthRange = [0.5 6];\nG.BranchLineStyle(3) = \":\";\nG.set_position(\"B001\", [0, 0]);\nG.ColorbarLabel = \"voltage angle [deg]\";\n```\n\nSee also GraphBase, ResultPF.plot_network, GraphNetDiagram",
-      "Deprecated": "",
-      "Documented": true,
-      "References": [],
-      "PropertyCount": {
-        "Own": 10,
-        "Total": 24
-      },
-      "MethodCount": {
-        "Own": 13,
-        "Total": 39
-      },
-      "path": "./database/GUILDAsystem/GraphNetMap.js",
       "Image": ""
     },
     {
@@ -2677,7 +2636,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 4,
-        "Total": 38
+        "Total": 39
       },
       "path": "./database/GUILDAsystem/GraphSpring2D.js",
       "Image": ""
@@ -2719,7 +2678,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 5,
-        "Total": 38
+        "Total": 39
       },
       "path": "./database/GUILDAsystem/GraphSpring3D.js",
       "Image": ""
@@ -2763,7 +2722,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 10,
-        "Total": 38
+        "Total": 39
       },
       "path": "./database/GUILDAsystem/GraphSpringBase.js",
       "Image": ""
@@ -2843,7 +2802,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 10,
-        "Total": 10
+        "Total": 11
       },
       "path": "./database/GUILDAsystem/HistoryGUILDA.js",
       "Image": ""
@@ -2874,7 +2833,7 @@ window.GUILDA_DOC_INDEX = {
       "Sealed": false,
       "Hidden": false,
       "Summary": "Abstract base class for layer hierarchy management in GUILDA.",
-      "Desc": "It centralizes parent/children relationships, tag handling, and what is out of date:\neach layer keeps, per stale tag, the reasons it is stale; only PowerNetwork.initialize\nbrings the layers up to date, and the analyses check them. The network, buses,\nbranches, components, controllers (through PowerSystemModel), the scenarios and the\nParameter containers derive from it. `launch_gui` shows any layer (DrawerModelGUI) with the\npages of `gui_content`.\n\nStale state:\n\n- `sct_stale` holds one field per stale tag of the class, each a string column of\n  messages (why that part is out of date); an empty column means up to date. The\n  constructor of each class creates its own fields with the message \"initialize has\n  not been run\": PowerNetwork `powerflow` and `odefcn` (the network frequency);\n  Component, LocalController and GlobalController `equilibrium` and `odefcn`; Bus and\n  Branch have none. Each class appends to and clears only its own fields.\n- An edit calls `log_edit(log, tag)` on the edited layer (the owner for a Parameter\n  container), which calls the hook `handle_edit` with that layer on every layer from\n  there up to the top. The default does nothing; each class appends the message\n  (\"<tag of the edited layer>: <log>\", \"<container tag>/<owner tag>: <log>\" for a\n  parameter) to its own fields for the edits that make them stale.\n- Each analysis reads the stale tags it needs (the network, and the components and\n  controllers it uses) and stops with its own error (e.g. GUILDA:PowerNetwork:SimulateStale),\n  naming up to three different messages; it rebuilds nothing.\n- `sct_stale` has public GetAccess (Hidden) because the DebugScript tests, which are\n  scripts, read it.\n\nTags: `s_tag` identifies the layer within the layer structure. A tag must be a valid\nMATLAB variable name (isvarname: a letter first, then letters, digits and underscores, at\nmost namelengthmax characters, not a keyword), because tags name OPF constraints and\nstruct fields; any other tag stops with GUILDA:LayerPackage:InvalidTag. A tag that\nalready exists among the siblings is renamed with a number suffix (checked again). A\nrename is an edit with the tag \"Tag\", which makes nothing stale. Tags are permanent\nIDs, so the tags of existing child layers do not follow: after renaming bus B002 to BX,\nits component B002SG1 keeps its tag and a component added later is BXSG1.",
+      "Desc": "It centralizes parent/children relationships, tag handling, and what is out of date:\neach layer keeps, per stale tag, the reasons it is stale; only PowerNetwork.initialize\nbrings the layers up to date, and the analyses check them. The network, buses,\nbranches, components, controllers (through PowerSystemModel), the scenarios and the\nParameter containers derive from it. `launch_gui` shows any layer (DrawerModelGUI) with the\npages of `gui_content`.\n\n`doc` (the class reference page) is a method of PowerSystemModel and auxiliary, not of\nLayerPackage: Parameter and Scenario inherit from both auxiliary and LayerPackage, so a\ndoc defined here too would make them fail with MATLAB:class:methodAmbiguous.\n\nStale state:\n\n- `sct_stale` holds one field per stale tag of the class, each a string column of\n  messages (why that part is out of date); an empty column means up to date. The\n  constructor of each class creates its own fields with the message \"initialize has\n  not been run\": PowerNetwork `powerflow` and `odefcn` (the network frequency);\n  Component, LocalController and GlobalController `equilibrium` and `odefcn`; Bus and\n  Branch have none. Each class appends to and clears only its own fields.\n- An edit calls `log_edit(log, tag)` on the edited layer (the owner for a Parameter\n  container), which calls the hook `handle_edit` with that layer on every layer from\n  there up to the top. The default does nothing; each class appends the message\n  (\"<tag of the edited layer>: <log>\", \"<container tag>/<owner tag>: <log>\" for a\n  parameter) to its own fields for the edits that make them stale.\n- Each analysis reads the stale tags it needs (the network, and the components and\n  controllers it uses) and stops with its own error (e.g. GUILDA:PowerNetwork:SimulateStale),\n  naming up to three different messages; it rebuilds nothing.\n- `sct_stale` has public GetAccess (Hidden) because the DebugScript tests, which are\n  scripts, read it.\n\nTags: `s_tag` identifies the layer within the layer structure. A tag must be a valid\nMATLAB variable name (isvarname: a letter first, then letters, digits and underscores, at\nmost namelengthmax characters, not a keyword), because tags name OPF constraints and\nstruct fields; any other tag stops with GUILDA:LayerPackage:InvalidTag. A tag that\nalready exists among the siblings is renamed with a number suffix (checked again). A\nrename is an edit with the tag \"Tag\", which makes nothing stale. Tags are permanent\nIDs, so the tags of existing child layers do not follow: after renaming bus B002 to BX,\nits component B002SG1 keeps its tag and a component added later is BXSG1.",
       "SeeAlso": [],
       "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.disp_tree();            % hierarchy of the layers below the network\nnet.a_Bus{1}.doc();         % class reference page of the first bus\nnet.a_Bus{1}.tab_parameter.powerflow.V = 1.02;\nnet.sct_stale               % powerflow: \"powerflow/B001: edit V: 1.06 -> 1.02\"\nnet.initialize();           % brings every layer up to date\n```\n\nSee also PowerSystemModel, Parameter",
       "Deprecated": "",
@@ -2885,8 +2844,8 @@ window.GUILDA_DOC_INDEX = {
         "Total": 6
       },
       "MethodCount": {
-        "Own": 13,
-        "Total": 13
+        "Own": 12,
+        "Total": 12
       },
       "path": "./database/GUILDAsystem/LayerPackage.js",
       "Image": ""
@@ -2989,7 +2948,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 6,
-        "Total": 6
+        "Total": 7
       },
       "path": "./database/GUILDAsystem/MethodBase.js",
       "Image": ""
@@ -3029,7 +2988,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 2,
-        "Total": 2
+        "Total": 3
       },
       "path": "./database/GUILDAsystem/MethodDynamic.js",
       "Image": ""
@@ -3070,7 +3029,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 2,
-        "Total": 6
+        "Total": 7
       },
       "path": "./database/GUILDAsystem/MethodFsolve.js",
       "Image": ""
@@ -3111,7 +3070,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 2,
-        "Total": 6
+        "Total": 7
       },
       "path": "./database/GUILDAsystem/MethodGradient.js",
       "Image": ""
@@ -3152,7 +3111,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 2,
-        "Total": 6
+        "Total": 7
       },
       "path": "./database/GUILDAsystem/MethodLevenbergMarquardt.js",
       "Image": ""
@@ -3193,7 +3152,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 3,
-        "Total": 7
+        "Total": 8
       },
       "path": "./database/GUILDAsystem/MethodNewtonRaphson.js",
       "Image": ""
@@ -3235,7 +3194,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.IEEE14bus.js",
       "Image": ""
@@ -3277,7 +3236,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.IEEE14bus_lossless.js",
       "Image": ""
@@ -3319,7 +3278,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.IEEE14bus_NoTap.js",
       "Image": ""
@@ -3361,7 +3320,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.IEEE39Bus.js",
       "Image": ""
@@ -3403,7 +3362,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.IEEE68bus.js",
       "Image": ""
@@ -3445,7 +3404,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.IEEE9bus.js",
       "Image": ""
@@ -3487,7 +3446,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.IEEJ_EAST10.js",
       "Image": ""
@@ -3529,7 +3488,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.IEEJ_EAST30.js",
       "Image": ""
@@ -3571,7 +3530,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.IEEJ_WEST10.js",
       "Image": ""
@@ -3613,7 +3572,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.IEEJ_WEST30.js",
       "Image": ""
@@ -3655,7 +3614,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.TEST31bus.js",
       "Image": ""
@@ -3697,7 +3656,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.Tutorial10bus.js",
       "Image": ""
@@ -3739,7 +3698,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.Tutorial3bus.js",
       "Image": ""
@@ -3781,7 +3740,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.Tutorial6bus.js",
       "Image": ""
@@ -3823,7 +3782,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 1,
-        "Total": 48
+        "Total": 49
       },
       "path": "./database/GUILDAobject/network.Txt3Bus.js",
       "Image": ""
@@ -3915,7 +3874,7 @@ window.GUILDA_DOC_INDEX = {
       "Sealed": false,
       "Hidden": false,
       "Summary": "Root of the model: holds the buses, branches and global controllers of one grid and runs the analyses.",
-      "Desc": "- Owns the topology (which buses, branches and global controllers exist), the system\n  base in `tab_parameter.base` (Hz, baseMVA) and the solver objects `solver_*`.\n- Every analysis starts here: the method reads its settings from a solver object, hands\n  the network to it and returns a result object.\n- Not where the numbers are: bus voltages belong to `Bus`, the model equations to\n  `Component` and the controllers, the numerical methods to the Solver classes.\n- Results are returned, never stored in the network. The one exception: `initialize`\n  writes the equilibrium into the buses, components and controllers.\n- Top of the object tree, with no parent. It is the parent of its buses, branches,\n  global controllers and scenarios; only the network sets their back references\n  (`Bus.a_PowerNetwork`, `Branch.a_PowerNetwork`, `Branch.a_Bus`,\n  `GlobalController.a_PowerNetwork`, `Scenario.a_PowerNetwork`). The remove methods\n  delete the buses, branches, global controllers and scenarios they take out.\n- Every edit is reported to the network's `handle_edit` (`LayerPackage.log_edit`), also\n  before the first initialize. It keeps at most one slack bus, and marks the stale tag\n  `powerflow` (`sct_stale`) for the edits that change the power flow: baseMVA, buses and\n  branches added, removed or replaced, bus parameters (powerflow, dynamics), the slack\n  bus, components connected, replaced or removed, branch dynamics and component\n  powerflow parameters. A Hz edit marks its stale tag `odefcn` (the function handles of\n  every model; the edit does not reach them). The components and controllers mark\n  their own stale tags.\n- `initialize` brings every layer up to date; the analyses only read the stale tags\n  they need and stop with their own error (GUILDA:PowerNetwork:SimulateStale,\n  SolverCPF:Stale, and PowerSystemModel:Stale of get_sys), naming the\n  reasons, until it has run.\n\nA network is built by adding buses (`add_bus`) and branches (`add_branch`); the\ncomponents (generators, loads, ...) are added to the buses (`Bus.add_component`) and\nlocal controllers to the components. The network runs the analyses:\n\n- power flow (`calculate_powerflow`), power flow with the inputs of the components held\n  (`calculate_fixed_input_powerflow`) and optimal power flow (`calculate_optimal_powerflow`)\n- the data of the power flow and the OPF (`get_pf_condition`, `get_opf_condition`)\n- continuation power flow (`calculate_continuation_powerflow`)\n- equilibrium (`initialize`), time simulation (`simulate`) of the scenarios it holds\n  (`add_scenario`, `remove_scenario`, `a_Scenario`)\n- linearization and eigenvalue analysis (`get_sys`)\n- network diagrams (`plot_diagram`) and their layout (`get_layout`, `set_layout`), spring-mass pictures of the equilibrium\n  (`plot_spring_model`), the signal connections of the controllers\n  (`disp_connection`) and CSV / MATPOWER import and export\n\nEach analysis runs a solver object stored in a `solver_*` property; a subclass of the\nnetwork may replace it with a subclass of the solver. `solver_PF` keeps no settings\n(they are in GUILDA.setting), only the warm start solution; the other solvers hold\nstored defaults, kept between runs. Name-Value options of a call override the settings\nfor that call only. Results are returned (calculate_powerflow and initialize: in the\nform of their Format option) and never stored in the network or the solver.\n\nThe scenarios (`a_Scenario`) are created by `add_scenario` and deleted by\n`remove_scenario`; their tags share the name space of the other children, but they are\nnot model data and do not make the equilibrium stale.\n\nThe parameters of the network (`tab_parameter.base`):\n\n- `Hz` [Hz]: nominal frequency. Models read it with get_Hz() and receive it as omega0.\n  Set by the constructor (GUILDA.config(\"PowerSystemModel\",\"Hz\")), by writing the table and by\n  import. An edit marks the stale tag `odefcn` of the network: initialize only\n  rebuilds the function handles (each model compares the frequency it was built with).\n- `baseMVA` [MVA]: system base of all per-unit values (default 100). Stored per-unit\n  values are not converted when it changes. Set by the constructor, by writing the\n  table, import and import_matpower. An edit makes the power flow stale.\n\nPower-flow settings are parameters of the buses (`tab_parameter.powerflow`: V, Varg)\nand the components (`tab_parameter.powerflow`: P, Q). OPF limits and costs are in\n`tab_parameter.operation` and `tab_parameter.OPF` of the buses, components and\nbranches; user-defined costs and constraints are the options Cost and Constraint of\n`calculate_optimal_powerflow` and `build_opf_problem`.",
+      "Desc": "- Owns the topology (which buses, branches and global controllers exist), the system\n  base in `tab_parameter.base` (Hz, baseMVA) and the solver objects `solver_*`.\n- Every analysis starts here: the method reads its settings from a solver object, hands\n  the network to it and returns a result object.\n- Not where the numbers are: bus voltages belong to `Bus`, the model equations to\n  `Component` and the controllers, the numerical methods to the Solver classes.\n- Results are returned, never stored in the network. The one exception: `initialize`\n  writes the equilibrium into the buses, components and controllers.\n- Top of the object tree, with no parent. It is the parent of its buses, branches,\n  global controllers and scenarios; only the network sets their back references\n  (`Bus.a_PowerNetwork`, `Branch.a_PowerNetwork`, `Branch.a_Bus`,\n  `GlobalController.a_PowerNetwork`, `Scenario.a_PowerNetwork`). The remove methods\n  delete the buses, branches, global controllers and scenarios they take out.\n- Every edit is reported to the network's `handle_edit` (`LayerPackage.log_edit`), also\n  before the first initialize. It keeps at most one slack bus, and marks the stale tag\n  `powerflow` (`sct_stale`) for the edits that change the power flow: baseMVA, buses and\n  branches added, removed or replaced, bus parameters (powerflow, dynamics), the slack\n  bus, components connected, replaced or removed, branch dynamics and component\n  powerflow parameters. A Hz edit marks its stale tag `odefcn` (the function handles of\n  every model; the edit does not reach them). The components and controllers mark\n  their own stale tags.\n- `initialize` brings every layer up to date; the analyses only read the stale tags\n  they need and stop with their own error (GUILDA:PowerNetwork:SimulateStale,\n  SolverCPF:Stale, and PowerSystemModel:Stale of get_sys), naming the\n  reasons, until it has run.\n\nA network is built by adding buses (`add_bus`) and branches (`add_branch`); the\ncomponents (generators, loads, ...) are added to the buses (`Bus.add_component`) and\nlocal controllers to the components. The network runs the analyses:\n\n- power flow (`calculate_powerflow`), power flow with the inputs of the components held\n  (`calculate_fixed_input_powerflow`) and optimal power flow (`calculate_optimal_powerflow`)\n- the data of the power flow and the OPF (`get_pf_condition`, `get_opf_condition`)\n- continuation power flow (`calculate_continuation_powerflow`)\n- equilibrium (`initialize`), time simulation (`simulate`) of the scenarios it holds\n  (`add_scenario`, `remove_scenario`, `a_Scenario`)\n- linearization and eigenvalue analysis (`get_sys`)\n- network diagrams (`plot_diagram`, the black-and-white `plot_single_line_diagram`) and their layout (`get_layout`, `set_layout`), spring-mass pictures of the equilibrium\n  (`plot_spring_model`), the signal connections of the controllers\n  (`disp_connection`) and CSV / MATPOWER import and export\n\nEach analysis runs a solver object stored in a `solver_*` property; a subclass of the\nnetwork may replace it with a subclass of the solver. `solver_PF` keeps no settings\n(they are in GUILDA.setting), only the warm start solution; the other solvers hold\nstored defaults, kept between runs. Name-Value options of a call override the settings\nfor that call only. Results are returned (calculate_powerflow and initialize: in the\nform of their Format option) and never stored in the network or the solver.\n\nThe scenarios (`a_Scenario`) are created by `add_scenario` and deleted by\n`remove_scenario`; their tags share the name space of the other children, but they are\nnot model data and do not make the equilibrium stale.\n\nThe parameters of the network (`tab_parameter.base`):\n\n- `Hz` [Hz]: nominal frequency. Models read it with get_Hz() and receive it as omega0.\n  Set by the constructor (GUILDA.config(\"PowerSystemModel\",\"Hz\")), by writing the table and by\n  import. An edit marks the stale tag `odefcn` of the network: initialize only\n  rebuilds the function handles (each model compares the frequency it was built with).\n- `baseMVA` [MVA]: system base of all per-unit values (default 100). Stored per-unit\n  values are not converted when it changes. Set by the constructor, by writing the\n  table, import and import_matpower. An edit makes the power flow stale.\n\nPower-flow settings are parameters of the buses (`tab_parameter.powerflow`: V, Varg)\nand the components (`tab_parameter.powerflow`: P, Q). OPF limits and costs are in\n`tab_parameter.operation` and `tab_parameter.OPF` of the buses, components and\nbranches; user-defined costs and constraints are the options Cost and Constraint of\n`calculate_optimal_powerflow` and `build_opf_problem`.",
       "SeeAlso": [],
       "Examples": "```matlab\nnet = PowerNetwork(\"ThreeBus\");\nnet.add_bus(V=1.0, Varg=0);\nnet.add_bus(V=1.0);\nnet.add_bus();\nnet.add_branch(\"pi\", [1,2], R=0.010, X=0.085);\nnet.add_branch(\"pi\", [2,3], R=0.017, X=0.092);\nnet.a_Bus{1}.add_component(\"gen-park\", P=0.0);\nnet.a_Bus{2}.add_component(\"gen-park\", P=0.5);\nnet.a_Bus{3}.add_component(\"load-power\", P=-0.5, Q=0);\nnet.a_Bus{1}.l_isSlack = true;\n\nres = net.calculate_powerflow();          % ResultPF\nnet.initialize();                         % equilibrium for the dynamic analyses\nsc  = net.add_scenario(\"fault\", Time=[0,10]);\nsc.add_fault(\"B003\", [1,1.05]);\nsim = net.simulate(\"fault\");              % ResultODE\nres = net.get_sys();                      % ResultLIN: linear model in res.A, res.B, ...\n```\n\nSee also Bus, Branch, Component, GlobalController, Scenario, network.IEEE9bus",
       "Deprecated": "",
@@ -3943,8 +3902,8 @@ window.GUILDA_DOC_INDEX = {
         "Total": 20
       },
       "MethodCount": {
-        "Own": 62,
-        "Total": 72
+        "Own": 63,
+        "Total": 73
       },
       "path": "./database/GUILDAsystem/PowerNetwork.js",
       "Image": "./database/images/PowerNetwork.svg"
@@ -3999,7 +3958,7 @@ window.GUILDA_DOC_INDEX = {
         "Total": 8
       },
       "MethodCount": {
-        "Own": 3,
+        "Own": 4,
         "Total": 13
       },
       "path": "./database/GUILDAsystem/PowerSystemModel.js",
@@ -4045,7 +4004,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 9,
-        "Total": 9
+        "Total": 10
       },
       "path": "./database/GUILDAsystem/ProgressGUILDA.js",
       "Image": ""
@@ -4096,7 +4055,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 5,
-        "Total": 5
+        "Total": 6
       },
       "path": "./database/GUILDAsystem/ResultBase.js",
       "Image": ""
@@ -4125,9 +4084,9 @@ window.GUILDA_DOC_INDEX = {
       "Sealed": false,
       "Hidden": false,
       "Summary": "Result of net.calculate_continuation_powerflow.",
-      "Desc": "Holds the load parameter lambda and the bus voltages at each point of the traced path,\nand the nose point (maximum loading). The loads of options.LoadBus are scaled by\n(1 + lambda). It holds computed values only; the settings of the buses and components\nstay with the network. plot_pvcurve draws the PV curves, get_point gives the operating\npoint of a step. export writes the path as a table (CSV, Excel): tab_path.\n\nWith the option Limits (see SolverCPF), `tab_switch` lists the PV buses switched to PQ\nat Qmin/Qmax of their generators: lambda and Step (index in rv_lambda) of the switch\npoint, Bus, Limit (\"Qmin\"/\"Qmax\") and Bound (the fixed Q [pu]). `tab_stop` has one row\nwhen a \"V\" or \"S\" limit ended the path: lambda and Step of the last point, Class (\"Bus\"\nor \"Branch\"), Object (tag), Limit (\"Vmin\", \"Vmax\", \"Smax\") and Bound [pu]. Both have 0\nrows otherwise. When the path stops before the nose, r_lambdaMax is the lambda of the\nstop.\n\nThe operating point of every step is kept for the network diagram, the spring-mass model\nand the linearization along the path: `tab_variable` and `rm_variable` have the layout of\nResultODE (the rows x, Vre, Vim, u, uc of net.get_variable_map(); row k of rm_variable is\nstep k, the index in rv_lambda as r_noseStep), `cm_Icomponent` the current of each\ncomponent and `sct_network` a snapshot struct(net, false). get_point(Step) returns a\npoint for net.get_sys, so net.get_sys({result, [1 result.r_noseStep]}) linearizes at the\nfirst point and at the nose (one section per step). At each step the bus injection is\nsplit to the components as net.initialize splits a power flow solution\n(tools.distribute_power: the components inject their CPF powers, the loads of LoadBus\nscaled by (1 + lambda); the free P of the slack bus and the free Q go to the components\nwith Q = NaN, so a bus switched to PQ keeps its fixed Q), and (x, u) of each component\nand (x, uc) of its local controllers are their get_equilibrium values for that split\n(with UseInternalState, x of a component is its CPF state and u its rv_Uequilibrium).\nThe local controllers get the state x of the component at the step as the fourth\nargument of get_equilibrium, and an input observed on the component takes the value of\nthe component at the step. Their design (e.g. the gain K of local-LQR and pss-retrofit,\nwith the equilibrium it was designed at) stays as net.initialize made it, so for such\ncontrollers the point of a later step is not exactly an equilibrium of the controller\n(see their help). The global controllers keep their equilibrium values. Values of\na model whose get_equilibrium stops at a step (a limit of its range) are NaN at that\nstep. Step 1 is the equilibrium of net.initialize.\n\nVoltage stability: `rv_sigmaMin` is the smallest singular value of the power flow\nJacobian with respect to the unknowns (without the lambda column) at each step; it goes\nto 0 at the nose. `tab_weakbus` ranks the buses at the nose: Participation is |V| of each\nbus in the right singular vector of that singular value (largest 1), dVdLambda the\naverage d|V|/dlambda [pu] from the first point to the nose (NaN when the nose is the\nfirst point). `r_marginP` [pu] is r_lambdaMax times the initial active power of every\ncomponent actually scaled by (1 + lambda) (power drawn minus power generated): the\ncomponents of LoadBus, and with UseInternalState every component. With\nUseInternalState the CPF scales every component, the generators included, so the sum\nis the power drawn minus the power generated over the whole network, which is minus\nthe network losses: r_marginP is then usually negative. With UseInternalState, x of a\ncomponent at a step is its CPF state and u is its equilibrium input rv_Uequilibrium\n(the CPF equations hold u fixed).\n\nPlots of the steps: every plot below takes the steps as its samples (rv_t = 1 ...\nn_step, named \"Step\", with the text \"Step k (λ = ...)\"; lambda is not monotonic past the\nnose), so G1.link(G2) keeps them in step with each other and with\nnet.get_sys({result, steps}).plot_eigenvalue / plot_eigenvalue_path (the sections of\nthat ResultLIN are the step numbers). G.set_time(k) shows step k; on a curve against\nlambda it puts a marker at step k. G.animate() and G.export_video(file) play one frame\nper step.\n\n- plot_pvcurve: |V| of the buses against lambda, the nose marked.\n- plot_diagram: network diagram (GraphNetDiagram) of each step from cm_Vbus,\n  cm_Icomponent and sct_network.\n- plot_spring_model: spring-mass picture (GraphSpring2D/3D) of each step from\n  tab_variable, rm_variable, cm_Icomponent and sct_network.\n- plot_stability_index: rv_sigmaMin against lambda, and the participation of the weak\n  buses at the nose (tab_weakbus).\n- plot_generator: P, Q or the Q margin (to the nearer of Qmin, Qmax) of the generators\n  (components with Q = NaN in powerflow) against lambda, the switches of tab_switch\n  marked.\n- plot_branch: P, |S|, loading |S|/Smax or the loss of the branches (or the total loss)\n  against lambda.\n\nThe plots other than plot_pvcurve read the data of the steps; a result without it (a\nResultCPF built by hand) stops with GUILDA:ResultCPF:NoStepData.\n\n`rm_x` is the CPF_Result.x_sol of v3: its rows are [|V|; angle V] of each bus (followed\nby the component states when options.UseInternalState is true), and lambda in the last\nrow. `rm_xPredicted` is the CPF_Result.x_prd of v3 in the same layout.",
+      "Desc": "Holds the load parameter lambda and the bus voltages at each point of the traced path,\nand the nose point (maximum loading). The loads of options.LoadBus are scaled by\n(1 + lambda). It holds computed values only; the settings of the buses and components\nstay with the network. plot_pvcurve draws the PV curves, get_point gives the operating\npoint of a step. export writes the path as a table (CSV, Excel): tab_path.\n\nWith the option Limits (see SolverCPF), `tab_switch` lists the PV buses switched to PQ\nat Qmin/Qmax of their generators: lambda and Step (index in rv_lambda) of the switch\npoint, Bus, Limit (\"Qmin\"/\"Qmax\") and Bound (the fixed Q [pu]). `tab_stop` has one row\nwhen a \"V\" or \"S\" limit ended the path: lambda and Step of the last point, Class (\"Bus\"\nor \"Branch\"), Object (tag), Limit (\"Vmin\", \"Vmax\", \"Smax\") and Bound [pu]. Both have 0\nrows otherwise. When the path stops before the nose, r_lambdaMax is the lambda of the\nstop.\n\nThe operating point of every step is kept for the network diagram, the spring-mass model\nand the linearization along the path: `tab_variable` and `rm_variable` have the layout of\nResultODE (the rows x, Vre, Vim, u, uc of net.get_variable_map(); row k of rm_variable is\nstep k, the index in rv_lambda as r_noseStep), `cm_Icomponent` the current of each\ncomponent and `sct_network` a snapshot struct(net, false). get_point(Step) returns a\npoint for net.get_sys, so net.get_sys({result, [1 result.r_noseStep]}) linearizes at the\nfirst point and at the nose (one section per step). At each step the bus injection is\nsplit to the components as net.initialize splits a power flow solution\n(tools.distribute_power: the components inject their CPF powers, the loads of LoadBus\nscaled by (1 + lambda); the free P of the slack bus and the free Q go to the components\nwith Q = NaN, so a bus switched to PQ keeps its fixed Q), and (x, u) of each component\nand (x, uc) of its local controllers are their get_equilibrium values for that split\n(with UseInternalState, x of a component is its CPF state and u its rv_Uequilibrium).\nThe local controllers get the state x of the component at the step as the fourth\nargument of get_equilibrium, and an input observed on the component takes the value of\nthe component at the step. Their design (e.g. the gain K of local-LQR and pss-retrofit,\nwith the equilibrium it was designed at) stays as net.initialize made it, so for such\ncontrollers the point of a later step is not exactly an equilibrium of the controller\n(see their help). The global controllers keep their equilibrium values. Values of\na model whose get_equilibrium stops at a step (a limit of its range) are NaN at that\nstep. Step 1 is the equilibrium of net.initialize.\n\nVoltage stability: `rv_sigmaMin` is, at each step, the smallest singular value of the\nfinite-difference Jacobian J of the CPF equations with respect to the unknowns, without\nthe lambda column. The equations are the P and Q mismatches of the buses [pu] (with\nUseInternalState, also the state equations of the components), the unknowns |V| and\ntheta of the buses (with UseInternalState, also the states of the components). At the\nsaddle-node nose J is singular, so sigma_min = 0 there. It has no physical unit and no\nabsolute threshold: near the nose it falls roughly like sqrt(lambda_max - lambda), so\nread it against its first value, or read lambda_max - lambda instead. It jumps where\nLimits \"Q\" switches a PV bus to PQ, and a path stopped by a \"V\" or \"S\" limit ends with\na value far from 0 (Löf et al., IEEE Trans. Power Systems 7(1), 1992; Gao, Morison,\nKundur, IEEE Trans. Power Systems 7(4), 1992; see plot_stability_index). `tab_weakbus` ranks the buses at the nose: Participation is |V| of each\nbus in the right singular vector of that singular value (largest 1), dVdLambda the\naverage d|V|/dlambda [pu] from the first point to the nose (NaN when the nose is the\nfirst point). `r_marginP` [pu] is r_lambdaMax times the initial active power of every\ncomponent actually scaled by (1 + lambda) (power drawn minus power generated): the\ncomponents of LoadBus, and with UseInternalState every component. With\nUseInternalState the CPF scales every component, the generators included, so the sum\nis the power drawn minus the power generated over the whole network, which is minus\nthe network losses: r_marginP is then usually negative. With UseInternalState, x of a\ncomponent at a step is its CPF state and u is its equilibrium input rv_Uequilibrium\n(the CPF equations hold u fixed).\n\nPlots of the steps: every plot below takes the steps as its samples (rv_t = 1 ...\nn_step, named \"Step\", with the text \"Step k (λ = ...)\"; lambda is not monotonic past the\nnose), so G1.link(G2) keeps them in step with each other and with\nnet.get_sys({result, steps}).plot_eigenvalue / plot_eigenvalue_path (the sections of\nthat ResultLIN are the step numbers). G.set_time(k) shows step k; on a curve against\nlambda it puts a marker at step k. G.animate() and G.export_video(file) play one frame\nper step.\n\n- plot_pvcurve: |V| of the buses against lambda, the nose marked.\n- plot_diagram: network diagram (GraphNetDiagram) of each step from cm_Vbus,\n  cm_Icomponent and sct_network.\n- plot_spring_model: spring-mass picture (GraphSpring2D/3D) of each step from\n  tab_variable, rm_variable, cm_Icomponent and sct_network.\n- plot_stability_index: rv_sigmaMin against lambda, and the participation of the weak\n  buses at the nose (tab_weakbus).\n- plot_pqv: P, Q and |V| of the buses as 3D lines over the steps (P + jQ = V conj(Y V)).\n- plot_generator: P, Q or the Q margin (to the nearer of Qmin, Qmax) of the generators\n  (components with Q = NaN in powerflow) against lambda, the switches of tab_switch\n  marked.\n- plot_branch: P, |S|, loading |S|/Smax or the loss of the branches (or the total loss)\n  against lambda.\n\nplot_diagram, plot_spring_model, plot_stability_index, plot_generator and plot_branch\ndraw the PV curves with them by default (PVCurve true, buses PVBus) and return the PV\nchart as a second output G_pv, linked: on the right (1/3 of the width) of the diagram\nand the spring-mass picture, as an extra panel on top of the lambda-axis charts (G_pv =\nG). PVCurve=false draws the plot alone.\n\nThe plots other than plot_pvcurve read the data of the steps; a result without it (a\nResultCPF built by hand) stops with GUILDA:ResultCPF:NoStepData.\n\n`rm_x` is the CPF_Result.x_sol of v3: its rows are [|V|; angle V] of each bus (followed\nby the component states when options.UseInternalState is true), and lambda in the last\nrow. `rm_xPredicted` is the CPF_Result.x_prd of v3 in the same layout.",
       "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.initialize();\n[result, flag] = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\nresult.r_lambdaMax       % maximum loading (nose of the PV curve)\nresult = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"], Limits=\"all\");\nresult.tab_switch        % PV buses switched to PQ at their Q limits\nresult.tab_stop          % voltage or branch limit that ended the path\nresult.tab_nose          % bus voltages at the nose\nresult.tab_weakbus       % buses ranked by their participation at the nose\nx = result.get_point(result.r_noseStep);          % point for net.get_sys(x)\nlin = net.get_sys({result, [1 result.r_noseStep]});   % one section per step\nresult.plot_pvcurve(Bus=\"all\");  % PV curves of every bus\nG = result.plot_diagram();        % network diagram of each step\nG.link(result.plot_pvcurve());    % markers on the PV curves follow the diagram\nG.set_time(result.r_noseStep);    % both at the nose\nresult.plot_generator(Quantity=\"Qmargin\");\nlin.plot_eigenvalue_path();       % eigenvalues over the two steps\nresult.export(\"cpf.csv\");\n```\n\nSee also SolverCPF, ResultBase",
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.initialize();\n[result, flag] = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\nresult.r_lambdaMax       % maximum loading (nose of the PV curve)\nresult = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"], Limits=\"all\");\nresult.tab_switch        % PV buses switched to PQ at their Q limits\nresult.tab_stop          % voltage or branch limit that ended the path\nresult.tab_nose          % bus voltages at the nose\nresult.tab_weakbus       % buses ranked by their participation at the nose\nx = result.get_point(result.r_noseStep);          % point for net.get_sys(x)\nlin = net.get_sys({result, [1 result.r_noseStep]});   % one section per step\nresult.plot_pvcurve(Bus=\"all\");  % PV curves of every bus\n[G, G_pv] = result.plot_diagram();   % network diagram of each step, PV curves on the right\nG.set_time(result.r_noseStep);    % both at the nose\nresult.plot_pqv();                % P-Q-V paths of the load buses\nresult.plot_generator(Quantity=\"Qmargin\");\nlin.plot_eigenvalue_path();       % eigenvalues over the two steps\nresult.export(\"cpf.csv\");\n```\n\nSee also SolverCPF, ResultBase",
       "Deprecated": "",
       "Documented": true,
       "References": [],
@@ -4136,8 +4095,8 @@ window.GUILDA_DOC_INDEX = {
         "Total": 26
       },
       "MethodCount": {
-        "Own": 11,
-        "Total": 14
+        "Own": 13,
+        "Total": 17
       },
       "path": "./database/GUILDAsystem/ResultCPF.js",
       "Image": ""
@@ -4166,19 +4125,19 @@ window.GUILDA_DOC_INDEX = {
       "Sealed": false,
       "Hidden": false,
       "Summary": "Result of get_sys.",
-      "Desc": "Holds the linear model of a layer at one or more points (time sections), as connected by\nSolverLIN.solve from the linear blocks of its model objects. For the network (output.s_layer \"PowerNetwork\") it is\nthe unreduced linear DAE\n\n```\nrm_E dx/dt = rm_Axx x + rm_Axv v + rm_Bx u\n         0 = rm_Avx x + rm_Avv v + rm_Bv u\n```\n\nwhere x are the states, v = [Vre1; Vim1; Vre2; ...] the bus voltages and u the inputs,\nall in the order of the variable map tab_variable (= net.get_variable_map() at the time\nof the analysis). The algebraic equations are the current balance of each bus,\n0 = (Y v - I of the components), in the order of v. The values are deviations from the\npoint rv_point. Y is the admittance matrix of the model, also at a point inside a fault.\nget_ss returns the model of a Type (\"ODE\": the bus voltages eliminated, or \"DAE\"),\nget_contribution the part of each element in the DAE, get_mode the modes (eigenvalue,\nfrequency, damping ratio, dominant owner and participation), get_participation the\nparticipation of the states and of the buses in the modes, and plot_eigenvalue draws the\neigenvalue map. get_eigenvalue and get_eigenvector return the eigenvalues and\neigenvectors in the order of get_mode, get_kernel the kernel of the Jacobian of the DAE\n(the rotation of the phases of each island), get_reduced_matrix the Jacobian with the\nvariables of chosen elements eliminated (Schur complement), and disp_summary and\ndisp_mode display the result and its modes. plot_matrix draws a matrix of the model by\ngroups of variables; plot_kernel, plot_participation, plot_eigenvector,\nplot_contribution and plot_reduced_matrix draw the kernel, the participation, the\neigenvectors, the shares of the elements in an eigenvalue and the reduced matrix on the\nnetwork diagram (the participation, eigenvectors and shares with the mode picked on the\neigenvalue map).\n\nThe properties A, B, C, D, E, StateName, InputName and OutputName hold one linear model\n(E dx/dt = A x + B u, y = C x + D u) with the names of the states, inputs and outputs, as\nin a state-space (ss) object, without the Control System Toolbox: get_ss(Type) with the\nInput, Output and Port of get_sys. They are computed from the DAE when read, and\nType chooses the model: its default is the Type of get_sys, and setting it (res.Type =\n\"DAE\") switches all of them. They are empty when get_ss stops (flag false, or \"ODE\" with\na singular Avv); get_ss gives the reason.\n\nForm chooses the view of A ... E (also an option of get_ss and of get_sys; res.Form =\n\"absorbed\" switches A ... OutputName like Type):\n\n- \"descriptor\" (default): E holds the time constants (the mass matrix of the models).\n- \"absorbed\": E^-1 multiplied into the rows of the states in A and B; E is the identity\n  there and zero on the bus variables (and on a state without a time constant, whose\n  row is kept). Derived from the descriptor model, so every result has it; the\n  eigenvalues and the transfer function do not change.\n- \"hessian\": the energy-function form (Nishino et al. 2025, eqs. (21)-(30)), only for a\n  result of net.get_sys(Form=\"hessian\"), which calls get_hessian of every component\n  and local controller at the point of each section. Over z = [x; theta; V] (Port\n  \"PI\"), E_h dz/dt = H z + B_h u with E_h = -blkdiag(inv(R), 0) and\n  H = [Hxx Hxv; Hvx Hvv + Hvv_net]: dx/dt = -R (Hxx x + Hxv v) and the balance\n  0 = Hvx x + (Hvv + Hvv_net) v, where w = sum of w_dev = dU/dv = -[P; Q/V] of the\n  devices plus w_net = [P; Q/V] of the power from each bus into the network, and\n  Hvv_net its exact Jacobian. H is the Hessian of the energy function (symmetric) when\n  the model is lossless. \"PQ\" follows by dV = V drho, dQ = V d(Q/V) (H -> T H T,\n  T = diag(1, V)). B_h is the descriptor B with its state rows times E_h E^-1, and C, D\n  are those of the descriptor model (the same variables); the inputs are constants of\n  the point in the energy function. Equal to the descriptor DAE with its state rows\n  times E_h E^-1 where the bus balance holds (the equilibrium, a simulation point; the\n  I dV terms of the devices cancel in the bus sum). Port \"I\" stops with\n  GUILDA:ResultLIN:HessianPort. rv_asymmetry is the asymmetry of Hvv + Hvv_net of each\n  section (the loss: branch resistances, conductances, impedance and current loads).\n  The descriptor data is kept, so Form switches back.\n\nA result of comp.get_sys, bus.get_sys, con.get_sys or gc.get_sys (output.s_layer\n\"Component\", \"Bus\", \"LocalController\" or \"GlobalController\") holds the port model of the\nlayer in A ... OutputName (see PowerSystemModel.get_sys), the point rv_point and the\nblocks rm_Axx, rm_Axv (the voltage inputs), rm_Bx (the other inputs of tab_variable)\nand rm_E. get_ss returns that model, and Type and Port do not apply.\n\nTime sections: get_sys({sim, rv_t}) with several times, or a matrix of points (one per\ncolumn), gives one section per time or column; the equilibrium and a vector give one.\nrv_t holds the time of each section (the times of {sim, rv_t}, 1:n for a matrix, NaN\notherwise), and Index (default 1) chooses the section that rv_point, rm_Axx ... rm_E,\nsct_model and A ... OutputName show: res.Index = 3 switches all of them. get_ss,\nget_contribution, get_mode, plot_eigenvalue and the analysis methods (get_eigenvalue ...\ndisp_mode) take Index (default res.Index); all but get_contribution and plot_eigenvalue\nalso take Time (the section of the nearest time), and Index \"all\" returns every section\n(get_eigenvalue: a table; get_mode and the other getters: a struct array, whose tab_mode\nare one table by vertcat). plot_eigenvalue of several sections draws all of them in one chart whose\nset_time shows the section nearest to a time (Index is the section shown first), so it\nlinks with the graphs of the simulation, and plot_eigenvalue_path draws the largest\nreal part and the smallest damping ratio over the sections, marking the first unstable\none. flag is true only when every section\nis usable; output.lv_flag, sv_issue, sv_message and rv_rcond_Avv describe each section,\nand the scalar fields (message, s_issue, rcond_Avv, sv_faultBus) the whole run. A\nresult of the network keeps a snapshot of it, sct_network = struct(net, false).\n\n- `tab_variable` has one row per variable with Index, Kind, Role, Owner, Name, Label, Bus\n  and Equilibrium: the leading rows x, Vre, Vim, u, uc of the variable map of the layer (for\n  a controller: its x, the voltages and its uc), the order of rv_point.\n- `sct_model` holds the connected model (field sct_sys: the descriptor model over\n  [x; v] with its outputs, from SolverLIN.solve) and, for the network, the admittance\n  matrix, the bus voltages at the point and the names of the bus currents: used by the\n  coordinates of get_ss(\"DAE\") and its Output option; sct_sys also holds the terms of\n  each element (sct_term) and their classes (tab_owner) for get_contribution. The\n  result holds computed values only; the network is not changed.",
+      "Desc": "Holds the linear model of a layer at one or more points (time sections), as connected by\nSolverLIN.solve from the linear blocks of its model objects. For the network (output.s_layer \"PowerNetwork\") it is\nthe unreduced linear DAE\n\n```\nrm_E dx/dt = rm_Axx x + rm_Axv v + rm_Bx u\n         0 = rm_Avx x + rm_Avv v + rm_Bv u\n```\n\nwhere x are the states, v = [Vre1; Vim1; Vre2; ...] the bus voltages and u the inputs,\nall in the order of the variable map tab_variable (= net.get_variable_map() at the time\nof the analysis). The algebraic equations are the current balance of each bus,\n0 = (Y v - I of the components), in the order of v. The values are deviations from the\npoint rv_point. Y is the admittance matrix of the model, also at a point inside a fault.\nget_ss returns the model of a Type (\"ODE\": the bus voltages eliminated, or \"DAE\"),\nget_contribution the part of elements in the DAE (a ResultLIN of its own, below),\nget_mode the modes (eigenvalue,\nfrequency, damping ratio, dominant owner and participation), get_participation the\nparticipation of the states and of the buses in the modes, and plot_eigenvalue draws the\neigenvalue map. get_eigenvalue and get_eigenvector return the eigenvalues and\neigenvectors in the order of get_mode, get_kernel the kernel of the Jacobian of the DAE\n(the rotation of the phases of each island), get_reduced_matrix the Jacobian with the\nvariables of chosen elements eliminated (Schur complement), and disp_summary and\ndisp_mode display the result and its modes. plot_matrix draws a matrix of the model by\ngroups of variables; plot_kernel, plot_participation, plot_eigenvector,\nplot_contribution and plot_reduced_matrix draw the kernel, the participation, the\neigenvectors, the shares of the elements in an eigenvalue and the reduced matrix on the\nnetwork diagram (the participation, eigenvectors and shares with the mode picked on the\neigenvalue map).\n\nThe properties A, B, C, D, E, StateName, InputName and OutputName hold one linear model\n(E dx/dt = A x + B u, y = C x + D u) with the names of the states, inputs and outputs, as\nin a state-space (ss) object, without the Control System Toolbox: get_ss(Type) with the\nInput, Output and Port of get_sys. They are computed from the DAE when read, and\nType chooses the model: its default is the Type of get_sys, and setting it (res.Type =\n\"DAE\") switches all of them. They are empty when get_ss stops (flag false, or \"ODE\" with\na singular Avv); get_ss gives the reason.\n\nForm chooses the view of A ... E (also an option of get_ss and of get_sys; res.Form =\n\"absorbed\" switches A ... OutputName like Type):\n\n- \"descriptor\" (default): E holds the time constants (the mass matrix of the models).\n- \"absorbed\": E^-1 multiplied into the rows of the states in A and B; E is the identity\n  there and zero on the bus variables (and on a state without a time constant, whose\n  row is kept). Derived from the descriptor model, so every result has it; the\n  eigenvalues and the transfer function do not change.\n- \"hessian\": the energy-function form (Nishino et al. 2025, eqs. (21)-(30)), only for a\n  result of net.get_sys(Form=\"hessian\"), which calls get_hessian of every component\n  and local controller at the point of each section. Over z = [x; theta; V] (Port\n  \"PI\"), E_h dz/dt = H z + B_h u with E_h = -blkdiag(inv(R), 0) and\n  H = [Hxx Hxv; Hvx Hvv + Hvv_net]: dx/dt = -R (Hxx x + Hxv v) and the balance\n  0 = Hvx x + (Hvv + Hvv_net) v, where w = sum of w_dev = dU/dv = -[P; Q/V] of the\n  devices plus w_net = [P; Q/V] of the power from each bus into the network, and\n  Hvv_net its exact Jacobian. H is the Hessian of the energy function (symmetric) when\n  the model is lossless. \"PQ\" follows by dV = V drho, dQ = V d(Q/V) (H -> T H T,\n  T = diag(1, V)). B_h is the descriptor B with its state rows times E_h E^-1, and C, D\n  are those of the descriptor model (the same variables); the inputs are constants of\n  the point in the energy function. Equal to the descriptor DAE with its state rows\n  times E_h E^-1 where the bus balance holds (the equilibrium, a simulation point; the\n  I dV terms of the devices cancel in the bus sum). Port \"I\" stops with\n  GUILDA:ResultLIN:HessianPort. rv_asymmetry is the asymmetry of Hvv + Hvv_net of each\n  section (the loss: branch resistances, conductances, impedance and current loads).\n  The descriptor data is kept, so Form switches back.\n\nA result of comp.get_sys, bus.get_sys, con.get_sys or gc.get_sys (output.s_layer\n\"Component\", \"Bus\", \"LocalController\" or \"GlobalController\") holds the port model of the\nlayer in A ... OutputName (see PowerSystemModel.get_sys), the point rv_point and the\nblocks rm_Axx, rm_Axv (the voltage inputs), rm_Bx (the other inputs of tab_variable)\nand rm_E. get_ss returns that model, and Type and Port do not apply.\n\nTime sections: get_sys({sim, rv_t}) with several times, or a matrix of points (one per\ncolumn), gives one section per time or column; the equilibrium and a vector give one.\nrv_t holds the time of each section (the times of {sim, rv_t}, 1:n for a matrix, NaN\notherwise), and Index (default 1) chooses the section that rv_point, rm_Axx ... rm_E,\nsct_model and A ... OutputName show: res.Index = 3 switches all of them. get_ss,\nget_mode, plot_eigenvalue and the analysis methods (get_eigenvalue ... disp_mode) take\nIndex (default res.Index); all but plot_eigenvalue also take Time (the section of the nearest time), and Index \"all\" returns every section\n(get_eigenvalue: a table; get_mode and the other getters: a struct array, whose tab_mode\nare one table by vertcat). plot_eigenvalue of several sections draws all of them in one chart whose\nset_time shows the section nearest to a time (Index is the section shown first), so it\nlinks with the graphs of the simulation, and plot_eigenvalue_path draws the largest\nreal part and the smallest damping ratio over the sections, marking the first unstable\none. flag is true only when every section\nis usable; output.lv_flag, sv_issue, sv_message and rv_rcond_Avv describe each section,\nand the scalar fields (message, s_issue, rcond_Avv, sv_faultBus) the whole run. A\nresult of the network keeps a snapshot of it, sct_network = struct(net, false).\n\nA contribution result: res.get_contribution(target) returns a ResultLIN with every\nsection of res whose sections hold the part of the targets in the connected model (the\nterms of those elements), with sv_target the targets. Its Type is \"DAE\" only (an \"ODE\"\nstops with GUILDA:ResultLIN:ContributionDAE) and it has no Form \"hessian\"; the parts of\nall the elements sum to the DAE of res in every section. Its methods compute on the\npart: on a contribution result (sv_target nonempty) the numbers are of the part alone\nand have no meaning for the whole system.\n\n- `tab_variable` has one row per variable with Index, Kind, Role, Owner, Name, Label, Bus\n  and Equilibrium: the leading rows x, Vre, Vim, u, uc of the variable map of the layer (for\n  a controller: its x, the voltages and its uc), the order of rv_point.\n- `sct_model` holds the connected model (field sct_sys: the descriptor model over\n  [x; v] with its outputs, from SolverLIN.solve) and, for the network, the admittance\n  matrix, the bus voltages at the point and the names of the bus currents: used by the\n  coordinates of get_ss(\"DAE\") and its Output option; sct_sys also holds the terms of\n  each element (sct_term) and their classes (tab_owner) for get_contribution. The\n  result holds computed values only; the network is not changed.",
       "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.initialize();\n[result, flag] = net.get_sys();\neig(full(result.rm_Axx))          % Jacobian blocks of the unreduced DAE\neig(result.A, result.E)           % model of result.Type (the Type of get_sys)\nresult.Type = \"DAE\";              % A ... OutputName are now the DAE\nsct = result.get_ss(\"ODE\", Format=\"struct\");   % reduced model as a struct\nsys = result.get_ss(\"ODE\");       % ss object (Control System Toolbox)\nsct_gen = result.get_contribution(\"component.generator.abstract\");   % part of the generators in the DAE\nsct = result.get_mode(MinFrequency=0.1);     % oscillatory modes: sct.tab_mode, participation, shapes\nsct = result.get_participation();            % participation by state and by bus (tab_bus)\nresult.plot_eigenvalue();                    % eigenvalue map\nresult.disp_summary();                       % sizes, status, modes and kernel\nsct = result.get_kernel();                   % rotation of the angles: rm_right, rm_left, tab_phase\nsct = result.get_reduced_matrix([\"Component\",\"LocalController\"]);   % seen from the buses\nresult.Form = \"absorbed\";  eig(result.A)     % E^-1 multiplied in\n\nresH = net.get_sys(Type=\"DAE\", Port=\"PI\", Form=\"hessian\");   % energy-function form (supported devices only)\nresH.rv_asymmetry                            % asymmetry of Hvv + Hvv_net (0 when lossless)\nresH.Form = \"descriptor\";                    % the Jacobian of the same result\n\nsc = net.add_scenario(\"fault\");  sc.add_fault(\"B008\", [1,1.05]);\nsim = net.simulate(\"fault\", Time=[0,5]);\nres = net.get_sys({sim, [0.5, 2, 4]});       % three time sections\nres.Index = 2;  eig(res.A, res.E)            % the section at t = 2\nsys = res.get_ss(Time=4, Format=\"struct\");   % the section nearest to t = 4\ntab = vertcat(res.get_mode(Index=\"all\").tab_mode);   % modes of every section, with Time and Index\n```\n\nSee also SolverLIN, ResultBase, PowerSystemModel.get_sys",
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.initialize();\n[result, flag] = net.get_sys();\neig(full(result.rm_Axx))          % Jacobian blocks of the unreduced DAE\neig(result.A, result.E)           % model of result.Type (the Type of get_sys)\nresult.Type = \"DAE\";              % A ... OutputName are now the DAE\nsct = result.get_ss(\"ODE\", Format=\"struct\");   % reduced model as a struct\nsys = result.get_ss(\"ODE\");       % ss object (Control System Toolbox)\nres_gen = result.get_contribution(\"component.generator.abstract\");   % part of the generators in the DAE (a ResultLIN)\nres_gen.A                                    % that part of the DAE in the section shown\nsct = result.get_mode(MinFrequency=0.1);     % oscillatory modes: sct.tab_mode, participation, shapes\nsct = result.get_participation();            % participation by state and by bus (tab_bus)\nresult.plot_eigenvalue();                    % eigenvalue map\nresult.disp_summary();                       % sizes, status, modes and kernel\nsct = result.get_kernel();                   % rotation of the angles: rm_right, rm_left, tab_phase\nsct = result.get_reduced_matrix([\"Component\",\"LocalController\"]);   % seen from the buses\nresult.Form = \"absorbed\";  eig(result.A)     % E^-1 multiplied in\n\nresH = net.get_sys(Type=\"DAE\", Port=\"PI\", Form=\"hessian\");   % energy-function form (supported devices only)\nresH.rv_asymmetry                            % asymmetry of Hvv + Hvv_net (0 when lossless)\nresH.Form = \"descriptor\";                    % the Jacobian of the same result\n\nsc = net.add_scenario(\"fault\");  sc.add_fault(\"B008\", [1,1.05]);\nsim = net.simulate(\"fault\", Time=[0,5]);\nres = net.get_sys({sim, [0.5, 2, 4]});       % three time sections\nres.Index = 2;  eig(res.A, res.E)            % the section at t = 2\nsys = res.get_ss(Time=4, Format=\"struct\");   % the section nearest to t = 4\ntab = vertcat(res.get_mode(Index=\"all\").tab_mode);   % modes of every section, with Time and Index\n```\n\nSee also SolverLIN, ResultBase, PowerSystemModel.get_sys",
       "Deprecated": "",
       "Documented": true,
       "References": [],
       "PropertyCount": {
-        "Own": 28,
-        "Total": 36
+        "Own": 29,
+        "Total": 37
       },
       "MethodCount": {
-        "Own": 30,
-        "Total": 34
+        "Own": 33,
+        "Total": 38
       },
       "path": "./database/GUILDAsystem/ResultLIN.js",
       "Image": ""
@@ -4207,7 +4166,7 @@ window.GUILDA_DOC_INDEX = {
       "Sealed": false,
       "Hidden": false,
       "Summary": "Result of net.simulate.",
-      "Desc": "Holds the time response of the bus voltages, currents and powers, of the states and\ninputs of the components and controllers, and of their outputs. It is built from data\nonly: the trajectories of the solver, the variable map and the output functions of the\nrun, a struct snapshot of the network (sct_network = struct(net, false)) and the solver\ninformation. It keeps no reference to the network: its methods (get_trajectory, plot_trajectory,\nget_point, export, judge_out_of_step, odeResults) work after the network is edited or\ndeleted.\nflag is 1 when the simulation reached the end time, 2 when it stopped by StopOnOutOfStep\n(output.outOfStep holds the stop), 0 when it stopped by TimeLimit and -1 when the solver\nstopped early; then the trajectories end at output.tEnd. When the first phase could not\nbe solved, they have no time points.\n\nThe trajectory is stored once, in the order of the variable map of the network\n(rm_variable, columns = rows of tab_variable): the states of the components with their\nlocal controllers, the states of the global controllers, the bus voltages, the inputs\nof the components and the inputs of the controllers. odeResults is a view of it per bus and component, and get_point gives\nthe values at a time, for example for net.get_sys({sim, t}). get_trajectory returns a\ntrajectory of the buses or components as a table (one column per bus or component, also\nrelative to the center of inertia) and plot_trajectory draws it, plot_spring_model an animated spring-mass\npicture of the phasors and plot_diagram a 3D network diagram of every output time.\nexport writes all trajectories as a table (CSV, Excel) or as a MAT-file.\njudge_out_of_step judges the rotor angles (stable, out of step).\n\n- `tab_variable` has one row per variable with Index, Kind (\"x\" | \"Vre\" | \"Vim\" | \"u\" |\n  \"uc\"), Role, Owner, Name, Label, Bus and Equilibrium: the leading rows of\n  net.get_variable_map() (its rows y and yc, the signals, are in tab_output).\n- In `rm_variable` the states and inputs of a tripped unit are NaN while it is tripped\n  (u of a component, uc of a local controller, u of a global controller). The inputs u\n  are the inputs applied to the components (steady value, outputs of the controllers and\n  event inputs), the inputs uc those applied to the controllers.\n- `rm_I` holds the columns B1 Ireal, B1 Iimag, B2 Ireal, ... They are not variables of the\n  map; odeResults.Bus(i).I and .PQ are made from them.\n- `rm_Icomponent` holds the current each component injects into its bus (its f_I at each\n  time, positive into the bus): Ireal, Iimag of each component in the order of sv_bus and\n  c_component. It is NaN while the component is tripped. At each time the currents of\n  the components of a bus add up to its rm_I (Y V) within the tolerance of the solver\n  (the residual of the current balance), except at a faulted bus during the fault: rm_I\n  there also holds the fault current.\n- `tab_output` has the rows y (outputs of the components) and yc (outputs of the\n  controllers) of the variable map, with the columns of tab_variable. `rm_output` holds\n  their trajectories, computed by the constructor from the output functions of the\n  blocks at each time (t from the start of the phase, as the solver). The outputs of a\n  tripped unit (its states are NaN) are NaN.\n- `odeResults` has the fields t (time [s], column), Bus(i).V (table Vreal, Vimag),\n  Bus(i).I (Ireal, Iimag), Bus(i).PQ (P, Q), Bus(i).Component(j).X (states, columns named\n  by sv_x), Bus(i).Component(j).U (inputs, columns named by sv_u),\n  Bus(i).Component(j).Y (outputs, columns named by sv_y) and Bus(i).Component(j).I (the\n  current of the component: Ireal, Iimag of rm_Icomponent). Bus(i) follows net.a_Bus and\n  Component(j) follows a_Component of the bus. The states and outputs of the local and\n  global controllers are in rm_variable and rm_output only.\n- `sct_branchY` holds the admittance matrix of each branch at each time of rv_t, in the\n  branch states of the phase (opened circuits, a fault inside the branch): iv_Y picks\n  the set of matrices c_Ybranch of each time. plot_diagram computes the branch flows\n  from it, so an opened branch carries no current (\"6open\") or the current of the\n  circuits left (\"3open\"), and a faulted branch the currents of its two ends into the\n  fault.\n- At a boundary between two phases the time appears twice in rv_t and odeResults: the\n  end of one phase, then the start of the next (see get_point).",
+      "Desc": "Holds the time response of the bus voltages, currents and powers, of the states and\ninputs of the components and controllers, and of their outputs. It is built from data\nonly: the trajectories of the solver, the variable map and the output functions of the\nrun, a struct snapshot of the network (sct_network = struct(net, false)) and the solver\ninformation. It keeps no reference to the network: its methods (get_trajectory, plot_trajectory,\nget_point, export, judge_out_of_step, odeResults) work after the network is edited or\ndeleted.\nflag is 1 when the simulation reached the end time, 2 when it stopped by StopOnOutOfStep\n(output.outOfStep holds the stop), 0 when it stopped by TimeLimit and -1 when the solver\nstopped early; then the trajectories end at output.tEnd. When the first phase could not\nbe solved, they have no time points.\n\nThe trajectory is stored once, in the order of the variable map of the network\n(rm_variable, columns = rows of tab_variable): the states of the components with their\nlocal controllers, the states of the global controllers, the bus voltages, the inputs\nof the components and the inputs of the controllers. odeResults is a view of it per bus and component, and get_point gives\nthe values at a time, for example for net.get_sys({sim, t}). get_trajectory returns a\ntrajectory of the buses or components as a table (one column per bus or component, also\nrelative to the center of inertia) and plot_trajectory draws it, plot_spring_model an animated spring-mass\npicture of the phasors and plot_diagram a 3D network diagram of every output time.\nplot_pqv draws the path of each bus in (P, Q, |V|) as a 3D line over the output times.\nexport writes all trajectories as a table (CSV, Excel) or as a MAT-file.\njudge_out_of_step judges the rotor angles (stable, out of step).\n\n- `tab_variable` has one row per variable with Index, Kind (\"x\" | \"Vre\" | \"Vim\" | \"u\" |\n  \"uc\"), Role, Owner, Name, Label, Bus and Equilibrium: the leading rows of\n  net.get_variable_map() (its rows y and yc, the signals, are in tab_output).\n- In `rm_variable` the states and inputs of a tripped unit are NaN while it is tripped\n  (u of a component, uc of a local controller, u of a global controller). The inputs u\n  are the inputs applied to the components (steady value, outputs of the controllers and\n  event inputs), the inputs uc those applied to the controllers.\n- `rm_I` holds the columns B1 Ireal, B1 Iimag, B2 Ireal, ... They are not variables of the\n  map; odeResults.Bus(i).I and .PQ are made from them.\n- `rm_Icomponent` holds the current each component injects into its bus (its f_I at each\n  time, positive into the bus): Ireal, Iimag of each component in the order of sv_bus and\n  c_component. It is NaN while the component is tripped. At each time the currents of\n  the components of a bus add up to its rm_I (Y V) within the tolerance of the solver\n  (the residual of the current balance), except at a faulted bus during the fault: rm_I\n  there also holds the fault current.\n- `tab_output` has the rows y (outputs of the components) and yc (outputs of the\n  controllers) of the variable map, with the columns of tab_variable. `rm_output` holds\n  their trajectories, computed by the constructor from the output functions of the\n  blocks at each time (t from the start of the phase, as the solver). The outputs of a\n  tripped unit (its states are NaN) are NaN.\n- `odeResults` has the fields t (time [s], column), Bus(i).V (table Vreal, Vimag),\n  Bus(i).I (Ireal, Iimag), Bus(i).PQ (P, Q), Bus(i).Component(j).X (states, columns named\n  by sv_x), Bus(i).Component(j).U (inputs, columns named by sv_u),\n  Bus(i).Component(j).Y (outputs, columns named by sv_y) and Bus(i).Component(j).I (the\n  current of the component: Ireal, Iimag of rm_Icomponent). Bus(i) follows net.a_Bus and\n  Component(j) follows a_Component of the bus. The states and outputs of the local and\n  global controllers are in rm_variable and rm_output only.\n- `sct_branchY` holds the admittance matrix of each branch at each time of rv_t, in the\n  branch states of the phase (opened circuits, a fault inside the branch): iv_Y picks\n  the set of matrices c_Ybranch of each time. plot_diagram computes the branch flows\n  from it, so an opened branch carries no current (\"6open\") or the current of the\n  circuits left (\"3open\"), and a faulted branch the currents of its two ends into the\n  fault.\n- At a boundary between two phases the time appears twice in rv_t and odeResults: the\n  end of one phase, then the start of the next (see get_point).",
       "SeeAlso": [],
       "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.initialize();\nsc = net.add_scenario(\"fault\");\nsc.add_fault(\"B008\", [1, 1.05]);\n[result, flag] = net.simulate(\"fault\");\nr = result.odeResults;               % r.t, r.Bus(i).V, r.Bus(i).Component(j).X, ...\nx = result.get_point(2);             % all variables at t = 2, in variable-map order\ntab = result.get_trajectory(\"omega\");          % t and one column per generator\nresult.plot_trajectory(Quantity=\"omega\");       % the same columns as a figure\nresult.export(\"sim.mat\");\nverdict = result.judge_out_of_step();   % \"stable\" / \"out-of-step\" / \"incomplete\"\n```\n\nSee also SolverODE, Scenario, ResultBase, PowerNetwork.get_variable_map",
       "Deprecated": "",
@@ -4218,8 +4177,8 @@ window.GUILDA_DOC_INDEX = {
         "Total": 22
       },
       "MethodCount": {
-        "Own": 13,
-        "Total": 16
+        "Own": 15,
+        "Total": 19
       },
       "path": "./database/GUILDAsystem/ResultODE.js",
       "Image": ""
@@ -4248,9 +4207,9 @@ window.GUILDA_DOC_INDEX = {
       "Sealed": false,
       "Hidden": false,
       "Summary": "Result of net.calculate_optimal_powerflow.",
-      "Desc": "Holds the optimal bus values, the injection of every connection into its bus (components\nand branch ends), the branch flows, the optimal cost, the Lagrange multipliers and the\nsolved optimization problem. The columns of the tables depend on the method: \"AC OPF\"\nhas voltages, P, Q and currents, \"DC OPF\" has Varg, V (= 1) and P, \"ELD\" has P only\n(branches are ignored and their values are NaN). It is built from data only: the\nsolution of SolverOPF.solve, a snapshot of the network (struct(net, false), kept as\nsct_network) and the solver information. It keeps no reference to the network, so a\nlater edit of the network does not change it; the OPF settings (tab_parameter.OPF /\n.operation) stay with the network. plot_dispatch draws the component outputs\nand, for \"DC OPF\" and \"AC OPF\", the bus voltages. export writes the bus, connection or\nbranch table (CSV, Excel). disp_summary (get_summary as a struct), disp_binding and get_lmp show what the solution\nis made of (the binding constraints and the nodal prices with their components);\nplot_lmp draws the prices on the network diagram, and plot_iteration the iterations of\nan \"AC OPF\" (sct_iteration) with the network diagram of each iteration.\n\n- `tab_bus`: row names = bus tags. \"AC OPF\": Varg [rad], V [pu], P, Q (injections into\n  the network) [pu], Vphasor, Iphasor [pu]; \"DC OPF\": Varg, V, P; \"ELD\": P.\n- `tab_cub`: rows are the components of each bus (row name \"<component>\"), then the\n  branch ends at the bus (\"<branch>_<bus>\"). \"AC OPF\": Iphasor, P, Q [pu]; \"DC OPF\" and\n  \"ELD\": P (NaN for branch ends in \"ELD\").\n- The branch-end rows of `tab_cub` and `tab_branch` are computed from the solved bus\n  voltages (the problem has no branch variables).\n- `tab_branch`: row names = branch tags. \"from\" is br.a_Bus{1}, \"to\" is br.a_Bus{2};\n  values flow into the branch at each end, as in ResultPF.tab_branch. \"AC OPF\": Pfrom,\n  Qfrom, Pto, Qto, Ifrom, Ito, Ploss, Qloss; \"DC OPF\" and \"ELD\": Pfrom, Pto, Ploss (NaN\n  in \"ELD\").\n- `lambda` is the fifth output of solve of the Optimization Toolbox.\n  lambda.Constraints.balancedP_<bus> (balancedP in \"ELD\") is the change of the optimal\n  cost per unit of injection at the bus, so the nodal price of active power (cost per\n  unit of load) is -lambda.Constraints.balancedP_<bus>; balancedQ_<bus> (\"AC OPF\") is\n  the same for reactive power. Branch limits are in lambda.Constraints.Pmax_<branch>_<bus>\n  and Qmax_<branch>_<bus> (two values: P <= Pmax, -P <= Pmax), Imax_<branch>_<bus>,\n  Smax_<branch>_<bus>, VargMax1_<branch> and VargMax2_<branch>; the bound multipliers of\n  the buses and components are in lambda.Variables.<tag>.Lower/Upper.\n- `OPFprob` is the solved problem: built by SolverOPF.build_problem, or the Problem given to calculate_optimal_powerflow.\n- `sct_iteration` holds the iterations of fmincon (\"AC OPF\"), recorded at every run\n  through the OutputFcn of fmincon (next to PlotFcn): Iteration (1 x n, the iteration\n  numbers), Fval (objective), ConstrViolation (largest constraint violation) and X (a\n  struct by variable name of the problem, each variable's values as columns, one per\n  iteration). It is an empty struct for linprog and quadprog (\"ELD\", \"DC OPF\"), which\n  have no OutputFcn.\n- `sct_stability` holds the outer iterations of a stability-constrained \"AC OPF\"\n  (MinDampingRatio or MaxRealPart of calculate_optimal_powerflow): `tab_iteration`, one\n  row per outer iteration (Iteration, Cost, MinDampingRatio and MaxRealPart of the\n  eigenvalues of get_sys at its solution, CriticalMode: the modes that got linearized\n  constraints, those near the MinDampingRatio limit from the smallest damping ratio, then\n  those near the MaxRealPart limit only from the largest real part, Step: the trust region\n  [dP dV] [pu] of the next iteration, Flag: the exit flag of its OPF; an OPF that stopped\n  without a solution after the first iteration gives a last row with Cost, MinDampingRatio\n  and MaxRealPart NaN, and the result is then the solution of the row before it), and\n  `tab_mode`, the modes of the last solution (Eigenvalue,\n  Frequency [Hz], DampingRatio (NaN for a real mode), Owner: the tag of the component or\n  controller with the largest participation). It is an empty struct otherwise.\n- `sct_network` is the snapshot of the network at the calculation (struct(net, false)),\n  as in ResultPF; get_lmp reads its branch admittances and bus shunts, plot_lmp and\n  plot_iteration draw it.",
+      "Desc": "Holds the optimal bus values, the injection of every connection into its bus (components\nand branch ends), the branch flows, the optimal cost, the Lagrange multipliers and the\nsolved optimization problem. The columns of the tables depend on the method: \"AC OPF\"\nhas voltages, P, Q and currents, \"DC OPF\" has Varg, V (= 1) and P, \"ELD\" has P only\n(branches are ignored and their values are NaN). It is built from data only: the\nsolution of SolverOPF.solve, a snapshot of the network (struct(net, false), kept as\nsct_network) and the solver information. It keeps no reference to the network, so a\nlater edit of the network does not change it; the OPF settings (tab_parameter.OPF /\n.operation) stay with the network. plot_dispatch draws the component outputs\nand, for \"DC OPF\" and \"AC OPF\", the bus voltages. export writes the bus, connection or\nbranch table (CSV, Excel). disp_summary (get_summary as a struct), disp_binding and get_lmp show what the solution\nis made of (the binding constraints and the nodal prices with their components);\nplot_lmp draws the prices on the network diagram, and plot_iteration the iterations of\nan \"AC OPF\" (sct_iteration) as a chart.\n\n- `tab_bus`: row names = bus tags. \"AC OPF\": Varg [rad], V [pu], P, Q (injections into\n  the network) [pu], Vphasor, Iphasor [pu]; \"DC OPF\": Varg, V, P; \"ELD\": P.\n- `tab_cub`: rows are the components of each bus (row name \"<component>\"), then the\n  branch ends at the bus (\"<branch>_<bus>\"). \"AC OPF\": Iphasor, P, Q [pu]; \"DC OPF\" and\n  \"ELD\": P (NaN for branch ends in \"ELD\").\n- The branch-end rows of `tab_cub` and `tab_branch` are computed from the solved bus\n  voltages (the problem has no branch variables).\n- `tab_branch`: row names = branch tags. \"from\" is br.a_Bus{1}, \"to\" is br.a_Bus{2};\n  values flow into the branch at each end, as in ResultPF.tab_branch. \"AC OPF\": Pfrom,\n  Qfrom, Pto, Qto, Ifrom, Ito, Ploss, Qloss; \"DC OPF\" and \"ELD\": Pfrom, Pto, Ploss (NaN\n  in \"ELD\").\n- `lambda` is the fifth output of solve of the Optimization Toolbox.\n  lambda.Constraints.balancedP_<bus> (balancedP in \"ELD\") is the change of the optimal\n  cost per unit of injection at the bus, so the nodal price of active power (cost per\n  unit of load) is -lambda.Constraints.balancedP_<bus>; balancedQ_<bus> (\"AC OPF\") is\n  the same for reactive power. Branch limits are in lambda.Constraints.Pmax_<branch>_<bus>\n  and Qmax_<branch>_<bus> (two values: P <= Pmax, -P <= Pmax), Imax_<branch>_<bus>,\n  Smax_<branch>_<bus>, VargMax1_<branch> and VargMax2_<branch>; the bound multipliers of\n  the buses and components are in lambda.Variables.<tag>.Lower/Upper.\n- `OPFprob` is the solved problem: built by SolverOPF.build_problem, or the Problem given to calculate_optimal_powerflow.\n- `sct_iteration` holds the iterations of fmincon (\"AC OPF\"), recorded at every run\n  through the OutputFcn of fmincon (next to PlotFcn): Iteration (1 x n, the iteration\n  numbers), Fval (objective), ConstrViolation (largest constraint violation) and X (a\n  struct by variable name of the problem, each variable's values as columns, one per\n  iteration). It is an empty struct for linprog and quadprog (\"ELD\", \"DC OPF\"), which\n  have no OutputFcn.\n- `sct_stability` holds the outer iterations of a stability-constrained \"AC OPF\"\n  (MinDampingRatio or MaxRealPart of calculate_optimal_powerflow): `tab_iteration`, one\n  row per outer iteration (Iteration, Cost, MinDampingRatio and MaxRealPart of the\n  eigenvalues of get_sys at its solution, CriticalMode: the modes that got linearized\n  constraints, those near the MinDampingRatio limit from the smallest damping ratio, then\n  those near the MaxRealPart limit only from the largest real part, Step: the trust region\n  [dP dV] [pu] of the next iteration, Flag: the exit flag of its OPF; an OPF that stopped\n  without a solution after the first iteration gives a last row with Cost, MinDampingRatio\n  and MaxRealPart NaN, and the result is then the solution of the row before it), and\n  `tab_mode`, the modes of the last solution (Eigenvalue,\n  Frequency [Hz], DampingRatio (NaN for a real mode), Owner: the tag of the component or\n  controller with the largest participation). It is an empty struct otherwise.\n- `sct_network` is the snapshot of the network at the calculation (struct(net, false)),\n  as in ResultPF; get_lmp reads its branch admittances and bus shunts, plot_lmp draws it.",
       "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE14bus();\n[result, flag] = net.calculate_optimal_powerflow(Method=\"AC OPF\");\nresult.r_cost            % optimal generation cost\nresult.tab_cub           % P, Q of each component and branch end\nprice = -result.lambda.Constraints.balancedP_B001;   % nodal price at bus B001\nG = result.plot_dispatch();     % bar charts of the solution (GraphChart)\nresult.export(\"opf.csv\", Table=\"cub\");\nresult.disp_summary();   % cost, generation, losses, binding constraints, price range\nsct = result.get_summary();  % the same values as a struct\nresult.get_lmp()         % nodal prices and their energy, congestion and loss components\nresult.plot_lmp();       % nodal prices on the network diagram\n[G_chart, G_net] = result.plot_iteration(); % iterations of the AC OPF and the network of each\n```\n\nSee also SolverOPF, ResultBase",
+      "Examples": "```matlab\nnet = network.IEEE14bus();\n[result, flag] = net.calculate_optimal_powerflow(Method=\"AC OPF\");\nresult.r_cost            % optimal generation cost\nresult.tab_cub           % P, Q of each component and branch end\nprice = -result.lambda.Constraints.balancedP_B001;   % nodal price at bus B001\nG = result.plot_dispatch();     % bar charts of the solution (GraphChart)\nresult.export(\"opf.csv\", Table=\"cub\");\nresult.disp_summary();   % cost, generation, losses, binding constraints, price range\nsct = result.get_summary();  % the same values as a struct\nresult.get_lmp()         % nodal prices and their energy, congestion and loss components\nresult.plot_lmp();       % nodal prices on the network diagram\nG = result.plot_iteration();   % iterations of the AC OPF (GraphChart)\n```\n\nSee also SolverOPF, ResultBase",
       "Deprecated": "",
       "Documented": true,
       "References": [],
@@ -4260,7 +4219,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 13,
-        "Total": 15
+        "Total": 16
       },
       "path": "./database/GUILDAsystem/ResultOPF.js",
       "Image": ""
@@ -4289,9 +4248,9 @@ window.GUILDA_DOC_INDEX = {
       "Sealed": false,
       "Hidden": false,
       "Summary": "Result of net.calculate_powerflow (its default Format \"GUILDAorigin\").",
-      "Desc": "Holds the bus voltages, currents and power injections of the solution, the branch flows,\nthe violated operating limits and the voltages at each iteration (or time step of the\n\"dynamic\" method). It is built from data only: the solution table, the bus admittance\nmatrix, a struct snapshot of the network (struct(net, false), no handles) and the\nsolver information. It keeps no reference to the network, so a later edit of the\nnetwork does not change it. The plot_* methods draw the voltage profile, the branch\nflows, the convergence, the network, a 3D network diagram and a spring-mass picture of the bus phasors; the disp_* methods print tables, and get_summary returns the values of disp_summary. export writes the bus or\nbranch table (CSV, Excel) or the iteration history (JSON for the GridSpring viewer).\n\n- `tab_bus` has the bus tags as row names.\n- `tab_branch` has the branch tags as row names. \"from\" is the first bus of the branch,\n  \"to\" the second. From, To: the tags of these end buses. Pfrom, Qfrom, Pto, Qto: power flowing into the branch at each end;\n  Ifrom, Ito: current phasors into the branch; Ploss, Qloss: losses of the branch (sum\n  of both ends). The admittance of each branch is the field cm_Y of the branch in the\n  snapshot (Branch.struct adds it from get_admittance_matrix), so every branch class,\n  also one of your own, gets its flows.\n- `cm_Vhistory` has one column per iteration, or per ODE step (\"dynamic\").\n- `tab_violation` records the operating limits (tab_parameter.operation of the\n  snapshot) that the solution violates by more than Tolerance; the power flow itself\n  never applies them, and a violation gives no warning or error. One row per violated\n  limit, 0 rows when none (or when the calculation did not converge):\n  - Class: \"Bus\", \"Component\" or \"Branch\"; Object: its tag.\n  - Limit: the violated limit, e.g. \"Vmin\", \"Vmax\" (bus), \"Pmin\", \"Pmax\", \"Qmin\",\n    \"Qmax\" (component), \"Pmax\", \"Qmax\", \"Smax\", \"Imax\", \"Vargmax\" (branch).\n  - Value: the solution value (bus V; component P, Q as initialize gives them; for a\n    branch the larger of its two ends of |P|, |Q|, |S|, |I|, and |Varg_from - Varg_to|).\n  - Bound: the limit; Excess: |Value - Bound|.\n- `tab_PFcondition`, `cm_Y` and `sct_network` are the data the result was built from.",
+      "Desc": "Holds the bus voltages, currents and power injections of the solution, the branch flows,\nthe violated operating limits and the voltages at each iteration (or time step of the\n\"dynamic\" method). It is built from data only: the solution table, the bus admittance\nmatrix, a struct snapshot of the network (struct(net, false), no handles) and the\nsolver information. It keeps no reference to the network, so a later edit of the\nnetwork does not change it. The plot_* methods draw the voltage profile, the branch\nflows, the convergence, the network diagram (2D or 3D), a black-and-white single-line diagram for papers and a spring-mass picture of the bus phasors; the disp_* methods print tables, and get_summary returns the values of disp_summary. export writes the bus or\nbranch table (CSV, Excel) or the iteration history (JSON for the GridSpring viewer).\n\n- `tab_bus` has the bus tags as row names.\n- `tab_branch` has the branch tags as row names. \"from\" is the first bus of the branch,\n  \"to\" the second. From, To: the tags of these end buses. Pfrom, Qfrom, Pto, Qto: power flowing into the branch at each end;\n  Ifrom, Ito: current phasors into the branch; Ploss, Qloss: losses of the branch (sum\n  of both ends). The admittance of each branch is the field cm_Y of the branch in the\n  snapshot (Branch.struct adds it from get_admittance_matrix), so every branch class,\n  also one of your own, gets its flows.\n- `cm_Vhistory` has one column per iteration, or per ODE step (\"dynamic\").\n- `tab_violation` records the operating limits (tab_parameter.operation of the\n  snapshot) that the solution violates by more than Tolerance; the power flow itself\n  never applies them, and a violation gives no warning or error. One row per violated\n  limit, 0 rows when none (or when the calculation did not converge):\n  - Class: \"Bus\", \"Component\" or \"Branch\"; Object: its tag.\n  - Limit: the violated limit, e.g. \"Vmin\", \"Vmax\" (bus), \"Pmin\", \"Pmax\", \"Qmin\",\n    \"Qmax\" (component), \"Pmax\", \"Qmax\", \"Smax\", \"Imax\", \"Vargmax\" (branch).\n  - Value: the solution value (bus V; component P, Q as initialize gives them; for a\n    branch the larger of its two ends of |P|, |Q|, |S|, |I|, and |Varg_from - Varg_to|).\n  - Bound: the limit; Excess: |Value - Bound|.\n- `tab_PFcondition`, `cm_Y` and `sct_network` are the data the result was built from.",
       "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE14bus();\n[result, flag, output] = net.calculate_powerflow();\nresult.tab_bus           % Varg, V, P, Q, Vphasor, Iphasor of each bus\nresult.tab_branch        % flows and losses of each branch\nresult.tab_violation     % violated operating limits (0 rows when none)\nresult.disp_summary();           % outcome, sums, |V| range, violations\nsct = result.get_summary();      % the same values as a struct\nresult.disp_bus(Unit=\"SI\");      % bus table in kV, MW, Mvar\nresult.disp_branch(Sort=\"loss\"); % branch flows, largest loss first\nresult.disp_violation();         % violated operating limits by kind\nresult.plot_voltage();           % voltage profile with Vmin / Vmax\nresult.plot_branch(Quantity=\"loading\");   % |S| / Smax of each branch\nresult.plot_convergence(Bus=\"B014\");       % largest residual and |V| per iteration\nresult.plot_network(Color=\"V\", Arrow=\"P\");  % |V| colors and P flow arrows on the network\nresult.plot_spring_model();      % spring-mass picture of the bus phasors\nresult.plot_diagram();          % 3D network diagram of the solution\nresult.export(\"pf.csv\", Table=\"branch\");\n```\n\nSee also SolverPF, ResultBase, PowerNetwork.calculate_powerflow",
+      "Examples": "```matlab\nnet = network.IEEE14bus();\n[result, flag, output] = net.calculate_powerflow();\nresult.tab_bus           % Varg, V, P, Q, Vphasor, Iphasor of each bus\nresult.tab_branch        % flows and losses of each branch\nresult.tab_violation     % violated operating limits (0 rows when none)\nresult.disp_summary();           % outcome, sums, |V| range, violations\nsct = result.get_summary();      % the same values as a struct\nresult.disp_bus(Unit=\"SI\");      % bus table in kV, MW, Mvar\nresult.disp_branch(Sort=\"loss\"); % branch flows, largest loss first\nresult.disp_violation();         % violated operating limits by kind\nresult.plot_voltage();           % voltage profile with Vmin / Vmax\nresult.plot_branch(Quantity=\"loading\");   % |S| / Smax of each branch\nresult.plot_convergence(Bus=\"B014\");       % largest residual and |V| per iteration\nresult.plot_diagram(BusColorMode=\"V\", ColorMode=\"none\");  % buses colored by |V|, P flow dots\nresult.plot_single_line_diagram();  % black-and-white single-line diagram for a paper\nresult.plot_spring_model();      % spring-mass picture of the bus phasors\nresult.export(\"pf.csv\", Table=\"branch\");\n```\n\nSee also SolverPF, ResultBase, PowerNetwork.calculate_powerflow",
       "Deprecated": "",
       "Documented": true,
       "References": [],
@@ -4301,7 +4260,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 21,
-        "Total": 24
+        "Total": 25
       },
       "path": "./database/GUILDAsystem/ResultPF.js",
       "Image": ""
@@ -4311,13 +4270,15 @@ window.GUILDA_DOC_INDEX = {
       "Origin": "System",
       "Folder": "_GUILDAsystem/_auxiliary",
       "Category": "",
-      "Type": "other",
+      "Type": "auxiliary",
       "Model": "",
-      "Parent": "LayerPackage",
+      "Parent": "auxiliary, LayerPackage",
       "Superclasses": [
+        "auxiliary",
         "LayerPackage"
       ],
       "Ancestors": [
+        "auxiliary",
         "LayerPackage",
         "handle"
       ],
@@ -4390,7 +4351,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 11,
-        "Total": 11
+        "Total": 12
       },
       "path": "./database/GUILDAsystem/SolverCPF.js",
       "Image": ""
@@ -4430,7 +4391,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 5,
-        "Total": 5
+        "Total": 6
       },
       "path": "./database/GUILDAsystem/SolverLIN.js",
       "Image": ""
@@ -4470,7 +4431,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 17,
-        "Total": 17
+        "Total": 18
       },
       "path": "./database/GUILDAsystem/SolverODE.js",
       "Image": ""
@@ -4510,7 +4471,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 12,
-        "Total": 12
+        "Total": 13
       },
       "path": "./database/GUILDAsystem/SolverOPF.js",
       "Image": ""
@@ -4550,7 +4511,7 @@ window.GUILDA_DOC_INDEX = {
       },
       "MethodCount": {
         "Own": 4,
-        "Total": 4
+        "Total": 5
       },
       "path": "./database/GUILDAsystem/SolverPF.js",
       "Image": ""
@@ -5764,6 +5725,14 @@ window.GUILDA_DOC_INDEX = {
               "Method": "plot_diagram"
             },
             {
+              "Name": "plot_single_line_diagram.m",
+              "Kind": "file",
+              "Path": "_GUILDAsystem/@PowerNetwork/plot_single_line_diagram.m",
+              "Children": [],
+              "Class": "PowerNetwork",
+              "Method": "plot_single_line_diagram"
+            },
+            {
               "Name": "plot_spring_model.m",
               "Kind": "file",
               "Path": "_GUILDAsystem/@PowerNetwork/plot_spring_model.m",
@@ -5849,6 +5818,28 @@ window.GUILDA_DOC_INDEX = {
           "Kind": "folder",
           "Path": "_GUILDAsystem/_auxiliary",
           "Children": [
+            {
+              "Name": "@auxiliary",
+              "Kind": "folder",
+              "Path": "_GUILDAsystem/_auxiliary/@auxiliary",
+              "Children": [
+                {
+                  "Name": "auxiliary.m",
+                  "Kind": "file",
+                  "Path": "_GUILDAsystem/_auxiliary/@auxiliary/auxiliary.m",
+                  "Children": [],
+                  "Class": "auxiliary"
+                },
+                {
+                  "Name": "doc.m",
+                  "Kind": "file",
+                  "Path": "_GUILDAsystem/_auxiliary/@auxiliary/doc.m",
+                  "Children": [],
+                  "Class": "auxiliary",
+                  "Method": "doc"
+                }
+              ]
+            },
             {
               "Name": "@DrawerGUILDA",
               "Kind": "folder",
@@ -7235,6 +7226,14 @@ window.GUILDA_DOC_INDEX = {
                   "Method": "color_percentile"
                 },
                 {
+                  "Name": "color_readout.m",
+                  "Kind": "file",
+                  "Path": "_GUILDAsystem/_auxiliary/@GraphNetDiagram/color_readout.m",
+                  "Children": [],
+                  "Class": "GraphNetDiagram",
+                  "Method": "color_readout"
+                },
+                {
                   "Name": "color_values.m",
                   "Kind": "file",
                   "Path": "_GUILDAsystem/_auxiliary/@GraphNetDiagram/color_values.m",
@@ -7512,108 +7511,6 @@ window.GUILDA_DOC_INDEX = {
                   "Children": [],
                   "Class": "GraphNetDiagram",
                   "Method": "validate"
-                }
-              ]
-            },
-            {
-              "Name": "@GraphNetMap",
-              "Kind": "folder",
-              "Path": "_GUILDAsystem/_auxiliary/@GraphNetMap",
-              "Children": [
-                {
-                  "Name": "apply_selection.m",
-                  "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@GraphNetMap/apply_selection.m",
-                  "Children": [],
-                  "Class": "GraphNetMap",
-                  "Method": "apply_selection"
-                },
-                {
-                  "Name": "apply_style.m",
-                  "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@GraphNetMap/apply_style.m",
-                  "Children": [],
-                  "Class": "GraphNetMap",
-                  "Method": "apply_style"
-                },
-                {
-                  "Name": "click_at.m",
-                  "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@GraphNetMap/click_at.m",
-                  "Children": [],
-                  "Class": "GraphNetMap",
-                  "Method": "click_at"
-                },
-                {
-                  "Name": "control_list.m",
-                  "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@GraphNetMap/control_list.m",
-                  "Children": [],
-                  "Class": "GraphNetMap",
-                  "Method": "control_list"
-                },
-                {
-                  "Name": "create_scene.m",
-                  "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@GraphNetMap/create_scene.m",
-                  "Children": [],
-                  "Class": "GraphNetMap",
-                  "Method": "create_scene"
-                },
-                {
-                  "Name": "element_table.m",
-                  "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@GraphNetMap/element_table.m",
-                  "Children": [],
-                  "Class": "GraphNetMap",
-                  "Method": "element_table"
-                },
-                {
-                  "Name": "get_layout.m",
-                  "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@GraphNetMap/get_layout.m",
-                  "Children": [],
-                  "Class": "GraphNetMap",
-                  "Method": "get_layout"
-                },
-                {
-                  "Name": "GraphNetMap.m",
-                  "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@GraphNetMap/GraphNetMap.m",
-                  "Children": [],
-                  "Class": "GraphNetMap"
-                },
-                {
-                  "Name": "load_data.m",
-                  "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@GraphNetMap/load_data.m",
-                  "Children": [],
-                  "Class": "GraphNetMap",
-                  "Method": "load_data"
-                },
-                {
-                  "Name": "set_position.m",
-                  "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@GraphNetMap/set_position.m",
-                  "Children": [],
-                  "Class": "GraphNetMap",
-                  "Method": "set_position"
-                },
-                {
-                  "Name": "style_properties.m",
-                  "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@GraphNetMap/style_properties.m",
-                  "Children": [],
-                  "Class": "GraphNetMap",
-                  "Method": "style_properties"
-                },
-                {
-                  "Name": "update_scene.m",
-                  "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@GraphNetMap/update_scene.m",
-                  "Children": [],
-                  "Class": "GraphNetMap",
-                  "Method": "update_scene"
                 }
               ]
             },
@@ -7912,14 +7809,6 @@ window.GUILDA_DOC_INDEX = {
                   "Method": "disp_tree"
                 },
                 {
-                  "Name": "doc.m",
-                  "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@LayerPackage/doc.m",
-                  "Children": [],
-                  "Class": "LayerPackage",
-                  "Method": "doc"
-                },
-                {
                   "Name": "gui_content.m",
                   "Kind": "file",
                   "Path": "_GUILDAsystem/_auxiliary/@LayerPackage/gui_content.m",
@@ -8168,6 +8057,14 @@ window.GUILDA_DOC_INDEX = {
               "Path": "_GUILDAsystem/_auxiliary/@PowerSystemModel",
               "Children": [
                 {
+                  "Name": "doc.m",
+                  "Kind": "file",
+                  "Path": "_GUILDAsystem/_auxiliary/@PowerSystemModel/doc.m",
+                  "Children": [],
+                  "Class": "PowerSystemModel",
+                  "Method": "doc"
+                },
+                {
                   "Name": "get_Hz.m",
                   "Kind": "file",
                   "Path": "_GUILDAsystem/_auxiliary/@PowerSystemModel/get_Hz.m",
@@ -8326,6 +8223,13 @@ window.GUILDA_DOC_INDEX = {
                       "Class": "ResultCPF"
                     },
                     {
+                      "Name": "pair_pvcurve.m",
+                      "Kind": "file",
+                      "Path": "_GUILDAsystem/_auxiliary/@ResultCPF/private/pair_pvcurve.m",
+                      "Children": [],
+                      "Class": "ResultCPF"
+                    },
+                    {
                       "Name": "step_sample.m",
                       "Kind": "file",
                       "Path": "_GUILDAsystem/_auxiliary/@ResultCPF/private/step_sample.m",
@@ -8373,6 +8277,14 @@ window.GUILDA_DOC_INDEX = {
                   "Children": [],
                   "Class": "ResultCPF",
                   "Method": "plot_generator"
+                },
+                {
+                  "Name": "plot_pqv.m",
+                  "Kind": "file",
+                  "Path": "_GUILDAsystem/_auxiliary/@ResultCPF/plot_pqv.m",
+                  "Children": [],
+                  "Class": "ResultCPF",
+                  "Method": "plot_pqv"
                 },
                 {
                   "Name": "plot_pvcurve.m",
@@ -8425,6 +8337,20 @@ window.GUILDA_DOC_INDEX = {
                       "Class": "ResultLIN"
                     },
                     {
+                      "Name": "contribution_part.m",
+                      "Kind": "file",
+                      "Path": "_GUILDAsystem/_auxiliary/@ResultLIN/private/contribution_part.m",
+                      "Children": [],
+                      "Class": "ResultLIN"
+                    },
+                    {
+                      "Name": "datatip_wrap.m",
+                      "Kind": "file",
+                      "Path": "_GUILDAsystem/_auxiliary/@ResultLIN/private/datatip_wrap.m",
+                      "Children": [],
+                      "Class": "ResultLIN"
+                    },
+                    {
                       "Name": "default_port.m",
                       "Kind": "file",
                       "Path": "_GUILDAsystem/_auxiliary/@ResultLIN/private/default_port.m",
@@ -8470,6 +8396,13 @@ window.GUILDA_DOC_INDEX = {
                       "Name": "section_list.m",
                       "Kind": "file",
                       "Path": "_GUILDAsystem/_auxiliary/@ResultLIN/private/section_list.m",
+                      "Children": [],
+                      "Class": "ResultLIN"
+                    },
+                    {
+                      "Name": "section_model.m",
+                      "Kind": "file",
+                      "Path": "_GUILDAsystem/_auxiliary/@ResultLIN/private/section_model.m",
                       "Children": [],
                       "Class": "ResultLIN"
                     },
@@ -8667,6 +8600,13 @@ window.GUILDA_DOC_INDEX = {
                       "Class": "ResultODE"
                     },
                     {
+                      "Name": "draw_with_chart.m",
+                      "Kind": "file",
+                      "Path": "_GUILDAsystem/_auxiliary/@ResultODE/private/draw_with_chart.m",
+                      "Children": [],
+                      "Class": "ResultODE"
+                    },
+                    {
                       "Name": "output_trajectory.m",
                       "Kind": "file",
                       "Path": "_GUILDAsystem/_auxiliary/@ResultODE/private/output_trajectory.m",
@@ -8737,6 +8677,14 @@ window.GUILDA_DOC_INDEX = {
                   "Children": [],
                   "Class": "ResultODE",
                   "Method": "plot_diagram"
+                },
+                {
+                  "Name": "plot_pqv.m",
+                  "Kind": "file",
+                  "Path": "_GUILDAsystem/_auxiliary/@ResultODE/plot_pqv.m",
+                  "Children": [],
+                  "Class": "ResultODE",
+                  "Method": "plot_pqv"
                 },
                 {
                   "Name": "plot_spring_model.m",
@@ -9018,12 +8966,12 @@ window.GUILDA_DOC_INDEX = {
                   "Method": "plot_diagram"
                 },
                 {
-                  "Name": "plot_network.m",
+                  "Name": "plot_single_line_diagram.m",
                   "Kind": "file",
-                  "Path": "_GUILDAsystem/_auxiliary/@ResultPF/plot_network.m",
+                  "Path": "_GUILDAsystem/_auxiliary/@ResultPF/plot_single_line_diagram.m",
                   "Children": [],
                   "Class": "ResultPF",
-                  "Method": "plot_network"
+                  "Method": "plot_single_line_diagram"
                 },
                 {
                   "Name": "plot_spring_model.m",
@@ -9670,13 +9618,6 @@ window.GUILDA_DOC_INDEX = {
                   "Children": []
                 }
               ]
-            },
-            {
-              "Name": "auxiliary.m",
-              "Kind": "file",
-              "Path": "_GUILDAsystem/_auxiliary/auxiliary.m",
-              "Children": [],
-              "Class": "auxiliary"
             },
             {
               "Name": "GraphEventData.m",
@@ -12447,16 +12388,16 @@ window.GUILDA_DOC_INDEX = {
   ],
   "coverage": {
     "Classes": {
-      "Documented": 102,
-      "Total": 102
+      "Documented": 101,
+      "Total": 101
     },
     "Properties": {
-      "Documented": 414,
-      "Total": 414
+      "Documented": 408,
+      "Total": 408
     },
     "Methods": {
-      "Documented": 456,
-      "Total": 465
+      "Documented": 457,
+      "Total": 466
     }
   },
   "validation": {
@@ -12745,11 +12686,6 @@ window.GUILDA_DOC_INDEX = {
       },
       {
         "ClassName": "GraphNetDiagram",
-        "Warnings": [],
-        "Errors": []
-      },
-      {
-        "ClassName": "GraphNetMap",
         "Warnings": [],
         "Errors": []
       },

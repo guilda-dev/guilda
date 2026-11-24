@@ -1,5 +1,71 @@
 const updateLogData = [
   {
+    "title": "PV curves beside the continuation power flow plots, and P-Q-V plots",
+    "date": "2026-11-23",
+    "type": "feature",
+    "content": "The network diagram, the spring model, the stability index, the generator and the branch plots of a continuation power flow result now draw the PV curves with them by default, already linked, so the step shown is marked on the curves: on the right third of the window for the network diagram and the spring model, and as an extra panel on top that shares the lambda axis for the other three charts. The options PVCurve (false draws the plot alone as before) and PVBus (the buses of the curves, by default the load buses) control them, and a second output returns the PV chart. The stability index plot now says what it shows: the smallest singular value of the power flow Jacobian, which is 0 at the nose, with the participation of the buses in the critical mode; the help explains how to read it. The new plot_pqv of continuation power flow and time simulation results draws the path of each bus in active power, reactive power and voltage magnitude as 3D lines, with a marker at the step or time shown."
+  },
+  {
+    "title": "Chart data tips name the line they belong to",
+    "date": "2026-11-23",
+    "type": "feature",
+    "content": "The data tips of the charts returned by plot_trajectory, plot_voltage, plot_iteration and the other chart plot methods, and of the side chart of plot_diagram and plot_spring_model, now start with the name of the element: the legend entry of the line or marker set, or its tag (for example the bus or generator) when it has none, and the tag of each bar. The x and y values below it, and z in a 3D panel, are labeled with the axis labels of the panel, for example \"t [s]\" and \"|V| [pu]\", instead of X and Y. The data tips stay right while the time shown changes or the chart is drawn again. Clicking a line still raises ElementClicked as before."
+  },
+  {
+    "title": "Bus voltage colors in plot_diagram and a single-line diagram for papers",
+    "date": "2026-11-23",
+    "type": "feature",
+    "content": "ResultPF.plot_network is replaced by plot_diagram. The new option BusColorMode of plot_diagram colors the buses by the voltage magnitude (\"V\") or the voltage angle in degrees (\"angle\"); the colorbar then shows that quantity, and the branch colors of ColorMode return when BusColorMode is \"none\" again (the default). For the map plot_network drew, write res.plot_diagram(BusColorMode=\"V\", ColorMode=\"none\"): the buses are colored by |V| and the dots and widths of the branches show the power flow. BusColorMode follows the time of a simulation result, can be chosen in the panel of show_controls, and the data tips and the \"value\" labels of the buses show the colored value. The new plot_single_line_diagram of a network or of a power flow result draws a black-and-white single-line diagram for a paper with the layout of plot_diagram: buses as thick bars or dots, thin lines, transformers as two circles, generators as a circle with a sine wave, loads as triangles and the bus names as labels, without colors, colorbar, title or controls. Without Parent it opens a figure 8.5 cm wide, the width of one column of a two-column paper, ready for exportgraphics. In a 3D diagram with bus heights, the z axis label is no longer cut at the left edge of the figure."
+  },
+  {
+    "title": "plot_iteration of an OPF result draws one chart",
+    "date": "2026-11-23",
+    "type": "feature",
+    "content": "plot_iteration of an AC OPF result now draws only the chart of the iterations and returns it: write G = res.plot_iteration() instead of [G_chart, G_net] = res.plot_iteration(). The four panels (objective, largest constraint violation, generator P and bus |V|) are as before; the network diagram of each iteration and its playback bar are gone. G.set_time(k) moves the cursor of every panel and the title to iteration k, and each line is found by its tag in G.tab_element. In the result window (launch_gui), plot_iteration no longer plays by itself."
+  },
+  {
+    "title": "Every GUILDA object opens its class reference page",
+    "date": "2026-11-23",
+    "type": "feature",
+    "content": "The doc method of a network, bus, branch, component or controller, which opens the GUILDA reference page of its class in the browser, now works on the other GUILDA objects too: analysis results, solvers, solver methods, graphs, GUI windows, scenarios, events and parameter groups. For example, the result of a power flow calculation opens the page of its result class."
+  },
+  {
+    "title": "Time responses beside the animated simulation plots",
+    "date": "2026-11-22",
+    "type": "feature",
+    "content": "plot_diagram and plot_spring_model of a time simulation result now draw a side chart of a time response on the right of the animated figure, with a line that marks the time shown: the voltage magnitude of all buses for plot_diagram and the generator speed (omega) for plot_spring_model. The new option Trajectory chooses another quantity, as Quantity of plot_trajectory (for example \"Vangle\", \"P\" or a state name), and Trajectory=\"none\" draws the figure alone as before; drawing into a given axes also draws the figure alone. Write [G, G_chart] = res.plot_diagram() to get the side chart too. The playback bar of the figure moves the line of the side chart. The playback bar now appears only on figures whose drawing changes with time, such as network diagrams, spring models and eigenvalue plots of several sections; charts in which time only moves a cursor, such as plot_trajectory, the power flow convergence, the continuation power flow charts and the OPF iteration chart, have no bar of their own but still follow set_time, play, animate and the bar of a linked figure. In plot_iteration the bar is now below the network diagram. In the result window (launch_gui), the first figure with a playback bar starts playing by itself, also for the plot shown when the window opens."
+  },
+  {
+    "title": "Bus heights of 3D network diagrams stand on a floor",
+    "date": "2026-11-22",
+    "type": "feature",
+    "content": "In a 3D network diagram (plot_diagram with Dimension=\"3D\") with a BusHeightMode other than \"none\", the heights are now easy to read. Each bus stands on a thin post down to a light floor with a grid, the branches and links cast shadows on the floor, a translucent plane marks the reference value (|V| = 1 pu for \"V\", 0 for \"angle\", \"Vimag\", \"P\" and \"Q\"), and the z axis shows the values and the quantity, for example \"|V| [pu]\". The heights are scaled about the reference so that the values of all times fill a quarter of the drawing, and the floor and the scale stay the same while you move the time of a simulation result, so the posts can be compared across times. The diagram first looks at the heights from an oblique angle instead of from the top. The floor, posts, shadows and plane cannot be clicked and have no data tips. 2D diagrams and 3D diagrams with BusHeightMode \"none\" do not change."
+  },
+  {
+    "title": "Network diagrams show the value behind each color",
+    "date": "2026-11-22",
+    "type": "feature",
+    "content": "On a network diagram (plot_diagram, plot_lmp and the other maps colored by a value), the data tip of a bus, branch or component now has one line with the value that colors it, named as the colorbar, for example \"LMP [cost/pu] = 12.34\" or \"Loss [pu] = 0.04298\", after a small square of its color. With LabelMode \"value\", the labels of the buses and components also end with that value, and they follow the time shown and any color values set while the diagram plays. Elements without a value get no line."
+  },
+  {
+    "title": "GraphChart draws 3D panels",
+    "date": "2026-11-22",
+    "type": "feature",
+    "content": "A panel of the data of GraphChart can now be 3D: set l_3d = true in sct_panel (with s_zlabel and rv_zlim if needed) and give each line or marker series of the panel z values in rm_z, the size of rm_y. The panel draws one 3D line per column, for example P, Q and |V| of each bus, in a 3D view that you turn by dragging it or with the rotate button of the axes toolbar; clicking a line still raises ElementClicked. The automatic limits include z. A 3D time panel shows a marker at the point (x, y, z) of each line for the sample shown, so it follows set_time, the playback bar and a linked graph such as a 2D chart. iv_sample, the legend, colors, set_style and select work as in a 2D panel. Bars, reference lines and series without rm_z cannot go in a 3D panel, and rm_z in a 2D panel is an error (GUILDA:GraphChart:Panel3D), as is the line cursor (s_cursor \"line\") in a 3D time panel. Charts without 3D panels do not change."
+  },
+  {
+    "title": "Select... for the targets of the linearization result forms",
+    "date": "2026-11-22",
+    "type": "feature",
+    "content": "In the result window of a linearization (res.launch_gui()), the forms of get_contribution, get_reduced_matrix and plot_reduced_matrix now have a Select... button beside target. It opens a searchable table of the elements of the result (their tags and classes) and of their classes, and writes the rows chosen into the field, several at a time. The table is read only when the button is pressed, so the forms open as fast as before. When the result has no elements to list, a message says so and the field does not change."
+  },
+  {
+    "title": "Time simulations use a tighter default relative tolerance",
+    "date": "2026-11-21",
+    "type": "fix",
+    "content": "The default relative tolerance of time simulations is now 1e-6 instead of 1e-4; the absolute tolerance (1e-6) and the largest step (the solver default) do not change. With the looser tolerance, a long run in which the frequency does not return, such as a network without governors after a change of mechanical power, could stop partway with a message that the solver cannot meet the tolerance; it now runs to the end, and in our tests it takes about the same time. Results change slightly, by up to about 0.02 in the states of our test cases, about the error of the old default. At the first startup after the update, GUILDA shows the information message GUILDA:GUILDA:ConfigReset once and every time simulation setting (the tolerances, the solver, the progress display and the others) returns to its default; set again any of them you had changed."
+  },
+  {
     "title": "Quieter path setup and the verification folder on the path",
     "date": "2026-11-21",
     "type": "feature",
