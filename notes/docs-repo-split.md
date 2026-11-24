@@ -111,7 +111,8 @@ guilda の `_GUILDAdocPages` の gitlink は、サブモジュールのコミッ
    - `git -C _GUILDAdocPages push --force origin HEAD:gh-pages`
    Pages の設定（`gh-pages` / root の legacy 配信）はそのままで新しいサイトに切り替わります。代わりに Settings → Pages を `main` / root に切り替える方法もあり、その場合は `gh-pages` を削除できます（以後の更新は main だけで済みます）。gh-pages のままにする場合は、以後の更新も両方へ送ります。
 3. サブモジュールを main に乗り換えます: `git -C _GUILDAdocPages fetch origin && git -C _GUILDAdocPages switch main && git -C _GUILDAdocPages reset --hard origin/main`（ローカルの `main` は clone のときの古い MkDocs の main なので、origin に合わせます）。
-4. guilda-doc-preview を削除します（Settings → Danger Zone → Delete this repository）。
+4. guilda の `_GUILDAdoc` のリンクを本番に戻します。レビューの間は guilda-doc-preview を指しています（`_GUILDAdoc/index.html` の転送とヘッダーの 4 つのタブ、`developer/folder-structure.html`、`developer/git-workflow.html`）。guilda-doc が新しいサイトを配信するようになったら、これらを `https://guilda-dev.github.io/guilda-doc/` に戻して `publish_doc` を実行します。プレビュー用リポジトリを削除する前に行います。
+5. guilda-doc-preview を削除します（Settings → Danger Zone → Delete this repository）。
 
 ### 5.4 guilda 側
 
