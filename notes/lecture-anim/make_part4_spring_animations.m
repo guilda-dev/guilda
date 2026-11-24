@@ -2,11 +2,12 @@ function make_part4_spring_animations(opt)
 % Make the spring-mass animations of the Part 4 lecture notes (part4-spring-mass-model.html).
 %
 % All cases use network.Tutorial6bus (four classical generators, G3 and G4 run as motors,
-% 50 Hz) and only GUILDA itself: Scenario events, net.simulate and plot_spring_model of the
-% result, with plot_trajectory-style charts below that follow the time (link). They are
-% the scenarios of the spring-mass presentation at IEEJ 2026.
+% 50 Hz) and only GUILDA itself: Scenario events, net.simulate, plot_spring_model and
+% plot_trajectory of the result. They are the scenarios of the spring-mass presentation
+% at IEEJ 2026.
 %
-% Writes into _GUILDAdocPages/images/lecture/part4/ (or OutDir), each with a -poster.png:
+% Writes into _GUILDAdocPages/images/lecture/part4/ (or OutDir), each with a -poster.png
+% (the last frame):
 %   swing-no-governor.mp4   (1) at t = 1 s G3 and G4 take 0.1 pu more, no governor:
 %                               the frequency deviation stays
 %   swing-governor.mp4      (2) the same with governors (gov-LPT3) and an integral
@@ -14,74 +15,101 @@ function make_part4_spring_animations(opt)
 %   swing-out-of-step.mp4   (3) at t = 1 s G3 and G4 take 0.3 pu more, governors without
 %                               integral, no damping on the motors: G3 and G4 fall out of
 %                               step; each is tripped when it has stopped (speed 0); the
-%                               video ends at t = 8 s, shortly after both have stopped
-%   voltage-collapse.mp4    (4) G4 replaced by a constant-power load L4; from t = 1 s G3 and
+%                               result and the video end at t = 8 s, shortly after both
+%                               have stopped
+%   swing-voltage-collapse.mp4  (4) G4 replaced by a load L4 at bus 4; from t = 1 s G3 and
 %                               L4 take more and more (ramp to 0.3 pu at 20 s), governors and
-%                               integral on G1 and G2: the voltage at bus 4 collapses; the
-%                               phasor plane (left) and the surface z = log|V| (right)
-%   swing-voltage-collapse-3d.gif  the same case on the surface z = log|V| only, as a small
-%                               GIF at 10 frames/s for the About tab of index.html (no poster)
+%                               integral on G1 and G2. With L4 as a constant-power load
+%                               the solver stops at the collapse (t = 7.29 s). The video
+%                               shows a second run in which L4 is an impedance load
+%                               (load-impedance) whose R and X are given by add_input: up to
+%                               3 samples before that stop the impedance of L4 in the first
+%                               run, then an admittance that keeps growing at its last
+%                               relative rate (exponentially, same angle).
+%                               It ends when |V| of bus 4 is 0.07 pu; the last frame is held
+%                               for 3 s. Left: the phasor plane and, below it,
+%                               plot_trajectory of |V| of the buses and of P of bus 4 (the
+%                               power L4 receives); right: the surface z = log|V|.
 %
-% The node labels are G1-G4 (and L4), the springs are thin, the tick text of the polar grid
-% (ShowTickLabel) and the legend of the arrows are hidden, the Iq arrows are shown only in
-% the voltage collapse (ArrowScaleQ = 0 in the others), and the time is in the title. Each
-% frame is printed at a fixed size, all frames are cropped to one box, and the video is
-% encoded by ffmpeg (H.264, yuv420p, faststart) when it is installed, otherwise by
-% VideoWriter (MPEG-4).
+% Cases 1-3 are the default drawing [G, G_chart] = result.plot_spring_model(): the picture
+% on the left and the side chart of the omega of the generators on the right, in the
+% figure of 1400 x 600 px that GUILDA makes. Styling: labels G1-G4 with the colors of the
+% generators (in the chart as well), thin springs, no tick text on the polar grid
+% (ShowTickLabel), no legend of the arrows, P arrows only (ArrowScaleQ = 0; the voltage
+% collapse keeps the Iq arrows). The time is the title of the picture (GUILDA's own title;
+% in case 4 the title of the phasor plane, with |V| of bus 4). The playback bar of the picture
+% is interactive: it is hidden (the picture takes its strip, as in export_video) and the
+% axes toolbars are hidden. Each frame is taken with getframe, and the video is encoded by
+% ffmpeg (H.264, yuv420p, faststart, scaled to the figure size in pixels).
 %
-% Run after GUILDA (the path) with R2026a:
+% Run after GUILDA (the path) with R2026a, with ffmpeg installed:
 %   addpath("notes/lecture-anim"); make_part4_spring_animations();
 %   make_part4_spring_animations(Case="governor");   % one case only
     arguments (Input)
         opt.OutDir (1,1) string = ""          % Output folder; "" for _GUILDAdocPages/images/lecture/part4.
-        opt.Case (1,:) string {mustBeMember(opt.Case, ["no-governor", "governor", "out-of-step", "voltage-collapse", "voltage-collapse-3d"])} ...
-            = ["no-governor", "governor", "out-of-step", "voltage-collapse", "voltage-collapse-3d"]  % Cases to make.
-        opt.Resolution (1,1) double {mustBePositive} = 160     % [dpi] Resolution of the frames.
+        opt.Case (1,:) string {mustBeMember(opt.Case, ["no-governor", "governor", "out-of-step", "voltage-collapse"])} ...
+            = ["no-governor", "governor", "out-of-step", "voltage-collapse"]  % Cases to make.
     end
     s_out = opt.OutDir;
     if s_out == ""
         s_root = fileparts(fileparts(fileparts(mfilename("fullpath"))));   % notes/lecture-anim -> notes -> root
         s_out = fullfile(s_root, "_GUILDAdocPages", "images", "lecture", "part4");
     end
+    rm_color = [0.85 0.15 0.10; 0 0 0.85; 0.15 0.60 0.10; 0 0 0];   % G1 red, G2 blue, G3 green, G4 black
     for s_case = opt.Case
         [res, sct] = simulate_case(s_case);
-        if s_case == "voltage-collapse-3d"
-            % the funnel only, small, for the About tab
-            fig = new_figure([11, 10.5]);
-            tl = tiledlayout(fig, 1, 1, Padding="tight");
-            G3 = res.plot_spring_model(Dimension=3, Parent=nexttile(tl));
-            style_spring(G3, sct);
-            G3.RMin = 0.3;                  % a shallow funnel: the nodes fill more of the picture
-            rv_frame = 0:0.1:res.rv_t(end); % real time at 10 frames/s
-            opt_gif = opt;
-            opt_gif.Resolution = 110;       % about 470 pixels wide, the slot of the About tab
-            write_animation(fig, {G3}, rv_frame, 10, @(t) sprintf("t = %.1f s", t), fullfile(s_out, "swing-" + s_case), "gif", opt_gif);
-            continue
-        end
+        n_gen = numel(sct.sv_gen);
         if s_case == "voltage-collapse"
-            fig = new_figure([24, 13]);
-            tl = tiledlayout(fig, 6, 5, TileSpacing="compact", Padding="compact");
-            ax = nexttile(tl, 1, [4 2]);
-            ax3 = nexttile(tl, 3, [6 3]);
-            c_ax = {nexttile(tl, 21, [1 2]), nexttile(tl, 26, [1 2])};
-        else
-            fig = new_figure([11, 13]);
-            tl = tiledlayout(fig, 6, 1, TileSpacing="compact", Padding="compact");
-            ax = nexttile(tl, [4 1]);
-            c_ax = {nexttile(tl), nexttile(tl)};
-        end
-        G = res.plot_spring_model(Parent=ax);
-        style_spring(G, sct);
-        c_G = {G};
-        if s_case == "voltage-collapse"
-            G3 = res.plot_spring_model(Dimension=3, Parent=ax3);
-            style_spring(G3, sct);
+            % left: the phasor plane above two charts of plot_trajectory; right: the funnel
+            fig = figure(Color="w", Position=[100 100 1400 800]);
+            f_panel = @(rv_pos) uipanel(fig, Units="normalized", Position=rv_pos, BorderType="none", BackgroundColor="w");
+            G = res.plot_spring_model(Trajectory="none", Parent=f_panel([0 0.34 0.5 0.66]));
+            G3 = res.plot_spring_model(Dimension=3, Trajectory="none", Parent=f_panel([0.5 0 0.5 1]));
+            c_chart = {res.plot_trajectory(Quantity="Vabs", Parent=f_panel([0 0 0.25 0.34])), ...
+                       res.plot_trajectory(Quantity="P", Bus="B004", Parent=f_panel([0.25 0 0.25 0.34]))};
+            c_G = {G, G3};
+            sv_chartTitle = ["|V| of the buses", "P of bus 4 (L4)"];
+            for k = 1:2
+                title(c_chart{k}.ax, sv_chartTitle(k));
+            end
+            sv_bus = "B00" + (1:6)';
+            rm_busColor = [rm_color; 0.55 0.55 0.55; 0.55 0.55 0.55];   % buses 5 and 6 grey
+            for i = 1:6
+                c_chart{1}.set_style(sv_bus(i), Color=rm_busColor(i, :));
+            end
+            c_chart{2}.set_style("B004", Color=[0 0 0]);
+            legend(c_chart{2}.ax, "off");
             G.link(G3);
-            c_G{end+1} = G3; %#ok<AGROW>
+            for k = 1:2
+                G.link(c_chart{k});
+            end
+            tab_V = res.get_trajectory("Vabs");
+            [rv_tV, iv_u] = unique(tab_V.t, "last");     % the times of the events appear twice
+            f_title = @(t) sprintf("t = %.2f s     |V_4| = %.2f pu", t, interp1(rv_tV, tab_V.B004(iv_u), t));
+            r_hold = 3;
+        else
+            [G, G_chart] = res.plot_spring_model();     % the default drawing: picture and side chart
+            c_G = {G};
+            for i = 1:n_gen
+                G_chart.set_style(sct.sv_gen(i), Label=sct.sv_label(i), Color=rm_color(i, :));
+            end
+            fig = ancestor(G.ax(1), "figure");
+            f_title = [];               % the title of the picture: t = ... s
+            r_hold = 1.5;
         end
-        add_charts(G, res, sct, c_ax);
-        rv_frame = 0:0.05:min(res.rv_t(end), sct.r_tEnd);    % real time at 20 frames/s
-        write_animation(fig, c_G, rv_frame, 20, sct.f_title, fullfile(s_out, "swing-" + s_case), "mp4", opt);
+        for k = 1:numel(c_G)
+            style_spring(c_G{k}, sct, rm_color);
+        end
+        % the playback bar (interactive) and the axes toolbars are not part of the frames
+        set(findall(fig, "Tag", "GUILDA:GraphBase:PlaybackBar"), Visible="off");
+        for ax = findall(fig, "Type", "axes")'
+            ax.Toolbar.Visible = "off";
+        end
+        rv_frame = 0:0.05:res.rv_t(end);       % real time at 20 frames/s
+        if rv_frame(end) < res.rv_t(end) - 1e-9
+            rv_frame(end+1) = res.rv_t(end); %#ok<AGROW>
+        end
+        write_animation(fig, c_G, rv_frame, 20, r_hold, f_title, fullfile(s_out, "swing-" + s_case));
     end
 end
 
@@ -92,14 +120,11 @@ function [res, sct] = simulate_case(s_case)
     end
     arguments (Output)
         res  % ResultODE.
-        sct (1,1) struct  % Drawing data: sv_gen, sv_label, rm_color, f_title, sv_load, r_tEnd, s_legend.
+        sct (1,1) struct  % Drawing data: sv_gen, sv_label, sv_load.
     end
     net = network.Tutorial6bus();
     sct.sv_gen = "B00" + (1:4)' + "SG1";
     sct.sv_load = strings(0, 1);
-    sct.f_title = @(t) sprintf("t = %.2f s", t);
-    sct.r_tEnd = 20;        % [s] end of the video and of the time axes
-    sct.s_legend = "northeast";   % location of the legend of the frequency chart
     % droop 5 %, first-order lag 3 s, no rate or position limit: Pm = (Pref - 20 omega)/(1 + 3s)
     sct_gov = struct(Prate=1, PLM=1000, droop=5, Tg=0, Ts=3, ...
         rate_max=Inf, rate_min=-Inf, pos_max=Inf, pos_min=-Inf);
@@ -134,12 +159,11 @@ function [res, sct] = simulate_case(s_case)
                 k = find(rv_w <= -1, 1);
                 sc.add_trip(sct.sv_gen(i), interp1(rv_w(k-1:k), tab.t(k-1:k), -1));
             end
-            % second run: the stopped motors are tripped
-            res = net.simulate("scenario", Progress="none", StopOnOutOfStep=false, MaxStep=0.005, SampleTime=0.01);
-            sct.r_tEnd = 8;     % shortly after both motors have stopped (7.6 s)
-            sct.s_legend = "none";   % no free corner (the lines have the colors of the nodes)
+            % second run: the stopped motors are tripped; it ends at t = 8 s, shortly after
+            % both have stopped (7.6 s), so that the chart spans the video
+            res = net.simulate("scenario", Time=[0, 8], Progress="none", StopOnOutOfStep=false, MaxStep=0.005, SampleTime=0.01);
 
-        case {"voltage-collapse", "voltage-collapse-3d"}
+        case "voltage-collapse"
             net.a_Bus{4}.remove_component("B004SG1");
             ld = net.a_Bus{4}.add_component("load-power", P=-0.8, Q=-0.2);
             add_governors(net, sct_gov, true);
@@ -148,13 +172,40 @@ function [res, sct] = simulate_case(s_case)
             sc.add_input("B003SG1", "Pmech", rm_ramp, [1, 20]);
             sc.add_input(ld.s_tag, "Pload", rm_ramp, [1, 20]);
             sct_warn = warning("off");           % the solver stops at the collapse
-            res = net.simulate("scenario", Progress="none", SampleTime=0.01);
+            res1 = net.simulate("scenario", Progress="none", SampleTime=0.01);
             warning(sct_warn);
+
+            % the admittance at which L4 took its power: Y = -conj(S)/|V|^2
+            tab_P = res1.get_trajectory("Pload");
+            tab_Q = res1.get_trajectory("Qload");
+            tab_V = res1.get_trajectory("Vabs");
+            [rv_t, iv_u] = unique(tab_P.t);
+            rv_Y = -(tab_P{iv_u, 2} - 1j*tab_Q{iv_u, 2}) ./ tab_V.B004(iv_u).^2;
+            k_end = numel(rv_t) - 3;             % 3 samples before the stop (t = 7.26 s)
+            r_rate = log(abs(rv_Y(k_end)) / abs(rv_Y(k_end - 3))) / (rv_t(k_end) - rv_t(k_end - 3));   % [1/s] relative rate
+            rv_tIn = (0:0.01:19)';               % [s from t = 1] the points of the input
+            rv_YIn = interp1(rv_t(1:k_end), rv_Y(1:k_end), 1 + rv_tIn);
+            iv_next = 1 + rv_tIn > rv_t(k_end);
+            rv_YIn(iv_next) = rv_Y(k_end) * exp(r_rate*(1 + rv_tIn(iv_next) - rv_t(k_end)));
+            rv_dZ = 1 ./ rv_YIn - 1 / rv_Y(1);  % added to the impedance of the equilibrium
+
+            % second run: L4 an impedance load driven by R and X; the same Pmech ramp of G3
+            net.a_Bus{4}.remove_component(ld.s_tag);
+            ld = net.a_Bus{4}.add_component("load-impedance", P=-0.8, Q=-0.2);
+            net.initialize();
+            sc = net.add_scenario("impedance", Time=[0, 20]);
+            sc.add_input("B003SG1", "Pmech", rm_ramp, [1, 20]);
+            sc.add_input(ld.s_tag, ["R"; "X"], [rv_tIn, real(rv_dZ), imag(rv_dZ)], [1, 20]);
+            res = net.simulate("impedance", Progress="none", SampleTime=0.01);
+            tab_V = res.get_trajectory("Vabs");
+            k = find(tab_V.B004 <= 0.07, 1);     % end when bus 4 is at 0.07 pu
+            r_tEnd = round(interp1(tab_V.B004(k-1:k), tab_V.t(k-1:k), 0.07), 2);
+            fprintf("voltage-collapse: first run stops at t = %.3f s; impedance from t = %.2f s; |V4| = %.2f pu at 7.75 s; end at %.2f s\n", ...
+                tab_P.t(end), rv_t(k_end), tab_V.B004(find(tab_V.t >= 7.75, 1)), r_tEnd);
+            res = net.simulate("impedance", Time=[0, r_tEnd], Progress="none", SampleTime=0.01);
             sct.sv_gen = sct.sv_gen(1:3);
             sct.sv_load = string(ld.s_tag);
-            sct.f_title = @(t) sprintf("t = %.2f s   \\DeltaP = %.3f pu", t, 0.3*min(max((t - 1)/19, 0), 1));
     end
-    sct.rm_color = [0.85 0.15 0.10; 0 0 0.85; 0.15 0.60 0.10; 0 0 0];   % G1 red, G2 blue, G3 green, G4 black
     sct.sv_label = "G" + (1:numel(sct.sv_gen))';
 end
 
@@ -175,12 +226,13 @@ function add_governors(net, sct_gov, l_integral)
     net.initialize();
 end
 
-function style_spring(G, sct)
+function style_spring(G, sct, rm_color)
 % Node labels G1-G4 (L4), colors of the generators on their nodes and buses, node sizes
 % from the inertia, thin springs and no tick text on the polar grid.
     arguments (Input)
         G  % GraphSpring2D or GraphSpring3D.
         sct (1,1) struct  % Drawing data of simulate_case.
+        rm_color (:,3) double  % Colors of G1-G4.
     end
     tab = G.tab_element;
     sv_node = tab.Tag(tab.Kind == "node");
@@ -188,8 +240,8 @@ function style_spring(G, sct)
     rv_M = [10, 8, 6, 6];
     for i = 1:numel(sct.sv_gen)
         s_bus = extractBefore(sct.sv_gen(i), "SG");
-        G.set_style(sct.sv_gen(i), Label=sct.sv_label(i), Color=sct.rm_color(i, :), MarkerSize=1.2*rv_M(i));
-        G.set_style(s_bus, Color=sct.rm_color(i, :));
+        G.set_style(sct.sv_gen(i), Label=sct.sv_label(i), Color=rm_color(i, :), MarkerSize=1.2*rv_M(i));
+        G.set_style(s_bus, Color=rm_color(i, :));
     end
     for s_load = sct.sv_load'
         G.set_style(extractBefore(s_load, "L"), Label="L4", MarkerSize=8);   % the bus of the load
@@ -205,198 +257,83 @@ function style_spring(G, sct)
     end
 end
 
-function add_charts(G, res, sct, c_ax)
-% Frequency deviation [Hz] and mechanical power below the picture, with a cursor at the time.
-    arguments (Input)
-        G  % GraphSpring2D of the case.
-        res  % ResultODE.
-        sct (1,1) struct  % Drawing data of simulate_case.
-        c_ax (1,2) cell  % Axes of the two charts.
-    end
-    r_Hz = 50;
-    tab_w = res.get_trajectory("omega");
-    tab_P = res.get_trajectory("Pmech");
-    rv_t = tab_w.t';
-    n_gen = numel(sct.sv_gen);
-    sct_f.rv_t = rv_t;
-    sct_f.sct_panel = struct("s_title", "Frequency deviation", "s_xlabel", "", "s_ylabel", "\Deltaf [Hz]", ...
-        "rv_xlim", [0, sct.r_tEnd], "l_time", true, "s_legendLocation", sct.s_legend);
-    sct_f.sct_series = struct("rv_x", rv_t, "rm_y", r_Hz*tab_w{:, sct.sv_gen}, "sv_tag", sct.sv_label, ...
-        "rm_color", sct.rm_color(1:n_gen, :), "r_lineWidth", 1.2);
-    C1 = GraphChart(sct_f, Parent=c_ax{1});
-
-    sct_p = sct_f;
-    sct_p.sct_panel.s_title = "Mechanical power";
-    sct_p.sct_panel.s_xlabel = "t [s]";
-    sct_p.sct_panel.s_ylabel = "P_m [pu]";
-    sct_p.sct_panel.s_legendLocation = "none";
-    sct_p.sct_series.rm_y = tab_P{:, sct.sv_gen};
-    if ~isempty(sct.sv_load)
-        sct_p.sct_panel.s_title = "Mechanical power and load";
-        sct_p.sct_panel.s_ylabel = "P [pu]";
-        tab_L = res.get_trajectory("Pload");
-        sct_p.sct_series(2) = struct("rv_x", rv_t, "rm_y", tab_L{:, sct.sv_load}, "sv_tag", "L4", ...
-            "rm_color", [0 0 0], "r_lineWidth", 1.2);
-        sct_p.sct_series(2).s_lineStyle = "--";
-    end
-    C2 = GraphChart(sct_p, Parent=c_ax{2});
-    G.link(C1);
-    G.link(C2);
-end
-
-function fig = new_figure(rr_cm)
-% White figure of the given size [cm] in the font of the lecture graphs.
-    arguments (Input)
-        rr_cm (1,2) double  % [cm] Width and height.
-    end
-    arguments (Output)
-        fig (1,1) matlab.ui.Figure  % Hidden figure.
-    end
-    sr_font = ["Arial Unicode MS", "Arial", "Helvetica"];
-    s_font = sr_font(find(ismember(sr_font, string(listfonts)), 1));
-    fig = figure(Visible="off", Color="w", Units="centimeters", Position=[2, 2, rr_cm], ...
-        PaperPositionMode="auto", DefaultAxesFontName=s_font, DefaultTextFontName=s_font, ...
-        DefaultAxesFontSize=8, DefaultTextFontSize=8, DefaultAxesTitleFontSizeMultiplier=1);
-    try
-        theme(fig, "light");
-    catch
-    end
-end
-
-function write_animation(fig, c_G, rv_frame, r_fps, f_title, s_base, s_format, opt)
-% Print every frame at a fixed size, crop all frames to the same box around the drawing,
-% and write the video and the poster PNG (the last frame).
+function write_animation(fig, c_G, rv_frame, r_fps, r_hold, f_title, s_base)
+% Take every frame with getframe and write the video (ffmpeg, H.264) and the poster PNG
+% (the last frame), both cropped to one box around the drawing of all frames (with a
+% white margin) and scaled from the screen pixels of getframe to the pixels of the figure.
     arguments (Input)
         fig (1,1) matlab.ui.Figure  % Figure of the graphs.
         c_G cell                    % Spring pictures, linked to each other and to the charts; the first is moved.
         rv_frame (1,:) double       % [s] Time of each frame.
         r_fps (1,1) double          % [1/s] Frames per second.
-        f_title (1,1) function_handle  % Title of the figure (the tiled layout) at time t.
+        r_hold (1,1) double         % [s] Time the last frame is held.
+        f_title                     % Title of the first picture at time t (the others none); [] for the titles of GUILDA. <@Type> function_handle
         s_base (1,1) string         % Output path without extension.
-        s_format (1,1) string {mustBeMember(s_format, ["mp4", "gif"])}  % "mp4" (with a poster PNG) or "gif" (no poster).
-        opt (1,1) struct            % Options of the main function.
-    end
-    s_png = string(tempname) + ".png";
-    c_tmp = onCleanup(@() delete_if(s_png));
-    n_frame = numel(rv_frame);
-    c_img = cell(1, n_frame);
-    for i_frame = 1:n_frame
-        c_G{1}.set_time(rv_frame(i_frame));       % the linked pictures and charts follow
-        for k = 1:numel(c_G)
-            title(c_G{k}.ax, "");
-        end
-        title(c_G{1}.ax.Parent, f_title(rv_frame(i_frame)), FontWeight="bold", FontSize=11);   % on the tiled layout
-        drawnow;
-        print(fig, s_png, "-dpng", "-r" + opt.Resolution);
-        c_img{i_frame} = imread(s_png);
-    end
-    close(fig);
-    % the printed size can differ by a pixel between frames: pad all to the largest
-    rm_size = cell2mat(cellfun(@(m) [size(m, 1), size(m, 2)], c_img(:), "UniformOutput", false));
-    rv_max = max(rm_size, [], 1);
-    lm_ink = false(rv_max);
-    for i_frame = 1:n_frame
-        m = c_img{i_frame};
-        c_img{i_frame} = uint8(255) * ones([rv_max, 3], "uint8");
-        c_img{i_frame}(1:size(m, 1), 1:size(m, 2), :) = m;
-        lm_ink = lm_ink | any(c_img{i_frame} < 245, 3);
-    end
-
-    % one crop box for all frames: the drawn area with a white margin, 16-pixel multiples
-    % (VideoWriter on macOS writes broken frames for other widths)
-    n_pad = 10;
-    iv_r = find(any(lm_ink, 2));
-    iv_c = find(any(lm_ink, 1));
-    r1 = max(1, iv_r(1) - n_pad);  r2 = min(size(lm_ink, 1), iv_r(end) + n_pad);
-    c1 = max(1, iv_c(1) - n_pad);  c2 = min(size(lm_ink, 2), iv_c(end) + n_pad);
-    n_h = 16*ceil((r2 - r1 + 1)/16);
-    n_w = 16*ceil((c2 - c1 + 1)/16);
-    f_crop = @(m) pad_white(m(r1:r2, c1:c2, :), n_h, n_w);
-    n_hold = round(1.5 * r_fps);    % hold the last frame for 1.5 s
-    if s_format == "gif"
-        for i_frame = 1:n_frame
-            [m_ind, m_map] = rgb2ind(f_crop(c_img{i_frame}), 64, "nodither");
-            r_delay = (1 + (i_frame == n_frame) * n_hold) / r_fps;
-            if i_frame == 1
-                imwrite(m_ind, m_map, s_base + ".gif", "gif", LoopCount=Inf, DelayTime=r_delay);
-            else
-                imwrite(m_ind, m_map, s_base + ".gif", "gif", WriteMode="append", DelayTime=r_delay);
-            end
-        end
-        return
-    end
-    imwrite(f_crop(c_img{end}), s_base + "-poster.png");
-    s_ffmpeg = find_ffmpeg();
-    if s_ffmpeg ~= ""
-        % H.264 (libx264, yuv420p) with the index at the start, for playing in browsers
-        s_dir = string(tempname);
-        mkdir(s_dir);
-        c_dir = onCleanup(@() rmdir(s_dir, "s"));
-        i_out = 0;
-        for i_frame = 1:n_frame
-            m_img = f_crop(c_img{i_frame});
-            for r = 1:(1 + (i_frame == n_frame) * n_hold)
-                i_out = i_out + 1;
-                imwrite(m_img, fullfile(s_dir, sprintf("f%05d.png", i_out)));
-            end
-        end
-        s_cmd = sprintf('"%s" -v error -y -framerate %g -i "%s" -c:v libx264 -preset slow -crf 26 -pix_fmt yuv420p -movflags +faststart "%s"', ...
-            s_ffmpeg, r_fps, fullfile(s_dir, "f%05d.png"), s_base + ".mp4");
-        [i_status, s_msg] = system(s_cmd);
-        if i_status ~= 0
-            error("ffmpeg failed: %s", s_msg);
-        end
-    else
-        vw = VideoWriter(s_base + ".mp4", "MPEG-4");
-        vw.FrameRate = r_fps;
-        vw.Quality = 75;
-        open(vw);
-        for i_frame = 1:n_frame
-            m_img = f_crop(c_img{i_frame});
-            for r = 1:(1 + (i_frame == n_frame) * n_hold)
-                writeVideo(vw, m_img);
-            end
-        end
-        close(vw);
-    end
-end
-
-function m_out = pad_white(m_img, n_h, n_w)
-% Put an image on a white canvas of n_h x n_w pixels (centred).
-    arguments (Input)
-        m_img (:,:,3) uint8  % RGB image.
-        n_h (1,1) double     % Height of the canvas.
-        n_w (1,1) double     % Width of the canvas.
-    end
-    arguments (Output)
-        m_out (:,:,3) uint8  % Image on the canvas.
-    end
-    m_out = uint8(255) * ones(n_h, n_w, 3, "uint8");
-    i_r = floor((n_h - size(m_img, 1))/2);
-    i_c = floor((n_w - size(m_img, 2))/2);
-    m_out(i_r + (1:size(m_img, 1)), i_c + (1:size(m_img, 2)), :) = m_img;
-end
-
-function s_ffmpeg = find_ffmpeg()
-% Path of ffmpeg ("" when it is not installed).
-    arguments (Output)
-        s_ffmpeg (1,1) string  % Full path or "".
     end
     s_ffmpeg = "";
     for s_try = ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"]
         if isfile(s_try)
             s_ffmpeg = s_try;
-            return
+            break
         end
     end
-end
-
-function delete_if(s_file)
-% Delete a temporary file if it exists.
-    arguments (Input)
-        s_file (1,1) string  % Path of the file.
+    if s_ffmpeg == ""
+        error("ffmpeg is not installed.");
     end
-    if isfile(s_file)
-        delete(s_file);
+    s_dir = string(tempname);
+    mkdir(s_dir);
+    c_dir = onCleanup(@() rmdir(s_dir, "s"));
+    n_frame = numel(rv_frame);
+    n_hold = round(r_hold * r_fps);
+    iv_size = [];
+    lm_ink = [];
+    i_out = 0;
+    for i_frame = 1:n_frame
+        c_G{1}.set_time(rv_frame(i_frame));       % the linked pictures and charts follow
+        if ~isempty(f_title)
+            title(c_G{1}.ax, f_title(rv_frame(i_frame)), FontWeight="bold", FontSize=16);
+            for k = 2:numel(c_G)
+                title(c_G{k}.ax, "");
+            end
+        end
+        drawnow;
+        pause(0.02);        % getframe in matlab -batch otherwise returns the frame before
+        drawnow;
+        m_img = frame2im(getframe(fig));
+        if isempty(iv_size)
+            iv_size = 2 * floor([size(m_img, 1), size(m_img, 2)] / 2);
+        end
+        m_out = 255 * ones(iv_size(1), iv_size(2), 3, "uint8");     % one size for all frames
+        n_h = min(iv_size(1), size(m_img, 1));
+        n_w = min(iv_size(2), size(m_img, 2));
+        m_out(1:n_h, 1:n_w, :) = m_img(1:n_h, 1:n_w, :);
+        if isempty(lm_ink)
+            lm_ink = false(iv_size);
+        end
+        lm_ink = lm_ink | any(m_out < 245, 3);
+        for r = 1:(1 + (i_frame == n_frame) * n_hold)
+            i_out = i_out + 1;
+            imwrite(m_out, fullfile(s_dir, sprintf("f%05d.png", i_out)));
+        end
+    end
+    r_scale = fig.Position(3) / iv_size(2);      % getframe takes the screen scale of the display
+    close(fig);
+    n_pad = round(12 / r_scale);
+    iv_r = find(any(lm_ink, 2));
+    iv_c = find(any(lm_ink, 1));
+    r1 = max(1, iv_r(1) - n_pad);  r2 = min(iv_size(1), iv_r(end) + n_pad);
+    c1 = max(1, iv_c(1) - n_pad);  c2 = min(iv_size(2), iv_c(end) + n_pad);
+    s_scale = sprintf("crop=%d:%d:%d:%d,scale=%d:%d:flags=lanczos", c2 - c1 + 1, r2 - r1 + 1, c1 - 1, r1 - 1, ...
+        2*round(r_scale*(c2 - c1 + 1)/2), 2*round(r_scale*(r2 - r1 + 1)/2));
+    c_cmd = { ...
+        sprintf('"%s" -v error -y -framerate %g -i "%s" -vf %s -c:v libx264 -preset slow -crf 26 -pix_fmt yuv420p -movflags +faststart "%s"', ...
+            s_ffmpeg, r_fps, fullfile(s_dir, "f%05d.png"), s_scale, s_base + ".mp4"), ...
+        sprintf('"%s" -v error -y -i "%s" -vf %s "%s"', ...
+            s_ffmpeg, fullfile(s_dir, sprintf("f%05d.png", i_out)), s_scale, s_base + "-poster.png")};
+    for i = 1:numel(c_cmd)
+        [i_status, s_msg] = system(c_cmd{i});
+        if i_status ~= 0
+            error("ffmpeg failed: %s", s_msg);
+        end
     end
 end
