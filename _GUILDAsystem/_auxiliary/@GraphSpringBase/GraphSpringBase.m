@@ -21,8 +21,8 @@ classdef (Abstract) GraphSpringBase < GraphBase
 %   (n_arrow x n_t) [pu]: active power and reactive-current magnitude (optional).
 % - `sv_marker` (MATLAB marker; "v" is a cone in 3D, other markers are spheres),
 %   `rv_size` (NaN: default of the kind), `sv_color` ("": default of the kind; a color
-%   name or "#RRGGBB") and `rv_circle` [pu] (radius of a dashed |E| circle; NaN: none),
-%   n_node x 1 each (optional).
+%   name or "#RRGGBB") and `rv_circle` [pu] (radius of a dashed |E| circle; NaN: none;
+%   hidden at the samples where the phasor of its node is NaN), n_node x 1 each (optional).
 % - `s_sampleName`, `sv_sampleText` (optional): the name of the samples (e.g. "Step") and
 %   the text of each sample (1 x n_t), shown in the title and in the playback bar instead
 %   of the time (see GraphBase).

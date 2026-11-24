@@ -28,7 +28,8 @@ function [G, G_chart] = plot_spring_model(obj, opt)
 % each component). While a unit is tripped its states are NaN: its own node, its spring
 % and its arrows are not drawn at those times, and the arrow of its bus counts its current
 % as 0. The dashed circle |E| of an own node is drawn when |E| stays constant over the
-% times (e.g. a classical generator without AVR).
+% times (e.g. a classical generator without AVR); it is hidden with its node while the unit
+% is tripped.
 %
 % <@Examples>
 % ```matlab

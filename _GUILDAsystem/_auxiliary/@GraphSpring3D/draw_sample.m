@@ -70,6 +70,14 @@ function update_scene(obj, k, cv_node)
         set(plt.LabelNode(n), "Position", rm_p(n, :) + [0 0 2.2*r_rad], "Visible", obj.ShowLabel && obj.NodeVisible(n));
     end
 
+    % |E| circles: shown with their node, hidden while it is disconnected (NaN phasor)
+    for n = find(isgraphics(plt.Circle))'
+        l_vis = obj.NodeVisible(n) && ~isnan(cv_node(n));
+        if strcmp(plt.Circle(n).Visible, "on") ~= l_vis
+            plt.Circle(n).Visible = l_vis;
+        end
+    end
+
     % Arrows: P along the circle of constant |V|, Iq along the surface away from the axis
     for a = 1:numel(d.iv_arrow)
         n     = d.iv_arrow(a);
