@@ -9,6 +9,7 @@ import re
 import shlex
 import subprocess
 import sys
+import urllib.parse
 
 # Work branch: <type>/<issue>-<slug> (git-workflow.html#branch-names).
 # The issue number is optional for now because the team has no GitHub Issues
@@ -20,6 +21,9 @@ PROTECTED_BRANCH = re.compile(r"^(main|version[0-9]+\.[0-9]+)$")
 # submodules _GUILDAslides and _GUILDAverification. Matched on the repository
 # name at the end of the origin URL, SSH or HTTPS, with or without ".git".
 MAIN_ONLY_REPO = re.compile(r"(^|[/:])guilda-(slides|verification)(\.git)?/*$")
+# A local-path origin (a local clone) is followed to that clone's own origin, at
+# most this many times (is_main_only_repo).
+MAX_ORIGIN_HOPS = 3
 
 SEPARATORS = {"&&", "||", ";", "|", "&", "(", ")", ";;", "|&"}
 # git options that take a separate value before the subcommand.
@@ -107,13 +111,53 @@ def current_branch(cwd):
     return git(cwd, "symbolic-ref", "--short", "-q", "HEAD")
 
 
+def local_origin_path(url, base):
+    """The directory a local-path origin URL points to, or None for a remote URL.
+
+    Local forms: an absolute or relative path, "~/...", or a file:// URL. A URL with
+    a scheme other than file://, or an scp-style address (host:path, no slash before
+    the colon), is remote.
+    """
+    if url.startswith("file://"):
+        path = urllib.parse.unquote(urllib.parse.urlsplit(url).path)
+    elif "://" in url:
+        return None
+    elif ":" in url and "/" not in url.split(":", 1)[0]:
+        return None  # scp-style user@host:path
+    else:
+        path = os.path.expanduser(url)
+    return os.path.realpath(os.path.join(base, path))
+
+
+def is_repo_root(path):
+    """True if path itself is a repository: a work tree (.git dir or file) or a bare repo."""
+    if os.path.exists(os.path.join(path, ".git")):
+        return True
+    return (os.path.isfile(os.path.join(path, "HEAD"))
+            and os.path.isdir(os.path.join(path, "objects")))
+
+
 def is_main_only_repo(cwd):
     """True if cwd is in a main-only repository (decided by its origin URL).
 
-    An unreadable or missing origin URL returns False, so the strict rules apply.
+    When origin is a local path to another repository (a local clone, as in the
+    verification procedure), that repository's own origin is followed, up to
+    MAX_ORIGIN_HOPS local hops. A missing or unreadable origin, a path that is not a
+    repository, a cycle or too many hops returns False, so the strict rules apply.
     """
-    url = git(cwd, "config", "--get", "remote.origin.url")
-    return bool(url and MAIN_ONLY_REPO.search(url))
+    seen, repo = set(), cwd
+    for _ in range(MAX_ORIGIN_HOPS + 1):
+        url = git(repo, "config", "--get", "remote.origin.url")
+        if not url:
+            return False
+        path = local_origin_path(url, repo)
+        if path is None:
+            return bool(MAIN_ONLY_REPO.search(url))
+        if path in seen or not os.path.isdir(path) or not is_repo_root(path):
+            return False
+        seen.add(path)
+        repo = path
+    return False
 
 
 def block(message):
