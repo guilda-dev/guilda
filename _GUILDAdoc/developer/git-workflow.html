@@ -345,32 +345,6 @@ breaks after a bus is removed. Refs #51.</div>
     <h2 id="integration"><span lang="en">Snapshot integration</span><span lang="ja">スナップショットの統合</span></h2>
     <p class="dg-lead-in" lang="en">The development branch is copied into <code>versionX.Y</code> from time to time as one snapshot commit. The snapshot has the content of the development branch only: its history, which records the coding assistants, stays out of <code>versionX.Y</code>.</p>
     <p class="dg-lead-in" lang="ja">開発ブランチの内容は、ときどき 1 つのスナップショットコミットとして <code>versionX.Y</code> に取り込みます。スナップショットが持つのは開発ブランチの内容だけです。コーディングアシスタントの記録を含む開発ブランチの履歴は、<code>versionX.Y</code> に入りません。</p>
-<!-- dev-only:start -->
-    <ol class="dg-list is-numbered">
-      <li><div><span class="dg-item-title"><span lang="en">Update the local branches</span><span lang="ja">ローカルのブランチの更新</span></span><span lang="en">Make sure the local <code>refactor/design-alignment</code> has the work to integrate, and that the local <code>versionX.Y</code> is not behind <code>origin/versionX.Y</code> (<code>git fetch origin versionX.Y:versionX.Y</code>). No worktree may have <code>versionX.Y</code> checked out.</span><span lang="ja">ローカルの <code>refactor/design-alignment</code> に統合する作業が入っていること、ローカルの <code>versionX.Y</code> が <code>origin/versionX.Y</code> より遅れていないこと（<code>git fetch origin versionX.Y:versionX.Y</code>）を確かめます。<code>versionX.Y</code> をチェックアウトしているワークツリーがあってはいけません。</span></div></li>
-      <li><div><span class="dg-item-title">integrate.sh</span><span lang="en">From any checkout of the development branch, run <code>bash .claude/release/integrate.sh X.Y</code>. No branch switch is needed and the working tree is not touched.</span><span lang="ja">開発ブランチのチェックアウトで <code>bash .claude/release/integrate.sh X.Y</code> を実行します。ブランチの切り替えは不要で、作業ツリーも変わりません。</span></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Review and push</span><span lang="ja">確認とプッシュ</span></span><span lang="en">Check the result with <code>git show --stat versionX.Y</code>, then the maintainer runs the printed <code>git push origin versionX.Y</code>. The script never pushes.</span><span lang="ja"><code>git show --stat versionX.Y</code> で結果を確かめてから、メンテナーが表示された <code>git push origin versionX.Y</code> を実行します。スクリプトはプッシュしません。</span></div></li>
-    </ol>
-
-    <h3><span lang="en">What integrate.sh does</span><span lang="ja">integrate.sh の処理内容</span></h3>
-    <ul class="dg-list is-numbered">
-      <li><div><span class="dg-item-title"><span lang="en">Checks the branches</span><span lang="ja">ブランチの確認</span></span><span lang="en">Refuses to run when <code>refactor/design-alignment</code> or <code>versionX.Y</code> does not exist locally, when <code>versionX.Y</code> is behind <code>origin/versionX.Y</code> or checked out in a worktree, and when the development branch has not moved since the last snapshot.</span><span lang="ja"><code>refactor/design-alignment</code> や <code>versionX.Y</code> がローカルにない場合、<code>versionX.Y</code> が <code>origin/versionX.Y</code> より遅れている場合やワークツリーでチェックアウトされている場合、前回のスナップショットから開発ブランチが進んでいない場合は実行を拒否します。</span></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Builds the snapshot tree</span><span lang="ja">スナップショットの内容の作成</span></span><span lang="en">Reads the tree of the development branch into a temporary index, removes the excluded paths below, cuts every block between the marker lines <code># &gt;&gt;&gt; dev-only</code> … <code># &lt;&lt;&lt; dev-only</code> or <code>&lt;!-- dev-only:start --&gt;</code> … <code>&lt;!-- dev-only:end --&gt;</code> (markers included) out of the files that have them, and writes the result as a tree. Unmatched markers stop it. It stops if this tree equals the current <code>versionX.Y</code>.</span><span lang="ja">開発ブランチの内容を一時的なインデックスに読み込み、下の除外パスを取り除きます。さらに、目印の行 <code># &gt;&gt;&gt; dev-only</code> … <code># &lt;&lt;&lt; dev-only</code> または <code>&lt;!-- dev-only:start --&gt;</code> … <code>&lt;!-- dev-only:end --&gt;</code> で囲まれた部分を、目印の行ごとファイルから削り、その結果をツリーとして書き出します。目印の対応が取れていなければ停止します。このツリーが現在の <code>versionX.Y</code> と同じなら停止します。</span></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Commits the snapshot</span><span lang="ja">スナップショットのコミット</span></span><span lang="en">Creates one commit whose only parent is the current tip of <code>versionX.Y</code>, with the message <code>chore: integrate refactor/design-alignment (&lt;short-sha&gt;)</code> naming the development commit.</span><span lang="ja">現在の <code>versionX.Y</code> の先端だけを親とする 1 つのコミットを作ります。メッセージは開発ブランチのコミットを示す <code>chore: integrate refactor/design-alignment (&lt;short-sha&gt;)</code> です。</span></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Checks the excluded paths</span><span lang="ja">除外パスの確認</span></span><span lang="en">Lists the new commit's files, and searches its whole tree (submodules aside) for the names of the coding assistants. If an excluded path or any match is left, it shows them and fails without moving <code>versionX.Y</code>.</span><span lang="ja">新しいコミットのファイルを一覧し、ツリー全体（サブモジュールの中は除く）からコーディングアシスタントの名前を検索します。除外パスや一致する箇所が残っていれば、それを表示し、<code>versionX.Y</code> を動かさずに失敗します。</span></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Moves the branch</span><span lang="ja">ブランチの更新</span></span><span lang="en">Fast-forwards <code>versionX.Y</code> to the new commit and prints the change summary and the push command.</span><span lang="ja"><code>versionX.Y</code> を新しいコミットへ早送りし、変更の概要とプッシュのコマンドを表示します。</span></div></li>
-    </ul>
-
-    <h3><span lang="en">Excluded paths</span><span lang="ja">除外パス</span></h3>
-    <div class="dg-rows">
-      <div class="dg-row"><span><code>.claude/</code>, <code>.codex/</code>, <code>.github/copilot-instructions.md</code></span><span><span lang="en">Coding-assistant config</span><span lang="ja">コーディングアシスタントの設定</span></span></div>
-      <div class="dg-row"><span><code>notes/</code></span><span><span lang="en">Working notes on the development</span><span lang="ja">開発の作業メモ</span></span></div>
-      <div class="dg-row"><span><code>.vscode/</code></span><span><span lang="en">Editor settings</span><span lang="ja">エディターの設定</span></span></div>
-      <div class="dg-row"><span><code>.github/copilot-instruction.md</code></span><span><span lang="en">Older name of the Copilot instructions</span><span lang="ja">Copilot 向け指示の古いファイル名</span></span></div>
-    </div>
-    <p lang="en">The list is <code>INTEGRATION_EXCLUDE</code> in <code>.claude/release/common.sh</code>. Everything else is kept as it is on the development branch, including the submodules <code>_GUILDAdocPages</code>, <code>_GUILDAslides</code> and <code>_GUILDAverification</code>, <code>.gitmodules</code>, and <code>.gitignore</code>.</p>
-    <p lang="ja">一覧は <code>.claude/release/common.sh</code> の <code>INTEGRATION_EXCLUDE</code> です。それ以外は開発ブランチのまま残します。サブモジュール <code>_GUILDAdocPages</code>、<code>_GUILDAslides</code>、<code>_GUILDAverification</code>、<code>.gitmodules</code>、<code>.gitignore</code> も含みます。</p>
-<!-- dev-only:end -->
 
     <div class="dg-callout">
       <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
@@ -386,25 +360,6 @@ breaks after a bus is removed. Refs #51.</div>
     <h2 id="release"><span lang="en">Release of a version</span><span lang="ja">バージョンのリリース</span></h2>
     <p lang="en">At a release, the maintainers merge <code>versionX.Y</code> into <code>main</code> with <code>--no-ff</code>, tag the merge commit <code>vX.Y</code>, and create the next <code>versionX.Y</code> from <code>main</code>.</p>
     <p lang="ja">リリースでは、メンテナーが <code>versionX.Y</code> を <code>--no-ff</code> で <code>main</code> にマージし、マージコミットに <code>vX.Y</code> のタグを付け、<code>main</code> から次の <code>versionX.Y</code> を作成します。</p>
-<!-- dev-only:start -->
-    <ol class="dg-list is-numbered">
-      <li><div><span class="dg-item-title"><span lang="en">Open a review pull request</span><span lang="ja">レビュー用 PR の作成</span></span><span lang="en">Open a pull request from <code>versionX.Y</code> into <code>main</code> for review. Do not merge it on GitHub.</span><span lang="ja">レビュー用に、<code>versionX.Y</code> から <code>main</code> へのプルリクエストを作成します。GitHub 上ではマージしません。</span></div></li>
-      <li><div><span class="dg-item-title">release.sh</span><span lang="en">From a clean checkout of the development branch (<code>versionX.Y</code> has no <code>.claude/</code>), run <code>bash .claude/release/release.sh X.Y</code>. It merges <code>versionX.Y</code> into <code>main</code> with <code>--no-ff</code>, removes any excluded path from the merge result, commits <code>chore: release vX.Y</code>, tags the merge commit <code>vX.Y</code>, and switches back to the development branch.</span><span lang="ja">開発ブランチのクリーンなチェックアウトで（<code>versionX.Y</code> には <code>.claude/</code> がありません）、<code>bash .claude/release/release.sh X.Y</code> を実行します。<code>--no-ff</code> で <code>versionX.Y</code> を <code>main</code> にマージし、マージ結果に除外パスがあれば取り除き、<code>chore: release vX.Y</code> をコミットし、マージコミットに <code>vX.Y</code> のタグを付けて、開発ブランチに戻ります。</span></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Push main and the tag</span><span lang="ja">main とタグのプッシュ</span></span><span lang="en">Check the result, then run the printed <code>git push origin main vX.Y</code>. GitHub marks the pull request as merged.</span><span lang="ja">結果を確認してから、表示された <code>git push origin main vX.Y</code> を実行します。GitHub 上でプルリクエストはマージ済みになります。</span></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Create the next version branch</span><span lang="ja">次のバージョンブランチの作成</span></span><span lang="en">Run <code>bash .claude/release/start-version.sh X.Y</code>: it creates the next <code>versionX.Y</code> at <code>main</code> without switching to it. Push it with <code>git push -u origin versionX.Y</code>, make it the default branch on GitHub, and add snapshots with <code>integrate.sh</code>.</span><span lang="ja"><code>bash .claude/release/start-version.sh X.Y</code> を実行します。<code>main</code> の位置に次の <code>versionX.Y</code> を作成します（そのブランチには切り替えません）。<code>git push -u origin versionX.Y</code> でプッシュし、GitHub の既定のブランチに設定して、<code>integrate.sh</code> でスナップショットを追加します。</span></div></li>
-    </ol>
-    <div class="dg-callout">
-      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
-      <div lang="en">
-        <p><strong>Assistant config never lands in <code>versionX.Y</code> or <code>main</code>.</strong> <code>.claude/</code>, <code>.codex/</code> and <code>.github/copilot-instructions.md</code> are tracked on the development branch and the work branches only, so users who clone or pull <code>versionX.Y</code> or <code>main</code> never get them.</p>
-        <p><code>integrate.sh</code> leaves them out of every snapshot; <code>release.sh</code> also removes any excluded path from the release merge and checks that <code>main</code> has none. If the release merge conflicts, the script aborts: resolve the conflict on the development branch, integrate again, and run it again.</p>
-      </div>
-      <div lang="ja">
-        <p><strong>アシスタント設定は <code>versionX.Y</code> にも <code>main</code> にも入れません。</strong> <code>.claude/</code>、<code>.codex/</code>、<code>.github/copilot-instructions.md</code> は、開発ブランチと作業ブランチでだけ管理します。<code>versionX.Y</code> や <code>main</code> をクローンまたは pull したユーザーには届きません。</p>
-        <p><code>integrate.sh</code> がすべてのスナップショットからこれらを除きます。<code>release.sh</code> もリリースマージから除外パスを取り除き、<code>main</code> に残っていないことを確認します。リリースマージでコンフリクトが起きると、スクリプトは中断します。その場合は開発ブランチで解消し、もう一度統合してから再実行します。</p>
-      </div>
-    </div>
-<!-- dev-only:end -->
 
     <!-- ===================== Publishing the documentation ===================== -->
     <h2 id="publish-docs"><span lang="en">Publishing the documentation</span><span lang="ja">ドキュメントの公開</span></h2>
@@ -455,12 +410,6 @@ breaks after a bus is removed. Refs #51.</div>
     </ul>
     <p lang="en">Exception: the submodules <code>_GUILDAslides</code> and <code>_GUILDAverification</code> are internal repositories with a single <code>main</code> branch. Commit directly on <code>main</code> there, without work branches or <code>--no-ff</code> merges. Never force-push or delete their <code>main</code>.</p>
     <p lang="ja">例外として、サブモジュール <code>_GUILDAslides</code> と <code>_GUILDAverification</code> は <code>main</code> ブランチだけを使う内部リポジトリです。作業ブランチや <code>--no-ff</code> マージを使わず、<code>main</code> に直接コミットします。ただし、それらの <code>main</code> の強制プッシュや削除はしません。</p>
-<!-- dev-only:start -->
-    <div class="dg-callout is-warn">
-      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-shield"/></svg>
-      <p><span lang="en"><strong>Enforced by Claude Code hooks</strong> (<code>.claude/settings.json</code>, <code>.claude/hooks/</code>): Claude Code sessions in this repository are blocked from creating branches with other names, committing on <code>main</code>, <code>versionX.Y</code> or non-work branches, force-pushing or deleting <code>main</code> / <code>versionX.Y</code>, running <code>git merge</code> or <code>git cherry-pick</code> on <code>main</code> (use <code>release.sh</code>), and editing generated files; a commit message that breaks the format is sent back for <code>git commit --amend</code>. In <code>_GUILDAslides</code> and <code>_GUILDAverification</code>, recognised by the <code>origin</code> URL, commits and merges on <code>main</code> are allowed and Claude may push, but force-pushing or deleting <code>main</code> is still blocked.</span><span lang="ja"><strong>Claude Code のフックによる強制</strong>（<code>.claude/settings.json</code>、<code>.claude/hooks/</code>）。このリポジトリの Claude Code セッションでは、他の名前のブランチの作成、<code>main</code>・<code>versionX.Y</code>・作業ブランチ以外でのコミット、<code>main</code> / <code>versionX.Y</code> の強制プッシュや削除、<code>main</code> 上での <code>git merge</code> や <code>git cherry-pick</code> の実行（<code>release.sh</code> を使用）、自動生成ファイルの編集をブロックします。形式に従わないコミットメッセージは、<code>git commit --amend</code> で修正するよう差し戻します。<code>origin</code> の URL で判定する <code>_GUILDAslides</code> と <code>_GUILDAverification</code> では、<code>main</code> 上のコミットやマージを許可し、Claude がプッシュしてもかまいませんが、<code>main</code> の強制プッシュや削除は引き続きブロックします。</span></p>
-    </div>
-<!-- dev-only:end -->
   </main>
 
   <script>
