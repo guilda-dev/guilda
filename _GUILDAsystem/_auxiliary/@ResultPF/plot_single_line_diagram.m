@@ -12,8 +12,8 @@ function G = plot_single_line_diagram(obj, opt)
 % tips show the values of the solution.
 %
 % With Parent empty, a new white figure for one column of a two-column paper is made:
-% 8.5 cm wide, as high as the layout needs (3 to 12 cm), with labels of 8 pt (smaller
-% beyond 30 buses: 8*sqrt(30/n_bus), at least 5 pt), so that exportgraphics writes it at
+% 8.5 cm wide, as high as the layout needs (3 to 12 cm), with labels of 6 pt (smaller
+% beyond 30 buses: 6*sqrt(30/n_bus), at least 4 pt), so that exportgraphics writes it at
 % its size. With a Parent the diagram is drawn in it.
 %
 % <@Examples>
@@ -36,7 +36,7 @@ function G = plot_single_line_diagram(obj, opt)
     if l_figure
         h_parent = figure("Color", "w", "Units", "centimeters", "Position", [2 2 8.5 8.5]);
     end
-    r_font = min(8, max(5, round(8*sqrt(30/max(height(obj.tab_bus), 1)))));   % 8 pt, smaller beyond 30 buses
+    r_font = min(6, max(4, round(6*sqrt(30/max(height(obj.tab_bus), 1)))));   % 6 pt, smaller beyond 30 buses
     G = obj.plot_diagram(Parent=h_parent, Dimension="2D", ColorMode="none", ...
         BusColorMode="none", FlowMode="none", FlowAnimation=false, BranchWidthMode="none", ...
         BranchWidthRange=[0.6 0.6], MarkerSizeMode="none", MarkerSizeRange=[4 4], LinkWidth=0.6, ...

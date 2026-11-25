@@ -19,6 +19,12 @@ function make_about_carousel(opt)
 %                                and its line in the |V| chart
 %   07-control-panel.mp4         (interactive) G.show_controls(): settings changed in the
 %                                panel and by commands, the panel and drawing follow
+%   08-eigen-participation.mp4   (interactive) ResultLIN.plot_participation of IEEE 68-bus:
+%                                eigenvalues clicked on the map (an inter-area mode, a local
+%                                mode, another inter-area mode), then a bus for its table
+%   09-app-gui.mp4               (interactive) GUILDA.launch_gui on IEEE 14-bus: a load
+%                                clicked and its P edited in the model GUI, the power flow
+%                                run, and Analyze result opens the result window
 %
 % Each video has a poster PNG of the same name. The videos are recorded frame by frame with
 % getframe (the playback bar and the control panel are in the frames of the interactive
@@ -30,8 +36,8 @@ function make_about_carousel(opt)
 %   make_about_carousel(Item="cpf", OutDir="/tmp/carousel");   % one item only
     arguments (Input)
         opt.OutDir (1,1) string = ""     % Output folder; "" for _GUILDAdocPages/images/about/carousel.
-        opt.Item (1,:) string {mustBeMember(opt.Item, ["lmp", "single-line", "fault-diagram", "spring-3d", "cpf", "explore", "controls"])} ...
-            = ["lmp", "single-line", "fault-diagram", "spring-3d", "cpf", "explore", "controls"]  % Items to make.
+        opt.Item (1,:) string {mustBeMember(opt.Item, ["lmp", "single-line", "fault-diagram", "spring-3d", "cpf", "explore", "controls", "participation", "gui"])} ...
+            = ["lmp", "single-line", "fault-diagram", "spring-3d", "cpf", "explore", "controls", "participation", "gui"]  % Items to make.
     end
     s_out = opt.OutDir;
     if s_out == ""
@@ -60,6 +66,10 @@ function make_about_carousel(opt)
                 make_explore(fullfile(s_out, "06-explore-click"));
             case "controls"
                 make_controls(fullfile(s_out, "07-control-panel"));
+            case "participation"
+                make_participation(fullfile(s_out, "08-eigen-participation"));
+            case "gui"
+                make_gui(fullfile(s_out, "09-app-gui"));
         end
         close all
     end
@@ -253,6 +263,108 @@ function make_controls(s_base)
 end
 
 
+function make_participation(s_base)
+% Interactive: the participation of the buses in the modes of IEEE 68-bus (plot_participation).
+% Eigenvalues are clicked on the map: the inter-area mode of 0.35 Hz, the local mode of the
+% generator at B011 (1.63 Hz) and the mode of 0.42 Hz of the area of B014 to B016; then bus
+% B014 is clicked and the table lists the participation of its states in that mode.
+    res = network.IEEE68bus().get_sys();
+    fig = figure(Color="w", Position=[100 100 1120 560]);
+    sct = res.plot_participation(Parent=fig);
+    for ax = findall(fig, "Type", "axes")'
+        ax.Toolbar.Visible = "off";
+    end
+    G_eig = sct.Eigenvalue;
+    G = sct.Diagram;
+    cv_lambda = res.get_participation().cv_lambda;
+    f_lambda = @(c) cv_lambda(nearest(cv_lambda, c));
+    c_inter = f_lambda(-0.18 + 2.18i);
+    c_local = f_lambda(-0.40 + 10.23i);
+    c_area = f_lambda(-0.11 + 2.65i);
+    f_eig = @(c) data_to_figure(G_eig.ax(1), real(c), imag(c));
+    rec = make_recorder(fig);
+
+    rec.cursor(f_eig(-0.2 + 5i));
+    rec.hold(12);
+    rec.move(f_eig(c_inter), 16);
+    rec.click(@() click_eigenvalue(G_eig, c_inter));
+    rec.hold(12);
+    rec.poster();
+    rec.hold(28);
+    rec.move(f_eig(c_local), 18);
+    rec.click(@() click_eigenvalue(G_eig, c_local));
+    rec.hold(36);
+    rec.move(f_eig(c_area), 18);
+    rec.click(@() click_eigenvalue(G_eig, c_area));
+    rec.hold(32);
+    rec.move(bus_point(G, "B014"), 18);
+    rec.click(@() click_bus(G, "B014"));
+    rec.hold(44);
+    rec.finish(s_base);
+end
+
+
+function make_gui(s_base)
+% Interactive: the GUILDA app (GUILDA.launch_gui) on IEEE 14-bus. The load at B009 is clicked
+% on the diagram and shown in the model GUI; its P is edited (a user types it into the cell of
+% the page; the script sends the same edit event and shows the model again with render); the
+% Power flow tab is opened and run; Analyze result opens the result window, which is recorded
+% as its own figure and drawn over the app.
+    h = GUILDA.launch_gui(network.IEEE14bus());
+    fig = h.h_figure;
+    fig.Position = [40 40 1360 680];
+    settle();
+    G = h.G;
+    rec = make_recorder(fig);
+    f_center = @(h_ui) center_of(h_ui);
+
+    rec.cursor(data_to_figure(G.ax(1), 0.5, 0.45));
+    rec.hold(12);
+    [h_load, rv_load] = component_line(G, "B009LPQ1");
+    rec.move(rv_load, 16);
+    rec.click(@() h_load.ButtonDownFcn(h_load, []));
+    settle();
+    rec.hold(24);
+    gui = findall(fig, "Tag", "tab_model").UserData.gui;
+    h_body = findobj(gui.h_container, "Type", "uihtml", "Tag", "body");
+    pos = getpixelposition(h_body, true);
+    rec.move([pos(1) + 301, pos(2) + pos(4) - 159], 18);     % the cell P of the panel powerflow
+    rec.click(@() edit_cell(gui, h_body, "powerflow", "P", "-0.6"));
+    settle();
+    rec.move([pos(1) + 345, pos(2) + pos(4) - 215], 10);     % off the cell: its new value shows
+    rec.hold(22);
+    h_tab_button = findall(fig, "Tag", "tab", "UserData", "pf");
+    rec.move(f_center(h_tab_button), 18);
+    rec.click(@() select_toggle(h_tab_button));
+    settle();
+    rec.hold(16);
+    h_tab = findall(fig, "Tag", "tab_pf");
+    h_run = findall(h_tab, "Tag", "run");
+    rec.move(f_center(h_run), 16);
+    rec.click(@() h_run.ButtonPushedFcn(h_run, []));
+    settle();
+    rec.hold(10);
+    rec.poster();
+    rec.hold(20);
+    h_analyze = findall(h_tab, "Tag", "analyze");
+    rec.move(f_center(h_analyze), 14);
+    rec.click(@() h_analyze.ButtonPushedFcn(h_analyze, []));
+    settle();
+    fig_result = findall(groot, "Type", "figure", "Tag", "result_gui");
+    fig_result = fig_result(1);
+    fig_result.Position = [200 100 1000 540];
+    settle();
+    rec.hold(4);
+    rec.overlay(fig_result, [330 96 1000 540]);
+    rec.hold(16);
+    rec.move([900, 300], 20);
+    rec.hold(44);
+    rec.finish(s_base);
+    delete(fig_result);
+    delete(fig);
+end
+
+
 %% Helpers of the items
 
 function select_bus(G, G_chart, data)
@@ -325,6 +437,69 @@ function click_bus(G, s_tag)
     h = findobj(G.ax(1), "-function", @(h) isprop(h, "UserData") && isstruct(h.UserData) ...
         && isfield(h.UserData, "Type") && h.UserData.Type == "Bus" && h.UserData.Index == i_bus);
     h(1).ButtonDownFcn(h(1), []);
+end
+
+
+function i = nearest(cv, c)
+% Index of the element of cv nearest to c.
+    [~, i] = min(abs(cv - c));
+end
+
+
+function click_eigenvalue(G_eig, c)
+% Click the eigenvalue c on the eigenvalue map: the CurrentPoint of the figure at it and the
+% ButtonDownFcn of the marker set that holds it, as a mouse click calls it.
+    ax = G_eig.ax(1);
+    fig = ancestor(ax, "figure");
+    fig.CurrentPoint = data_to_figure(ax, real(c), imag(c));
+    a_h = G_eig.sct_plt.Element;
+    rv_d = arrayfun(@(h) min([abs(complex(h.XData, h.YData) - c), Inf]), a_h);
+    [~, k] = min(rv_d);
+    a_h(k).ButtonDownFcn(a_h(k), []);
+end
+
+
+function [h, rv_xy] = component_line(G, s_tag)
+% The marker line of the component s_tag of a 2D diagram and its point in the figure [px].
+    tab = G.tab_element;
+    i_comp = tab.Index(tab.Tag == s_tag & tab.Kind == "component");
+    h = findobj(G.ax(1), "-function", @(h) isprop(h, "UserData") && isstruct(h.UserData) ...
+        && isfield(h.UserData, "Type") && h.UserData.Type == "Component" && isequal(h.UserData.Index, i_comp));
+    h = h(1);
+    rv_xy = data_to_figure(G.ax(1), mean(h.XData(isfinite(h.XData))), mean(h.YData(isfinite(h.YData))));
+end
+
+
+function edit_cell(gui, h_body, s_panel, s_var, s_value)
+% Edit a cell of the Parameter tab of a model GUI: the event its page sends when a value is
+% typed into the cell, then the model shown again (the page shows the typed value).
+    c_panel = h_body.Data.tabs{1}.panels;
+    sct = c_panel{cellfun(@(q) q.tag == s_panel, c_panel)};
+    h_body.HTMLEventReceivedFcn(h_body, struct("HTMLEventName", "edit", ...
+        "HTMLEventData", struct("index", sct.index, "var", s_var, "row", 1, "value", s_value)));
+    gui.render(gui.a_target);
+end
+
+
+function select_toggle(h)
+% Press a toggle button (a tab of the app), as a click does.
+    h.Value = true;
+    h.ValueChangedFcn(h, []);
+end
+
+
+function rv_xy = center_of(h)
+% [px] Center of a UI component in its figure (from the bottom left).
+    pos = getpixelposition(h, true);
+    rv_xy = pos(1:2) + pos(3:4)/2;
+end
+
+
+function settle()
+% Let the app finish its drawing (its timers and the pages of uihtml).
+    drawnow;
+    pause(0.6);
+    drawnow;
 end
 
 
@@ -416,6 +591,9 @@ function rec = make_recorder(fig)
 % rec.move(xy, n)        move the pointer to xy in n frames
 % rec.click(f)           a click ring at the pointer, then f() ([] for none)
 % rec.poster()           the next frame is the poster (default: the last frame)
+% rec.overlay(h, rect)   from now on, draw the frame of figure h over each frame in rect
+%                        [x y w h] (px of the figure, from the top left), as a window
+%                        opened over it; rec.overlay([]) none
 % rec.finish(s_base)     write s_base.mp4 and s_base.png
     r_fps = 20;
     s_dir = string(tempname);
@@ -428,6 +606,8 @@ function rec = make_recorder(fig)
     iv_size = [];
     r_scale = NaN;
     n_ripple = 10;
+    h_over = [];
+    rv_over = [];
 
     rec.r_fps = r_fps;
     rec.shot = @shot;
@@ -437,7 +617,15 @@ function rec = make_recorder(fig)
     rec.click = @click;
     rec.poster = @mark_poster;
     rec.set_tick = @set_tick;
+    rec.overlay = @set_overlay;
     rec.finish = @finish;
+
+    function set_overlay(h, rect)
+        h_over = h;
+        if nargin > 1
+            rv_over = rect;
+        end
+    end
 
     function set_tick(f)
         fcn_tick = f;
@@ -467,6 +655,9 @@ function rec = make_recorder(fig)
         n_h = min(iv_size(1), size(m_img, 1));
         n_w = min(iv_size(2), size(m_img, 2));
         m_out(1:n_h, 1:n_w, :) = m_img(1:n_h, 1:n_w, :);
+        if ~isempty(h_over)
+            m_out = draw_window(m_out, frame2im(getframe(h_over)), round(rv_over*r_scale));
+        end
         for i = 1:size(rm_ripple, 1)
             m_out = draw_ring(m_out, rm_ripple(i, 1:2), rm_ripple(i, 3)/n_ripple, r_scale);
         end
@@ -558,6 +749,50 @@ function m = draw_pointer(m, rv_xy, r_s)
         P = P.*(1 - r_black);
         m(iv_y, iv_x, c) = uint8(P);
     end
+end
+
+
+function m = draw_window(m, m_win, iv_rect)
+% Draw the image m_win of a window, resized to iv_rect [x y w h] (px of the image, from the
+% top left), over m with a gray edge and a soft shadow.
+    m_win = resize_image(m_win, iv_rect([4 3]));
+    [n_h, n_w, ~] = size(m);
+    iv_y = iv_rect(2) + (1:iv_rect(4));
+    iv_x = iv_rect(1) + (1:iv_rect(3));
+    for r_off = 10:-2:2                % the shadow: darker near the window
+        iv_sy = min(max(iv_y + r_off, 1), n_h);
+        iv_sx = min(max(iv_x + r_off, 1), n_w);
+        m(iv_sy, iv_sx, :) = uint8(double(m(iv_sy, iv_sx, :))*(0.93 + 0.004*r_off));
+    end
+    l_y = iv_y >= 1 & iv_y <= n_h;
+    l_x = iv_x >= 1 & iv_x <= n_w;
+    m(iv_y(l_y), iv_x(l_x), :) = m_win(l_y, l_x, :);
+    rv_edge = uint8([150 150 150]);
+    for c = 1:3
+        m(iv_y(l_y), iv_x([find(l_x, 1), find(l_x, 1, "last")]), c) = rv_edge(c);
+        m(iv_y([find(l_y, 1), find(l_y, 1, "last")]), iv_x(l_x), c) = rv_edge(c);
+    end
+end
+
+
+function m = resize_image(m, iv_size)
+% Resize an RGB image to iv_size [rows cols]: a box filter of the scale, then bilinear.
+    [n_h, n_w, ~] = size(m);
+    r_s = max(n_h/iv_size(1), n_w/iv_size(2));
+    m = double(m);
+    if r_s > 1
+        n_k = max(1, round(r_s));
+        K = ones(n_k)/n_k^2;
+        for c = 1:3
+            m(:, :, c) = conv2(m(:, :, c), K, "same");
+        end
+    end
+    [X, Y] = meshgrid(linspace(1, n_w, iv_size(2)), linspace(1, n_h, iv_size(1)));
+    m_out = zeros(iv_size(1), iv_size(2), 3);
+    for c = 1:3
+        m_out(:, :, c) = interp2(m(:, :, c), X, Y, "linear");
+    end
+    m = uint8(m_out);
 end
 
 

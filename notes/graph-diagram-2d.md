@@ -845,7 +845,7 @@ F59 に 4 件: `test3DBusHeightModeNoneDrawsNoHeightGuide`(medium)、`test3DHeig
 - `draw_diagram_2d` の単線結線図モード: すべて黒、ラベルは枠なし・Helvetica。発電機(`component.generator.*` のクラス)は円と正弦波 1 周期を NaN で区切った 1 本の line(Tag `GeneratorGlyph`、UserData は機器なのでクリックとデータチップはそのまま)。半径は `min(0.025·span, 0.8·接続線の最初の区間)`(d0 基準では IEEE68 で小さすぎた)。接続線は円の縁で止める(点の数は変えないので `update_heights` もそのまま)。負荷(`component.load.*`)は接続線の向き(母線から離れる向き)の塗った三角のマーカー(`<`、`>`、`v`、`^`)。ほかの機器(インバータなど)は `Shape` のマーカーを黒で。
 - `apply_style`: 色の値のない母線・ブランチ・接続線を灰色(0.2)ではなく黒に。`set_style` の色は今までどおり優先。
 - `create_scene`: 発電機の円を `DrawBox` に含める(IEEE14 の B003 の発電機が切れていた)。`fit_axes` の余白は 3% → 1%。
-- 図の大きさ(Parent が空のとき): `figure("Units","centimeters")` の幅 8.5 cm(2 段組の 1 段)、高さは描いた範囲の縦横比 × 8.5 cm を 3〜12 cm に収める。tiledlayout の `Padding="tight"`。ラベルは 8 pt、30 母線を超えると `8·sqrt(30/n_bus)`(最小 5 pt、IEEE68 は 5 pt)。8 pt のままでは IEEE68 のラベルが重なって読めなかった。
+- 図の大きさ(Parent が空のとき): `figure("Units","centimeters")` の幅 8.5 cm(2 段組の 1 段)、高さは描いた範囲の縦横比 × 8.5 cm を 3〜12 cm に収める。tiledlayout の `Padding="tight"`。ラベルは 6 pt、30 母線を超えると `6·sqrt(30/n_bus)`(最小 4 pt、IEEE39 は 5 pt、IEEE68 は 4 pt)。8 pt のままでは IEEE68 のラベルが重なって読めなかった。2026-11-26 に既定を 8 pt(最小 5 pt)から 6 pt(最小 4 pt)へ小さくしました(利用者の依頼。IEEE14 でラベルが図に対して大きすぎたため)。
 - 画像(600 dpi、`exportgraphics(G.ax, …)`): `scratchpad/singleline/IEEE{9bus,14bus,68bus}_{net,res}.png`。
 
 ### 20.3 置き換えたもの
