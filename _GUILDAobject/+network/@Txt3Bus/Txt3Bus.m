@@ -5,6 +5,12 @@ classdef Txt3Bus < PowerNetwork
 % (gen-1axis) at buses 1 and 3 and a constant-impedance load (load-impedance) at
 % bus 2, on a 100 MVA base.
 %
+% <@Citations>
+% - 石崎孝幸 編著, 川口貴弘, 河辺賢一 著, 『電力系統のシステム制御工学
+%   ―システム数理とMATLABシミュレーション―』 (計測・制御セレクションシリーズ 4),
+%   計測自動制御学会 編, コロナ社, 2022, Example 2.1, ISBN 978-4-339-03384-7,
+%   [publisher page](https://www.coronasha.co.jp/np/isbn/9784339033847/).
+%
 % <@Examples>
 % Run the power flow and simulate a fault at bus 2:
 %

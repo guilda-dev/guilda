@@ -29,6 +29,17 @@ classdef IEEE39Bus < PowerNetwork
 % initial condition, GUILDA:SolverODE:InitialConditionFailed). For a fault, replace
 % the loads with load-impedance first (second example).
 %
+% <@Citations>
+% - I. Hiskens, "IEEE PES Task Force on Benchmark Systems for Stability Controls: Report
+%   on the 39-bus system (New England Reduced Model)," Tech. Rep., 2013,
+%   [https://cmte.ieee.org/pes-psdp/?p=331](https://cmte.ieee.org/pes-psdp/?p=331).
+% - T. Athay, R. Podmore, and S. Virmani, "A practical method for the direct analysis of
+%   transient stability," *IEEE Trans. Power App. Syst.*, vol. PAS-98, no. 2, pp. 573–584,
+%   1979, doi: [10.1109/TPAS.1979.319407](https://doi.org/10.1109/TPAS.1979.319407).
+% - M. A. Pai, *Energy Function Analysis for Power System Stability*. Boston, MA, USA:
+%   Kluwer Academic, 1989, doi:
+%   [10.1007/978-1-4613-1635-0](https://doi.org/10.1007/978-1-4613-1635-0).
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE39Bus();

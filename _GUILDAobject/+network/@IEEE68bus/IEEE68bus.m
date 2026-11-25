@@ -2,7 +2,7 @@ classdef IEEE68bus < PowerNetwork
 % IEEE 68-bus test system (NETS-NYPS 16-machine), with AVRs and PSSs on request.
 % The 68-bus, 16-machine reduced model of the New England Test System (NETS) and
 % the New York Power System (NYPS) with three neighbouring areas, from B. Pal and
-% B. Chaudhuri, "Robust Control in Power Systems", Springer, 2005, pp. 171-178.
+% B. Chaudhuri, "Robust Control in Power Systems", Springer, 2005.
 % It is a standard benchmark for inter-area oscillations and wide-area control.
 % It has 68 buses, 83 branches (64 lines and 19 transformers), 16 generators and
 % 35 loads; 60 Hz, 100 MVA base.
@@ -59,6 +59,13 @@ classdef IEEE68bus < PowerNetwork
 % equilibrium is unstable: one real eigenvalue is about +0.13 1/s. With the AVRs and PSSs
 % (`LocalController=true`) it is stable; the largest real part apart from the zero mode
 % of the common angle is about -0.0051 1/s.
+%
+% <@Citations>
+% - B. Pal and B. Chaudhuri, *Robust Control in Power Systems*. New York, NY, USA:
+%   Springer, 2005, doi: [10.1007/b136490](https://doi.org/10.1007/b136490).
+% - A. K. Singh and B. C. Pal, "IEEE PES Task Force on Benchmark Systems for Stability
+%   Controls: Report on the 68-bus, 16-machine, 5-area system," ver. 3.3, Tech. Rep.,
+%   2013, [https://cmte.ieee.org/pes-psdp/?p=331](https://cmte.ieee.org/pes-psdp/?p=331).
 %
 % <@Examples>
 % Run the power flow and simulate a fault at bus 1, with the AVRs and PSSs:

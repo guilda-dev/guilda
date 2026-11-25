@@ -76,6 +76,15 @@ classdef IEEE14bus_lossless < PowerNetwork
 %    ///  :   Shunt (bus)
 % ```
 %
+% <@Citations>
+% - R. D. Zimmerman, C. E. Murillo-Sánchez, and R. J. Thomas, "MATPOWER: Steady-state
+%   operations, planning, and analysis tools for power systems research and education,"
+%   *IEEE Trans. Power Syst.*, vol. 26, no. 1, pp. 12–19, 2011, doi:
+%   [10.1109/TPWRS.2010.2051168](https://doi.org/10.1109/TPWRS.2010.2051168).
+% - University of Washington, "Power Systems Test Case Archive: 14 bus power flow test
+%   case," [https://labs.ece.uw.edu/pstca/](https://labs.ece.uw.edu/pstca/) (accessed
+%   2026-11-25).
+%
 % <@Examples>
 % Run the power flow and simulate a fault at bus 8:
 %

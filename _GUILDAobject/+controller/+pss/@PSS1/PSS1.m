@@ -29,6 +29,20 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
 % state is then the block output. A block with `td = 0` and `tn ~= 0` is improper and raises
 % an error at `initialize`.
 %
+% <@Citations>
+% - 石崎孝幸 編著, 川口貴弘, 河辺賢一 著, 『電力系統のシステム制御工学
+%   ―システム数理とMATLABシミュレーション―』 (計測・制御セレクションシリーズ 4),
+%   計測自動制御学会 編, コロナ社, 2022, Sect. 5.3.4, ISBN 978-4-339-03384-7,
+%   [publisher page](https://www.coronasha.co.jp/np/isbn/9784339033847/).
+% - *IEEE Recommended Practice for Excitation System Models for Power System Stability
+%   Studies*, IEEE Std 421.5-2016, 2016, doi:
+%   [10.1109/IEEESTD.2016.7553421](https://doi.org/10.1109/IEEESTD.2016.7553421).
+% - P. Kundur, *Power System Stability and Control*. New York, NY, USA: McGraw-Hill, 1994,
+%   ISBN 0-07-035958-X.
+% - J. H. Chow, G. E. Boukarim, and A. Murdoch, "Power system stabilizers as undergraduate
+%   control design projects," *IEEE Trans. Power Syst.*, vol. 19, no. 1, pp. 144–151,
+%   2004, doi: [10.1109/TPWRS.2003.821003](https://doi.org/10.1109/TPWRS.2003.821003).
+%
 % <@Examples>
 % Attach an AVR with this PSS to a generator and simulate a fault:
 %

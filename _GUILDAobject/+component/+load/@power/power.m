@@ -26,6 +26,12 @@ classdef power < component.load.abstract
 % I = \overline{\left(\frac{P_\mathrm{load} + jQ_\mathrm{load}}{V}\right)}
 % ```
 %
+% <@Citations>
+% - 石崎孝幸 編著, 川口貴弘, 河辺賢一 著, 『電力系統のシステム制御工学
+%   ―システム数理とMATLABシミュレーション―』 (計測・制御セレクションシリーズ 4),
+%   計測自動制御学会 編, コロナ社, 2022, Sect. 2.4.1, ISBN 978-4-339-03384-7,
+%   [publisher page](https://www.coronasha.co.jp/np/isbn/9784339033847/).
+%
 % <@Examples>
 % ```matlab
 % net = PowerNetwork();
