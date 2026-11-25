@@ -125,7 +125,7 @@
 
       <h2><span lang="en">Update Log</span><span lang="ja">更新履歴</span></h2>
       <div id="update-log-container" class="ulog is-compact"></div>
-      <p class="ulog-more"><a class="btn" href="updatelog.html"><span lang="en">Show more</span><span lang="ja">もっと見る</span> <span aria-hidden="true">→</span></a></p>
+      <p class="ulog-more"><a href="updatelog.html"><span lang="en">Show more</span><span lang="ja">もっと見る</span></a></p>
     </div>
   </main>
 
@@ -215,7 +215,7 @@
                   <span class="developer-link-title">${escapeHtml(item.title)}</span>
                   <span class="developer-link-description">${escapeHtml(item.description)}</span>
                 </span>
-                <span class="developer-link-action">${item.link.startsWith('class.html') ? (ja ? 'リファレンスを見る' : 'View reference') : (ja ? 'ガイドを見る' : 'View guide')} <span aria-hidden="true">→</span></span>
+                <span class="developer-link-action">${item.link.startsWith('class.html') ? (ja ? 'リファレンスを見る' : 'View reference') : (ja ? 'ガイドを見る' : 'View guide')}</span>
               </a>
             `).join('')}
           </div>
