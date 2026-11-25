@@ -612,8 +612,11 @@
       "Throws": [],
       "Summary": "Display the violated operating limits of the power flow result.",
       "Desc": "Shows tab_violation grouped by kind (Bus, Component, Branch): for each violated limit\nits object, the limit, the solution value, the bound and the excess. A kind without a\nviolation is left out; without any, one line says so. The power flow never applies the\nlimits (see ResultPF). It reads only the stored result. With one output it returns the\ntext instead of displaying it.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nres.disp_violation()\nres.disp_violation(Class=\"Branch\")\n```\n\nSee also ResultPF.tab_violation, ResultPF.disp_summary",
+      "SeeAlso": [
+        "ResultPF.tab_violation",
+        "ResultPF.disp_summary"
+      ],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nres.disp_violation()\nres.disp_violation(Class=\"Branch\")\n```",
       "Deprecated": ""
     },
     {
@@ -711,8 +714,12 @@
       ],
       "Summary": "Display the branch flows of the power flow result.",
       "Desc": "One row per branch: its end buses (From = the first bus, To = the second), the power\nflowing into the branch at each end (Pfrom, Qfrom, Pto, Qto), its losses (Ploss,\nQloss) and its loading, the larger |S| of the two ends over Smax of its operating\nlimits (NaN when Smax is infinite or not held). It reads only the stored result. With\nUnit=\"SI\", P and Q are in MW and Mvar (times baseMVA of the network). With one output it\nreturns the text instead of displaying it.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nres.disp_branch()\nres.disp_branch(Sort=\"loss\", Unit=\"SI\")     % largest active power loss first\n```\n\nSee also ResultPF.disp_bus, ResultPF.disp_violation, ResultPF.tab_branch",
+      "SeeAlso": [
+        "ResultPF.disp_bus",
+        "ResultPF.disp_violation",
+        "ResultPF.tab_branch"
+      ],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nres.disp_branch()\nres.disp_branch(Sort=\"loss\", Unit=\"SI\")     % largest active power loss first\n```",
       "Deprecated": ""
     },
     {
@@ -810,8 +817,12 @@
       ],
       "Summary": "Display the bus values of the power flow result.",
       "Desc": "One row per bus: its type (slack, PV or PQ), the values its power flow condition sets\n(slack: V and Varg; PV: P and V; PQ: P and Q), and the solution |V|, the angle [deg],\nP and Q (injections into the network). It reads only the stored result. With\nUnit=\"SI\", |V| is in kV (times baseKV of the bus) and P, Q in MW and Mvar (times\nbaseMVA of the network); the set values stay in per unit. With one output it returns\nthe text instead of displaying it.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nres.disp_bus()\nres.disp_bus(Bus=[\"B001\",\"B005\"], Unit=\"SI\")\nres.disp_bus(Sort=\"V\")              % lowest |V| first\n```\n\nSee also ResultPF.disp_summary, ResultPF.disp_branch, ResultPF.plot_voltage",
+      "SeeAlso": [
+        "ResultPF.disp_summary",
+        "ResultPF.disp_branch",
+        "ResultPF.plot_voltage"
+      ],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nres.disp_bus()\nres.disp_bus(Bus=[\"B001\",\"B005\"], Unit=\"SI\")\nres.disp_bus(Sort=\"V\")              % lowest |V| first\n```",
       "Deprecated": ""
     },
     {
@@ -866,8 +877,12 @@
       "Throws": [],
       "Summary": "Return the values that disp_summary shows, as a struct.",
       "Desc": "The fields hold the outcome of the calculation, the numbers of buses and branches, the\nsums of the bus injections, the largest and smallest |V| with their buses and the number\nof violated operating limits. The buses with a positive P are the generation, those with\na negative P the load: r_Pgeneration and r_Qgeneration are the sums of P and Q of the\nfirst, r_Pload and r_Qload the sums of -P and -Q of the second (Q of a bus with P = 0\nis in neither), and r_Ploss and r_Qloss the sums of P and Q of all buses. For a result\nthat did not converge (flag <= 0) these sums, the |V| fields and n_violation are NaN\n(the bus tags \"\") as disp_summary leaves them out: the values of the last iterate are\nnot a solution. It reads only the stored result.\n\n| Field | Value |\n| --- | --- |\n| `s_network`, `s_Solver` | Tag of the network; option Solver of the run (\"\" when not held) |\n| `l_success`, `r_flag` | Convergence (flag > 0) and the flag (double) |\n| `n_iteration`, `r_residual`, `r_elapsed` | Iterations, largest residual [pu], elapsed time [s] (NaN when not held) |\n| `n_bus`, `n_slack`, `n_PV`, `n_PQ`, `n_branch` | Numbers of buses by type and of branches |\n| `r_Pgeneration`, `r_Qgeneration` | [pu] Generation (buses with P > 0) |\n| `r_Pload`, `r_Qload` | [pu] Load (buses with P < 0), positive for a consumption |\n| `r_Ploss`, `r_Qloss` | [pu] Losses: sums of P and Q of all buses |\n| `r_Vmax`, `s_VmaxBus`, `r_Vmin`, `s_VminBus` | [pu] Largest and smallest \\|V\\| and their buses |\n| `n_violation` | Number of violated operating limits (rows of tab_violation) |",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nsct = res.get_summary();\nsct.r_Ploss                  % active power losses [pu]\n[sct.r_Vmin, sct.s_VminBus]  % smallest |V| and its bus\n```\n\nSee also ResultPF.disp_summary, ResultPF.tab_bus, ResultPF.tab_violation",
+      "SeeAlso": [
+        "ResultPF.disp_summary",
+        "ResultPF.tab_bus",
+        "ResultPF.tab_violation"
+      ],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nsct = res.get_summary();\nsct.r_Ploss                  % active power losses [pu]\n[sct.r_Vmin, sct.s_VminBus]  % smallest |V| and its bus\n```",
       "Deprecated": ""
     },
     {
@@ -922,8 +937,13 @@
       "Throws": [],
       "Summary": "Display a summary of the power flow result.",
       "Desc": "Shows a title line with the outcome (Solver, converged or not, flag) and one bullet per\nitem: the calculation (iterations, largest residual, elapsed time), the message of the\nsolver, the numbers of buses of each type and of branches, the generation (buses with a\npositive P), the load (buses with a negative P) and the losses (sums over all buses),\neach with P and Q, the largest and smallest |V| with their buses, and the number of\nviolated operating limits (tab_violation). The values are those of get_summary. For a\nresult that did not converge (flag <= 0) the injection sums, |V| and violations are\nleft out, with a bullet saying so: the values of the last iterate are not a solution.\nIt reads only the stored result. With one output it returns the text instead of\ndisplaying it, by the same rule.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nres.disp_summary()\ns = res.disp_summary();      % as text\n```\n\nSee also ResultPF.get_summary, ResultPF.disp_bus, ResultPF.disp_branch, ResultPF.disp_violation",
+      "SeeAlso": [
+        "ResultPF.get_summary",
+        "ResultPF.disp_bus",
+        "ResultPF.disp_branch",
+        "ResultPF.disp_violation"
+      ],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nres.disp_summary()\ns = res.disp_summary();      % as text\n```",
       "Deprecated": ""
     },
     {
@@ -991,8 +1011,12 @@
       "Throws": [],
       "Summary": "Draw the network of the power flow as a black-and-white single-line diagram for a paper.",
       "Desc": "The same drawing as PowerNetwork.plot_single_line_diagram, from the network snapshot of\nthe result (as plot_diagram): the 2D layout of the graph parameters, a bus as a thick\nbar or dot, a branch as a thin line, a transformer as two overlapping circles, a\ngenerator (a class of component.generator) as a circle with a sine inside, a load\n(component.load) as a filled triangle pointing away from its bus, any other component\nas a marker of its Shape, all in black on white, and the bus tags as labels without a\nbox. The solution sets no color, width or size: there are no colors, colorbar, title,\nflow dots or data-dependent widths, and the axes are hidden with tight limits. The data\ntips show the values of the solution.\n\nWith Parent empty, a new white figure for one column of a two-column paper is made:\n8.5 cm wide, as high as the layout needs (3 to 12 cm), with labels of 8 pt (smaller\nbeyond 30 buses: 8*sqrt(30/n_bus), at least 5 pt), so that exportgraphics writes it at\nits size. With a Parent the diagram is drawn in it.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nG = res.plot_single_line_diagram();\nexportgraphics(G.ax, \"ieee9.png\", Resolution=600);\n```\n\nSee also ResultPF.plot_diagram, PowerNetwork.plot_single_line_diagram, GraphNetDiagram",
+      "SeeAlso": [
+        "ResultPF.plot_diagram",
+        "PowerNetwork.plot_single_line_diagram",
+        "GraphNetDiagram"
+      ],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nG = res.plot_single_line_diagram();\nexportgraphics(G.ax, \"ieee9.png\", Resolution=600);\n```",
       "Deprecated": ""
     },
     {
@@ -1074,8 +1098,13 @@
       ],
       "Summary": "Draw the power flow solution as a network diagram (GraphNetDiagram; 2D, or Dimension=\"3D\").",
       "Desc": "The bus voltages are Vphasor of tab_bus. The result holds no current of each component,\nso the bus injection P + jQ is split among the components of the bus as initialize\nwould split it (tools.distribute_power with \"baseMVA\": tab_parameter.powerflow of the\nsnapshot, the remainder at the slack bus (l_isSlack of the snapshot) and the split of\nthe bus Q), and each component current is\nconj((P + jQ) / V). The branch flows come from the admittance matrix cm_Y of each branch\nin the snapshot. It reads only the stored result and its network snapshot. The other\nName-Value options set the properties of the GraphNetDiagram.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE14bus().calculate_powerflow();\nG = res.plot_diagram();\nG = res.plot_diagram(ColorMode=\"P\", LabelMode=\"value\");\n```\n\nSee also PowerNetwork.plot_diagram, ResultODE.plot_diagram, GraphNetDiagram, ResultPF.plot_single_line_diagram",
+      "SeeAlso": [
+        "PowerNetwork.plot_diagram",
+        "ResultODE.plot_diagram",
+        "GraphNetDiagram",
+        "ResultPF.plot_single_line_diagram"
+      ],
+      "Examples": "```matlab\nres = network.IEEE14bus().calculate_powerflow();\nG = res.plot_diagram();\nG = res.plot_diagram(ColorMode=\"P\", LabelMode=\"value\");\n```",
       "Deprecated": ""
     },
     {
@@ -1159,8 +1188,13 @@
       ],
       "Summary": "Draw the power flow solution as a spring-mass picture of the buses.",
       "Desc": "The nodes are the bus voltage phasors (Vphasor of tab_bus) and the springs are the\nbranches. The result holds no states of the components, so there are no own nodes (such\nas the internal voltage of a generator): each bus with a component gets one arrow pair,\nthe active power P and the reactive-current magnitude Iq of its injection (Iphasor) at\nthe bus voltage. Marker, MarkerSize and Color of the graph parameters of the buses set\nthe appearance. Dimension=2 draws the phasor plane (GraphSpring2D), Dimension=3 the\nsurface z = log|V| (GraphSpring3D). It reads only the stored result and its network\nsnapshot. For the own nodes, draw the equilibrium with PowerNetwork.plot_spring_model.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nG = res.plot_spring_model();\nG = res.plot_spring_model(Dimension=3);\n```\n\nSee also PowerNetwork.plot_spring_model, ResultODE.plot_spring_model, GraphSpring2D, GraphSpring3D",
+      "SeeAlso": [
+        "PowerNetwork.plot_spring_model",
+        "ResultODE.plot_spring_model",
+        "GraphSpring2D",
+        "GraphSpring3D"
+      ],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nG = res.plot_spring_model();\nG = res.plot_spring_model(Dimension=3);\n```",
       "Deprecated": ""
     },
     {
@@ -1242,8 +1276,13 @@
       ],
       "Summary": "Plot the convergence of the power flow calculation.",
       "Desc": "Draws the largest residual of the power equations at each iterate stored in\ncm_Vhistory, on a log scale, against rv_step: the iteration number, or the virtual time\nfor Solver \"dynamic\". The iteration axis has integer ticks only. The residuals are those the solver checks against Tolerance\n(private power_equation of SolverPF): P, or the angle at the slack bus; Q, or |V| at PV\nand slack buses. They are computed from the stored power flow conditions\n(tab_PFcondition) and admittance matrix (cm_Y). Tolerance is drawn as a dashed\nreference line. With Bus, a second panel shows |V| of those buses at each iterate. It\nreads only the stored result; a result without the conditions (e.g. one of initialize\nwithout a power flow) stops with GUILDA:ResultPF:NoHistory.\n\nIt returns the chart G (GraphChart). Its elements (kind \"line\") are tagged:\n\n- \"Residual\": the largest residual (first panel);\n- the bus tag: |V| of the bus (second panel, with Bus).\n\nFor Solver \"dynamic\" the panels are time panels over the virtual time (G.set_time\ndraws a cursor).",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE14bus().calculate_powerflow(WarmStart=false);\nG = res.plot_convergence();\nG.set_style(\"Residual\", Color=\"k\", LineWidth=2);\nres.plot_convergence(Bus=[\"B001\",\"B014\"]);   % also |V| of two buses\n```\n\nSee also GraphChart, ResultPF.cm_Vhistory, ResultPF.rv_step, SolverPF",
+      "SeeAlso": [
+        "GraphChart",
+        "ResultPF.cm_Vhistory",
+        "ResultPF.rv_step",
+        "SolverPF"
+      ],
+      "Examples": "```matlab\nres = network.IEEE14bus().calculate_powerflow(WarmStart=false);\nG = res.plot_convergence();\nG.set_style(\"Residual\", Color=\"k\", LineWidth=2);\nres.plot_convergence(Bus=[\"B001\",\"B014\"]);   % also |V| of two buses\n```",
       "Deprecated": ""
     },
     {
@@ -1325,8 +1364,13 @@
       "Throws": [],
       "Summary": "Plot the branch flows of the power flow result.",
       "Desc": "Draws one bar per branch (tab_branch order, tags on the axis). The bar height by Quantity:\n\n- \"P\": Pfrom, the active power into the branch at its first bus [pu].\n- \"Q\": Qfrom, the reactive power into the branch at its first bus [pu].\n- \"S\": the larger apparent power of the two ends [pu].\n- \"loading\": that apparent power over Smax of the branch (operating limits in the\n  snapshot; no bar when Smax is infinite), with a dashed reference line at 1.\n- \"loss\": Ploss, the active power loss of the branch [pu].\n\nIt reads only the stored result. It returns the chart G (GraphChart) with one element\nper bar (kind \"bar\"), tagged with the branch tag.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE14bus().calculate_powerflow();\nG = res.plot_branch();                   % Pfrom of each branch\nG.set_style(G.tab_element.Tag(1), Color=\"r\");\nres.plot_branch(Quantity=\"loading\");     % |S| / Smax with the line at 1\n```\n\nSee also GraphChart, ResultPF.disp_branch, ResultPF.tab_branch, ResultPF.plot_voltage",
+      "SeeAlso": [
+        "GraphChart",
+        "ResultPF.disp_branch",
+        "ResultPF.tab_branch",
+        "ResultPF.plot_voltage"
+      ],
+      "Examples": "```matlab\nres = network.IEEE14bus().calculate_powerflow();\nG = res.plot_branch();                   % Pfrom of each branch\nG.set_style(G.tab_element.Tag(1), Color=\"r\");\nres.plot_branch(Quantity=\"loading\");     % |S| / Smax with the line at 1\n```",
       "Deprecated": ""
     },
     {
@@ -1420,8 +1464,12 @@
       "Throws": [],
       "Summary": "Plot the bus voltage profile.",
       "Desc": "Draws the voltage profile of the solution as bar charts, one bar per bus: the voltage\nmagnitude [pu] and the phase angle [deg], in two panels (\"both\") or one. With Limit=true,\nthe operating limits Vmin and Vmax of each bus (tab_parameter.operation in the network\nsnapshot) are drawn on the magnitude as dashed lines over the buses; infinite or missing\nlimits are not drawn. With more than 20 buses, the bus names on the horizontal axis\nare thinned to at most 20 evenly spaced ones and turned vertical; every bus keeps its\nbar. It reads only the stored result. The only figure of the analysis:\ncalculate_powerflow draws none (its PlotFcn is a live display during the calculation).\n\nIt returns the chart G (GraphChart). Its elements are tagged:\n\n- the bus tag: the bar of the bus, in each panel drawn (|V| and angle bars of a bus\n  share the tag, so set_style and select act on both);\n- \"Vmin\", \"Vmax\": the dashed limit lines (kind \"line\"), when drawn.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nG = res.plot_voltage();\nG.set_style(\"B002\", Color=\"r\");              % both bars of bus B002\nG.set_style(\"Vmax\", LineStyle=\"-\");\nres.plot_voltage(Quantity=\"magnitude\", Limit=false);\n```\n\nSee also GraphChart, ResultPF.disp_bus, PowerNetwork.calculate_powerflow",
+      "SeeAlso": [
+        "GraphChart",
+        "ResultPF.disp_bus",
+        "PowerNetwork.calculate_powerflow"
+      ],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nG = res.plot_voltage();\nG.set_style(\"B002\", Color=\"r\");              % both bars of bus B002\nG.set_style(\"Vmax\", LineStyle=\"-\");\nres.plot_voltage(Quantity=\"magnitude\", Limit=false);\n```",
       "Deprecated": ""
     },
     {
@@ -2193,8 +2241,12 @@
       ],
       "Summary": "Show the result in a GUI: header, the plot_, disp_, get_ and export methods as buttons, and a view area.",
       "Desc": "With no container it opens a new uifigure; with a container (uifigure, uipanel, uitab or\nuigridlayout) it fills it, so that the GUI can be embedded in another app. The buttons\nare the methods of the result in functionSignatures.json, grouped as Plot, Display, Get\nand Export, so a result class needs no GUI code. A method with options asks for them in\na dialog (DrawerOptionDialog.ask); plots are drawn in the plot panel, and the text of\ndisp_* and the values of get_* are shown in the text area. See DrawerResultGUI.\n\nEvery action runs as a line of MATLAB code in History (HistoryGUILDA.run) on the result\nvariable Variable of its workspace (set to this result when the workspace has no such\nvariable): the code is logged, and `h.history.get_script()` returns a script that repeats\nthe actions, drawing the plots in new figures. The default history prints each `>> code`\nin the Command Window; its script needs the result in the workspace as Variable.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nh = res.launch_gui();                        % new window\nfig = uifigure();\nh = res.launch_gui(uipanel(uigridlayout(fig, [1 1])));   % embedded in a panel\nhist = HistoryGUILDA();\nhist.run(\"Power flow\", \"Calculate\", \"net = network.IEEE9bus(); res_pf = net.calculate_powerflow();\");\nh = hist.get_variable(\"res_pf\").launch_gui(History=hist, Variable=\"res_pf\");\nhist.get_script()                            % the power flow and the actions of the GUI\n```\n\nSee also DrawerResultGUI, HistoryGUILDA, DrawerOptionDialog",
+      "SeeAlso": [
+        "DrawerResultGUI",
+        "HistoryGUILDA",
+        "DrawerOptionDialog"
+      ],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nh = res.launch_gui();                        % new window\nfig = uifigure();\nh = res.launch_gui(uipanel(uigridlayout(fig, [1 1])));   % embedded in a panel\nhist = HistoryGUILDA();\nhist.run(\"Power flow\", \"Calculate\", \"net = network.IEEE9bus(); res_pf = net.calculate_powerflow();\");\nh = hist.get_variable(\"res_pf\").launch_gui(History=hist, Variable=\"res_pf\");\nhist.get_script()                            % the power flow and the actions of the GUI\n```",
       "Deprecated": ""
     },
     {

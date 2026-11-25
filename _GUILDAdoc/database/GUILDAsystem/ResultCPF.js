@@ -943,8 +943,12 @@
       ],
       "Summary": "Plot the branch flows along the path.",
       "Desc": "The flows of each step come from the bus voltages cm_Vbus and the admittance matrix\ncm_Y of each branch in the snapshot sct_network: [I_from; I_to] = cm_Y [V_from; V_to],\nS = V conj(I) at each end. Drawn against lambda by Quantity:\n\n- \"P\": P_from, the active power into the branch at its first bus [pu].\n- \"S\": the larger apparent power |S| of the two ends [pu].\n- \"loading\": that apparent power over Smax of the branch (operating limits in the\n  snapshot), with a dotted line at 1; a branch with an infinite or NaN Smax has no line.\n- \"loss\": the active power loss P_from + P_to [pu]: with no Branch given, one line\n  \"total\", the loss of the whole network (the sum over the branches); with Branch, one\n  line per branch.\n\nBranch selects the branches (tags of the branches of sct_network, or \"all\"); with no\nBranch every branch is drawn (for \"loss\": the total). A dashed line marks the nose. The\nsamples of the chart are the steps (rv_t = 1 ... n_step, named \"Step\"): G.set_time(k)\nputs a marker on each line at step k, and G.link(G2) keeps it in step with\nplot_pvcurve, plot_diagram and the other plots of the steps. A result without the\nsnapshot stops with GUILDA:ResultCPF:NoStepData; \"loading\" with no finite Smax stops\nwith GUILDA:ResultCPF:NoLimit.\n\nIt returns the chart G (GraphChart): one line per branch, tagged with the branch tag\n(or \"total\").\n\nWith PVCurve true (default), the PV curves of PVBus (|V| [pu] against lambda, as\nplot_pvcurve, with the nose line) are an extra panel on top of the chart: it shares the\nlambda axis (the x axes of the lambda panels are linked) and is a time panel with the\nmarker cursor, so set_time(k) puts a marker on each PV curve at step k too. Its lines\nare tagged \"V_\" + bus tag (legend: the bus tag) and come after the elements above in\ntab_element, so their tags and rows stay. G_pv is then G. PVCurve false, or an axes or\nuiaxes Parent, draws the chart alone as before (G_pv []). A PVBus tag that is not in\nsv_bus stops with GUILDA:ResultCPF:UnknownBus.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\nG = res.plot_branch(Quantity=\"S\");\nres.plot_branch(Quantity=\"loss\");                       % total loss\nres.plot_branch(Quantity=\"P\", Branch=[\"B004_B009\", \"B007_B009\"]);\n```\n\nSee also ResultPF.plot_branch, ResultCPF.plot_diagram, ResultCPF.plot_pvcurve",
+      "SeeAlso": [
+        "ResultPF.plot_branch",
+        "ResultCPF.plot_diagram",
+        "ResultCPF.plot_pvcurve"
+      ],
+      "Examples": "```matlab\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\nG = res.plot_branch(Quantity=\"S\");\nres.plot_branch(Quantity=\"loss\");                       % total loss\nres.plot_branch(Quantity=\"P\", Branch=[\"B004_B009\", \"B007_B009\"]);\n```",
       "Deprecated": ""
     },
     {
@@ -1083,8 +1087,12 @@
       ],
       "Summary": "Plot the active or reactive power of the generators along the path.",
       "Desc": "The generators are the components with Q = NaN in the powerflow parameters of the\nsnapshot sct_network (the components that take the free Q of their bus, and the free P\nof the slack bus). At each step their power is S = V conj(I), from cm_Vbus and\ncm_Icomponent, drawn against lambda by Quantity:\n\n- \"P\": the active power [pu] of each generator.\n- \"Q\": the reactive power [pu] of each generator.\n- \"Qmargin\": the distance of Q to the nearer of Qmin and Qmax (operating limits of the\n  generator in the snapshot) [pu]; it is 0 at a limit and negative beyond it. A\n  generator with no finite limit (Inf or NaN Qmin and Qmax) has no line; a dotted line\n  marks 0.\n\nA dotted vertical line marks the lambda of each switch of tab_switch (a PV bus fixed at\nQmin or Qmax by Limits \"Q\"), labelled with the bus and the limit, and a dashed line the\nnose. The samples of the chart are the steps (rv_t = 1 ... n_step, named \"Step\"):\nG.set_time(k) puts a marker on each line at step k, and G.link(G2) keeps it in step with\nplot_pvcurve, plot_diagram and the other plots of the steps. A result without the data\nof the steps stops with GUILDA:ResultCPF:NoStepData; Quantity \"Qmargin\" with no finite\nlimit stops with GUILDA:ResultCPF:NoLimit.\n\nIt returns the chart G (GraphChart): one line per generator, tagged with the component\ntag.\n\nWith PVCurve true (default), the PV curves of PVBus (|V| [pu] against lambda, as\nplot_pvcurve, with the nose line) are an extra panel on top of the chart: it shares the\nlambda axis (the x axes of the lambda panels are linked) and is a time panel with the\nmarker cursor, so set_time(k) puts a marker on each PV curve at step k too. Its lines\nare tagged \"V_\" + bus tag (legend: the bus tag) and come after the elements above in\ntab_element, so their tags and rows stay. G_pv is then G. PVCurve false, or an axes or\nuiaxes Parent, draws the chart alone as before (G_pv []). A PVBus tag that is not in\nsv_bus stops with GUILDA:ResultCPF:UnknownBus.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"], Limits=\"Q\");\nG = res.plot_generator(Quantity=\"Q\");\nres.plot_generator(Quantity=\"Qmargin\", Generator=[\"B002SG1\",\"B003SG1\"]);\n```\n\nSee also ResultCPF.tab_switch, ResultCPF.plot_pvcurve, SolverCPF",
+      "SeeAlso": [
+        "ResultCPF.tab_switch",
+        "ResultCPF.plot_pvcurve",
+        "SolverCPF"
+      ],
+      "Examples": "```matlab\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"], Limits=\"Q\");\nG = res.plot_generator(Quantity=\"Q\");\nres.plot_generator(Quantity=\"Qmargin\", Generator=[\"B002SG1\",\"B003SG1\"]);\n```",
       "Deprecated": ""
     },
     {
@@ -1206,8 +1214,12 @@
       "Throws": [],
       "Summary": "Plot the voltage stability index along the path and the weak buses at the nose.",
       "Desc": "The index is rv_sigmaMin: at each step, the smallest singular value of the Jacobian J of\nthe CPF equations with respect to the unknowns, without the lambda column,\n\n  sigma_min(J) = min over |v| = 1 of |J v|,   J = d f / d [|V|; theta; x]  (lambda fixed).\n\nThe equations f are the P and Q mismatches of the buses [pu] (with UseInternalState,\nalso the state equations of the components), and the unknowns are |V| and theta of the\nbuses (with UseInternalState, also the states of the components), as the corrector\nsolves them (SolverCPF; J by finite differences). At the saddle-node nose J is\nsingular, so sigma_min = 0 there. The participation of a bus is the |V| part of the\nright singular vector of sigma_min, scaled to a largest value of 1 (tab_weakbus at the\nnose).\n\nHow to read it: it has no physical unit and no absolute threshold. Near the nose it\nfalls roughly like sqrt(lambda_max - lambda), so read it against its first value (the\nequilibrium), or read lambda_max - lambda instead. It jumps where Limits \"Q\" switches a\nPV bus to PQ (the equations change). When a \"V\" or \"S\" limit stops the path\n(tab_stop), it ends far from 0: the value at the stop.\n\nSources: P.-A. Löf, T. Smed, G. Andersson, D. J. Hill, \"Fast calculation of a voltage\nstability index\", IEEE Trans. Power Systems 7(1), 1992; B. Gao, G. K. Morison,\nP. Kundur, \"Voltage stability evaluation using modal analysis\", IEEE Trans. Power\nSystems 7(4), 1992.\n\nThe panel of the index draws rv_sigmaMin against lambda, with a dashed line at the nose\n(r_lambdaMax). The lower panel, when tab_weakbus has rows, draws the participation of\nthe buses in the critical mode at the nose (largest 1) as bars, for the TopBus buses of\ntab_weakbus with the largest participation. The samples of the chart are the steps\n(rv_t = 1 ... n_step, named \"Step\"): G.set_time(k) puts a marker on the curve at step\nk, and G.link(G2) keeps it in step with plot_pvcurve, plot_diagram and the other plots\nof the steps. A result without rv_sigmaMin stops with GUILDA:ResultCPF:NoStepData.\n\nWith PVCurve true (default), the PV curves of PVBus (|V| [pu] against lambda, as\nplot_pvcurve, with the nose line) are an extra panel on top of the chart: it shares the\nlambda axis (the x axes of the lambda panels are linked) and is a time panel with the\nmarker cursor, so set_time(k) puts a marker on each PV curve at step k too. Its lines\nare tagged \"V_\" + bus tag (legend: the bus tag) and come after the elements above in\ntab_element, so their tags and rows stay. G_pv is then G. PVCurve false, or an axes or\nuiaxes Parent, draws the chart alone as before (G_pv []). A PVBus tag that is not in\nsv_bus stops with GUILDA:ResultCPF:UnknownBus.\n\nIt returns the chart G (GraphChart): the line \"sigmaMin\", one bar per bus (the bus\ntag), then the PV curves (\"V_\" + bus tag).",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\nG = res.plot_stability_index(TopBus=5);       % PV curves on top, index, weak buses\nres.plot_stability_index(PVCurve=false);      % the index and the weak buses only\n```\n\nSee also ResultCPF.rv_sigmaMin, ResultCPF.tab_weakbus, ResultCPF.plot_pvcurve",
+      "SeeAlso": [
+        "ResultCPF.rv_sigmaMin",
+        "ResultCPF.tab_weakbus",
+        "ResultCPF.plot_pvcurve"
+      ],
+      "Examples": "```matlab\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\nG = res.plot_stability_index(TopBus=5);       % PV curves on top, index, weak buses\nres.plot_stability_index(PVCurve=false);      % the index and the weak buses only\n```",
       "Deprecated": ""
     },
     {
@@ -1328,8 +1340,14 @@
       "Throws": [],
       "Summary": "Draw the continuation power flow path as a spring-mass picture with every step.",
       "Desc": "The picture holds every step of the path as a sample (rv_t = 1 ... n_step, named\n\"Step\"): G.set_time(k) shows step k, G.animate() plays the steps (one frame per step)\nand G.export_video(file) writes them as a video; the title shows \"Step k (λ = ...)\".\nThe nodes, springs and arrows are those of ResultODE.plot_spring_model\n(tools.spring_model_data): every bus, and the own node of each component whose class\nreturns one from its Static get_spring_node (e.g. the internal voltage of a generator),\nwith the states x and inputs u of the components at each step (tab_variable,\nrm_variable), the bus voltages cm_Vbus and the component currents cm_Icomponent.\nDimension=2 draws the phasor plane (GraphSpring2D), Dimension=3 the surface z = log|V|\n(GraphSpring3D). A component whose values are NaN at a step (its get_equilibrium\nstopped there) has no own node, spring or arrows at that step. G.link(G2) keeps it in\nstep with plot_pvcurve, plot_diagram and the other plots of the steps. A result without\nthe data of the steps stops with GUILDA:ResultCPF:NoStepData.\n\nWith PVCurve true (default), the container (Parent, or a new figure of 1400 x 600 px) is\nsplit: the picture on the left (2/3 of the width) and plot_pvcurve(Bus=PVBus) on the\nright (1/3), linked with G.link(G_pv), so the playback of the picture moves the markers on\nthe PV curves. A uigridlayout Parent gets a borderless uipanel first. PVCurve false, or\nan axes or uiaxes Parent, draws the picture alone as before (G_pv []). A PVBus tag that is\nnot in sv_bus stops with GUILDA:ResultCPF:UnknownBus.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE9bus();\nnet.initialize();\nres = net.calculate_continuation_powerflow(LoadBus=\"B005\");\n[G, G_pv] = res.plot_spring_model(PVBus=\"all\");   % PV curves of every bus on the right\nG.animate();\n```\n\nSee also ResultODE.plot_spring_model, GraphSpring2D, GraphSpring3D, Component.get_spring_node, ResultCPF.plot_diagram",
+      "SeeAlso": [
+        "ResultODE.plot_spring_model",
+        "GraphSpring2D",
+        "GraphSpring3D",
+        "Component.get_spring_node",
+        "ResultCPF.plot_diagram"
+      ],
+      "Examples": "```matlab\nnet = network.IEEE9bus();\nnet.initialize();\nres = net.calculate_continuation_powerflow(LoadBus=\"B005\");\n[G, G_pv] = res.plot_spring_model(PVBus=\"all\");   % PV curves of every bus on the right\nG.animate();\n```",
       "Deprecated": ""
     },
     {
@@ -1448,8 +1466,13 @@
       "Throws": [],
       "Summary": "Draw the continuation power flow path as a network diagram (GraphNetDiagram) with every step.",
       "Desc": "The diagram holds every step of the path as a sample (rv_t = 1 ... n_step, named\n\"Step\"; lambda is not monotonic past the nose): G.set_time(k) shows step k (the first\none, the equilibrium, is shown at first), and the title and the control panel show\n\"Step k (λ = ...)\". G.animate() plays the steps, one frame per step. The bus voltages\ncome from cm_Vbus, the current of each component from cm_Icomponent, and the branch\nflows from these voltages and the admittance matrices of the branches in the snapshot\nsct_network, so the colors, labels and arrows show the operating point of each step.\nG.link(G2) keeps it in step with plot_pvcurve, plot_spring_model and the other plots of\nthe steps. It reads only the stored result. A result without the data of the steps\n(e.g. a ResultCPF built by hand) stops with GUILDA:ResultCPF:NoStepData. The other\nName-Value options set the properties of the GraphNetDiagram.\n\nWith PVCurve true (default), the container (Parent, or a new figure of 1400 x 600 px) is\nsplit: the diagram on the left (2/3 of the width) and plot_pvcurve(Bus=PVBus) on the\nright (1/3), linked with G.link(G_pv), so the playback of the diagram moves the markers on\nthe PV curves. A uigridlayout Parent gets a borderless uipanel first. PVCurve false, or\nan axes or uiaxes Parent, draws the diagram alone as before (G_pv []). A PVBus tag that is\nnot in sv_bus stops with GUILDA:ResultCPF:UnknownBus.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.initialize();\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\n[G, G_pv] = res.plot_diagram(ColorMode=\"P\", LabelMode=\"value\");   % PV curves on the right\nG.set_time(res.r_noseStep);       % both at the nose\nG2 = res.plot_diagram(PVCurve=false);   % the diagram alone\n```\n\nSee also ResultODE.plot_diagram, ResultPF.plot_diagram, GraphNetDiagram, ResultCPF.plot_spring_model",
+      "SeeAlso": [
+        "ResultODE.plot_diagram",
+        "ResultPF.plot_diagram",
+        "GraphNetDiagram",
+        "ResultCPF.plot_spring_model"
+      ],
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.initialize();\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\n[G, G_pv] = res.plot_diagram(ColorMode=\"P\", LabelMode=\"value\");   % PV curves on the right\nG.set_time(res.r_noseStep);       % both at the nose\nG2 = res.plot_diagram(PVCurve=false);   % the diagram alone\n```",
       "Deprecated": ""
     },
     {
@@ -1533,8 +1556,12 @@
       ],
       "Summary": "Plot the P-Q-V path of the buses in 3D: P, Q and |V| of each bus at every step.",
       "Desc": "Draws one 3D line per bus through (P, Q, |V|) [pu] of its steps: P + jQ is the total\npower the bus injects into the network, S = V conj(sum of the currents of its\ncomponents), from cm_Vbus and cm_Icomponent; it equals V conj(Y V) of the bus (a load\nbus has negative P). A bus without components has P = Q = 0. By default it draws the\nbuses of plot_pvcurve (options.LoadBus; every bus when it is empty); Bus selects other\nbuses (\"all\" for every bus), and a tag that is not in sv_bus stops with\nGUILDA:ResultCPF:UnknownBus. Drag the axes to turn the view.\n\nThe samples of the chart are the steps (rv_t = 1 ... n_step, named \"Step\", text \"Step k\n(λ = ...)\"): G.set_time(k) puts a marker on each line at its point of step k (none\nbefore the first set_time), and G.link(G2) keeps it in step with the other plots of the\nsteps (plot_pvcurve, plot_diagram, ...). A result without the data of the steps stops\nwith GUILDA:ResultCPF:NoStepData.\n\nIt returns the chart G (GraphChart, one 3D panel): one line per bus, tagged with the\nbus tag.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\nG = res.plot_pqv();\nG.set_time(res.r_noseStep);       % markers at the nose\nres.plot_pqv(Bus=\"all\");\n```\n\nSee also ResultCPF.plot_pvcurve, ResultODE.plot_pqv, GraphChart",
+      "SeeAlso": [
+        "ResultCPF.plot_pvcurve",
+        "ResultODE.plot_pqv",
+        "GraphChart"
+      ],
+      "Examples": "```matlab\nres = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B014\"]);\nG = res.plot_pqv();\nG.set_time(res.r_noseStep);       % markers at the nose\nres.plot_pqv(Bus=\"all\");\n```",
       "Deprecated": ""
     },
     {
@@ -1618,8 +1645,11 @@
       ],
       "Summary": "Plot the PV curves.",
       "Desc": "Draws the PV curves: the voltage magnitude [pu] of each bus against the load parameter\nlambda along the path. A dashed line marks the nose (maximum loading, r_lambdaMax).\nBy default it draws the load buses (options.LoadBus); Bus selects other buses.\nThe only figure of the analysis: calculate_continuation_powerflow draws none (its\nPlotFcn is a live display during the calculation).\n\nIt returns the chart G (GraphChart): one line per bus, tagged with the bus tag. The\nnose line is fixed drawing, not an element. The samples of the chart are the steps\n(rv_t = 1 ... n_step, named \"Step\", text \"Step k (λ = ...)\"): G.set_time(k) puts a\nmarker on each curve at step k (none before the first set_time), and G.link(G2) keeps\nit in step with the other plots of the steps (plot_diagram, plot_spring_model,\nplot_stability_index, plot_generator, plot_branch) and with\nnet.get_sys({res, steps}).plot_eigenvalue / plot_eigenvalue_path.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nG = res.plot_pvcurve(Bus=\"all\");\nG.set_style(G.tab_element.Tag(1), Color=\"r\", LineWidth=2);\nG.set_time(res.r_noseStep);       % markers at the nose\n```\n\nSee also GraphChart, PowerNetwork.calculate_continuation_powerflow",
+      "SeeAlso": [
+        "GraphChart",
+        "PowerNetwork.calculate_continuation_powerflow"
+      ],
+      "Examples": "```matlab\nG = res.plot_pvcurve(Bus=\"all\");\nG.set_style(G.tab_element.Tag(1), Color=\"r\", LineWidth=2);\nG.set_time(res.r_noseStep);       % markers at the nose\n```",
       "Deprecated": ""
     },
     {
@@ -1706,8 +1736,12 @@
       ],
       "Summary": "Get the values of the variable map at a step of the continuation power flow path.",
       "Desc": "Returns the operating point at step Step (the index in rv_lambda, as r_noseStep), in\nthe order of the rows of tab_map (by default the whole tab_variable, so rv is a point\nfor net.get_sys(rv)). tab_map may be any part of tab_variable, e.g. the rows x, Vre,\nVim, u, uc of the variable map of a bus or component of the analysed network\n(bus.get_variable_map(), comp.get_variable_map()); its rows are found by Kind, Owner,\nName and Bus. The other rows of a variable map (the signals y, yc) are not in the result\nand stop with GUILDA:ResultCPF:UnknownVariable. Step must be an integer from 1 to\nnumel(rv_lambda) (GUILDA:ResultCPF:PointStep); there is no interpolation between steps.\nHow the point of a step is made is in the class help (ResultCPF). net.get_sys({result,\nrv_step}) reads the steps rv_step through this method, one section per step.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nresult = net.calculate_continuation_powerflow(LoadBus=\"B014\");\nx0 = result.get_point(1);                     % the equilibrium of net.initialize\nxn = result.get_point(result.r_noseStep);     % the nose\nV  = result.get_point(5, net.a_Bus{14}.get_variable_map());   % rows of one bus\nlin = net.get_sys({result, [1 result.r_noseStep]});          % two sections\n```\n\nSee also ResultCPF, PowerNetwork.get_variable_map, SolverLIN",
+      "SeeAlso": [
+        "ResultCPF",
+        "PowerNetwork.get_variable_map",
+        "SolverLIN"
+      ],
+      "Examples": "```matlab\nresult = net.calculate_continuation_powerflow(LoadBus=\"B014\");\nx0 = result.get_point(1);                     % the equilibrium of net.initialize\nxn = result.get_point(result.r_noseStep);     % the nose\nV  = result.get_point(5, net.a_Bus{14}.get_variable_map());   % rows of one bus\nlin = net.get_sys({result, [1 result.r_noseStep]});          % two sections\n```",
       "Deprecated": ""
     },
     {
@@ -2251,8 +2285,12 @@
       ],
       "Summary": "Show the result in a GUI: header, the plot_, disp_, get_ and export methods as buttons, and a view area.",
       "Desc": "With no container it opens a new uifigure; with a container (uifigure, uipanel, uitab or\nuigridlayout) it fills it, so that the GUI can be embedded in another app. The buttons\nare the methods of the result in functionSignatures.json, grouped as Plot, Display, Get\nand Export, so a result class needs no GUI code. A method with options asks for them in\na dialog (DrawerOptionDialog.ask); plots are drawn in the plot panel, and the text of\ndisp_* and the values of get_* are shown in the text area. See DrawerResultGUI.\n\nEvery action runs as a line of MATLAB code in History (HistoryGUILDA.run) on the result\nvariable Variable of its workspace (set to this result when the workspace has no such\nvariable): the code is logged, and `h.history.get_script()` returns a script that repeats\nthe actions, drawing the plots in new figures. The default history prints each `>> code`\nin the Command Window; its script needs the result in the workspace as Variable.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nh = res.launch_gui();                        % new window\nfig = uifigure();\nh = res.launch_gui(uipanel(uigridlayout(fig, [1 1])));   % embedded in a panel\nhist = HistoryGUILDA();\nhist.run(\"Power flow\", \"Calculate\", \"net = network.IEEE9bus(); res_pf = net.calculate_powerflow();\");\nh = hist.get_variable(\"res_pf\").launch_gui(History=hist, Variable=\"res_pf\");\nhist.get_script()                            % the power flow and the actions of the GUI\n```\n\nSee also DrawerResultGUI, HistoryGUILDA, DrawerOptionDialog",
+      "SeeAlso": [
+        "DrawerResultGUI",
+        "HistoryGUILDA",
+        "DrawerOptionDialog"
+      ],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nh = res.launch_gui();                        % new window\nfig = uifigure();\nh = res.launch_gui(uipanel(uigridlayout(fig, [1 1])));   % embedded in a panel\nhist = HistoryGUILDA();\nhist.run(\"Power flow\", \"Calculate\", \"net = network.IEEE9bus(); res_pf = net.calculate_powerflow();\");\nh = hist.get_variable(\"res_pf\").launch_gui(History=hist, Variable=\"res_pf\");\nhist.get_script()                            % the power flow and the actions of the GUI\n```",
       "Deprecated": ""
     },
     {

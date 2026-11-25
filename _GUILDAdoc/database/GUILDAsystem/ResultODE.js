@@ -708,8 +708,10 @@
       ],
       "Summary": "Judge the result by the rotor angles: out of step beyond a threshold from a reference.",
       "Desc": "The units judged are the components with the state\ndelta (synchronous generators). A unit is out of step when the absolute value of its\nrotor angle relative to the reference exceeds Threshold (360 degrees) at any time of the\nresult. The verdict is\n\n- \"out-of-step\" when a unit is out of step (also when the simulation stopped early after\n  that),\n- \"incomplete\" when no unit is out of step but the simulation did not reach its end\n  (result.flag ~= 1; also flag = 2, a run stopped by StopOnOutOfStep at an angle below\n  Threshold),\n- \"stable\" otherwise.\n\nA run stopped by StopOnOutOfStep (flag = 2) from the same reference at StopAngle >=\nThreshold is \"out-of-step\" for the unit of output.outOfStep at the time of the stop,\neven when the angle at the located stop is a rounding error below StopAngle.\n\nThe reference is the generator of the slack bus (Reference=\"slack\", the default; the\nfirst component with delta on the slack bus of the network snapshot sct_network), the\ncenter of inertia of all the units (Reference=\"COI\", weights the dynamics parameter M of\nthe snapshot), or a unit given by its tag. The states of a tripped unit are NaN while it\nis tripped and do not count; they are left out of the center of inertia at those times.\nOnly the result is read, so the judgment works after the network is edited or deleted.\nFor another criterion, write a function of the result: v = my_judge(result).",
-      "SeeAlso": [],
-      "Examples": "```matlab\nresult  = net.simulate(\"fault\");\nverdict = result.judge_out_of_step();\nverdict = result.judge_out_of_step(Reference=\"COI\", Threshold=180);\nverdict = result.judge_out_of_step(Reference=\"B003SG1\");\n```\n\nSee also ResultODE",
+      "SeeAlso": [
+        "ResultODE"
+      ],
+      "Examples": "```matlab\nresult  = net.simulate(\"fault\");\nverdict = result.judge_out_of_step();\nverdict = result.judge_out_of_step(Reference=\"COI\", Threshold=180);\nverdict = result.judge_out_of_step(Reference=\"B003SG1\");\n```",
       "Deprecated": ""
     },
     {
@@ -887,8 +889,14 @@
       ],
       "Summary": "Draw the time response as a network diagram (GraphNetDiagram; 2D, or Dimension=\"3D\") with every output time.",
       "Desc": "The diagram holds every output time rv_t; G.set_time(t) shows the sample nearest to t\n(the first one is shown at first). The bus voltages come from the variables Vre, Vim of\nthe buses (rm_variable) and the current of each component from rm_Icomponent, so the\ncolors, labels and arrows of the components and branches show the simulated values.\nThe current injection of a bus is the sum of the currents of its components: during a\nfault it does not hold the fault current. The branch flows use the admittance matrix\nof each branch in the branch states of the phase of each time (sct_branchY; a result\nbuilt without it: the closed matrices cm_Y of sct_network): an opened\nbranch (\"6open\") carries no current, a branch with one circuit open (\"3open\") the\ncurrent of the other circuits, and during a fault inside a branch the two ends carry\nthe currents of the faulted branch into the fault point (both ends feed it). At a phase\nboundary the end of one phase takes the states of that phase and the start of the\nnext those of the next. While a unit is tripped its current is\nNaN: its link is gray, its values are NaN and its bus counts its current as 0. A result\nwithout component currents (rm_Icomponent all NaN, e.g. a result built without them)\nstops with GUILDA:ResultODE:NoDiagramData. It reads only the stored result. The other\nName-Value options set the properties of the GraphNetDiagram.\n\nBeside the diagram, on its right, the side chart G_chart (GraphChart) draws a trajectory\nagainst time as plot_trajectory, with a cursor at the time shown: by default |V| of all\nbuses (\"Vabs\"); Trajectory names another quantity as Quantity of plot_trajectory\n(\"Vangle\", \"P\", \"Q\" or a state, input or output name such as \"omega\"). The container (a\nnew figure of 1400 x 600 px when Parent is empty; a uigridlayout gets a borderless\nuipanel first) holds two borderless panels: the diagram with its playback bar on the\nleft (60 %) and the chart on the right (40 %). The two are linked (G.link(G_chart)): the\nbar, G.set_time, G.play and G.animate move the cursor of the chart. The chart has no bar\nof its own (its time only moves the cursor). Trajectory=\"none\", or an axes or uiaxes as\nParent, draws the diagram alone, without a side chart (G_chart []).",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE9bus();\nsc = net.add_scenario(\"fault\");\nsc.add_fault(\"B007\", [1, 1.05]);\nres = net.simulate(\"fault\", Time=[0, 5]);\n[G, G_chart] = res.plot_diagram(ColorMode=\"P\", LabelMode=\"value\");   % |V| of the buses on the right\nG.set_time(1.02);       % during the fault; the cursor of G_chart moves too\nG = res.plot_diagram(Trajectory=\"none\");    % the diagram alone\n```\n\nSee also ResultODE.plot_trajectory, PowerNetwork.plot_diagram, ResultPF.plot_diagram, GraphNetDiagram, ResultODE.plot_spring_model",
+      "SeeAlso": [
+        "ResultODE.plot_trajectory",
+        "PowerNetwork.plot_diagram",
+        "ResultPF.plot_diagram",
+        "GraphNetDiagram",
+        "ResultODE.plot_spring_model"
+      ],
+      "Examples": "```matlab\nnet = network.IEEE9bus();\nsc = net.add_scenario(\"fault\");\nsc.add_fault(\"B007\", [1, 1.05]);\nres = net.simulate(\"fault\", Time=[0, 5]);\n[G, G_chart] = res.plot_diagram(ColorMode=\"P\", LabelMode=\"value\");   % |V| of the buses on the right\nG.set_time(1.02);       % during the fault; the cursor of G_chart moves too\nG = res.plot_diagram(Trajectory=\"none\");    % the diagram alone\n```",
       "Deprecated": ""
     },
     {
@@ -997,8 +1005,15 @@
       ],
       "Summary": "Draw the time response as a spring-mass picture that can be animated.",
       "Desc": "The picture holds every output time rv_t: G.set_time(t) shows one time, G.animate()\nplays it and G.export_video(file) writes it as a video. The nodes are voltage phasors:\nevery bus, and the own node of each component whose class returns one from its Static\nget_spring_node (the internal voltage of a generator, joined to its bus by the machine\nreactance). The springs are the branches and these reactances. Arrow pairs show the\nactive power P and the reactive-current magnitude Iq: on each own node, and on each bus\nwith a component without an own node (the bus injection minus the currents of the own\nnodes, at the bus voltage). Marker, MarkerSize and Color of the graph parameters set the\nappearance. Dimension=2 draws the phasor plane (GraphSpring2D), Dimension=3 the surface\nz = log|V| (GraphSpring3D).\n\nBeside the picture, on its right, the side chart G_chart (GraphChart) draws a trajectory\nagainst time as plot_trajectory, with a cursor at the time shown: by default the omega\nof the generators (the components with the state omega); Trajectory names another\nquantity as Quantity of plot_trajectory (\"Vabs\", \"Vangle\", \"P\", \"Q\" or a state, input or\noutput name). The container (a new figure of 1400 x 600 px when Parent is empty; a\nuigridlayout gets a borderless uipanel first) holds two borderless panels: the picture\nwith its playback bar on the left (60 %) and the chart on the right (40 %). The two are\nlinked (G.link(G_chart)): the bar, G.set_time, G.play and G.animate move the cursor of the\nchart. The chart has no bar of its own (its time only moves the cursor). Trajectory=\"none\",\nor an axes or uiaxes as Parent, draws the picture alone, without a side chart (G_chart []).\n\nIt reads only the stored result: the trajectories of the states, inputs, bus voltages\nand bus currents, and the network snapshot sct_network (class and dynamic parameters of\neach component). While a unit is tripped its states are NaN: its own node, its spring\nand its arrows are not drawn at those times, and the arrow of its bus counts its current\nas 0. The dashed circle |E| of an own node is drawn when |E| stays constant over the\ntimes (e.g. a classical generator without AVR); it is hidden with its node while the unit\nis tripped.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE9bus();\nsc = net.add_scenario(\"fault\");\nsc.add_fault(\"B007\", [1, 1.05]);\nres = net.simulate(\"fault\", Time=[0, 5]);\n[G, G_chart] = res.plot_spring_model(Dimension=3);   % omega of the generators on the right\nG.animate(Speed=0.5);                                % the cursor of G_chart follows\nG.export_video(\"swing.mp4\");\nG = res.plot_spring_model(Trajectory=\"none\");        % the picture alone\n```\n\nSee also ResultODE.plot_trajectory, PowerNetwork.plot_spring_model, ResultPF.plot_spring_model, GraphSpring2D, GraphSpring3D, Component.get_spring_node",
+      "SeeAlso": [
+        "ResultODE.plot_trajectory",
+        "PowerNetwork.plot_spring_model",
+        "ResultPF.plot_spring_model",
+        "GraphSpring2D",
+        "GraphSpring3D",
+        "Component.get_spring_node"
+      ],
+      "Examples": "```matlab\nnet = network.IEEE9bus();\nsc = net.add_scenario(\"fault\");\nsc.add_fault(\"B007\", [1, 1.05]);\nres = net.simulate(\"fault\", Time=[0, 5]);\n[G, G_chart] = res.plot_spring_model(Dimension=3);   % omega of the generators on the right\nG.animate(Speed=0.5);                                % the cursor of G_chart follows\nG.export_video(\"swing.mp4\");\nG = res.plot_spring_model(Trajectory=\"none\");        % the picture alone\n```",
       "Deprecated": ""
     },
     {
@@ -1083,8 +1098,12 @@
       ],
       "Summary": "Plot the P-Q-V trajectory of the buses in 3D: P, Q and |V| of each bus at every output time.",
       "Desc": "Draws one 3D line per bus through (P, Q, |V|) [pu] of its output times: P + jQ is the\ntotal power the bus injects into the network, S = V conj(sum of the currents of its\ncomponents), from the bus voltages (Vre, Vim of rm_variable) and rm_Icomponent; it\nequals V conj(Y V) of the bus (rm_I) within the tolerance of the solver, except at a\nfaulted bus during the fault (the fault current is not a component current). A\ntripped component (NaN current) counts as 0, and a bus without components has\nP = Q = 0. By default it draws every bus; Bus selects some (a tag that is not in sv_bus\nstops with GUILDA:ResultODE:UnknownBus). Drag the axes to turn the view.\n\nThe samples of the chart are the output times rv_t: G.set_time(t) puts a marker on each\nline at its point of the time nearest to t (none before the first set_time), and\nG.link(G2) keeps it in step with plot_diagram, plot_spring_model and plot_trajectory.\nA result without time points or component currents stops with\nGUILDA:ResultODE:NoDiagramData.\n\nIt returns the chart G (GraphChart, one 3D panel): one line per bus, tagged with the\nbus tag.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE9bus();\nsc = net.add_scenario(\"fault\");\nsc.add_fault(\"B007\", [1, 1.05]);\nres = net.simulate(\"fault\", Time=[0, 5]);\nG = res.plot_pqv(Bus=[\"B005\", \"B007\"]);\nG.set_time(1.02);       % markers during the fault\n```\n\nSee also ResultODE.plot_trajectory, ResultCPF.plot_pqv, GraphChart",
+      "SeeAlso": [
+        "ResultODE.plot_trajectory",
+        "ResultCPF.plot_pqv",
+        "GraphChart"
+      ],
+      "Examples": "```matlab\nnet = network.IEEE9bus();\nsc = net.add_scenario(\"fault\");\nsc.add_fault(\"B007\", [1, 1.05]);\nres = net.simulate(\"fault\", Time=[0, 5]);\nG = res.plot_pqv(Bus=[\"B005\", \"B007\"]);\nG.set_time(1.02);       % markers during the fault\n```",
       "Deprecated": ""
     },
     {
@@ -1178,8 +1197,13 @@
       "Throws": [],
       "Summary": "Plot a trajectory of the buses or components.",
       "Desc": "Draws a trajectory against time [s]: for the buses, the voltage magnitude (Vabs), the\nvoltage angle (Vangle) or the power P / Q injected by the components; for the\ncomponents, a state, an input or an output given by its name (e.g. omega, Pmech), with\none line per component of the selected buses that has it: the columns of\nget_trajectory(Quantity, Bus=Bus). By default it draws Vabs of every bus.\nThe only figure of the analysis: simulate draws none (its PlotFcn is a live display\nduring the simulation).\n\nIt returns the chart G (GraphChart): one line per bus, tagged with the bus tag, or per\ncomponent, tagged with the full component tag. The panel is a time panel: G.set_time(t)\ndraws a cursor at t, and G.link(G2) with the graph of plot_spring_model or plot_diagram\nof the same result moves the cursor with its animation.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nG = res.plot_trajectory(Quantity=\"omega\");\nG.set_style(G.tab_element.Tag(1), Color=\"r\", LineWidth=2);\nS = res.plot_spring_model();\nG.link(S);\nS.animate();                 % the cursor of G follows\n```\n\nSee also ResultODE.get_trajectory, GraphChart, ResultODE.plot_spring_model, ResultODE.plot_diagram",
+      "SeeAlso": [
+        "ResultODE.get_trajectory",
+        "GraphChart",
+        "ResultODE.plot_spring_model",
+        "ResultODE.plot_diagram"
+      ],
+      "Examples": "```matlab\nG = res.plot_trajectory(Quantity=\"omega\");\nG.set_style(G.tab_element.Tag(1), Color=\"r\", LineWidth=2);\nS = res.plot_spring_model();\nG.link(S);\nS.animate();                 % the cursor of G follows\n```",
       "Deprecated": ""
     },
     {
@@ -1295,8 +1319,12 @@
       ],
       "Summary": "Get a trajectory of the buses or components as a table.",
       "Desc": "Returns the values of one quantity against time, one column per owner: for the buses,\nthe voltage magnitude (Vabs), the voltage angle (Vangle) or the power P / Q injected by\nthe components; for the components, a state, an input or an output given by its name\n(e.g. omega, delta, Vfield), with one column per component of the selected buses that\nhas it. plot_trajectory draws the same columns.\n\nThe result is a table (not a timetable: at a phase boundary the time appears twice, see\nResultODE) with the column t [s] first, then one column per owner named by its tag (the\nbus tag, or the full component tag), in the order of Bus and of the components of each\nbus. tab.Properties.Description names the quantity and VariableUnits holds the units.\n\n- Bus: the buses (for a component quantity, the buses of the components); \"all\" for\n  every bus.\n- Owner: the owners to keep, bus tags for a bus quantity or component tags for a\n  component quantity; \"all\" for every owner of the selected buses.\n- Reference=\"COI\": the values relative to the center of inertia (the mean weighted by\n  the dynamics parameter M of the network snapshot), and a last column COI with the\n  center itself (tab.B001 + tab.COI is the value of B001). The states and inputs of a\n  tripped unit are NaN while it is tripped: at those times the unit is left out of the\n  center (the weights of the other units are renormalized) and its own column stays\n  NaN. COI is NaN at a time when every unit is NaN. For delta and Vangle the center is that of the rotor angles delta of\n  all the components with delta, as in judge_out_of_step(Reference=\"COI\"), and Vangle\n  relative to it is wrapped to (-pi, pi]. For another component quantity it is the center\n  of that quantity over all the components that have it (each needs M). Vabs, P and Q\n  have no center. \"none\" (default) returns the values as simulated.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = net.simulate(\"fault\");\ntab = res.get_trajectory(\"omega\");                    % t, B001SG1, B002SG1, ...\nplot(tab.t, tab{:, 2:end});\ntab = res.get_trajectory(\"delta\", Reference=\"COI\");   % angles from the center of inertia, and COI\ntab = res.get_trajectory(\"Vabs\", Bus=[\"B004\", \"B005\"]);\ntab = res.get_trajectory(\"Vfield\", Owner=\"B001SG1\");\n```\n\nSee also ResultODE.plot_trajectory, ResultODE.judge_out_of_step, ResultODE.get_point",
+      "SeeAlso": [
+        "ResultODE.plot_trajectory",
+        "ResultODE.judge_out_of_step",
+        "ResultODE.get_point"
+      ],
+      "Examples": "```matlab\nres = net.simulate(\"fault\");\ntab = res.get_trajectory(\"omega\");                    % t, B001SG1, B002SG1, ...\nplot(tab.t, tab{:, 2:end});\ntab = res.get_trajectory(\"delta\", Reference=\"COI\");   % angles from the center of inertia, and COI\ntab = res.get_trajectory(\"Vabs\", Bus=[\"B004\", \"B005\"]);\ntab = res.get_trajectory(\"Vfield\", Owner=\"B001SG1\");\n```",
       "Deprecated": ""
     },
     {
@@ -1396,8 +1424,11 @@
       ],
       "Summary": "Get the values of the variable map at a time of the simulation.",
       "Desc": "Returns the values of the variables at time t, in the order of the rows of tab_map\n(by default the whole tab_variable, so rv is a point for net.get_sys(rv)).\ntab_map may be any part of tab_variable, e.g. the rows x, Vre, Vim, u, uc of the\nvariable map of a bus or component of the simulated network (bus.get_variable_map(),\ncomp.get_variable_map()); its rows are found by Kind, Owner, Name and Bus. The other\nrows of a variable map (the signals y, yc) are not in the result and stop with\nGUILDA:ResultODE:UnknownVariable.\n\nBetween two output times the values are interpolated linearly. At a phase boundary,\nwhere the time appears twice in rv_t, Side chooses the value: \"after\" (default) the\nstart of the later phase, i.e. the state after the event (an offset applied, a fault\ncleared), \"before\" the end of the earlier phase. At any other output time Side has no\neffect.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nsc = net.add_scenario(\"fault\");  sc.add_fault(\"B008\", [1,1.05]);\nsim = net.simulate(\"fault\", Time=[0,5]);\nx  = sim.get_point(2);                    % rows x, Vre, Vim, u, uc of net.get_variable_map()\nx0 = sim.get_point(1.05, Side=\"before\");  % end of the fault\nres = net.get_sys({sim, 2});            % same point as net.get_sys(x)\n```\n\nSee also PowerNetwork.get_variable_map, SolverLIN",
+      "SeeAlso": [
+        "PowerNetwork.get_variable_map",
+        "SolverLIN"
+      ],
+      "Examples": "```matlab\nsc = net.add_scenario(\"fault\");  sc.add_fault(\"B008\", [1,1.05]);\nsim = net.simulate(\"fault\", Time=[0,5]);\nx  = sim.get_point(2);                    % rows x, Vre, Vim, u, uc of net.get_variable_map()\nx0 = sim.get_point(1.05, Side=\"before\");  % end of the fault\nres = net.get_sys({sim, 2});            % same point as net.get_sys(x)\n```",
       "Deprecated": ""
     },
     {
@@ -2033,8 +2064,12 @@
       ],
       "Summary": "Show the result in a GUI: header, the plot_, disp_, get_ and export methods as buttons, and a view area.",
       "Desc": "With no container it opens a new uifigure; with a container (uifigure, uipanel, uitab or\nuigridlayout) it fills it, so that the GUI can be embedded in another app. The buttons\nare the methods of the result in functionSignatures.json, grouped as Plot, Display, Get\nand Export, so a result class needs no GUI code. A method with options asks for them in\na dialog (DrawerOptionDialog.ask); plots are drawn in the plot panel, and the text of\ndisp_* and the values of get_* are shown in the text area. See DrawerResultGUI.\n\nEvery action runs as a line of MATLAB code in History (HistoryGUILDA.run) on the result\nvariable Variable of its workspace (set to this result when the workspace has no such\nvariable): the code is logged, and `h.history.get_script()` returns a script that repeats\nthe actions, drawing the plots in new figures. The default history prints each `>> code`\nin the Command Window; its script needs the result in the workspace as Variable.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nh = res.launch_gui();                        % new window\nfig = uifigure();\nh = res.launch_gui(uipanel(uigridlayout(fig, [1 1])));   % embedded in a panel\nhist = HistoryGUILDA();\nhist.run(\"Power flow\", \"Calculate\", \"net = network.IEEE9bus(); res_pf = net.calculate_powerflow();\");\nh = hist.get_variable(\"res_pf\").launch_gui(History=hist, Variable=\"res_pf\");\nhist.get_script()                            % the power flow and the actions of the GUI\n```\n\nSee also DrawerResultGUI, HistoryGUILDA, DrawerOptionDialog",
+      "SeeAlso": [
+        "DrawerResultGUI",
+        "HistoryGUILDA",
+        "DrawerOptionDialog"
+      ],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nh = res.launch_gui();                        % new window\nfig = uifigure();\nh = res.launch_gui(uipanel(uigridlayout(fig, [1 1])));   % embedded in a panel\nhist = HistoryGUILDA();\nhist.run(\"Power flow\", \"Calculate\", \"net = network.IEEE9bus(); res_pf = net.calculate_powerflow();\");\nh = hist.get_variable(\"res_pf\").launch_gui(History=hist, Variable=\"res_pf\");\nhist.get_script()                            % the power flow and the actions of the GUI\n```",
       "Deprecated": ""
     },
     {

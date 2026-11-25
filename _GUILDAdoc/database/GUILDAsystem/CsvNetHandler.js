@@ -114,9 +114,11 @@
       "Throws": [],
       "Summary": "Write a network to a CSV model folder (v3 wrapper of net.export).",
       "Desc": "v3 entry point of the CSV export (deprecated: warns GUILDA:Deprecated:CsvNetHandlerExport).\nWrites the folder <savepath>/@<ModelName> with the class file <ModelName>.m by\nnet.export(fullfile(savepath, \"@\"+ModelName), Overwrite=Overwrite). Without\nsavepath a folder dialog opens (as in v3); version is the constant ver of the class file.",
-      "SeeAlso": [],
+      "SeeAlso": [
+        "PowerNetwork.export"
+      ],
       "Examples": "",
-      "Deprecated": "Use net.export(fullfile(savepath, \"@\"+ModelName)) instead.\n\nSee also PowerNetwork.export"
+      "Deprecated": "Use net.export(fullfile(savepath, \"@\"+ModelName)) instead."
     },
     {
       "Name": "import",
@@ -196,9 +198,11 @@
       "Throws": [],
       "Summary": "Build a network from a CSV model folder (v3 wrapper of PowerNetwork.import).",
       "Desc": "v3 entry point of the CSV import (deprecated: warns GUILDA:Deprecated:CsvNetHandlerImport).\nCalls PowerNetwork.import(path, Network=net, Initialize=opt.Initialize); without net\na new network is built.",
-      "SeeAlso": [],
+      "SeeAlso": [
+        "PowerNetwork.import"
+      ],
       "Examples": "",
-      "Deprecated": "Use PowerNetwork.import(path, Network=net) instead.\n\nSee also PowerNetwork.import"
+      "Deprecated": "Use PowerNetwork.import(path, Network=net) instead."
     },
     {
       "Name": "CsvNetHandler",

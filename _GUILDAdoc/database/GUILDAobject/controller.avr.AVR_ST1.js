@@ -27,7 +27,7 @@
       },
       "Unit": "",
       "File": "_GUILDAobject/+controller/+avr/@AVR_ST1/AVR_ST1.m",
-      "Line": 67,
+      "Line": 85,
       "Summary": "Model key that selects this class in `Component.add_local_controller`.",
       "Desc": "",
       "SeeAlso": [],
@@ -1028,7 +1028,7 @@
       ],
       "Signature": "obj = controller.avr.AVR_ST1(tag, Name=Value)",
       "File": "_GUILDAobject/+controller/+avr/@AVR_ST1/AVR_ST1.m",
-      "Line": 71,
+      "Line": 89,
       "ImplementedIn": "classdef",
       "Overrides": "",
       "Throws": [],
@@ -2744,8 +2744,11 @@
       "Throws": [],
       "Summary": "Return the variable map of the local controller.",
       "Desc": "Variable map of the controller: its rows of the map of its component\n(comp.get_variable_map(), with the same columns and labels), and the voltage of the bus:\n  1. x: states of the controller\n  2. Vre, Vim of the bus of its component\n  3. uc: inputs of the controller\n  4. yc: outputs of the controller (signals)\nThe rows x, Vre, Vim and uc come first: they are the order of the point vector of\ncon.get_sys(point). Index counts from 1 here. The column Equilibrium holds the value of\neach row at the equilibrium set by net.initialize (the stored rv_Xequilibrium,\nc_Vequilibrium and rv_Uequilibrium, and the outputs evaluated there); it is NaN when\nthe equilibrium has not been computed yet. Where each input is read is in the\nconnection map of the component (comp.get_variable_map), whose sources are not rows of\nthis map.",
-      "SeeAlso": [],
-      "Examples": "```matlab\navr = net.a_Bus{1}.a_Component{1}.avr;    % a generator with an AVR\ntab = avr.get_variable_map();\nres = avr.get_sys(tab.Equilibrium(tab.Role == \"variable\"));   % same as avr.get_sys()\n```\n\nSee also Component.get_variable_map, PowerSystemModel.get_sys",
+      "SeeAlso": [
+        "Component.get_variable_map",
+        "PowerSystemModel.get_sys"
+      ],
+      "Examples": "```matlab\navr = net.a_Bus{1}.a_Component{1}.avr;    % a generator with an AVR\ntab = avr.get_variable_map();\nres = avr.get_sys(tab.Equilibrium(tab.Role == \"variable\"));   % same as avr.get_sys()\n```",
       "Deprecated": ""
     },
     {
@@ -3149,8 +3152,12 @@
       ],
       "Summary": "Linearize the layer and return its linear model.",
       "Desc": "One method for every layer with a linear model: PowerNetwork, Bus, Component (with\nits local controllers), LocalController and GlobalController (Branch has none:\nGUILDA:PowerSystemModel:NoLinearModel). Each model object gives its own linear block\n(get_linear_matrix); get_sys takes the inputs and outputs of the layer (its port) from\nthe variable map, and SolverLIN.solve connects the blocks along it. The linearization needs no\ntoolbox, and the model is not changed.\n\n| Layer | Inputs | Outputs | Bus voltages |\n|---|---|---|---|\n| PowerNetwork | inputs u of the components | outputs y and yc | algebraic: 0 = Y v - I of the components, eliminated for Type \"ODE\" |\n| Bus, Component | V, u, uc | I, y, yc | inputs |\n| LocalController | V of its bus, its inputs | its outputs | inputs |\n| GlobalController | V of all buses, its inputs | its outputs | inputs |\n\nThe names are the Labels of the variable map of the layer (obj.get_variable_map); the\nstates follow its order. The current of a\ncomponent is the component tag with Ire, Iim; that of a bus the bus tag. An input is\nthe sum of its sources in the connection map plus the external input of that name.\n\npoint, the first argument, gives the point: [] (the equilibrium set by net.initialize,\nthe default), a vector of the variables of the layer in the order of the leading rows of\nobj.get_variable_map() (x, Vre, Vim, u, uc; for a controller x, Vre, Vim, uc), or\n{sim, t} (or {sim, t, \"before\"}) for the state of a simulation result at time t\n(PowerNetwork, Bus and Component).\nTime sections: {sim, rv_t} with several times, or a matrix with one point per column,\nlinearizes the layer at each of them; the result holds one section per time or column\n(ResultLIN.rv_t: the times, or 1:n for a matrix; ResultLIN.Index chooses the section),\nand flag is true only when every section is usable (output.lv_flag of each section). Every value of the point is used as given: the\ninputs u of the components and uc of the controllers, whether the connection map drives\nthem or holds them at a setpoint (Vref of an AVR, Pref of a governor). The outputs y and\nyc are evaluated at the point. The point sets the variables only: the\nadmittance matrix stays the one of the model, also inside a fault (reported with an\nINFO message and output.sv_faultBus).\n\nThe layer stops with GUILDA:PowerSystemModel:Stale when net.initialize() is needed: an\nedited dynamics always, an edited network, power flow or equilibrium when the point is the\nequilibrium; with GUILDA:PowerSystemModel:InputEdited when the inputs were edited.\nA point with NaN or Inf stops with GUILDA:SolverLIN:PointNotFinite, and a model that is\nnot finite at the point with GUILDA:SolverLIN:JacobianNotFinite.\n\nFormat chooses the form of sys: \"GUILDAorigin\" (default) is the ResultLIN of the\nlinearization, also when flag is false; its properties A, B, C, D, E, StateName,\nInputName and OutputName hold the model of its Type (the Type of the call) with the\nselected Input and Output. \"struct\" is a struct with these eight fields and \"ss\" a\ndescriptor state-space model (dss, Control System Toolbox): they stop with the error of\nResultLIN.get_ss when flag is false (except \"DAE\" with a singular Avv). With several\nsections, \"struct\" is a 1 x n_t struct array and \"ss\" an ss array (sys(:,:,k) is\nsection k). The ResultLIN of the network (Format \"GUILDAorigin\") keeps a snapshot of it,\nsct_network = struct(net, false).\n\nType chooses the model of the network: \"DAE\" is the connected model, with the bus\nvoltages as algebraic variables (E is singular on their rows), each bus written as the\nport of Port (see ResultLIN.get_ss); \"ODE\" is the model with the bus voltages eliminated (SolverLIN.reduce).\nThe result keeps the DAE, so res.Type switches between them later.\n\nForm chooses the view of A ... E (ResultLIN.Form): \"descriptor\" (default; E holds the\ntime constants), \"absorbed\" (E^-1 multiplied into the state rows) or \"hessian\", the\nenergy-function form of the network: get_sys calls get_hessian of every component, local\ncontroller and global controller at the point of each section, and SolverLIN.solve\nassembles E_h dz/dt = H z over z = [x; theta; V] with E_h = -blkdiag(inv(R), 0) and\nH = [Hxx Hxv; Hvx Hvv + Hvv_net] (see ResultLIN). A class without the form stops with\nits GUILDA:<layer>:HessianNotSupported (the Static AVR and governor have empty blocks).\n\"hessian\" needs the network (GUILDA:PowerSystemModel:HessianNetworkOnly) and Port \"PI\"\nor \"PQ\" (GUILDA:PowerSystemModel:HessianPort). The result keeps the descriptor DAE too.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = net.get_sys();                          % ResultLIN of the network (Type of GUILDA.setting)\neig(res.A, res.E)\nsct = net.get_sys(Type=\"DAE\", Format=\"struct\");\nresV = net.get_sys(Output=\"V\");               % bus voltages as outputs\nsys = net.a_Bus{1}.a_Component{1}.get_sys(Format=\"ss\");   % component, V to I\nres2 = net.get_sys({sim, 1.5});               % at a time of a simulation result\nres3 = net.get_sys(res.rv_point);             % at a vector in the order of net.get_variable_map()\nres4 = net.get_sys({sim, [0.5, 1, 2]});       % three time sections; res4.Index = 2 shows t = 1\nsct4 = net.get_sys({sim, [0.5, 1, 2]}, Format=\"struct\");   % 1 x 3 struct array\nresH = net.get_sys(Type=\"DAE\", Port=\"PI\", Form=\"hessian\");  % energy-function form\n```\n\nSee also ResultLIN, SolverLIN, PowerNetwork.get_variable_map",
+      "SeeAlso": [
+        "ResultLIN",
+        "SolverLIN",
+        "PowerNetwork.get_variable_map"
+      ],
+      "Examples": "```matlab\nres = net.get_sys();                          % ResultLIN of the network (Type of GUILDA.setting)\neig(res.A, res.E)\nsct = net.get_sys(Type=\"DAE\", Format=\"struct\");\nresV = net.get_sys(Output=\"V\");               % bus voltages as outputs\nsys = net.a_Bus{1}.a_Component{1}.get_sys(Format=\"ss\");   % component, V to I\nres2 = net.get_sys({sim, 1.5});               % at a time of a simulation result\nres3 = net.get_sys(res.rv_point);             % at a vector in the order of net.get_variable_map()\nres4 = net.get_sys({sim, [0.5, 1, 2]});       % three time sections; res4.Index = 2 shows t = 1\nsct4 = net.get_sys({sim, [0.5, 1, 2]}, Format=\"struct\");   % 1 x 3 struct array\nresH = net.get_sys(Type=\"DAE\", Port=\"PI\", Form=\"hessian\");  % energy-function form\n```",
       "Deprecated": ""
     },
     {

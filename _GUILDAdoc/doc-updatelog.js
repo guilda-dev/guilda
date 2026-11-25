@@ -1,6 +1,6 @@
 // Update log list, shared by the Home tab (index.html, latest entries) and
 // updatelog.html (every entry). Data: database/list_UpdateLog.js (updateLogData).
-// Rules for the entries: developer/project-management.html#update-log.
+// Rules for the entries: developer/git-workflow.html#update-log.
 (function (root) {
   'use strict';
 

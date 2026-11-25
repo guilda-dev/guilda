@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-title-ja="GUILDA ドキュメント - ページが見つかりません">GUILDA Documentation - Page not found</title>
+  <script>
+    // GitHub Pages serves this page (copied to the site root by GUILDA.publish_doc) for any
+    // missing path, at any depth. On the project site (<user>.github.io/<repo>/...) the pages
+    // live in <repo>/_GUILDAdoc/, so links and assets resolve against that folder. Opened from
+    // _GUILDAdoc itself (a file or a local server), relative links are used as they are.
+    (function () {
+      var seg = location.pathname.split('/')[1];
+      if (/^https?:$/.test(location.protocol) && /\.github\.io$/.test(location.hostname) && seg && seg !== '404.html') {
+        document.write('<base href="/' + seg + '/_GUILDAdoc/">');
+      }
+    })();
+  </script>
+  <script src="doc-lang.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Same look as the 404 page of the guilda-doc site */
+    .nf-main { max-width: 720px; margin: 0 auto; padding: 72px 20px 48px; box-sizing: border-box; text-align: center; }
+    .nf-logo { display: inline-block; margin-bottom: 28px; }
+    .nf-logo img { display: block; height: 52px; width: auto; }
+    .nf-art { display: block; width: 100%; max-width: 460px; height: auto; margin: 0 auto 8px; color: var(--ink); }
+    .nf-art * { fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .nf-art .nf-dead { stroke: var(--line-strong); stroke-dasharray: 2 7; }
+    .nf-art .nf-live { stroke-dasharray: 10 8; }
+    .nf-art .nf-spark { stroke: var(--muted); stroke-width: 2; }
+    .nf-art .nf-window { fill: var(--surface-subtle); stroke-width: 2; }
+    .nf-art text { fill: var(--muted); stroke: none; font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.08em; }
+    @media (prefers-reduced-motion: no-preference) {
+      .nf-art .nf-live { animation: nf-flow 0.9s linear infinite; }
+      .nf-art .nf-blade { transform-origin: 134px 80px; animation: nf-trip 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+    }
+    @keyframes nf-flow { to { stroke-dashoffset: -18; } }
+    @keyframes nf-trip { from { transform: rotate(36deg); } to { transform: rotate(0deg); } }
+    .nf-code { margin: 0 0 6px; color: var(--muted); font-family: var(--font-mono); font-size: 0.9rem; letter-spacing: 0.08em; }
+    .nf-main h1 { margin: 0 0 12px; font-size: clamp(1.5rem, 5vw, 2.1rem); }
+    .nf-main p { margin: 0 auto 10px; max-width: 34em; }
+    .nf-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 12px; margin: 26px 0 0; }
+    .nf-main hr.line-divider { margin: 40px 0 0; }
+    @media (max-width: 560px) {
+      .nf-main { padding: 56px 16px 32px; }
+      .nf-actions .btn { flex: 1 1 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body class="home-layout">
+  <main class="nf-main">
+    <a class="nf-logo" href="index.html"><img src="images/GUILDAicon.png" alt="GUILDA" width="150" height="65"></a>
+
+    <svg class="nf-art" viewBox="0 0 360 130" role="img" aria-labelledby="nf-art-title">
+      <title id="nf-art-title">An open circuit breaker between a generator and a house: the line after the breaker is dead</title>
+      <!-- generator, energized line -->
+      <circle cx="40" cy="80" r="22"/>
+      <path d="M26 80q7-12 14 0t14 0"/>
+      <path class="nf-live" d="M62 80H128"/>
+      <!-- the breaker, tripped open -->
+      <circle cx="134" cy="80" r="6"/>
+      <path class="nf-blade" d="M139 76 194 32"/>
+      <circle cx="206" cy="80" r="6"/>
+      <path class="nf-spark" d="M203 26q8 1 10 9M198 16q14 2 17 17M186 20l-4-7"/>
+      <text x="170" y="110" text-anchor="middle">OFF</text>
+      <!-- dead line and a dark house -->
+      <path class="nf-dead" d="M212 80H276"/>
+      <path d="M280 108V76l24-20 24 20v32Z"/>
+      <rect class="nf-window" x="296" y="82" width="16" height="13" rx="1"/>
+      <path d="M270 108h68"/>
+    </svg>
+
+    <p class="nf-code">404</p>
+    <h1><span lang="en">The breaker has tripped</span><span lang="ja">ブレーカーが落ちました</span></h1>
+    <p lang="en">No power reaches this page: it does not exist, or it has moved. Go back to the Reference or For Developer and take another line.</p>
+    <p lang="ja">このページには電気が届いていません。ページが存在しないか、移動した可能性があります。リファレンスか開発者向けに戻って、別の線から進んでください。</p>
+    <div class="nf-actions">
+      <a class="btn btn-primary" href="index.html#tab-reference"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/><path d="M1.5 12h2M20.5 12h2"/></svg><span lang="en">Back to Reference</span><span lang="ja">リファレンスに戻る</span></a>
+      <a class="btn" href="index.html#tab-developer"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="7" y="6.5" width="10" height="11" rx="1.5"/><path d="M1.5 12H7M4.5 9.5 7 12l-2.5 2.5M17 12h5.5M20 9.5l2.5 2.5-2.5 2.5M9.5 12h5M11 9.5h2M10.5 14.5h3"/></svg><span lang="en">For Developer</span><span lang="ja">開発者向け</span></a>
+    </div>
+    <hr class="line-divider">
+  </main>
+</body>
+</html>

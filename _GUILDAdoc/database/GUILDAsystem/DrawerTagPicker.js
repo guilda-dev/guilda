@@ -124,8 +124,12 @@
       ],
       "Summary": "Show a table in a modal picker window with a search box and return the values chosen; strings(1,0) on cancel.",
       "Desc": "The window shows tab in a uitable, one row per element, under a search box that filters\nthe rows as the user types (every word, case-insensitive, over all the columns). Select\n(Tag \"picker_ok\") returns the values of the column Column of the chosen rows, in the order\nof tab; Cancel (Tag \"picker_cancel\") or closing the window returns strings(1,0). In single mode a double\nclick on a row chooses it at once. With Multiple=true the rows chosen stay chosen while the\nsearch hides them. Selected preselects the rows whose Column value is in it (values that\nare not in the table are ignored).\n\nOne hidden window is kept per parent figure (one more for no parent) and reused: a call\nonly swaps the data, title and mode, so the second opening is fast. The window is created\nagain when it was deleted, and is deleted with its parent figure.\n\nA visible window waits for the user (uiwait). A hidden window (hidden parent) or one in\n`matlab -batch` has no user: it waits at most 10 s for a program (a test) to press its\nbuttons and then returns strings(1,0) as a cancel, so it never blocks indefinitely.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE68bus();\nfig = uifigure();\nsv_tag = DrawerTagPicker.pick(fig, DrawerTagPicker.element_table(net, \"Component\"), Title=\"Component\")\nsv_tag = DrawerTagPicker.pick(fig, DrawerTagPicker.element_table(net, \"Bus\"), Multiple=true, Selected=\"B001\")\ns_key = DrawerTagPicker.pick(fig, DrawerTagPicker.key_table(\"Component\"), Column=\"Key\")\n```\n\nSee also DrawerTagPicker.element_table, DrawerTagPicker.key_table, DrawerOptionDialog.ask",
+      "SeeAlso": [
+        "DrawerTagPicker.element_table",
+        "DrawerTagPicker.key_table",
+        "DrawerOptionDialog.ask"
+      ],
+      "Examples": "```matlab\nnet = network.IEEE68bus();\nfig = uifigure();\nsv_tag = DrawerTagPicker.pick(fig, DrawerTagPicker.element_table(net, \"Component\"), Title=\"Component\")\nsv_tag = DrawerTagPicker.pick(fig, DrawerTagPicker.element_table(net, \"Bus\"), Multiple=true, Selected=\"B001\")\ns_key = DrawerTagPicker.pick(fig, DrawerTagPicker.key_table(\"Component\"), Column=\"Key\")\n```",
       "Deprecated": ""
     },
     {
@@ -182,8 +186,11 @@
       "Throws": [],
       "Summary": "Return one row per model key of a category: the key, its class and the first help line of the class.",
       "Desc": "The rows are the keys of GUILDA.keymap(s_category), sorted by Key. Description is the\nfirst comment line of the class file (its H1 line). The table is kept for the MATLAB\nsession, because reading the class files is slow; it is rebuilt when the classes of the\nkey map change (after GUILDA.update_keymap finds a new model class).",
-      "SeeAlso": [],
-      "Examples": "```matlab\ntab = DrawerTagPicker.key_table(\"Component\")      % Key, Class, Description\ns_key = DrawerTagPicker.pick(fig, tab, Column=\"Key\", Title=\"Component type\");\n```\n\nSee also DrawerTagPicker.pick, GUILDA.keymap",
+      "SeeAlso": [
+        "DrawerTagPicker.pick",
+        "GUILDA.keymap"
+      ],
+      "Examples": "```matlab\ntab = DrawerTagPicker.key_table(\"Component\")      % Key, Class, Description\ns_key = DrawerTagPicker.pick(fig, tab, Column=\"Key\", Title=\"Component type\");\n```",
       "Deprecated": ""
     },
     {
@@ -253,8 +260,11 @@
       "Throws": [],
       "Summary": "Return one row per element of one kind of the network, with the columns that tell them apart.",
       "Desc": "The table is read in a single pass over the layers of the network (handles only: no\nstruct(net, false), no copies). The columns by kind are listed in the help of\nDrawerTagPicker; for example, a component row gives its bus, the index of that bus, its\nposition among the components of the bus, its class and its model key.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE68bus();\ntab = DrawerTagPicker.element_table(net, \"Component\");\ntab(tab.Bus == \"B001\", :)       % the components of B001 in the order of the bus\ntab = DrawerTagPicker.element_table(net, \"LocalController\");\ntab(tab.Role == \"pss\", [\"Tag\", \"Component\", \"Parent\"])\n```\n\nSee also DrawerTagPicker.pick, DrawerTagPicker.key_table",
+      "SeeAlso": [
+        "DrawerTagPicker.pick",
+        "DrawerTagPicker.key_table"
+      ],
+      "Examples": "```matlab\nnet = network.IEEE68bus();\ntab = DrawerTagPicker.element_table(net, \"Component\");\ntab(tab.Bus == \"B001\", :)       % the components of B001 in the order of the bus\ntab = DrawerTagPicker.element_table(net, \"LocalController\");\ntab(tab.Role == \"pss\", [\"Tag\", \"Component\", \"Parent\"])\n```",
       "Deprecated": ""
     },
     {

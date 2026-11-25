@@ -241,8 +241,11 @@
       ],
       "Summary": "Eliminate the algebraic variables of a linear DAE.",
       "Desc": "The DAE E dx/dt = A x + B u, y = C x + D u has dynamic variables d and algebraic\nvariables a (E is zero on their rows and columns). The algebraic equations\n0 = A_ad x_d + A_aa x_a + B_a u give x_a = -A_aa \\ (A_ad x_d + B_a u), and the reduced model is\n\n```\nE_dd dx_d/dt = (A_dd - A_da A_aa^-1 A_ad) x_d + (B_d - A_da A_aa^-1 B_a) u\n           y = (C_d  - C_a  A_aa^-1 A_ad) x_d + (D   - C_a  A_aa^-1 B_a) u\n```\n\nwith the names of the dynamic variables, the inputs and the outputs. For the network\n(get_sys with Type \"ODE\", ResultLIN.get_ss(\"ODE\")) the algebraic variables are the bus\nvoltages, and A_aa is the current balance with respect to them (Avv). A model without\nalgebraic variables is returned as it is. An A_aa with a reciprocal condition number\nbelow 1e-14 stops with GUILDA:SolverLIN:SingularAvv, naming the algebraic variables it\ndoes not determine.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres  = net.get_sys(Type=\"DAE\");\nsct  = res.get_ss(\"DAE\", Port=\"I\", Format=\"struct\");\nsODE = SolverLIN.reduce(sct);             % = res.get_ss(\"ODE\", Format=\"struct\")\n```\n\nSee also PowerSystemModel.get_sys, ResultLIN.get_ss",
+      "SeeAlso": [
+        "PowerSystemModel.get_sys",
+        "ResultLIN.get_ss"
+      ],
+      "Examples": "```matlab\nres  = net.get_sys(Type=\"DAE\");\nsct  = res.get_ss(\"DAE\", Port=\"I\", Format=\"struct\");\nsODE = SolverLIN.reduce(sct);             % = res.get_ss(\"ODE\", Format=\"struct\")\n```",
       "Deprecated": ""
     },
     {

@@ -2606,8 +2606,11 @@
       "Throws": [],
       "Summary": "Return the positions drawn now, in the form of net.get_layout.",
       "Desc": "tab_bus has the columns Tag, X, Y (the bus centers, with the automatic layout and the\nmoves of set_position) and tab_component the columns Tag (full tag), DX, DY (relative\nto the center of the bus). No other column is given: the diagram changes no other\ngraph parameter, so net.set_layout(G.get_layout()) writes the positions only. The model\nis never changed by the diagram itself.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE14bus();\nG = net.plot_diagram();\nG.set_position(\"B001\", [0.1, 0.9]);\nnet.set_layout(G.get_layout());\n```\n\nSee also PowerNetwork.set_layout, GraphNetDiagram.set_position",
+      "SeeAlso": [
+        "PowerNetwork.set_layout",
+        "GraphNetDiagram.set_position"
+      ],
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nG = net.plot_diagram();\nG.set_position(\"B001\", [0.1, 0.9]);\nnet.set_layout(G.get_layout());\n```",
       "Deprecated": ""
     },
     {

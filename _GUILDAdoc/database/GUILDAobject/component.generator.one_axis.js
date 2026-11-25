@@ -27,7 +27,7 @@
       },
       "Unit": "",
       "File": "_GUILDAobject/+component/+generator/@one_axis/one_axis.m",
-      "Line": 64,
+      "Line": 87,
       "Summary": "Model key that selects this class in `Bus.add_component`.",
       "Desc": "",
       "SeeAlso": [],
@@ -55,7 +55,7 @@
       },
       "Unit": "",
       "File": "_GUILDAobject/+component/+generator/@one_axis/one_axis.m",
-      "Line": 65,
+      "Line": 88,
       "Summary": "State names.",
       "Desc": "",
       "SeeAlso": [],
@@ -83,7 +83,7 @@
       },
       "Unit": "",
       "File": "_GUILDAobject/+component/+generator/@one_axis/one_axis.m",
-      "Line": 66,
+      "Line": 89,
       "Summary": "Input port names.",
       "Desc": "",
       "SeeAlso": [],
@@ -111,7 +111,7 @@
       },
       "Unit": "",
       "File": "_GUILDAobject/+component/+generator/@one_axis/one_axis.m",
-      "Line": 67,
+      "Line": 90,
       "Summary": "Output names read by local controllers.",
       "Desc": "",
       "SeeAlso": [],
@@ -139,7 +139,7 @@
       },
       "Unit": "",
       "File": "_GUILDAobject/+component/+generator/@one_axis/one_axis.m",
-      "Line": 68,
+      "Line": 91,
       "Summary": "Dynamic parameter names.",
       "Desc": "",
       "SeeAlso": [],
@@ -1061,7 +1061,7 @@
       ],
       "Signature": "obj = component.generator.one_axis(index, parameter, varargin)",
       "File": "_GUILDAobject/+component/+generator/@one_axis/one_axis.m",
-      "Line": 72,
+      "Line": 95,
       "ImplementedIn": "classdef",
       "Overrides": "",
       "Throws": [],
@@ -2590,8 +2590,11 @@
       "Throws": [],
       "Summary": "Attach the governor of the generator by its model key and return it.",
       "Desc": "Same as add_local_controller(Key, parameter=...) for a key whose role (s_role) is\n\"governor\"; a key of another role is rejected with an error\n(GUILDA:Component:ControllerRoleMismatch) and the generator is left as it was.\nA new governor replaces the attached one, as in add_local_controller.\ngen.governor returns the attached governor.",
-      "SeeAlso": [],
-      "Examples": "```matlab\ncon = gen.set_governor(\"gov-LPT1\");\ngen.governor == con     % true\n```\n\nSee also Component.add_local_controller, component.generator.abstract",
+      "SeeAlso": [
+        "Component.add_local_controller",
+        "component.generator.abstract"
+      ],
+      "Examples": "```matlab\ncon = gen.set_governor(\"gov-LPT1\");\ngen.governor == con     % true\n```",
       "Deprecated": ""
     },
     {
@@ -2676,8 +2679,11 @@
       "Throws": [],
       "Summary": "Attach the PSS of the generator by its model key and return it.",
       "Desc": "Same as add_local_controller(Key, parameter=...) for a key whose role (s_role) is\n\"pss\"; a key of another role is rejected with an error\n(GUILDA:Component:ControllerRoleMismatch) and the generator is left as it was.\nThe PSS goes under the AVR of the generator, so attach the AVR first.\nA new PSS replaces the attached one, as in add_local_controller.\ngen.pss returns the attached PSS.",
-      "SeeAlso": [],
-      "Examples": "```matlab\ngen.set_avr(\"avr-ST1\");\ncon = gen.set_pss(\"pss-PSS1\");    % under the AVR\ngen.pss == con     % true\n```\n\nSee also Component.add_local_controller, component.generator.abstract",
+      "SeeAlso": [
+        "Component.add_local_controller",
+        "component.generator.abstract"
+      ],
+      "Examples": "```matlab\ngen.set_avr(\"avr-ST1\");\ncon = gen.set_pss(\"pss-PSS1\");    % under the AVR\ngen.pss == con     % true\n```",
       "Deprecated": ""
     },
     {
@@ -2762,8 +2768,11 @@
       "Throws": [],
       "Summary": "Attach the AVR of the generator by its model key and return it.",
       "Desc": "Same as add_local_controller(Key, parameter=...) for a key whose role (s_role) is\n\"avr\"; a key of another role is rejected with an error\n(GUILDA:Component:ControllerRoleMismatch) and the generator is left as it was.\nA new AVR replaces the attached one, as in add_local_controller.\ngen.avr returns the attached AVR.",
-      "SeeAlso": [],
-      "Examples": "```matlab\ncon = gen.set_avr(\"avr-ST1\");\ngen.avr == con     % true\n```\n\nSee also Component.add_local_controller, component.generator.abstract",
+      "SeeAlso": [
+        "Component.add_local_controller",
+        "component.generator.abstract"
+      ],
+      "Examples": "```matlab\ncon = gen.set_avr(\"avr-ST1\");\ngen.avr == con     % true\n```",
       "Deprecated": ""
     },
     {
@@ -3246,8 +3255,11 @@
       ],
       "Summary": "Set the inputs of the component at the equilibrium (rv_Uequilibrium).",
       "Desc": "The inputs, in the order of sv_u, are held for net.initialize(Method=\"FixedInput\"),\nwhich solves the states, the bus voltages and the currents with these inputs (only the\nPmech of the first generator of the slack bus is solved too). The edit is logged\n(LayerPackage.log_edit, tag \"input\"): it makes the equilibrium of the component stale\nand is listed in net.sct_stale.input, so the analyses (simulate, get_sys,\nthe continuation power flow) and net.initialize() stop until\nnet.initialize(Method=\"FixedInput\") is run. net.initialize(Method=\"powerflow\") or\nMethod=\"OPF\" replaces the edited inputs with the values of their solution.\nA value equal to the held one changes nothing.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE9bus();\nnet.initialize();\ngen = net.a_Bus{2}.a_Component{1};\nu = gen.rv_Uequilibrium;\nu(1) = u(1) + 0.1;                         % Pmech\ngen.set_input(u);\nnet.initialize(Method=\"FixedInput\");       % the slack generator balances the power\n```\n\nSee also PowerNetwork.initialize, Component.rv_Uequilibrium",
+      "SeeAlso": [
+        "PowerNetwork.initialize",
+        "Component.rv_Uequilibrium"
+      ],
+      "Examples": "```matlab\nnet = network.IEEE9bus();\nnet.initialize();\ngen = net.a_Bus{2}.a_Component{1};\nu = gen.rv_Uequilibrium;\nu(1) = u(1) + 0.1;                         % Pmech\ngen.set_input(u);\nnet.initialize(Method=\"FixedInput\");       % the slack generator balances the power\n```",
       "Deprecated": ""
     },
     {
@@ -3316,8 +3328,11 @@
       ],
       "Summary": "Remove a local controller from the component by tag.",
       "Desc": "The tag can name a top-level controller (the AVR or \"local\" controller, or the\ngovernor) or the PSS under the AVR; the other top-level controller stays attached.\nAn AVR that still has a PSS feeding it cannot be removed unless `RemoveNested` is true,\nwhich removes the PSS too. Remove the PSS alone by its own tag. The removed controllers\nare deleted, so a handle to them becomes invalid.\nThe removal is a \"Topology\" edit, so the equilibrium of the component becomes stale.\nWhen a global controller controls the component and the edit changes where one of its\noutputs goes (the \"global\" rows of net.get_variable_map), an INFO message\n(GUILDA:Component:GconRouteChanged) lists the outputs that go elsewhere now.",
-      "SeeAlso": [],
-      "Examples": "```matlab\ngen = net.a_Bus{1}.a_Component{1};\navr = gen.add_local_controller(\"avr-ST1\");\npss = gen.add_local_controller(\"pss-PSS1\");\ngen.remove_local_controller(pss.s_tag);                       % the PSS only\ngen.add_local_controller(\"pss-PSS1\");\ngen.remove_local_controller(avr.s_tag, RemoveNested=true);    % the AVR and its PSS\ngov = gen.add_local_controller(\"gov-LPT1\");\ngen.remove_local_controller(gov.s_tag);                       % the governor\n```\n\nSee also Component.add_local_controller, LocalController",
+      "SeeAlso": [
+        "Component.add_local_controller",
+        "LocalController"
+      ],
+      "Examples": "```matlab\ngen = net.a_Bus{1}.a_Component{1};\navr = gen.add_local_controller(\"avr-ST1\");\npss = gen.add_local_controller(\"pss-PSS1\");\ngen.remove_local_controller(pss.s_tag);                       % the PSS only\ngen.add_local_controller(\"pss-PSS1\");\ngen.remove_local_controller(avr.s_tag, RemoveNested=true);    % the AVR and its PSS\ngov = gen.add_local_controller(\"gov-LPT1\");\ngen.remove_local_controller(gov.s_tag);                       % the governor\n```",
       "Deprecated": ""
     },
     {
@@ -3408,8 +3423,15 @@
       ],
       "Summary": "Build a local controller (AVR, PSS, governor, LQR, ...) from its model key, attach it to the component and return it.",
       "Desc": "`Key` is the model key of a local controller class (`keys(GUILDA.keymap(\"LocalController\"))`\nlists them). `parameter` gives the parameters of the constructor as a struct\n(or a one-row table) of Name=Value; omitted fields keep the class defaults. The\ncontroller tag is the component tag, the class header and a number, e.g. \"B001SG1CA1\".\nOne controller is added per call.\n\nThe role of the controller class (`s_role`) says where it goes:\n\n- \"avr\": attached to the component (the PSS feeds it)\n- \"pss\": attached to the AVR of the component\n- \"local\": attached to the component in the place of an AVR (e.g. \"local-LQR\")\n- \"governor\": attached to the component beside the AVR or \"local\" controller (it\n  drives Pmech, e.g. \"gov-LPT1\")\n\nA component has two slots for top-level controllers: the AVR or \"local\" controller\n(with the PSS under an AVR), then the governor. a_LocalController lists them in this\norder whatever the order of attachment, and so do the variables (get_variable_map).\nA controller reads the outputs and states of the component it observes by the names\nof its inputs sv_u (\"Xall\" / \"Yall\": all the states / all the outputs), and its outputs\ndrive the inputs of the component of the same name (an input event or a global\ncontroller on such an input adds to them).\nEvery synchronous generator has a Static AVR (\"avr-static\") and a Static governor\n(\"gov-static\") from its creation (controller.avr.Static, controller.governor.Static).\nThey are replaced like any other controller, but without the warning, and are not\ncounted in the numbers of the tags.\nA new AVR or \"local\" controller replaces the attached one. The PSS of an old AVR moves\nto a new AVR, and is deleted when the new controller is not an AVR. A new PSS\nreplaces the attached one, and a new governor the attached governor. Replaced\ncontrollers are deleted, so a handle to them becomes invalid.\nEvery write to a_LocalController is checked against these slots (Component.a_LocalController\nand LocalController.a_LocalController reject any other list: GUILDA:Component:ControllerSlots,\nGUILDA:LocalController:NestedControllerSlot). A generator returns them as gen.avr, gen.pss and\ngen.governor, and gen.set_avr, set_pss and set_governor call this method.\nThe two top-level controllers must drive different inputs: a governor and an AVR or\n\"local\" controller with a common output (e.g. a local_LQR on all the inputs, Pmech\namong them) are rejected with an error, unless the attached one is a default Static:\nit is then removed (a local_LQR on all the inputs takes the place of both Statics).\nA role other than \"avr\", \"pss\", \"local\" or \"governor\" is rejected with an error, and so\nis an output that matches no input of the component (for a PSS, of its AVR), e.g. an\nAVR on a load. A rejected call leaves the component as it was.\nA misspelled input is not an error, because it has the same form as an input left\nunconnected on purpose.\nEach addition is a \"Topology\" edit, so the equilibrium of the component becomes stale.\nWhen a global controller controls the component and the edit changes where one of its\noutputs goes (the \"global\" rows of net.get_variable_map), an INFO message\n(GUILDA:Component:GconRouteChanged) lists the outputs that go elsewhere now.",
-      "SeeAlso": [],
-      "Examples": "```matlab\ngen = net.a_Bus{1}.a_Component{1};\navr = gen.add_local_controller(\"avr-ST1\", parameter=struct(kap=30));\npss = gen.add_local_controller(\"pss-PSS1\");                          % under the AVR\ngov = gen.add_local_controller(\"gov-LPT1\", parameter=struct(PLM=5));\n```\n\nSee also Component.remove_local_controller, LocalController, controller.avr.AVR_ST1, controller.pss.PSS1, controller.governor.IEEJ_LPT1, controller.local_LQR",
+      "SeeAlso": [
+        "Component.remove_local_controller",
+        "LocalController",
+        "controller.avr.AVR_ST1",
+        "controller.pss.PSS1",
+        "controller.governor.IEEJ_LPT1",
+        "controller.local_LQR"
+      ],
+      "Examples": "```matlab\ngen = net.a_Bus{1}.a_Component{1};\navr = gen.add_local_controller(\"avr-ST1\", parameter=struct(kap=30));\npss = gen.add_local_controller(\"pss-PSS1\");                          % under the AVR\ngov = gen.add_local_controller(\"gov-LPT1\", parameter=struct(PLM=5));\n```",
       "Deprecated": ""
     },
     {
@@ -3503,8 +3525,11 @@
       "Throws": [],
       "Summary": "Get the linear block of the component alone at a point.",
       "Desc": "Returns the linear model of the component without its local controllers at the\nstates x, the bus voltage V = [Vre; Vim] and the inputs u, as a struct with the fields\nA, B, C, D, E (E dx/dt = A x + B [V; u], [I; y] = C x + D [V; u]) and StateName,\nInputName, OutputName (string columns). The names are the Labels of the variable map\n(comp.get_variable_map): the inputs are the voltage of the bus and the inputs u, the\nstates are the states, and the outputs are the current [Ire; Iim] (tagged with the\ncomponent) and the outputs y (\"Y_\" + name for an output with the name of a state).\n\nget_sys connects these blocks (SolverLIN.solve); a controller that designs with the\nlinear model of the component alone (controller.local_LQR) calls it directly. The\nJacobians are those of the simulation (f_JacobiDx, f_JacobiI, f_JacobiY); a model that\nreturns [] for a block gives zeros. The model is not changed.",
-      "SeeAlso": [],
-      "Examples": "```matlab\ncomp = net.a_Bus{1}.a_Component{1};\nV = [real(comp.c_Vequilibrium); imag(comp.c_Vequilibrium)];\nS = comp.get_linear_matrix(comp.rv_Xequilibrium, V, comp.rv_Uequilibrium);\neig(S.A, S.E)\n```\n\nSee also PowerSystemModel.get_sys, SolverLIN.solve",
+      "SeeAlso": [
+        "PowerSystemModel.get_sys",
+        "SolverLIN.solve"
+      ],
+      "Examples": "```matlab\ncomp = net.a_Bus{1}.a_Component{1};\nV = [real(comp.c_Vequilibrium); imag(comp.c_Vequilibrium)];\nS = comp.get_linear_matrix(comp.rv_Xequilibrium, V, comp.rv_Uequilibrium);\neig(S.A, S.E)\n```",
       "Deprecated": ""
     },
     {
@@ -3859,8 +3884,11 @@
       ],
       "Summary": "Return the variable map of the component and the connections inside it.",
       "Desc": "Variable map of the component: the rows of net.get_variable_map() that belong to it,\nin the same relative order (see PowerNetwork.get_variable_map for the columns):\n  1. x: states of the component, then of its local controllers (depth first: the AVR or\n     \"local\" controller, the PSS attached under the AVR, then the governor)\n  2. Vre, Vim of its bus\n  3. u: inputs of the component\n  4. uc: inputs of its local controllers (depth first)\n  5. y: outputs of the component (signals)\n  6. yc: outputs of its local controllers (signals)\nThe rows of the kinds x, Vre, Vim, u and uc come first: they are the order of the point\nvector of comp.get_sys(point), every value used as given. Index counts from 1 here. The column Equilibrium is\nas in the map of the network (NaN in every row before net.initialize).\ntab_connection lists the connections inside the component: the outputs of the local\ncontrollers into the inputs of the same name of their parent (\"local\"), the outputs and\nstates of the component into the inputs of the controllers that observe them\n(\"observe\"), and the equilibrium of an input without either (\"equilibrium\"). The\nconnections of the global controllers are only in the map of the network.\nget_variable_map(\"rows\") is the form used inside the map: see PowerNetwork.get_variable_map.",
-      "SeeAlso": [],
-      "Examples": "```matlab\n[tab, tab_connection] = net.a_Bus{1}.a_Component{1}.get_variable_map();\ntab(tab.Kind == \"x\", :)\n```\n\nSee also PowerNetwork.get_variable_map, PowerSystemModel.get_sys",
+      "SeeAlso": [
+        "PowerNetwork.get_variable_map",
+        "PowerSystemModel.get_sys"
+      ],
+      "Examples": "```matlab\n[tab, tab_connection] = net.a_Bus{1}.a_Component{1}.get_variable_map();\ntab(tab.Kind == \"x\", :)\n```",
       "Deprecated": ""
     },
     {
@@ -4094,8 +4122,12 @@
       ],
       "Summary": "Linearize the layer and return its linear model.",
       "Desc": "One method for every layer with a linear model: PowerNetwork, Bus, Component (with\nits local controllers), LocalController and GlobalController (Branch has none:\nGUILDA:PowerSystemModel:NoLinearModel). Each model object gives its own linear block\n(get_linear_matrix); get_sys takes the inputs and outputs of the layer (its port) from\nthe variable map, and SolverLIN.solve connects the blocks along it. The linearization needs no\ntoolbox, and the model is not changed.\n\n| Layer | Inputs | Outputs | Bus voltages |\n|---|---|---|---|\n| PowerNetwork | inputs u of the components | outputs y and yc | algebraic: 0 = Y v - I of the components, eliminated for Type \"ODE\" |\n| Bus, Component | V, u, uc | I, y, yc | inputs |\n| LocalController | V of its bus, its inputs | its outputs | inputs |\n| GlobalController | V of all buses, its inputs | its outputs | inputs |\n\nThe names are the Labels of the variable map of the layer (obj.get_variable_map); the\nstates follow its order. The current of a\ncomponent is the component tag with Ire, Iim; that of a bus the bus tag. An input is\nthe sum of its sources in the connection map plus the external input of that name.\n\npoint, the first argument, gives the point: [] (the equilibrium set by net.initialize,\nthe default), a vector of the variables of the layer in the order of the leading rows of\nobj.get_variable_map() (x, Vre, Vim, u, uc; for a controller x, Vre, Vim, uc), or\n{sim, t} (or {sim, t, \"before\"}) for the state of a simulation result at time t\n(PowerNetwork, Bus and Component).\nTime sections: {sim, rv_t} with several times, or a matrix with one point per column,\nlinearizes the layer at each of them; the result holds one section per time or column\n(ResultLIN.rv_t: the times, or 1:n for a matrix; ResultLIN.Index chooses the section),\nand flag is true only when every section is usable (output.lv_flag of each section). Every value of the point is used as given: the\ninputs u of the components and uc of the controllers, whether the connection map drives\nthem or holds them at a setpoint (Vref of an AVR, Pref of a governor). The outputs y and\nyc are evaluated at the point. The point sets the variables only: the\nadmittance matrix stays the one of the model, also inside a fault (reported with an\nINFO message and output.sv_faultBus).\n\nThe layer stops with GUILDA:PowerSystemModel:Stale when net.initialize() is needed: an\nedited dynamics always, an edited network, power flow or equilibrium when the point is the\nequilibrium; with GUILDA:PowerSystemModel:InputEdited when the inputs were edited.\nA point with NaN or Inf stops with GUILDA:SolverLIN:PointNotFinite, and a model that is\nnot finite at the point with GUILDA:SolverLIN:JacobianNotFinite.\n\nFormat chooses the form of sys: \"GUILDAorigin\" (default) is the ResultLIN of the\nlinearization, also when flag is false; its properties A, B, C, D, E, StateName,\nInputName and OutputName hold the model of its Type (the Type of the call) with the\nselected Input and Output. \"struct\" is a struct with these eight fields and \"ss\" a\ndescriptor state-space model (dss, Control System Toolbox): they stop with the error of\nResultLIN.get_ss when flag is false (except \"DAE\" with a singular Avv). With several\nsections, \"struct\" is a 1 x n_t struct array and \"ss\" an ss array (sys(:,:,k) is\nsection k). The ResultLIN of the network (Format \"GUILDAorigin\") keeps a snapshot of it,\nsct_network = struct(net, false).\n\nType chooses the model of the network: \"DAE\" is the connected model, with the bus\nvoltages as algebraic variables (E is singular on their rows), each bus written as the\nport of Port (see ResultLIN.get_ss); \"ODE\" is the model with the bus voltages eliminated (SolverLIN.reduce).\nThe result keeps the DAE, so res.Type switches between them later.\n\nForm chooses the view of A ... E (ResultLIN.Form): \"descriptor\" (default; E holds the\ntime constants), \"absorbed\" (E^-1 multiplied into the state rows) or \"hessian\", the\nenergy-function form of the network: get_sys calls get_hessian of every component, local\ncontroller and global controller at the point of each section, and SolverLIN.solve\nassembles E_h dz/dt = H z over z = [x; theta; V] with E_h = -blkdiag(inv(R), 0) and\nH = [Hxx Hxv; Hvx Hvv + Hvv_net] (see ResultLIN). A class without the form stops with\nits GUILDA:<layer>:HessianNotSupported (the Static AVR and governor have empty blocks).\n\"hessian\" needs the network (GUILDA:PowerSystemModel:HessianNetworkOnly) and Port \"PI\"\nor \"PQ\" (GUILDA:PowerSystemModel:HessianPort). The result keeps the descriptor DAE too.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = net.get_sys();                          % ResultLIN of the network (Type of GUILDA.setting)\neig(res.A, res.E)\nsct = net.get_sys(Type=\"DAE\", Format=\"struct\");\nresV = net.get_sys(Output=\"V\");               % bus voltages as outputs\nsys = net.a_Bus{1}.a_Component{1}.get_sys(Format=\"ss\");   % component, V to I\nres2 = net.get_sys({sim, 1.5});               % at a time of a simulation result\nres3 = net.get_sys(res.rv_point);             % at a vector in the order of net.get_variable_map()\nres4 = net.get_sys({sim, [0.5, 1, 2]});       % three time sections; res4.Index = 2 shows t = 1\nsct4 = net.get_sys({sim, [0.5, 1, 2]}, Format=\"struct\");   % 1 x 3 struct array\nresH = net.get_sys(Type=\"DAE\", Port=\"PI\", Form=\"hessian\");  % energy-function form\n```\n\nSee also ResultLIN, SolverLIN, PowerNetwork.get_variable_map",
+      "SeeAlso": [
+        "ResultLIN",
+        "SolverLIN",
+        "PowerNetwork.get_variable_map"
+      ],
+      "Examples": "```matlab\nres = net.get_sys();                          % ResultLIN of the network (Type of GUILDA.setting)\neig(res.A, res.E)\nsct = net.get_sys(Type=\"DAE\", Format=\"struct\");\nresV = net.get_sys(Output=\"V\");               % bus voltages as outputs\nsys = net.a_Bus{1}.a_Component{1}.get_sys(Format=\"ss\");   % component, V to I\nres2 = net.get_sys({sim, 1.5});               % at a time of a simulation result\nres3 = net.get_sys(res.rv_point);             % at a vector in the order of net.get_variable_map()\nres4 = net.get_sys({sim, [0.5, 1, 2]});       % three time sections; res4.Index = 2 shows t = 1\nsct4 = net.get_sys({sim, [0.5, 1, 2]}, Format=\"struct\");   % 1 x 3 struct array\nresH = net.get_sys(Type=\"DAE\", Port=\"PI\", Form=\"hessian\");  % energy-function form\n```",
       "Deprecated": ""
     },
     {

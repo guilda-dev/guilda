@@ -1422,8 +1422,11 @@
       ],
       "Summary": "Return the drawn positions in the form of net.get_layout (only graphs with a free layout).",
       "Desc": "A graph with a free layout (GraphNetDiagram) overrides this method and\nreturns the positions it draws, so that net.set_layout(G.get_layout()) saves them in the\nmodel. In the other graphs the positions follow from the data, and this method raises\nan error.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nG = net.plot_diagram();\nnet.set_layout(G.get_layout());\n```\n\nSee also PowerNetwork.get_layout, PowerNetwork.set_layout",
+      "SeeAlso": [
+        "PowerNetwork.get_layout",
+        "PowerNetwork.set_layout"
+      ],
+      "Examples": "```matlab\nG = net.plot_diagram();\nnet.set_layout(G.get_layout());\n```",
       "Deprecated": ""
     },
     {

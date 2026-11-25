@@ -552,8 +552,13 @@
       ],
       "Summary": "Draw the iterations of the AC optimal power flow as a chart of four panels.",
       "Desc": "Draws sct_iteration (recorded by fmincon at every \"AC OPF\" run) as one GraphChart with\nfour panels in a 2-by-2 grid against the iteration number, in rows: the objective (line\ntag \"Fval\"), the largest constraint violation on a log scale (tag \"ConstrViolation\"),\nP of each generator (a component whose P bounds differ; tags of the generators) and |V|\nof each bus (tags of the buses). The four panels are time panels whose times are the\niteration numbers (sct_iteration.Iteration): set_time(k) moves the cursor of every\npanel to iteration k, and the TimeChangedFcn of the chart writes the title \"OPF\niteration k (i of n)\" of the iteration shown (the last one at first). The chart has no\nplayback bar, as its time only moves the cursor (see GraphChart). A line is found by\nits tag in G.tab_element, and the first row of the data tip of a line is its name (the\ntag, e.g. the generator or bus). The chart is drawn in the container Parent. \"ELD\" and\n\"DC OPF\" (linprog, quadprog) record no iterations and stop with\nGUILDA:ResultOPF:NoIteration. It reads only the stored result.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE14bus().calculate_optimal_powerflow(Method=\"AC OPF\");\nG = res.plot_iteration();\nG.set_time(3);                      % cursor and title at iteration 3\nG.tab_element                       % the lines: Fval, ConstrViolation, generators, buses\nG.set_style(\"B001\", LineWidth=3);   % pick out the |V| of bus B001\n```\n\nSee also ResultOPF.sct_iteration, ResultOPF.plot_lmp, ResultPF.plot_convergence, GraphChart",
+      "SeeAlso": [
+        "ResultOPF.sct_iteration",
+        "ResultOPF.plot_lmp",
+        "ResultPF.plot_convergence",
+        "GraphChart"
+      ],
+      "Examples": "```matlab\nres = network.IEEE14bus().calculate_optimal_powerflow(Method=\"AC OPF\");\nG = res.plot_iteration();\nG.set_time(3);                      % cursor and title at iteration 3\nG.tab_element                       % the lines: Fval, ConstrViolation, generators, buses\nG.set_style(\"B001\", LineWidth=3);   % pick out the |V| of bus B001\n```",
       "Deprecated": ""
     },
     {
@@ -633,8 +638,12 @@
       "Throws": [],
       "Summary": "Draw the locational marginal prices on the network diagram (GraphNetDiagram).",
       "Desc": "Each bus is colored by its LMP (get_lmp, cost per pu), with a color bar (ColorbarLabel\n\"LMP [cost/pu]\") and the title \"LMP of <network> (<Method>)\"; the color limits\nare the lowest and the highest LMP. The branches with a binding limit (the branch\nconstraints of disp_binding: Pmax, Qmax, Imax, Smax, VargMax) are selected, so they are\ndrawn in SelectionColor. The state of the diagram is the solution: the bus voltages\n(Vphasor in \"AC OPF\"; |V| = 1 and the angle Varg in \"DC OPF\"; V = 1 in \"ELD\", which has\nno angles) and the component powers of tab_cub. The branches and links keep a neutral\ncolor. The labels are LabelMode \"value\": each bus label shows its tag, ∠V, |V| and the\nline \"LMP [cost/pu]=<value>\", and each component label its tag, P and Q; the data\ntip of a bus shows the same LMP line. Works for \"ELD\", \"DC OPF\" and \"AC OPF\"; it reads\nonly the stored result. The other Name-Value options set the properties of the\nGraphNetDiagram (they override the color and label settings above, e.g. LabelMode=\"bus\"\nfor the bus tags only).",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.a_Branch{1}.tab_parameter.operation.Pmax = 1;\nres = net.calculate_optimal_powerflow(Method=\"DC OPF\");\nG = res.plot_lmp();\nG.Selection                 % the branches with a binding limit\nG.BusLabel(1)               % the tag, ∠V, |V| and \"LMP [cost/pu]=<the LMP>\" of the first bus\nG = res.plot_lmp(LabelMode=\"bus\");   % the bus tags only\n```\n\nSee also ResultOPF.get_lmp, ResultOPF.disp_binding, GraphNetDiagram",
+      "SeeAlso": [
+        "ResultOPF.get_lmp",
+        "ResultOPF.disp_binding",
+        "GraphNetDiagram"
+      ],
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.a_Branch{1}.tab_parameter.operation.Pmax = 1;\nres = net.calculate_optimal_powerflow(Method=\"DC OPF\");\nG = res.plot_lmp();\nG.Selection                 % the branches with a binding limit\nG.BusLabel(1)               % the tag, ∠V, |V| and \"LMP [cost/pu]=<the LMP>\" of the first bus\nG = res.plot_lmp(LabelMode=\"bus\");   % the bus tags only\n```",
       "Deprecated": ""
     },
     {
@@ -689,8 +698,11 @@
       "Throws": [],
       "Summary": "Return the locational marginal price of every bus and its components.",
       "Desc": "The price LMP of bus i is the change of the optimal cost per unit of load at the bus,\n-lambda.Constraints.balancedP_<bus> (balancedP in \"ELD\"), in the unit of the multiplier:\ncost per pu of active power (the cost of tab_parameter.OPF per pu). It is split into\nthree components, LMP = Energy + Congestion + Loss:\n\n- `Energy`: the price at the reference bus (options.ReferenceBus of the run; the first\n  bus when it is \"none\"), the same at every bus.\n- `Loss`: -Energy * dPloss/dP_i, the price of the change of the losses when bus i injects\n  one more unit and the reference bus one less. dPloss/dP_i is the loss sensitivity at the\n  solution, from the Jacobian of the power flow equations (bus admittance matrix of the\n  branches cm_Y and bus shunts of sct_network; the angle of the reference bus fixed, the\n  reactive injections held). It is 0 at the reference bus, and 0 in \"DC OPF\" and \"ELD\",\n  which have no losses.\n- `Congestion`: the rest, LMP - Energy - Loss, from the binding limits (branches,\n  voltages). It is 0 at every bus without binding limits in \"DC OPF\".\n\nThe components depend on the choice of the reference bus; LMP does not. In \"ELD\" every\nbus has the same price. It reads only the stored result.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE14bus().calculate_optimal_powerflow(Method=\"AC OPF\");\ntab = res.get_lmp();\ntab{\"B014\", [\"LMP\",\"Energy\",\"Congestion\",\"Loss\"]}\n```\n\nSee also ResultOPF.disp_summary, ResultOPF.disp_binding",
+      "SeeAlso": [
+        "ResultOPF.disp_summary",
+        "ResultOPF.disp_binding"
+      ],
+      "Examples": "```matlab\nres = network.IEEE14bus().calculate_optimal_powerflow(Method=\"AC OPF\");\ntab = res.get_lmp();\ntab{\"B014\", [\"LMP\",\"Energy\",\"Congestion\",\"Loss\"]}\n```",
       "Deprecated": ""
     },
     {
@@ -760,8 +772,11 @@
       "Throws": [],
       "Summary": "Display the binding constraints of the optimal power flow solution.",
       "Desc": "Lists the constraints that hold with equality at the solution: the bounds of the\nvariables (e.g. Vmax of a bus, Pmax of a generator; a fixed value such as the P of a\nload is left out) and the inequalities of OPFprob (branch limits Pmax_, Qmax_, Imax_,\nSmax_, VargMax1_, VargMax2_, and those of Constraint). Columns: Constraint (the name;\n\"(k)\" for element k of a constraint with several), Object (the tag of the bus,\ncomponent, branch end \"<branch>_<bus>\" or branch), Value, Limit and Multiplier (the\nLagrange multiplier of lambda, cost per unit of the constraint). A constraint counts as\nbinding when its value is within 1e-4 * max(1, |Limit|) of its limit. The values of the\nbranch limits are physical (P, Q, |I|, |S| of the branch end; the angle difference From -\nTo), with the limits of tab_parameter.operation of the branch in sct_network; for a\nconstraint of Constraint, Value is the left-hand side minus the right-hand side (<= 0)\nand Limit is 0. The power balance equations always hold and are not listed. It reads\nonly the stored result. With one output it returns the text instead of displaying it.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.a_Branch{1}.tab_parameter.operation.Smax = 1;\nres = net.calculate_optimal_powerflow(Method=\"AC OPF\");\nres.disp_binding()\nres.disp_binding(Kind=\"Branch\")\n```\n\nSee also ResultOPF.disp_summary, ResultOPF.get_lmp",
+      "SeeAlso": [
+        "ResultOPF.disp_summary",
+        "ResultOPF.get_lmp"
+      ],
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.a_Branch{1}.tab_parameter.operation.Smax = 1;\nres = net.calculate_optimal_powerflow(Method=\"AC OPF\");\nres.disp_binding()\nres.disp_binding(Kind=\"Branch\")\n```",
       "Deprecated": ""
     },
     {
@@ -816,8 +831,12 @@
       "Throws": [],
       "Summary": "Return the values that disp_summary shows, as a struct.",
       "Desc": "The fields hold the outcome of the calculation, the optimal cost, the sums of the bus\ninjections, the numbers of binding constraints, the range of the locational marginal\nprices (get_lmp) with their buses and, for a stability-constrained \"AC OPF\"\n(sct_stability), the stability at the solution. The buses with a positive P are the\ngeneration, those with a negative P the load: r_Pgeneration and r_Qgeneration are the\nsums of P and Q of the first, r_Pload and r_Qload the sums of -P and -Q of the second,\nand r_Ploss and r_Qloss the sums of P and Q of all buses (P losses are 0 in \"DC OPF\" and\n\"ELD\"). The Q fields are NaN in \"DC OPF\" and \"ELD\", which have no Q, and the stability\nfields NaN without sct_stability. Like disp_summary, it gives the values of the stored\nsolution also when the solver did not succeed (l_success false). It reads only the stored\nresult.\n\n| Field | Value |\n| --- | --- |\n| `s_network`, `s_Method`, `s_Solver` | Tag of the network; option Method of the run; the optimization solver (\"\" when not held) |\n| `l_success`, `r_flag` | Success (flag > 0) and the flag (double) |\n| `n_iteration`, `r_elapsed` | Iterations (NaN when not held), elapsed time [s] |\n| `r_cost` | Optimal cost (total generation cost of tab_parameter.OPF) |\n| `r_Pgeneration`, `r_Qgeneration` | [pu] Generation (buses with P > 0) |\n| `r_Pload`, `r_Qload` | [pu] Load (buses with P < 0), positive for a consumption |\n| `r_Ploss`, `r_Qloss` | [pu] Losses: sums of P and Q of all buses |\n| `n_binding`, `n_bindingBranch` | Numbers of binding constraints (disp_binding) and of the branch limits among them |\n| `r_LMPmin`, `s_LMPminBus`, `r_LMPmax`, `s_LMPmaxBus` | Smallest and largest LMP (cost per pu) and their buses |\n| `r_minDampingRatio`, `r_maxRealPart`, `n_outerIteration` | Stability: smallest damping ratio, largest real part [1/s] of the eigenvalues at the solution, outer iterations |",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE9bus().calculate_optimal_powerflow(Method=\"AC OPF\");\nsct = res.get_summary();\nsct.r_cost                       % optimal cost\n[sct.r_LMPmax, sct.s_LMPmaxBus]  % highest nodal price and its bus\n```\n\nSee also ResultOPF.disp_summary, ResultOPF.get_lmp, ResultOPF.disp_binding",
+      "SeeAlso": [
+        "ResultOPF.disp_summary",
+        "ResultOPF.get_lmp",
+        "ResultOPF.disp_binding"
+      ],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_optimal_powerflow(Method=\"AC OPF\");\nsct = res.get_summary();\nsct.r_cost                       % optimal cost\n[sct.r_LMPmax, sct.s_LMPmaxBus]  % highest nodal price and its bus\n```",
       "Deprecated": ""
     },
     {
@@ -872,8 +891,13 @@
       "Throws": [],
       "Summary": "Display a summary of the optimal power flow result.",
       "Desc": "Shows a title line with the outcome (Method, solver, solved or not, flag) and one bullet\nper item: the calculation (iterations, elapsed time), the optimal cost, the generation\n(buses with a positive P), the load (buses with a negative P) and the losses (sums over\nall buses; 0 in \"DC OPF\" and \"ELD\"), each with P and, in \"AC OPF\", Q, the number of\nbinding constraints (see disp_binding; branch limits among them), the range of the\nlocational marginal prices (see get_lmp) with their buses, and for a stability-\nconstrained \"AC OPF\" (sct_stability) the smallest damping ratio and the largest real\npart of the eigenvalues at the solution with the number of outer iterations. The values\nare those of get_summary. It reads only the stored result. With one output it returns\nthe text instead of displaying it.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE14bus().calculate_optimal_powerflow(Method=\"DC OPF\");\nres.disp_summary()\ns = res.disp_summary();      % as text\n```\n\nSee also ResultOPF.get_summary, ResultOPF.disp_binding, ResultOPF.get_lmp, ResultPF.disp_summary",
+      "SeeAlso": [
+        "ResultOPF.get_summary",
+        "ResultOPF.disp_binding",
+        "ResultOPF.get_lmp",
+        "ResultPF.disp_summary"
+      ],
+      "Examples": "```matlab\nres = network.IEEE14bus().calculate_optimal_powerflow(Method=\"DC OPF\");\nres.disp_summary()\ns = res.disp_summary();      % as text\n```",
       "Deprecated": ""
     },
     {
@@ -1027,8 +1051,12 @@
       "Throws": [],
       "Summary": "Plot the component outputs and the bus voltages.",
       "Desc": "Draws the solution as bar charts (GraphChart) in panels one above the other: the active\npower P [pu] of each component (and the reactive power Q for \"AC OPF\", grouped with P,\nwith a legend), then for \"AC OPF\" the bus voltage magnitude [pu], and for \"DC OPF\" and\n\"AC OPF\" the bus voltage angle [deg]. The bars are elements of the chart tagged by the\ncomponent or bus (P and Q of a component share its tag). The title shows the method,\nthe cost and \"not solved\" when the OPF failed. The only figure of the analysis:\ncalculate_optimal_powerflow draws none (its PlotFcn is a live display during the\ncalculation).",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE14bus().calculate_optimal_powerflow(Method=\"AC OPF\");\nG = res.plot_dispatch();\nG.set_style(\"B001SG1\", Color=\"r\");     % the P and Q bars of a component\n```\n\nSee also GraphChart, ResultOPF.plot_lmp, ResultOPF.plot_iteration",
+      "SeeAlso": [
+        "GraphChart",
+        "ResultOPF.plot_lmp",
+        "ResultOPF.plot_iteration"
+      ],
+      "Examples": "```matlab\nres = network.IEEE14bus().calculate_optimal_powerflow(Method=\"AC OPF\");\nG = res.plot_dispatch();\nG.set_style(\"B001SG1\", Color=\"r\");     % the P and Q bars of a component\n```",
       "Deprecated": ""
     },
     {
@@ -1483,8 +1511,12 @@
       ],
       "Summary": "Show the result in a GUI: header, the plot_, disp_, get_ and export methods as buttons, and a view area.",
       "Desc": "With no container it opens a new uifigure; with a container (uifigure, uipanel, uitab or\nuigridlayout) it fills it, so that the GUI can be embedded in another app. The buttons\nare the methods of the result in functionSignatures.json, grouped as Plot, Display, Get\nand Export, so a result class needs no GUI code. A method with options asks for them in\na dialog (DrawerOptionDialog.ask); plots are drawn in the plot panel, and the text of\ndisp_* and the values of get_* are shown in the text area. See DrawerResultGUI.\n\nEvery action runs as a line of MATLAB code in History (HistoryGUILDA.run) on the result\nvariable Variable of its workspace (set to this result when the workspace has no such\nvariable): the code is logged, and `h.history.get_script()` returns a script that repeats\nthe actions, drawing the plots in new figures. The default history prints each `>> code`\nin the Command Window; its script needs the result in the workspace as Variable.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nh = res.launch_gui();                        % new window\nfig = uifigure();\nh = res.launch_gui(uipanel(uigridlayout(fig, [1 1])));   % embedded in a panel\nhist = HistoryGUILDA();\nhist.run(\"Power flow\", \"Calculate\", \"net = network.IEEE9bus(); res_pf = net.calculate_powerflow();\");\nh = hist.get_variable(\"res_pf\").launch_gui(History=hist, Variable=\"res_pf\");\nhist.get_script()                            % the power flow and the actions of the GUI\n```\n\nSee also DrawerResultGUI, HistoryGUILDA, DrawerOptionDialog",
+      "SeeAlso": [
+        "DrawerResultGUI",
+        "HistoryGUILDA",
+        "DrawerOptionDialog"
+      ],
+      "Examples": "```matlab\nres = network.IEEE9bus().calculate_powerflow();\nh = res.launch_gui();                        % new window\nfig = uifigure();\nh = res.launch_gui(uipanel(uigridlayout(fig, [1 1])));   % embedded in a panel\nhist = HistoryGUILDA();\nhist.run(\"Power flow\", \"Calculate\", \"net = network.IEEE9bus(); res_pf = net.calculate_powerflow();\");\nh = hist.get_variable(\"res_pf\").launch_gui(History=hist, Variable=\"res_pf\");\nhist.get_script()                            % the power flow and the actions of the GUI\n```",
       "Deprecated": ""
     },
     {

@@ -749,8 +749,12 @@
       "Throws": [],
       "Summary": "Return the optimal-power-flow condition of the bus and its components.",
       "Desc": "The tables hold exactly what net.calculate_optimal_powerflow and net.build_opf_problem\nuse for this bus; row names are the tags.\n\n- tab_bus (one row): Vmin, Vmax (tab_parameter.operation), Gshunt, Bshunt (dynamics),\n  Type (\"slack\", \"PV\" or \"PQ\", from get_pf_condition), V, Varg (powerflow: the set\n  values of the start and of the reference angle).\n- tab_component (one row per component): Bus (tag of this bus), HP, fP, HQ, fQ, c, P0,\n  Q0 (OPF), Pmin, Pmax, Qmin, Qmax (operation). A load or a grid-following inverter\n  whose Pmin and Pmax (Qmin and Qmax) are both infinite is fixed to its P (Q) of tab_parameter.powerflow: both bounds and\n  the start show that value.\n\nWith Display=true (default) the tables are printed under the headings \"Bus\" and\n\"Component\"; with no output nothing is returned.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.a_Bus{2}.get_opf_condition();                      % print the tables\n[tab_bus, tab_com] = net.a_Bus{2}.get_opf_condition(Display=false);\n```\n\nSee also PowerNetwork.get_opf_condition, Branch.get_opf_condition, Bus.get_pf_condition",
+      "SeeAlso": [
+        "PowerNetwork.get_opf_condition",
+        "Branch.get_opf_condition",
+        "Bus.get_pf_condition"
+      ],
+      "Examples": "```matlab\nnet = network.IEEE14bus();\nnet.a_Bus{2}.get_opf_condition();                      % print the tables\n[tab_bus, tab_com] = net.a_Bus{2}.get_opf_condition(Display=false);\n```",
       "Deprecated": ""
     },
     {
@@ -924,8 +928,11 @@
       ],
       "Summary": "Replace a component of the bus by a component of another model.",
       "Desc": "The new component keeps the power-flow, operation, OPF and graph settings and the\nnumber of the replaced one. The replacement is a \"Topology\" edit, which makes\nthe power flow stale, so `net.initialize()` is needed before the dynamic analyses.\nA tag that is not found is an error. A component controlled by a global controller\ncannot be replaced.\n\nThe replaced component is deleted, so a handle to it becomes invalid. The local\ncontrollers are not carried over by default: they are deleted with it and the warning\nGUILDA:Bus:ControllersDropped names them. The default Static AVR and governor of a\ngenerator (controller.avr.Static, controller.governor.Static) are neither carried over\nnor named: a new generator has its own. A PSS under the Static AVR is named and\ncarried over like the others. With\n`Controllers=\"keep\"` they move to the new component (a handle to one of them then refers\nto the new component), and `net.initialize()` designs them again; a PSS under the Static\nAVR moves under the Static AVR of the new component. If the new component lacks an\ninput they drive or a signal they observe, or such a PSS finds no Static AVR there, the\nerror GUILDA:Bus:ControllersNotKept stops the call and nothing changes. The weights of\n`controller.local_LQR` are kept as given, so a `Q` of another size stops `net.initialize()`.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nnet.a_Bus{1}.replace_component(\"B001SG1\", \"gen-classical\");\nnet.a_Bus{1}.replace_component(\"B001SG1\", \"gen-1axis\", Controllers=\"keep\");\n```\n\nSee also Bus.add_component, Bus.remove_component",
+      "SeeAlso": [
+        "Bus.add_component",
+        "Bus.remove_component"
+      ],
+      "Examples": "```matlab\nnet.a_Bus{1}.replace_component(\"B001SG1\", \"gen-classical\");\nnet.a_Bus{1}.replace_component(\"B001SG1\", \"gen-1axis\", Controllers=\"keep\");\n```",
       "Deprecated": ""
     },
     {
@@ -1294,8 +1301,12 @@
       "Throws": [],
       "Summary": "Add a component to the bus and return it.",
       "Desc": "`Key` is the model key of a component class (`keys(GUILDA.keymap(\"Component\"))` lists\nthem). The component tag is the bus tag, the class header and a number, e.g.\n\"B001SG1\". The addition is a \"Topology\" edit, which makes the power flow of the network stale.",
-      "SeeAlso": [],
-      "Examples": "```matlab\ngen  = net.a_Bus{1}.add_component(\"gen-park\", P=0.5);\nld   = net.a_Bus{3}.add_component(\"load-power\", P=-0.8, Q=-0.2);\n```\n\nSee also Bus.remove_component, Bus.replace_component, Component",
+      "SeeAlso": [
+        "Bus.remove_component",
+        "Bus.replace_component",
+        "Component"
+      ],
+      "Examples": "```matlab\ngen  = net.a_Bus{1}.add_component(\"gen-park\", P=0.5);\nld   = net.a_Bus{3}.add_component(\"load-power\", P=-0.8, Q=-0.2);\n```",
       "Deprecated": ""
     },
     {
@@ -1816,8 +1827,12 @@
       ],
       "Summary": "Linearize the layer and return its linear model.",
       "Desc": "One method for every layer with a linear model: PowerNetwork, Bus, Component (with\nits local controllers), LocalController and GlobalController (Branch has none:\nGUILDA:PowerSystemModel:NoLinearModel). Each model object gives its own linear block\n(get_linear_matrix); get_sys takes the inputs and outputs of the layer (its port) from\nthe variable map, and SolverLIN.solve connects the blocks along it. The linearization needs no\ntoolbox, and the model is not changed.\n\n| Layer | Inputs | Outputs | Bus voltages |\n|---|---|---|---|\n| PowerNetwork | inputs u of the components | outputs y and yc | algebraic: 0 = Y v - I of the components, eliminated for Type \"ODE\" |\n| Bus, Component | V, u, uc | I, y, yc | inputs |\n| LocalController | V of its bus, its inputs | its outputs | inputs |\n| GlobalController | V of all buses, its inputs | its outputs | inputs |\n\nThe names are the Labels of the variable map of the layer (obj.get_variable_map); the\nstates follow its order. The current of a\ncomponent is the component tag with Ire, Iim; that of a bus the bus tag. An input is\nthe sum of its sources in the connection map plus the external input of that name.\n\npoint, the first argument, gives the point: [] (the equilibrium set by net.initialize,\nthe default), a vector of the variables of the layer in the order of the leading rows of\nobj.get_variable_map() (x, Vre, Vim, u, uc; for a controller x, Vre, Vim, uc), or\n{sim, t} (or {sim, t, \"before\"}) for the state of a simulation result at time t\n(PowerNetwork, Bus and Component).\nTime sections: {sim, rv_t} with several times, or a matrix with one point per column,\nlinearizes the layer at each of them; the result holds one section per time or column\n(ResultLIN.rv_t: the times, or 1:n for a matrix; ResultLIN.Index chooses the section),\nand flag is true only when every section is usable (output.lv_flag of each section). Every value of the point is used as given: the\ninputs u of the components and uc of the controllers, whether the connection map drives\nthem or holds them at a setpoint (Vref of an AVR, Pref of a governor). The outputs y and\nyc are evaluated at the point. The point sets the variables only: the\nadmittance matrix stays the one of the model, also inside a fault (reported with an\nINFO message and output.sv_faultBus).\n\nThe layer stops with GUILDA:PowerSystemModel:Stale when net.initialize() is needed: an\nedited dynamics always, an edited network, power flow or equilibrium when the point is the\nequilibrium; with GUILDA:PowerSystemModel:InputEdited when the inputs were edited.\nA point with NaN or Inf stops with GUILDA:SolverLIN:PointNotFinite, and a model that is\nnot finite at the point with GUILDA:SolverLIN:JacobianNotFinite.\n\nFormat chooses the form of sys: \"GUILDAorigin\" (default) is the ResultLIN of the\nlinearization, also when flag is false; its properties A, B, C, D, E, StateName,\nInputName and OutputName hold the model of its Type (the Type of the call) with the\nselected Input and Output. \"struct\" is a struct with these eight fields and \"ss\" a\ndescriptor state-space model (dss, Control System Toolbox): they stop with the error of\nResultLIN.get_ss when flag is false (except \"DAE\" with a singular Avv). With several\nsections, \"struct\" is a 1 x n_t struct array and \"ss\" an ss array (sys(:,:,k) is\nsection k). The ResultLIN of the network (Format \"GUILDAorigin\") keeps a snapshot of it,\nsct_network = struct(net, false).\n\nType chooses the model of the network: \"DAE\" is the connected model, with the bus\nvoltages as algebraic variables (E is singular on their rows), each bus written as the\nport of Port (see ResultLIN.get_ss); \"ODE\" is the model with the bus voltages eliminated (SolverLIN.reduce).\nThe result keeps the DAE, so res.Type switches between them later.\n\nForm chooses the view of A ... E (ResultLIN.Form): \"descriptor\" (default; E holds the\ntime constants), \"absorbed\" (E^-1 multiplied into the state rows) or \"hessian\", the\nenergy-function form of the network: get_sys calls get_hessian of every component, local\ncontroller and global controller at the point of each section, and SolverLIN.solve\nassembles E_h dz/dt = H z over z = [x; theta; V] with E_h = -blkdiag(inv(R), 0) and\nH = [Hxx Hxv; Hvx Hvv + Hvv_net] (see ResultLIN). A class without the form stops with\nits GUILDA:<layer>:HessianNotSupported (the Static AVR and governor have empty blocks).\n\"hessian\" needs the network (GUILDA:PowerSystemModel:HessianNetworkOnly) and Port \"PI\"\nor \"PQ\" (GUILDA:PowerSystemModel:HessianPort). The result keeps the descriptor DAE too.",
-      "SeeAlso": [],
-      "Examples": "```matlab\nres = net.get_sys();                          % ResultLIN of the network (Type of GUILDA.setting)\neig(res.A, res.E)\nsct = net.get_sys(Type=\"DAE\", Format=\"struct\");\nresV = net.get_sys(Output=\"V\");               % bus voltages as outputs\nsys = net.a_Bus{1}.a_Component{1}.get_sys(Format=\"ss\");   % component, V to I\nres2 = net.get_sys({sim, 1.5});               % at a time of a simulation result\nres3 = net.get_sys(res.rv_point);             % at a vector in the order of net.get_variable_map()\nres4 = net.get_sys({sim, [0.5, 1, 2]});       % three time sections; res4.Index = 2 shows t = 1\nsct4 = net.get_sys({sim, [0.5, 1, 2]}, Format=\"struct\");   % 1 x 3 struct array\nresH = net.get_sys(Type=\"DAE\", Port=\"PI\", Form=\"hessian\");  % energy-function form\n```\n\nSee also ResultLIN, SolverLIN, PowerNetwork.get_variable_map",
+      "SeeAlso": [
+        "ResultLIN",
+        "SolverLIN",
+        "PowerNetwork.get_variable_map"
+      ],
+      "Examples": "```matlab\nres = net.get_sys();                          % ResultLIN of the network (Type of GUILDA.setting)\neig(res.A, res.E)\nsct = net.get_sys(Type=\"DAE\", Format=\"struct\");\nresV = net.get_sys(Output=\"V\");               % bus voltages as outputs\nsys = net.a_Bus{1}.a_Component{1}.get_sys(Format=\"ss\");   % component, V to I\nres2 = net.get_sys({sim, 1.5});               % at a time of a simulation result\nres3 = net.get_sys(res.rv_point);             % at a vector in the order of net.get_variable_map()\nres4 = net.get_sys({sim, [0.5, 1, 2]});       % three time sections; res4.Index = 2 shows t = 1\nsct4 = net.get_sys({sim, [0.5, 1, 2]}, Format=\"struct\");   % 1 x 3 struct array\nresH = net.get_sys(Type=\"DAE\", Port=\"PI\", Form=\"hessian\");  % energy-function form\n```",
       "Deprecated": ""
     },
     {
