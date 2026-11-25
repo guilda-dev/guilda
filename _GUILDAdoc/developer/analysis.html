@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-title-ja="GUILDA 開発者ガイド - 解析の流れ">GUILDA Developer Guide - Analysis Flows</title>
+  <script src="../doc-lang.js"></script>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body class="developer-layout dg">
+  <main>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
+    <h1><span lang="en">Analysis Flows</span><span lang="ja">解析の流れ</span></h1>
+    <p class="page-lead" lang="en">What a user does with GUILDA, and which classes each analysis passes through. Every analysis has the same shape: <code>net.verb_noun()</code> → solver → result, returned as <code>[result, flag, output]</code>.</p>
+    <p class="page-lead" lang="ja">ユーザーが GUILDA で行うことと、各解析が通るクラスを示します。どの解析も <code>net.verb_noun()</code> → ソルバー → 結果という同じ形で、<code>[result, flag, output]</code> を返します。</p>
+
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#use-cases"><span lang="en">Use cases</span><span lang="ja">ユースケース</span></a>
+      <a href="#convention"><span lang="en">Common call sequence</span><span lang="ja">共通の呼び出し順</span></a>
+      <a href="#build"><span lang="en">Building a model</span><span lang="ja">モデルの構築</span></a>
+      <a href="#power-flow"><span lang="en">Power flow</span><span lang="ja">潮流計算</span></a>
+      <a href="#initialize"><span lang="en">Initialization</span><span lang="ja">初期化</span></a>
+      <a href="#simulate"><span lang="en">Time-domain simulation</span><span lang="ja">時間応答シミュレーション</span></a>
+      <a href="#linearize"><span lang="en">Linearization</span><span lang="ja">近似線形化</span></a>
+      <a href="#opf"><span lang="en">Optimal power flow</span><span lang="ja">最適潮流計算</span></a>
+      <a href="#cpf"><span lang="en">Continuation power flow</span><span lang="ja">連続潮流計算</span></a>
+      <a href="#plot"><span lang="en">Plotting</span><span lang="ja">描画</span></a>
+    </nav>
+
+    <!-- ============================== USE CASES ============================== -->
+    <h2 id="use-cases"><span lang="en">Use cases</span><span lang="ja">ユースケース</span></h2>
+    <figure class="uml-fig">
+<svg class="uml" viewBox="0 0 900 470" style="--w:900px" role="img" aria-labelledby="uc-t">
+<title id="uc-t" lang="en">Use cases: a user builds or imports a model, initializes it, runs power flow, optimal power flow, continuation power flow, time-domain simulation and linearization, and plots the results. Initialization includes a power flow; simulation, linearization and continuation power flow include initialization. A developer is also a user, and adds and validates model classes.</title>
+<title lang="ja">ユースケース: ユーザーはモデルを構築または読み込み、初期化し、潮流計算、最適潮流計算、連続潮流計算、時間応答シミュレーション、近似線形化を実行し、結果を描画します。初期化は潮流計算を含み、シミュレーション、近似線形化、連続潮流計算は初期化を含みます。開発者もユーザーであり、モデルクラスを追加し検証します。</title>
+<defs><marker id="uc-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-fill" d="M0 0L10 5L0 10z"/></marker><marker id="uc-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-acc" d="M0 0L10 5L0 10z"/></marker><marker id="uc-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-open" d="M1 1L9 5L1 9"/></marker></defs>
+<rect class="frame" x="170" y="34" width="600" height="428" rx="2"/>
+<text class="b" x="184" y="54" text-anchor="start">GUILDA</text>
+<g class="actor"><circle cx="80" cy="200" r="11"/><path d="M80 211v30M62 222h36M80 241l-14 22M80 241l14 22"/></g><text class="b" lang="en" x="80" y="282" text-anchor="middle">User</text><text class="b" lang="ja" x="80" y="282" text-anchor="middle">ユーザー</text>
+<g class="actor"><circle cx="840" cy="200" r="11"/><path d="M840 211v30M822 222h36M840 241l-14 22M840 241l14 22"/></g><text class="b" lang="en" x="840" y="282" text-anchor="middle">Developer</text><text class="b" lang="ja" x="840" y="282" text-anchor="middle">開発者</text>
+<ellipse class="box" cx="345" cy="84" rx="128" ry="20"/>
+<text lang="en" x="345" y="81" text-anchor="middle">Build or import a model</text><text lang="ja" x="345" y="81" text-anchor="middle">モデルを構築・読み込む</text>
+<text class="m k" x="345" y="96" text-anchor="middle">add_* · PowerNetwork.import</text>
+<ellipse class="box" cx="345" cy="132" rx="128" ry="20"/>
+<text lang="en" x="345" y="129" text-anchor="middle">Initialize</text><text lang="ja" x="345" y="129" text-anchor="middle">初期化する</text>
+<text class="m k" x="345" y="144" text-anchor="middle">initialize</text>
+<ellipse class="box" cx="345" cy="180" rx="128" ry="20"/>
+<text lang="en" x="345" y="177" text-anchor="middle">Run power flow</text><text lang="ja" x="345" y="177" text-anchor="middle">潮流計算を実行する</text>
+<text class="m k" x="345" y="192" text-anchor="middle">calculate_powerflow</text>
+<ellipse class="box" cx="345" cy="228" rx="128" ry="20"/>
+<text lang="en" x="345" y="225" text-anchor="middle">Run optimal power flow</text><text lang="ja" x="345" y="225" text-anchor="middle">最適潮流計算を実行する</text>
+<text class="m k" x="345" y="240" text-anchor="middle">calculate_optimal_powerflow</text>
+<ellipse class="box" cx="345" cy="276" rx="140" ry="20"/>
+<text lang="en" x="345" y="273" text-anchor="middle">Run continuation power flow</text><text lang="ja" x="345" y="273" text-anchor="middle">連続潮流計算を実行する</text>
+<text class="m k" x="345" y="288" text-anchor="middle">calculate_continuation_powerflow</text>
+<ellipse class="box" cx="345" cy="324" rx="128" ry="20"/>
+<text lang="en" x="345" y="321" text-anchor="middle">Simulate</text><text lang="ja" x="345" y="321" text-anchor="middle">時間応答を計算する</text>
+<text class="m k" x="345" y="336" text-anchor="middle">simulate</text>
+<ellipse class="box" cx="345" cy="372" rx="128" ry="20"/>
+<text lang="en" x="345" y="369" text-anchor="middle">Linearize</text><text lang="ja" x="345" y="369" text-anchor="middle">近似線形化する</text>
+<text class="m k" x="345" y="384" text-anchor="middle">get_sys</text>
+<ellipse class="box" cx="345" cy="420" rx="128" ry="20"/>
+<text lang="en" x="345" y="417" text-anchor="middle">Plot a result</text><text lang="ja" x="345" y="417" text-anchor="middle">結果を描画する</text>
+<text class="m k" x="345" y="432" text-anchor="middle">result.plot_*</text>
+<ellipse class="box" cx="664" cy="190" rx="96" ry="20"/>
+<text lang="en" x="664" y="187" text-anchor="middle">Add a model class</text><text lang="ja" x="664" y="187" text-anchor="middle">モデルクラスを追加する</text>
+<text class="m k" x="664" y="202" text-anchor="middle">GUILDA.update_keymap</text>
+<ellipse class="box" cx="664" cy="260" rx="96" ry="20"/>
+<text lang="en" x="664" y="257" text-anchor="middle">Validate a model</text><text lang="ja" x="664" y="257" text-anchor="middle">モデルを検証する</text>
+<text class="m k" x="664" y="272" text-anchor="middle">comp.validate</text>
+<path class="ln" d="M100 224L217 84"/>
+<path class="ln" d="M100 224L217 132"/>
+<path class="ln" d="M100 224L217 180"/>
+<path class="ln" d="M100 224L217 228"/>
+<path class="ln" d="M100 224L205 276"/>
+<path class="ln" d="M100 224L217 324"/>
+<path class="ln" d="M100 224L217 372"/>
+<path class="ln" d="M100 224L217 420"/>
+<path class="ln" d="M820 224L760 190"/>
+<path class="ln" d="M820 224L760 260"/>
+<path class="ln" d="M840 188V16H80V174"/>
+<path class="tri" d="M80 186l-7 -12h14z"/>
+<text class="k" lang="en" x="430" y="28" text-anchor="middle">a developer is also a user</text><text class="k" lang="ja" x="430" y="28" text-anchor="middle">開発者もユーザーです</text>
+<path class="ln dsh" d="M467 132C497 132 497 180 469 184" marker-end="url(#uc-o)"/>
+<path class="ln dsh" d="M479 276C524 276 512 132 469 136" marker-end="url(#uc-o)"/>
+<path class="ln dsh" d="M467 324C527 324 527 132 469 136" marker-end="url(#uc-o)"/>
+<path class="ln dsh" d="M467 372C542 372 542 132 469 136" marker-end="url(#uc-o)"/>
+<text class="k" x="530" y="112" text-anchor="middle">«include»</text>
+<text class="k" lang="en" x="470" y="457" text-anchor="middle">«include»: the arrow points to the included case</text><text class="k" lang="ja" x="470" y="457" text-anchor="middle">«include»: 矢印の先が含まれるユースケース</text>
+</svg>
+    </figure>
+
+    <!-- ============================== COMMON ============================== -->
+    <h2 id="convention"><span lang="en">Common call sequence</span><span lang="ja">共通の呼び出し順</span></h2>
+    <figure class="uml-fig">
+<svg class="uml seq" viewBox="0 0 902 430" style="--w:902px" role="img" aria-labelledby="sq0-t">
+<title id="sq0-t" lang="en">Common call sequence of an analysis: the caller calls net.verb_noun with Name-Value options; the network reads the defaults of its GUILDA.setting section, checks the stale state of the models and collects their data, hands the data to its solver, builds the result class and returns [result, flag, output]. Plotting is a method of the result that returns a graph object.</title><title lang="ja">解析の共通の呼び出し順です。呼び出し側が Name-Value オプション付きで net.verb_noun を呼びます。ネットワークは GUILDA.setting の該当セクションから既定値を読み、モデルの古い状態を確かめてデータを集め、ソルバーに渡し、結果クラスを作って [result, flag, output] を返します。描画は結果のメソッドで、図のオブジェクトを返します。</title>
+<defs><marker id="sq0-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-fill" d="M0 0L10 5L0 10z"/></marker><marker id="sq0-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-acc" d="M0 0L10 5L0 10z"/></marker><marker id="sq0-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-open" d="M1 1L9 5L1 9"/></marker></defs>
+<path class="ln life" d="M76 50V426"/>
+<rect class="box is-actor" x="6" y="8" width="140" height="42" rx="2"/>
+<text class="b" lang="en" x="76" y="26" text-anchor="middle">Caller</text><text class="b" lang="ja" x="76" y="26" text-anchor="middle">呼び出し側</text>
+<path class="ln life" d="M226 50V426"/>
+<rect class="box" x="156" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="226" y="26" text-anchor="middle">PowerNetwork</text>
+<text class="k m" x="226" y="42" text-anchor="middle">net</text>
+<path class="ln life" d="M376 50V426"/>
+<rect class="box" x="306" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="376" y="26" text-anchor="middle">Bus · Branch …</text>
+<text class="k" lang="en" x="376" y="42" text-anchor="middle">model objects</text><text class="k" lang="ja" x="376" y="42" text-anchor="middle">モデル</text>
+<path class="ln life" d="M526 50V426"/>
+<rect class="box" x="456" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="526" y="26" text-anchor="middle">Solver*</text>
+<text class="k m" x="526" y="42" text-anchor="middle">net.solver_*</text>
+<path class="ln life" d="M676 50V426"/>
+<rect class="box" x="606" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="676" y="26" text-anchor="middle">Result*</text>
+<text class="k m" x="676" y="42" text-anchor="middle">result</text>
+<path class="ln life" d="M826 50V426"/>
+<rect class="box" x="756" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="826" y="26" text-anchor="middle">Graph*</text>
+<text class="k m" x="826" y="42" text-anchor="middle">g</text>
+<path class="ln acc" d="M79 84H223" marker-end="url(#sq0-b)"/>
+<text class="m s lbl acc-t" x="84" y="78" text-anchor="start">net.verb_noun(Name=Value)</text>
+<path class="ln" d="M226 112h24v14h-22" marker-end="url(#sq0-a)"/>
+<text class="m s lbl" lang="en" x="256" y="123" text-anchor="start">options ← GUILDA.setting section</text><text class="m s lbl" lang="ja" x="256" y="123" text-anchor="start">オプション ← GUILDA.setting の節</text>
+<path class="ln" d="M229 152H373" marker-end="url(#sq0-a)"/>
+<text class="m s lbl" lang="en" x="234" y="146" text-anchor="start">check sct_stale, collect data</text><text class="m s lbl" lang="ja" x="234" y="146" text-anchor="start">sct_stale を確認、データ収集</text>
+<path class="ln" d="M229 186H523" marker-end="url(#sq0-a)"/>
+<text class="m s lbl" x="234" y="180" text-anchor="start">solve(data, options)</text>
+<path class="ln ret" d="M523 220H229" marker-end="url(#sq0-o)"/>
+<text class="m s lbl mu" x="234" y="214" text-anchor="start">[solution, flag, output]</text>
+<path class="ln" d="M229 254H673" marker-end="url(#sq0-a)"/>
+<text class="m s lbl" x="234" y="248" text-anchor="start">Result*(…)</text>
+<path class="ln ret" d="M223 288H79" marker-end="url(#sq0-o)"/>
+<text class="m s lbl mu" x="84" y="282" text-anchor="start">[result, flag, output]</text>
+<path class="ln" d="M79 322H673" marker-end="url(#sq0-a)"/>
+<text class="m s lbl" x="84" y="316" text-anchor="start">result.plot_*()</text>
+<path class="ln" d="M679 356H823" marker-end="url(#sq0-a)"/>
+<text class="m s lbl" lang="en" x="684" y="350" text-anchor="start">create</text><text class="m s lbl" lang="ja" x="684" y="350" text-anchor="start">作成</text>
+<path class="ln ret" d="M673 390H79" marker-end="url(#sq0-o)"/>
+<text class="m s lbl mu" x="84" y="384" text-anchor="start">g  (GraphBase)</text>
+</svg>
+    </figure>
+    <ul>
+      <li lang="en"><code>result</code> is a subclass of <code>ResultBase</code>. It also keeps <code>flag</code>, <code>output</code>, the effective <code>options</code> and <code>l_success</code>, so the result alone tells how the run went.</li>
+      <li lang="ja"><code>result</code> は <code>ResultBase</code> のサブクラスです。<code>flag</code>、<code>output</code>、実際の <code>options</code>、<code>l_success</code> も保持するため、結果だけで実行の様子が分かります。</li>
+      <li lang="en">Only <code>initialize</code> and the <code>add_ / remove_ / replace_ / set_</code> methods change the model; the analyses leave it as it was, also after an error.</li>
+      <li lang="ja">モデルを変えるのは <code>initialize</code> と <code>add_ / remove_ / replace_ / set_</code> のメソッドだけです。解析はエラーの後もモデルを変えません。</li>
+      <li lang="en">The rules behind this shape: <a href="architecture.html#api">Analysis API rules</a>. Where to look when a step fails: <a href="debugging.html">Debugging Guide</a>.</li>
+      <li lang="ja">この形の規則は<a href="architecture.html#api">解析 API の規則</a>に、段階が失敗したときに見る場所は<a href="debugging.html">デバッグガイド</a>にあります。</li>
+    </ul>
+
+    <!-- ============================== BUILD ============================== -->
+    <h2 id="build"><span lang="en">Building a model</span><span lang="ja">モデルの構築</span></h2>
+    <ul>
+      <li lang="en">Build in code with <code>net.add_bus</code>, <code>net.add_branch</code>, <code>bus.add_component</code>, <code>comp.add_local_controller</code> and <code>net.add_global_controller</code>, each taking a model key; or load a folder with <code>PowerNetwork.import(path)</code> (MATPOWER: <code>PowerNetwork.import_matpower</code>) and write one with <code>net.export(path)</code>.</li>
+      <li lang="ja">コードでは <code>net.add_bus</code>、<code>net.add_branch</code>、<code>bus.add_component</code>、<code>comp.add_local_controller</code>、<code>net.add_global_controller</code> にモデルキーを渡して組み立てます。フォルダからは <code>PowerNetwork.import(path)</code>（MATPOWER は <code>PowerNetwork.import_matpower</code>）で読み込み、<code>net.export(path)</code> で書き出します。</li>
+      <li lang="en">The model keys are read from the classes into <code>GUILDA.keymap</code>; an unknown key is rejected before anything changes.</li>
+      <li lang="ja">モデルキーはクラスから <code>GUILDA.keymap</code> に読み込まれます。未知のキーは何も変更する前に拒否されます。</li>
+      <li lang="en">The user sets the slack bus (<code>bus.l_isSlack = true</code>). A model can be inspected in a window with <code>net.launch_gui()</code>.</li>
+      <li lang="ja">スラック母線はユーザーが設定します（<code>bus.l_isSlack = true</code>）。モデルは <code>net.launch_gui()</code> のウィンドウでも確かめられます。</li>
+    </ul>
+
+    <!-- ============================== POWER FLOW ============================== -->
+    <h2 id="power-flow"><span lang="en">Power flow</span><span lang="ja">潮流計算</span></h2>
+    <figure class="uml-fig">
+<svg class="uml seq" viewBox="0 0 752 328" style="--w:752px" role="img" aria-labelledby="sq1-t">
+<title id="sq1-t" lang="en">Power flow: calculate_powerflow collects get_pf_condition and the admittance matrix, SolverPF solves them with a Method class, and the network returns a ResultPF.</title><title lang="ja">潮流計算: calculate_powerflow が get_pf_condition とアドミタンス行列を集め、SolverPF が Method クラスで解き、ネットワークが ResultPF を返します。</title>
+<defs><marker id="sq1-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-fill" d="M0 0L10 5L0 10z"/></marker><marker id="sq1-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-acc" d="M0 0L10 5L0 10z"/></marker><marker id="sq1-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-open" d="M1 1L9 5L1 9"/></marker></defs>
+<path class="ln life" d="M76 50V324"/>
+<rect class="box is-actor" x="6" y="8" width="140" height="42" rx="2"/>
+<text class="b" lang="en" x="76" y="26" text-anchor="middle">Caller</text><text class="b" lang="ja" x="76" y="26" text-anchor="middle">呼び出し側</text>
+<path class="ln life" d="M226 50V324"/>
+<rect class="box" x="156" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="226" y="26" text-anchor="middle">PowerNetwork</text>
+<text class="k m" x="226" y="42" text-anchor="middle">net</text>
+<path class="ln life" d="M376 50V324"/>
+<rect class="box" x="306" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="376" y="26" text-anchor="middle">Bus · Branch</text>
+<path class="ln life" d="M526 50V324"/>
+<rect class="box" x="456" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="526" y="26" text-anchor="middle">SolverPF</text>
+<text class="k m" x="526" y="42" text-anchor="middle">net.solver_PF</text>
+<path class="ln life" d="M676 50V324"/>
+<rect class="box" x="606" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="676" y="26" text-anchor="middle">Method*</text>
+<text class="k m" x="676" y="42" text-anchor="middle">Solver=</text>
+<path class="ln acc" d="M79 84H223" marker-end="url(#sq1-b)"/>
+<text class="m s lbl acc-t" x="84" y="78" text-anchor="start">calculate_powerflow(…)</text>
+<path class="ln" d="M229 118H373" marker-end="url(#sq1-a)"/>
+<text class="m s lbl" x="234" y="112" text-anchor="start">get_pf_condition, get_admittance_matrix</text>
+<path class="ln" d="M229 152H523" marker-end="url(#sq1-a)"/>
+<text class="m s lbl" x="234" y="146" text-anchor="start">solve(Y, tab, options)</text>
+<path class="ln" d="M529 186H673" marker-end="url(#sq1-a)"/>
+<text class="m s lbl" lang="en" x="534" y="180" text-anchor="start">iterate</text><text class="m s lbl" lang="ja" x="534" y="180" text-anchor="start">反復</text>
+<path class="ln ret" d="M523 220H229" marker-end="url(#sq1-o)"/>
+<text class="m s lbl mu" x="234" y="214" text-anchor="start">[V, flag, output]</text>
+<path class="ln" d="M226 248h24v14h-22" marker-end="url(#sq1-a)"/>
+<text class="m s lbl" x="256" y="259" text-anchor="start">ResultPF(…, struct(net,false))</text>
+<path class="ln ret" d="M223 288H79" marker-end="url(#sq1-o)"/>
+<text class="m s lbl mu" x="84" y="282" text-anchor="start">[result, flag, output]</text>
+</svg>
+    </figure>
+    <ul>
+      <li lang="en"><code>SolverPF</code> receives only the admittance matrix and the bus conditions; <code>Solver=</code> chooses the algorithm class (<code>Method*</code>). <code>Format=</code> can return voltages or an array instead of <code>ResultPF</code>.</li>
+      <li lang="ja"><code>SolverPF</code> が受け取るのはアドミタンス行列と母線の条件だけです。<code>Solver=</code> で解法のクラス（<code>Method*</code>）を選びます。<code>Format=</code> を使うと <code>ResultPF</code> の代わりに電圧や配列を返します。</li>
+    </ul>
+
+    <!-- ============================== INITIALIZE ============================== -->
+    <h2 id="initialize"><span lang="en">Initialization</span><span lang="ja">初期化</span></h2>
+    <figure class="uml-fig">
+<svg class="uml seq" viewBox="0 0 902 328" style="--w:902px" role="img" aria-labelledby="sq2-t">
+<title id="sq2-t" lang="en">Initialization: initialize solves the operating point when it is stale or Method is given, writes it to the buses, then the buses initialize their components and these their local controllers; global controllers come last. It is the only analysis that writes to the model.</title><title lang="ja">初期化: initialize は動作点が古いか Method が指定されたときに解き直し、母線に書き込みます。続いて母線が機器を、機器がローカル制御器を初期化し、最後にグローバル制御器を初期化します。モデルに書き込む唯一の解析です。</title>
+<defs><marker id="sq2-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-fill" d="M0 0L10 5L0 10z"/></marker><marker id="sq2-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-acc" d="M0 0L10 5L0 10z"/></marker><marker id="sq2-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-open" d="M1 1L9 5L1 9"/></marker></defs>
+<path class="ln life" d="M76 50V324"/>
+<rect class="box is-actor" x="6" y="8" width="140" height="42" rx="2"/>
+<text class="b" lang="en" x="76" y="26" text-anchor="middle">Caller</text><text class="b" lang="ja" x="76" y="26" text-anchor="middle">呼び出し側</text>
+<path class="ln life" d="M226 50V324"/>
+<rect class="box" x="156" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="226" y="26" text-anchor="middle">PowerNetwork</text>
+<text class="k m" x="226" y="42" text-anchor="middle">net</text>
+<path class="ln life" d="M376 50V324"/>
+<rect class="box" x="306" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="376" y="26" text-anchor="middle">Bus</text>
+<path class="ln life" d="M526 50V324"/>
+<rect class="box" x="456" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="526" y="26" text-anchor="middle">Component</text>
+<path class="ln life" d="M676 50V324"/>
+<rect class="box" x="606" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="676" y="26" text-anchor="middle">LocalController</text>
+<path class="ln life" d="M826 50V324"/>
+<rect class="box" x="756" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="826" y="26" text-anchor="middle">GlobalController</text>
+<path class="ln acc" d="M79 84H223" marker-end="url(#sq2-b)"/>
+<text class="m s lbl acc-t" x="84" y="78" text-anchor="start">initialize(Method=…)</text>
+<path class="ln" d="M226 112h24v14h-22" marker-end="url(#sq2-a)"/>
+<text class="m s lbl" lang="en" x="256" y="123" text-anchor="start">power flow | OPF | FixedInput</text><text class="m s lbl" lang="ja" x="256" y="123" text-anchor="start">潮流 | OPF | FixedInput</text>
+<path class="ln" d="M229 152H373" marker-end="url(#sq2-a)"/>
+<text class="m s lbl" x="234" y="146" text-anchor="start">set_equilibrium(V, I)</text>
+<path class="ln" d="M379 186H523" marker-end="url(#sq2-a)"/>
+<text class="m s lbl" x="384" y="180" text-anchor="start">initialize: set_odefcn, get_equilibrium</text>
+<path class="ln" d="M529 220H673" marker-end="url(#sq2-a)"/>
+<text class="m s lbl" x="534" y="214" text-anchor="start">get_equilibrium(V, u, x)</text>
+<path class="ln" d="M229 254H823" marker-end="url(#sq2-a)"/>
+<text class="m s lbl" x="234" y="248" text-anchor="start">get_equilibrium()</text>
+<path class="ln ret" d="M223 288H79" marker-end="url(#sq2-o)"/>
+<text class="m s lbl mu" x="84" y="282" text-anchor="start">[rm_pf, flag, output]</text>
+</svg>
+    </figure>
+    <ul>
+      <li lang="en">The only analysis that writes to the model. It solves only what is stale (or what <code>Method=</code> asks for) and clears the stale state at the end; a failure stops with an error and leaves the model unchanged.</li>
+      <li lang="ja">モデルに書き込む唯一の解析です。古くなった部分（または <code>Method=</code> で指定したもの）だけを解き、最後に古い状態を消します。失敗するとエラーで止まり、モデルは変わりません。</li>
+      <li lang="en">Simulation, linearization and the continuation power flow need it first.</li>
+      <li lang="ja">シミュレーション、近似線形化、連続潮流計算の前に必要です。</li>
+    </ul>
+
+    <!-- ============================== SIMULATION ============================== -->
+    <h2 id="simulate"><span lang="en">Time-domain simulation</span><span lang="ja">時間応答シミュレーション</span></h2>
+    <figure class="uml-fig">
+<svg class="uml seq" viewBox="0 0 692 362" style="--w:692px" role="img" aria-labelledby="sq3-t">
+<title id="sq3-t" lang="en">Time-domain simulation: simulate builds the data of the run (checking the stale state), the scenario gives the events of each phase, SolverODE integrates the phases, and the network returns a ResultODE.</title><title lang="ja">時間応答シミュレーション: simulate が実行用のデータを作り（古い状態を確認）、シナリオが区間ごとのイベントを渡し、SolverODE が各区間を積分し、ネットワークが ResultODE を返します。</title>
+<defs><marker id="sq3-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-fill" d="M0 0L10 5L0 10z"/></marker><marker id="sq3-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-acc" d="M0 0L10 5L0 10z"/></marker><marker id="sq3-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-open" d="M1 1L9 5L1 9"/></marker></defs>
+<path class="ln life" d="M76 50V358"/>
+<rect class="box is-actor" x="6" y="8" width="140" height="42" rx="2"/>
+<text class="b" lang="en" x="76" y="26" text-anchor="middle">Caller</text><text class="b" lang="ja" x="76" y="26" text-anchor="middle">呼び出し側</text>
+<path class="ln life" d="M256 50V358"/>
+<rect class="box" x="186" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="256" y="26" text-anchor="middle">PowerNetwork</text>
+<text class="k m" x="256" y="42" text-anchor="middle">net</text>
+<path class="ln life" d="M436 50V358"/>
+<rect class="box" x="366" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="436" y="26" text-anchor="middle">Scenario</text>
+<text class="k m" x="436" y="42" text-anchor="middle">net.a_Scenario</text>
+<path class="ln life" d="M616 50V358"/>
+<rect class="box" x="546" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="616" y="26" text-anchor="middle">SolverODE</text>
+<text class="k m" x="616" y="42" text-anchor="middle">net.solver_ODE</text>
+<path class="ln acc" d="M79 84H253" marker-end="url(#sq3-b)"/>
+<text class="m s lbl acc-t" x="84" y="78" text-anchor="start">simulate(tag, Name=Value)</text>
+<path class="ln" d="M256 112h24v14h-22" marker-end="url(#sq3-a)"/>
+<text class="m s lbl" lang="en" x="286" y="123" text-anchor="start">build_simulation_data (checks sct_stale)</text><text class="m s lbl" lang="ja" x="286" y="123" text-anchor="start">build_simulation_data（sct_stale を確認）</text>
+<path class="ln" d="M259 152H433" marker-end="url(#sq3-a)"/>
+<text class="m s lbl" x="264" y="146" text-anchor="start">compile</text>
+<path class="ln ret" d="M433 186H259" marker-end="url(#sq3-o)"/>
+<text class="m s lbl mu" lang="en" x="264" y="180" text-anchor="start">events per phase</text><text class="m s lbl mu" lang="ja" x="264" y="180" text-anchor="start">区間ごとのイベント</text>
+<path class="ln" d="M259 220H613" marker-end="url(#sq3-a)"/>
+<text class="m s lbl" x="264" y="214" text-anchor="start">solve(dae, events, x0, options)</text>
+<path class="ln ret" d="M613 254H259" marker-end="url(#sq3-o)"/>
+<text class="m s lbl mu" x="264" y="248" text-anchor="start">[sol, flag, output]</text>
+<path class="ln" d="M256 282h24v14h-22" marker-end="url(#sq3-a)"/>
+<text class="m s lbl" x="286" y="293" text-anchor="start">ResultODE(sol, dae, struct(net,false), …)</text>
+<path class="ln ret" d="M253 322H79" marker-end="url(#sq3-o)"/>
+<text class="m s lbl mu" x="84" y="316" text-anchor="start">[result, flag, output]</text>
+</svg>
+    </figure>
+    <ul>
+      <li lang="en">One scenario per run, chosen by its tag (<code>net.add_scenario(tag)</code>). Its events (<code>Event*</code>) split the run into phases.</li>
+      <li lang="ja">1 回の実行で 1 つのシナリオを、タグで選んで使います（<code>net.add_scenario(tag)</code>）。シナリオのイベント（<code>Event*</code>）が実行を区間に分けます。</li>
+      <li lang="en"><code>SolverODE</code> reads only the data of the run, never a model object; the result keeps a snapshot <code>struct(net, false)</code>.</li>
+      <li lang="ja"><code>SolverODE</code> は実行用のデータだけを読み、モデルのオブジェクトは読みません。結果はスナップショット <code>struct(net, false)</code> を保持します。</li>
+    </ul>
+
+    <!-- ============================== LINEARIZATION ============================== -->
+    <h2 id="linearize"><span lang="en">Linearization</span><span lang="ja">近似線形化</span></h2>
+    <figure class="uml-fig">
+<svg class="uml seq" viewBox="0 0 692 328" style="--w:692px" role="img" aria-labelledby="sq4-t">
+<title id="sq4-t" lang="en">Linearization: get_sys of any layer checks the stale state, reads the variable map, asks each model for its linear blocks, lets SolverLIN connect them, and returns a ResultLIN.</title><title lang="ja">近似線形化: どの層の get_sys も古い状態を確認し、変数マップを読み、各モデルから線形ブロックを受け取り、SolverLIN に接続させ、ResultLIN を返します。</title>
+<defs><marker id="sq4-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-fill" d="M0 0L10 5L0 10z"/></marker><marker id="sq4-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-acc" d="M0 0L10 5L0 10z"/></marker><marker id="sq4-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-open" d="M1 1L9 5L1 9"/></marker></defs>
+<path class="ln life" d="M76 50V324"/>
+<rect class="box is-actor" x="6" y="8" width="140" height="42" rx="2"/>
+<text class="b" lang="en" x="76" y="26" text-anchor="middle">Caller</text><text class="b" lang="ja" x="76" y="26" text-anchor="middle">呼び出し側</text>
+<path class="ln life" d="M256 50V324"/>
+<rect class="box" x="186" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="256" y="26" text-anchor="middle">PowerNetwork</text>
+<text class="k" lang="en" x="256" y="42" text-anchor="middle">or any layer</text><text class="k" lang="ja" x="256" y="42" text-anchor="middle">または任意の層</text>
+<path class="ln life" d="M436 50V324"/>
+<rect class="box" x="366" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="436" y="26" text-anchor="middle">Component …</text>
+<text class="k" lang="en" x="436" y="42" text-anchor="middle">model objects</text><text class="k" lang="ja" x="436" y="42" text-anchor="middle">モデル</text>
+<path class="ln life" d="M616 50V324"/>
+<rect class="box" x="546" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="616" y="26" text-anchor="middle">SolverLIN</text>
+<text class="k m" x="616" y="42" text-anchor="middle">net.solver_LIN</text>
+<path class="ln acc" d="M79 84H253" marker-end="url(#sq4-b)"/>
+<text class="m s lbl acc-t" x="84" y="78" text-anchor="start">get_sys(point, Type=, Port=)</text>
+<path class="ln" d="M256 112h24v14h-22" marker-end="url(#sq4-a)"/>
+<text class="m s lbl" lang="en" x="286" y="123" text-anchor="start">check sct_stale, get_variable_map</text><text class="m s lbl" lang="ja" x="286" y="123" text-anchor="start">sct_stale 確認、get_variable_map</text>
+<path class="ln" d="M259 152H433" marker-end="url(#sq4-a)"/>
+<text class="m s lbl" x="264" y="146" text-anchor="start">get_linear_matrix(x, V, u)</text>
+<path class="ln" d="M259 186H613" marker-end="url(#sq4-a)"/>
+<text class="m s lbl" x="264" y="180" text-anchor="start">solve(blocks, map, connection, port)</text>
+<path class="ln ret" d="M613 220H259" marker-end="url(#sq4-o)"/>
+<text class="m s lbl mu" x="264" y="214" text-anchor="start">[sys, output]</text>
+<path class="ln" d="M256 248h24v14h-22" marker-end="url(#sq4-a)"/>
+<text class="m s lbl" x="286" y="259" text-anchor="start">ResultLIN(net, …)</text>
+<path class="ln ret" d="M253 288H79" marker-end="url(#sq4-o)"/>
+<text class="m s lbl mu" x="84" y="282" text-anchor="start">[result, flag, output]</text>
+</svg>
+    </figure>
+    <ul>
+      <li lang="en"><code>get_sys</code> exists on every layer (network, bus, component, controller) with the same meaning. The point is the equilibrium by default, or any state, or a time of a simulation result.</li>
+      <li lang="ja"><code>get_sys</code> はどの層（ネットワーク、母線、機器、制御器）にも同じ意味で存在します。線形化の点は既定で平衡点ですが、任意の状態やシミュレーション結果の時刻も指定できます。</li>
+      <li lang="en"><code>ResultLIN</code> keeps the unreduced model in the order of <code>get_variable_map</code>; <code>Type="ODE" | "DAE"</code> and <code>get_ss</code> give the state-space form.</li>
+      <li lang="ja"><code>ResultLIN</code> は縮約前のモデルを <code>get_variable_map</code> の順で保持します。状態空間表現は <code>Type="ODE" | "DAE"</code> と <code>get_ss</code> で得ます。</li>
+    </ul>
+
+    <!-- ============================== OPF ============================== -->
+    <h2 id="opf"><span lang="en">Optimal power flow</span><span lang="ja">最適潮流計算</span></h2>
+    <figure class="uml-fig">
+<svg class="uml seq" viewBox="0 0 692 328" style="--w:692px" role="img" aria-labelledby="sq5-t">
+<title id="sq5-t" lang="en">Optimal power flow: the network collects three tables of buses, components and branches, SolverOPF builds the optimization problem from them only and solves it, and the network returns a ResultOPF.</title><title lang="ja">最適潮流計算: ネットワークが母線・機器・ブランチの 3 つの表を集め、SolverOPF がその表だけから最適化問題を組み立てて解き、ネットワークが ResultOPF を返します。</title>
+<defs><marker id="sq5-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-fill" d="M0 0L10 5L0 10z"/></marker><marker id="sq5-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-acc" d="M0 0L10 5L0 10z"/></marker><marker id="sq5-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-open" d="M1 1L9 5L1 9"/></marker></defs>
+<path class="ln life" d="M76 50V324"/>
+<rect class="box is-actor" x="6" y="8" width="140" height="42" rx="2"/>
+<text class="b" lang="en" x="76" y="26" text-anchor="middle">Caller</text><text class="b" lang="ja" x="76" y="26" text-anchor="middle">呼び出し側</text>
+<path class="ln life" d="M256 50V324"/>
+<rect class="box" x="186" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="256" y="26" text-anchor="middle">PowerNetwork</text>
+<text class="k m" x="256" y="42" text-anchor="middle">net</text>
+<path class="ln life" d="M436 50V324"/>
+<rect class="box" x="366" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="436" y="26" text-anchor="middle">Bus · Branch …</text>
+<text class="k" lang="en" x="436" y="42" text-anchor="middle">model objects</text><text class="k" lang="ja" x="436" y="42" text-anchor="middle">モデル</text>
+<path class="ln life" d="M616 50V324"/>
+<rect class="box" x="546" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="616" y="26" text-anchor="middle">SolverOPF</text>
+<text class="k m" x="616" y="42" text-anchor="middle">net.solver_OPF</text>
+<path class="ln acc" d="M79 84H253" marker-end="url(#sq5-b)"/>
+<text class="m s lbl acc-t" x="84" y="78" text-anchor="start">calculate_optimal_powerflow(Method=, Cost=, …)</text>
+<path class="ln" d="M259 118H433" marker-end="url(#sq5-a)"/>
+<text class="m s lbl" lang="en" x="264" y="112" text-anchor="start">get_opf_condition → 3 tables</text><text class="m s lbl" lang="ja" x="264" y="112" text-anchor="start">get_opf_condition → 3 つの表</text>
+<path class="ln" d="M259 152H613" marker-end="url(#sq5-a)"/>
+<text class="m s lbl" x="264" y="146" text-anchor="start">build_problem(tables, base)</text>
+<path class="ln" d="M259 186H613" marker-end="url(#sq5-a)"/>
+<text class="m s lbl" x="264" y="180" text-anchor="start">solve(prob, x0, …)</text>
+<path class="ln ret" d="M613 220H259" marker-end="url(#sq5-o)"/>
+<text class="m s lbl mu" x="264" y="214" text-anchor="start">[solution, flag, output]</text>
+<path class="ln" d="M256 248h24v14h-22" marker-end="url(#sq5-a)"/>
+<text class="m s lbl" x="286" y="259" text-anchor="start">ResultOPF(struct(net,false), …)</text>
+<path class="ln ret" d="M253 288H79" marker-end="url(#sq5-o)"/>
+<text class="m s lbl mu" x="84" y="282" text-anchor="start">[result, flag, output]</text>
+</svg>
+    </figure>
+    <ul>
+      <li lang="en">The model holds parameters only. User costs and constraints are call options (<code>Cost</code>, <code>Constraint</code>); a problem built by <code>net.build_opf_problem</code> can be edited and passed back with <code>Problem=</code>.</li>
+      <li lang="ja">モデルが持つのはパラメータだけです。ユーザーのコストと制約は呼び出しのオプション（<code>Cost</code>、<code>Constraint</code>）です。<code>net.build_opf_problem</code> で作った問題を編集し、<code>Problem=</code> で渡すこともできます。</li>
+    </ul>
+
+    <!-- ============================== CPF ============================== -->
+    <h2 id="cpf"><span lang="en">Continuation power flow</span><span lang="ja">連続潮流計算</span></h2>
+    <figure class="uml-fig">
+<svg class="uml seq" viewBox="0 0 692 294" style="--w:692px" role="img" aria-labelledby="sq6-t">
+<title id="sq6-t" lang="en">Continuation power flow: the network passes itself and the options to SolverCPF, which checks the stale state, traces the path with a predictor and a corrector, and returns a ResultCPF.</title><title lang="ja">連続潮流計算: ネットワークが自身とオプションを SolverCPF に渡します。SolverCPF は古い状態を確認し、予測子と修正子で解曲線をたどり、ResultCPF を返します。</title>
+<defs><marker id="sq6-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-fill" d="M0 0L10 5L0 10z"/></marker><marker id="sq6-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-acc" d="M0 0L10 5L0 10z"/></marker><marker id="sq6-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-open" d="M1 1L9 5L1 9"/></marker></defs>
+<path class="ln life" d="M76 50V290"/>
+<rect class="box is-actor" x="6" y="8" width="140" height="42" rx="2"/>
+<text class="b" lang="en" x="76" y="26" text-anchor="middle">Caller</text><text class="b" lang="ja" x="76" y="26" text-anchor="middle">呼び出し側</text>
+<path class="ln life" d="M256 50V290"/>
+<rect class="box" x="186" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="256" y="26" text-anchor="middle">PowerNetwork</text>
+<text class="k m" x="256" y="42" text-anchor="middle">net</text>
+<path class="ln life" d="M436 50V290"/>
+<rect class="box" x="366" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="436" y="26" text-anchor="middle">SolverCPF</text>
+<text class="k m" x="436" y="42" text-anchor="middle">net.solver_CPF</text>
+<path class="ln life" d="M616 50V290"/>
+<rect class="box" x="546" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="616" y="26" text-anchor="middle">ResultCPF</text>
+<text class="k m" x="616" y="42" text-anchor="middle">result</text>
+<path class="ln acc" d="M79 84H253" marker-end="url(#sq6-b)"/>
+<text class="m s lbl acc-t" x="84" y="78" text-anchor="start">calculate_continuation_powerflow(…)</text>
+<path class="ln" d="M259 118H433" marker-end="url(#sq6-a)"/>
+<text class="m s lbl" x="264" y="112" text-anchor="start">solve(net, options)  (LoadBus)</text>
+<path class="ln" d="M436 146h24v14h-22" marker-end="url(#sq6-a)"/>
+<text class="m s lbl" lang="en" x="466" y="157" text-anchor="start">predictor · corrector steps</text><text class="m s lbl" lang="ja" x="466" y="157" text-anchor="start">予測子・修正子のステップ</text>
+<path class="ln" d="M439 186H613" marker-end="url(#sq6-a)"/>
+<text class="m s lbl" x="444" y="180" text-anchor="start">ResultCPF(net, …)</text>
+<path class="ln ret" d="M433 220H259" marker-end="url(#sq6-o)"/>
+<text class="m s lbl mu" x="264" y="214" text-anchor="start">[result, flag, output]</text>
+<path class="ln ret" d="M253 254H79" marker-end="url(#sq6-o)"/>
+<text class="m s lbl mu" x="84" y="248" text-anchor="start">[result, flag, output]</text>
+</svg>
+    </figure>
+    <ul>
+      <li lang="en">The buses whose load is scaled are the condition <code>LoadBus</code> kept by <code>net.solver_CPF</code>. <code>flag</code> is true when the path passed the nose.</li>
+      <li lang="ja">負荷を増やす母線は <code>net.solver_CPF</code> が保持する条件 <code>LoadBus</code> です。<code>flag</code> は解曲線がノーズを越えたときに true です。</li>
+    </ul>
+
+    <!-- ============================== PLOT ============================== -->
+    <h2 id="plot"><span lang="en">Plotting</span><span lang="ja">描画</span></h2>
+    <figure class="uml-fig">
+<svg class="uml seq" viewBox="0 0 552 226" style="--w:552px" role="img" aria-labelledby="sq7-t">
+<title id="sq7-t" lang="en">Plotting: a plot_* method of a result (or of the network) creates a graph object and returns it; the caller changes the figure through that object.</title><title lang="ja">描画: 結果（またはネットワーク）の plot_* メソッドが図のオブジェクトを作って返します。呼び出し側はそのオブジェクトを通して図を変更します。</title>
+<defs><marker id="sq7-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-fill" d="M0 0L10 5L0 10z"/></marker><marker id="sq7-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-acc" d="M0 0L10 5L0 10z"/></marker><marker id="sq7-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-open" d="M1 1L9 5L1 9"/></marker></defs>
+<path class="ln life" d="M76 50V222"/>
+<rect class="box is-actor" x="6" y="8" width="140" height="42" rx="2"/>
+<text class="b" lang="en" x="76" y="26" text-anchor="middle">Caller</text><text class="b" lang="ja" x="76" y="26" text-anchor="middle">呼び出し側</text>
+<path class="ln life" d="M276 50V222"/>
+<rect class="box" x="206" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="276" y="26" text-anchor="middle">Result*</text>
+<text class="k" lang="en" x="276" y="42" text-anchor="middle">or net</text><text class="k" lang="ja" x="276" y="42" text-anchor="middle">または net</text>
+<path class="ln life" d="M476 50V222"/>
+<rect class="box" x="406" y="8" width="140" height="42" rx="2"/>
+<text class="m b" x="476" y="26" text-anchor="middle">Graph*</text>
+<text class="k m" x="476" y="42" text-anchor="middle">GraphBase</text>
+<path class="ln acc" d="M79 84H273" marker-end="url(#sq7-b)"/>
+<text class="m s lbl acc-t" x="84" y="78" text-anchor="start">plot_*(Name=Value)</text>
+<path class="ln" d="M279 118H473" marker-end="url(#sq7-a)"/>
+<text class="m s lbl" lang="en" x="284" y="112" text-anchor="start">create, draw</text><text class="m s lbl" lang="ja" x="284" y="112" text-anchor="start">作成・描画</text>
+<path class="ln ret" d="M273 152H79" marker-end="url(#sq7-o)"/>
+<text class="m s lbl mu" x="84" y="146" text-anchor="start">g</text>
+<path class="ln" d="M79 186H473" marker-end="url(#sq7-a)"/>
+<text class="m s lbl" x="84" y="180" text-anchor="start">g.set_style(…) · play · export_video</text>
+</svg>
+    </figure>
+    <ul>
+      <li lang="en">Every <code>plot_*</code> returns a graph object (a subclass of <code>GraphBase</code>); styles, playback and video export go through that object. A result can also be opened in a window with <code>result.launch_gui()</code>.</li>
+      <li lang="ja"><code>plot_*</code> はすべて図のオブジェクト（<code>GraphBase</code> のサブクラス）を返します。スタイル、再生、動画の書き出しはそのオブジェクトを通して行います。結果は <code>result.launch_gui()</code> でウィンドウに開くこともできます。</li>
+    </ul>
+  </main>
+</body>
+</html>

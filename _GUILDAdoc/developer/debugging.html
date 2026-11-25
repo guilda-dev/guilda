@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-title-ja="GUILDA 開発者ガイド - デバッグガイド">GUILDA Developer Guide - Debugging Guide</title>
+  <script src="../doc-lang.js"></script>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body class="developer-layout dg">
+  <main>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
+    <h1><span lang="en">Debugging Guide</span><span lang="ja">デバッグガイド</span></h1>
+    <p class="page-lead" lang="en">Where to look when something goes wrong: for each stage, the entry method and solver class, the result fields to read, the settings that change it, and the messages you are likely to see. The source of a method is linked from its <a href="../class.html">class reference</a> page.</p>
+    <p class="page-lead" lang="ja">うまくいかないときに見る場所をまとめます。段階ごとに、入口のメソッドとソルバークラス、読むべき結果のフィールド、挙動を変える設定、よく出るメッセージを示します。メソッドのソースは<a href="../class.html">クラスリファレンス</a>の各ページからたどれます。</p>
+
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#map"><span lang="en">Where to look first</span><span lang="ja">最初に見る場所</span></a>
+      <a href="#messages"><span lang="en">Reading a message</span><span lang="ja">メッセージの読み方</span></a>
+      <a href="#build"><span lang="en">Model build</span><span lang="ja">モデル構築</span></a>
+      <a href="#initialize"><span lang="en">Initialize</span><span lang="ja">初期化</span></a>
+      <a href="#power-flow"><span lang="en">Power flow</span><span lang="ja">潮流計算</span></a>
+      <a href="#simulate"><span lang="en">Simulate</span><span lang="ja">時間応答シミュレーション</span></a>
+      <a href="#linearize"><span lang="en">Linearize</span><span lang="ja">近似線形化</span></a>
+      <a href="#opf"><span lang="en">OPF</span><span lang="ja">最適潮流計算</span></a>
+      <a href="#cpf"><span lang="en">CPF</span><span lang="ja">連続潮流計算</span></a>
+      <a href="#plot"><span lang="en">Plotting</span><span lang="ja">描画</span></a>
+    </nav>
+
+    <!-- ============================== MAP ============================== -->
+    <h2 id="map"><span lang="en">Where to look first</span><span lang="ja">最初に見る場所</span></h2>
+    <figure class="uml-fig">
+<svg class="uml" viewBox="0 0 884 250" style="--w:884px" role="img" aria-labelledby="dm-t">
+<title id="dm-t" lang="en">Where to look first at each stage: after building, net.disp_summary and comp.validate; at initialize, the error that names the failed step; before an analysis, net.sct_stale; after an analysis, flag, result.l_success and output.message; for a figure, the graph object returned by plot_*.</title>
+<title lang="ja">各段階で最初に見る場所: 構築後は net.disp_summary と comp.validate、初期化では失敗した段階を示すエラー、解析の前は net.sct_stale、解析の後は flag、result.l_success、output.message、図では plot_* が返す図のオブジェクトです。</title>
+<defs><marker id="dm-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-fill" d="M0 0L10 5L0 10z"/></marker><marker id="dm-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-acc" d="M0 0L10 5L0 10z"/></marker><marker id="dm-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-open" d="M1 1L9 5L1 9"/></marker></defs>
+<rect class="box" x="14" y="14" width="158" height="50" rx="2"/>
+<text class="b" lang="en" x="93.0" y="35" text-anchor="middle">Build</text><text class="b" lang="ja" x="93.0" y="35" text-anchor="middle">構築</text>
+<text class="m k" x="93.0" y="53" text-anchor="middle">add_* · import</text>
+<path class="ln dsh" d="M93.0 64V86"/>
+<rect class="box is-soft" x="14" y="86" width="158" height="86" rx="2"/>
+<text class="m s" x="24" y="108" text-anchor="start">net.disp_summary</text>
+<text class="m s" x="24" y="132" text-anchor="start">comp.validate</text>
+<text class="m s" x="24" y="156" text-anchor="start">net.get_variable_map</text>
+<rect class="box" x="194" y="14" width="158" height="50" rx="2"/>
+<text class="b" lang="en" x="273.0" y="35" text-anchor="middle">Initialize</text><text class="b" lang="ja" x="273.0" y="35" text-anchor="middle">初期化</text>
+<text class="m k" x="273.0" y="53" text-anchor="middle">initialize</text>
+<path class="ln" d="M174 39H191" marker-end="url(#dm-a)"/>
+<path class="ln dsh" d="M273.0 64V86"/>
+<rect class="box is-soft" x="194" y="86" width="158" height="86" rx="2"/>
+<text class="m s" x="204" y="108" text-anchor="start">net.sct_stale</text>
+<text class="m s" lang="en" x="204" y="132" text-anchor="start">error names the step</text><text class="m s" lang="ja" x="204" y="132" text-anchor="start">失敗段階のエラー</text>
+<text class="m s" lang="en" x="204" y="156" text-anchor="start">EquilibriumResidual</text><text class="m s" lang="ja" x="204" y="156" text-anchor="start">EquilibriumResidual</text>
+<rect class="box is-hl" x="374" y="14" width="158" height="50" rx="2"/>
+<text class="b" lang="en" x="453.0" y="35" text-anchor="middle">Analyze</text><text class="b" lang="ja" x="453.0" y="35" text-anchor="middle">解析</text>
+<text class="m k" x="453.0" y="53" text-anchor="middle">calculate_* · get_sys</text>
+<path class="ln" d="M354 39H371" marker-end="url(#dm-a)"/>
+<path class="ln dsh" d="M453.0 64V86"/>
+<rect class="box is-soft" x="374" y="86" width="158" height="86" rx="2"/>
+<text class="m s" x="384" y="108" text-anchor="start">result.options</text>
+<text class="m s" x="384" y="132" text-anchor="start">Verbose=true</text>
+<text class="m s" x="384" y="156" text-anchor="start">PlotFcn</text>
+<rect class="box" x="554" y="14" width="158" height="50" rx="2"/>
+<text class="b" lang="en" x="633.0" y="35" text-anchor="middle">Result</text><text class="b" lang="ja" x="633.0" y="35" text-anchor="middle">結果</text>
+<text class="m k" x="633.0" y="53" text-anchor="middle">Result*</text>
+<path class="ln" d="M534 39H551" marker-end="url(#dm-a)"/>
+<path class="ln dsh" d="M633.0 64V86"/>
+<rect class="box is-soft" x="554" y="86" width="158" height="86" rx="2"/>
+<text class="m s" x="564" y="108" text-anchor="start">flag · l_success</text>
+<text class="m s" x="564" y="132" text-anchor="start">output.message</text>
+<text class="m s" x="564" y="156" text-anchor="start">disp_summary</text>
+<rect class="box" x="734" y="14" width="158" height="50" rx="2"/>
+<text class="b" lang="en" x="813.0" y="35" text-anchor="middle">Plot</text><text class="b" lang="ja" x="813.0" y="35" text-anchor="middle">描画</text>
+<text class="m k" x="813.0" y="53" text-anchor="middle">plot_* → Graph*</text>
+<path class="ln" d="M714 39H731" marker-end="url(#dm-a)"/>
+<path class="ln dsh" d="M813.0 64V86"/>
+<rect class="box is-soft" x="734" y="86" width="158" height="86" rx="2"/>
+<text class="m s" x="744" y="108" text-anchor="start">g = plot_*(…)</text>
+<text class="m s" x="744" y="132" text-anchor="start">g.set_style</text>
+<text class="m s" lang="en" x="744" y="156" text-anchor="start">graph warnings</text><text class="m s" lang="ja" x="744" y="156" text-anchor="start">図の警告</text>
+<text class="k m" lang="en" x="14" y="220" text-anchor="start">Messages: GUILDA:&lt;Object&gt;:&lt;Key&gt;, text in _GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</text><text class="k m" lang="ja" x="14" y="220" text-anchor="start">メッセージ: GUILDA:&lt;Object&gt;:&lt;Key&gt;、本文は _GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</text>
+</svg>
+    </figure>
+
+    <!-- ============================== MESSAGES ============================== -->
+    <h2 id="messages"><span lang="en">Reading a message</span><span lang="ja">メッセージの読み方</span></h2>
+    <ul>
+      <li lang="en">Every GUILDA message has an ID <code>GUILDA:&lt;Object&gt;:&lt;Key&gt;</code>. Its text is the entry <code>&lt;Key&gt;</code> in <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>; search the code for the ID to find where it is raised.</li>
+      <li lang="ja">GUILDA のメッセージには <code>GUILDA:&lt;Object&gt;:&lt;Key&gt;</code> という ID があります。本文は <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> の <code>&lt;Key&gt;</code> 項目です。発生箇所はコードを ID で検索して探します。</li>
+      <li lang="en">An error from <code>error(msg(...))</code> carries the text only: <code>ME.identifier</code> is empty, so check <code>flag</code> or <code>result.l_success</code> rather than catching by identifier. A warning has the ID as identifier (<code>lastwarn</code>, <code>warning("off", id)</code>).</li>
+      <li lang="ja"><code>error(msg(...))</code> のエラーは本文だけを持ち、<code>ME.identifier</code> は空です。識別子で捕まえるのではなく、<code>flag</code> や <code>result.l_success</code> を確かめます。警告は ID を識別子に持ちます（<code>lastwarn</code>、<code>warning("off", id)</code>）。</li>
+      <li lang="en">Warnings and INFO lines can be hidden by <code>Message.ShowWarning</code> and <code>Message.ShowInfo</code> of <code>GUILDA.setting</code>; turn them on while debugging.</li>
+      <li lang="ja">警告と INFO は <code>GUILDA.setting</code> の <code>Message.ShowWarning</code> と <code>Message.ShowInfo</code> で非表示にできます。デバッグ中は表示にします。</li>
+      <li lang="en">An error that says to run <code>net.initialize()</code> first lists the edits that made the model stale; <code>net.sct_stale</code> (and <code>sct_stale</code> of each object) shows the same.</li>
+      <li lang="ja">先に <code>net.initialize()</code> を実行するよう求めるエラーには、モデルを古くした編集が並びます。<code>net.sct_stale</code>（各オブジェクトの <code>sct_stale</code>）でも同じ内容を確認できます。</li>
+    </ul>
+
+    <!-- ============================== BUILD ============================== -->
+    <h2 id="build"><span lang="en">Model build</span><span lang="ja">モデル構築</span></h2>
+    <dl class="kv">
+      <dt><span lang="en">Entry</span><span lang="ja">入口</span></dt>
+      <dd><code>net.add_bus</code>, <code>add_branch</code>, <code>bus.add_component</code>, <code>comp.add_local_controller</code>, <code>net.add_global_controller</code>, <code>PowerNetwork.import</code></dd>
+      <dt><span lang="en">Inspect</span><span lang="ja">確かめる</span></dt>
+      <dd><code>net.disp_summary</code>, <code>net.get_element_table</code>, <code>net.get_parameter</code>, <code>net.get_variable_map</code> (<span lang="en">every variable and connection</span><span lang="ja">すべての変数と接続</span>), <code>comp.validate</code> / <code>con.validate</code> (<span lang="en">contract, input sources, Jacobians</span><span lang="ja">約束事、入力の接続元、ヤコビアン</span>), <code>net.launch_gui()</code></dd>
+      <dt><span lang="en">Settings</span><span lang="ja">設定</span></dt>
+      <dd><span lang="en"><code>PowerSystemModel.Hz</code>; the model keys come from <code>GUILDA.keymap</code> (rebuilt by <code>GUILDA.update_keymap</code>)</span><span lang="ja"><code>PowerSystemModel.Hz</code>。モデルキーは <code>GUILDA.keymap</code> から読みます（<code>GUILDA.update_keymap</code> で作り直します）</span></dd>
+      <dt><span lang="en">Typical messages</span><span lang="ja">よく出るメッセージ</span></dt>
+      <dd><span lang="en">MATLAB argument validation for an unknown key or option; <code>Component:MissingParameter</code>, <code>UnknownParameter</code>; <code>PowerNetwork:BusNotFound</code>; <code>dictionary:ClassNotLoaded</code> for a new class that does not load. A rejected call leaves the model unchanged.</span><span lang="ja">未知のキーやオプションには MATLAB の引数検証エラー、<code>Component:MissingParameter</code>、<code>UnknownParameter</code>、<code>PowerNetwork:BusNotFound</code>。読み込めない新しいクラスには <code>dictionary:ClassNotLoaded</code>。拒否された呼び出しはモデルを変えません。</span></dd>
+    </dl>
+
+    <!-- ============================== INITIALIZE ============================== -->
+    <h2 id="initialize"><span lang="en">Initialize</span><span lang="ja">初期化</span></h2>
+    <dl class="kv">
+      <dt><span lang="en">Entry · solver</span><span lang="ja">入口・ソルバー</span></dt>
+      <dd><code>net.initialize(Method=…)</code> → <code>calculate_powerflow</code> | <code>calculate_optimal_powerflow</code> | <code>calculate_fixed_input_powerflow</code>, <span lang="en">then <code>get_equilibrium</code> of every model</span><span lang="ja">続いて各モデルの <code>get_equilibrium</code></span></dd>
+      <dt><span lang="en">Result</span><span lang="ja">結果</span></dt>
+      <dd><span lang="en">The operating point array (V, I, P, Q per bus); <code>rv_Xequilibrium</code> of each component and controller; <code>net.sct_stale</code> empty after success</span><span lang="ja">動作点の配列（母線ごとの V、I、P、Q）、各機器と制御器の <code>rv_Xequilibrium</code>。成功すると <code>net.sct_stale</code> は空になります</span></dd>
+      <dt><span lang="en">Settings</span><span lang="ja">設定</span></dt>
+      <dd><span lang="en">The section of the analysis it runs (<code>PowerFlowCalculation</code> or <code>OptimalPowerFlow</code>)</span><span lang="ja">実行する解析のセクション（<code>PowerFlowCalculation</code> または <code>OptimalPowerFlow</code>）</span></dd>
+      <dt><span lang="en">Typical messages</span><span lang="ja">よく出るメッセージ</span></dt>
+      <dd><span lang="en"><code>InitializePowerflowFailed</code> / <code>InitializeOPFFailed</code> (…<code>Island</code> for a split network); <code>InitializeModelFailed</code>, <code>InitializeModelSize</code>, <code>InitializeEquilibriumSize</code> from a model; warning <code>EquilibriumResidual</code>: the model moves without a disturbance, check its <code>get_equilibrium</code> with <code>validate</code>.</span><span lang="ja"><code>InitializePowerflowFailed</code> / <code>InitializeOPFFailed</code>（系統が分かれていると …<code>Island</code>）。モデル由来の <code>InitializeModelFailed</code>、<code>InitializeModelSize</code>、<code>InitializeEquilibriumSize</code>。警告 <code>EquilibriumResidual</code> は外乱なしで状態が動くことを示すため、<code>validate</code> で <code>get_equilibrium</code> を確かめます。</span></dd>
+    </dl>
+
+    <!-- ============================== POWER FLOW ============================== -->
+    <h2 id="power-flow"><span lang="en">Power flow</span><span lang="ja">潮流計算</span></h2>
+    <dl class="kv">
+      <dt><span lang="en">Entry · solver</span><span lang="ja">入口・ソルバー</span></dt>
+      <dd><code>net.calculate_powerflow</code> → <code>net.get_pf_condition</code> → <code>SolverPF</code> + <code>Method*</code></dd>
+      <dt><span lang="en">Result</span><span lang="ja">結果</span></dt>
+      <dd><code>ResultPF</code>: <code>tab_bus</code>, <code>tab_branch</code>, <code>tab_violation</code>, <code>tab_PFcondition</code> (<span lang="en">what the solver received</span><span lang="ja">ソルバーが受け取った条件</span>), <code>cm_Vhistory</code>; <code>plot_convergence</code></dd>
+      <dt><span lang="en">Settings</span><span lang="ja">設定</span></dt>
+      <dd><code>PowerFlowCalculation</code>: <code>Solver</code>, <code>Tolerance</code>, <code>MaxIteration</code>, <code>WarmStart</code>, <code>WhenFailed</code>, <code>Verbose</code>, <code>PlotFcn="residual"</code></dd>
+      <dt><span lang="en">Typical messages</span><span lang="ja">よく出るメッセージ</span></dt>
+      <dd><span lang="en"><code>PowerNetwork:NoSlackBus</code> (set <code>bus.l_isSlack = true</code>); warning <code>PowerflowNotConverged</code> with <code>flag &lt;= 0</code>; <code>Bus:SlackWithoutQnan</code>; <code>require_toolbox:Unavailable</code> for <code>"fsolve"</code>. Print the input with <code>net.get_pf_condition()</code>.</span><span lang="ja"><code>PowerNetwork:NoSlackBus</code>（<code>bus.l_isSlack = true</code> を設定）、<code>flag &lt;= 0</code> と警告 <code>PowerflowNotConverged</code>、<code>Bus:SlackWithoutQnan</code>、<code>"fsolve"</code> では <code>require_toolbox:Unavailable</code>。入力は <code>net.get_pf_condition()</code> で表示できます。</span></dd>
+    </dl>
+
+    <!-- ============================== SIMULATE ============================== -->
+    <h2 id="simulate"><span lang="en">Simulate</span><span lang="ja">時間応答シミュレーション</span></h2>
+    <dl class="kv">
+      <dt><span lang="en">Entry · solver</span><span lang="ja">入口・ソルバー</span></dt>
+      <dd><code>net.simulate(tag)</code> → <code>net.build_simulation_data</code> → <code>Scenario.compile</code> → <code>SolverODE.solve</code></dd>
+      <dt><span lang="en">Result</span><span lang="ja">結果</span></dt>
+      <dd><code>ResultODE</code>: <code>rv_t</code>, <code>rm_variable</code> + <code>tab_variable</code>, <code>odeResults</code>, <code>get_trajectory</code>, <code>judge_out_of_step</code>; <code>output.tEnd</code>, <code>output.message</code>, <code>output.exception</code></dd>
+      <dt><span lang="en">Settings</span><span lang="ja">設定</span></dt>
+      <dd><code>TimeSimulation</code>: <code>Solver</code>, <code>Tolerance</code>, <code>MaxStep</code>, <code>SampleTime</code>, <code>StopOnOutOfStep</code>, <code>TimeLimit</code>, <code>Verbose</code></dd>
+      <dt><span lang="en">Typical messages</span><span lang="ja">よく出るメッセージ</span></dt>
+      <dd><span lang="en"><code>SimulateStale</code> / <code>SimulateInputEdited</code> (run <code>initialize</code>); <code>flag</code> 2 out of step, 0 time limit, −1 solver stop with warning <code>SimulationIncomplete</code> (reason in <code>output.exception</code>: <code>SolverODE:InitialConditionFailed</code>, <code>UnfeasibleDAE</code>, <code>PhaseFailed</code>); <code>Scenario:*</code> for an invalid event.</span><span lang="ja"><code>SimulateStale</code> / <code>SimulateInputEdited</code>（<code>initialize</code> を実行）。<code>flag</code> は 2 で脱調停止、0 で時間制限、−1 でソルバー停止となり、警告 <code>SimulationIncomplete</code> が出ます（原因は <code>output.exception</code> の <code>SolverODE:InitialConditionFailed</code>、<code>UnfeasibleDAE</code>、<code>PhaseFailed</code>）。不正なイベントには <code>Scenario:*</code>。</span></dd>
+    </dl>
+
+    <!-- ============================== LINEARIZE ============================== -->
+    <h2 id="linearize"><span lang="en">Linearize</span><span lang="ja">近似線形化</span></h2>
+    <dl class="kv">
+      <dt><span lang="en">Entry · solver</span><span lang="ja">入口・ソルバー</span></dt>
+      <dd><code>x.get_sys(point)</code> (<span lang="en">any layer</span><span lang="ja">任意の層</span>) → <code>get_linear_matrix</code> → <code>SolverLIN.solve</code></dd>
+      <dt><span lang="en">Result</span><span lang="ja">結果</span></dt>
+      <dd><code>ResultLIN</code>: <code>rm_Axx</code> … <code>rm_E</code>, <code>A</code> … <code>D</code>, <code>StateName</code>, <code>tab_variable</code>, <code>get_ss</code>, <code>get_eigenvalue</code>, <code>get_participation</code>, <code>get_contribution</code>; <code>output.s_issue</code>, <code>output.message</code></dd>
+      <dt><span lang="en">Settings</span><span lang="ja">設定</span></dt>
+      <dd><code>ApproximateLinearization</code>: <code>Type</code> (<code>"ODE"</code> | <code>"DAE"</code>), <code>Port</code></dd>
+      <dt><span lang="en">Typical messages</span><span lang="ja">よく出るメッセージ</span></dt>
+      <dd><span lang="en"><code>PowerSystemModel:Stale</code> / <code>InputEdited</code>; <code>flag = false</code> with <code>s_issue</code> <code>"SingularAvv"</code> or <code>"NotFinite"</code>; <code>SolverLIN:JacobianNotFinite</code>, <code>AlgebraicLoop</code>, <code>Point*</code>. For a model, compare its Jacobians with finite differences in <code>validate</code>.</span><span lang="ja"><code>PowerSystemModel:Stale</code> / <code>InputEdited</code>、<code>s_issue</code> が <code>"SingularAvv"</code> や <code>"NotFinite"</code> で <code>flag = false</code>、<code>SolverLIN:JacobianNotFinite</code>、<code>AlgebraicLoop</code>、<code>Point*</code>。モデルのヤコビアンは <code>validate</code> で差分近似と比べます。</span></dd>
+    </dl>
+
+    <!-- ============================== OPF ============================== -->
+    <h2 id="opf"><span lang="en">OPF</span><span lang="ja">最適潮流計算</span></h2>
+    <dl class="kv">
+      <dt><span lang="en">Entry · solver</span><span lang="ja">入口・ソルバー</span></dt>
+      <dd><code>net.calculate_optimal_powerflow</code> → <code>net.get_opf_condition</code> → <code>SolverOPF</code> (<span lang="en">Optimization Toolbox</span><span lang="ja">Optimization Toolbox</span>)</dd>
+      <dt><span lang="en">Result</span><span lang="ja">結果</span></dt>
+      <dd><code>ResultOPF</code>: <code>tab_bus</code>, <code>tab_branch</code>, <code>r_cost</code>, <code>lambda</code>, <code>OPFprob</code>, <code>disp_binding</code>, <code>get_lmp</code>, <code>plot_iteration</code></dd>
+      <dt><span lang="en">Settings</span><span lang="ja">設定</span></dt>
+      <dd><code>OptimalPowerFlow</code>: <code>Method</code>, <code>Solver</code>, <code>Tolerance</code>, <code>MaxIteration</code>, <code>WarmStart</code>, <code>PlotFcn</code>; <span lang="en">limits in <code>tab_parameter.operation</code></span><span lang="ja">制約値は <code>tab_parameter.operation</code></span></dd>
+      <dt><span lang="en">Typical messages</span><span lang="ja">よく出るメッセージ</span></dt>
+      <dd><span lang="en">An unsolved problem is not an error: <code>l_success</code> false and <code>output.message</code>. <code>SolverOPF:HandleError</code> (a user <code>Cost</code>/<code>Constraint</code> failed, cause attached), <code>UnsupportedSolver</code>, <code>UnknownReferenceBus</code>. When <code>fmincon</code> cannot start: <code>net.build_opf_problem(validate=true)</code>.</span><span lang="ja">解けなくてもエラーではなく、<code>l_success</code> が false になり <code>output.message</code> に理由が出ます。<code>SolverOPF:HandleError</code>（ユーザーの <code>Cost</code>/<code>Constraint</code> が失敗、原因付き）、<code>UnsupportedSolver</code>、<code>UnknownReferenceBus</code>。<code>fmincon</code> が始まらないときは <code>net.build_opf_problem(validate=true)</code>。</span></dd>
+    </dl>
+
+    <!-- ============================== CPF ============================== -->
+    <h2 id="cpf"><span lang="en">CPF</span><span lang="ja">連続潮流計算</span></h2>
+    <dl class="kv">
+      <dt><span lang="en">Entry · solver</span><span lang="ja">入口・ソルバー</span></dt>
+      <dd><code>net.calculate_continuation_powerflow</code> → <code>net.solver_CPF.solve</code> (<code>LoadBus</code>)</dd>
+      <dt><span lang="en">Result</span><span lang="ja">結果</span></dt>
+      <dd><code>ResultCPF</code>: <code>rv_lambda</code>, <code>cm_Vbus</code>, <code>r_lambdaMax</code>, <code>tab_nose</code>, <code>tab_switch</code>, <code>tab_stop</code>, <code>tab_weakbus</code>, <code>plot_pvcurve</code></dd>
+      <dt><span lang="en">Settings</span><span lang="ja">設定</span></dt>
+      <dd><code>ContinuationPowerFlow</code>: <code>StepSize</code>, <code>ArcLength</code>, <code>MaxIteration</code>, <code>Limits</code>, <code>UseInternalState</code>, <code>PlotFcn="pvcurve"</code></dd>
+      <dt><span lang="en">Typical messages</span><span lang="ja">よく出るメッセージ</span></dt>
+      <dd><span lang="en"><code>SolverCPF:Stale</code>, <code>NoEquilibrium</code>, <code>EmptyLoadBus</code>, <code>UnknownLoadBus</code>; <code>flag = false</code> when the nose was not passed (raise <code>MaxIteration</code> or <code>StepSize</code>); warning <code>MethodNewtonRaphson:MaxIteration</code> for a corrector step.</span><span lang="ja"><code>SolverCPF:Stale</code>、<code>NoEquilibrium</code>、<code>EmptyLoadBus</code>、<code>UnknownLoadBus</code>。ノーズを越えないと <code>flag = false</code> です（<code>MaxIteration</code> か <code>StepSize</code> を大きくします）。修正子の反復には警告 <code>MethodNewtonRaphson:MaxIteration</code>。</span></dd>
+    </dl>
+
+    <!-- ============================== PLOT ============================== -->
+    <h2 id="plot"><span lang="en">Plotting</span><span lang="ja">描画</span></h2>
+    <dl class="kv">
+      <dt><span lang="en">Entry</span><span lang="ja">入口</span></dt>
+      <dd><code>result.plot_*</code>, <code>net.plot_diagram</code> → <code>Graph*</code> (<code>GraphBase</code>)</dd>
+      <dt><span lang="en">Inspect</span><span lang="ja">確かめる</span></dt>
+      <dd><span lang="en">The returned object <code>g</code>: its properties, <code>g.set_style</code> by tag; the data come from the result, so check the result first</span><span lang="ja">返されたオブジェクト <code>g</code> のプロパティと、タグで指定する <code>g.set_style</code>。データは結果から来るため、先に結果を確かめます</span></dd>
+      <dt><span lang="en">Typical messages</span><span lang="ja">よく出るメッセージ</span></dt>
+      <dd><span lang="en"><code>GraphNetDiagram:RangeValue</code>; <code>GraphBase:OneSample</code> for an animation of one sample; a timer error is turned into a warning (<code>PlaybackTimer</code>, <code>FlowTimer</code>) and the timer stops.</span><span lang="ja"><code>GraphNetDiagram:RangeValue</code>、1 サンプルのアニメーションには <code>GraphBase:OneSample</code>。タイマー内のエラーは警告（<code>PlaybackTimer</code>、<code>FlowTimer</code>）になり、タイマーが止まります。</span></dd>
+    </dl>
+  </main>
+</body>
+</html>

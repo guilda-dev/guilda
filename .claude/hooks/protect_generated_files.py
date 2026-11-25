@@ -1,6 +1,6 @@
 """PreToolUse hook (Edit|Write|MultiEdit|NotebookEdit): block edits to generated files.
 
-Rule (_GUILDAdoc/developer/folder-structure.html#generated): generated files are
+Rule (_GUILDAdoc/developer/coding-rules.html#generated): generated files are
 rebuilt by GUILDA and must not be edited by hand. Paths are matched relative to
 the repository root, so the rule also holds inside .claude/worktrees/<name>/.
 """
@@ -48,7 +48,7 @@ def main():
         # Anchor at the root, or at any folder boundary if the root was not found.
         if re.search(r"(^|/)" + pattern + "$", rel, re.IGNORECASE):
             block(f"Blocked: '{rel}' is a generated file and must not be edited "
-                  "(_GUILDAdoc/developer/folder-structure.html#generated).\n" + fix)
+                  "(_GUILDAdoc/developer/coding-rules.html#generated).\n" + fix)
 
 
 if __name__ == "__main__":

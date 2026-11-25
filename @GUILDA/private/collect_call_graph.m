@@ -933,7 +933,7 @@ function cell_type = class_from_name(s_name, s_rule, sct_ctx)
 end
 
 function cell_type = name_type(s_name, sct_ctx)
-    % Naming rule of developer/naming-conventions.html, with the usual short forms.
+    % Naming rule of developer/coding-rules.html#naming, with the usual short forms.
     cell_type = {'', ''};
     if any(strcmp(s_name, {'opt', 'opts', 'option', 'options', 'ctx', 'mpc', 'args', 'arg', 'config', 'cfg', 'info', 'param'})) ...
             || ~isempty(regexp(s_name, '^(s|str|sct|tab|cell|map|iv|rv|cv|lv|sv|sr|im|rm|cm|lm|sm|l|r|i|n|bln)_', 'once'))
