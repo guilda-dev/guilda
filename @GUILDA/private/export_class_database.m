@@ -1972,9 +1972,19 @@ function [sct_info, cell_diagnostics] = apply_help_tags(sct_info, s_raw_help, s_
     end
     sct_info.SeeAlso = cell_see_also;
 
+    % A "See also" line may also follow the tags (MATLAB's convention):
+    % it ends up in a tag value, from which it is moved to SeeAlso.
     for i_tag = 1:numel(cell_tags)
         s_tag_name = cell_tags{i_tag};
         if isfield(sct_parsed_tags, s_tag_name)
+            [cell_value, cell_see_tagged] = take_see_also(regexp(sct_parsed_tags.(s_tag_name), '\n', 'split'));
+            if ~isempty(cell_see_tagged)
+                while ~isempty(cell_value) && isempty(strtrim(cell_value{end}))
+                    cell_value(end) = [];
+                end
+                sct_parsed_tags.(s_tag_name) = strjoin(cell_value, newline);
+                sct_info.SeeAlso = unique([sct_info.SeeAlso, cell_see_tagged], 'stable');
+            end
             sct_info.(s_tag_name) = sct_parsed_tags.(s_tag_name);
         else
             sct_info.(s_tag_name) = '';
@@ -1987,14 +1997,29 @@ function [s_summary, s_desc, cell_see_also] = split_help_text(s_text)
     % "See also" lines, which give the SeeAlso list.
     s_summary = '';
     s_desc = '';
-    cell_see_also = cell(1, 0);
-    cell_lines = regexp(char(s_text), '\n', 'split');
+    [cell_lines, cell_see_also] = take_see_also(regexp(char(s_text), '\n', 'split'));
 
+    i_first = find(~cellfun(@(s) isempty(strtrim(s)), cell_lines), 1, 'first');
+    if isempty(i_first)
+        return
+    end
+    s_summary = strtrim(cell_lines{i_first});
+    s_desc = strtrim(strjoin(cell_lines(i_first+1:end), newline));
+end
+
+function [cell_lines, cell_see_also] = take_see_also(cell_lines)
+    % Removes the "See also A, B" lines outside ``` fences and returns the
+    % names they list (split_help_text, and tag values in apply_help_tags).
+    cell_see_also = cell(1, 0);
     bln_keep = true(size(cell_lines));
+    bln_fence = false;
     i_line = 1;
     while i_line <= numel(cell_lines)
+        if startsWith(strtrim(cell_lines{i_line}), '```')
+            bln_fence = ~bln_fence;
+        end
         cell_tok = regexp(cell_lines{i_line}, '^\s*See also\>:?(.*)$', 'tokens', 'once', 'ignorecase');
-        if isempty(cell_tok)
+        if bln_fence || isempty(cell_tok)
             i_line = i_line + 1;
             continue
         end
@@ -2012,13 +2037,6 @@ function [s_summary, s_desc, cell_see_also] = split_help_text(s_text)
         i_line = i_line + 1;
     end
     cell_lines = cell_lines(bln_keep);
-
-    i_first = find(~cellfun(@(s) isempty(strtrim(s)), cell_lines), 1, 'first');
-    if isempty(i_first)
-        return
-    end
-    s_summary = strtrim(cell_lines{i_first});
-    s_desc = strtrim(strjoin(cell_lines(i_first+1:end), newline));
 end
 
 function [s_unit, s_text] = take_unit(s_text)
