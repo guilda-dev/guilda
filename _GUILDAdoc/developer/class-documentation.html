@@ -15,15 +15,15 @@
     .cd-where { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--dg-s4); }
     .cd-where .cd-code { padding: var(--dg-s3); font-size: 0.74rem; }
     @media (max-width: 760px) { .cd-where { grid-template-columns: minmax(0, 1fr); gap: var(--dg-s5); } }
-    .cd-pin { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin: 0 2px; border-radius: 50%; background: var(--dg-warn); color: var(--dg-ink); font: bold 0.68rem/1 var(--dg-mono); vertical-align: 1px; white-space: normal; }
+    .cd-pin { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin: 0 2px; box-sizing: border-box; border-radius: 50%; border: 1px solid var(--dg-warn-ink); color: var(--dg-warn-ink); font: 600 0.68rem/1 var(--dg-mono); vertical-align: 1px; white-space: normal; }
     .cd-page { overflow: hidden; border: 1px solid var(--dg-line); border-radius: var(--radius); background: var(--dg-card); font-size: 0.82rem; line-height: 1.5; }
     .cd-page-bar { padding: 6px var(--dg-s3); border-bottom: 1px solid var(--dg-line); background: var(--surface-subtle); color: var(--dg-muted); font: 0.72rem var(--dg-mono); }
     .cd-page-body { padding: var(--dg-s3) var(--dg-s4) var(--dg-s4); }
     .cd-page h4 { margin: 0 0 2px; color: var(--dg-accent); font: bold 1.2rem/1.3 var(--dg-mono); }
-    .cd-page-label { display: block; margin: var(--dg-s3) 0 4px; color: var(--dg-muted); font-size: 0.68rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+    .cd-page-label { display: block; margin: var(--dg-s3) 0 4px; color: var(--dg-muted); font-size: 0.78rem; }
     .cd-page table { display: table; width: 100%; margin: 0; border-collapse: collapse; table-layout: fixed; font-size: 0.78rem; box-shadow: none; }
     .cd-page th, .cd-page td { padding: 4px 6px; border-bottom: 1px solid var(--dg-line); text-align: left; vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
-    .cd-page th { min-width: 0; background: var(--dg-accent); color: var(--dg-card); font-weight: normal; }
+    .cd-page th { min-width: 0; color: var(--dg-muted); font-weight: normal; border-bottom-color: var(--line-strong); }
     .cd-page .dg-mono { font-size: 0.95em; overflow-wrap: anywhere; }
     /* Tag map: one row per tag, one column per target; stays a table at every width */
     .dg .cd-map { display: table; width: 100%; }

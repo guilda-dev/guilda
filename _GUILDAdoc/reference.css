@@ -15,27 +15,19 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
-  padding: 8px 12px 10px;
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--line-strong);
-  border-radius: var(--radius);
+  padding: 6px 0 8px;
+  border-top: 1px solid var(--line);
   background: var(--surface);
 }
-.ref-stat-label { color: var(--muted); font-size: 0.75rem; font-weight: 600; line-height: 1.3; }
-.ref-stat-value { margin-top: auto; color: var(--ink); font-size: 1.35rem; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
-.ref-stat-total { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
-.ref-stat-pct { margin-left: 6px; color: var(--ok); font-size: 0.75rem; font-weight: 600; }
-.ref-stat-bar { display: block; height: 4px; margin-top: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.ref-stat-label { color: var(--muted); font-size: 0.82rem; font-weight: 400; line-height: 1.3; }
+.ref-stat-value { margin-top: auto; color: var(--ink); font-size: 1.3rem; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.ref-stat-total { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
+.ref-stat-pct { margin-left: 6px; color: var(--muted); font-size: 0.8rem; font-weight: 400; }
+.ref-stat-bar { display: block; height: 3px; margin-top: 4px; border-radius: 0; background: var(--line); overflow: hidden; }
 .ref-stat-bar > span { display: block; height: 100%; background: var(--ok); }
-.ref-stat.is-partial { border-top-color: var(--brand); }
-.ref-stat.is-partial .ref-stat-pct { color: var(--brand); }
-.ref-stat.is-partial .ref-stat-bar > span { background: var(--brand); }
-.ref-stat.is-clear { border-top-color: var(--ok); }
-.ref-stat.is-clear .ref-stat-value { color: var(--ok); }
-.ref-stat.is-warn { border-color: var(--warn-line); border-top-color: var(--warn-line); background: var(--warn-bg); }
-.ref-stat.is-warn .ref-stat-value, .ref-stat.is-warn .ref-stat-label { color: var(--warn); }
-.ref-stat.is-err { border-color: var(--err); border-top-color: var(--err); background: var(--err-bg); }
-.ref-stat.is-err .ref-stat-value, .ref-stat.is-err .ref-stat-label { color: var(--err); }
+.ref-stat.is-partial .ref-stat-bar > span { background: var(--ink-2); }
+.ref-stat.is-warn .ref-stat-value { color: var(--warn); }
+.ref-stat.is-err .ref-stat-value { color: var(--err); }
 .ref-stat-caption { margin: 6px 0 0; color: var(--muted); font-size: 0.75rem; }
 
 .ref-empty {
@@ -50,9 +42,8 @@
 .ref-notice {
   margin: 12px 0 20px;
   padding: 10px 14px;
-  border-left: 2px solid var(--warn-line);
-  border-radius: 0;
-  background: var(--surface-subtle);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   font-size: 0.9rem;
 }
 
@@ -65,7 +56,7 @@
 
 .ref-badge {
   display: inline-block;
-  padding: 2px 9px;
+  padding: 0 6px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
   background: var(--surface);
@@ -74,7 +65,7 @@
   line-height: 1.5;
   white-space: nowrap;
 }
-.ref-badge.is-abstract { border-color: var(--line-strong); color: var(--primary-color); }
+.ref-badge.is-abstract { color: var(--ink); }
 .ref-badge.is-sealed { border-color: var(--warn-line); color: var(--warn); }
 .ref-badge.is-undocumented { border-color: var(--warn-line); background: var(--surface); color: var(--warn); }
 .ref-badge.is-small { padding: 0 6px; font-size: 0.7rem; }
@@ -155,10 +146,13 @@ tr.ref-inherited td .row-link { font-weight: normal; }
   font-size: 0.85rem;
   line-height: 1.7;
 }
-.ref-method-nav a.is-current { font-weight: bold; }
+.ref-method-nav a.is-current { color: var(--ink); font-weight: 600; text-decoration: none; }
 .ref-method-nav .ref-muted { font-size: 0.75rem; }
 
 .ref-nav-title { margin: 18px 0 6px; }
+/* Navigation lists (this page's contents, the method list): links without the underline */
+#page-toc a, .ref-toc a, .ref-method-nav a { text-decoration: none; }
+#page-toc a:hover, .ref-toc a:hover, .ref-method-nav a:hover { text-decoration: underline; }
 
 /* Source folder tree (doc-tree.js) in the sidebar and the Reference tab. */
 .ref-tree-panel { margin: 0 0 18px; }
@@ -166,7 +160,7 @@ tr.ref-inherited td .row-link { font-weight: normal; }
   margin: 0 0 6px;
   color: var(--ink);
   font-size: 1.0rem;
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
 }
 .ref-tree-filter {
@@ -219,11 +213,11 @@ tr.ref-inherited td .row-link { font-weight: normal; }
   text-decoration: none;
 }
 .ref-tree-file > a:hover { background: var(--surface-subtle); text-decoration: underline; }
+/* The current file: the blue nav marker on the left, the name in ink */
 .ref-tree-file > a.is-current {
-  background: var(--brand-tint);
   box-shadow: inset 2px 0 0 var(--brand);
-  color: var(--brand-strong);
-  font-weight: bold;
+  color: var(--ink);
+  font-weight: 600;
 }
 .ref-tree summary:focus-visible,
 .ref-tree-file > a:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
@@ -259,49 +253,28 @@ tr.ref-inherited td .row-link { font-weight: normal; }
 .ref-deprecated {
   margin: 12px 0 20px;
   padding: 10px 14px;
-  border-left: 3px solid var(--err);
-  background: var(--err-bg);
+  border: 1px solid var(--err);
+  border-radius: var(--radius);
   color: var(--ink);
   font-size: 0.9rem;
 }
 .ref-deprecated p { margin: 4px 0 0; }
 .ref-badge.is-deprecated { border-color: var(--err); color: var(--err); }
-.ref-badge.is-user { border-color: var(--brand); color: var(--brand); }
+.ref-badge.is-user { color: var(--ink); }
 
-/* Group headings (groupHeading in doc-render.js): a tinted band with a
-   "Group" tag, the name in the UI font and a count badge, unlike the
+/* Group headings (groupHeading in doc-render.js): a rule above, a muted
+   "Group" word, the name in the UI font and a muted count, unlike the
    monospace member names below them. */
 .ref-group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
-.ref-group-tag {
-  padding: 0 6px;
-  border: 1px solid var(--brand);
-  border-radius: var(--radius);
-  color: var(--brand);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  line-height: 1.6;
-  text-transform: uppercase;
-}
-.ref-group-name { color: var(--ink); font-family: var(--font-sans); font-size: 0.9rem; font-weight: 700; overflow-wrap: anywhere; }
-.ref-group-count {
-  min-width: 1.6em;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--brand);
-  color: var(--surface);
-  font-size: 0.7rem;
-  font-weight: 700;
-  line-height: 1.6;
-  text-align: center;
-}
+.ref-group-tag { color: var(--muted); font-size: 0.82rem; font-weight: 400; line-height: 1.6; }
+.ref-group-name { color: var(--ink); font-family: var(--font-sans); font-size: 0.92rem; font-weight: 600; overflow-wrap: anywhere; }
+.ref-group-count { color: var(--muted); font-size: 0.82rem; font-weight: 400; line-height: 1.6; font-variant-numeric: tabular-nums; }
 tr.ref-group-row th,
 .doc-layout .compact-table tr.ref-group-row th {
-  padding: 7px 12px;
-  border-top: 1px solid var(--brand);
+  padding: 14px 12px 6px 0;
+  border-top: 1px solid var(--line-strong);
   border-bottom: 1px solid var(--line);
-  border-left: 3px solid var(--brand);
-  background: var(--brand-tint);
+  background: var(--surface);
   font-family: var(--font-sans);
   font-weight: normal;
   text-align: left;
@@ -311,7 +284,7 @@ tr.ref-group-row:hover { background: transparent; }
 .ref-nav-group { margin: 10px 0 2px; }
 .ref-nav-group .ref-group-tag { display: none; }
 .ref-nav-group .ref-group-name { font-size: 0.78rem; }
-.ref-nav-group .ref-group-count { background: var(--surface-subtle); color: var(--muted); border: 1px solid var(--line); }
+.ref-nav-group .ref-group-count { font-size: 0.75rem; }
 .ref-hints { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 6px; vertical-align: middle; }
 .ref-see-also a > code { color: inherit; }
 .ref-unit { font-family: var(--font-mono); font-size: 0.85em; white-space: nowrap; }
@@ -322,8 +295,8 @@ tr.ref-group-row:hover { background: transparent; }
 .cg-svg { display: block; max-width: 100%; font-family: var(--font-mono); font-size: 12px; }
 .cg-box { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1; }
 .cg-box.is-property { fill: var(--surface-subtle); stroke: var(--line); }
-.cg-box.is-parameter { fill: var(--brand-tint); stroke: var(--line); }
-.cg-bar { fill: var(--brand); }
+.cg-box.is-parameter { fill: var(--surface-subtle); stroke: var(--line); }
+.cg-bar { fill: var(--ink-2); }
 .cg-text { fill: var(--ink); }
 .cg-text.is-parameter { font-style: italic; }
 .cg-prefix { fill: var(--muted); }
@@ -346,9 +319,9 @@ tr.ref-group-row:hover { background: transparent; }
 .cg-toggle text { fill: var(--ink-2); font-size: 13px; }
 .cg-toggle:hover rect, .cg-toggle:focus-visible rect { stroke: var(--brand); }
 .cg-toggle:focus { outline: none; }
-.cg-current rect { fill: var(--brand); }
-.cg-current-class { fill: var(--on-brand-muted); font-size: 11px; }
-.cg-current-member { fill: var(--surface); font-weight: 600; }
+.cg-current rect { fill: var(--surface); stroke: var(--ink); stroke-width: 1.5; }
+.cg-current-class { fill: var(--muted); font-size: 11px; }
+.cg-current-member { fill: var(--ink); font-weight: 600; }
 .cg-note { margin: 0 0 10px; font-size: 0.85rem; color: var(--ink-2); overflow-wrap: anywhere; }
 .cg-legend {
   display: flex;
@@ -369,28 +342,29 @@ tr.ref-group-row:hover { background: transparent; }
    "label | value". */
 .ref-lead { margin: 0 0 10px; color: var(--ink); font-size: 1.05rem; }
 .ref-small { font-size: 0.82rem; }
-.ref-figure { margin: 16px 0 20px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: #FFFFFF; }
+.ref-figure { margin: 16px 0 20px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .ref-figure img { display: block; width: 100%; max-width: 640px; height: auto; margin: 0 auto; }
 .ref-overview-table { margin: 0 0 24px; }
 .doc-layout table.ref-stack,
 .ref-stack tbody, .ref-stack tr, .ref-stack td, .ref-stack th { display: block; width: auto !important; max-width: none !important; white-space: normal !important; }
 .ref-stack { border: 0; box-shadow: none; background: transparent; }
 .ref-stack thead { display: none; }
-/* Each row is a card; its first cell is the card's title bar. */
-.ref-stack tr { margin: 0 0 8px; padding: 0 0 8px; border: 1px solid var(--line); border-left: 3px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); }
+/* Each row is a block under a hairline; its first cell is the block's title. */
+.ref-stack tr { margin: 0; padding: 10px 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: var(--surface); }
+.ref-stack tr:last-child { border-bottom: 1px solid var(--line); }
 .ref-stack tr:hover { background: var(--surface); }
-.doc-layout .ref-stack td { padding: 2px 14px; border: 0; font-size: 0.9rem; }
-.doc-layout .ref-stack td:first-child { margin-bottom: 6px; padding: 7px 14px; border-bottom: 1px solid var(--line); background: var(--surface-subtle); overflow-wrap: anywhere; }
+.doc-layout .ref-stack td { padding: 2px 0; border: 0; font-size: 0.9rem; }
+.doc-layout .ref-stack td:first-child { margin-bottom: 4px; padding: 0; color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
 .ref-stack td.col-unit { white-space: nowrap !important; }
-.doc-layout .ref-stack td[data-label] { position: relative; padding-left: calc(9.5rem + 14px); }
-.ref-stack td[data-label]::before { content: attr(data-label); position: absolute; left: 14px; top: 4px; width: 9rem; color: var(--muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+.doc-layout .ref-stack td[data-label] { position: relative; padding-left: 9.5rem; }
+.ref-stack td[data-label]::before { content: attr(data-label); position: absolute; left: 0; top: 3px; width: 9rem; color: var(--muted); font-size: 0.82rem; font-weight: 400; }
 .ref-stack td .markdown-content > :first-child { margin-top: 0; }
 .ref-stack td .markdown-content > :last-child { margin-bottom: 0; }
 .ref-stack tr.ref-group-row { margin: 18px 0 8px; padding: 0; border: 0; border-radius: 0; background: transparent; }
 .ref-stack tr.ref-group-row th { box-sizing: border-box; width: 100% !important; }
 .ref-tree-indent { padding-left: calc(var(--depth, 0) * 1.25rem); }
 @media (max-width: 599px) {
-  .doc-layout .ref-stack td[data-label] { padding-left: 14px; }
+  .doc-layout .ref-stack td[data-label] { padding-left: 0; }
   .ref-stack td[data-label]::before { position: static; display: block; width: auto; }
 }
 
@@ -405,38 +379,36 @@ tr.ref-group-row:hover { background: transparent; }
   .ref-method-nav { columns: 2; }
 }
 
-/* Section headings of the class and method pages: a tinted band with a
-   brand bar, unlike the group headings and cards inside the section. */
+/* Section headings of the class and method pages: ink with one rule above,
+   the single section divider of these long pages. */
 .doc-layout #dynamic-content > h2 {
-  margin: 44px 0 14px;
-  padding: 8px 14px;
+  margin: 48px 0 14px;
+  padding: 20px 0 0;
   border: 0;
-  border-left: 5px solid var(--brand);
-  border-radius: 0 var(--radius) var(--radius) 0;
-  background: linear-gradient(90deg, var(--brand-tint), var(--surface-subtle));
-  font-size: 1.35rem;
+  border-top: 1px solid var(--line);
+  font-size: 1.3rem;
   scroll-margin-top: 12px;
 }
+/* After the rule under the page title, the first section needs no second rule */
+.doc-layout #dynamic-content > hr + h2 { margin-top: 24px; padding-top: 0; border-top: 0; }
 .doc-layout #dynamic-content > h3 {
   margin: 22px 0 10px;
-  padding-left: 10px;
-  border-left: 3px solid var(--line-strong);
   font-size: 1.05rem;
 }
 
 /* Links: brand colour and an underline, so they differ from inline code.
-   Code inside a link keeps the link colour on a blue tint. */
+   Code inside a link keeps the link colour on the grey code surface. */
 .doc-layout #dynamic-content a {
   color: var(--brand);
   text-decoration: underline;
-  text-decoration-color: var(--on-brand-muted);
+  text-decoration-color: color-mix(in srgb, var(--brand) 45%, transparent);
   text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
+  text-underline-offset: 0.18em;
 }
 .doc-layout #dynamic-content a:hover { color: var(--brand-strong); text-decoration-color: currentColor; }
 .doc-layout #dynamic-content a > code,
 .doc-layout #dynamic-content a > strong > code {
-  background: var(--brand-tint);
+  background: var(--code-bg);
   color: inherit;
 }
 .doc-layout #dynamic-content svg a,
@@ -470,7 +442,7 @@ tr.ref-group-row:hover { background: transparent; }
   font-size: 0.85rem;
 }
 .ref-facts > div { display: flex; flex-wrap: wrap; gap: 0 12px; margin-bottom: 2px; }
-.ref-facts dt { flex: 0 0 9.5rem; padding-top: 2px; color: var(--muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+.ref-facts dt { flex: 0 0 9.5rem; color: var(--muted); font-size: 0.82rem; font-weight: 400; }
 .ref-facts dd { flex: 1 1 24ch; min-width: 0; margin: 0; overflow-wrap: anywhere; }
 .ref-facts dd .markdown-content > :first-child { margin-top: 0; }
 @media (max-width: 600px) {
@@ -555,10 +527,7 @@ tr.ref-group-row:hover { background: transparent; }
     margin-right: 8px;
     color: var(--muted);
     font-family: var(--font-sans);
-    font-size: 0.7rem;
-    font-weight: bold;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    font-size: 0.82rem;
   }
   .ref-member-table td.col-facts[data-label]::before { display: block; }
   .ref-member-table tr.ref-group-row,
@@ -570,7 +539,7 @@ tr.ref-group-row:hover { background: transparent; }
 .ref-columns { margin: -4px 0 12px; font-size: 0.8rem; }
 .ref-columns > summary { display: none; }
 .ref-columns-list { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
-.ref-columns-label { color: var(--muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+.ref-columns-label { color: var(--muted); font-size: 0.8rem; }
 .ref-columns .ref-check { gap: 4px; font-size: 0.8rem; }
 .ref-columns .ref-check input { margin: 0; }
 @media (max-width: 600px) {
@@ -580,14 +549,14 @@ tr.ref-group-row:hover { background: transparent; }
 }
 
 /* Access values (accessTag in doc-render.js): public green, protected
-   orange, private red, a class list such as {?SolverODE} blue, others
-   neutral. Text on a tint, the border in the same hue. */
+   orange, private red, a class list such as {?SolverODE} and others in ink.
+   Coloured text in a neutral outline, no tinted fill. */
 :root {
-  --access-public: var(--ok);   --access-public-bg: var(--ok-bg);   --access-public-line: #7FA88A;
-  --access-protected: #9A4A00;  --access-protected-bg: #FBF2EA;     --access-protected-line: #D99A5E;
-  --access-private: var(--err); --access-private-bg: var(--err-bg); --access-private-line: #D48F8F;
-  --access-classes: var(--brand); --access-classes-bg: var(--brand-tint); --access-classes-line: #8FB0D3;
-  --access-other: var(--ink);   --access-other-bg: var(--surface);  --access-other-line: var(--line-strong);
+  --access-public: var(--ok);   --access-public-bg: transparent; --access-public-line: var(--line);
+  --access-protected: #8A4A10;  --access-protected-bg: transparent; --access-protected-line: var(--line);
+  --access-private: var(--err); --access-private-bg: transparent; --access-private-line: var(--line);
+  --access-classes: var(--ink); --access-classes-bg: transparent; --access-classes-line: var(--line);
+  --access-other: var(--ink);   --access-other-bg: transparent; --access-other-line: var(--line);
 }
 .ref-access { font-family: var(--font-mono); }
 .ref-access.is-public { border-color: var(--access-public-line); background: var(--access-public-bg); color: var(--access-public); }

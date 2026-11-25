@@ -14,7 +14,7 @@
     .sim-opts td:nth-child(3) { width: 9rem; }
     .sim-seq-list { margin: 0; padding-left: 0; list-style: none; font-size: 0.9rem; line-height: 1.5; }
     .sim-seq-list li { padding: 4px 0; border-bottom: 1px solid var(--dg-line); }
-    .sim-seq-list li.sim-loop { padding-left: 10px; border-left: 3px solid var(--dg-accent); }
+    .sim-seq-list li.sim-loop { padding-left: 10px; border-left: 2px solid var(--line-strong); }
     .sim-seq-list code { overflow-wrap: anywhere; }
     .sim-seq-list .sim-id { display: inline-block; min-width: 4.2em; color: var(--dg-accent); font-family: var(--dg-mono); font-weight: bold; }
     /* Step list (fs-*): one block per step, ID + call as the head, labelled descriptions below. Same block on every feature page. */
@@ -25,11 +25,11 @@
     .fs-id { margin-right: 10px; color: var(--dg-accent); font-family: var(--dg-mono); }
     .fs-head small { display: block; margin-top: 2px; color: var(--dg-muted); font-size: 0.88em; }
     .fs-body { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 4px 14px; margin: 0; }
-    .fs-body dt { padding-top: 0.15rem; color: var(--dg-muted); font-size: 0.72rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+    .fs-body dt { padding-top: 0.15rem; color: var(--dg-muted); font-size: 0.85rem; }
     .fs-body dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
     .fs-body ul { margin: 0; padding-left: 1.1em; list-style: disc; }
     .fs-steps code { background: var(--code-bg); padding: 1px 5px; border-radius: var(--radius); color: var(--ink); }
-    .fs-step.sim-loop { padding-left: 10px; box-shadow: inset 3px 0 0 var(--dg-accent); }   /* step repeats (page-local) */
+    .fs-step.sim-loop { padding-left: 10px; box-shadow: inset 2px 0 0 var(--line-strong); }   /* step repeats (page-local) */
     @media (max-width: 640px) {
       .sim-opts td:first-child, .sim-opts td:nth-child(3) { width: auto; }
       .fs-body { display: block; }

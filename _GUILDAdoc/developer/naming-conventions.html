@@ -26,7 +26,7 @@
     .nc-frame:nth-child(6) { animation-delay: 17.5s; }
     .nc-anatomy:hover .nc-frame, .nc-anatomy:hover .nc-dot { animation-play-state: paused; }
     @keyframes nc-cycle { 0% { opacity: 0; transform: translateY(6px); } 3%, 14% { opacity: 1; transform: none; } 16.6%, 100% { opacity: 0; } }
-    .nc-fullname { margin-bottom: var(--dg-s3); font: bold clamp(1.5rem, 6vw, 2.3rem)/1.2 var(--dg-mono); letter-spacing: 0.02em; }
+    .nc-fullname { margin-bottom: var(--dg-s3); font: 600 clamp(1.5rem, 6vw, 2.3rem)/1.2 var(--dg-mono); }
     .nc-dots { display: flex; justify-content: center; gap: 8px; margin-top: var(--dg-s4); }
     .nc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dg-line); animation: nc-dot 21s infinite; }
     .nc-dot:nth-child(2) { animation-delay: 3.5s; }
@@ -53,7 +53,7 @@
     .nc-gcorner { display: flex; align-items: flex-end; padding: var(--dg-s3) 4px; color: var(--dg-muted); font-size: 0.72rem; line-height: 1.3; }
     .nc-gcorner .nc-c-s, .nc-gcorner .nc-c-t { font-weight: bold; }
     .nc-gr { display: flex; align-items: center; gap: 10px; padding: 10px 4px; }
-    .nc-gr-tok { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--radius); background: var(--dg-accent); color: var(--surface); font: bold 1rem var(--dg-mono); }
+    .nc-gr-tok { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 28px; height: 28px; box-sizing: border-box; border: 1px solid var(--line-strong); border-radius: var(--radius); color: var(--dg-ink); font: 600 1rem var(--dg-mono); }
     .nc-gr-txt { color: var(--dg-accent); font-size: 0.82rem; font-weight: bold; line-height: 1.2; }
     .nc-gr-txt small { display: block; color: var(--dg-muted); font: normal 0.7rem var(--dg-mono); }
     .nc-cell { display: flex; align-items: center; justify-content: center; padding: 10px 2px; border: 0; border-bottom: 1px solid var(--dg-line); background: none; cursor: pointer; font: bold clamp(0.85rem, 3vw, 1.05rem) var(--dg-mono); transition: background 0.15s; }
@@ -73,7 +73,7 @@
     .nc-formula-line i { color: var(--dg-muted); font-style: normal; }
 
     .nc-flash { animation: nc-flash 1.2s ease-out; }
-    @keyframes nc-flash { 0% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 35%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+    @keyframes nc-flash { 0% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--ink) 25%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }
     @media (prefers-reduced-motion: reduce) { .nc-flash { animation: none; } }
 
     @media (max-width: 480px) {
@@ -166,19 +166,19 @@
     <div class="nc-grid" role="group" aria-label="Prefix for each variable type and size. Click a cell to fill the generator.">
       <div class="nc-gcorner"><span><span class="nc-c-t"><span lang="en">type</span><span lang="ja">型</span></span> ↓<br><span class="nc-c-s"><span lang="en">size</span><span lang="ja">サイズ</span></span> →</span></div>
       <div class="nc-gh">
-        <svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="5" style="fill:var(--brand)"/></svg>
+        <svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="5" style="fill:var(--ink)"/></svg>
         <span class="nc-gh-tok"><span lang="en">(none)</span><span lang="ja">(なし)</span></span><span class="nc-gh-lab"><span lang="en">scalar</span><span lang="ja">スカラー</span></span>
       </div>
       <div class="nc-gh">
-        <svg viewBox="0 0 30 30" aria-hidden="true"><g style="fill:var(--brand)"><rect x="11" y="2" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="20" width="8" height="8" rx="1.5"/></g></svg>
+        <svg viewBox="0 0 30 30" aria-hidden="true"><g style="fill:var(--ink)"><rect x="11" y="2" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="20" width="8" height="8" rx="1.5"/></g></svg>
         <span class="nc-gh-tok">v</span><span class="nc-gh-lab"><span lang="en">column vector</span><span lang="ja">列ベクトル</span></span>
       </div>
       <div class="nc-gh">
-        <svg viewBox="0 0 30 30" aria-hidden="true"><g style="fill:var(--brand)"><rect x="2" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="20" y="11" width="8" height="8" rx="1.5"/></g></svg>
+        <svg viewBox="0 0 30 30" aria-hidden="true"><g style="fill:var(--ink)"><rect x="2" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="20" y="11" width="8" height="8" rx="1.5"/></g></svg>
         <span class="nc-gh-tok">r</span><span class="nc-gh-lab"><span lang="en">row vector</span><span lang="ja">行ベクトル</span></span>
       </div>
       <div class="nc-gh">
-        <svg viewBox="0 0 30 30" aria-hidden="true"><g style="fill:var(--brand)"><rect x="2" y="2" width="8" height="8" rx="1.5"/><rect x="11" y="2" width="8" height="8" rx="1.5"/><rect x="20" y="2" width="8" height="8" rx="1.5"/><rect x="2" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="20" y="11" width="8" height="8" rx="1.5"/><rect x="2" y="20" width="8" height="8" rx="1.5"/><rect x="11" y="20" width="8" height="8" rx="1.5"/><rect x="20" y="20" width="8" height="8" rx="1.5"/></g></svg>
+        <svg viewBox="0 0 30 30" aria-hidden="true"><g style="fill:var(--ink)"><rect x="2" y="2" width="8" height="8" rx="1.5"/><rect x="11" y="2" width="8" height="8" rx="1.5"/><rect x="20" y="2" width="8" height="8" rx="1.5"/><rect x="2" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="20" y="11" width="8" height="8" rx="1.5"/><rect x="2" y="20" width="8" height="8" rx="1.5"/><rect x="11" y="20" width="8" height="8" rx="1.5"/><rect x="20" y="20" width="8" height="8" rx="1.5"/></g></svg>
         <span class="nc-gh-tok">m</span><span class="nc-gh-lab"><span lang="en">matrix</span><span lang="ja">行列</span></span>
       </div>
       <!-- rows are generated from NC_TYPES below -->
@@ -214,8 +214,8 @@
     <ul class="dg-list nc-prefixes">
       <li>
         <svg viewBox="0 0 64 48" aria-hidden="true">
-          <rect x="4" y="4" width="56" height="40" rx="4" stroke-width="2" style="fill:var(--surface); stroke:var(--brand)"/>
-          <path d="M4 8a4 4 0 0 1 4-4h48a4 4 0 0 1 4 4v6H4z" style="fill:var(--brand)"/>
+          <rect x="4" y="4" width="56" height="40" rx="4" stroke-width="2" style="fill:var(--surface); stroke:var(--ink)"/>
+          <path d="M4 8a4 4 0 0 1 4-4h48a4 4 0 0 1 4 4v6H4z" style="fill:var(--ink)"/>
           <path d="M4 24h56M4 34h56M22 4v40M42 4v40" stroke-width="1.5" style="stroke:var(--line-strong)"/>
         </svg>
         <div>
@@ -226,9 +226,9 @@
       </li>
       <li>
         <svg viewBox="0 0 64 48" aria-hidden="true">
-          <rect x="4" y="4" width="56" height="40" rx="4" stroke-width="2" style="fill:var(--surface); stroke:var(--brand)"/>
-          <g style="fill:var(--brand)"><rect x="11" y="11" width="14" height="6" rx="1.5"/><rect x="11" y="21" width="14" height="6" rx="1.5"/><rect x="11" y="31" width="14" height="6" rx="1.5"/></g>
-          <g stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--brand)"><rect x="30" y="11" width="23" height="6" rx="1.5"/><rect x="30" y="21" width="23" height="6" rx="1.5"/><rect x="30" y="31" width="23" height="6" rx="1.5"/></g>
+          <rect x="4" y="4" width="56" height="40" rx="4" stroke-width="2" style="fill:var(--surface); stroke:var(--ink)"/>
+          <g style="fill:var(--ink)"><rect x="11" y="11" width="14" height="6" rx="1.5"/><rect x="11" y="21" width="14" height="6" rx="1.5"/><rect x="11" y="31" width="14" height="6" rx="1.5"/></g>
+          <g stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--ink)"><rect x="30" y="11" width="23" height="6" rx="1.5"/><rect x="30" y="21" width="23" height="6" rx="1.5"/><rect x="30" y="31" width="23" height="6" rx="1.5"/></g>
         </svg>
         <div>
           <span class="dg-item-title"><span lang="en">Struct variables</span><span lang="ja">struct 型の変数</span></span>
@@ -238,10 +238,10 @@
       </li>
       <li>
         <svg viewBox="0 0 64 48" aria-hidden="true">
-          <path d="M10 6c-4 0-4 3-4 7v6c0 3-2 5-4 5 2 0 4 2 4 5v6c0 4 0 7 4 7M54 6c4 0 4 3 4 7v6c0 3 2 5 4 5-2 0-4 2-4 5v6c0 4 0 7-4 7" fill="none" stroke-width="2.5" stroke-linecap="round" style="stroke:var(--brand)"/>
-          <g stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--brand)"><rect x="13" y="16" width="11" height="16" rx="2"/><rect x="27" y="16" width="11" height="16" rx="2"/><rect x="41" y="16" width="11" height="16" rx="2"/></g>
-          <g style="fill:var(--brand)"><circle cx="18.5" cy="21" r="2"/><circle cx="32.5" cy="21" r="2"/><circle cx="46.5" cy="21" r="2"/></g>
-          <g stroke-width="1.5" style="stroke:var(--brand)"><path d="M16 27h5M30 27h5M44 27h5"/></g>
+          <path d="M10 6c-4 0-4 3-4 7v6c0 3-2 5-4 5 2 0 4 2 4 5v6c0 4 0 7 4 7M54 6c4 0 4 3 4 7v6c0 3 2 5 4 5-2 0-4 2-4 5v6c0 4 0 7-4 7" fill="none" stroke-width="2.5" stroke-linecap="round" style="stroke:var(--ink)"/>
+          <g stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--ink)"><rect x="13" y="16" width="11" height="16" rx="2"/><rect x="27" y="16" width="11" height="16" rx="2"/><rect x="41" y="16" width="11" height="16" rx="2"/></g>
+          <g style="fill:var(--ink)"><circle cx="18.5" cy="21" r="2"/><circle cx="32.5" cy="21" r="2"/><circle cx="46.5" cy="21" r="2"/></g>
+          <g stroke-width="1.5" style="stroke:var(--ink)"><path d="M16 27h5M30 27h5M44 27h5"/></g>
         </svg>
         <div>
           <span class="dg-item-title"><span lang="en">GUILDA objects in a cell array</span><span lang="ja">cell 配列に入れた GUILDA のオブジェクト</span></span>
