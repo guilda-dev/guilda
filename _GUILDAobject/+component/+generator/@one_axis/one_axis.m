@@ -48,6 +48,29 @@ classdef one_axis < component.generator.abstract
 % I_d = \frac{E_q - V_q}{X_d'}, \quad I_q = \frac{V_d}{X_q}, \quad P = V_d I_d + V_q I_q
 % ```
 %
+% <@Citations>
+% - 石崎孝幸 編著, 川口貴弘, 河辺賢一 著, 『電力系統のシステム制御工学
+%   ―システム数理とMATLABシミュレーション―』 (計測・制御セレクションシリーズ 4),
+%   計測自動制御学会 編, コロナ社, 2022, Sect. 2.3.2, ISBN 978-4-339-03384-7,
+%   [publisher page](https://www.coronasha.co.jp/np/isbn/9784339033847/).
+% - P. W. Sauer, M. A. Pai, and J. H. Chow, *Power System Dynamics and Stability: With
+%   Synchrophasor Measurement and Power System Toolbox*, 2nd ed. Hoboken, NJ, USA:
+%   Wiley-IEEE Press, 2017, Sect. 5.5, doi:
+%   [10.1002/9781119355755](https://doi.org/10.1002/9781119355755).
+% - P. M. Anderson and A. A. Fouad, *Power System Control and Stability*, 2nd ed.
+%   Piscataway, NJ, USA: IEEE Press / Wiley-Interscience, 2003, doi:
+%   [10.1109/9780470545577](https://doi.org/10.1109/9780470545577).
+% - N. Tsolas, A. Arapostathis, and P. Varaiya, "A structure preserving energy function
+%   for power system transient stability analysis," *IEEE Trans. Circuits Syst.*, vol.
+%   CAS-32, no. 10, pp. 1041–1049, 1985, doi:
+%   [10.1109/TCS.1985.1085625](https://doi.org/10.1109/TCS.1985.1085625).
+% - P. Varaiya, F. F. Wu, and R.-L. Chen, "Direct methods for transient stability analysis
+%   of power systems: Recent results," *Proc. IEEE*, vol. 73, no. 12, pp. 1703–1715, 1985,
+%   doi: [10.1109/PROC.1985.13366](https://doi.org/10.1109/PROC.1985.13366).
+% - H.-D. Chiang, *Direct Methods for Stability Analysis of Electric Power Systems:
+%   Theoretical Foundation, BCU Methodologies, and Applications*. Hoboken, NJ, USA: Wiley,
+%   2011, doi: [10.1002/9780470872130](https://doi.org/10.1002/9780470872130).
+%
 % <@Examples>
 % ```matlab
 % net = PowerNetwork();

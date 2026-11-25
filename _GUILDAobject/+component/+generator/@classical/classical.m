@@ -40,6 +40,16 @@ classdef classical < component.generator.abstract
 % I_d = \frac{V_\mathrm{field} - V_q}{X_d}, \quad I_q = \frac{V_d}{X_q}, \quad P = V_d I_d + V_q I_q
 % ```
 %
+% <@Citations>
+% - P. W. Sauer, M. A. Pai, and J. H. Chow, *Power System Dynamics and Stability: With
+%   Synchrophasor Measurement and Power System Toolbox*, 2nd ed. Hoboken, NJ, USA:
+%   Wiley-IEEE Press, 2017, Sect. 5.6, doi:
+%   [10.1002/9781119355755](https://doi.org/10.1002/9781119355755).
+% - P. M. Anderson and A. A. Fouad, *Power System Control and Stability*, 2nd ed.
+%   Piscataway, NJ, USA: IEEE Press / Wiley-Interscience, 2003, doi:
+%   [10.1109/9780470545577](https://doi.org/10.1109/9780470545577).
+% - 加藤政一, 『詳解 電力系統工学』, 東京電機大学出版局, 2017, ISBN 978-4-501-11770-2.
+%
 % <@Examples>
 % ```matlab
 % net = PowerNetwork();

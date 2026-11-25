@@ -124,6 +124,13 @@ classdef IEEJ_EAST30 < PowerNetwork
 % power flow against the flow diagram, fig. 4.17) and `+TimeResponse/README.md` (the
 % transient stability cases of table 4.9, 3LG-O faults), each with its data and script.
 %
+% <@Citations>
+% - 電気学会 電力系統モデル標準化調査専門委員会, 「電力系統の標準モデル」,
+%   電気学会技術報告 第754号, 1999.
+% - 電気学会 電力・エネルギー部門, 「電力系統の標準モデル」,
+%   [https://www.iee.jp/pes/ele_systems/base_model](https://www.iee.jp/pes/ele_systems/base_model)
+%   (accessed 2026-11-25).
+%
 % <@Examples>
 % Run the power flow of the night section with the exciters and governors, and simulate a fault at node 3105 cleared by
 % opening both circuits of the line 3105-3104 (card 3104, branches `EL047` and `EL048`):

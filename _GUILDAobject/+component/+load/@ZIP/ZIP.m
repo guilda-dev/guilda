@@ -50,6 +50,13 @@ classdef ZIP < component.load.abstract
 % ```
 % and $f_Q$ the same with $k_{QZ}$, $k_{QI}$, $k_{QP}$.
 %
+% <@Citations>
+% - 電気学会 電力系統モデル標準化調査専門委員会, 「電力系統の標準モデル」,
+%   電気学会技術報告 第754号, 1999.
+% - 電気学会 電力・エネルギー部門, 「電力系統の標準モデル」,
+%   [https://www.iee.jp/pes/ele_systems/base_model](https://www.iee.jp/pes/ele_systems/base_model)
+%   (accessed 2026-11-25).
+%
 % <@Examples>
 % ```matlab
 % net = PowerNetwork();

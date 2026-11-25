@@ -37,6 +37,25 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
 % the field voltage). The logical parameter `Limiter` switches both limits: true (the
 % default) applies them, false ignores them (the same as all four limits at +-Inf).
 %
+% <@Citations>
+% - 石崎孝幸 編著, 川口貴弘, 河辺賢一 著, 『電力系統のシステム制御工学
+%   ―システム数理とMATLABシミュレーション―』 (計測・制御セレクションシリーズ 4),
+%   計測自動制御学会 編, コロナ社, 2022, Sect. 5.3.2, ISBN 978-4-339-03384-7,
+%   [publisher page](https://www.coronasha.co.jp/np/isbn/9784339033847/).
+% - *IEEE Recommended Practice for Excitation System Models for Power System Stability
+%   Studies*, IEEE Std 421.5-2016, 2016, doi:
+%   [10.1109/IEEESTD.2016.7553421](https://doi.org/10.1109/IEEESTD.2016.7553421).
+% - P. Kundur, *Power System Stability and Control*. New York, NY, USA: McGraw-Hill, 1994,
+%   ISBN 0-07-035958-X.
+% - P. M. Anderson and A. A. Fouad, *Power System Control and Stability*, 2nd ed.
+%   Piscataway, NJ, USA: IEEE Press / Wiley-Interscience, 2003, doi:
+%   [10.1109/9780470545577](https://doi.org/10.1109/9780470545577).
+% - 電気学会 電力系統モデル標準化調査専門委員会, 「電力系統の標準モデル」,
+%   電気学会技術報告 第754号, 1999.
+% - 電気学会 電力・エネルギー部門, 「電力系統の標準モデル」,
+%   [https://www.iee.jp/pes/ele_systems/base_model](https://www.iee.jp/pes/ele_systems/base_model)
+%   (accessed 2026-11-25).
+%
 % <@Examples>
 % Attach the AVR and a PSS to a generator and simulate a fault:
 %

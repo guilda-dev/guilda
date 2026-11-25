@@ -67,6 +67,31 @@ classdef (Sealed) Retrofit < LocalController
 % **Output signals** $y$ (`sv_y`)
 % - `Vpss` [pu]: the `Vpss` input of the Static AVR.
 %
+% <@Citations>
+% - 石崎孝幸 編著, 川口貴弘, 河辺賢一 著, 『電力系統のシステム制御工学
+%   ―システム数理とMATLABシミュレーション―』 (計測・制御セレクションシリーズ 4),
+%   計測自動制御学会 編, コロナ社, 2022, Sect. 5.4, ISBN 978-4-339-03384-7,
+%   [publisher page](https://www.coronasha.co.jp/np/isbn/9784339033847/).
+% - T. Ishizaki, T. Sadamoto, J. Imura, H. Sandberg, and K. H. Johansson, "Retrofit
+%   control: Localization of controller design and implementation," *Automatica*, vol. 95,
+%   pp. 336–346, 2018, doi:
+%   [10.1016/j.automatica.2018.05.033](https://doi.org/10.1016/j.automatica.2018.05.033).
+% - T. Sadamoto, A. Chakrabortty, T. Ishizaki, and J. Imura, "Retrofit control of
+%   wind-integrated power systems," *IEEE Trans. Power Syst.*, vol. 33, no. 3, pp.
+%   2804–2815, 2018, doi:
+%   [10.1109/TPWRS.2017.2750411](https://doi.org/10.1109/TPWRS.2017.2750411).
+% - H. Sasahara, T. Ishizaki, T. Sadamoto, T. Masuta, Y. Ueda, H. Sugihara, N. Yamaguchi,
+%   and J. Imura, "Damping performance improvement for PV-integrated power grids via
+%   retrofit control," *Control Eng. Pract.*, vol. 84, pp. 92–101, 2019, doi:
+%   [10.1016/j.conengprac.2018.11.004](https://doi.org/10.1016/j.conengprac.2018.11.004).
+% - T. Ishizaki, T. Kawaguchi, H. Sasahara, and J. Imura, "Retrofit control with
+%   approximate environment modeling," *Automatica*, vol. 107, pp. 442–453, 2019, doi:
+%   [10.1016/j.automatica.2019.06.010](https://doi.org/10.1016/j.automatica.2019.06.010).
+% - T. Ishizaki, H. Sasahara, M. Inoue, T. Kawaguchi, and J. Imura, "Modularity-in-design
+%   of dynamical network systems: Retrofit control approach," *IEEE Trans. Autom.
+%   Control*, vol. 66, no. 11, pp. 5205–5220, 2021, doi:
+%   [10.1109/TAC.2020.3035631](https://doi.org/10.1109/TAC.2020.3035631).
+%
 % <@Examples>
 % Put a generator back on its Static AVR, attach the controller and simulate an
 % initial-value disturbance:

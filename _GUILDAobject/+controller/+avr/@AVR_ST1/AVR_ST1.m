@@ -47,6 +47,24 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
 % defaults (`ttr = 0`, `tst = kst = 0`, no limits) the AVR is the first-order lag
 % `kap/(1 + tap*s)`.
 %
+% <@Citations>
+% - 石崎孝幸 編著, 川口貴弘, 河辺賢一 著, 『電力系統のシステム制御工学
+%   ―システム数理とMATLABシミュレーション―』 (計測・制御セレクションシリーズ 4),
+%   計測自動制御学会 編, コロナ社, 2022, Sect. 5.3.2, ISBN 978-4-339-03384-7,
+%   [publisher page](https://www.coronasha.co.jp/np/isbn/9784339033847/).
+% - *IEEE Recommended Practice for Excitation System Models for Power System Stability
+%   Studies*, IEEE Std 421.5-2016, 2016, doi:
+%   [10.1109/IEEESTD.2016.7553421](https://doi.org/10.1109/IEEESTD.2016.7553421).
+% - P. Kundur, *Power System Stability and Control*. New York, NY, USA: McGraw-Hill, 1994,
+%   Sect. 8.6.3, ISBN 0-07-035958-X.
+% - J. H. Chow, G. E. Boukarim, and A. Murdoch, "Power system stabilizers as undergraduate
+%   control design projects," *IEEE Trans. Power Syst.*, vol. 19, no. 1, pp. 144–151,
+%   2004, doi: [10.1109/TPWRS.2003.821003](https://doi.org/10.1109/TPWRS.2003.821003).
+% - T. Sadamoto, A. Chakrabortty, T. Ishizaki, and J. Imura, "Dynamic modeling, stability,
+%   and control of power systems with distributed energy resources: Handling faults using
+%   two control methods in tandem," *IEEE Control Syst. Mag.*, vol. 39, no. 2, pp. 34–65,
+%   2019, doi: [10.1109/MCS.2018.2888680](https://doi.org/10.1109/MCS.2018.2888680).
+%
 % <@Examples>
 % Attach the AVR and a PSS to a generator and simulate a fault:
 %

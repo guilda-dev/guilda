@@ -52,6 +52,12 @@ classdef two_axis < component.generator.abstract
 % I_d = \frac{E_q - V_q}{X_d'}, \quad I_q = \frac{V_d - E_d}{X_q'}, \quad P = V_d I_d + V_q I_q
 % ```
 %
+% <@Citations>
+% - P. W. Sauer, M. A. Pai, and J. H. Chow, *Power System Dynamics and Stability: With
+%   Synchrophasor Measurement and Power System Toolbox*, 2nd ed. Hoboken, NJ, USA:
+%   Wiley-IEEE Press, 2017, Sect. 5.4, doi:
+%   [10.1002/9781119355755](https://doi.org/10.1002/9781119355755).
+%
 % <@Examples>
 % ```matlab
 % net = PowerNetwork();

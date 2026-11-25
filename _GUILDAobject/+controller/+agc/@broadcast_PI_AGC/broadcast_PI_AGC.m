@@ -24,6 +24,12 @@ classdef broadcast_PI_AGC < GlobalController
 % $\alpha_i$ (`alpha`) shares the command among the generators and $\beta_i$ (`beta`)
 % weights their frequency deviations.
 %
+% <@Citations>
+% - 石崎孝幸 編著, 川口貴弘, 河辺賢一 著, 『電力系統のシステム制御工学
+%   ―システム数理とMATLABシミュレーション―』 (計測・制御セレクションシリーズ 4),
+%   計測自動制御学会 編, コロナ社, 2022, Sect. 5.1.1, ISBN 978-4-339-03384-7,
+%   [publisher page](https://www.coronasha.co.jp/np/isbn/9784339033847/).
+%
 % <@Examples>
 % Control the generators at buses 1 and 2 and simulate a fault:
 %

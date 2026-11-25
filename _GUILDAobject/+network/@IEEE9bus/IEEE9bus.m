@@ -65,6 +65,11 @@ classdef IEEE9bus < PowerNetwork
 %    (.)  :   Bus Number
 % ```
 %
+% <@Citations>
+% - P. M. Anderson and A. A. Fouad, *Power System Control and Stability*, 2nd ed.
+%   Piscataway, NJ, USA: IEEE Press / Wiley-Interscience, 2003, doi:
+%   [10.1109/9780470545577](https://doi.org/10.1109/9780470545577).
+%
 % <@Examples>
 % Run the power flow and simulate a fault at bus 7:
 %
