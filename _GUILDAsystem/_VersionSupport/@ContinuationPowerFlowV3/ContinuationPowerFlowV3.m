@@ -1,4 +1,4 @@
-classdef ContinuationPowerFlowV3 < handle
+classdef ContinuationPowerFlowV3 < auxiliary
 % v3 view of the continuation power flow, returned by Continuation_Power_Flow(net, opt).
 %
 % It keeps the v3 option names (CPFBus, CPFInitLam, CPFMaxIter, CPFStepSize, CPFArcL,

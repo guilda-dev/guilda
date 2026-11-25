@@ -50,6 +50,9 @@
      annotations stay in ink and greys. */
   --gem-1: #1171BE; --gem-2: #DD5400; --gem-3: #EDB120; --gem-4: #8516D1;
   --gem-5: #3BAA32; --gem-6: #2FBEEF; --gem-7: #D1048B;
+
+  /* Section divider: a thin transmission line on towers (same drawing as guilda-doc) */
+  --line-divider-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 30' fill='none' stroke='%23000' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M0 19Q53 19 106 11M134 11Q187 19 240 19M120 2.5 113.5 28.5M120 2.5l6.5 26M104 8h32M106 8v3M134 8v3M117 13h6M116.4 16.5l7.2 11M123.6 16.5l-7.2 11M110 28.5h20'/%3E%3C/svg%3E");
 }
 
 /* =========================================
@@ -102,6 +105,13 @@ table {
   table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
 th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+/* A cell never gets narrower than a short word, so text does not wrap one
+   character per line; a table wider than its column scrolls in .table-scroll
+   (doc-nav.js wraps the tables of the developer pages). Only code may break
+   anywhere; prose breaks between words. */
+td { min-width: 4.5em; }
+.table-scroll { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 0 20px; }
+.table-scroll > table { margin-bottom: 0; }
 th { background-color: var(--surface-subtle); color: var(--ink); font-weight: 600; min-width: 120px; border-bottom: 1px solid var(--line-strong); }
 tr:hover { background-color: var(--surface-subtle); }
 
@@ -121,13 +131,61 @@ tr:hover { background-color: var(--surface-subtle); }
   text-decoration: underline; 
 }
 
-.btn { 
-  display: inline-block; padding: 7px 14px; background-color: var(--surface); color: var(--ink); 
-  border: 1px solid var(--line-strong); border-radius: var(--radius); text-decoration: none; font-weight: 600; 
-  transition: border-color 0.15s ease; white-space: nowrap;
+/* Standalone links (call to action, a way back, "Show more"): a quiet button in link blue,
+   as on guilda-doc. Inline links in prose stay underlined text. A .btn may start with an
+   <svg class="btn-icon">. The developer pages' back link and the "View guide" label of the
+   For Developer cards take the same look. */
+.btn, .developer-back-button, .developer-link-action {
+  position: relative; display: inline-flex; align-items: center; gap: 8px; box-sizing: border-box; min-height: 38px; padding: 6px 14px;
+  background-color: var(--surface); color: var(--brand); border: 1px solid var(--line-strong); border-radius: 4px;
+  font: inherit; font-size: 0.95rem; font-weight: 600; line-height: 1.3; text-decoration: none; white-space: nowrap; cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
 }
-.btn:hover { border-color: var(--ink); color: var(--ink); text-decoration: none; }
-.btn-primary { border-color: var(--ink); }
+.btn:hover, .btn:focus-visible, .developer-back-button:hover, .developer-back-button:focus-visible { border-color: var(--brand); color: var(--brand-strong); text-decoration: none; }
+.btn:focus-visible, .developer-back-button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.btn-primary { background-color: var(--brand); border-color: var(--brand); color: var(--surface); }
+.btn-primary:hover, .btn-primary:focus-visible { background-color: var(--brand-strong); border-color: var(--brand-strong); color: var(--surface); }
+.btn-icon { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.btn-chevron::before { content: ""; order: 2; flex: none; width: 0.42em; height: 0.42em; margin-left: 2px; border: solid currentColor; border-width: 1.75px 1.75px 0 0; transform: rotate(45deg); }
+
+/* Current-flow hover: a short dash runs along the underline of a link or the lower edge of a
+   button, like current in a line (as on guilda-doc). Links draw their underline as a background
+   so the dash can move; the static underline stays when motion is reduced. */
+@media (prefers-reduced-motion: no-preference) {
+  main a:not([class]):hover, main a:not([class]):focus-visible,
+  .doc-layout #dynamic-content a:not([class]):hover, .doc-layout #dynamic-content a:not([class]):focus-visible {
+    text-decoration-color: transparent;
+    background-image: linear-gradient(currentColor, currentColor), linear-gradient(color-mix(in srgb, currentColor 45%, transparent), color-mix(in srgb, currentColor 45%, transparent));
+    background-size: 1.1em 1.5px, 100% 1px; background-repeat: no-repeat;
+    background-position: -40% calc(100% - 0.05em), 0 calc(100% - 0.05em);
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+    animation: flow-underline 1.1s linear infinite;
+  }
+  .btn::after, .tab-button::after, .flow-edge::after, .developer-back-button::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; pointer-events: none; opacity: 0;
+    background: linear-gradient(currentColor, currentColor) no-repeat; background-size: 18px 2px; background-position: -40% 0;
+  }
+  .btn:hover::after, .btn:focus-visible::after, .tab-button:hover::after, .tab-button:focus-visible::after,
+  .developer-back-button:hover::after, .developer-back-button:focus-visible::after,
+  .flow-edge:hover::after, .flow-edge:focus-visible::after, a:hover > .flow-edge::after, a:focus-visible > .flow-edge::after { opacity: 0.9; animation: flow-edge 1.1s linear infinite; }
+  .btn-primary::after { background-image: linear-gradient(var(--accent), var(--accent)); }
+  .tab-button::after { bottom: -3px; height: 3px; background-size: 14px 3px; }
+}
+@keyframes flow-underline { to { background-position: 140% calc(100% - 0.05em), 0 calc(100% - 0.05em); } }
+@keyframes flow-edge { to { background-position: 140% 0; } }
+
+/* Section divider: a thin transmission line on towers instead of a plain rule (as on
+   guilda-doc). <hr class="line-divider">, or above a section heading (.dg main h2 and the
+   h2 of the class and method pages); the drawing is a mask, so it takes --line-strong. */
+hr.line-divider, .tutorial-divider {
+  display: block; height: 30px; margin: 40px 0; border: 0; background: var(--line-strong);
+  -webkit-mask: var(--line-divider-mask) repeat-x 0 50% / 240px 30px; mask: var(--line-divider-mask) repeat-x 0 50% / 240px 30px;
+}
+.dg main h2::before, .doc-layout #dynamic-content > h2::before {
+  content: ""; display: block; height: 30px; margin: 0 0 14px; background: var(--line-strong);
+  /* round: a whole number of spans, so no tower is cut at the right edge */
+  -webkit-mask: var(--line-divider-mask) round 0 50% / 240px 30px; mask: var(--line-divider-mask) round 0 50% / 240px 30px;
+}
 
 .search-box { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid var(--line-strong); border-radius: var(--radius); font-size: 1rem; font-family: inherit; box-sizing: border-box; }
 
@@ -145,7 +203,18 @@ body.home-layout > header { background-color: var(--surface); border-bottom: 1px
 .tab-button { background-color: var(--tab-bg); border: none; border-bottom: 3px solid transparent; padding: 12px 16px 11px; font: inherit; font-size: 0.95rem; font-weight: 600; color: var(--muted); cursor: pointer; border-radius: 0; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
 .tab-button:hover { color: var(--ink); border-bottom-color: var(--line-strong); }
 .tab-button.active { color: var(--ink); border-bottom-color: var(--brand); }
-.tab-button { text-decoration: none; }
+.tab-button { position: relative; display: inline-flex; align-items: center; gap: 7px; text-decoration: none; }
+.tab-button:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+/* Tab icons: power-system line icons (images/icons/*.svg, drawn inline), 24x24 grid, stroke 1.75,
+   the same as on guilda-doc; the update log has a meter */
+.tab-icon { flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.tab-button.active .tab-icon { color: var(--brand); }
+@media (prefers-reduced-motion: no-preference) {
+  .tab-button:hover .tab-icon { animation: tab-icon-nudge 0.45s ease; }
+}
+@keyframes tab-icon-nudge { 40% { transform: translateY(-2px); } }
+.heading-icon { display: flex; align-items: center; gap: 10px; }
+.heading-icon > .tab-icon { width: 22px; height: 22px; color: var(--muted); }
 
 /* Page: white, no card. The column is wide enough for the About figures; prose keeps its own measure. */
 body.home-layout main { max-width: 1000px; width: 100%; box-sizing: border-box; margin: 16px auto 48px; min-height: 60vh; }
@@ -188,6 +257,15 @@ body.home-layout main { max-width: 1000px; width: 100%; box-sizing: border-box; 
   .header-logo { height: 44px; margin-bottom: 4px; }
   .tabs { width: 100%; }
   .tab-button { padding: 10px 12px 9px; }
+}
+/* Phones: the six tabs wrap into a 3 x 2 grid, icon above the label, and the header
+   scrolls away with the page instead of covering a third of the screen (as on guilda-doc). */
+@media (max-width: 560px) {
+  body.home-layout > header { position: static; }
+  .tab-content { scroll-margin-top: 240px; }
+  .header-content { padding: 10px 12px 0; }
+  .tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; overflow: visible; }
+  .tab-button { flex-direction: column; justify-content: center; gap: 2px; min-width: 0; padding: 8px 2px 7px; font-size: 0.8rem; line-height: 1.25; white-space: normal; text-align: center; }
 }
 
 /* About tab */
@@ -281,20 +359,20 @@ body.home-layout main { max-width: 1000px; width: 100%; box-sizing: border-box; 
   box-sizing: border-box;
 }
 .developer-link-card:hover { color: var(--text-color); text-decoration: none; }
-.developer-link-card:hover .developer-link-action { color: var(--brand-strong); text-decoration-color: currentColor; }
+.developer-link-card:hover .developer-link-action, .developer-link-card:focus-visible .developer-link-action { border-color: var(--brand); color: var(--brand-strong); }
+.developer-link-card:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .developer-link-number { color: var(--muted); font-family: var(--font-mono); font-size: 1rem; font-weight: 400; line-height: 1.5; }
 .developer-link-content { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
 .developer-link-title { color: var(--ink); font-size: 1rem; font-weight: 600; }
 .developer-link-description { color: var(--ink-2); font-size: 0.93rem; }
-.developer-link-action { color: var(--brand); font-size: 0.9rem; white-space: nowrap; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--brand) 45%, transparent); text-underline-offset: 0.18em; }
+.developer-link-action { justify-self: start; min-height: 32px; padding: 4px 12px; font-size: 0.88rem; }
 @media (max-width: 650px) {
   .developer-link-card { grid-template-columns: 32px minmax(0, 1fr); gap: 4px 12px; padding: 14px 0; }
   .developer-link-action { grid-column: 2; }
 }
 
 body.developer-layout main { max-width: 900px; width: 100%; margin: 16px auto 48px; background: var(--surface); min-height: 60vh; box-sizing: border-box; padding: clamp(16px, 5vw, 40px); }
-.developer-back-button { display: inline-block; margin: 0 0 22px; padding: 0; border: 0; background: none; color: var(--brand); cursor: pointer; font: inherit; font-size: 0.9rem; }
-.developer-back-button:hover { color: var(--brand-strong); }
+.developer-back-button { margin: 0 0 22px; min-height: 34px; padding: 4px 12px; font-size: 0.9rem; }
 .developer-layout .page-lead { color: var(--muted); font-size: 1.05rem; }
 
 /* Japanese/English switch (doc-lang.js). Translatable content is written as sibling
@@ -322,14 +400,16 @@ html[data-lang="ja"] body [lang="en"] { display: none !important; }
   body.developer-layout { --doc-side-w: 228px; --doc-side-gap: 24px; }
   body.developer-layout main { width: calc(100% - var(--doc-side-w) - 3 * var(--doc-side-gap)); margin-left: calc(var(--doc-side-w) + 2 * var(--doc-side-gap)); margin-right: auto; }
   body.developer-layout main .dev-toc { display: none; }
-  .dg main .dev-toc + h2, .dg main .dev-toc + .dg-callout + h2 { border-top: 1px solid var(--dg-line); }
+  .dg main .dev-toc + h2::before, .dg main .dev-toc + .dg-callout + h2::before { display: block; }
   .doc-side { position: fixed; top: 32px; bottom: 24px; left: var(--doc-side-gap); z-index: 10; display: flex; flex-direction: column; gap: 20px; width: var(--doc-side-w); font-size: 0.86rem; line-height: 1.4; }
   .doc-side ul { margin: 0; padding: 0; list-style: none; }
   .doc-side a { display: block; padding: 4px 10px; border-left: 2px solid transparent; color: var(--ink-2); text-decoration: none; }
   .doc-side a:hover { color: var(--brand); text-decoration: none; }
   .doc-side-pages { position: relative; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
   .doc-side-pages a.is-current { border-left-color: var(--brand); color: var(--ink); font-weight: 600; }
-  .doc-side a.doc-side-home { margin-bottom: 8px; padding-left: 12px; color: var(--ink); font-weight: 600; }
+  .doc-side a.doc-side-home { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding-left: 12px; color: var(--ink); font-weight: 600; }
+  .doc-side a.doc-side-home .tab-icon { width: 18px; height: 18px; color: var(--muted); }
+  .doc-side a.doc-side-home:hover .tab-icon { color: var(--brand); }
   .doc-side-group + .doc-side-group { margin-top: 12px; }
   .doc-side-label { margin: 0 0 4px; padding-left: 12px; color: var(--muted); font-size: 0.82rem; font-weight: 400; }
   .doc-side-toc { flex: 0 1 auto; max-height: 45%; overflow-y: auto; padding-top: 16px; border-top: 1px solid var(--line); }
@@ -544,8 +624,9 @@ html[data-lang="ja"] body [lang="en"] { display: none !important; }
 
 .inheritance-legend {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 18px;
+  gap: 4px 18px;
   margin: 10px 0 14px;
   color: var(--muted);
   font-size: 0.9rem;
@@ -554,6 +635,7 @@ html[data-lang="ja"] body [lang="en"] { display: none !important; }
 .inheritance-legend-item {
   display: inline-flex;
   align-items: center;
+  white-space: nowrap;
 }
 
 .inheritance-legend .tree-node-marker {
@@ -612,10 +694,15 @@ html[data-lang="ja"] body [lang="en"] { display: none !important; }
 .auxiliary-table th:nth-child(2),
 .auxiliary-table td:nth-child(2) { width: 65%; }
 
+/* Phones: one column; the summary goes under the class name, indented like it */
+.tree-inline-summary { display: none; }
 @media (max-width: 700px) {
-  .inheritance-table,
-  .auxiliary-table {
-    min-width: 850px;
+  .inheritance-table, .auxiliary-table { table-layout: auto; }
+  .inheritance-table th:nth-child(2), .inheritance-table td:nth-child(2) { display: none; }
+  .inheritance-table th:first-child, .inheritance-table td:first-child { width: auto; }
+  .tree-inline-summary {
+    display: block; margin: 1px 0 2px; padding-left: calc(var(--tree-depth, 0) * 22px + 18px);
+    color: var(--muted); font-size: 0.76rem; line-height: 1.45; white-space: normal;
   }
 }
 
@@ -860,8 +947,9 @@ body.doc-layout table td:nth-child(1) {
 body.doc-layout table td,
 body.doc-layout table th {
   max-width: 420px;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
+body.doc-layout table td code { overflow-wrap: anywhere; }
 
 .doc-layout .compact-table td,
 .doc-layout .compact-table th {
@@ -1218,12 +1306,16 @@ body.doc-layout .meta-box table th {
 }
 
 /* Sections */
-.dg main h2 { margin: var(--dg-s7) 0 var(--dg-s4); padding: var(--dg-s5) 0 0; border-bottom: 0; border-top: 1px solid var(--dg-line); font-size: 1.3rem; }
+.dg main h2 { margin: var(--dg-s7) 0 var(--dg-s4); padding: 0; border: 0; font-size: 1.3rem; }
 .dg main h3 { margin: var(--dg-s5) 0 var(--dg-s2); color: var(--dg-ink); font-size: 1.05rem; }
 .dg main code { overflow-wrap: anywhere; }
+/* Table cells of the developer pages keep about six characters: a code name such
+   as Tolerance stays whole, and a wide table scrolls in its .table-scroll box */
+.dg main td, .dg main th { min-width: 6em; }
 .dg main h3 code, .dg .dg-item-title code, .dg .dg-row-head code { background: var(--code-bg); color: inherit; }
 .dg .dev-toc { margin: var(--dg-s5) 0 0; padding: 0 0 var(--dg-s3); gap: var(--dg-s2) var(--dg-s5); background: none; border: 0; border-bottom: 1px solid var(--dg-line); border-radius: 0; }
 .dg .dev-toc + h2, .dg .dev-toc + .dg-callout + h2 { border-top: 0; }
+.dg .dev-toc + h2::before, .dg .dev-toc + .dg-callout + h2::before { display: none; }
 /* main is a size container (dg-main): side-by-side parts below decide from the
    width they actually get, not from the screen width */
 .dg main { container: dg-main / inline-size; }
@@ -1236,7 +1328,7 @@ body.doc-layout .meta-box table th {
 
 /* Compact tables: one row per item; below 640px each row stacks, td[data-label] shows its column name */
 .dg .dg-table { margin: var(--dg-s3) 0 var(--dg-s5); border-radius: 0; box-shadow: none; font-size: 0.92rem; line-height: 1.5; }
-.dg .dg-table th { min-width: 0; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--dg-line); background: none; color: var(--dg-muted); font-size: 0.85rem; font-weight: 400; }
+.dg .dg-table th { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--dg-line); background: none; color: var(--dg-muted); font-size: 0.85rem; font-weight: 400; }
 .dg .dg-table td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--dg-line); vertical-align: top; }
 .dg .dg-table tr:hover { background: none; }
 .dg .dg-table td:first-child { color: var(--dg-ink); font-weight: 600; }
@@ -1786,3 +1878,25 @@ a.lec-card:hover b { color: var(--brand-strong); text-decoration: underline; tex
   body.lec main.lec-main { border: 0; margin: 0; width: auto; max-width: none; }
   .lec-toc, .lec-pager { display: none; }
 }
+
+
+/* =========================================
+   Phones: the sidebar of class.html, method.html and updatelog.html stacks above
+   the page in a compact form (small logo, the way back, the folded source tree,
+   this page's sections in one wrapping line, the method list folded)
+========================================= */
+@media (max-width: 899px) {
+  body.doc-layout #sidebar { padding: 12px 16px 4px !important; border-bottom: 1px solid var(--line); }
+  body.doc-layout #sidebar > a:first-child { width: 120px; margin-bottom: 10px !important; }
+  body.doc-layout #sidebar img { max-width: 120px; }
+  body.doc-layout #sidebar .btn { width: auto !important; margin-bottom: 12px !important; padding: 4px 12px; font-size: 0.88rem; }
+  body.doc-layout #sidebar h3 { margin: 6px 0 2px; font-size: 0.9rem; }
+  body.doc-layout #page-toc { display: flex; flex-wrap: wrap; gap: 0 16px; margin: 0 0 8px; }
+  body.doc-layout .ref-tree-panel { margin-bottom: 8px; }
+  body.doc-layout #main-content { padding: 16px; }
+}
+.ref-method-nav-panel > summary { cursor: pointer; }
+.ref-method-nav-panel > summary.ref-nav-title { display: list-item; color: var(--ink); font-size: 1rem; font-weight: 600; }
+
+/* Sidebar buttons of class.html, method.html and updatelog.html: centred in their full width */
+body.doc-layout #sidebar .btn { justify-content: center; }

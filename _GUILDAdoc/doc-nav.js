@@ -2,6 +2,7 @@
 // Builds a page list from database/list_developer.js and an "On this page" list
 // from the page's <nav class="dev-toc">. style.css shows them only where there is
 // room beside the main column; narrower screens keep the inline .dev-toc.
+// It also wraps the tables of the page in a sideways-scrolling box.
 (function () {
   'use strict';
 
@@ -17,6 +18,9 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
   }
+
+  // Controller-block line icon of the For Developer tab (images/icons/controller.svg).
+  const CONTROLLER_ICON = '<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="7" y="6.5" width="10" height="11" rx="1.5"/><path d="M1.5 12H7M4.5 9.5 7 12l-2.5 2.5M17 12h5.5M20 9.5l2.5 2.5-2.5 2.5M9.5 12h5M11 9.5h2M10.5 14.5h3"/></svg>';
 
   function bilingual(en, ja) {
     return `<span lang="en">${escapeHtml(en)}</span><span lang="ja">${escapeHtml(ja || en)}</span>`;
@@ -117,9 +121,24 @@
     update();
   }
 
+  // A table wider than the column scrolls inside its own box (.table-scroll in
+  // style.css), so the page never scrolls sideways and columns keep a readable width.
+  function wrapTables(main) {
+    main.querySelectorAll('table').forEach((table) => {
+      const parent = table.parentElement;
+      if (!parent || parent.classList.contains('table-scroll')) return;
+      if (/(auto|scroll)/.test(window.getComputedStyle(parent).overflowX)) return;
+      const box = document.createElement('div');
+      box.className = 'table-scroll';
+      parent.insertBefore(box, table);
+      box.appendChild(table);
+    });
+  }
+
   async function mount() {
     const main = document.querySelector('body.developer-layout main');
     if (!main || document.querySelector('.doc-side')) return;
+    wrapTables(main);
 
     const aside = document.createElement('aside');
     aside.className = 'doc-side';
@@ -131,7 +150,7 @@
       nav.className = 'doc-side-pages';
       nav.setAttribute('aria-label', 'For Developer pages');
       nav.innerHTML = `
-        <a class="doc-side-home" href="${escapeHtml(new URL('index.html#tab-developer', docRoot).href)}">${bilingual('For Developer', '開発者向け')}</a>
+        <a class="doc-side-home" href="${escapeHtml(new URL('index.html#tab-developer', docRoot).href)}">${CONTROLLER_ICON}${bilingual('For Developer', '開発者向け')}</a>
         ${pageListHtml(pages)}`;
       aside.appendChild(nav);
     }
