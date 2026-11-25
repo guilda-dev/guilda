@@ -4,9 +4,9 @@
           <marker id="cl-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:#1B2127"/></marker>
           <marker id="cl-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:#5A6570"/></marker>
         </defs>
-        <rect x="200" y="20" width="200" height="56" rx="4" style="fill:#0059A7"/>
+        <rect x="200" y="20" width="200" height="56" rx="4" style="fill:#1A1A1A"/>
         <text x="300" y="46" text-anchor="middle" font-size="16" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#FFFFFF">PowerNetwork</text>
-        <text x="300" y="65" text-anchor="middle" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#C7D8EA">base: Hz · baseMVA</text>
+        <text x="300" y="65" text-anchor="middle" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#F5F5F4">base: Hz · baseMVA</text>
 
         <rect x="20" y="20" width="130" height="56" rx="4" stroke-width="1.5" stroke-dasharray="5 4" style="fill:#F5F6F7; stroke:#5A6570"/>
         <text x="85" y="44" text-anchor="middle" font-size="13" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#5A6570">solver_*</text>
@@ -25,10 +25,10 @@
         <text x="306" y="106" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1B2127">a_Branch</text>
         <text x="410" y="106" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1B2127">a_GlobalController</text>
 
-        <rect x="20" y="150" width="140" height="48" rx="4" stroke-width="1.5" style="fill:#FFFFFF; stroke:#0059A7"/>
-        <text x="90" y="179" text-anchor="middle" font-size="15" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#0059A7">Bus ×N</text>
-        <rect x="230" y="150" width="140" height="48" rx="4" stroke-width="1.5" style="fill:#FFFFFF; stroke:#0059A7"/>
-        <text x="300" y="179" text-anchor="middle" font-size="15" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#0059A7">Branch ×M</text>
+        <rect x="20" y="150" width="140" height="48" rx="4" stroke-width="2" style="fill:#FFFFFF; stroke:#1A1A1A"/>
+        <text x="90" y="179" text-anchor="middle" font-size="15" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1A1A1A">Bus ×N</text>
+        <rect x="230" y="150" width="140" height="48" rx="4" stroke-width="2" style="fill:#FFFFFF; stroke:#1A1A1A"/>
+        <text x="300" y="179" text-anchor="middle" font-size="15" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1A1A1A">Branch ×M</text>
         <rect x="440" y="150" width="140" height="48" rx="4" stroke-width="1.5" style="fill:#FFFFFF; stroke:#1B2127"/>
         <text x="510" y="179" text-anchor="middle" font-size="13" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1B2127">GlobalController</text>
 

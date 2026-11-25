@@ -532,7 +532,7 @@
         <div style="font-size: 0.9rem; color: var(--muted); margin-bottom: 10px;">
           <a href="${loader.pageUrl('index.html')}">${tr('Home', 'ホーム')}</a> &gt; <a href="${loader.pageUrl('index.html', 'tab-reference')}">${tr('Reference', 'リファレンス')}</a> &gt; ${escapeHtml(name)}
         </div>
-        <h1 style="font-size: 2.2rem; margin-bottom: 8px; word-break: break-word;">${escapeHtml(name)}</h1>
+        <h1 style="font-size: 1.8rem; margin-bottom: 8px; word-break: break-word;">${escapeHtml(name)}</h1>
         <div class="ref-badges">${badges}</div>
         ${source ? `<p class="ref-source">${tr('Source:', 'ソース:')} <code>${escapeHtml(source)}</code></p>` : ''}
       `;
@@ -544,6 +544,9 @@
       }
       const overview = [
         ['role', tr('Role', '役割'), renderRole(c, name)],
+        ['references', tr('References', '参考文献'), firstText(c.Citations) ? `
+          <h2 id="references">${tr('References', '参考文献')}</h2>
+          <div class="markdown-content">${renderMarkdown(c.Citations)}</div>` : ''],
         ['examples', tr('Examples', '使用例'), firstText(examples) ? `
           <h2 id="examples">${tr('Examples', '使用例')}</h2>
           <div class="markdown-content">${renderMarkdown(examples)}</div>` : ''],

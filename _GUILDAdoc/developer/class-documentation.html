@@ -15,15 +15,15 @@
     .cd-where { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--dg-s4); }
     .cd-where .cd-code { padding: var(--dg-s3); font-size: 0.74rem; }
     @media (max-width: 760px) { .cd-where { grid-template-columns: minmax(0, 1fr); gap: var(--dg-s5); } }
-    .cd-pin { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin: 0 2px; border-radius: 50%; background: var(--dg-warn); color: var(--dg-ink); font: bold 0.68rem/1 var(--dg-mono); vertical-align: 1px; white-space: normal; }
+    .cd-pin { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin: 0 2px; box-sizing: border-box; border-radius: 50%; border: 1px solid var(--dg-warn-ink); color: var(--dg-warn-ink); font: 600 0.68rem/1 var(--dg-mono); vertical-align: 1px; white-space: normal; }
     .cd-page { overflow: hidden; border: 1px solid var(--dg-line); border-radius: var(--radius); background: var(--dg-card); font-size: 0.82rem; line-height: 1.5; }
     .cd-page-bar { padding: 6px var(--dg-s3); border-bottom: 1px solid var(--dg-line); background: var(--surface-subtle); color: var(--dg-muted); font: 0.72rem var(--dg-mono); }
     .cd-page-body { padding: var(--dg-s3) var(--dg-s4) var(--dg-s4); }
     .cd-page h4 { margin: 0 0 2px; color: var(--dg-accent); font: bold 1.2rem/1.3 var(--dg-mono); }
-    .cd-page-label { display: block; margin: var(--dg-s3) 0 4px; color: var(--dg-muted); font-size: 0.68rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+    .cd-page-label { display: block; margin: var(--dg-s3) 0 4px; color: var(--dg-muted); font-size: 0.78rem; }
     .cd-page table { display: table; width: 100%; margin: 0; border-collapse: collapse; table-layout: fixed; font-size: 0.78rem; box-shadow: none; }
     .cd-page th, .cd-page td { padding: 4px 6px; border-bottom: 1px solid var(--dg-line); text-align: left; vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
-    .cd-page th { min-width: 0; background: var(--dg-accent); color: var(--dg-card); font-weight: normal; }
+    .cd-page th { min-width: 0; color: var(--dg-muted); font-weight: normal; border-bottom-color: var(--line-strong); }
     .cd-page .dg-mono { font-size: 0.95em; overflow-wrap: anywhere; }
     /* Tag map: one row per tag, one column per target; stays a table at every width */
     .dg .cd-map { display: table; width: 100%; }
@@ -330,6 +330,7 @@
       <thead><tr><th><span lang="en">Section</span><span lang="ja">部分</span></th><th><span lang="en">Built from</span><span lang="ja">作成元</span></th></tr></thead>
       <tbody>
         <tr><td><span lang="en">Role</span><span lang="ja">役割</span></td><td data-label="Built from" data-label-ja="作成元"><span lang="en">The H1 line as the lead, the description, then the figure (see <a href="#image">Figure</a>).</span><span lang="ja">冒頭に H1 行、続いて説明、最後に図を表示します（<a href="#image">図</a>を参照）。</span></td></tr>
+        <tr><td><span lang="en">References</span><span lang="ja">参考文献</span></td><td data-label="Built from" data-label-ja="作成元"><span lang="en"><code>&lt;@Citations&gt;</code> of the class itself (not inherited).</span><span lang="ja">そのクラス自身の <code>&lt;@Citations&gt;</code>（継承しません）。</span></td></tr>
         <tr><td><span lang="en">Examples</span><span lang="ja">使用例</span></td><td data-label="Built from" data-label-ja="作成元"><span lang="en"><code>&lt;@Examples&gt;</code>.</span><span lang="ja"><code>&lt;@Examples&gt;</code>。</span></td></tr>
         <tr><td><span lang="en">Properties</span><span lang="ja">プロパティ</span></td><td data-label="Built from" data-label-ja="作成元"><span lang="en">All properties, own and inherited, in one table by property group, with search, the Group / Inherited / Public only filters and one checkbox per column (Description, Details, Unit, Type, Size, Default, Validators, GetAccess, SetAccess, Attributes, Defined in), remembered per table. Access values show as coloured tags. By default Description and Details are shown: under each comment, Points to (the class of a reference property such as <code>a_*</code>), Unit / size (<code>[unit]</code> and the declaration), Set by (the methods that assign it, from the call graph, and its SetAccess) and Edit makes stale (<code>&lt;@Stale&gt;</code>). Then the properties of other classes that point to this class.</span><span lang="ja">自身のプロパティと継承したプロパティを、プロパティのグループごとに 1 つの表にまとめます。検索、表示の切り替え（グループ表示、継承メンバー、public だけ）、列ごとのチェックボックス（説明、詳細、単位、型、サイズ、既定値、検証関数、GetAccess、SetAccess、属性、定義元）があり、チェックの状態は表ごとに記憶されます。アクセスは色付きのタグで示します。既定では説明と詳細を表示し、各コメントの下に、参照先（<code>a_*</code> などの参照プロパティのクラス）、単位 / サイズ（<code>[unit]</code> と宣言）、設定元（代入するメソッドを呼び出しグラフから求めたものと SetAccess）、編集で無効化されるもの（<code>&lt;@Stale&gt;</code>）を示します。最後に、このクラスを指す他クラスのプロパティを並べます。</span></td></tr>
         <tr><td><span lang="en">Methods</span><span lang="ja">メソッド</span></td><td data-label="Built from" data-label-ja="作成元"><span lang="en">All methods in one table with the same tools, by method group: the subclass contract (abstract methods) first, then the groups in source order. Columns: Summary, Details, Signature, Access, Attributes, Defined in. By default Summary and Details are shown: the H1 line and Called by (the call graph).</span><span lang="ja">すべてのメソッドを、プロパティと同じ機能を持つ 1 つの表に、メソッドのグループごとにまとめます。先頭にサブクラスの契約（抽象メソッド）を置き、続けてソースに現れる順にグループを並べます。列は、概要、詳細、シグネチャ、アクセス、属性、定義元です。既定では概要と詳細を表示し、H1 行と、呼び出しグラフから求めた呼び出し元を示します。</span></td></tr>
@@ -400,12 +401,13 @@
 
     <!-- ============================== TAGS ============================== -->
     <h2 id="tags"><span lang="en">Tags to use</span><span lang="ja">使うタグ</span></h2>
-    <p class="dg-lead-in" lang="en">A tag is only for what neither the code nor the help conventions can say. There are five.</p>
-    <p class="dg-lead-in" lang="ja">タグは、コードからもヘルプの慣例からも表せない情報にだけ使います。タグは全部で 5 種類です。</p>
+    <p class="dg-lead-in" lang="en">A tag is only for what neither the code nor the help conventions can say. There are six.</p>
+    <p class="dg-lead-in" lang="ja">タグは、コードからもヘルプの慣例からも表せない情報にだけ使います。タグは全部で 6 種類です。</p>
     <table class="dg-table cd-map" aria-label="Tags for classes, properties and methods">
       <thead><tr><th><span lang="en">Tag</span><span lang="ja">タグ</span></th><th><span lang="en">Class</span><span lang="ja">クラス</span></th><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">Use when</span><span lang="ja">使う場面</span></th></tr></thead>
       <tbody>
         <tr><td>Examples</td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span lang="en">A short usage example helps. Markdown with fenced code blocks.</span><span lang="ja">短い使用例が役立つときに使います。フェンス付きコードブロックを含む Markdown で書きます。</span></td></tr>
+        <tr><td>Citations</td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td></td><td><span lang="en">The class is based on literature: cite it, one Markdown bullet per reference, plain text in IEEE-like style, with a DOI or URL as a Markdown link. Japanese titles stay in Japanese. Write only the class's own citations: they are not inherited by subclasses. Shown as References on the class page.</span><span lang="ja">クラスが文献に基づくときに、その文献を挙げます。1 つの文献を Markdown の箇条書き 1 項目にし、IEEE に準じた書式のプレーンテキストで書きます。DOI や URL は Markdown のリンクにします。日本語の題名は日本語のまま書きます。そのクラス自身の文献だけを書きます。サブクラスには継承されません。クラスのページの参考文献に表示します。</span></td></tr>
         <tr><td>Deprecated</td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span lang="en">The member will be removed. The text names the replacement.</span><span lang="ja">そのメンバーを削除する予定のときに使います。本文に代わりの手段を書きます。</span></td></tr>
         <tr><td>Type</td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td><span lang="en">The declaration cannot state the class, for example an untyped property that holds a <code>SolverPF</code>.</span><span lang="ja">宣言でクラスを示せないときに使います。たとえば、<code>SolverPF</code> を保持する型指定のないプロパティです。</span></td></tr>
         <tr><td>Stale</td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td><span lang="en">An edit of the property makes something out of date, e.g. <code>equilibrium</code>, <code>handles equilibrium</code>, <code>nothing (logged)</code>. Shown as "Edit makes stale" in Owned data.</span><span lang="ja">プロパティを編集すると古くなるものがあるときに使います。例: <code>equilibrium</code>、<code>handles equilibrium</code>、<code>nothing (logged)</code>。値は保持データの「編集で無効化」に表示されます。</span></td></tr>
@@ -434,6 +436,12 @@
 <pre class="cd-code" style="margin-top:8px">solver_PF  <span class="cd-c">% Solver of calculate_powerflow. &lt;@Type&gt; SolverPF &lt;@Stale&gt; nothing</span></pre>
       </div>
     </div>
+    <span class="dg-kicker" style="margin-top:12px"><span lang="en">Class comment with citations</span><span lang="ja">文献を挙げるクラスのコメント</span></span>
+<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% Synchronous generator, one-axis model.</span>
+<span class="cd-c">%</span>
+<span class="cd-c">% &lt;@Citations&gt;</span>
+<span class="cd-c">% - P. W. Sauer and M. A. Pai, *Power System Dynamics and Stability*, Prentice Hall, 1998.</span>
+<span class="cd-c">% - R. D. Zimmerman et al., "MATPOWER: ...," *IEEE Trans. Power Syst.*, vol. 26, no. 1, pp. 12–19, 2011, doi: [10.1109/TPWRS.2010.2051168](https://doi.org/10.1109/TPWRS.2010.2051168).</span></pre>
 
     <h3 id="removed"><span lang="en">Unsupported tags</span><span lang="ja">使わないタグ</span></h3>
     <p lang="en">The exporter recognizes these tags and warns with what to write instead. With <code>"strict", true</code>: errors.</p>
@@ -624,8 +632,9 @@ r_Sbase (1,1) double = 100</pre>
   <script>
     (function () {
       // kind: text (one comment line per input line), code (Examples, fenced if
-      // not already), rows (an arguments block). declared: hidden while the
-      // "declaration states the class" switch is on.
+      // not already), citations (one bullet per line), rows (an arguments
+      // block). declared: hidden while the "declaration states the class"
+      // switch is on.
       var FIELD_SETS = {
         class: {
           pasteHint: 'Paste this directly under the "classdef ClassName" line, before any properties or methods blocks.',
@@ -635,6 +644,7 @@ r_Sbase (1,1) double = 100</pre>
             { key: 'desc', label: 'Description', rows: 3, placeholder: 'Following comment lines. Markdown is supported.', label_ja: '説明', placeholder_ja: 'H1 行に続くコメント行です。Markdown が使えます。' },
             { key: 'seeAlso', label: 'See also', rows: 1, placeholder: 'e.g. PowerNetwork, Component', label_ja: '関連項目（See also）', placeholder_ja: '例: PowerNetwork, Component' },
             { key: 'examples', label: '<@Examples>', kind: 'code', rows: 3, placeholder: 'MATLAB code; it is put in a ```matlab block.', placeholder_ja: 'MATLAB コードを書きます。```matlab ブロックに入ります。' },
+            { key: 'citations', label: '<@Citations>', kind: 'citations', rows: 3, placeholder: 'Literature the class is based on (own only, not inherited): one reference per line, one bullet each, IEEE-like; DOI/URL as a Markdown link.', placeholder_ja: 'クラスの基になった文献を書きます（自身の文献だけで、継承されません）。1 行に 1 件、1 件が箇条書きの 1 項目になります。IEEE に準じた書式で、DOI や URL は Markdown のリンクにします。' },
             { key: 'deprecated', label: '<@Deprecated>', rows: 1, placeholder: 'Leave empty unless deprecated; name the replacement.', placeholder_ja: '非推奨でなければ空欄のままにします。非推奨なら代わりの手段を書きます。' }
           ]
         },
@@ -932,6 +942,10 @@ r_Sbase (1,1) double = 100</pre>
         if (see) head.push('%', see);
 
         tags = tags.concat(exampleLines(value('examples')));
+        var citations = lines(value('citations')).filter(function (l) { return l.trim() !== ''; });
+        if (citations.length) {
+          tags = tags.concat(['% <@Citations>'], citations.map(function (l) { return '% ' + l.trim().replace(/^(?:[-*+]\s+)?/, '- '); }));
+        }
         tags = tags.concat(tagLines('Type', value('type')));
         tags = tags.concat(tagLines('Stale', value('stale')));
         tags = tags.concat(tagLines('Group', value('group')));

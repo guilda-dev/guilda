@@ -8,14 +8,14 @@
   <link rel="stylesheet" href="../style.css">
   <style>
     /* Folder Structure page only (fs-*); shared parts are dg-* in style.css */
-    .fs-c-guilda { --fs-c: var(--brand); }
-    .fs-c-system { --fs-c: var(--brand); }
-    .fs-c-object { --fs-c: var(--brand); }
+    .fs-c-guilda { --fs-c: var(--ink); }
+    .fs-c-system { --fs-c: var(--ink); }
+    .fs-c-object { --fs-c: var(--ink); }
     .fs-c-tutorial { --fs-c: var(--ink); }
     .fs-c-doc { --fs-c: var(--muted); }
     .fs-c-other { --fs-c: var(--muted); }
     .fs-figure svg { max-width: 540px; margin: 0 auto; }
-    .fs-name { display: block; color: var(--fs-c); font: bold 1.05rem/1.4 var(--dg-mono); overflow-wrap: anywhere; }
+    .fs-name { display: block; color: var(--fs-c); font: 600 1.05rem/1.4 var(--dg-mono); overflow-wrap: anywhere; }
     .fs-name + .dg-badge, .fs-name ~ .dg-badge { margin: 6px 6px 0 0; }
     .fs-folders .dg-row { grid-template-columns: minmax(0, 13rem) minmax(0, 1fr); }
     .fs-folders dl { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; margin: var(--dg-s2) 0 0; }
@@ -23,9 +23,9 @@
     .fs-folders dd ul { margin: 2px 0 0; padding-left: 20px; }
     .fs-place.dg-rows.is-arrow .dg-row { grid-template-columns: minmax(0, 15rem) 28px minmax(0, 1fr); }
     .fs-place .fs-dest-note + .fs-dest-note { margin-top: 2px; }
-    .fs-folders dt { padding-top: 2px; color: var(--fs-c); font-size: 0.75rem; font-weight: bold; letter-spacing: 0.04em; text-transform: uppercase; }
+    .fs-folders dt { padding-top: 2px; color: var(--dg-muted); font-size: 0.85rem; }
     .fs-folders dd { margin: 0; }
-    .fs-dest { display: block; color: var(--fs-c); font: bold 0.95rem/1.5 var(--dg-mono); overflow-wrap: anywhere; }
+    .fs-dest { display: block; color: var(--fs-c); font: 600 0.95rem/1.5 var(--dg-mono); overflow-wrap: anywhere; }
     .fs-dest-note { display: block; color: var(--dg-muted); font-size: 0.88rem; }
     .fs-yn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; align-items: baseline; }
     .fs-gen { margin: var(--dg-s4) 0; }
@@ -66,11 +66,11 @@
         <title lang="ja">GUILDA のトップレベルのフォルダと依存関係を示す図です。</title>
         <defs>
           <marker id="fs-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker>
-          <marker id="fs-ah-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--brand)"/></marker>
+          <marker id="fs-ah-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--ink)"/></marker>
         </defs>
 
         <!-- @GUILDA -->
-        <rect x="140" y="10" width="200" height="64" rx="4" style="fill:var(--brand)"/>
+        <rect x="140" y="10" width="200" height="64" rx="4" style="fill:var(--ink)"/>
         <text x="240" y="38" text-anchor="middle" font-size="18" font-weight="bold" class="dg-mono" style="fill:var(--surface)">@GUILDA</text>
         <text lang="en" x="240" y="60" text-anchor="middle" font-size="12" style="fill:var(--on-brand-muted)">entry point · environment</text><text lang="ja" x="240" y="60" text-anchor="middle" font-size="12" style="fill:var(--on-brand-muted)">エントリポイント · 環境設定</text>
 
@@ -81,24 +81,24 @@
         <text lang="en" x="18" y="34" font-size="11" style="fill:var(--muted)">opens</text><text lang="ja" x="18" y="34" font-size="11" style="fill:var(--muted)">開く</text>
 
         <!-- path setup -->
-        <path class="dg-anim-dash" d="M240 74V118" fill="none" stroke-width="2" marker-end="url(#fs-ah-p)" style="stroke:var(--brand)"/>
-        <text lang="en" x="232" y="100" text-anchor="end" font-size="12" font-weight="bold" style="fill:var(--brand)">sets up the path</text><text lang="ja" x="232" y="100" text-anchor="end" font-size="12" font-weight="bold" style="fill:var(--brand)">パスを設定</text>
+        <path class="dg-anim-dash" d="M240 74V118" fill="none" stroke-width="2" marker-end="url(#fs-ah-p)" style="stroke:var(--ink)"/>
+        <text lang="en" x="232" y="100" text-anchor="end" font-size="12" font-weight="bold" style="fill:var(--ink)">sets up the path</text><text lang="ja" x="232" y="100" text-anchor="end" font-size="12" font-weight="bold" style="fill:var(--ink)">パスを設定</text>
 
         <!-- MATLAB path region -->
-        <rect x="24" y="124" width="446" height="262" rx="4" stroke-width="1.5" stroke-dasharray="6 4" style="fill:var(--surface); stroke:var(--brand)"/>
+        <rect x="24" y="124" width="446" height="262" rx="4" stroke-width="1.5" stroke-dasharray="6 4" style="fill:var(--surface); stroke:var(--ink)"/>
         <rect x="34" y="116" width="96" height="18" style="fill:var(--surface-subtle)"/>
-        <text lang="en" x="38" y="129" font-size="12" font-weight="bold" style="fill:var(--brand)">MATLAB path</text><text lang="ja" x="38" y="129" font-size="12" font-weight="bold" style="fill:var(--brand)">MATLAB パス</text>
+        <text lang="en" x="38" y="129" font-size="12" font-weight="bold" style="fill:var(--ink)">MATLAB path</text><text lang="ja" x="38" y="129" font-size="12" font-weight="bold" style="fill:var(--ink)">MATLAB パス</text>
 
-        <rect x="44" y="148" width="206" height="72" rx="4" stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--brand)"/>
-        <text x="147" y="178" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--brand)">_GUILDAobject</text>
+        <rect x="44" y="148" width="206" height="72" rx="4" stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--ink)"/>
+        <text x="147" y="178" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--ink)">_GUILDAobject</text>
         <text lang="en" x="147" y="200" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">concrete models</text><text lang="ja" x="147" y="200" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">具体的なモデル</text>
 
-        <rect x="44" y="290" width="206" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface-subtle); stroke:var(--brand)"/>
-        <text x="147" y="320" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--brand)">_GUILDAsystem</text>
+        <rect x="44" y="290" width="206" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface-subtle); stroke:var(--ink)"/>
+        <text x="147" y="320" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--ink)">_GUILDAsystem</text>
         <text lang="en" x="147" y="342" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">framework + analysis</text><text lang="ja" x="147" y="342" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">フレームワーク + 解析</text>
 
-        <path class="dg-anim-dash" d="M147 220V286" fill="none" stroke-width="2" marker-end="url(#fs-ah)" style="stroke:var(--brand)"/>
-        <text lang="en" x="156" y="250" font-size="12" font-weight="bold" style="fill:var(--brand)">builds on</text><text lang="ja" x="156" y="250" font-size="12" font-weight="bold" style="fill:var(--brand)">を基盤とする</text>
+        <path class="dg-anim-dash" d="M147 220V286" fill="none" stroke-width="2" marker-end="url(#fs-ah)" style="stroke:var(--ink)"/>
+        <text lang="en" x="156" y="250" font-size="12" font-weight="bold" style="fill:var(--ink)">builds on</text><text lang="ja" x="156" y="250" font-size="12" font-weight="bold" style="fill:var(--ink)">を基盤とする</text>
         <text lang="en" x="156" y="266" font-size="11" style="fill:var(--err)">never the reverse</text><text lang="ja" x="156" y="266" font-size="11" style="fill:var(--err)">逆方向は不可</text>
 
         <rect x="276" y="148" width="180" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface); stroke:var(--ink)"/>
@@ -194,7 +194,7 @@
       <div class="dg-row fs-c-doc">
         <div><code class="fs-name">_GUILDAdocPages/</code><span class="dg-badge is-muted"><span lang="en">submodule · not on path</span><span lang="ja">サブモジュール · パス外</span></span></div>
         <div>
-          <p><span lang="en">The public documentation site <a href="https://guilda-dev.github.io/guilda-doc/">guilda-dev.github.io/guilda-doc</a>, the repository guilda-dev/guilda-doc checked out as a git submodule.</span><span lang="ja">公開のドキュメントサイト <a href="https://guilda-dev.github.io/guilda-doc/">guilda-dev.github.io/guilda-doc</a> です。リポジトリ guilda-dev/guilda-doc を git のサブモジュールとしてチェックアウトします。</span></p>
+          <p><span lang="en">The public documentation site <a href="https://guilda-dev.github.io/guilda-doc-preview/">guilda-dev.github.io/guilda-doc-preview</a>, the repository guilda-dev/guilda-doc checked out as a git submodule.</span><span lang="ja">公開のドキュメントサイト <a href="https://guilda-dev.github.io/guilda-doc-preview/">guilda-dev.github.io/guilda-doc-preview</a> です。リポジトリ guilda-dev/guilda-doc を git のサブモジュールとしてチェックアウトします。</span></p>
           <dl>
             <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">Home, About, Getting Started and Tutorial (<code>index.html</code>), the lecture notes (<code>lecture/</code>), their images and lists (<code>list_Lectures.js</code>, <code>list_Tutorials.js</code>) and its own copies of the shared styles and scripts. No class reference or developer pages: its header links to those on this repository's site.</span><span lang="ja">Home、About、Getting Started、Tutorial（<code>index.html</code>）、講義ノート（<code>lecture/</code>）、その画像と一覧（<code>list_Lectures.js</code>、<code>list_Tutorials.js</code>）、共通のスタイルとスクリプトの自前のコピーです。クラスリファレンスと開発者向けのページは置かず、ヘッダーからこのリポジトリのサイトのものにリンクします。</span></dd>
             <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Edited and committed inside the submodule. No code opens it by path: the Live Scripts link to the online lecture notes. Pushed from inside the submodule (see <a href="git-workflow.html#publish-docs">Publishing the documentation</a>).</span><span lang="ja">サブモジュールの中で編集してコミットします。コードからパスで開くことはありません。ライブスクリプトはオンラインの講義ノートにリンクします。プッシュもサブモジュールの中から行います（<a href="git-workflow.html#publish-docs">ドキュメントの公開</a>を参照）。</span></dd>
