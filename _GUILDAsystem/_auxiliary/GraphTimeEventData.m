@@ -1,4 +1,4 @@
-classdef GraphTimeEventData < event.EventData
+classdef GraphTimeEventData < event.EventData & auxiliary
 % Data of the event TimeChanged of a graph: the sample it shows after set_time.
 %
 % A graph (GraphBase) raises TimeChanged and calls its TimeChangedFcn as fcn(G, data) with
