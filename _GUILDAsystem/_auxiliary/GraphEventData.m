@@ -1,4 +1,4 @@
-classdef GraphEventData < event.EventData
+classdef GraphEventData < event.EventData & auxiliary
 % Data of the event ElementClicked of a graph: the element that was clicked.
 %
 % A graph (GraphBase) raises ElementClicked and calls its ElementClickedFcn as
