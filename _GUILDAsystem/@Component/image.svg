@@ -4,15 +4,15 @@
           <marker id="cl-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:#1B2127"/></marker>
           <marker id="cl-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:#5A6570"/></marker>
         </defs>
-        <rect x="200" y="12" width="200" height="44" rx="4" stroke-width="1.5" style="fill:#FFFFFF; stroke:#0059A7"/>
-        <text x="300" y="40" text-anchor="middle" font-size="15" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#0059A7">Bus</text>
+        <rect x="200" y="12" width="200" height="44" rx="4" stroke-width="2" style="fill:#FFFFFF; stroke:#1A1A1A"/>
+        <text x="300" y="40" text-anchor="middle" font-size="15" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1A1A1A">Bus</text>
         <path d="M300 56V92" fill="none" stroke-width="1.6" marker-end="url(#cl-ah)" style="stroke:#1B2127"/>
         <text x="306" y="80" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1B2127">a_Component</text>
         <text x="190" y="80" text-anchor="end" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#38424C">V ↓  I ↑</text>
 
-        <rect x="200" y="96" width="200" height="56" rx="4" style="fill:#0059A7"/>
+        <rect x="200" y="96" width="200" height="56" rx="4" style="fill:#1A1A1A"/>
         <text x="300" y="122" text-anchor="middle" font-size="16" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#FFFFFF">Component</text>
-        <text x="300" y="141" text-anchor="middle" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#C7D8EA">x · u · y · f_*</text>
+        <text x="300" y="141" text-anchor="middle" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#F5F5F4">x · u · y · f_*</text>
 
         <rect x="450" y="102" width="130" height="44" rx="4" stroke-width="1.5" style="fill:#FFFFFF; stroke:#1B2127"/>
         <text x="515" y="130" text-anchor="middle" font-size="12" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1B2127">GlobalController</text>
