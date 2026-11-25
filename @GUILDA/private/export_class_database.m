@@ -1825,12 +1825,9 @@ function [s_help, i_next] = collect_following_comment_lines(cell_lines, idx_star
         if i > idx_start && ~isempty(regexp(s_line, '^\s*%%', 'once'))
             break
         end
+        % Like MATLAB help, the help is the contiguous comment lines: a blank
+        % line ends it, so a later comment (e.g. above a properties block) is not help.
         if ~isempty(regexp(s_line, '^\s*%.*$', 'once'))
-            cell_comment{end+1,1} = s_line; %#ok<AGROW>
-            i = i + 1;
-            continue
-        end
-        if isempty(strtrim(s_line)) && ~isempty(cell_comment)
             cell_comment{end+1,1} = s_line; %#ok<AGROW>
             i = i + 1;
             continue
