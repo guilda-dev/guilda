@@ -62,7 +62,6 @@
       </aside>
       <div class="ref-main">
       <h1><span lang="en">Class Reference</span><span lang="ja">クラスリファレンス</span></h1>
-      <div class="ref-status" id="reference-status"></div>
       <div id="reference-empty" class="ref-empty" hidden>
         <p><strong><span lang="en">The class reference has not been generated yet.</span><span lang="ja">クラスリファレンスはまだ生成されていません。</span></strong></p>
         <p lang="en">Run <code>GUILDA.doc</code> in MATLAB. It builds <code>_GUILDAdoc/database</code> from the source code and reopens this page.</p>
@@ -289,42 +288,10 @@
       return classData.Documented ?? Boolean(firstLineText(classData.Summary || classData.Desc));
     }
 
-    function renderReferenceStatus() {
-      const status = document.getElementById('reference-status');
+    // Without the generated database, show how to build it instead of the tables.
+    function renderReferenceEmpty() {
       const empty = document.getElementById('reference-empty');
-      const loader = window.GuildaDocLoader;
-      if (!loader?.hasIndex()) {
-        if (empty) empty.hidden = false;
-        if (status) status.textContent = '';
-        return;
-      }
-      const classes = getClassReferenceData();
-      const coverage = loader.getCoverage();
-      const validation = loader.getValidation();
-      const generatedAt = loader.getSchema()?.generatedAt;
-      if (!status) return;
-      // One tile per figure: a count, a documented/total share with a bar, or an issue count.
-      const label = (en, ja) => `<span class="ref-stat-label"><span lang="en">${en}</span><span lang="ja">${ja}</span></span>`;
-      const tile = (body, modifier = '') => `<div class="ref-stat${modifier}">${body}</div>`;
-      const share = (en, ja, part) => {
-        const pct = part.Total ? Math.round(100 * part.Documented / part.Total) : 100;
-        return tile(`${label(en, ja)}
-          <span class="ref-stat-value">${part.Documented}<span class="ref-stat-total">/${part.Total}</span><span class="ref-stat-pct">${pct}%</span></span>
-          <span class="ref-stat-bar" role="presentation"><span style="width: ${pct}%"></span></span>`, pct < 100 ? ' is-partial' : '');
-      };
-      const issues = (en, ja, count, kind) => tile(`${label(en, ja)}<span class="ref-stat-value">${count}</span>`, count > 0 ? ` is-${kind}` : ' is-clear');
-      const tiles = [
-        tile(`${label('Classes', 'クラス')}<span class="ref-stat-value">${classes.length}</span>`),
-        ...(coverage ? [
-          share('Documented classes', '説明ありのクラス', coverage.Classes),
-          share('Documented public methods', '説明ありの public メソッド', coverage.Methods),
-          share('Documented public properties', '説明ありの public プロパティ', coverage.Properties)
-        ] : []),
-        issues('Warnings', '警告', validation.warningCount || 0, 'warn'),
-        issues('Errors', 'エラー', validation.errorCount || 0, 'err')
-      ];
-      status.innerHTML = `<div class="ref-stats">${tiles.join('')}</div>`
-        + (generatedAt ? `<p class="ref-stat-caption"><span lang="en">Generated</span><span lang="ja">生成日時</span> ${escapeHtml(generatedAt.replace('T', ' ').slice(0, 16))}</p>` : '');
+      if (empty) empty.hidden = Boolean(window.GuildaDocLoader?.hasIndex());
     }
 
     // Draw one inheritance tree into a table. `classes` is the set to show;
@@ -460,8 +427,7 @@
       document.addEventListener('guilda-langchange', renderDeveloperLinks);
       applyLanguageAttributes();
       document.addEventListener('guilda-langchange', applyLanguageAttributes);
-      renderReferenceStatus();
-      document.addEventListener('guilda-langchange', renderReferenceStatus);
+      renderReferenceEmpty();
       renderReferenceNavigation();
       window.GuildaDocTree?.mount(document.getElementById('reference-source-tree'), null);
       renderInheritanceTree();

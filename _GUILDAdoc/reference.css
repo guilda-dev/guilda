@@ -3,33 +3,6 @@
 /* Class reference (index.html#tab-reference, class.html, method.html).
    Shared tokens come from style.css; only reference-specific rules live here. */
 
-/* Reference tab summary: one tile per figure, wrapping on narrow screens. */
-.ref-status { margin: 0 0 18px; }
-.ref-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
-}
-.ref-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding: 6px 0 8px;
-  border-top: 1px solid var(--line);
-  background: var(--surface);
-}
-.ref-stat-label { color: var(--muted); font-size: 0.82rem; font-weight: 400; line-height: 1.3; }
-.ref-stat-value { margin-top: auto; color: var(--ink); font-size: 1.3rem; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
-.ref-stat-total { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
-.ref-stat-pct { margin-left: 6px; color: var(--muted); font-size: 0.8rem; font-weight: 400; }
-.ref-stat-bar { display: block; height: 3px; margin-top: 4px; border-radius: 0; background: var(--line); overflow: hidden; }
-.ref-stat-bar > span { display: block; height: 100%; background: var(--ok); }
-.ref-stat.is-partial .ref-stat-bar > span { background: var(--ink-2); }
-.ref-stat.is-warn .ref-stat-value { color: var(--warn); }
-.ref-stat.is-err .ref-stat-value { color: var(--err); }
-.ref-stat-caption { margin: 6px 0 0; color: var(--muted); font-size: 0.75rem; }
-
 .ref-empty {
   padding: 16px 18px;
   border: 1px dashed var(--line-strong);

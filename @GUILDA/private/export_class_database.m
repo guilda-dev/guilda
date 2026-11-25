@@ -27,12 +27,11 @@ function sct_summary = export_class_database(sct_scan, option)
 % Schema version 5
 % ----------------
 % list_Classes.js: window.GUILDA_DOC_INDEX = {
-%   schema: {name, version: 5, classDocumentVersion: 5, pathBase, generatedAt,
-%            matlabRelease, modelCategories, coreClasses,
+%   schema: {name, version: 5, classDocumentVersion: 5, pathBase, matlabRelease,
+%            modelCategories, coreClasses,
 %            tags: {class, property, method: [tag name], removed: {Tag: message}}}
 %   classes: [class], sorted by Name
 %   tree: [node], roots System, Object, then one per user root folder
-%   coverage: {Classes, Properties, Methods: {Documented, Total}}
 %   validation: {warningCount, errorCount, classes: [{ClassName, Warnings, Errors}]}
 % }
 % class: Name, Origin ("System"|"Object"|"User"), Folder, Category (= Package),
@@ -103,7 +102,7 @@ function sct_summary = export_class_database(sct_scan, option)
         option.full   (1,1) logical = false  % Ignore database/manifest.json and export every class.
     end
     arguments (Output)
-        sct_summary (1,1) struct  % Export summary (ClassCount, ExportedCount, WarningCount, ErrorCount, Coverage).
+        sct_summary (1,1) struct  % Export summary (ClassCount, ExportedCount, WarningCount, ErrorCount).
     end
     sct_classes = sct_scan.Classes;
     cell_names  = {sct_classes.Name};
@@ -261,7 +260,6 @@ function sct_summary = export_class_database(sct_scan, option)
         'classDocumentVersion', 5, ...
         'pathBase',             '_GUILDAdoc' ...
     );
-    sct_schema.generatedAt = char(datetime('now', 'TimeZone', 'local', 'Format', 'yyyy-MM-dd''T''HH:mm:ssXXX'));
     sct_schema.matlabRelease = version('-release');
     sct_schema.modelCategories = get_model_categories(cell_class_info);
     sct_schema.coreClasses = sct_schema.modelCategories;
@@ -270,11 +268,6 @@ function sct_summary = export_class_database(sct_scan, option)
     sct_database.schema  = sct_schema;
     sct_database.classes = cell_class_info;
     sct_database.tree    = build_tree(sct_scan, sct_ctx);
-    sct_database.coverage = struct( ...
-        'Classes',    coverage_entry(sct_coverage.Classes), ...
-        'Properties', coverage_entry(sct_coverage.Properties), ...
-        'Methods',    coverage_entry(sct_coverage.Methods) ...
-    );
     sct_database.validation = struct();
     sct_database.validation.warningCount = sum(cellfun(@(v) numel(v.Warnings), cell_validation));
     sct_database.validation.errorCount   = sum(cellfun(@(v) numel(v.Errors), cell_validation));
@@ -303,8 +296,7 @@ function sct_summary = export_class_database(sct_scan, option)
         'ClassCount',    numel(cell_class_info), ...
         'ExportedCount', numel(iv_export), ...
         'WarningCount',  sct_database.validation.warningCount, ...
-        'ErrorCount',    sct_database.validation.errorCount, ...
-        'Coverage',      sct_database.coverage ...
+        'ErrorCount',    sct_database.validation.errorCount ...
     );
     fprintf("  %d classes, %d warning(s), %d error(s). Documented: classes %d/%d, public methods %d/%d, public properties %d/%d.\n", ...
         sct_summary.ClassCount, sct_summary.WarningCount, sct_summary.ErrorCount, ...
@@ -540,10 +532,6 @@ function sct_images = image_state(sct_scan, bln_with_path)
     if nargin < 2 || ~bln_with_path
         sct_images = rmfield(sct_images, 'Path');
     end
-end
-
-function sct_entry = coverage_entry(rv_count)
-    sct_entry = struct('Documented', rv_count(1), 'Total', rv_count(2));
 end
 
 function cell_categories = get_model_categories(cell_class_info)
