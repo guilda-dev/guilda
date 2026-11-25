@@ -52,10 +52,10 @@ function net = make_home_guilda_network(opt)
     delete(findobj(fig, "Type", "colorbar"));
     axis(ax, "off");
     % frame of the aspect of the image around the drawing (letters, components, backbone)
-    rv_x = [-1.75, 18.45];
+    rv_x = [-1.85, 21.75];
     r_h  = diff(rv_x)*opt.Size(2)/opt.Size(1);
     xlim(ax, rv_x);
-    ylim(ax, 2.05 + [-0.5, 0.5]*r_h);
+    ylim(ax, 2.0 + [-0.5, 0.5]*r_h);
 
     %% Frames F(t), t = 0, T/n, ..., 2T - T/n
     n = opt.Frames;
