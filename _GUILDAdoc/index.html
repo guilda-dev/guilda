@@ -10,7 +10,8 @@
   <style>
     /* Header links to the other site (Home, About, Getting Started, Tutorial on guilda-doc) */
     a.tab-button.tab-link { text-decoration: none; }
-    a.tab-button.tab-link::after { content: " \2197"; font-weight: 400; }
+    .tab-ext { margin-left: -3px; font-weight: 400; }
+    @media (max-width: 560px) { .tab-ext { display: none; } }
   </style>
   <script>
     // Home, About, Getting Started, Tutorial and the lecture notes moved to the site guilda-doc.
@@ -39,12 +40,12 @@
       <img src="./images/GUILDAicon.png" alt="GUILDA Logo" class="header-logo">
       
       <div class="tabs">
-        <a class="tab-button tab-link" href="https://guilda-dev.github.io/guilda-doc-preview/#tab-home"><span lang="en">Home</span><span lang="ja">ホーム</span></a>
-        <a class="tab-button tab-link" href="https://guilda-dev.github.io/guilda-doc-preview/#tab-about"><span lang="en">About</span><span lang="ja">概要</span></a>
-        <a class="tab-button tab-link" href="https://guilda-dev.github.io/guilda-doc-preview/#tab-getting-started"><span lang="en">Getting Started</span><span lang="ja">はじめに</span></a>
-        <a class="tab-button tab-link" href="https://guilda-dev.github.io/guilda-doc-preview/#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span></a>
-        <button class="tab-button active" onclick="openTab('tab-reference')"><span lang="en">Reference</span><span lang="ja">リファレンス</span></button>
-        <button class="tab-button" onclick="openTab('tab-developer')"><span lang="en">For Developer</span><span lang="ja">開発者向け</span></button>
+        <a class="tab-button tab-link" href="https://guilda-dev.github.io/guilda-doc-preview/#tab-home"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M6.5 12q2.75-5.5 5.5 0t5.5 0"/></svg><span lang="en">Home</span><span lang="ja">ホーム</span><span class="tab-ext" aria-hidden="true">↗</span></a>
+        <a class="tab-button tab-link" href="https://guilda-dev.github.io/guilda-doc-preview/#tab-about"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.5 7.5 21.5M12 2.5l4.5 19M4 7h16M6 11.5h12M4 7v2.5M20 7v2.5M6 11.5V14M18 11.5V14M9.6 13.5l5.8 8M14.4 13.5l-5.8 8"/></svg><span lang="en">About</span><span lang="ja">概要</span><span class="tab-ext" aria-hidden="true">↗</span></a>
+        <a class="tab-button tab-link" href="https://guilda-dev.github.io/guilda-doc-preview/#tab-getting-started"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 16H7M17.5 16H21.5M9.4 15 17 8.5"/><circle cx="8.25" cy="16" r="1.25"/><circle cx="16.25" cy="16" r="1.25"/></svg><span lang="en">Getting Started</span><span lang="ja">はじめに</span><span class="tab-ext" aria-hidden="true">↗</span></a>
+        <a class="tab-button tab-link" href="https://guilda-dev.github.io/guilda-doc-preview/#tab-tutorial"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 8h18M12 3v5M6 8v10M12 8v10M18 8v10M4.5 16.5 6 18l1.5-1.5M10.5 16.5 12 18l1.5-1.5M16.5 16.5 18 18l1.5-1.5"/></svg><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span><span class="tab-ext" aria-hidden="true">↗</span></a>
+        <button class="tab-button active" onclick="openTab('tab-reference')"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/><path d="M1.5 12h2M20.5 12h2"/></svg><span lang="en">Reference</span><span lang="ja">リファレンス</span></button>
+        <button class="tab-button" onclick="openTab('tab-developer')"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="7" y="6.5" width="10" height="11" rx="1.5"/><path d="M1.5 12H7M4.5 9.5 7 12l-2.5 2.5M17 12h5.5M20 9.5l2.5 2.5-2.5 2.5M9.5 12h5M11 9.5h2M10.5 14.5h3"/></svg><span lang="en">For Developer</span><span lang="ja">開発者向け</span></button>
       </div>
     </div>
   </header>
@@ -62,7 +63,6 @@
       </aside>
       <div class="ref-main">
       <h1><span lang="en">Class Reference</span><span lang="ja">クラスリファレンス</span></h1>
-      <div class="ref-status" id="reference-status"></div>
       <div id="reference-empty" class="ref-empty" hidden>
         <p><strong><span lang="en">The class reference has not been generated yet.</span><span lang="ja">クラスリファレンスはまだ生成されていません。</span></strong></p>
         <p lang="en">Run <code>GUILDA.doc</code> in MATLAB. It builds <code>_GUILDAdoc/database</code> from the source code and reopens this page.</p>
@@ -123,9 +123,9 @@
 
       <div id="developer-link-container" class="developer-groups"></div>
 
-      <h2><span lang="en">Update Log</span><span lang="ja">更新履歴</span></h2>
+      <h2 class="heading-icon"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 17a8.5 8.5 0 0 1 17 0M12 17l4-5M12 8.5V10M6 11l1.1 1M18 11l-1.1 1M3.5 20.5h17"/><circle cx="12" cy="17" r="1.25"/></svg><span lang="en">Update Log</span><span lang="ja">更新履歴</span></h2>
       <div id="update-log-container" class="ulog is-compact"></div>
-      <p class="ulog-more"><a href="updatelog.html"><span lang="en">Show more</span><span lang="ja">もっと見る</span></a></p>
+      <p class="ulog-more"><a class="btn btn-chevron" href="updatelog.html"><span lang="en">Show more</span><span lang="ja">もっと見る</span></a></p>
     </div>
   </main>
 
@@ -215,7 +215,7 @@
                   <span class="developer-link-title">${escapeHtml(item.title)}</span>
                   <span class="developer-link-description">${escapeHtml(item.description)}</span>
                 </span>
-                <span class="developer-link-action">${item.link.startsWith('class.html') ? (ja ? 'リファレンスを見る' : 'View reference') : (ja ? 'ガイドを見る' : 'View guide')}</span>
+                <span class="developer-link-action flow-edge">${item.link.startsWith('class.html') ? (ja ? 'リファレンスを見る' : 'View reference') : (ja ? 'ガイドを見る' : 'View guide')}</span>
               </a>
             `).join('')}
           </div>
@@ -289,42 +289,10 @@
       return classData.Documented ?? Boolean(firstLineText(classData.Summary || classData.Desc));
     }
 
-    function renderReferenceStatus() {
-      const status = document.getElementById('reference-status');
+    // Without the generated database, show how to build it instead of the tables.
+    function renderReferenceEmpty() {
       const empty = document.getElementById('reference-empty');
-      const loader = window.GuildaDocLoader;
-      if (!loader?.hasIndex()) {
-        if (empty) empty.hidden = false;
-        if (status) status.textContent = '';
-        return;
-      }
-      const classes = getClassReferenceData();
-      const coverage = loader.getCoverage();
-      const validation = loader.getValidation();
-      const generatedAt = loader.getSchema()?.generatedAt;
-      if (!status) return;
-      // One tile per figure: a count, a documented/total share with a bar, or an issue count.
-      const label = (en, ja) => `<span class="ref-stat-label"><span lang="en">${en}</span><span lang="ja">${ja}</span></span>`;
-      const tile = (body, modifier = '') => `<div class="ref-stat${modifier}">${body}</div>`;
-      const share = (en, ja, part) => {
-        const pct = part.Total ? Math.round(100 * part.Documented / part.Total) : 100;
-        return tile(`${label(en, ja)}
-          <span class="ref-stat-value">${part.Documented}<span class="ref-stat-total">/${part.Total}</span><span class="ref-stat-pct">${pct}%</span></span>
-          <span class="ref-stat-bar" role="presentation"><span style="width: ${pct}%"></span></span>`, pct < 100 ? ' is-partial' : '');
-      };
-      const issues = (en, ja, count, kind) => tile(`${label(en, ja)}<span class="ref-stat-value">${count}</span>`, count > 0 ? ` is-${kind}` : ' is-clear');
-      const tiles = [
-        tile(`${label('Classes', 'クラス')}<span class="ref-stat-value">${classes.length}</span>`),
-        ...(coverage ? [
-          share('Documented classes', '説明ありのクラス', coverage.Classes),
-          share('Documented public methods', '説明ありの public メソッド', coverage.Methods),
-          share('Documented public properties', '説明ありの public プロパティ', coverage.Properties)
-        ] : []),
-        issues('Warnings', '警告', validation.warningCount || 0, 'warn'),
-        issues('Errors', 'エラー', validation.errorCount || 0, 'err')
-      ];
-      status.innerHTML = `<div class="ref-stats">${tiles.join('')}</div>`
-        + (generatedAt ? `<p class="ref-stat-caption"><span lang="en">Generated</span><span lang="ja">生成日時</span> ${escapeHtml(generatedAt.replace('T', ' ').slice(0, 16))}</p>` : '');
+      if (empty) empty.hidden = Boolean(window.GuildaDocLoader?.hasIndex());
     }
 
     // Draw one inheritance tree into a table. `classes` is the set to show;
@@ -417,9 +385,11 @@
         const summaryCell = isDocumented(node)
           ? escapeHtml(summary)
           : `<span class="ref-badge is-undocumented is-small">${bilingual('no docs', '説明なし')}</span>`;
+        // Phones hide the Summary column and show the summary under the name instead.
+        const inlineSummary = `<div class="tree-inline-summary" style="--tree-depth:${guides.length}">${summaryCell}</div>`;
 
         return `<tr${rowAttributes}>
-          <td>${hierarchyCell}</td>
+          <td>${hierarchyCell}${inlineSummary}</td>
           <td>${summaryCell}</td>
         </tr>`;
       }).join('');
@@ -460,8 +430,7 @@
       document.addEventListener('guilda-langchange', renderDeveloperLinks);
       applyLanguageAttributes();
       document.addEventListener('guilda-langchange', applyLanguageAttributes);
-      renderReferenceStatus();
-      document.addEventListener('guilda-langchange', renderReferenceStatus);
+      renderReferenceEmpty();
       renderReferenceNavigation();
       window.GuildaDocTree?.mount(document.getElementById('reference-source-tree'), null);
       renderInheritanceTree();

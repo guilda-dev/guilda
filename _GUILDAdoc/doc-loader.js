@@ -246,8 +246,6 @@
     hasIndex,
     getIndex,
     getSchema: () => getIndex().schema,
-    getValidation: () => getIndex().validation || { warningCount: 0, errorCount: 0, classes: [] },
-    getCoverage: () => getIndex().coverage || null,
     getClasses,
     parentNames,
     getSubclasses,

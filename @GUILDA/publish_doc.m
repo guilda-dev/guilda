@@ -17,7 +17,8 @@ function publish_doc()
 % temporary git worktree, and commits "docs: publish <branch>@<sha>". It
 % never contacts the remote and never pushes: the push command is printed
 % at the end.
-% gh-pages layout: _GUILDAdoc/, LICENSE, index.html (redirect), .nojekyll.
+% gh-pages layout: _GUILDAdoc/, LICENSE, index.html (redirect), 404.html (a copy
+% of _GUILDAdoc/404.html, which GitHub Pages serves for a missing path), .nojekyll.
 % User classes (database/User), database/manifest.json and
 % database/callgraph_cache.mat are local data and are never published.
     s_root     = GUILDA.pwd();
@@ -160,6 +161,8 @@ function write_site(s_root, s_tmp)
 
     copy_or_error(fullfile(s_root, '_GUILDAdoc'), fullfile(s_tmp, '_GUILDAdoc'));
     copy_or_error(fullfile(s_root, 'LICENSE'), fullfile(s_tmp, 'LICENSE'));
+    % GitHub Pages serves /404.html of the site root for every missing path.
+    copy_or_error(fullfile(s_root, '_GUILDAdoc', '404.html'), fullfile(s_tmp, '404.html'));
 
     % Local export data: user classes, the incremental-export manifest and the call-graph cache.
     s_db = fullfile(s_tmp, '_GUILDAdoc', 'database');
@@ -197,17 +200,15 @@ end
 
 
 function keep_published_index(s_tmp)
-    % The exporter stamps generatedAt on every rebuild. Keep the published
-    % class index when nothing else in it changed, so an unchanged site
-    % makes no commit.
+    % Keep the published class index when it differs only in line endings,
+    % so an unchanged site makes no commit.
     s_path = '_GUILDAdoc/database/list_Classes.js';
     [r_status, s_old] = system(sprintf('git --no-pager -C %s show HEAD:%s', quote(s_tmp), s_path));
     if r_status ~= 0
         return
     end
     s_new = fileread(fullfile(s_tmp, s_path), 'Encoding', 'UTF-8');
-    sr_pattern = {'"generatedAt":\s*"[^"]*"', '\r'};
-    if strcmp(regexprep(strtrim(s_old), sr_pattern, ''), regexprep(strtrim(s_new), sr_pattern, ''))
+    if strcmp(strrep(strtrim(s_old), char(13), ''), strrep(strtrim(s_new), char(13), ''))
         run_git(s_tmp, sprintf('checkout HEAD -- %s', s_path));
     end
 end
