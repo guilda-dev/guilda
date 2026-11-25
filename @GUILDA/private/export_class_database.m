@@ -39,7 +39,8 @@ function sct_summary = export_class_database(sct_scan, option)
 %   Type ("PowerSystemModel"|"auxiliary"|"other"), Model, Parent,
 %   Superclasses, Ancestors (nearest first), Subclasses (direct, among the
 %   exported classes), Package, File, Line, Abstract, Sealed, Hidden,
-%   Summary, Desc, SeeAlso, Examples, Deprecated, Documented,
+%   Summary, Desc, SeeAlso, Examples, Citations (own <@Citations>, Markdown;
+%   not inherited), Deprecated, Documented,
 %   PropertyCount {Own, Total}, MethodCount {Own, Total}, path (class JS file),
 %   References [{Name, Type}] (own a_* properties; Type is the class from
 %   <@Type> or the name, '' when unknown),
@@ -79,7 +80,8 @@ function sct_summary = export_class_database(sct_scan, option)
 %   Overrides  nearest GUILDA ancestor that defines the same method
 %   Throws     error IDs in error(msg(...)) and MException(...) calls of the
 %              method body (with the local functions of a method file)
-% Tags: <@Examples> (class, method), <@Deprecated> (all), <@Type> (property),
+% Tags: <@Examples> (class, method), <@Citations> (class: a Markdown list of
+%   the literature the class is based on), <@Deprecated> (all), <@Type> (property),
 %   <@Stale> (property: what an edit of it makes out of date),
 %   <@Group> (method: the purpose group, for methods in their own files).
 %
@@ -2091,7 +2093,7 @@ function sct_schema = get_tag_schema()
         return
     end
     sct_schema = struct();
-    sct_schema.class    = {'Examples', 'Deprecated'};
+    sct_schema.class    = {'Examples', 'Citations', 'Deprecated'};
     sct_schema.property = {'Type', 'Stale', 'Deprecated'};
     sct_schema.method   = {'Examples', 'Group', 'Deprecated'};
     sct_schema.removed  = struct( ...
