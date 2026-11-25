@@ -44,6 +44,12 @@
   --dg-err: var(--err); --dg-err-soft: var(--err-bg);
   --dg-ink: var(--ink); --dg-muted: var(--muted); --dg-line: var(--line); --dg-panel: var(--surface-subtle); --dg-bg: var(--surface); --dg-card: var(--surface);
   --dg-mono: var(--font-mono);
+
+  /* Data series of plots drawn in the pages (not MATLAB figures): MATLAB's default
+     "gem" colour order, series k takes --gem-k (wrap after 7). Axes, grid, ticks and
+     annotations stay in ink and greys. */
+  --gem-1: #1171BE; --gem-2: #DD5400; --gem-3: #EDB120; --gem-4: #8516D1;
+  --gem-5: #3BAA32; --gem-6: #2FBEEF; --gem-7: #D1048B;
 }
 
 /* =========================================
