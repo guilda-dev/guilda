@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-title-ja="GUILDA 開発者ガイド - アーキテクチャ">GUILDA Developer Guide - Architecture</title>
+  <script src="../doc-lang.js"></script>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* UML figures (inline SVG, ink and grey, brand blue for the entry point only) */
+    .uml-fig { margin: var(--dg-s4) 0 var(--dg-s5); padding: var(--dg-s4); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .uml-fig figcaption { margin-top: var(--dg-s3); color: var(--muted); font-size: 0.88rem; }
+    .uml { display: block; width: 100%; min-width: min(var(--w), 640px); height: auto; }
+    .uml text { font-family: var(--font-sans); font-size: 12px; fill: var(--ink); }
+    .uml .m { font-family: var(--font-mono); }
+    .uml .b { font-weight: 600; }
+    .uml .s { font-size: 11.5px; }
+    .uml .k { fill: var(--muted); font-size: 11px; }
+    .uml .mu { fill: var(--muted); }
+    .uml .acc-t { fill: var(--brand); }
+    .uml .box { fill: var(--surface); stroke: var(--ink); stroke-width: 1.1; }
+    .uml .box.is-actor, .uml .box.is-soft { fill: var(--surface-subtle); stroke: var(--line-strong); }
+    .uml .box.is-hl { stroke: var(--brand); stroke-width: 1.6; }
+    .uml .ln { fill: none; stroke: var(--ink); stroke-width: 1.1; }
+    .uml .ln.thin { stroke: var(--line-strong); stroke-width: 1; }
+    .uml .ln.life { stroke: var(--line-strong); stroke-dasharray: 4 4; }
+    .uml .ln.ret, .uml .ln.dsh { stroke: var(--muted); stroke-dasharray: 5 4; }
+    .uml .ln.acc { stroke: var(--brand); stroke-width: 1.5; }
+    .uml .hd-fill { fill: var(--ink); }
+    .uml .hd-acc { fill: var(--brand); }
+    .uml .hd-open { fill: none; stroke: var(--muted); stroke-width: 1.4; }
+    .uml .dia { fill: var(--ink); }
+    .uml .tri { fill: var(--surface); stroke: var(--ink); stroke-width: 1.1; }
+    .uml .frame { fill: none; stroke: var(--line-strong); }
+    .uml .actor circle, .uml .actor path { fill: none; stroke: var(--ink); stroke-width: 1.3; }
+    /* Key-value blocks instead of narrow multi-column tables */
+    .kv { display: grid; grid-template-columns: minmax(8rem, 11rem) minmax(0, 1fr); gap: 0 var(--dg-s4); margin: var(--dg-s3) 0 var(--dg-s5); border-top: 1px solid var(--line); }
+    .kv > dt, .kv > dd { margin: 0; padding: 9px 0; border-bottom: 1px solid var(--line); line-height: 1.55; min-width: 0; }
+    .kv > dt { color: var(--ink); font-weight: 600; }
+    .kv > dd > ul { margin: 0; padding-left: 1.1em; }
+    @media (max-width: 640px) {
+      .kv { grid-template-columns: minmax(0, 1fr); }
+      .kv > dt { padding-bottom: 0; border-bottom: 0; }
+      .kv > dd { padding-top: 2px; }
+    }
+    .uml text.lbl { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+  </style>
+</head>
+<body class="developer-layout dg">
+  <main>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
+    <h1><span lang="en">Architecture</span><span lang="ja">アーキテクチャ</span></h1>
+    <p class="page-lead" lang="en">GUILDA has two families of classes. The model classes (<code>PowerSystemModel</code>) hold the power system; the analysis classes (<code>auxiliary</code>) run an analysis on the data the model hands them and hold the result. What a single class owns and does is on its <a href="../class.html">class reference</a> page.</p>
+    <p class="page-lead" lang="ja">GUILDA のクラスは 2 つの系統に分かれます。モデルクラス（<code>PowerSystemModel</code>）が電力系統を保持し、解析クラス（<code>auxiliary</code>）がモデルから渡されたデータで解析を行い、結果を保持します。個々のクラスが持つデータと処理は、<a href="../class.html">クラスリファレンス</a>の各ページにあります。</p>
+
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#layers"><span lang="en">Class diagram</span><span lang="ja">クラス図</span></a>
+      <a href="#principles"><span lang="en">Design principles</span><span lang="ja">設計原則</span></a>
+      <a href="#parents"><span lang="en">Parent references</span><span lang="ja">親への参照</span></a>
+      <a href="#identity"><span lang="en">Identifying objects (tags)</span><span lang="ja">オブジェクトの識別（タグ）</span></a>
+      <a href="#edits"><span lang="en">Model edits and stale state</span><span lang="ja">モデルの編集と古い状態</span></a>
+      <a href="#variables"><span lang="en">Variable order and signals</span><span lang="ja">変数の順序と信号</span></a>
+      <a href="#api"><span lang="en">Analysis API rules</span><span lang="ja">解析 API の規則</span></a>
+      <a href="#solvers"><span lang="en">Settings of analyses</span><span lang="ja">解析の設定</span></a>
+      <a href="#conventions"><span lang="en">Units and messages</span><span lang="ja">単位とメッセージ</span></a>
+    </nav>
+
+    <!-- ============================== CLASS DIAGRAM ============================== -->
+    <h2 id="layers"><span lang="en">Class diagram</span><span lang="ja">クラス図</span></h2>
+    <p lang="en">Top: the two roots and what specializes them. Bottom: who owns whom, and the read-only reference each child keeps to its parent. A name with <code>*</code> stands for a family of classes, one per analysis or kind.</p>
+    <p lang="ja">上段は 2 つの基底クラスと、それを継承するクラスです。下段は所有関係と、子が親に対して持つ読み取り専用の参照です。<code>*</code> の付いた名前は、解析や種類ごとに 1 つずつあるクラスの一群を表します。</p>
+    <figure class="uml-fig" id="class-diagram">
+<svg class="uml" viewBox="0 0 860 860" style="--w:860px" role="img" aria-labelledby="cl-t">
+<title id="cl-t" lang="en">UML class diagram. Generalization: PowerNetwork, Bus, Branch, Component, LocalController and GlobalController specialize PowerSystemModel; the analysis classes Solver*, Result*, Method*, Graph*, Scenario, Event* and Parameter specialize auxiliary. Ownership: PowerNetwork owns buses, branches, global controllers and scenarios; a bus owns components; a component owns local controllers; a scenario owns events. Each child keeps a read-only reference to its parent. A global controller controls components. The network holds one solver per analysis; a solver result is a Result* object, and its plot methods return Graph* objects.</title>
+<title lang="ja">UML クラス図です。汎化: PowerNetwork、Bus、Branch、Component、LocalController、GlobalController は PowerSystemModel を、解析用の Solver*、Result*、Method*、Graph*、Scenario、Event*、Parameter は auxiliary を継承します。所有: PowerNetwork が母線、ブランチ、グローバル制御器、シナリオを、母線が機器を、機器がローカル制御器を、シナリオがイベントを所有します。子は親への読み取り専用の参照を持ちます。グローバル制御器は機器を制御します。ネットワークは解析ごとにソルバーを持ち、結果は Result* オブジェクトで、その plot メソッドが Graph* オブジェクトを返します。</title>
+<defs><marker id="cl-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-fill" d="M0 0L10 5L0 10z"/></marker><marker id="cl-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-acc" d="M0 0L10 5L0 10z"/></marker><marker id="cl-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="hd-open" d="M1 1L9 5L1 9"/></marker></defs>
+<text class="k b" lang="en" x="14" y="22" text-anchor="start">Generalization</text><text class="k b" lang="ja" x="14" y="22" text-anchor="start">汎化</text>
+<rect class="box" x="14" y="34" width="200" height="80" rx="2"/>
+<text class="k" x="114.0" y="48" text-anchor="middle">«abstract»</text>
+<text class="m b" x="114.0" y="65" text-anchor="middle">PowerSystemModel</text>
+<path class="ln thin" d="M14 74H214"/>
+<text class="m s" x="22" y="90" text-anchor="start">s_tag, sct_stale</text>
+<text class="m s" x="22" y="106" text-anchor="start">a_Parameter : Parameter</text>
+<path class="tri" d="M36 114l-7 12h14z"/>
+<rect class="box" x="58" y="136" width="150" height="24" rx="2"/>
+<text class="m s b" x="133" y="152" text-anchor="middle">PowerNetwork</text>
+<text class="k" lang="en" x="218" y="152" text-anchor="start">whole system, analysis entry</text><text class="k" lang="ja" x="218" y="152" text-anchor="start">系統全体、解析の入口</text>
+<path class="ln" d="M36 148H58"/>
+<rect class="box" x="58" y="166" width="150" height="24" rx="2"/>
+<text class="m s b" x="133" y="182" text-anchor="middle">Bus</text>
+<text class="k" lang="en" x="218" y="182" text-anchor="start">node: voltage V</text><text class="k" lang="ja" x="218" y="182" text-anchor="start">ノード: 電圧 V</text>
+<path class="ln" d="M36 178H58"/>
+<rect class="box" x="58" y="196" width="150" height="24" rx="2"/>
+<text class="m s b" x="133" y="212" text-anchor="middle">Branch</text>
+<text class="k" lang="en" x="218" y="212" text-anchor="start">line, transformer: Y</text><text class="k" lang="ja" x="218" y="212" text-anchor="start">線路・変圧器: Y</text>
+<path class="ln" d="M36 208H58"/>
+<rect class="box" x="58" y="226" width="150" height="24" rx="2"/>
+<text class="m s b" x="133" y="242" text-anchor="middle">Component</text>
+<text class="k" lang="en" x="218" y="242" text-anchor="start">device equations</text><text class="k" lang="ja" x="218" y="242" text-anchor="start">機器の方程式</text>
+<path class="ln" d="M36 238H58"/>
+<rect class="box" x="58" y="256" width="150" height="24" rx="2"/>
+<text class="m s b" x="133" y="272" text-anchor="middle">LocalController</text>
+<text class="k" lang="en" x="218" y="272" text-anchor="start">controller of one component</text><text class="k" lang="ja" x="218" y="272" text-anchor="start">1 機器の制御器</text>
+<path class="ln" d="M36 268H58"/>
+<rect class="box" x="58" y="286" width="150" height="24" rx="2"/>
+<text class="m s b" x="133" y="302" text-anchor="middle">GlobalController</text>
+<text class="k" lang="en" x="218" y="302" text-anchor="start">controller of several</text><text class="k" lang="ja" x="218" y="302" text-anchor="start">複数機器の制御器</text>
+<path class="ln" d="M36 298H58"/>
+<path class="ln" d="M36 126V298"/>
+<rect class="box" x="444" y="34" width="200" height="40" rx="2"/>
+<text class="k" x="544.0" y="48" text-anchor="middle">«handle»</text>
+<text class="m b" x="544.0" y="65" text-anchor="middle">auxiliary</text>
+<path class="tri" d="M466 74l-7 12h14z"/>
+<rect class="box" x="488" y="96" width="150" height="24" rx="2"/>
+<text class="m s b" x="563" y="112" text-anchor="middle">Solver*</text>
+<text class="k" lang="en" x="648" y="112" text-anchor="start">runs one analysis</text><text class="k" lang="ja" x="648" y="112" text-anchor="start">1 つの解析を実行</text>
+<path class="ln" d="M466 108H488"/>
+<rect class="box" x="488" y="126" width="150" height="24" rx="2"/>
+<text class="m s b" x="563" y="142" text-anchor="middle">ResultBase</text>
+<text class="k" lang="en" x="648" y="142" text-anchor="start">◁ Result*: returned result</text><text class="k" lang="ja" x="648" y="142" text-anchor="start">◁ Result*: 返す結果</text>
+<path class="ln" d="M466 138H488"/>
+<rect class="box" x="488" y="156" width="150" height="24" rx="2"/>
+<text class="m s b" x="563" y="172" text-anchor="middle">MethodBase</text>
+<text class="k" lang="en" x="648" y="172" text-anchor="start">◁ Method*: PF algorithm</text><text class="k" lang="ja" x="648" y="172" text-anchor="start">◁ Method*: 潮流の解法</text>
+<path class="ln" d="M466 168H488"/>
+<rect class="box" x="488" y="186" width="150" height="24" rx="2"/>
+<text class="m s b" x="563" y="202" text-anchor="middle">GraphBase</text>
+<text class="k" lang="en" x="648" y="202" text-anchor="start">◁ Graph*: figure object</text><text class="k" lang="ja" x="648" y="202" text-anchor="start">◁ Graph*: 図のオブジェクト</text>
+<path class="ln" d="M466 198H488"/>
+<rect class="box" x="488" y="216" width="150" height="24" rx="2"/>
+<text class="m s b" x="563" y="232" text-anchor="middle">Scenario</text>
+<text class="k" lang="en" x="648" y="232" text-anchor="start">disturbances of a run</text><text class="k" lang="ja" x="648" y="232" text-anchor="start">シミュレーションの外乱</text>
+<path class="ln" d="M466 228H488"/>
+<rect class="box" x="488" y="246" width="150" height="24" rx="2"/>
+<text class="m s b" x="563" y="262" text-anchor="middle">EventBase</text>
+<text class="k" lang="en" x="648" y="262" text-anchor="start">◁ Event*: one event</text><text class="k" lang="ja" x="648" y="262" text-anchor="start">◁ Event*: 1 つのイベント</text>
+<path class="ln" d="M466 258H488"/>
+<rect class="box" x="488" y="276" width="150" height="24" rx="2"/>
+<text class="m s b" x="563" y="292" text-anchor="middle">Parameter</text>
+<text class="k" lang="en" x="648" y="292" text-anchor="start">one parameter group</text><text class="k" lang="ja" x="648" y="292" text-anchor="start">1 つのパラメータ群</text>
+<path class="ln" d="M466 288H488"/>
+<path class="ln" d="M466 86V288"/>
+<path class="ln thin mu" d="M14 322H846"/>
+<text class="k b" lang="en" x="14" y="340" text-anchor="start">Ownership and references</text><text class="k b" lang="ja" x="14" y="340" text-anchor="start">所有と参照</text>
+<rect class="box is-hl" x="20" y="356" width="190" height="114" rx="2"/>
+<text class="m b" x="115.0" y="374" text-anchor="middle">PowerNetwork</text>
+<path class="ln thin" d="M20 382H210"/>
+<text class="m s" x="28" y="398" text-anchor="start">a_Bus</text>
+<text class="m s" x="28" y="414" text-anchor="start">a_Branch</text>
+<text class="m s" x="28" y="430" text-anchor="start">a_GlobalController</text>
+<text class="m s" x="28" y="446" text-anchor="start">a_Scenario</text>
+<text class="m s" x="28" y="462" text-anchor="start">solver_*</text>
+<rect class="box" x="260" y="356" width="160" height="66" rx="2"/>
+<text class="m b" x="340.0" y="374" text-anchor="middle">Bus</text>
+<path class="ln thin" d="M260 382H420"/>
+<text class="m s" x="268" y="398" text-anchor="start">↑ a_PowerNetwork</text>
+<text class="m s" x="268" y="414" text-anchor="start">a_Component</text>
+<rect class="box" x="470" y="356" width="160" height="66" rx="2"/>
+<text class="m b" x="550.0" y="374" text-anchor="middle">Component</text>
+<path class="ln thin" d="M470 382H630"/>
+<text class="m s" x="478" y="398" text-anchor="start">↑ a_Bus</text>
+<text class="m s" x="478" y="414" text-anchor="start">a_LocalController</text>
+<rect class="box" x="680" y="356" width="160" height="50" rx="2"/>
+<text class="m b" x="760.0" y="374" text-anchor="middle">LocalController</text>
+<path class="ln thin" d="M680 382H840"/>
+<text class="m s" x="688" y="398" text-anchor="start">↑ a_Component</text>
+<rect class="box" x="260" y="510" width="160" height="50" rx="2"/>
+<text class="m b" x="340.0" y="528" text-anchor="middle">Branch</text>
+<path class="ln thin" d="M260 536H420"/>
+<text class="m s" x="268" y="552" text-anchor="start">↑ a_PowerNetwork</text>
+<rect class="box" x="470" y="510" width="160" height="50" rx="2"/>
+<text class="m b" x="550.0" y="528" text-anchor="middle">GlobalController</text>
+<path class="ln thin" d="M470 536H630"/>
+<text class="m s" x="478" y="552" text-anchor="start">↑ a_PowerNetwork</text>
+<rect class="box" x="20" y="620" width="190" height="66" rx="2"/>
+<text class="m b" x="115.0" y="638" text-anchor="middle">Scenario</text>
+<path class="ln thin" d="M20 646H210"/>
+<text class="m s" x="28" y="662" text-anchor="start">↑ a_PowerNetwork</text>
+<text class="m s" x="28" y="678" text-anchor="start">a_Event</text>
+<rect class="box" x="260" y="640" width="160" height="50" rx="2"/>
+<text class="m b" x="340.0" y="658" text-anchor="middle">EventBase</text>
+<path class="ln thin" d="M260 666H420"/>
+<text class="m s" x="268" y="682" text-anchor="start">↑ a_Scenario</text>
+<rect class="box" x="260" y="740" width="160" height="26" rx="2"/>
+<text class="m b" x="340.0" y="758" text-anchor="middle">Solver*</text>
+<rect class="box" x="470" y="740" width="160" height="26" rx="2"/>
+<text class="m b" x="550.0" y="758" text-anchor="middle">Result*</text>
+<rect class="box" x="680" y="740" width="160" height="26" rx="2"/>
+<text class="m b" x="760.0" y="758" text-anchor="middle">Graph*</text>
+<path class="dia" d="M210 369l9 -5l9 5l-9 5z"/>
+<path class="ln" d="M228 369H260"/>
+<text class="k m" x="230" y="363" text-anchor="start">0..*</text>
+<path class="dia" d="M420 369l9 -5l9 5l-9 5z"/>
+<path class="ln" d="M438 369H470"/>
+<text class="k m" x="440" y="363" text-anchor="start">0..*</text>
+<path class="dia" d="M630 369l9 -5l9 5l-9 5z"/>
+<path class="ln" d="M648 369H680"/>
+<text class="k m" x="650" y="363" text-anchor="start">0..*</text>
+<path class="dia" d="M170 470l-5 9l5 9l5 -9z"/>
+<path class="ln" d="M170 488V535H260"/>
+<text class="k m" x="230" y="529" text-anchor="start">0..*</text>
+<path class="dia" d="M195 470l-5 9l5 9l5 -9z"/>
+<path class="ln" d="M195 488V580H520V560"/>
+<text class="k m" x="526" y="574" text-anchor="start">0..*</text>
+<path class="ln" d="M580 510V422" marker-end="url(#cl-o)"/>
+<text class="k" lang="en" x="586" y="470" text-anchor="start">controls</text><text class="k" lang="ja" x="586" y="470" text-anchor="start">制御する</text>
+<text class="k m" x="586" y="438" text-anchor="start">1..*</text>
+<path class="dia" d="M70 470l-5 9l5 9l5 -9z"/>
+<path class="ln" d="M70 488V620"/>
+<text class="k m" x="76" y="614" text-anchor="start">0..*</text>
+<path class="dia" d="M210 653l9 -5l9 5l-9 5z"/>
+<path class="ln" d="M228 653H260"/>
+<text class="k m" x="230" y="647" text-anchor="start">0..*</text>
+<path class="ln" d="M20 456H8V753H260" marker-end="url(#cl-o)"/>
+<text class="k m" x="170" y="747" text-anchor="start">solver_*</text>
+<path class="ln dsh" d="M420 753H470" marker-end="url(#cl-o)"/>
+<text class="k" lang="en" x="445.0" y="747" text-anchor="middle">solution</text><text class="k" lang="ja" x="445.0" y="747" text-anchor="middle">解</text>
+<path class="ln dsh" d="M630 753H680" marker-end="url(#cl-o)"/>
+<text class="k m" x="655.0" y="747" text-anchor="middle">plot_*</text>
+<text class="k m" lang="en" x="445.0" y="787" text-anchor="middle">solve() → [result, flag, output]</text><text class="k m" lang="ja" x="445.0" y="787" text-anchor="middle">solve() → [result, flag, output]</text>
+<path class="dia" d="M20 830l9 -5l9 5l-9 5z"/><path class="ln" d="M38 830H70"/>
+<text class="k" lang="en" x="78" y="834" text-anchor="start">owns (composition)</text><text class="k" lang="ja" x="78" y="834" text-anchor="start">所有（コンポジション）</text>
+<text class="k m" lang="en" x="250" y="834" text-anchor="start">↑ a_*: read-only reference to the parent</text><text class="k m" lang="ja" x="250" y="834" text-anchor="start">↑ a_*: 親への読み取り専用の参照</text>
+<path class="ln dsh" d="M560 830H600" marker-end="url(#cl-o)"/>
+<text class="k" lang="en" x="608" y="834" text-anchor="start">dependency</text><text class="k" lang="ja" x="608" y="834" text-anchor="start">依存</text>
+<path class="tri" d="M720 824l-7 12h14z"/>
+<text class="k" lang="en" x="732" y="834" text-anchor="start">specializes</text><text class="k" lang="ja" x="732" y="834" text-anchor="start">継承</text>
+</svg>
+    </figure>
+    <ul>
+      <li lang="en">A model is complete when its objects are set in a <code>PowerNetwork</code>; every analysis starts there.</li>
+      <li lang="ja">オブジェクトを <code>PowerNetwork</code> に設定するとモデルが完成します。すべての解析はここから始まります。</li>
+      <li lang="en">Concrete models (generators, loads, controllers, branches, networks) are subclasses in <code>_GUILDAobject</code>; the framework depends on none of them (see <a href="coding-rules.html#folders">Coding Rules</a>).</li>
+      <li lang="ja">具体的なモデル（発電機、負荷、制御器、ブランチ、ネットワーク）は <code>_GUILDAobject</code> のサブクラスです。フレームワークはどのモデルにも依存しません（<a href="coding-rules.html#folders">コーディング規則</a>を参照）。</li>
+    </ul>
+
+    <!-- ============================== PRINCIPLES ============================== -->
+    <h2 id="principles"><span lang="en">Design principles</span><span lang="ja">設計原則</span></h2>
+    <dl class="kv">
+      <dt><span lang="en">One owner per value</span><span lang="ja">値の所有者は 1 つ</span></dt>
+      <dd><span lang="en">No data is held by two classes. A derived value is a <code>Dependent</code> property that reads its owner; never copy a value and keep the copies in sync.</span><span lang="ja">同じデータを 2 つのクラスで持ちません。導出した値は所有者を読む <code>Dependent</code> プロパティにします。値をコピーして同期させるコードは書きません。</span></dd>
+      <dt><span lang="en">Real-world roles</span><span lang="ja">実物の役割に従う</span></dt>
+      <dd><span lang="en">A branch builds its own admittance matrix, a bus holds its voltage, components and controllers hold their equations.</span><span lang="ja">ブランチは自身のアドミタンス行列を作り、母線は電圧を持ち、機器と制御器は自身の方程式を持ちます。</span></dd>
+      <dt><span lang="en">Same name, same meaning</span><span lang="ja">同じ名前は同じ意味</span></dt>
+      <dd><span lang="en">A method has the same meaning and shape on every layer, and a higher layer aggregates the lower ones (e.g. <code>get_sys</code>, <code>get_variable_map</code>, <code>get_admittance_matrix</code>).</span><span lang="ja">メソッドはどの層でも同じ意味と入出力の形を持ち、上の層が下の層をまとめます（例: <code>get_sys</code>、<code>get_variable_map</code>、<code>get_admittance_matrix</code>）。</span></dd>
+      <dt><span lang="en">Solvers read data, not models</span><span lang="ja">ソルバーはモデルを読まない</span></dt>
+      <dd><span lang="en">The network collects the data (tables, matrices) and hands them to its solver; a solver keeps no settings and never a result.</span><span lang="ja">ネットワークがデータ（表や行列）を集めてソルバーに渡します。ソルバーは設定も結果も保持しません。</span></dd>
+      <dt><span lang="en">Edits record, analyses check</span><span lang="ja">編集は記録、解析は確認</span></dt>
+      <dd><span lang="en">An edit only stores the value and records what became stale; nothing is rebuilt per edit (see <a href="#edits">Model edits</a>).</span><span lang="ja">編集は値を保存し、古くなったものを記録するだけです。編集のたびに作り直すことはしません（<a href="#edits">モデルの編集</a>を参照）。</span></dd>
+    </dl>
+
+    <!-- ============================== PARENTS ============================== -->
+    <h2 id="parents"><span lang="en">Parent references</span><span lang="ja">親への参照</span></h2>
+    <ul>
+      <li lang="en">Only the parent creates a child, from a model key: <code>add_bus</code>, <code>add_branch</code>, <code>add_global_controller</code>, <code>add_component</code>, <code>replace_component</code>, <code>add_local_controller</code>. Each concrete constructor is accessible only from its parent class (e.g. <code>Access={?Bus}</code>).</li>
+      <li lang="ja">子を作るのは親だけで、モデルキーから作ります（<code>add_bus</code>、<code>add_branch</code>、<code>add_global_controller</code>、<code>add_component</code>、<code>replace_component</code>、<code>add_local_controller</code>）。具体クラスのコンストラクタは親クラスからだけ呼べます（例: <code>Access={?Bus}</code>）。</li>
+      <li lang="en">Only the parent sets the reference (<code>SetAccess={?Parent}</code>, no setter). A child only reads its parent and never writes upward or sideways; an edit travels upward as a call (<code>log_edit</code> → <code>handle_edit</code>).</li>
+      <li lang="ja">参照を設定するのも親だけです（<code>SetAccess={?親}</code>、セッターなし）。子は親を読むだけで、上や横には書き込みません。編集は呼び出しとして上に伝わります（<code>log_edit</code> → <code>handle_edit</code>）。</li>
+      <li lang="en">A removed object is deleted with the objects under it; a handle the user still holds becomes invalid. Results, scenarios and messages keep tags, not objects.</li>
+      <li lang="ja">取り除いたオブジェクトは、その下のオブジェクトと一緒に削除されます。ユーザーが持っていたハンドルは無効になります。結果、シナリオ、メッセージはオブジェクトではなくタグを保持します。</li>
+      <li lang="en">Since a model object never exists without its parent, methods do not test for a missing parent.</li>
+      <li lang="ja">モデルオブジェクトが親なしで存在することはないため、メソッドは親がない場合を確かめません。</li>
+    </ul>
+
+    <!-- ============================== IDENTITY ============================== -->
+    <h2 id="identity"><span lang="en">Identifying objects (tags)</span><span lang="ja">オブジェクトの識別（タグ）</span></h2>
+    <ul>
+      <li lang="en">The tag (e.g. <code>B001</code>) is the permanent ID: use it in saved data and scenarios. An index such as <code>net.a_Bus{3}</code> shifts after <code>remove_*</code>; never store it.</li>
+      <li lang="ja">タグ（例: <code>B001</code>）が恒久的な ID です。保存するデータやシナリオではタグを使います。<code>net.a_Bus{3}</code> のようなインデックスは <code>remove_*</code> の後にずれるため、保存しません。</li>
+      <li lang="en">An automatic tag is the largest number in use plus one, so it never names an earlier object. Every tag is a valid MATLAB variable name (<code>LINE20_1</code>, not <code>LINE20-1</code>).</li>
+      <li lang="ja">自動のタグは使用中の最大の番号に 1 を足したもので、以前のオブジェクトの名前と重なりません。タグはすべて MATLAB の変数名として有効な文字列です（<code>LINE20-1</code> ではなく <code>LINE20_1</code>）。</li>
+    </ul>
+
+    <!-- ============================== EDITS ============================== -->
+    <h2 id="edits"><span lang="en">Model edits and stale state</span><span lang="ja">モデルの編集と古い状態</span></h2>
+    <ul>
+      <li lang="en">Each layer records in <code>sct_stale</code> what of its own is out of date (e.g. <code>powerflow</code>, <code>equilibrium</code>, <code>odefcn</code>), with the message of each edit that caused it.</li>
+      <li lang="ja">各層は自分の古くなった部分を <code>sct_stale</code> に記録します（例: <code>powerflow</code>、<code>equilibrium</code>、<code>odefcn</code>）。原因となった編集のメッセージも残ります。</li>
+      <li lang="en">Only <code>net.initialize()</code> brings the layers up to date. Analyses only read the stale tags they need and stop with an error that names the edits and says to run <code>net.initialize()</code> first.</li>
+      <li lang="ja">各層を最新にするのは <code>net.initialize()</code> だけです。解析は必要な項目を読むだけで、古ければ原因の編集を示し、先に <code>net.initialize()</code> を実行するよう伝えるエラーで止まります。</li>
+      <li lang="en">Editing a scenario makes nothing stale: a scenario is not model data.</li>
+      <li lang="ja">シナリオはモデルのデータではないため、シナリオを編集しても何も古くなりません。</li>
+    </ul>
+
+    <!-- ============================== VARIABLES ============================== -->
+    <h2 id="variables"><span lang="en">Variable order and signals</span><span lang="ja">変数の順序と信号</span></h2>
+    <ul>
+      <li lang="en"><code>net.get_variable_map()</code> is the single definition of the order of states, bus voltages, inputs and signals, and of every connection between them. Simulation, linearization and results all use it; find a variable by its label, not by its position.</li>
+      <li lang="ja"><code>net.get_variable_map()</code> が状態、母線電圧、入力、信号の順序と、それらの接続をただ 1 か所で定めます。シミュレーション、近似線形化、結果はすべてこれを使います。変数は位置ではなくラベルで探します。</li>
+      <li id="signals" lang="en">Signals are connected by name. A component outputs its current to the bus and exposes its outputs and states; a controller only drives inputs. Outputs of a component depend on its states and <code>V</code>, not on its inputs.</li>
+      <li lang="ja">信号は名前で接続します。機器は電流を母線に出力し、出力と状態を制御器に見せます。制御器は入力を駆動するだけです。機器の出力は状態と <code>V</code> だけで決まり、入力には依存しません。</li>
+    </ul>
+
+    <!-- ============================== API ============================== -->
+    <h2 id="api"><span lang="en">Analysis API rules</span><span lang="ja">解析 API の規則</span></h2>
+    <p lang="en">Every analysis has the same call shape; a new analysis follows it too. The flow of each analysis is drawn in <a href="analysis.html">Analysis Flows</a>.</p>
+    <p lang="ja">すべての解析は同じ呼び出しの形を持ち、新しい解析もこれに従います。各解析の流れは<a href="analysis.html">解析の流れ</a>に図示しています。</p>
+    <pre><code>[result, flag, output] = net.verb_noun(Name=Value, ...)</code></pre>
+    <dl class="kv">
+      <dt id="entry-point"><span lang="en">Entry point</span><span lang="ja">入口</span></dt>
+      <dd><span lang="en">A <code>PowerNetwork</code> method named <code>verb_noun</code>. The solver behind it (<code>net.solver_*</code>) is for advanced use only.</span><span lang="ja"><code>verb_noun</code> という名前の <code>PowerNetwork</code> のメソッドです。その裏のソルバー（<code>net.solver_*</code>）を直接使うのは上級者だけです。</span></dd>
+      <dt id="inputs"><span lang="en">Inputs</span><span lang="ja">入力</span></dt>
+      <dd><span lang="en">System data is set on the model beforehand. Settings come from <code>GUILDA.setting</code>; a Name-Value option overrides one for this call only.</span><span lang="ja">系統のデータは事前にモデルに設定します。解析の設定は <code>GUILDA.setting</code> から読み、Name-Value オプションはその呼び出しだけ設定を上書きします。</span></dd>
+      <dt id="outputs"><span lang="en">Outputs</span><span lang="ja">出力</span></dt>
+      <dd><span lang="en">Always <code>[result, flag, output]</code>. A main analysis returns a subclass of <code>ResultBase</code>, which also keeps <code>flag</code>, <code>output</code> and the effective <code>options</code>; a simple getter returns a MATLAB type. Plotting and files are methods of the result (<code>plot_*</code>, <code>export</code>).</span><span lang="ja">常に <code>[result, flag, output]</code> です。主な解析は <code>ResultBase</code> のサブクラスを返し、そこにも <code>flag</code>、<code>output</code>、実際の <code>options</code> が残ります。単純な取得メソッドは MATLAB の型を返します。描画とファイル出力は結果のメソッド（<code>plot_*</code>、<code>export</code>）です。</span></dd>
+      <dt id="preconditions"><span lang="en">Preconditions</span><span lang="ja">前提条件</span></dt>
+      <dd><span lang="en">If one fails, stop with an error that says how to fix it. Continue with an INFO message only when a harmless default exists.</span><span lang="ja">満たされないときは、直し方を示すエラーで止めます。結果の意味を変えない既定値があるときだけ、INFO メッセージを出して続けます。</span></dd>
+      <dt id="side-effects"><span lang="en">Side effects</span><span lang="ja">副作用</span></dt>
+      <dd><span lang="en">The verb decides: <code>add_ remove_ replace_ set_ initialize</code> may change the model; <code>calculate_ simulate_ get_ disp_ plot_ export_</code> must not. GUILDA never picks a slack bus for the user.</span><span lang="ja">動詞で決まります。<code>add_ remove_ replace_ set_ initialize</code> はモデルを変えてよく、<code>calculate_ simulate_ get_ disp_ plot_ export_</code> は変えてはいけません。GUILDA がスラック母線を勝手に選ぶことはありません。</span></dd>
+      <dt id="options"><span lang="en">Options</span><span lang="ja">オプション</span></dt>
+      <dd><span lang="en">UpperCamelCase, same name and meaning everywhere: <code>Method</code> (what is solved), <code>Solver</code> (algorithm), <code>Type</code>, <code>Tolerance</code>, <code>MaxIteration</code>, <code>TimeLimit</code>, <code>Verbose</code>, <code>Progress</code>, <code>PlotFcn</code>, <code>WarmStart</code>.</span><span lang="ja">UpperCamelCase で、どこでも同じ名前は同じ意味です: <code>Method</code>（何を解くか）、<code>Solver</code>（解法）、<code>Type</code>、<code>Tolerance</code>、<code>MaxIteration</code>、<code>TimeLimit</code>、<code>Verbose</code>、<code>Progress</code>、<code>PlotFcn</code>、<code>WarmStart</code>。</span></dd>
+      <dt id="compatibility"><span lang="en">Deprecated names</span><span lang="ja">非推奨の名前</span></dt>
+      <dd><span lang="en">A wrapper in <code>_GUILDAsystem/_VersionSupport/</code> keeps a deprecated public name working for at least one major version, with a warning.</span><span lang="ja"><code>_GUILDAsystem/_VersionSupport/</code> のラッパーが、非推奨になった公開名を警告付きで少なくとも 1 メジャーバージョンの間使えるようにします。</span></dd>
+    </dl>
+
+    <!-- ============================== SETTINGS ============================== -->
+    <h2 id="solvers"><span lang="en">Settings of analyses</span><span lang="ja">解析の設定</span></h2>
+    <ul>
+      <li lang="en">Each analysis has a section of <code>GUILDA.setting</code> (e.g. <code>PowerFlowCalculation</code>, <code>TimeSimulation</code>). Its options are declared in an <code>arguments</code> block whose defaults read <code>GUILDA.config("Section", "Name")</code>; pass them on as they are, without reading the section again.</li>
+      <li lang="ja">解析ごとに <code>GUILDA.setting</code> のセクションがあります（例: <code>PowerFlowCalculation</code>、<code>TimeSimulation</code>）。オプションは <code>arguments</code> ブロックで宣言し、既定値は <code>GUILDA.config("Section", "Name")</code> から読みます。受け取った値はそのまま渡し、セクションを読み直しません。</li>
+      <li id="settings-files" lang="en">The shipped defaults are <code>@GUILDA/config/Default&lt;Section&gt;.json</code>; user values go to <code>@GUILDA/user/</code> (not committed). Raise the file's <code>version</code> when you change a default, a key, its type or options, so users start from the new defaults.</li>
+      <li lang="ja">既定値は同梱の <code>@GUILDA/config/Default&lt;Section&gt;.json</code> にあり、ユーザーの値は <code>@GUILDA/user/</code> に保存されます（コミットしません）。既定値、キー、型、選択肢を変えたときはファイルの <code>version</code> を上げ、ユーザーが新しい既定値から始まるようにします。</li>
+    </ul>
+
+    <!-- ============================== CONVENTIONS ============================== -->
+    <h2 id="conventions"><span lang="en">Units and messages</span><span lang="ja">単位とメッセージ</span></h2>
+    <dl class="kv">
+      <dt><span lang="en">Per unit</span><span lang="ja">単位法</span></dt>
+      <dd><span lang="en">Voltages, currents, powers, branch constants and dynamic parameters are per unit on the system base. No class converts physical units.</span><span lang="ja">電圧、電流、電力、ブランチ定数、動特性のパラメータは系統基準の単位法です。物理単位への変換はどのクラスも行いません。</span></dd>
+      <dt><span lang="en">Angle, time</span><span lang="ja">角度、時間</span></dt>
+      <dd><span lang="en">Radians; seconds. The nominal frequency is read with <code>get_Hz()</code>, and models multiply by 2π themselves.</span><span lang="ja">ラジアンと秒です。定格周波数は <code>get_Hz()</code> で読み、2π を掛けるのはモデル側です。</span></dd>
+      <dt><span lang="en">Current direction</span><span lang="ja">電流の向き</span></dt>
+      <dd><span lang="en">A component's current is injected into its bus (positive for generation); the network equation is <code>I = Y*V</code>.</span><span lang="ja">機器の電流は母線への注入方向です（発電で正）。ネットワークの式は <code>I = Y*V</code> です。</span></dd>
+      <dt><span lang="en">Errors and warnings</span><span lang="ja">エラーと警告</span></dt>
+      <dd><span lang="en"><code>error(msg("GUILDA:&lt;Object&gt;:&lt;Key&gt;", ...))</code> and <code>show_msg("warning" | "info", ID, ...)</code>; the English text is in <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>. No <code>disp</code> or <code>warning</code> of GUILDA text without <code>show_msg</code>.</span><span lang="ja"><code>error(msg("GUILDA:&lt;Object&gt;:&lt;Key&gt;", ...))</code> と <code>show_msg("warning" | "info", ID, ...)</code> を使います。英語の本文は <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> にあります。GUILDA の文を <code>show_msg</code> を通さずに <code>disp</code> や <code>warning</code> で出しません。</span></dd>
+    </dl>
+  </main>
+</body>
+</html>
