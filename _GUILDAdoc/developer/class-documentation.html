@@ -21,9 +21,9 @@
     .cd-page-body { padding: var(--dg-s3) var(--dg-s4) var(--dg-s4); }
     .cd-page h4 { margin: 0 0 2px; color: var(--dg-accent); font: bold 1.2rem/1.3 var(--dg-mono); }
     .cd-page-label { display: block; margin: var(--dg-s3) 0 4px; color: var(--dg-muted); font-size: 0.78rem; }
-    .cd-page table { display: table; width: 100%; margin: 0; border-collapse: collapse; table-layout: fixed; font-size: 0.78rem; box-shadow: none; }
-    .cd-page th, .cd-page td { padding: 4px 6px; border-bottom: 1px solid var(--dg-line); text-align: left; vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
-    .cd-page th { min-width: 0; color: var(--dg-muted); font-weight: normal; border-bottom-color: var(--line-strong); }
+    .cd-page table { display: table; width: 100%; margin: 0; border-collapse: collapse; font-size: 0.78rem; box-shadow: none; }
+    .cd-page th, .cd-page td { padding: 4px 6px; border-bottom: 1px solid var(--dg-line); text-align: left; vertical-align: top; white-space: normal; }
+    .cd-page th { color: var(--dg-muted); font-weight: normal; border-bottom-color: var(--line-strong); }
     .cd-page .dg-mono { font-size: 0.95em; overflow-wrap: anywhere; }
     /* Tag map: one row per tag, one column per target; stays a table at every width */
     .dg .cd-map { display: table; width: 100%; }
@@ -579,7 +579,7 @@ r_Sbase (1,1) double = 100</pre>
         <tr><td><span class="dg-badge is-warn"><span lang="en">Warning</span><span lang="ja">警告</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">A <code>&lt;@Deprecated&gt;</code> tag with no text.<small>The text must name the replacement.</small></span><span lang="ja"><code>&lt;@Deprecated&gt;</code> タグに本文がありません。<small>本文に代わりの手段を書く必要があります。</small></span></td></tr>
         <tr><td><span class="dg-badge is-warn"><span lang="en">Warning</span><span lang="ja">警告</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">An unknown tag, or the same tag twice (the last value is used).</span><span lang="ja">未知のタグがあるか、同じタグが重複しています（最後の値を使います）。</span></td></tr>
         <tr><td><span class="dg-badge is-warn"><span lang="en">Warning</span><span lang="ja">警告</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">A method declared in the classdef with no implementation file.</span><span lang="ja">classdef で宣言されているのに、実装ファイルがないメソッドがあります。</span></td></tr>
-        <tr><td><span class="dg-badge"><span lang="en">Coverage</span><span lang="ja">カバレッジ</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">Documented / total for classes, public methods and public properties. Documented means it has an H1 line.<small>Shown at the top of the Reference tab. Undocumented classes get a <span class="dg-badge is-warn">no docs</span> marker there.</small></span><span lang="ja">クラス、公開メソッド、公開プロパティそれぞれについて「記述済み / 総数」を数えます。H1 行があれば記述済みとみなします。<small>結果は Reference タブの上部に表示され、記述のないクラスにはそこで <span class="dg-badge is-warn">説明なし</span> の印が付きます。</small></span></td></tr>
+        <tr><td><span class="dg-badge"><span lang="en">Coverage</span><span lang="ja">カバレッジ</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">Documented / total for classes, public methods and public properties. Documented means it has an H1 line.<small>Printed in the summary line of each export. In the class tree of the Reference tab, an undocumented class gets a <span class="dg-badge is-warn">no docs</span> marker.</small></span><span lang="ja">クラス、公開メソッド、公開プロパティそれぞれについて「記述済み / 総数」を数えます。H1 行があれば記述済みとみなします。<small>結果はエクスポートのたびに最後の要約行に表示されます。Reference タブのクラスツリーでは、記述のないクラスに <span class="dg-badge is-warn">説明なし</span> の印が付きます。</small></span></td></tr>
       </tbody>
     </table>
     <p lang="en">With <code>GUILDA.doc("strict", true)</code> the run fails when there are errors.</p>
@@ -615,7 +615,7 @@ r_Sbase (1,1) double = 100</pre>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Generated file</span><span lang="ja">生成されるファイル</span></th><th><span lang="en">Content</span><span lang="ja">内容</span></th></tr></thead>
       <tbody>
-        <tr><td><code>_GUILDAdoc/database/list_Classes.js</code></td><td data-label="Content" data-label-ja="内容"><span lang="en">Index with the schema, coverage and validation results.</span><span lang="ja">スキーマ、カバレッジ、検証結果を含む索引です。</span></td></tr>
+        <tr><td><code>_GUILDAdoc/database/list_Classes.js</code></td><td data-label="Content" data-label-ja="内容"><span lang="en">Index with the schema and validation results.</span><span lang="ja">スキーマと検証結果を含む索引です。</span></td></tr>
         <tr><td><code>database/GUILDAsystem|GUILDAobject/&lt;Class&gt;.js</code></td><td data-label="Content" data-label-ja="内容"><span lang="en">One file per class, loaded on demand.</span><span lang="ja">クラスごとに 1 ファイルあり、必要なときに読み込みます。</span></td></tr>
         <tr><td><code>database/User/&lt;Class&gt;.js</code></td><td data-label="Content" data-label-ja="内容"><span lang="en">One file per user class. Never published.</span><span lang="ja">ユーザークラスごとに 1 ファイルあります。公開はしません。</span></td></tr>
         <tr><td><code>database/manifest.json</code></td><td data-label="Content" data-label-ja="内容"><span lang="en">Time and size of each source file, and the classes it defines.</span><span lang="ja">各ソースファイルの時刻とサイズ、そのファイルが定義するクラスを記録します。</span></td></tr>
