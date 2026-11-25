@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-title-ja="GUILDA 開発者ガイド - コーディング規則">GUILDA Developer Guide - Coding Rules</title>
+  <script src="../doc-lang.js"></script>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Folder sections (fs-*) */
+    .fs-c-guilda { --fs-c: var(--ink); }
+    .fs-c-system { --fs-c: var(--ink); }
+    .fs-c-object { --fs-c: var(--ink); }
+    .fs-c-tutorial { --fs-c: var(--ink); }
+    .fs-c-doc { --fs-c: var(--muted); }
+    .fs-c-other { --fs-c: var(--muted); }
+    .fs-figure svg { max-width: 540px; margin: 0 auto; }
+    .fs-name { display: block; color: var(--fs-c); font: 600 1.05rem/1.4 var(--dg-mono); overflow-wrap: anywhere; }
+    .fs-name + .dg-badge, .fs-name ~ .dg-badge { margin: 6px 6px 0 0; }
+    .fs-folders .dg-row { grid-template-columns: minmax(0, 13rem) minmax(0, 1fr); }
+    .fs-folders dl { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; margin: var(--dg-s2) 0 0; }
+    .fs-folders dd + dt { margin-top: var(--dg-s2); }
+    .fs-folders dd ul { margin: 2px 0 0; padding-left: 20px; }
+    .fs-place.dg-rows.is-arrow .dg-row { grid-template-columns: minmax(0, 15rem) 28px minmax(0, 1fr); }
+    .fs-place .fs-dest-note + .fs-dest-note { margin-top: 2px; }
+    .fs-folders dt { padding-top: 2px; color: var(--dg-muted); font-size: 0.85rem; }
+    .fs-folders dd { margin: 0; }
+    .fs-dest { display: block; color: var(--fs-c); font: 600 0.95rem/1.5 var(--dg-mono); overflow-wrap: anywhere; }
+    .fs-dest-note { display: block; color: var(--dg-muted); font-size: 0.88rem; }
+    .fs-yn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; align-items: baseline; }
+    .fs-gen { margin: var(--dg-s4) 0; }
+    .fs-gen + .fs-gen { padding-top: var(--dg-s4); border-top: 1px solid var(--dg-line); }
+    @media (max-width: 640px) {
+      .fs-folders .dg-row { grid-template-columns: minmax(0, 1fr); }
+      .fs-place.dg-rows.is-arrow .dg-row { grid-template-columns: minmax(0, 1fr); }
+    }
+    /* Naming and model sections (cr-*) */
+    .cr-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 2px; margin: var(--dg-s4) 0; font: 600 clamp(1.05rem, 3.6vw, 1.35rem)/1.4 var(--dg-mono); }
+    .cr-name .is-t { color: var(--brand); }
+    .cr-name .is-s { color: var(--ok); }
+    .cr-name .is-u { color: var(--muted); }
+    .cr-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: var(--dg-s3) 0 var(--dg-s5); }
+    .cr-table { display: table; width: 100%; min-width: 520px; margin: 0; border-top: 1px solid var(--line-strong); font-size: 0.92rem; line-height: 1.5; }
+    .cr-table th, .cr-table td { min-width: 0; padding: 8px 12px 8px 0; vertical-align: top; text-align: left; }
+    .cr-table th { background: none; color: var(--muted); font-weight: 400; font-size: 0.85rem; }
+    .cr-table tbody th { width: 1%; color: var(--ink); font-weight: 600; white-space: nowrap; }
+    .cr-table.is-grid td { text-align: center; }
+    .cr-table.is-grid td code { font-weight: 600; }
+    .cr-table tr:hover { background: none; }
+    .kv { display: grid; grid-template-columns: minmax(8rem, 11rem) minmax(0, 1fr); gap: 0 var(--dg-s4); margin: var(--dg-s3) 0 var(--dg-s5); border-top: 1px solid var(--line); }
+    .kv > dt, .kv > dd { margin: 0; padding: 9px 0; border-bottom: 1px solid var(--line); line-height: 1.55; min-width: 0; }
+    .kv > dt { color: var(--ink); font-weight: 600; }
+    @media (max-width: 640px) {
+      .kv { grid-template-columns: minmax(0, 1fr); }
+      .kv > dt { padding-bottom: 0; border-bottom: 0; }
+      .kv > dd { padding-top: 2px; }
+    }
+  </style>
+</head>
+<body class="developer-layout dg">
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+    <symbol id="dg-i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4.5M12 17.5v.5"/></symbol>
+    <symbol id="fs-gear" viewBox="0 0 24 24"><path fill="currentColor" d="M10.3 2h3.4l.5 2.6 1.9.8 2.2-1.5 2.4 2.4-1.5 2.2.8 1.9 2.6.5v3.4l-2.6.5-.8 1.9 1.5 2.2-2.4 2.4-2.2-1.5-1.9.8-.5 2.6h-3.4l-.5-2.6-1.9-.8-2.2 1.5-2.4-2.4 1.5-2.2-.8-1.9L2 13.7v-3.4l2.6-.5.8-1.9-1.5-2.2 2.4-2.4 2.2 1.5 1.9-.8zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/></symbol>
+  </svg>
+  <main>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
+    <h1><span lang="en">Coding Rules</span><span lang="ja">コーディング規則</span></h1>
+    <p class="page-lead" lang="en">How to name things, where a new file goes, which files are generated, and what a new model class must provide. How to document a class is in <a href="class-documentation.html">Class Documentation</a>.</p>
+    <p class="page-lead" lang="ja">名前の付け方、新しいファイルの置き場所、自動生成されるファイル、新しいモデルクラスが備えるべきものをまとめます。クラスの説明の書き方は<a href="class-documentation.html">クラスのドキュメント</a>にあります。</p>
+
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#naming"><span lang="en">Naming conventions</span><span lang="ja">命名規則</span></a>
+      <a href="#overview"><span lang="en">Overview of the folders</span><span lang="ja">フォルダ構成の概要</span></a>
+      <a href="#folders"><span lang="en">Top-level folders</span><span lang="ja">トップレベルのフォルダ</span></a>
+      <a href="#placement"><span lang="en">Placement rules for new files</span><span lang="ja">新しいファイルの配置ルール</span></a>
+      <a href="#generated"><span lang="en">Generated files</span><span lang="ja">自動生成ファイル</span></a>
+      <a href="#legacy"><span lang="en">Archived code</span><span lang="ja">アーカイブしたコード</span></a>
+      <a href="#model"><span lang="en">Adding a model</span><span lang="ja">モデルの追加</span></a>
+      <a href="#testing"><span lang="en">Testing</span><span lang="ja">テスト</span></a>
+    </nav>
+
+    <!-- ============================== NAMING ============================== -->
+    <h2 id="naming"><span lang="en">Naming conventions</span><span lang="ja">命名規則</span></h2>
+    <p lang="en">A variable or property name is <code>[type][size]_[description]</code>.</p>
+    <p lang="ja">変数名とプロパティ名は <code>[型][サイズ]_[説明]</code> の形にします。</p>
+    <div class="cr-name" aria-label="cv_Vequilibrium"><span class="is-t">c</span><span class="is-s">v</span><span class="is-u">_</span><span>Vequilibrium</span></div>
+    <p class="dg-muted" lang="en"><code>c</code> complex · <code>v</code> column vector · description. More examples: <code>lv_faultflag</code>, <code>im_solution</code>, <code>r_gain</code> (scalar: no size letter).</p>
+    <p class="dg-muted" lang="ja"><code>c</code> は複素数、<code>v</code> は列ベクトル、その後に説明が続きます。ほかの例: <code>lv_faultflag</code>、<code>im_solution</code>、<code>r_gain</code>（スカラーはサイズの文字なし）。</p>
+    <div class="dg-two">
+      <div>
+        <h3><span lang="en">Type letter</span><span lang="ja">型の文字</span></h3>
+        <div class="cr-scroll"><table class="cr-table" style="min-width:0">
+          <tbody>
+            <tr><th><code>c</code></th><td><span lang="en">complex</span><span lang="ja">複素数</span></td><th><code>r</code></th><td><span lang="en">real</span><span lang="ja">実数</span></td></tr>
+            <tr><th><code>l</code></th><td><span lang="en">logical</span><span lang="ja">論理値</span></td><th><code>s</code></th><td><span lang="en">string</span><span lang="ja">文字列</span></td></tr>
+            <tr><th><code>i</code></th><td><span lang="en">index</span><span lang="ja">インデックス</span></td><th><code>n</code></th><td><span lang="en">count</span><span lang="ja">個数</span></td></tr>
+            <tr><th><code>f</code></th><td colspan="3"><span lang="en">function handle (a cell array when the variable is an array)</span><span lang="ja">関数ハンドル（変数が配列なら cell 配列）</span></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div>
+        <h3><span lang="en">Size letter</span><span lang="ja">サイズの文字</span></h3>
+        <div class="cr-scroll"><table class="cr-table" style="min-width:0">
+          <tbody>
+            <tr><th><span lang="en">(none)</span><span lang="ja">（なし）</span></th><td><span lang="en">scalar</span><span lang="ja">スカラー</span></td></tr>
+            <tr><th><code>v</code></th><td><span lang="en">column vector</span><span lang="ja">列ベクトル</span></td></tr>
+            <tr><th><code>r</code></th><td><span lang="en">row vector</span><span lang="ja">行ベクトル</span></td></tr>
+            <tr><th><code>m</code></th><td><span lang="en">matrix</span><span lang="ja">行列</span></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+    <h3 id="fixed-prefixes"><span lang="en">Fixed prefixes</span><span lang="ja">決まった接頭辞</span></h3>
+    <dl class="kv">
+      <dt><code>tab_</code></dt><dd><span lang="en">A table, whatever its size (<code>tab_bus_data</code>).</span><span lang="ja">表。サイズによらずこの接頭辞です（<code>tab_bus_data</code>）。</span></dd>
+      <dt><code>sct_</code></dt><dd><span lang="en">A struct, whatever its size (<code>sct_stale</code>); <code>s</code> alone means string.</span><span lang="ja">構造体。サイズによらずこの接頭辞です（<code>sct_stale</code>）。<code>s</code> だけなら文字列です。</span></dd>
+      <dt><code>a_</code></dt><dd><span lang="en">A cell array of GUILDA objects, named after the class (<code>a_Bus</code>, <code>a_LocalController</code>).</span><span lang="ja">GUILDA のオブジェクトの cell 配列で、クラス名を付けます（<code>a_Bus</code>、<code>a_LocalController</code>）。</span></dd>
+      <dt><span lang="en">Name-Value options</span><span lang="ja">Name-Value オプション</span></dt><dd><span lang="en">UpperCamelCase as in MATLAB (<code>Method</code>, <code>Tolerance</code>, <code>MaxIteration</code>); see <a href="architecture.html#options">common options</a>.</span><span lang="ja">MATLAB と同じ UpperCamelCase です（<code>Method</code>、<code>Tolerance</code>、<code>MaxIteration</code>）。<a href="architecture.html#options">共通のオプション</a>を参照してください。</span></dd>
+      <dt id="private-functions"><code>simulateFcn_</code></dt><dd><span lang="en">A private function in <code>@PowerNetwork/private</code> used only by the time simulation. A private function shared with other methods has no prefix.</span><span lang="ja"><code>@PowerNetwork/private</code> にあり、時間応答シミュレーションだけが使う private 関数です。ほかのメソッドと共有する private 関数には付けません。</span></dd>
+    </dl>
+
+    <!-- ============================== OVERVIEW ============================== -->
+    <h2 id="overview"><span lang="en">Overview of the folders</span><span lang="ja">フォルダ構成の概要</span></h2>
+    <figure class="dg-figure fs-figure">
+      <svg class="dg-svg" viewBox="0 0 480 624" role="img" aria-labelledby="fs-map-title">
+        <title id="fs-map-title" lang="en">Map of the GUILDA top-level folders and how they depend on each other</title>
+        <title lang="ja">GUILDA のトップレベルのフォルダと依存関係を示す図です。</title>
+        <defs>
+          <marker id="fs-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker>
+          <marker id="fs-ah-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--ink)"/></marker>
+        </defs>
+
+        <!-- @GUILDA -->
+        <rect x="140" y="10" width="200" height="64" rx="4" style="fill:var(--ink)"/>
+        <text x="240" y="38" text-anchor="middle" font-size="18" font-weight="bold" class="dg-mono" style="fill:var(--surface)">@GUILDA</text>
+        <text lang="en" x="240" y="60" text-anchor="middle" font-size="12" style="fill:var(--on-brand-muted)">entry point · environment</text><text lang="ja" x="240" y="60" text-anchor="middle" font-size="12" style="fill:var(--on-brand-muted)">エントリポイント · 環境設定</text>
+
+        <!-- @GUILDA opens tutorial / doc -->
+        <path class="dg-anim-dash" d="M340 42H366V144" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text lang="en" x="372" y="100" font-size="11" style="fill:var(--muted)">opens</text><text lang="ja" x="372" y="100" font-size="11" style="fill:var(--muted)">開く</text>
+        <path class="dg-anim-dash" d="M140 42H12V476H42" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text lang="en" x="18" y="34" font-size="11" style="fill:var(--muted)">opens</text><text lang="ja" x="18" y="34" font-size="11" style="fill:var(--muted)">開く</text>
+
+        <!-- path setup -->
+        <path class="dg-anim-dash" d="M240 74V118" fill="none" stroke-width="2" marker-end="url(#fs-ah-p)" style="stroke:var(--ink)"/>
+        <text lang="en" x="232" y="100" text-anchor="end" font-size="12" font-weight="bold" style="fill:var(--ink)">sets up the path</text><text lang="ja" x="232" y="100" text-anchor="end" font-size="12" font-weight="bold" style="fill:var(--ink)">パスを設定</text>
+
+        <!-- MATLAB path region -->
+        <rect x="24" y="124" width="446" height="262" rx="4" stroke-width="1.5" stroke-dasharray="6 4" style="fill:var(--surface); stroke:var(--ink)"/>
+        <rect x="34" y="116" width="96" height="18" style="fill:var(--surface-subtle)"/>
+        <text lang="en" x="38" y="129" font-size="12" font-weight="bold" style="fill:var(--ink)">MATLAB path</text><text lang="ja" x="38" y="129" font-size="12" font-weight="bold" style="fill:var(--ink)">MATLAB パス</text>
+
+        <rect x="44" y="148" width="206" height="72" rx="4" stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--ink)"/>
+        <text x="147" y="178" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--ink)">_GUILDAobject</text>
+        <text lang="en" x="147" y="200" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">concrete models</text><text lang="ja" x="147" y="200" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">具体的なモデル</text>
+
+        <rect x="44" y="290" width="206" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface-subtle); stroke:var(--ink)"/>
+        <text x="147" y="320" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--ink)">_GUILDAsystem</text>
+        <text lang="en" x="147" y="342" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">framework + analysis</text><text lang="ja" x="147" y="342" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">フレームワーク + 解析</text>
+
+        <path class="dg-anim-dash" d="M147 220V286" fill="none" stroke-width="2" marker-end="url(#fs-ah)" style="stroke:var(--ink)"/>
+        <text lang="en" x="156" y="250" font-size="12" font-weight="bold" style="fill:var(--ink)">builds on</text><text lang="ja" x="156" y="250" font-size="12" font-weight="bold" style="fill:var(--ink)">を基盤とする</text>
+        <text lang="en" x="156" y="266" font-size="11" style="fill:var(--err)">never the reverse</text><text lang="ja" x="156" y="266" font-size="11" style="fill:var(--err)">逆方向は不可</text>
+
+        <rect x="276" y="148" width="180" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface); stroke:var(--ink)"/>
+        <text x="366" y="178" text-anchor="middle" font-size="15" font-weight="bold" class="dg-mono" style="fill:var(--ink)">_GUILDAtutorial</text>
+        <text lang="en" x="366" y="200" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">learning material</text><text lang="ja" x="366" y="200" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">学習用教材</text>
+
+        <!-- tutorials use the models -->
+        <path class="dg-anim-dash" d="M366 220V326H254" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text lang="en" x="358" y="276" text-anchor="end" font-size="11" style="fill:var(--muted)">uses the public API</text><text lang="ja" x="358" y="276" text-anchor="end" font-size="11" style="fill:var(--muted)">公開 API を使用</text>
+
+        <!-- doc generation -->
+        <path class="dg-anim-dash" d="M147 362V436" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text lang="en" x="156" y="404" font-size="11" style="fill:var(--muted)">help comments in source</text><text lang="ja" x="156" y="404" font-size="11" style="fill:var(--muted)">ソースのヘルプコメント</text>
+        <text lang="en" x="156" y="420" font-size="11" style="fill:var(--muted)">→ generated class reference</text><text lang="ja" x="156" y="420" font-size="11" style="fill:var(--muted)">→ クラスリファレンスを生成</text>
+
+        <rect x="44" y="440" width="206" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface-subtle); stroke:var(--muted)"/>
+        <text x="147" y="470" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--muted)">_GUILDAdoc</text>
+        <text lang="en" x="147" y="492" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">HTML docs · not on path</text><text lang="ja" x="147" y="492" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">HTML ドキュメント · パス外</text>
+
+        <!-- verification runs the models -->
+        <path class="dg-anim-dash" d="M366 440V390" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text lang="en" x="374" y="420" font-size="11" style="fill:var(--muted)">runs the models</text><text lang="ja" x="374" y="420" font-size="11" style="fill:var(--muted)">モデルを実行</text>
+
+        <rect x="276" y="440" width="180" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface-subtle); stroke:var(--muted)"/>
+        <text x="366" y="470" text-anchor="middle" font-size="13" font-weight="bold" class="dg-mono" style="fill:var(--muted)">_GUILDAverification</text>
+        <text lang="en" x="366" y="492" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">vs literature · folder on path</text><text lang="ja" x="366" y="492" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">文献との比較 · フォルダのみパス上</text>
+
+        <rect x="276" y="540" width="180" height="72" rx="4" stroke-width="1.5" stroke-dasharray="5 4" style="fill:var(--surface-subtle); stroke:var(--muted)"/>
+        <text x="366" y="570" text-anchor="middle" font-size="15" font-weight="bold" class="dg-mono" style="fill:var(--muted)">_GUILDAexport</text>
+        <text lang="en" x="366" y="592" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">output · created on demand</text><text lang="ja" x="366" y="592" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">出力 · 必要時に作成</text>
+      </svg>
+      <figcaption><span lang="en">Arrows: which folder uses or produces another. Only folders on the MATLAB path can be called from user scripts; <code>@GUILDA</code> adds them at startup.</span><span lang="ja">矢印は、あるフォルダが別のフォルダを使う・生成する関係を表します。ユーザースクリプトから呼び出せるのは MATLAB パス上のフォルダだけです。これらは <code>@GUILDA</code> が起動時にパスへ追加します。</span></figcaption>
+    </figure>
+
+    <!-- ============================== TOP-LEVEL FOLDERS ============================== -->
+    <h2 id="folders"><span lang="en">Top-level folders</span><span lang="ja">トップレベルのフォルダ</span></h2>
+    <div class="dg-rows fs-folders">
+      <div class="dg-row fs-c-guilda">
+        <div><code class="fs-name">@GUILDA/</code><span class="dg-badge is-ok"><span lang="en">via repository root</span><span lang="ja">リポジトリルート経由</span></span></div>
+        <div>
+          <p><span lang="en">Entry point of the toolbox. Running <code>&gt;&gt; GUILDA</code> prepares the environment.</span><span lang="ja">ツールボックスのエントリポイントです。<code>&gt;&gt; GUILDA</code> を実行すると環境を準備します。</span></p>
+          <dl>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">Environment setup, user settings and their shipped defaults, and commands that open the tutorials and this documentation.</span><span lang="ja">環境設定、ユーザー設定とその既定値、チュートリアルとこのドキュメントを開くコマンドです。</span></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Puts the other code folders on the MATLAB path. Contains no power system modeling or analysis.</span><span lang="ja">他のコードフォルダを MATLAB パスに追加します。電力系統のモデリングや解析は含みません。</span></dd>
+            <dt><span lang="en">Optional folders</span><span lang="ja">任意のフォルダ</span></dt><dd><span lang="en"><code>GUILDA.addpath</code> (run at startup) also adds <code>_GUILDAverification</code> and <code>_GUILDAtextbook</code> at the root when they exist, each folder only and not its subfolders, and <code>GUILDA.rmpath</code> removes them. A missing one is skipped without a message, so a copy without them works the same. Both are left out of <code>GUILDA.dictionary</code>. The setting <code>Startup.PrintPathLog</code> (default <code>true</code>) chooses whether the two commands print their log lines in the Command Window; a folder that fails to be added is reported either way.</span><span lang="ja"><code>GUILDA.addpath</code>（起動時に実行）は、ルートに <code>_GUILDAverification</code> と <code>_GUILDAtextbook</code> があれば、それぞれのフォルダだけ（サブフォルダは含みません）をパスに追加します。<code>GUILDA.rmpath</code> はこれらも外します。無いフォルダは何も表示せずに飛ばすため、これらを含まないコピーでも同じように動きます。どちらも <code>GUILDA.dictionary</code> には載りません。設定 <code>Startup.PrintPathLog</code>（既定は <code>true</code>）で、2 つのコマンドがコマンド ウィンドウに経過を表示するかどうかを選びます。追加に失敗したフォルダは、設定にかかわらず表示します。</span></dd>
+          </dl>
+        </div>
+      </div>
+      <div class="dg-row fs-c-system">
+        <div><code class="fs-name">_GUILDAsystem/</code><span class="dg-badge is-ok"><span lang="en">on path</span><span lang="ja">パス上</span></span></div>
+        <div>
+          <p><span lang="en">The modeling framework.</span><span lang="ja">モデリングのフレームワークです。</span></p>
+          <dl>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">Base classes that define what a network, bus, branch, component, and controller are; the classes that perform analysis; general helper functions; wrappers that keep deprecated names working.</span><span lang="ja">ネットワーク、母線、ブランチ、機器、制御器を定義する基底クラス、解析を行うクラス、汎用の補助関数、非推奨の名前を動かし続けるラッパーです。</span></dd>
+            <dt><span lang="en">Core classes</span><span lang="ja">コアクラス</span></dt><dd><code>@PowerNetwork</code>, <code>@Bus</code>, <code>@Branch</code>, <code>@Component</code>, <code>@LocalController</code>, <code>@GlobalController</code>.</dd>
+            <dt><span lang="en">Support classes</span><span lang="ja">補助クラス</span></dt><dd><span lang="en">In <code>_auxiliary/</code>: the bases <code>PowerSystemModel</code> and <code>auxiliary</code>, and the analysis families <code>Solver*</code>, <code>Method*</code>, <code>Result*</code>, <code>Graph*</code>, <code>Scenario</code> / <code>Event*</code> (see <a href="architecture.html#layers">Architecture</a>).</span><span lang="ja"><code>_auxiliary/</code> 内に、基底クラス <code>PowerSystemModel</code> と <code>auxiliary</code>、解析用のクラス群 <code>Solver*</code>、<code>Method*</code>、<code>Result*</code>、<code>Graph*</code>、<code>Scenario</code> / <code>Event*</code> を置きます（<a href="architecture.html#layers">アーキテクチャ</a>を参照）。</span></dd>
+            <dt><span lang="en">Other contents</span><span lang="ja">その他の中身</span></dt><dd><span lang="en"><code>+tools/</code> helpers; <code>resources/functionSignatures.json</code> and <code>_auxiliary/resources/functionSignatures.json</code>, the code suggestions (generated, see <a href="#generated">Generated files</a>); <code>_VersionSupport/</code> wrappers for deprecated names (e.g. <code>Continuation_Power_Flow</code> → <code>net.calculate_continuation_powerflow</code>, <code>CsvNetHandler</code> → <code>PowerNetwork.import</code> / <code>net.export</code>).</span><span lang="ja"><code>+tools/</code> の補助関数、<code>resources/functionSignatures.json</code> と <code>_auxiliary/resources/functionSignatures.json</code> のコード補完（生成物。<a href="#generated">自動生成ファイル</a>を参照）、<code>_VersionSupport/</code> の非推奨の名前のラッパー（例: <code>Continuation_Power_Flow</code> → <code>net.calculate_continuation_powerflow</code>、<code>CsvNetHandler</code> → <code>PowerNetwork.import</code> / <code>net.export</code>）があります。</span></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Depends on no concrete model in <code>_GUILDAobject</code>, so models can be added or removed without touching the framework. Network import and export are methods of <code>PowerNetwork</code>, not separate classes.</span><span lang="ja"><code>_GUILDAobject</code> の具体的なモデルには依存しません。そのため、フレームワークに手を加えずにモデルを追加・削除できます。ネットワークのインポートとエクスポートは、独立したクラスではなく <code>PowerNetwork</code> のメソッドです。</span></dd>
+          </dl>
+        </div>
+      </div>
+      <div class="dg-row fs-c-object">
+        <div><code class="fs-name">_GUILDAobject/</code><span class="dg-badge is-ok"><span lang="en">on path</span><span lang="ja">パス上</span></span></div>
+        <div>
+          <p><span lang="en">Concrete models that users put into a network.</span><span lang="ja">ユーザーがネットワークに組み込む具体的なモデルです。</span></p>
+          <dl>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><ul><li><span lang="en">Model classes, grouped into packages by kind (branch / component / controller / network); sub-packages for model families that share a base class.</span><span lang="ja">種類（branch / component / controller / network）ごとのパッケージにまとめたモデルクラスです。基底クラスを共有するモデル群はサブパッケージにまとめます。</span></li><li><span lang="en">A network template: a class that builds the network in its constructor, usually a class folder with data subfolders per element type.</span><span lang="ja">ネットワークテンプレートも置きます。これはコンストラクタでネットワークを組み立てるクラスで、通常は要素の種類ごとのデータのサブフォルダを持つクラスフォルダにします。</span></li></ul></dd>
+            <dt><span lang="en">Network templates</span><span lang="ja">ネットワークのテンプレート</span></dt><dd><span lang="en">Each constructor loads its own data folder with <code>PowerNetwork.import(dir, Network=obj)</code>. The bundled templates are listed in the <a href="../class.html">class reference</a>.</span><span lang="ja">各コンストラクタは <code>PowerNetwork.import(dir, Network=obj)</code> で自身のデータフォルダを読み込みます。同梱のテンプレートは<a href="../class.html">クラスリファレンス</a>に一覧があります。</span></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Every model inherits from a base class in <code>_GUILDAsystem</code>.</span><span lang="ja">すべてのモデルは <code>_GUILDAsystem</code> の基底クラスを継承します。</span></dd>
+          </dl>
+        </div>
+      </div>
+      <div class="dg-row fs-c-tutorial">
+        <div><code class="fs-name">_GUILDAtutorial/</code><span class="dg-badge is-ok"><span lang="en">on path</span><span lang="ja">パス上</span></span></div>
+        <div>
+          <p><span lang="en">Learning material for users.</span><span lang="ja">ユーザー向けの学習教材です。</span></p>
+          <dl>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">Live scripts that walk through using GUILDA, and reference scripts per model family.</span><span lang="ja">GUILDA の使い方を順を追って説明するライブスクリプトと、モデル群ごとの参考スクリプトです。</span></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Uses only the public API of <code>_GUILDAsystem</code> and <code>_GUILDAobject</code>; opened from <code>@GUILDA</code>. Each tutorial is listed in the documentation.</span><span lang="ja"><code>_GUILDAsystem</code> と <code>_GUILDAobject</code> の公開 API だけを使います。<code>@GUILDA</code> から開きます。各チュートリアルはドキュメントに掲載します。</span></dd>
+          </dl>
+        </div>
+      </div>
+      <div class="dg-row fs-c-doc">
+        <div><code class="fs-name">_GUILDAdoc/</code><span class="dg-badge is-muted"><span lang="en">not on path</span><span lang="ja">パス外</span></span></div>
+        <div>
+          <p><span lang="en">The documentation that changes with the code, viewed in a browser: the class reference, these For Developer pages and the update log.</span><span lang="ja">コードと一緒に変わるドキュメントです。ブラウザで閲覧します。クラスリファレンス、この開発者向けのページ、更新履歴を置きます。</span></p>
+          <dl>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">The reference and developer pages, their styles and lists, the update log, plus a class reference generated from the help comments in the MATLAB source.</span><span lang="ja">リファレンスと開発者向けのページ、そのスタイルと一覧、更新履歴と、MATLAB ソースのヘルプコメントから生成するクラスリファレンスです。</span></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Reads the code folders but is never called by them. Opened from <code>@GUILDA</code> (<code>GUILDA.doc</code>). <code>GUILDA.publish_doc</code> publishes it, without user classes, on the <code>gh-pages</code> branch.</span><span lang="ja">コードフォルダを参照しますが、コードフォルダからは呼び出されません。<code>@GUILDA</code> から開きます（<code>GUILDA.doc</code>）。<code>GUILDA.publish_doc</code> が、ユーザークラスを除いて <code>gh-pages</code> ブランチで公開します。</span></dd>
+          </dl>
+        </div>
+      </div>
+      <div class="dg-row fs-c-doc">
+        <div><code class="fs-name">_GUILDAdocPages/</code><span class="dg-badge is-muted"><span lang="en">submodule · not on path</span><span lang="ja">サブモジュール · パス外</span></span></div>
+        <div>
+          <p><span lang="en">The public documentation site <a href="https://guilda-dev.github.io/guilda-doc-preview/">guilda-dev.github.io/guilda-doc-preview</a>, the repository guilda-dev/guilda-doc checked out as a git submodule.</span><span lang="ja">公開のドキュメントサイト <a href="https://guilda-dev.github.io/guilda-doc-preview/">guilda-dev.github.io/guilda-doc-preview</a> です。リポジトリ guilda-dev/guilda-doc を git のサブモジュールとしてチェックアウトします。</span></p>
+          <dl>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">Home, About, Getting Started and Tutorial (<code>index.html</code>), the lecture notes (<code>lecture/</code>), their images and lists (<code>list_Lectures.js</code>, <code>list_Tutorials.js</code>) and its own copies of the shared styles and scripts. No class reference or developer pages: its header links to those on this repository's site.</span><span lang="ja">Home、About、Getting Started、Tutorial（<code>index.html</code>）、講義ノート（<code>lecture/</code>）、その画像と一覧（<code>list_Lectures.js</code>、<code>list_Tutorials.js</code>）、共通のスタイルとスクリプトの自前のコピーです。クラスリファレンスと開発者向けのページは置かず、ヘッダーからこのリポジトリのサイトのものにリンクします。</span></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Edited and committed inside the submodule. No code opens it by path: the Live Scripts link to the online lecture notes. Pushed from inside the submodule (see <a href="git-workflow.html#publish-docs">Publishing the documentation</a>).</span><span lang="ja">サブモジュールの中で編集してコミットします。コードからパスで開くことはありません。ライブスクリプトはオンラインの講義ノートにリンクします。プッシュもサブモジュールの中から行います（<a href="git-workflow.html#publish-docs">ドキュメントの公開</a>を参照）。</span></dd>
+          </dl>
+        </div>
+      </div>
+      <div class="dg-row fs-c-other">
+        <div><code class="fs-name">_GUILDAverification/</code><span class="dg-badge is-ok"><span lang="en">submodule · folder on path</span><span lang="ja">サブモジュール · フォルダのみパス上</span></span></div>
+        <div>
+          <p><span lang="en">Verification of the bundled models against published results, one subfolder per network.</span><span lang="ja">同梱のモデルを公表された結果と比較して検証します。ネットワークごとに 1 つのサブフォルダを置きます。</span></p>
+          <dl>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">For each network (details in its <code>README.md</code>):</span><span lang="ja">ネットワークごとに次のものを置きます（詳細はその <code>README.md</code>）:</span><ul><li><span lang="en"><code>README.md</code>: the literature reference (link and bibliographic data only, never a copy of the paper or its figures), the criterion, the modelling differences, the latest measured agreement</span><span lang="ja"><code>README.md</code>: 文献の参照（リンクと書誌情報のみ。論文や図のコピーは置きません）、判定基準、モデル化の違い、最新の一致状況</span></li><li><span lang="en">The cases as Scenario CSV files; the published verdicts as CSV</span><span lang="ja">Scenario の CSV ファイルとしてのケース、公表された判定の CSV</span></li><li><span lang="en">A comparison function</span><span lang="ja">比較用の関数</span></li></ul></dd><dd><span lang="en">At its root, the test package <code>+DebugScript/</code> (<code>DebugScript.run_all</code>, see <a href="#testing">Adding a model</a>). The tests need the submodule checked out (<code>git submodule update --init</code>).</span><span lang="ja">ルートにはテスト用のパッケージ <code>+DebugScript/</code>（<code>DebugScript.run_all</code>。<a href="#testing">モデルの追加</a> を参照）を置きます。テストを実行するには、このサブモジュールをチェックアウトしておく必要があります（<code>git submodule update --init</code>）。</span></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Uses the public API of <code>_GUILDAsystem</code> and <code>_GUILDAobject</code> and is never called by them. Kept in releases. <code>GUILDA.addpath</code> adds the folder itself when it exists (see <code>@GUILDA/</code>), so a package at its root (<code>+Name/</code>) can be called; the per-network subfolders stay off the path: run a comparison with <code>run(...)</code> or after <code>cd</code> into its subfolder.</span><span lang="ja"><code>_GUILDAsystem</code> と <code>_GUILDAobject</code> の公開 API を使い、それらからは呼ばれません。リリースにも含めます。フォルダがあれば <code>GUILDA.addpath</code> がこのフォルダ自体をパスに追加します（<code>@GUILDA/</code> を参照）。そのため、直下のパッケージ（<code>+Name/</code>）は呼び出せます。ネットワークごとのサブフォルダはパス外にあるため、比較は <code>run(...)</code> で、またはそのサブフォルダに <code>cd</code> してから実行します。</span></dd>
+          </dl>
+        </div>
+      </div>
+      <div class="dg-row fs-c-other">
+        <div><code class="fs-name">_GUILDAexport/</code><span class="dg-badge is-muted"><span lang="en">not on path</span><span lang="ja">パス外</span></span><span class="dg-badge is-err"><span lang="en">Git-ignored</span><span lang="ja">Git 管理外</span></span></div>
+        <div>
+          <p><span lang="en">Default output folder for exported data.</span><span lang="ja">エクスポートしたデータの既定の出力フォルダです。</span></p>
+          <dl>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">Files written by GUILDA's export functions. Nothing hand-written.</span><span lang="ja">GUILDA のエクスポート関数が書き出すファイルです。手書きのファイルは置きません。</span></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Created on demand; safe to delete.</span><span lang="ja">必要に応じて作成されます。削除しても問題ありません。</span></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <div class="dg-callout">
+      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <p><span lang="en">Inside a class or package folder, a subfolder without an <code>@</code> or <code>+</code> prefix is not on the path: for data or archived code only. A class folder keeps one method per file, <code>@Class/&lt;method&gt;.m</code>, wherever MATLAB allows it; a small model may be a single <code>classdef</code> file instead.</span><span lang="ja">クラスフォルダやパッケージフォルダの中で <code>@</code> や <code>+</code> の接頭辞がないサブフォルダはパス外です。これらはデータやアーカイブしたコード専用です。クラスフォルダは、MATLAB が許す限り 1 ファイル 1 メソッド（<code>@Class/&lt;method&gt;.m</code>）にします。小さなモデルは単一の <code>classdef</code> ファイルでもかまいません。</span></p>
+      <p><span lang="en">The classdef file of a class folder keeps only the properties, the constructor, the <code>get.</code> / <code>set.</code> accessors, the Abstract declarations and the signatures of methods with attributes (<code>Access</code>, <code>Static</code>, <code>Hidden</code>), whose bodies are in their own files. A method with default attributes needs no declaration. A local function used only by the methods of the class goes in <code>@Class/private/</code>.</span><span lang="ja">クラスフォルダの classdef ファイルに残すのは、プロパティ、コンストラクター、<code>get.</code> / <code>set.</code> アクセサー、Abstract の宣言、属性（<code>Access</code>、<code>Static</code>、<code>Hidden</code>）付きメソッドのシグネチャだけです。属性付きメソッドの本体も、それぞれのファイルに置きます。既定の属性のメソッドは宣言不要です。そのクラスのメソッドだけが使うローカル関数は <code>@Class/private/</code> に置きます。</span></p>
+    </div>
+
+    <!-- ============================== PLACEMENT ============================== -->
+    <h2 id="placement"><span lang="en">Placement rules for new files</span><span lang="ja">新しいファイルの配置ルール</span></h2>
+    <div class="dg-rows is-arrow fs-place">
+      <div class="dg-row dg-rows-head"><span class="dg-kicker"><span lang="en">What are you adding?</span><span lang="ja">追加するもの</span></span><span></span><span class="dg-kicker"><span lang="en">Put it in</span><span lang="ja">置き場所</span></span></div>
+      <div class="dg-row"><span class="dg-row-head"><span lang="en">A new generator, load, branch, or controller model</span><span lang="ja">新しい発電機・負荷・ブランチ・制御器のモデル</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-object"><code class="fs-dest">_GUILDAobject/+&lt;package&gt;/</code><span class="fs-dest-note"><span lang="en">the matching package; a sub-package for a family of models that shares a base class</span><span lang="ja">対応するパッケージ（基底クラスを共有するモデル群はサブパッケージ）</span></span><span class="fs-dest-note"><span lang="en">see <a href="#model">Adding a model</a></span><span lang="ja"><a href="#model">モデルの追加</a> を参照</span></span></span></div>
+      <div class="dg-row"><span class="dg-row-head"><span lang="en">A new network template</span><span lang="ja">新しいネットワークテンプレート</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-object"><code class="fs-dest">_GUILDAobject/+network/@Name/</code><span class="fs-dest-note"><span lang="en">data folders <code>bus/</code>, <code>branch/</code>, <code>component/&lt;key&gt;/</code>, loaded by <code>PowerNetwork.import(dir, Network=obj)</code></span><span lang="ja">データフォルダ <code>bus/</code>、<code>branch/</code>、<code>component/&lt;key&gt;/</code>（<code>PowerNetwork.import(dir, Network=obj)</code> で読み込み）</span></span><span class="fs-dest-note"><span lang="en"><code>network/</code> (base values <code>Hz</code>, <code>baseMVA</code> in <code>parameter.csv</code>): optional; without it the defaults apply</span><span lang="ja"><code>network/</code>（<code>parameter.csv</code> に基準値 <code>Hz</code>、<code>baseMVA</code>）は省略可（ない場合は既定値）</span></span><span class="fs-dest-note"><span lang="en">a network built in code: a single file <code>_GUILDAobject/+network/Name.m</code></span><span lang="ja">コードで組み立てるネットワークは単一ファイル <code>_GUILDAobject/+network/Name.m</code></span></span></span></div>
+      <div class="dg-row"><span class="dg-row-head"><span lang="en">A change to the model framework</span><span lang="ja">モデルフレームワークの変更</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-system"><code class="fs-dest">_GUILDAsystem/@&lt;CoreClass&gt;/</code><span class="fs-dest-note"><span lang="en">the base class folder being changed</span><span lang="ja">変更する基底クラスのフォルダ</span></span></span></div>
+      <div class="dg-row"><span class="dg-row-head"><span lang="en">A new analysis or support class</span><span lang="ja">新しい解析クラス・補助クラス</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-system"><code class="fs-dest">_GUILDAsystem/_auxiliary/@Name/</code><span class="fs-dest-note"><span lang="en">inheriting from <code>auxiliary</code>; a result class inherits from <code>ResultBase</code></span><span lang="ja"><code>auxiliary</code> を継承（結果クラスは <code>ResultBase</code> を継承）</span></span></span></div>
+      <div class="dg-row"><span class="dg-row-head"><span lang="en">A helper function — used by one class only?</span><span lang="ja">補助関数 — 使うのは 1 つのクラスだけ？</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-yn"><span class="dg-badge is-ok"><span lang="en">yes</span><span lang="ja">はい</span></span><code class="fs-dest fs-c-tutorial">&lt;that class&gt;/private/</code><span class="dg-badge is-muted"><span lang="en">no</span><span lang="ja">いいえ</span></span><code class="fs-dest fs-c-system">_GUILDAsystem/+tools/</code></span></div>
+      <div class="dg-row"><span class="dg-row-head"><span lang="en">A deprecated public name</span><span lang="ja">非推奨にする公開の名前</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-system"><code class="fs-dest">_GUILDAsystem/_VersionSupport/</code><span class="fs-dest-note"><span lang="en">a wrapper under the deprecated name</span><span lang="ja">非推奨の名前のラッパー</span></span></span></div>
+      <div class="dg-row"><span class="dg-row-head"><span lang="en">A new tutorial</span><span lang="ja">新しいチュートリアル</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-tutorial"><code class="fs-dest">_GUILDAtutorial/</code><span class="fs-dest-note"><span lang="en">and register it in <code>_GUILDAdocPages/database/list_Tutorials.js</code></span><span lang="ja">さらに <code>_GUILDAdocPages/database/list_Tutorials.js</code> に登録</span></span></span></div>
+      <div class="dg-row"><span class="dg-row-head"><span lang="en">A comparison of a bundled network with published results</span><span lang="ja">同梱のネットワークと公表された結果の比較</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-other"><code class="fs-dest">_GUILDAverification/&lt;Network&gt;/</code><span class="fs-dest-note"><span lang="en">named after the network class: <code>README.md</code>, Scenario CSV cases, verdict CSV, comparison function</span><span lang="ja">ネットワーククラスと同じ名前のフォルダ（中身は <code>README.md</code>、Scenario の CSV ケース、判定の CSV、比較用の関数）</span></span><span class="fs-dest-note"><span lang="en">never inside the class folder: MATLAB does not run the files of its subfolders</span><span lang="ja">クラスフォルダの中には置きません。MATLAB はクラスフォルダのサブフォルダのファイルを実行しないためです。</span></span></span></div>
+      <div class="dg-row"><span class="dg-row-head"><span lang="en">Code kept for reference only</span><span lang="ja">参照用にだけ残すコード</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-other"><code class="fs-dest">archive/</code><span class="fs-dest-note"><span lang="en">next to the original location (see <a href="#legacy">Archived code</a>)</span><span lang="ja">元の場所の隣（<a href="#legacy">アーカイブ</a>を参照）</span></span></span></div>
+    </div>
+
+    <!-- ============================== GENERATED ============================== -->
+    <h2 id="generated"><span lang="en">Generated files — do not edit</span><span lang="ja">自動生成ファイル — 編集禁止</span></h2>
+    <p lang="en">Rewritten by the system. <strong>Edit the green source</strong>, never the red output.</p>
+    <p lang="ja">システムが書き換えるファイルです。<strong>緑のソースを編集</strong>し、赤の出力は編集しません。</p>
+    <div class="fs-gen">
+      <div class="dg-chain">
+        <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">✎ source to edit</span><span lang="ja">✎ 編集するソース</span></span><span class="fs-dest-note"><span lang="en">in <code>_GUILDAsystem/</code></span><span lang="ja"><code>_GUILDAsystem/</code> 内</span></span><span lang="en">the <code>arguments</code> blocks of the methods that build or remove a model</span><span lang="ja">モデルを追加・削除するメソッドの <code>arguments</code> ブロック</span><br><code>@Bus/add_component.m</code>, <code>@Bus/replace_component.m</code>, <code>@PowerNetwork/add_branch.m</code>, <code>remove_*.m</code>, ...</div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker"><span lang="en">generated by</span><span lang="ja">生成する処理</span></span><code>GUILDA.update_keymap(Signature=true)</code><span class="fs-dest-note"><span lang="en">by a developer, after editing one of these blocks</span><span lang="ja">開発者が、これらのブロックの編集後に実行</span></span></div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-err"><span class="dg-kicker"><span lang="en">✕ output, do not edit</span><span lang="ja">✕ 生成物（編集禁止）</span></span><span class="fs-dest-note"><span lang="en">in <code>_GUILDAsystem/</code></span><span lang="ja"><code>_GUILDAsystem/</code> 内</span></span><code>resources/functionSignatures.json</code><span class="fs-dest-note"><span lang="en">every entry: the classes of <code>_GUILDAsystem/</code> for MATLAB, all of them for the GUI forms</span><span lang="ja">全項目（MATLAB は <code>_GUILDAsystem/</code> のクラスの項目を、GUI のフォームは全項目を使用）</span></span><code>_auxiliary/resources/functionSignatures.json</code><span class="fs-dest-note"><span lang="en">the entries of the classes in <code>_auxiliary/</code> (<code>Scenario</code>, the results, <code>PowerSystemModel</code>)</span><span lang="ja"><code>_auxiliary/</code> のクラス（<code>Scenario</code>、結果、<code>PowerSystemModel</code>）の項目</span></span><span class="fs-dest-note"><span lang="en">code suggestions (model keys, tags of the current object); both committed</span><span lang="ja">コード補完（モデルのキー、そのオブジェクトのタグ）（どちらもコミット対象）</span></span></div>
+      </div>
+    </div>
+    <div class="fs-gen">
+      <div class="dg-chain">
+        <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">✎ source to edit</span><span lang="ja">✎ 編集するソース</span></span><span lang="en">help comments in the MATLAB source, <code>@Class/image.svg</code></span><span lang="ja">MATLAB ソースのヘルプコメント、<code>@Class/image.svg</code></span></div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker"><span lang="en">generated by</span><span lang="ja">生成する処理</span></span><code>GUILDA.doc("update", true)</code></div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-err"><span class="dg-kicker"><span lang="en">✕ output, do not edit</span><span lang="ja">✕ 生成物（編集禁止）</span></span><span class="fs-dest-note"><span lang="en">in <code>_GUILDAdoc/database/</code></span><span lang="ja"><code>_GUILDAdoc/database/</code> 内</span></span><code>list_Classes.js</code><br><code>GUILDAsystem/</code><br><code>GUILDAobject/</code><br><code>images/</code></div>
+      </div>
+    </div>
+    <div class="fs-gen">
+      <div class="dg-chain">
+        <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">✎ what the user changes</span><span lang="ja">✎ 利用者が変更するもの</span></span><span lang="en">settings changed by the user (window or command)</span><span lang="ja">ユーザーが変更した設定（ウィンドウまたはコマンド）</span></div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker"><span lang="en">generated by</span><span lang="ja">生成する処理</span></span><code>GUILDA.setting</code></div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-err"><span class="dg-kicker"><span lang="en">✕ output, do not edit or commit</span><span lang="ja">✕ 生成物（編集・コミット禁止）</span></span><code>@GUILDA/user/</code></div>
+      </div>
+    </div>
+    <p class="dg-caption" lang="en">There are two <code>functionSignatures.json</code> files because MATLAB applies a <code>resources/functionSignatures.json</code> only to the functions and classes of the folder that holds <code>resources/</code>, not to a subfolder that is a separate path entry such as <code>_auxiliary/</code>. <code>GUILDA.update_keymap(Signature=true)</code> writes both from the same entries, choosing the classes of <code>_auxiliary/</code> by the location of their class folder.</p>
+    <p class="dg-caption" lang="ja"><code>functionSignatures.json</code> が 2 つあるのは、MATLAB が <code>resources/functionSignatures.json</code> を、<code>resources/</code> のあるフォルダの関数とクラスだけに使い、<code>_auxiliary/</code> のように別のパスとして追加したサブフォルダには使わないためです。<code>GUILDA.update_keymap(Signature=true)</code> は同じ項目から両方を書き出し、<code>_auxiliary/</code> のクラスはクラスフォルダの場所で選びます。</p>
+    <p class="dg-caption" lang="en">All outputs above except the <code>functionSignatures.json</code> files are listed in <code>.gitignore</code>. The model keys themselves are not generated: <code>GUILDA.keymap</code> reads them from the classes when first called, and <code>GUILDA.update_keymap</code> (also run at startup) reads them again.</p>
+    <p class="dg-caption" lang="ja">2 つの <code>functionSignatures.json</code> 以外の出力はすべて <code>.gitignore</code> に記載しています。モデルのキー自体は生成しません。<code>GUILDA.keymap</code> が初回の呼び出しでクラスから読み、<code>GUILDA.update_keymap</code>（起動時にも実行）が読み直します。</p>
+    <div class="dg-callout">
+      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <p><span lang="en">The generated class reference in <code>_GUILDAdoc/database/</code> is never committed to source branches. It reaches the web only through the <code>gh-pages</code> branch, which <code>GUILDA.publish_doc</code> builds and commits locally for you to push (see <a href="git-workflow.html#publish-docs">Publishing the documentation</a>).</span><span lang="ja"><code>_GUILDAdoc/database/</code> に生成されるクラスリファレンスは、ソースブランチには一切コミットしません。Web への公開は <code>gh-pages</code> ブランチ経由だけです。このブランチは <code>GUILDA.publish_doc</code> がビルドしてローカルにコミットし、利用者がプッシュします（<a href="git-workflow.html#publish-docs">ドキュメントの公開</a>を参照）。</span></p>
+    </div>
+
+    <!-- ============================== ARCHIVE ============================== -->
+    <h2 id="legacy"><span lang="en">Archived code</span><span lang="ja">アーカイブしたコード</span></h2>
+    <ul>
+      <li><span lang="en">Code kept for reference only goes into a folder named <code>archive/</code> next to its original location.</span><span lang="ja">参照用にだけ残すコードは、元の場所の隣の <code>archive/</code> フォルダに置きます。</span></li>
+      <li><span lang="en">With no <code>@</code> or <code>+</code> prefix, it stays off the MATLAB path inside class and package folders.</span><span lang="ja"><code>@</code> や <code>+</code> の接頭辞がないため、クラスフォルダやパッケージフォルダの中では MATLAB パス外になります。</span></li>
+      <li><span lang="en">No other name or marker for unused or unfinished code.</span><span lang="ja">使わないコードや未完成のコードに、これ以外の名前や目印は使いません。</span></li>
+    </ul>
+    <p class="fs-legacy">
+      <span class="dg-badge is-ok">✓ archive/</span>
+      <span class="dg-badge is-strike">history</span> <span class="dg-badge is-strike">_past</span> <span class="dg-badge is-strike">_origin</span> <span class="dg-badge is-strike"><span lang="en">未 prefix</span><span lang="ja">「未」接頭辞</span></span>
+    </p>
+
+    <!-- ============================== MODEL ============================== -->
+    <h2 id="model"><span lang="en">Adding a model</span><span lang="ja">モデルの追加</span></h2>
+    <ol class="dg-steps" id="steps" style="--n:4">
+      <li><span lang="en"><b>Pick the base class and place.</b> A package of <code>_GUILDAobject</code> (see <a href="#placement">Placement</a>); one method per file in a class folder.</span><span lang="ja"><b>基底クラスと場所を決めます。</b><code>_GUILDAobject</code> のパッケージに置きます（<a href="#placement">配置ルール</a>）。クラスフォルダではメソッドごとに 1 ファイルです。</span></li>
+      <li><span lang="en"><b>Implement the contract</b> below, and document it (<a href="class-documentation.html">Class Documentation</a>).</span><span lang="ja"><b>下の約束事を実装し</b>、説明を書きます（<a href="class-documentation.html">クラスのドキュメント</a>）。</span></li>
+      <li><span lang="en"><b>Register the key</b> with <code>GUILDA.update_keymap</code> (or by starting GUILDA). Until then the key is rejected.</span><span lang="ja"><code>GUILDA.update_keymap</code>（または GUILDA の起動）で<b>キーを登録します</b>。登録するまでキーは拒否されます。</span></li>
+      <li><span lang="en"><b>Test it</b> with <code>validate</code> and the test suite (see <a href="#testing">Testing</a>).</span><span lang="ja"><code>validate</code> とテストスイートで<b>確かめます</b>（<a href="#testing">テスト</a>を参照）。</span></li>
+    </ol>
+
+    <h3 id="contracts"><span lang="en">Contract of each kind of model</span><span lang="ja">モデルの種類ごとの約束事</span></h3>
+    <div class="cr-scroll">
+      <table class="cr-table">
+        <thead><tr><th></th><th>Component</th><th>LocalController</th><th>GlobalController</th></tr></thead>
+        <tbody>
+          <tr><th><span lang="en">Created by</span><span lang="ja">作成</span></th><td><code>bus.add_component</code></td><td><code>comp.add_local_controller</code></td><td><code>net.add_global_controller</code></td></tr>
+          <tr><th><span lang="en">Constants</span><span lang="ja">定数</span></th><td><code>key</code></td><td><code>key</code>, <code>s_role</code></td><td><code>key</code>, <code>s_role</code></td></tr>
+          <tr><th><span lang="en">Outputs</span><span lang="ja">出力</span></th><td><code>fcn_I</code>, <code>fcn_Y</code> <span lang="en">(no <code>u</code>)</span><span lang="ja">（<code>u</code> なし）</span></td><td><code>fcn_y</code></td><td><code>fcn_y</code></td></tr>
+          <tr><th><span lang="en">Jacobians</span><span lang="ja">ヤコビアン</span></th><td><span lang="en">optional</span><span lang="ja">任意</span></td><td><span lang="en">required</span><span lang="ja">必須</span></td><td><span lang="en">required</span><span lang="ja">必須</span></td></tr>
+          <tr><th><span lang="en">Equilibrium</span><span lang="ja">平衡点</span></th><td><code>get_equilibrium(V,I,P,Q)</code></td><td><code>get_equilibrium(V,u,x)</code></td><td><code>get_equilibrium()</code></td></tr>
+          <tr><th><span lang="en">Check</span><span lang="ja">確認</span></th><td><code>comp.validate</code></td><td><code>con.validate</code></td><td><code>get_sys</code>, <span lang="en">simulation</span><span lang="ja">シミュレーション</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p lang="en">Copy from an existing model: <a href="../class.html#class=component.generator.classical"><code>component.generator.classical</code></a>, <a href="../class.html#class=controller.avr.AVR_ST1"><code>controller.avr.AVR_ST1</code></a>, <a href="../class.html#class=controller.agc.broadcast_PI_AGC"><code>controller.agc.broadcast_PI_AGC</code></a>. The details of each contract are on the reference page of the base class.</p>
+    <p lang="ja">既存のモデルを手本にします: <a href="../class.html#class=component.generator.classical"><code>component.generator.classical</code></a>、<a href="../class.html#class=controller.avr.AVR_ST1"><code>controller.avr.AVR_ST1</code></a>、<a href="../class.html#class=controller.agc.broadcast_PI_AGC"><code>controller.agc.broadcast_PI_AGC</code></a>。各約束事の詳細は基底クラスのリファレンスページにあります。</p>
+
+    <h3 id="rules"><span lang="en">Rules for every model</span><span lang="ja">すべてのモデルに共通の規則</span></h3>
+    <ul>
+      <li id="generator" lang="en">The constructor is accessible only from the parent class (<code>Access={?Bus}</code>, <code>{?Component}</code>, <code>{?PowerNetwork}</code>), declared even when it only calls the superclass.</li>
+      <li lang="ja">コンストラクタは親クラスからだけ呼べるようにします（<code>Access={?Bus}</code>、<code>{?Component}</code>、<code>{?PowerNetwork}</code>）。スーパークラスを呼ぶだけでも宣言します。</li>
+      <li lang="en">Model functions take <code>(t, x, V, u, param, omega0)</code>, with <code>V</code> as <code>[re; im]</code>; they run at every evaluation, so their <code>arguments</code> blocks declare size and class only (<a href="class-documentation.html#hot-path">hot path</a>).</li>
+      <li lang="ja">モデル関数の引数は <code>(t, x, V, u, param, omega0)</code> で、<code>V</code> は <code>[re; im]</code> です。評価のたびに呼ばれるため、<code>arguments</code> ブロックではサイズとクラスだけを宣言します（<a href="class-documentation.html#hot-path">ホットパス</a>）。</li>
+      <li lang="en">No model function receives the bus current; a component output depends only on <code>x</code> and <code>V</code>; the outputs of a global controller are 0 at its equilibrium; <code>sv_u</code> never uses the port names <code>Vre</code>, <code>Vim</code>, <code>Ire</code>, <code>Iim</code>.</li>
+      <li lang="ja">モデル関数は母線電流を受け取りません。機器の出力は <code>x</code> と <code>V</code> だけで決まります。グローバル制御器の出力は平衡点で 0 です。<code>sv_u</code> にポート名 <code>Vre</code>、<code>Vim</code>、<code>Ire</code>、<code>Iim</code> を使いません。</li>
+      <li id="controller" lang="en">Controller inputs connect by name; <code>Xall</code> and <code>Yall</code> observe all states or outputs (override <code>set_inputs</code>), <code>X</code> and <code>Y</code> are errors. A component has one <code>"avr"</code> or <code>"local"</code> slot (a <code>"pss"</code> under an AVR) and one <code>"governor"</code> slot, and they drive different inputs.</li>
+      <li lang="ja">制御器の入力は名前で接続します。<code>Xall</code> と <code>Yall</code> はすべての状態または出力を観測し（<code>set_inputs</code> を上書き）、<code>X</code> と <code>Y</code> はエラーです。機器には <code>"avr"</code> か <code>"local"</code> の枠（AVR の下に <code>"pss"</code>）と <code>"governor"</code> の枠が 1 つずつあり、両者は異なる入力を駆動します。</li>
+      <li lang="en">Every constructor argument of a controller is a column of <code>tab_parameter.dynamics</code> or a field of <code>get_option</code>, so that <code>net.export</code> can save it.</li>
+      <li lang="ja">制御器のコンストラクタ引数は、<code>tab_parameter.dynamics</code> の列か <code>get_option</code> のフィールドのどちらかにします。そうすると <code>net.export</code> で保存できます。</li>
+      <li id="other" lang="en">A branch defines <code>key</code>, <code>header</code> and <code>get_admittance_matrix(obj, opt)</code> with the options <code>Status</code> and <code>Point</code>. A network inherits from <code>PowerNetwork</code> in <code>_GUILDAobject/+network/</code> and builds itself in its constructor, from CSV folders or in code.</li>
+      <li lang="ja">ブランチは <code>key</code>、<code>header</code> と、オプション <code>Status</code> と <code>Point</code> を持つ <code>get_admittance_matrix(obj, opt)</code> を定義します。ネットワークは <code>_GUILDAobject/+network/</code> で <code>PowerNetwork</code> を継承し、コンストラクタの中で CSV フォルダかコードから自身を組み立てます。</li>
+    </ul>
+
+    <!-- ============================== TESTING ============================== -->
+    <h2 id="testing"><span lang="en">Testing</span><span lang="ja">テスト</span></h2>
+    <ul>
+      <li lang="en"><code>s = comp.validate(false)</code> (or <code>con.validate</code>) compares the contract, the source of each input, the residuals at the point and each Jacobian with finite differences; a broken model shows as <code>FAIL</code>.</li>
+      <li lang="ja"><code>s = comp.validate(false)</code>（または <code>con.validate</code>）は、約束事、各入力の接続元、点での残差、各ヤコビアンと差分近似の差を比べます。壊れたモデルは <code>FAIL</code> と表示されます。</li>
+      <li id="network" lang="en">Then check the behaviour: a scenario without disturbances stays at the equilibrium, a fault and a trip complete with <code>flag = 1</code>, and the eigenvalues of <code>net.get_sys(Format="ss")</code> agree with an existing model the new one reduces to.</li>
+      <li lang="ja">次に挙動を確かめます。外乱のないシナリオでは平衡点にとどまり、事故と解列は <code>flag = 1</code> で完了し、<code>net.get_sys(Format="ss")</code> の固有値は、新しいモデルが帰着する既存モデルと一致します。</li>
+      <li lang="en">Tests live in the submodule <code>_GUILDAverification/+DebugScript</code>. Add a <code>%%</code> section or a script <code>test_I&lt;issue&gt;_&lt;slug&gt;.m</code>, register a new script in <code>test_categories.m</code>, and list a slow test in <code>test_levels.m</code>. Each script also passes on its own with <code>runtests</code>.</li>
+      <li lang="ja">テストはサブモジュール <code>_GUILDAverification/+DebugScript</code> にあります。<code>%%</code> セクションかスクリプト <code>test_I&lt;issue&gt;_&lt;slug&gt;.m</code> を追加し、新しいスクリプトは <code>test_categories.m</code> に登録し、時間のかかるテストは <code>test_levels.m</code> に記載します。各スクリプトは <code>runtests</code> で単独でも通るようにします。</li>
+      <li lang="en">Run <code>DebugScript.run_all("Category", [...], "Level", "small")</code> for the area you changed after each step, <code>"medium"</code> before merging a branch, and <code>"large"</code> (all tests) on the development branch and before a release.</li>
+      <li lang="ja">変更した領域のテストを、各段階のあとに <code>DebugScript.run_all("Category", [...], "Level", "small")</code> で、ブランチのマージ前に <code>"medium"</code> で、開発ブランチとリリース前に <code>"large"</code>（全テスト）で実行します。</li>
+    </ul>
+  </main>
+</body>
+</html>
