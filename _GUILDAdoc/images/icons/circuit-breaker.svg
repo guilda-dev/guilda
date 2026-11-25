@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+  <title>Circuit breaker</title>
+  <path d="M2.5 16H7M17.5 16H21.5M9.4 15 17 8.5"/>
+  <circle cx="8.25" cy="16" r="1.25"/>
+  <circle cx="16.25" cy="16" r="1.25"/>
+</svg>

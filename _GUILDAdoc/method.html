@@ -75,7 +75,7 @@
         <div class="ref-empty"><p>${tr('The class reference has not been generated yet.', 'クラスリファレンスは未生成。')}</p><p>${tr('Run <code>GUILDA.doc</code> in MATLAB to build it.', 'MATLAB で <code>GUILDA.doc</code> を実行して生成。')}</p></div>`;
     } else {
       document.getElementById('sidebar-back-btn').innerHTML = `
-        <a href="${loader.pageUrl('class.html', { class: className })}" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;"><span lang="en">← Back to ${escapeHtml(className)}</span><span lang="ja">← ${escapeHtml(className)} に戻る</span></a>
+        <a href="${loader.pageUrl('class.html', { class: className })}" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/><path d="M1.5 12h2M20.5 12h2"/></svg><span lang="en">Back to ${escapeHtml(className)}</span><span lang="ja">${escapeHtml(className)} に戻る</span></a>
       `;
 
       loader.loadClass(className)
@@ -117,13 +117,19 @@
       if (!methods.length) return;
       const item = ({ method: m }) => `<li><a class="${m.Name === currentName ? 'is-current' : ''}${m.Defining !== ownerName ? ' ref-muted' : ''}"${m.Name === currentName ? ' aria-current="page"' : ''} href="${loader.pageUrl('method.html', { class: ownerName, method: m.Name })}">${escapeHtml(m.Name)}</a></li>`;
       const grouped = methods.some((row) => row.group);
-      document.getElementById('sidebar-method-nav').innerHTML = `
-        <h3 class="ref-nav-title">${tr(`Methods of ${escapeHtml(ownerName)}`, `${escapeHtml(ownerName)} のメソッド`)}</h3>
+      // A disclosure: open beside the page, closed when the sidebar stacks above it (phones).
+      // A re-render (language switch) keeps the reader's choice.
+      const container = document.getElementById('sidebar-method-nav');
+      const previous = container.querySelector('details');
+      const open = previous ? previous.open : window.matchMedia('(min-width: 900px)').matches;
+      container.innerHTML = `<details class="ref-method-nav-panel"${open ? ' open' : ''}>
+        <summary class="ref-nav-title">${tr(`Methods of ${escapeHtml(ownerName)}`, `${escapeHtml(ownerName)} のメソッド`)}</summary>
         ${grouped
           ? groupRows(methods, 'Other').map((group) => `
               <p class="ref-nav-group">${groupHeading(groupLabel(group.name), group.items.length)}</p>
               <ul class="ref-method-nav" style="margin-bottom: 6px;">${group.items.map(item).join('')}</ul>`).join('')
-          : `<ul class="ref-method-nav">${methods.map(item).join('')}</ul>`}`;
+          : `<ul class="ref-method-nav">${methods.map(item).join('')}</ul>`}
+      </details>`;
     }
 
     // Input rows come from the arguments block of the source (schema v5 adds

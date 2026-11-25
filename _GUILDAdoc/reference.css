@@ -209,6 +209,12 @@ tr.ref-inherited td .row-link { font-weight: normal; }
   line-height: 1.8;
 }
 .ref-aside h3 { margin: 0 0 6px; font-size: 1.0rem; }
+/* Phones: this page's sections in one wrapping line under the folded source tree */
+@media (max-width: 899px) {
+  .ref-layout { gap: 8px; }
+  .ref-aside h3 { font-size: 0.9rem; }
+  .ref-aside .ref-toc { display: flex; flex-wrap: wrap; gap: 0 16px; }
+}
 @media (min-width: 900px) {
   .ref-layout { grid-template-columns: var(--sidebar-width) minmax(0, 1fr); }
   /* Below the sticky page header of index.html. */
@@ -352,18 +358,18 @@ tr.ref-group-row:hover { background: transparent; }
   .ref-method-nav { columns: 2; }
 }
 
-/* Section headings of the class and method pages: ink with one rule above,
-   the single section divider of these long pages. */
+/* Section headings of the class and method pages: a thin transmission line on towers
+   above (h2::before in style.css), the single section divider of these long pages. */
 .doc-layout #dynamic-content > h2 {
-  margin: 48px 0 14px;
-  padding: 20px 0 0;
+  margin: 40px 0 14px;
+  padding: 0;
   border: 0;
-  border-top: 1px solid var(--line);
   font-size: 1.3rem;
   scroll-margin-top: 12px;
 }
 /* After the rule under the page title, the first section needs no second rule */
 .doc-layout #dynamic-content > hr + h2 { margin-top: 24px; padding-top: 0; border-top: 0; }
+.doc-layout #dynamic-content > hr + h2::before { display: none; }
 .doc-layout #dynamic-content > h3 {
   margin: 22px 0 10px;
   font-size: 1.05rem;
@@ -438,7 +444,7 @@ tr.ref-group-row:hover { background: transparent; }
 }
 .doc-layout table.ref-member-table .is-name { width: 1%; }
 .doc-layout table.ref-member-table .is-fit { width: 1%; white-space: nowrap; }
-.doc-layout table.ref-member-table .is-wrap { width: 1%; min-width: 0; white-space: normal; word-break: normal; overflow-wrap: anywhere; }
+.doc-layout table.ref-member-table .is-wrap { width: 1%; min-width: 5em; white-space: normal; word-break: normal; overflow-wrap: break-word; }
 .doc-layout table.ref-member-table td.is-wrap { max-width: 28ch; }
 .doc-layout table.ref-member-table .is-flex { width: auto; min-width: 16ch; }
 .doc-layout table.ref-member-table.is-fit { width: auto; }
@@ -492,7 +498,7 @@ tr.ref-group-row:hover { background: transparent; }
   .ref-member-table tr:not(.ref-group-row) { display: block; padding: 4px 0; border-bottom: 1px solid var(--line); }
   .doc-layout .ref-member-table tr:not(.ref-group-row) td { display: block; width: auto !important; max-width: none; min-width: 0; border: 0; white-space: normal; }
   .doc-layout .ref-table-scroll .ref-member-table tr:not(.ref-group-row) td { padding-top: 2px; padding-bottom: 2px; }
-  .doc-layout .ref-member-table td.is-fit { overflow-wrap: anywhere; }
+  .doc-layout .ref-member-table td.is-fit { overflow-wrap: break-word; }
   .ref-member-table td[data-label]::before {
     content: attr(data-label);
     display: inline-block;
