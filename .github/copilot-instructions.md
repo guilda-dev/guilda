@@ -8,8 +8,8 @@ approximate linearization, eigenvalue analysis, and time-domain simulation.
 
 # Project Rules
 This section summarizes the For Developer pages in `_GUILDAdoc/developer/`,
-which are the source of truth (`project-management.html`, `git-workflow.html`,
-`folder-structure.html`, `naming-conventions.html`, `class-documentation.html`).
+which are the source of truth (`git-workflow.html`, `coding-rules.html`,
+`class-documentation.html`; the design is in `architecture.html`).
 
 ## Branch Model
 - `main`: released, stable code. Every release is tagged `vX.Y` on the merge commit.
@@ -70,7 +70,7 @@ which are the source of truth (`project-management.html`, `git-workflow.html`,
 
 ## Keeping Documentation Current
 - Public class, property, or method changed → update its help comment tags (see `class-documentation.html`).
-- Folder layout changed → update `folder-structure.html`.
+- Folder layout changed → update `coding-rules.html#folders`.
 - Tutorial changed → update `_GUILDAdocPages/database/list_Tutorials.js` (site submodule).
 - User-visible feature in a release → update `_GUILDAdoc/database/list_UpdateLog.js`.
 - Developer rule changed → update the matching For Developer page.
@@ -85,7 +85,7 @@ Check before requesting a review:
 - The pull request title follows `<type>: <summary>` and the description contains `Closes #<issue>`.
 
 # Coding Convention (Naming Convention)
-Source of truth: `_GUILDAdoc/developer/naming-conventions.html`.
+Source of truth: `_GUILDAdoc/developer/coding-rules.html#naming`.
 
 ## Variable Names
 Variable names follow **`[variableType][size]_[variableDescription]`**.
