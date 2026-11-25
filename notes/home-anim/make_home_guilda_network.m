@@ -2,7 +2,7 @@ function net = make_home_guilda_network(opt)
 % Make the animated network diagram of the Home tab: the power flow of network.GUILDAlogo.
 %
 % network.GUILDAlogo is one meshed network laid out so that its diagram reads as GUILDA,
-% with generators and loads. Its power flow solution is drawn by ResultPF.plot_diagram
+% with its generators and loads inside the letters. Its power flow solution is drawn by ResultPF.plot_diagram
 % with the branches and links colored and sized by their current (ColorMode and
 % BranchWidthMode "I", default colormap) and the flow dots of FlowMode "P".
 %
@@ -11,18 +11,24 @@ function net = make_home_guilda_network(opt)
 % loop is made seamless by a cross-fade: the frames F(t) are taken for t in [0, 2T), and
 % the GIF shows, for t in [T, 2T), (1 - w)*F(t) + w*F(t - T) with w rising from 0 to 1
 % over the last Fade part of the loop. The last frame then runs into F(T), the first.
+% The GIF stores, after the first frame, only the pixels that change (the others are
+% transparent), so that it stays small.
 %
 % Writes into _GUILDAdocPages/images/home/ (or OutDir):
 %   guilda-network.gif  looping animation of the flow dots
 %   guilda-network.png  still of the first frame
 %
 % Only the graph is kept: no title, axes, labels, colorbar, control panel or playback bar
-% (one sample, axes given as Parent; the colorbar is deleted). The dots are moved with
-% G.step_flow (the flow timer is not made in matlab -batch). Run with R2026a:
+% (one sample, axes given as Parent; the colorbar is deleted). The image is the hero of
+% the Home page: it is Width wide, cropped around the letters (x 0-25.4, y 0-6 in the
+% diagram) with an even Margin, on the page background (--surface of style.css, white).
+% The dots are moved with G.step_flow (the flow timer is not made in matlab -batch).
+% Run with R2026a:
 %   addpath("notes/home-anim"); make_home_guilda_network();
     arguments (Input)
         opt.OutDir (1,1) string = ""                    % Output folder; "" for _GUILDAdocPages/images/home.
-        opt.Size (1,2) double {mustBePositive} = [1200, 400]  % [px] Size of the frames.
+        opt.Width (1,1) double {mustBeInteger, mustBePositive} = 1200  % [px] Width of the frames (the height follows the letters).
+        opt.Margin (1,1) double {mustBeNonnegative} = 0.4  % Margin around the letters, in units of the diagram.
         opt.Frames (1,1) double {mustBeInteger, mustBePositive} = 60  % Frames of one loop.
         opt.Delay (1,1) double {mustBePositive} = 0.05  % [s] Time of each frame of the GIF.
         opt.Period (1,1) double {mustBePositive} = 3    % [s] Time T of the flow of one loop.
@@ -44,18 +50,18 @@ function net = make_home_guilda_network(opt)
     assert(flag == 1, "The power flow of network.GUILDAlogo did not converge.");
 
     %% Drawing: only the graph, in axes that fill a white figure
-    fig = figure(Visible="off", Color="w", Units="pixels", Position=[100, 100, opt.Size]);
+    rv_x = [0, 25.4] + [-1, 1]*opt.Margin;          % the letters and the margin
+    rv_y = [0, 6] + [-1, 1]*opt.Margin;
+    rv_size = [opt.Width, round(opt.Width*diff(rv_y)/diff(rv_x))];
+    fig = figure(Visible="off", Color="w", Units="pixels", Position=[100, 100, rv_size]);
     ax  = axes(fig, Units="normalized", Position=[0, 0, 1, 1]);
     G = res.plot_diagram(Parent=ax, ColorMode="I", BranchWidthMode="I", BranchWidthRange=[2.5 7], ...
         LinkWidth=1.5, MarkerSizeRange=[9 9], LabelMode="none", TitleFormat="", ...
         FlowMode="P", FlowSpeed=1, FlowAnimation=false);
     delete(findobj(fig, "Type", "colorbar"));
     axis(ax, "off");
-    % frame of the aspect of the image around the drawing (letters, components, backbone)
-    rv_x = [-1.85, 21.75];
-    r_h  = diff(rv_x)*opt.Size(2)/opt.Size(1);
     xlim(ax, rv_x);
-    ylim(ax, 2.0 + [-0.5, 0.5]*r_h);
+    ylim(ax, rv_y);
 
     %% Frames F(t), t = 0, T/n, ..., 2T - T/n
     n = opt.Frames;
@@ -64,8 +70,8 @@ function net = make_home_guilda_network(opt)
         G.step_flow(opt.Period/n * (i > 1));
         drawnow;
         rgb = frame2im(getframe(fig));
-        if ~isequal(size(rgb, [1 2]), opt.Size([2 1]))
-            rgb = imresize(rgb, opt.Size([2 1]));
+        if ~isequal(size(rgb, [1 2]), rv_size([2 1]))
+            rgb = imresize(rgb, rv_size([2 1]));
         end
         c_raw{i} = rgb;
     end
@@ -81,17 +87,27 @@ function net = make_home_guilda_network(opt)
     end
 
     imwrite(c_frame{1}, fullfile(s_out, "guilda-network.png"));
-    [~, cmap] = rgb2ind(cat(1, c_frame{:}), opt.Colors, "nodither");
+    [~, cmap] = rgb2ind(cat(1, c_frame{:}), opt.Colors - 1, "nodither");
     [~, i_white] = min(sum((1 - cmap).^2, 2));
     cmap(i_white, :) = 1;                      % the background stays pure white
+    % After the first frame, the pixels that keep their color are written with the last
+    % index of the palette, which is transparent: the frame before stays (leaveInPlace)
+    i_keep = size(cmap, 1);                    % 0-based index of the extra color
+    cmap(end + 1, :) = [1 0 1];
     s_gif = fullfile(s_out, "guilda-network.gif");
+    X_prev = [];
     for i = 1:n
-        X = rgb2ind(c_frame{i}, cmap, "nodither");
+        X = rgb2ind(c_frame{i}, cmap(1:end-1, :), "nodither");
         if i == 1
-            imwrite(X, cmap, s_gif, "gif", LoopCount=Inf, DelayTime=opt.Delay);
+            imwrite(X, cmap, s_gif, "gif", LoopCount=Inf, DelayTime=opt.Delay, DisposalMethod="leaveInPlace");
         else
-            imwrite(X, cmap, s_gif, "gif", WriteMode="append", DelayTime=opt.Delay);
+            X_out = X;
+            X_out(X == X_prev) = i_keep;
+            imwrite(X_out, cmap, s_gif, "gif", WriteMode="append", DelayTime=opt.Delay, ...
+                DisposalMethod="leaveInPlace", TransparentColor=i_keep);
         end
+        X_prev = X;
     end
-    fprintf("%s (%d frames, %.0f kB)\n%s\n", s_gif, n, dir(s_gif).bytes/1024, fullfile(s_out, "guilda-network.png"));
+    fprintf("%s (%d x %d px, %d frames, %.0f kB)\n%s\n", s_gif, rv_size, n, dir(s_gif).bytes/1024, ...
+        fullfile(s_out, "guilda-network.png"));
 end
