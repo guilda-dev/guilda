@@ -1,7 +1,7 @@
 // Japanese/English switch for the developer docs.
 // Load in <head> so the language is set before first paint. Translatable content
 // is written as sibling elements with lang="en" and lang="ja"; style.css hides the
-// inactive one based on <html data-lang>. See developer/project-management.html#bilingual.
+// inactive one based on <html data-lang>. See developer/git-workflow.html#bilingual.
 //
 // The choice is kept in three places, because none of them works everywhere:
 // - the ?lang= query of the page URL, which links to other doc pages carry

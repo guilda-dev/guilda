@@ -39,22 +39,13 @@
     .cr-name .is-t { color: var(--brand); }
     .cr-name .is-s { color: var(--ok); }
     .cr-name .is-u { color: var(--muted); }
-    .cr-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: var(--dg-s3) 0 var(--dg-s5); }
     .cr-table { display: table; width: 100%; min-width: 520px; margin: 0; border-top: 1px solid var(--line-strong); font-size: 0.92rem; line-height: 1.5; }
-    .cr-table th, .cr-table td { min-width: 0; padding: 8px 12px 8px 0; vertical-align: top; text-align: left; }
+    .cr-table th, .cr-table td { padding: 8px 12px 8px 0; vertical-align: top; text-align: left; }
     .cr-table th { background: none; color: var(--muted); font-weight: 400; font-size: 0.85rem; }
-    .cr-table tbody th { width: 1%; color: var(--ink); font-weight: 600; white-space: nowrap; }
+    .cr-table tbody th { width: 1%; min-width: 0; color: var(--ink); font-weight: 600; white-space: nowrap; }
     .cr-table.is-grid td { text-align: center; }
     .cr-table.is-grid td code { font-weight: 600; }
     .cr-table tr:hover { background: none; }
-    .kv { display: grid; grid-template-columns: minmax(8rem, 11rem) minmax(0, 1fr); gap: 0 var(--dg-s4); margin: var(--dg-s3) 0 var(--dg-s5); border-top: 1px solid var(--line); }
-    .kv > dt, .kv > dd { margin: 0; padding: 9px 0; border-bottom: 1px solid var(--line); line-height: 1.55; min-width: 0; }
-    .kv > dt { color: var(--ink); font-weight: 600; }
-    @media (max-width: 640px) {
-      .kv { grid-template-columns: minmax(0, 1fr); }
-      .kv > dt { padding-bottom: 0; border-bottom: 0; }
-      .kv > dd { padding-top: 2px; }
-    }
   </style>
 </head>
 <body class="developer-layout dg">
@@ -90,7 +81,7 @@
     <div class="dg-two">
       <div>
         <h3><span lang="en">Type letter</span><span lang="ja">型の文字</span></h3>
-        <div class="cr-scroll"><table class="cr-table" style="min-width:0">
+        <div class="table-scroll"><table class="cr-table" style="min-width:0">
           <tbody>
             <tr><th><code>c</code></th><td><span lang="en">complex</span><span lang="ja">複素数</span></td><th><code>r</code></th><td><span lang="en">real</span><span lang="ja">実数</span></td></tr>
             <tr><th><code>l</code></th><td><span lang="en">logical</span><span lang="ja">論理値</span></td><th><code>s</code></th><td><span lang="en">string</span><span lang="ja">文字列</span></td></tr>
@@ -101,7 +92,7 @@
       </div>
       <div>
         <h3><span lang="en">Size letter</span><span lang="ja">サイズの文字</span></h3>
-        <div class="cr-scroll"><table class="cr-table" style="min-width:0">
+        <div class="table-scroll"><table class="cr-table" style="min-width:0">
           <tbody>
             <tr><th><span lang="en">(none)</span><span lang="ja">（なし）</span></th><td><span lang="en">scalar</span><span lang="ja">スカラー</span></td></tr>
             <tr><th><code>v</code></th><td><span lang="en">column vector</span><span lang="ja">列ベクトル</span></td></tr>
@@ -367,7 +358,7 @@
     </ol>
 
     <h3 id="contracts"><span lang="en">Contract of each kind of model</span><span lang="ja">モデルの種類ごとの約束事</span></h3>
-    <div class="cr-scroll">
+    <div class="table-scroll">
       <table class="cr-table">
         <thead><tr><th></th><th>Component</th><th>LocalController</th><th>GlobalController</th></tr></thead>
         <tbody>

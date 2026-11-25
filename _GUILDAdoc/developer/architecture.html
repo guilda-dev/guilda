@@ -6,45 +6,6 @@
   <title data-title-ja="GUILDA 開発者ガイド - アーキテクチャ">GUILDA Developer Guide - Architecture</title>
   <script src="../doc-lang.js"></script>
   <link rel="stylesheet" href="../style.css">
-  <style>
-    /* UML figures (inline SVG, ink and grey, brand blue for the entry point only) */
-    .uml-fig { margin: var(--dg-s4) 0 var(--dg-s5); padding: var(--dg-s4); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .uml-fig figcaption { margin-top: var(--dg-s3); color: var(--muted); font-size: 0.88rem; }
-    .uml { display: block; width: 100%; min-width: min(var(--w), 640px); height: auto; }
-    .uml text { font-family: var(--font-sans); font-size: 12px; fill: var(--ink); }
-    .uml .m { font-family: var(--font-mono); }
-    .uml .b { font-weight: 600; }
-    .uml .s { font-size: 11.5px; }
-    .uml .k { fill: var(--muted); font-size: 11px; }
-    .uml .mu { fill: var(--muted); }
-    .uml .acc-t { fill: var(--brand); }
-    .uml .box { fill: var(--surface); stroke: var(--ink); stroke-width: 1.1; }
-    .uml .box.is-actor, .uml .box.is-soft { fill: var(--surface-subtle); stroke: var(--line-strong); }
-    .uml .box.is-hl { stroke: var(--brand); stroke-width: 1.6; }
-    .uml .ln { fill: none; stroke: var(--ink); stroke-width: 1.1; }
-    .uml .ln.thin { stroke: var(--line-strong); stroke-width: 1; }
-    .uml .ln.life { stroke: var(--line-strong); stroke-dasharray: 4 4; }
-    .uml .ln.ret, .uml .ln.dsh { stroke: var(--muted); stroke-dasharray: 5 4; }
-    .uml .ln.acc { stroke: var(--brand); stroke-width: 1.5; }
-    .uml .hd-fill { fill: var(--ink); }
-    .uml .hd-acc { fill: var(--brand); }
-    .uml .hd-open { fill: none; stroke: var(--muted); stroke-width: 1.4; }
-    .uml .dia { fill: var(--ink); }
-    .uml .tri { fill: var(--surface); stroke: var(--ink); stroke-width: 1.1; }
-    .uml .frame { fill: none; stroke: var(--line-strong); }
-    .uml .actor circle, .uml .actor path { fill: none; stroke: var(--ink); stroke-width: 1.3; }
-    /* Key-value blocks instead of narrow multi-column tables */
-    .kv { display: grid; grid-template-columns: minmax(8rem, 11rem) minmax(0, 1fr); gap: 0 var(--dg-s4); margin: var(--dg-s3) 0 var(--dg-s5); border-top: 1px solid var(--line); }
-    .kv > dt, .kv > dd { margin: 0; padding: 9px 0; border-bottom: 1px solid var(--line); line-height: 1.55; min-width: 0; }
-    .kv > dt { color: var(--ink); font-weight: 600; }
-    .kv > dd > ul { margin: 0; padding-left: 1.1em; }
-    @media (max-width: 640px) {
-      .kv { grid-template-columns: minmax(0, 1fr); }
-      .kv > dt { padding-bottom: 0; border-bottom: 0; }
-      .kv > dd { padding-top: 2px; }
-    }
-    .uml text.lbl { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
-  </style>
 </head>
 <body class="developer-layout dg">
   <main>
