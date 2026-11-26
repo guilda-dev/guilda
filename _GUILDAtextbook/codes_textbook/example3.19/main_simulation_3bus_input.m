@@ -1,7 +1,9 @@
 % 例3.19（プログラム3-38）の GUILDA v4 版: 負荷のインピーダンスを時間とともに変える入力に対する時間応答を計算します。
-% 旧版の load_impedance の入力 u = [u1; u2] は z = real(z)*(1+u1) + 1j*imag(z)*(1+u2)
-% と働き, u1 = u2 = 0.05*t/50 です。v4 の load-impedance の入力は R と X そのものなので、
-% R と X に 0.05*t/50 倍の値を加える直線の時系列（"foh"）を与えます。
+% 旧版の load_impedance の入力 u = [u1; u2] は z = R0*(1+u1) + 1j*X0*(1+u2)（z の割合）と働き、
+% u1 = u2 = 0.05*t/50 です。v4 の load-impedance の入力は R と X です（平衡点の値に加える値）。
+% 旧版は z·(1+u)、v4 の入力は R・X なので、R0·u1, X0·u2 として与えれば
+% R = R0 + R0·u1, X = X0 + X0·u2 となり、式として旧版と同一です。
+% そこで R と X に R0*0.05*t/50, X0*0.05*t/50 を加える直線の時系列（"foh"）を与えます。
 % 旧版の発電機1の入力（Pmech に加える値）は 0 なので、v4 では入力を加えません。
 
 y12 = 1.3652 - 11.6040j;
@@ -28,7 +30,7 @@ net.initialize();                 % 潮流計算と平衡点の計算
 
 sc = net.add_scenario("example3_19", Time=[0, 50]);
 z0 = load2.rv_Uequilibrium;            % 平衡点の [R; X]
-sc.add_input(load2.s_tag, ["R";"X"], [0, 0, 0; 50, 0.05*z0.'], [0, 50]);
+sc.add_input(load2.s_tag, ["R";"X"], [0, 0, 0; 50, 0.05*z0.'], [0, 50]);   % R0·u1, X0·u2（u1 = u2 = 0.05*t/50）
 
 c_opt = {"Solver","ode15s", "Tolerance",1e-6, "AbsoluteTolerance",1e-6, ...
          "MaxStep",NaN, "InitialStep",NaN, "SampleTime",NaN, "Progress","none"};
