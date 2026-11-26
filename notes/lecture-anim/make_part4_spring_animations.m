@@ -39,8 +39,9 @@ function make_part4_spring_animations(opt)
 % collapse keeps the Iq arrows). The time is the title of the picture (GUILDA's own title;
 % in case 4 the title of the phasor plane, with |V| of bus 4). The playback bar of the picture
 % is interactive: it is hidden (the picture takes its strip, as in export_video) and the
-% axes toolbars are hidden. Each frame is taken with getframe, and the video is encoded by
-% ffmpeg (H.264, yuv420p, faststart, scaled to the figure size in pixels).
+% axes toolbars are hidden. The videos play at half the simulated speed (Speed), 20 frames/s.
+% Each frame is taken with getframe, and the video is encoded by ffmpeg (H.264, yuv420p,
+% faststart, scaled to the figure size in pixels).
 %
 % Run after GUILDA (the path) with R2026a, with ffmpeg installed:
 %   addpath("notes/lecture-anim"); make_part4_spring_animations();
@@ -49,6 +50,7 @@ function make_part4_spring_animations(opt)
         opt.OutDir (1,1) string = ""          % Output folder; "" for _GUILDAdocPages/images/lecture/part4.
         opt.Case (1,:) string {mustBeMember(opt.Case, ["no-governor", "governor", "out-of-step", "voltage-collapse"])} ...
             = ["no-governor", "governor", "out-of-step", "voltage-collapse"]  % Cases to make.
+        opt.Speed (1,1) double {mustBePositive} = 0.5   % Playback speed relative to the simulated time.
     end
     s_out = opt.OutDir;
     if s_out == ""
@@ -105,11 +107,12 @@ function make_part4_spring_animations(opt)
         for ax = findall(fig, "Type", "axes")'
             ax.Toolbar.Visible = "off";
         end
-        rv_frame = 0:0.05:res.rv_t(end);       % real time at 20 frames/s
+        r_fps = 20;
+        rv_frame = 0:opt.Speed/r_fps:res.rv_t(end);   % opt.Speed times real time at 20 frames/s
         if rv_frame(end) < res.rv_t(end) - 1e-9
             rv_frame(end+1) = res.rv_t(end); %#ok<AGROW>
         end
-        write_animation(fig, c_G, rv_frame, 20, r_hold, f_title, fullfile(s_out, "swing-" + s_case));
+        write_animation(fig, c_G, rv_frame, r_fps, r_hold, f_title, fullfile(s_out, "swing-" + s_case));
     end
 end
 
@@ -326,7 +329,7 @@ function write_animation(fig, c_G, rv_frame, r_fps, r_hold, f_title, s_base)
     s_scale = sprintf("crop=%d:%d:%d:%d,scale=%d:%d:flags=lanczos", c2 - c1 + 1, r2 - r1 + 1, c1 - 1, r1 - 1, ...
         2*round(r_scale*(c2 - c1 + 1)/2), 2*round(r_scale*(r2 - r1 + 1)/2));
     c_cmd = { ...
-        sprintf('"%s" -v error -y -framerate %g -i "%s" -vf %s -c:v libx264 -preset slow -crf 26 -pix_fmt yuv420p -movflags +faststart "%s"', ...
+        sprintf('"%s" -v error -y -framerate %g -i "%s" -vf %s -c:v libx264 -preset slow -crf 28 -pix_fmt yuv420p -movflags +faststart "%s"', ...
             s_ffmpeg, r_fps, fullfile(s_dir, "f%05d.png"), s_scale, s_base + ".mp4"), ...
         sprintf('"%s" -v error -y -i "%s" -vf %s "%s"', ...
             s_ffmpeg, fullfile(s_dir, sprintf("f%05d.png", i_out)), s_scale, s_base + "-poster.png")};
