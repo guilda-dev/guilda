@@ -36,7 +36,7 @@ net = network_example3bus(flow=Value, comp2=Value, lossless=Value)
 
   | Value | 指定内容 |
   |:---|:---|
-  | 0 | 表 2.2 の入力定常値に対応する潮流設定 |
+  | 0 | 表 2.2 の定常値（δ\*、E\*）に対応する潮流設定 |
   | 1 | 表 3.1 の潮流設定 |
   | 2 | 表 3.2 の潮流設定 |
 
@@ -57,9 +57,11 @@ net = network_example3bus(flow=Value, comp2=Value, lossless=Value)
   | `"br23"` | 損失あり | 損失なし |
   | `["br12", "br23"]` | 損失なし | 損失なし |
 
-GUILDA v4 の潮流計算には slack 母線が 1 つ必要です。`flow=0` の旧版の設定は 3 母線とも PV 母線なので、
-v4 版では母線 1 を slack 母線（|V| = 1.372、偏角 0）にしています。そのため例 2.3 の数値は旧版と少し違います
-（`_GUILDAverification/Textbook/README.md`）。
+`flow=0` は、表 2.2 の発電機の定常値 δ\*、E\* から母線電圧を計算し、母線 1 を slack 母線（その |V|・偏角）、
+母線 2・3 を PV 母線（その P・|V|）にした潮流設定です。平衡点は表 2.2 の δ\*、E\* に一致します
+（表 2.2 は母線 2 が発電機の場合の値です）。旧版は 3 母線とも PV 母線（|V|・P は表の丸め値）で slack 母線がなく、
+fsolve の解は表 2.2 から偏角が約 0.25 rad 回転し、丸めた |V| のため E が最大 6e-3 ずれています。そのため例 2.3 の数値は
+旧版と違います（`_GUILDAverification/Textbook/README.md`）。
 
 ### グラフ作成ファイル
 
