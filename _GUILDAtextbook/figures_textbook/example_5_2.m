@@ -18,31 +18,27 @@ function example_5_2(varargin)
 
     % AGC の積分器 xi の初期値: 1 区間目は 2 台の発電機で母線 2 の負荷 P2 を半分ずつ受け持つ値
     % （旧版 x0 = P2/(2*Ki)、Ki = -500）、2 区間目からは前の区間の最後の値です。
-    % v4 のシナリオでは制御器の状態の初期値を与えられないので、xi = xi_start + xi'（xi' は
-    % 0 から始まる v4 の AGC の状態）と分け、AGC の出力 -alpha*(kP*w + kI*xi) のうち
-    % 一定の部分 -alpha*kI*xi_start を、発電機の機械入力 Pmech に一定の入力として加えます。
-    % xi' は xi と同じ式 dxi'/dt = beta'*omega に従うので、旧版と同じ式です。
-    P2       = net.a_Bus{2}.a_Component{1}.tab_parameter.powerflow.P;
-    xi_start = P2 / (2 * -500);
-    kI       = 500;
+    % 初期値は、平衡点からのずれとして add_offset で AGC の状態 xi に与えます。
+    P2  = net.a_Bus{2}.a_Component{1}.tab_parameter.powerflow.P;
+    xi0 = P2 / (2 * -500);
 
     K = [1, 1; 1, 3; 3, 1];          % 区間ごとの寄与係数（alpha = beta）
     c_sol = cell(3, 1);
     for k = 1:3
         T = 20*[k-1, k];
-        alpha = K(k, :).';
-        agc.tab_parameter.dynamics.alpha = alpha;
+        agc.tab_parameter.dynamics.alpha = K(k, :).';
         agc.tab_parameter.dynamics.beta  = K(k, :).';
         net.initialize(Solver="fsolve");          % 寄与係数の変更を反映（平衡点は変わりません）
         if k > 1
-            xi_start = xi_start + c_sol{k-1}.a_GlobalController{1}.x.xi(end);
+            xi0 = c_sol{k-1}.a_GlobalController{1}.x.xi(end);
         end
 
         sc = net.add_scenario("term" + k, Time=T);
+        sc.add_offset(agc.s_tag, "xi", xi0 - agc.rv_Xequilibrium, T(1));
         for i = 1:2
-            % 機械入力: 定常値を 0 にし（旧版 governor.P = 0）、AGC の一定の部分を加えます
+            % 機械入力: 定常値を 0 にします（旧版 governor.P = 0。機械入力は AGC がすべて与えます）
             Pm0 = g{i}.rv_Uequilibrium(g{i}.sv_u == "Pmech");
-            sc.add_input(g{i}.s_tag, "Pmech", -Pm0 - alpha(i)*kI*xi_start, T);
+            sc.add_input(g{i}.s_tag, "Pmech", -Pm0, T);
             % 発電機の状態の初期値: 1 区間目は平衡点、2 区間目からは前の区間の最後の状態
             if k > 1
                 x_end = c_sol{k-1}.a_Bus{ib(i)}.a_Component{1}.x{end, :}.';

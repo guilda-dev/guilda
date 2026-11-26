@@ -94,5 +94,5 @@ AVR の状態の初期値も平衡点と違う値にして計算しますが、v
 | 定電力負荷の入力 = 電力の倍率 `P0*(1+u)` | `load-power` の入力は電力 `Pload`、`Qload` そのもの。`P0*u` を加えます（例 5.1） |
 | `controller_broadcast_PI_AGC(net, [1,3], [1,3], -100, -500)`、`set_K_input`、`set_K_observe` | `net.add_global_controller("agc-PI", {g1, g3}, parameter=struct(alpha=..., beta=..., kP=100, kI=500))`。出力は `-alpha*(kP*w + kI*xi)` で、旧版の `Kp = -100`、`Ki = -500` と同じです |
 | `net.a_bus{i}.component.governor.P = 0`（機械入力の定常値） | `sc.add_input(<発電機>, "Pmech", -<平衡点の Pmech>, [t0, t1])`（既定の `gov-static` は定常値をそのまま出すので同じです） |
-| `net.simulate(..., 'x0_con_global', x0)`（AGC の状態の初期値） | シナリオでは制御器の状態の初期値を与えられないので、AGC の出力の一定の部分 `-alpha*kI*x0` を `Pmech` の入力に加えます（同じ式です。例 5.2、5.3） |
+| `net.simulate(..., 'x0_con_global', x0)`（AGC の状態の初期値） | `sc.add_offset(agc.s_tag, "xi", x0 - agc.rv_Xequilibrium, t0)`（平衡点からのずれとして与えます。例 5.2、5.3） |
 | 区間ごとにパラメータを変えて `simulate` を繰り返す（例 5.2） | `agc.tab_parameter.dynamics.alpha = ...` と `net.initialize` の後、前の区間の最後の状態との差を `sc.add_offset` で与えて区間ごとに `simulate` します |
