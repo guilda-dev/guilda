@@ -74,8 +74,9 @@ classdef (Sealed = true) Scenario < auxiliary & LayerPackage
 %
 % Offsets and inputs:
 %
-% - An offset applies at its time (TimeSpan t_start). An input lasts from t_start to t_end
-%   (TimeSpan [t_start, t_end], t_start < t_end).
+% - An offset applies at its time (TimeSpan t_start) to the states of a component, a local
+%   controller or a global controller. An input acts on the inputs of a component and
+%   lasts from t_start to t_end (TimeSpan [t_start, t_end], t_start < t_end).
 % - An input value is a constant (one number per input name, or one for all) or a time
 %   series [t, v_1, ..., v_n] (or a table with the variables Time and the input names), t
 %   from t_start, starting at 0 and increasing. The series is interpolated by InputMethod:

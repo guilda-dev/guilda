@@ -11,7 +11,7 @@ function edit(obj, opt)
 % ```
     arguments (Input)
         obj
-        opt.Unit  (1,1) string   % Tag of the component. Default: obj.s_unit.
+        opt.Unit  (1,1) string   % Tag of the component, local controller or global controller. Default: obj.s_unit.
         opt.State (:,1) string   % Names of the states (e.g. "delta"). Default: obj.sv_state.
         opt.Value (:,1) double   % Offsets, one per state or one for all. Default: obj.rv_value.
         opt.Time  (1,1) double   % [s] Time of the offset. Default: obj.r_time.
