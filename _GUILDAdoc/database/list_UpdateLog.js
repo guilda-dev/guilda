@@ -1,5 +1,11 @@
 const updateLogData = [
   {
+    "title": "Offsets of the states of controllers in a scenario",
+    "date": "2026-11-26",
+    "type": "feature",
+    "content": "Scenario.add_offset now also takes the tag of a local controller or a global controller, so the initial value of a controller state can differ from the equilibrium, or a controller state can jump at a given time, as for the states of a component. For example, sc.add_offset(gen.avr.s_tag, \"Vtr\", 0.05, 0) starts the voltage transducer of an AVR 0.05 above its equilibrium, and sc.add_offset(agc.s_tag, \"xi\", xi0, 0) starts the integrator of an AGC at xi0. The states are names of the sv_x of the controller. Offsets of components and inputs (add_input, still on the inputs of components only) work as before."
+  },
+  {
     "title": "PV curves beside the continuation power flow plots, and P-Q-V plots",
     "date": "2026-11-23",
     "type": "feature",

@@ -27,15 +27,14 @@ function example_5_3(varargin)
         net.initialize(Solver="fsolve");
 
         % AGC の積分器 xi の初期値: 2 台の発電機で母線 2 の負荷を半分ずつ受け持つ値
-        % （旧版 x0 = P2/(2*Ki)、Ki = -500）。v4 のシナリオでは制御器の状態の初期値を
-        % 与えられないので、xi = xi0 + xi'（xi' は 0 から始まる v4 の AGC の状態）と分け、
-        % AGC の出力のうち一定の部分 -alpha*kI*xi0 を機械入力 Pmech に加えます（同じ式です）。
+        % （旧版 x0 = P2/(2*Ki)、Ki = -500）。平衡点からのずれとして add_offset で与えます。
         P2  = net.a_Bus{2}.a_Component{1}.tab_parameter.powerflow.P;
         xi0 = P2 / (2 * -kI);
         sc  = net.add_scenario("flow" + k, Time=[0, 5]);
+        sc.add_offset(agc.s_tag, "xi", xi0 - agc.rv_Xequilibrium, 0);
         for i = 1:2
             Pm0 = g{i}.rv_Uequilibrium(g{i}.sv_u == "Pmech");   % 定常値を 0 に（旧版 governor.P = 0）
-            sc.add_input(g{i}.s_tag, "Pmech", -Pm0 - kI*xi0, [0, 5]);
+            sc.add_input(g{i}.s_tag, "Pmech", -Pm0, [0, 5]);
         end
         sol = net.simulate("flow" + k, c_opt{:});
 
@@ -82,7 +81,7 @@ function [W, WF, WG, Wxi] = storage_func(sol, net, kI)
         p = net.a_Bus{i}.a_Component{1}.tab_parameter.dynamics;
         M(i) = p.M;  X(i) = p.Xd;  X_prime(i) = p.Xd_p;
     end
-    xi = sol.a_GlobalController{1}.x.xi;           % AGC の状態（一定の部分を除いた xi'）
+    xi = sol.a_GlobalController{1}.x.xi;           % AGC の状態
 
     % 電気サブシステムのポテンシャルエネルギー関数 UG
     ig = find(gen_idx(:));

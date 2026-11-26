@@ -395,7 +395,7 @@
   "Scenario.add_offset": {
     "inputs": [
       {"name":"obj","kind":"required","type":"Scenario"},
-      {"name":"unit","kind":"required","type":[["string","scalar","choices=cellstr([strings(0,1); tools.vcellfun(@(b) string(b.a_Component(:)), obj.a_PowerNetwork.a_Bus)])"],["string","scalar"]],"purpose":"Tag of the component."},
+      {"name":"unit","kind":"required","type":[["string","scalar","choices=cellstr([strings(0,1); tools.vcellfun(@(b) string(b.a_Component(:)), obj.a_PowerNetwork.a_Bus); string(obj.a_PowerNetwork.a_GlobalController(:)); tools.vcellfun(@(c) string(c.a_LocalController(:)), tools.vcellfun(@(b) b.a_Component(:), obj.a_PowerNetwork.a_Bus))])"],["string","scalar"]],"purpose":"Tag of the component, local controller or global controller."},
       {"name":"state","kind":"required","type":["string"],"purpose":"Names of the states (e.g. \"delta\")."},
       {"name":"value","kind":"required","type":["double"],"purpose":"Offsets, one per state or one for all."},
       {"name":"time","kind":"ordered","type":["double","scalar"],"purpose":"[s] Time of the offset. Default: 0."},
@@ -457,7 +457,7 @@
   },
   "EventOffset": {
     "inputs": [
-      {"name":"unit","kind":"required","type":["string","scalar"],"purpose":"Tag of the component."},
+      {"name":"unit","kind":"required","type":["string","scalar"],"purpose":"Tag of the component, local controller or global controller."},
       {"name":"state","kind":"required","type":["string"],"purpose":"Names of the states (e.g. \"delta\")."},
       {"name":"value","kind":"required","type":["double"],"purpose":"Offsets, one per state or one for all."},
       {"name":"time","kind":"ordered","type":["double","scalar"],"purpose":"[s] Time of the offset. Default: 0."},
@@ -507,7 +507,7 @@
   "EventOffset.edit": {
     "inputs": [
       {"name":"obj","kind":"required","type":"EventOffset"},
-      {"name":"Unit","kind":"namevalue","type":[["string","scalar","choices=cellstr([strings(0,1); tools.vcellfun(@(b) string(b.a_Component(:)), obj.a_Scenario.a_PowerNetwork.a_Bus)])"],["string","scalar"]],"purpose":"Tag of the component. Default: obj.s_unit."},
+      {"name":"Unit","kind":"namevalue","type":[["string","scalar","choices=cellstr([strings(0,1); tools.vcellfun(@(b) string(b.a_Component(:)), obj.a_Scenario.a_PowerNetwork.a_Bus); string(obj.a_Scenario.a_PowerNetwork.a_GlobalController(:)); tools.vcellfun(@(c) string(c.a_LocalController(:)), tools.vcellfun(@(b) b.a_Component(:), obj.a_Scenario.a_PowerNetwork.a_Bus))])"],["string","scalar"]],"purpose":"Tag of the component, local controller or global controller. Default: obj.s_unit."},
       {"name":"State","kind":"namevalue","type":["string"],"purpose":"Names of the states (e.g. \"delta\"). Default: obj.sv_state."},
       {"name":"Value","kind":"namevalue","type":["double"],"purpose":"Offsets, one per state or one for all. Default: obj.rv_value."},
       {"name":"Time","kind":"namevalue","type":["double","scalar"],"purpose":"[s] Time of the offset. Default: obj.r_time."},

@@ -27,15 +27,25 @@ function validate_disturbance(d, s_scenario, net)
         a_comp = cellfun(@(b) b.a_Component, net.a_Bus, 'UniformOutput', false);
         a_comp = vertcat(cell(0,1), a_comp{:});
         sv_tag = string(cellfun(@(c) c.s_tag, a_comp, 'UniformOutput', false));
+        % Units of an offset: the components, their local controllers (nested ones too)
+        % and the global controllers
+        a_unit = a_comp;
+        k = 0;
+        while k < numel(a_unit)
+            k = k + 1;
+            a_unit = [a_unit; reshape(a_unit{k}.a_LocalController, [], 1)]; %#ok<AGROW>
+        end
+        a_unit = [a_unit; reshape(net.a_GlobalController, [], 1)];
+        sv_unit = reshape(string(cellfun(@(c) c.s_tag, a_unit, 'UniformOutput', false)), [], 1);
     end
 
     if strlength(d.OffsetUnit) > 0 || ~isempty(d.OffsetState) || ~isempty(d.OffsetValue)
         if l_net
-            lv_cmp = sv_tag == d.OffsetUnit;
+            lv_cmp = sv_unit == d.OffsetUnit;
             if ~any(lv_cmp)
                 error(msg("GUILDA:Scenario:UnknownOffsetUnit", c_lbl{:}, char(d.OffsetUnit), s_net));
             end
-            sv_x = string(a_comp{find(lv_cmp,1)}.sv_x(:));
+            sv_x = string(a_unit{find(lv_cmp,1)}.sv_x(:));
             lv_bad = ~ismember(d.OffsetState, sv_x);
             if any(lv_bad)
                 error(msg("GUILDA:Scenario:UnknownOffsetState", c_lbl{:}, ...

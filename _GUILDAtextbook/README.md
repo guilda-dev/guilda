@@ -36,7 +36,7 @@ net = network_example3bus(flow=Value, comp2=Value, lossless=Value)
 
   | Value | 指定内容 |
   |:---|:---|
-  | 0 | 表 2.2 の入力定常値に対応する潮流設定 |
+  | 0 | 表 2.2 の定常値（δ\*、E\*）に対応する潮流設定 |
   | 1 | 表 3.1 の潮流設定 |
   | 2 | 表 3.2 の潮流設定 |
 
@@ -57,9 +57,11 @@ net = network_example3bus(flow=Value, comp2=Value, lossless=Value)
   | `"br23"` | 損失あり | 損失なし |
   | `["br12", "br23"]` | 損失なし | 損失なし |
 
-GUILDA v4 の潮流計算には slack 母線が 1 つ必要です。`flow=0` の旧版の設定は 3 母線とも PV 母線なので、
-v4 版では母線 1 を slack 母線（|V| = 1.372、偏角 0）にしています。そのため例 2.3 の数値は旧版と少し違います
-（`_GUILDAverification/Textbook/README.md`）。
+`flow=0` は、表 2.2 の発電機の定常値 δ\*、E\* から母線電圧を計算し、母線 1 を slack 母線（その |V|・偏角）、
+母線 2・3 を PV 母線（その P・|V|）にした潮流設定です。平衡点は表 2.2 の δ\*、E\* に一致します
+（表 2.2 は母線 2 が発電機の場合の値です）。旧版は 3 母線とも PV 母線（|V|・P は表の丸め値）で slack 母線がなく、
+fsolve の解は表 2.2 から偏角が約 0.25 rad 回転し、丸めた |V| のため E が最大 6e-3 ずれています。そのため例 2.3 の数値は
+旧版と違います（`_GUILDAverification/Textbook/README.md`）。
 
 ### グラフ作成ファイル
 
@@ -117,5 +119,5 @@ AVR の状態の初期値も平衡点と違う値にして計算しますが、v
 | 定電力負荷の入力 = 電力の倍率 `P0*(1+u)` | `load-power` の入力は電力 `Pload`、`Qload` そのもの。`P0*u` を加えます（例 5.1） |
 | `controller_broadcast_PI_AGC(net, [1,3], [1,3], -100, -500)`、`set_K_input`、`set_K_observe` | `net.add_global_controller("agc-PI", {g1, g3}, parameter=struct(alpha=..., beta=..., kP=100, kI=500))`。出力は `-alpha*(kP*w + kI*xi)` で、旧版の `Kp = -100`、`Ki = -500` と同じです |
 | `net.a_bus{i}.component.governor.P = 0`（機械入力の定常値） | `sc.add_input(<発電機>, "Pmech", -<平衡点の Pmech>, [t0, t1])`（既定の `gov-static` は定常値をそのまま出すので同じです） |
-| `net.simulate(..., 'x0_con_global', x0)`（AGC の状態の初期値） | シナリオでは制御器の状態の初期値を与えられないので、AGC の出力の一定の部分 `-alpha*kI*x0` を `Pmech` の入力に加えます（同じ式です。例 5.2、5.3） |
+| `net.simulate(..., 'x0_con_global', x0)`（AGC の状態の初期値） | `sc.add_offset(agc.s_tag, "xi", x0 - agc.rv_Xequilibrium, t0)`（平衡点からのずれとして与えます。例 5.2、5.3） |
 | 区間ごとにパラメータを変えて `simulate` を繰り返す（例 5.2） | `agc.tab_parameter.dynamics.alpha = ...` と `net.initialize` の後、前の区間の最後の状態との差を `sc.add_offset` で与えて区間ごとに `simulate` します |
