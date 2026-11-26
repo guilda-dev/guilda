@@ -45,18 +45,20 @@ classdef Tutorial6bus < PowerNetwork
 
             obj.tab_parameter.base.Hz = 50;
 
-            obj.add_bus("V",0.9);
-            obj.add_bus("V",1.3);
-            obj.add_bus("V",1.289197);   % gives Q = 0.8 at bus 3
-            obj.add_bus("V",1.010786);   % gives Q = -0.2 at bus 4
-            obj.add_bus();
-            obj.add_bus();
+            % layout: B001/B002 on the left, B003/B004 on the right, joined by the
+            % vertical bars B005 and B006 with horizontal lines
+            obj.add_bus("V",0.9,      "X",0.15, "Y",0.75, "Shape","vbar", "Length",0.12);
+            obj.add_bus("V",1.3,      "X",0.15, "Y",0.25, "Shape","vbar", "Length",0.12);
+            obj.add_bus("V",1.289197, "X",0.90, "Y",0.75, "Shape","vbar", "Length",0.12);   % gives Q = 0.8 at bus 3
+            obj.add_bus("V",1.010786, "X",0.90, "Y",0.25, "Shape","vbar", "Length",0.12);   % gives Q = -0.2 at bus 4
+            obj.add_bus(              "X",0.40, "Y",0.50, "Shape","vbar", "Length",0.56);
+            obj.add_bus(              "X",0.65, "Y",0.50, "Shape","vbar", "Length",0.56);
 
-            obj.add_branch("pi", [1,5], "R",0, "X",0.35, "C",0);
-            obj.add_branch("pi", [2,5], "R",0, "X",0.20, "C",0);
-            obj.add_branch("pi", [5,6], "R",0, "X",0.20, "C",0);
-            obj.add_branch("pi", [3,6], "R",0, "X",0.30, "C",0);
-            obj.add_branch("pi", [4,6], "R",0, "X",0.35, "C",0);
+            obj.add_branch("pi", [1,5], "R",0, "X",0.35, "C",0, "FromOffset",0, "ToOffset", 0.25);
+            obj.add_branch("pi", [2,5], "R",0, "X",0.20, "C",0, "FromOffset",0, "ToOffset",-0.25);
+            obj.add_branch("pi", [5,6], "R",0, "X",0.20, "C",0, "FromOffset",0, "ToOffset", 0);
+            obj.add_branch("pi", [3,6], "R",0, "X",0.30, "C",0, "FromOffset",0, "ToOffset", 0.25);
+            obj.add_branch("pi", [4,6], "R",0, "X",0.35, "C",0, "FromOffset",0, "ToOffset",-0.25);
 
             M  = [10; 8; 6; 6];
             D  = [ 5; 5; 5; 5];
@@ -64,9 +66,10 @@ classdef Tutorial6bus < PowerNetwork
             Xq = Xd;
             para = table(M,D,Xd,Xq);
 
-            rv_P = [0, 1.0, -0.7, -0.8];
+            rv_P  = [0, 1.0, -0.7, -0.8];
+            rv_DX = [-0.08, -0.08, 0.08, 0.08];   % the generators point outward
             for i = 1:4
-                obj.a_Bus{i}.add_component("gen-classical", "P",rv_P(i), "parameter",para(i,:));
+                obj.a_Bus{i}.add_component("gen-classical", "P",rv_P(i), "parameter",para(i,:), "DX",rv_DX(i), "DY",0);
             end
             evalc("obj.a_Bus{1}.l_isSlack = true;");   % the slack bus (GUILDA never selects one)
 
