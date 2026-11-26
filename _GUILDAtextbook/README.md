@@ -73,6 +73,9 @@ v4 版では母線 1 を slack 母線（|V| = 1.372、偏角 0）にしていま
 | `example_4_3.m` | 例 4.3 | （蓄積関数） | 0 | `Gen_1axis` | `["br12", "br23"]`、`{}` | なし |
 | `example_4_4.m` | 例 4.4 | （固有値の軌跡） | 0 | `Gen_1axis` | `["br12", "br23"]`、`{}` | なし |
 | `example_4_6.m` | 例 4.6 | （安定性の分類） | 0 | `Gen_1axis` | `{}`（R、X を書き換え） | なし |
+| `example_5_1.m` | 例 5.1 | 図 5.2 | 2 | `L_power` | `"br23"` | なし、AGC（`agc-PI`） |
+| `example_5_2.m` | 例 5.2 | 図 5.3 | 2 | `L_power` | `"br23"` | AGC（`agc-PI`） |
+| `example_5_3.m` | 例 5.3 | 図 5.5 | 2（表 5.2 の 2 つの設定） | `L_power` | `["br12", "br23"]` | AGC（`agc-PI`） |
 
 旧版の対応表にある例 4.5、5.4、5.6 と 6.2 節、6.3 節のファイルは、旧版のリポジトリにもありません。
 
@@ -95,6 +98,10 @@ v4 版は `linear_model_example3bus.m` で、同じ系統を教科書の点（δ
 例 4.6 は送電線の R、X と（(b)、(d) では）制動係数 D を書き換え、θ2 ごとに θ1 の 101 点をまとめて線形化します
 （全体で数分かかります）。
 
+例 5.5（図 5.12）の v4 版はありません。旧版は AVR の電圧の目標値 Vref を平衡点と違う値にし（`avr.initialize`）、
+AVR の状態の初期値も平衡点と違う値にして計算しますが、v4 のシナリオで与えられるのは機器の入力と機器の状態のずれだけで、
+制御器の入力（Vref）と状態は与えられないためです（`_GUILDAverification/Textbook/README.md`）。
+
 ## 旧版（GUILDA v1.1）との書き方の違い
 
 | 旧版 | v4 版 |
@@ -107,3 +114,8 @@ v4 版は `linear_model_example3bus.m` で、同じ系統を教科書の点（δ
 | 発電機の入力の順序 `[Vfd; Pm]` | `gen-1axis` の入力は `Pmech`、`Vfield`（名前で指定） |
 | 定インピーダンス負荷の入力 = アドミタンスの倍率 `Y0*(1+u)` | `load-impedance` の入力はインピーダンス `R`、`X` そのもの（例 3.4 で換算しています） |
 | 数値解法 ode15s、許容誤差 1e-8（既定） | `net.simulate(..., Solver="ode15s", Tolerance=1e-8, AbsoluteTolerance=1e-8)` を指定しています（v4 の既定は 1e-6） |
+| 定電力負荷の入力 = 電力の倍率 `P0*(1+u)` | `load-power` の入力は電力 `Pload`、`Qload` そのもの。`P0*u` を加えます（例 5.1） |
+| `controller_broadcast_PI_AGC(net, [1,3], [1,3], -100, -500)`、`set_K_input`、`set_K_observe` | `net.add_global_controller("agc-PI", {g1, g3}, parameter=struct(alpha=..., beta=..., kP=100, kI=500))`。出力は `-alpha*(kP*w + kI*xi)` で、旧版の `Kp = -100`、`Ki = -500` と同じです |
+| `net.a_bus{i}.component.governor.P = 0`（機械入力の定常値） | `sc.add_input(<発電機>, "Pmech", -<平衡点の Pmech>, [t0, t1])`（既定の `gov-static` は定常値をそのまま出すので同じです） |
+| `net.simulate(..., 'x0_con_global', x0)`（AGC の状態の初期値） | シナリオでは制御器の状態の初期値を与えられないので、AGC の出力の一定の部分 `-alpha*kI*x0` を `Pmech` の入力に加えます（同じ式です。例 5.2、5.3） |
+| 区間ごとにパラメータを変えて `simulate` を繰り返す（例 5.2） | `agc.tab_parameter.dynamics.alpha = ...` と `net.initialize` の後、前の区間の最後の状態との差を `sc.add_offset` で与えて区間ごとに `simulate` します |
