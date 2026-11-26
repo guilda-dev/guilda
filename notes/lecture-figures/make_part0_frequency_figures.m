@@ -42,7 +42,7 @@ function make_part0_frequency_figures(opt)
 
     % Tutorial6bus with a load at bus 6 that draws 0.1 pu from t = 1 s
     net = network.Tutorial6bus();
-    ld = net.a_Bus{6}.add_component("load-power", P=0, Q=0);
+    ld = net.a_Bus{6}.add_component("load-power", P=0, Q=0, DX=0.1, DY=-0.1);   % off the line B005-B006
     net.initialize();
     G = net.plot_single_line_diagram(Parent=diagram_figure(6.0, 5.4));
     drawnow;
