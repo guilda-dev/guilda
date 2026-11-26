@@ -151,7 +151,7 @@ function c_method = sig_methods()
         "Scenario",     "add_fault",                {"target",     "[" + s_bus + "; " + s_branch + "]", "string"}
         "Scenario",     "add_trip",                 {"unit",       s_unit,                            "string"}
         "Scenario",     "add_open_branch",          {"branch",     s_branch,                          "string"}
-        "Scenario",     "add_offset",               {"unit",       s_comp,                            "string"}
+        "Scenario",     "add_offset",               {"unit",       s_unit,                            "string"}
         "Scenario",     "add_input",                {"unit",       s_comp,                            "string"; "name", s_uname, "string"}
         "Scenario",     "remove_event",             {"tag",        s_dist,                            "string"}
         "EventFault",      "EventFault",            cell(0,3)    % constructors: no network, no tags
@@ -162,7 +162,7 @@ function c_method = sig_methods()
         "EventFault",      "edit",                  {"Target", replace("[" + s_bus + "; " + s_branch + "]", "obj.a_PowerNetwork", s_net), "string"}
         "EventTrip",       "edit",                  {"Unit",   replace(s_unit,   "obj.a_PowerNetwork", s_net), "string"}
         "EventOpenBranch", "edit",                  {"Branch", replace(s_branch, "obj.a_PowerNetwork", s_net), "string"}
-        "EventOffset",     "edit",                  {"Unit",   replace(s_comp,   "obj.a_PowerNetwork", s_net), "string"}
+        "EventOffset",     "edit",                  {"Unit",   replace(s_unit,   "obj.a_PowerNetwork", s_net), "string"}
         "EventInput",      "edit",                  {"Unit",   replace(s_comp,   "obj.a_PowerNetwork", s_net), "string"; ...
                                                      "Name",   s_net + ".get_element(obj.s_unit).sv_u",       "string"}
         };
