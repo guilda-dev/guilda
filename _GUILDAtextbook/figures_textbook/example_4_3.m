@@ -11,7 +11,7 @@ function example_4_3()
         subplot(1, 2, k)
         net = network_example3bus(flow=0, comp2="Gen_1axis", lossless=sv_lossless{k});
 
-        % 発電機モデルの状態の点（教科書の値。平衡点ではありません）
+        % 発電機モデルの状態の点（教科書の値。損失ありでは flow=0 の平衡点、損失なしでは平衡点ではありません）
         delta = [0.4656; 1.0903; 0.6067];
         E     = [1.4363; 1.8095; 1.1030];
         lin   = linear_model_example3bus(net, delta, E);
