@@ -53,6 +53,7 @@
         <entry key="DiagramTopology">net.plot_diagram: ''{0}'' is not initialized or not up to date, so the diagram shows the topology only. Run net.initialize() and draw again for the equilibrium.</entry>
         <entry key="SummaryNoEquilibrium">net.disp_summary: ''{0}'' has no equilibrium yet, so the equilibrium columns are not shown. Run net.initialize() and display again for the equilibrium.</entry>
         <entry key="DiagramGraph">Graph of net.plot_diagram must be a GraphNetDiagram whose axes still exist; it is a {0}.</entry>
+        <entry key="ValidateStale">net.validate stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
         <entry key="DiagramStale">net.plot_diagram stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
         <entry key="SimulateInputEdited">net.simulate stopped: inputs of components of ''{0}'' were edited ({1}).&#xA;Run net.initialize(Method="FixedInput") for the equilibrium with these inputs, or net.initialize(Method="powerflow") to replace them with the power flow solution.</entry>
         <entry key="GconNoTarget">The global controller ''{0}'' drives the input ''{1}'' of ''{2}'', but neither the component nor its local controllers have this input now.&#xA;Attach a local controller with this input, or remove the global controller with net.remove_global_controller(TAG).</entry>

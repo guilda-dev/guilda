@@ -41,6 +41,7 @@ classdef PowerNetwork < PowerSystemModel
 % - network diagrams (`plot_diagram`, the black-and-white `plot_single_line_diagram`) and their layout (`get_layout`, `set_layout`), spring-mass pictures of the equilibrium
 %   (`plot_spring_model`), the signal connections of the controllers
 %   (`disp_connection`) and CSV / MATPOWER import and export
+% - the check of the model functions of every component and local controller (`validate`)
 %
 % Each analysis runs a solver object stored in a `solver_*` property; a subclass of the
 % network may replace it with a subclass of the solver. `solver_PF` keeps no settings
@@ -193,6 +194,7 @@ classdef PowerNetwork < PowerSystemModel
         disp_summary(obj, opt)
         varargout = disp_powerflow(obj)
         varargout = disp_connection(obj, opt)
+        flag = validate(obj, l_message, opt)
         G = plot_diagram(obj, opt)
         G = plot_single_line_diagram(obj, opt)
         G = plot_spring_model(obj, opt)
