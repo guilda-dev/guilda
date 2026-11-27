@@ -15,14 +15,22 @@ classdef IEEE68bus < PowerNetwork
 %
 % Data:
 %
-% The values are those of the v2 CSV files (kept in `archive/IEEE68bus`); only the
-% format is converted:
+% The values are those of the v2 CSV files (kept in `archive/IEEE68bus`) with the
+% format converted, except for three generator values corrected to the book:
 %
 % - Branches with tap 0 in the v2 file are pi lines; the others are pi_transformer
 %   branches with the v2 tap and phase. The line charging is given at each end
 %   (`C = b/2`), as in the v2 files.
 % - Generators are gen-1axis models with the v2 generator_1axis data (`M`, `D`, `Xd`,
-%   `Xq`, `Xd_p`, `Td_p`), as network.build used them.
+%   `Xq`, `Xd_p`, `Td_p`), as network.build used them, except for three values.
+%   Table B.1 of the book gives each machine on its own MVA base; on the 100 MVA base
+%   with `k = S/100` the reactances are `X/k`, `M = 2*k*H` and the damping `k*D`. The v2
+%   data converted three values wrongly, and this network has the values from the book
+%   on the 100 MVA base, so they differ from the v2 (archive) data (rows of
+%   `component/gen-1axis/dynamics.csv` by `ParameterID`):
+%   - `Xd` of G13 (200 MVA, `ParameterID` 13): 0.0148 (v2: 0.0296).
+%   - `M` of G14 and G15 (both `ParameterID` 14): 600 (v2: 1200).
+%   - `Xd` of G16 (200 MVA, `ParameterID` 15): 0.0178 (v2: 0.0356).
 % - Loads are load-impedance models (constant impedance at the power-flow solution).
 % - By default (`LocalController=false`) each generator keeps the Static AVR and governor
 %   (`avr-static`, `gov-static`), which hold `Vfield` and `Pmech` at their equilibrium.
@@ -37,8 +45,8 @@ classdef IEEE68bus < PowerNetwork
 %     `data16m.m`, and the SEXS of generator 9 in the PSS/E dyr file of the IEEE PES
 %     Task Force benchmark. The equilibrium field voltages (1.03 to 2.43 pu) are inside
 %     the limits, so the equilibrium and the linearization do not depend on them.
-%   - Setting `Limiter` to false on every AVR reproduces the v2/v3 results without
-%     limits (see the examples).
+%   - Setting `Limiter` to false on every AVR removes the limits, as in v2/v3 (see the
+%     examples); the results still differ from v2/v3 by the three corrected values.
 %   - The v2 PSS (`Kpss`, `Tpss`, `TL1p`, `TL1`, `TL2p`, `TL2`) has the transfer function
 %     `Kpss/Tpss * Tpss*s/(1+Tpss*s) * (1+TL1p*s)/(1+TL1*s) * (1+TL2p*s)/(1+TL2*s)`,
 %     which is controller.pss.PSS1 with `kpss = Kpss/Tpss`, `tWS = Tpss`, `tn1 = TL1p`,
@@ -56,9 +64,9 @@ classdef IEEE68bus < PowerNetwork
 %   avr_IEEE_ST1, excitation); they are not part of this network.
 %
 % With the Static AVRs and governors only (`LocalController=false`, the default) the
-% equilibrium is unstable: one real eigenvalue is about +0.13 1/s. With the AVRs and PSSs
+% equilibrium is unstable: one real eigenvalue is about +0.10 1/s. With the AVRs and PSSs
 % (`LocalController=true`) it is stable; the largest real part apart from the zero mode
-% of the common angle is about -0.0051 1/s.
+% of the common angle is about -0.0052 1/s.
 %
 % <@Citations>
 % - B. Pal and B. Chaudhuri, *Robust Control in Power Systems*. New York, NY, USA:
@@ -79,7 +87,7 @@ classdef IEEE68bus < PowerNetwork
 % sol = net.simulate("fault");
 % ```
 %
-% Switch the AVR limiters off to reproduce the v2/v3 results:
+% Switch the AVR limiters off, as in v2/v3:
 %
 % ```matlab
 % net = network.IEEE68bus(LocalController=true);
