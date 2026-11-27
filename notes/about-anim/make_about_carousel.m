@@ -265,8 +265,8 @@ end
 
 function make_participation(s_base)
 % Interactive: the participation of the buses in the modes of IEEE 68-bus (plot_participation).
-% Eigenvalues are clicked on the map: the inter-area mode of 0.35 Hz, the local mode of the
-% generator at B011 (1.63 Hz) and the mode of 0.42 Hz of the area of B014 to B016; then bus
+% Eigenvalues are clicked on the map: the inter-area mode of 0.39 Hz, the local mode of the
+% generator at B011 (1.63 Hz) and the mode of 0.66 Hz of the area of B014 to B016; then bus
 % B014 is clicked and the table lists the participation of its states in that mode.
     res = network.IEEE68bus().get_sys();
     fig = figure(Color="w", Position=[100 100 1120 560]);
@@ -278,9 +278,9 @@ function make_participation(s_base)
     G = sct.Diagram;
     cv_lambda = res.get_participation().cv_lambda;
     f_lambda = @(c) cv_lambda(nearest(cv_lambda, c));
-    c_inter = f_lambda(-0.18 + 2.18i);
+    c_inter = f_lambda(-0.20 + 2.47i);
     c_local = f_lambda(-0.40 + 10.23i);
-    c_area = f_lambda(-0.11 + 2.65i);
+    c_area = f_lambda(-0.11 + 4.16i);
     f_eig = @(c) data_to_figure(G_eig.ax(1), real(c), imag(c));
     rec = make_recorder(fig);
 
