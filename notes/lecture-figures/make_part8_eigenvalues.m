@@ -3,8 +3,9 @@ function make_part8_eigenvalues(opt)
 % (_GUILDAdocPages/lecture/part8-controller-design.html): lqr-eigenvalues.png.
 %
 % Three panels of network.IEEE68bus(LocalController=true), each drawn by
-% ResultLIN.plot_eigenvalue of net.get_sys() and shown near the origin (upper half of the
-% complex plane, the limits XLim and YLim):
+% ResultLIN.plot_eigenvalue of net.get_sys() and shown near the origin, both halves of the
+% complex plane (the limits XLim and YLim; eigenvalues left of XLim(1) decay faster and are
+% outside the frame):
 %   (a) as bundled: AVR (avr-ST1) and PSS (pss-PSS1) on all 16 generators;
 %   (b) the PSSs removed (AVR only);
 %   (c) the AVR of generators 1-15 replaced by local-LQR (Input="Vfield", R=1e-4);
@@ -19,9 +20,9 @@ function make_part8_eigenvalues(opt)
     arguments (Input)
         opt.OutDir (1,1) string = ""                                % Output folder; "" for _GUILDAdocPages/images/lecture/part8.
         opt.Resolution (1,1) double {mustBePositive} = 150          % [dpi] Resolution of the PNG.
-        opt.Size (1,2) double {mustBePositive} = [22, 9]            % [cm] Size of the figure.
+        opt.Size (1,2) double {mustBePositive} = [22, 13]            % [cm] Size of the figure.
         opt.XLim (1,2) double = [-3, 1]                             % [1/s] Limits of the real axis.
-        opt.YLim (1,2) double = [0, 14]                             % [rad/s] Limits of the imaginary axis.
+        opt.YLim (1,2) double = [-14, 14]                             % [rad/s] Limits of the imaginary axis.
     end
     s_out = opt.OutDir;
     if s_out == ""
