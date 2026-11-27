@@ -7,6 +7,16 @@ function tab_out = dictionary(headword,opt)
 % a key, such as PowerNetwork or an abstract class). The returned table lists the
 % descendants of the classes in output with their keys; GUILDA.keymap is built from it.
 %
+% The classes are searched in the GUILDA folder, then in each folder of the setting
+% ModelFolder (Startup section of GUILDA.setting), where a user keeps model classes of
+% their own. A package folder (+name) gives the package of its classes (e.g.
+% +controller/+governor/Droop.m is controller.governor.Droop); hidden folders and
+% folders named archive are skipped. A folder of ModelFolder that does not exist is
+% skipped with a warning (GUILDA:dictionary:ModelFolderNotFound). A class whose name was
+% already found is left out, so a GUILDA class keeps its name against a user class of
+% the same name. The classes must be on the MATLAB path (GUILDA.addpath adds the folders
+% of ModelFolder).
+%
 % <@Examples>
 % ```matlab
 % GUILDA.dictionary("Component")                          % class tree under Component
@@ -29,7 +39,14 @@ function tab_out = dictionary(headword,opt)
     filename      = "handle";
     superclass    = "";
     Key           = "";
-    class_list    = make_classlist(table(filename,superclass,Key),cell(0), opt.disp);
+    class_list    = make_classlist(table(filename,superclass,Key), GUILDA.pwd, cell(0), opt.disp);
+    for s_folder = GUILDA.config("Startup","ModelFolder")
+        if ~isfolder(s_folder)
+            show_msg("warning", "GUILDA:dictionary:ModelFolderNotFound", s_folder);
+            continue
+        end
+        class_list = make_classlist(class_list, s_folder, cell(0), opt.disp);
+    end
 
     if opt.disp
         % width of the Key column: the longest key in the displayed tree
@@ -78,14 +95,14 @@ function tab_out = dictionary(headword,opt)
     end
 end
 
-function data = make_classlist(data, cell_dirlist, l_disp)
+function data = make_classlist(data, s_root, cell_dirlist, l_disp)
 
     % Old load classes kept for reference only (same names as the current ones)
     if isequal(cell_dirlist, {'_GUILDAobject','+component','+load','history'})
         return
     end
 
-    list = dir(fullfile( GUILDA.pwd, cell_dirlist{:} ));
+    list = dir(fullfile( s_root, cell_dirlist{:} ));
     for idx = 1:numel(list)
         char_name = list(idx).name;
 
@@ -108,7 +125,7 @@ function data = make_classlist(data, cell_dirlist, l_disp)
 
         % ディレクトリの場合：フォルダ内を探索
         if  list(idx).isdir
-            data = make_classlist( data, [cell_dirlist, {char_name}], l_disp);
+            data = make_classlist( data, s_root, [cell_dirlist, {char_name}], l_disp);
             continue
         end
         

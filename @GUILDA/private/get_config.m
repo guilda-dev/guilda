@@ -11,7 +11,8 @@ function [out, sv_reset, sm_invalid] = get_config(varargin)
 % check_setting (merge_config): an invalid value is replaced by its default in the same
 % way, returned in sm_invalid (INFO GUILDA:GUILDA:ConfigValueReset). The values are
 % therefore of the class of their type (double, logical, string) and pass the condition
-% Valid of their definition.
+% Valid of their definition. The default values are converted to the class of their type
+% by check_setting as well.
     arguments (Input, Repeating)
         varargin  % Field names passed to getfield to select a part of the configuration.
     end
@@ -31,6 +32,10 @@ function [out, sv_reset, sm_invalid] = get_config(varargin)
 
         field = replace(ele,["Default",".json"],["",""]);
         [out.(field), version_sys] = split_version(readstruct(path_def_sys));
+        % the defaults in the class of their type too (e.g. [] of an empty "string" list)
+        for s_name = string(fieldnames(out.(field)))'
+            out.(field).(s_name).Value = check_setting(out.(field).(s_name), out.(field).(s_name).Value);
+        end
         if isfile(path_def_user)
             [sct_user, version_user] = split_version(readstruct(path_def_user));
             if isequal(version_user, version_sys)
