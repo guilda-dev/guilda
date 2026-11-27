@@ -2,21 +2,26 @@ function make_about_custom_controller(opt)
 % Make the About carousel video "制御器もネットワークの一部": a user-written controller class.
 %
 % The video (1280 x 640 px) shows, as a user would do it in MATLAB:
-%   1. An editor pane where the class file
-%      _GUILDAobject/+controller/+governor/Droop.m is typed: a governor
-%      with a proportional frequency feedback, Pmech = Pmech_ref - K*omega (key "gov-droop",
-%      a LocalController with the role "governor", no state), then saved.
-%   2. A command window where the commands of sv_cmd below are typed: GUILDA.update_keymap
-%      registers the new key, the IEEE 9-bus system loses 0.1 pu of mechanical power at 1 s
-%      and is simulated with the default governors (gov-static) and again with gov-droop on
-%      its three generators; the text under each command is its real output (evalc).
+%   1. An editor pane where the class file myModels/+controller/+governor/Droop.m (in a
+%      folder of the user's own, outside GUILDA) is typed: a governor with a proportional
+%      frequency feedback, Pmech = Pmech_ref - K*omega (key "gov-droop", a LocalController
+%      with the role "governor", no state), then saved.
+%   2. A command window where the commands of sv_cmd below are typed: the folder myModels
+%      is set as the setting Startup.ModelFolder (with PrintPathLog=false, so that
+%      GUILDA.addpath prints no path), GUILDA.addpath puts it on the path,
+%      GUILDA.update_keymap registers the new key, the IEEE 9-bus system loses 0.1 pu of
+%      mechanical power at 1 s and is simulated with the default governors (gov-static)
+%      and again with gov-droop on its three generators; the text under each command is
+%      its real output (evalc).
 %   3. The two figures drawn by the last two commands (ResultODE.plot_trajectory of omega),
 %      as GUILDA draws them, side by side under the command lines that drew them.
 %   4. A cross-fade back to the first frame, so that the video loops.
 % The class file typed is the file used: the script writes sv_class to
-% _GUILDAobject/+controller/+governor/Droop.m (it stops if a different file is there), runs
-% the commands exactly as shown, and deletes the file again at the end (the key is then
-% removed with GUILDA.update_keymap).
+% myModels/+controller/+governor/Droop.m in a new temporary folder, makes that folder the
+% current folder and runs the commands exactly as shown. At the end it restores the user
+% settings (the files of @GUILDA/user as they were before), removes the folders of myModels
+% from the path, deletes the temporary folder, goes back to the previous current folder and
+% runs GUILDA.update_keymap again (the key gov-droop is then gone).
 %
 % Writes into OutDir (default _GUILDAdocPages/images/about/analysis/):
 %   04-custom-controller.mp4   H.264, yuv420p, faststart, 1280 x 640, 20 fps
@@ -40,7 +45,7 @@ function make_about_custom_controller(opt)
     end
     s_base = fullfile(s_out, "04-custom-controller");
 
-    s_dir = "_GUILDAobject/+controller/+governor/";
+    s_dir = "myModels/+controller/+governor/";
     s_name = "Droop.m";
     sv_class = [ ...
         "classdef Droop < LocalController"
@@ -84,6 +89,9 @@ function make_about_custom_controller(opt)
         "    end"
         "end"];
     sv_cmd = [ ...
+        "folder = fullfile(pwd, ""myModels"");   % the folder of your own classes"
+        "GUILDA.setting(""Startup"", ModelFolder=folder, PrintPathLog=false);"
+        "GUILDA.addpath;   % puts the folder and its subfolders on the path"
         "GUILDA.update_keymap;   % registers the key of the new class"
         "net = network.IEEE9bus();"
         "sc = net.add_scenario(""loss"", Time=[0, 30]);"
@@ -96,17 +104,20 @@ function make_about_custom_controller(opt)
         "res0.plot_trajectory(Quantity=""omega"");"
         "res1.plot_trajectory(Quantity=""omega"");"];
 
-    % The class file, as the user saves it
-    s_file = fullfile(GUILDA.pwd, s_dir, s_name);
-    s_text = strjoin(sv_class, newline) + newline;
-    if isfile(s_file) && string(fileread(s_file)) ~= s_text
-        error("%s exists with other content; move it away first.", s_file);
-    end
-    obj_clean = onCleanup(@() remove_class(s_file));
+    % The class file, as the user saves it, in a folder of the user's own (a new temporary
+    % folder, made the current folder); the user settings are restored at the end
+    s_user = fullfile(GUILDA.pwd, "@GUILDA", "user");
+    sct_user = dir(fullfile(s_user, "*.json"));
+    c_user = arrayfun(@(d) fileread(fullfile(s_user, d.name)), sct_user, UniformOutput=false);
+    s_work = string(tempname);
+    s_file = fullfile(s_work, s_dir, s_name);
+    mkdir(fileparts(s_file));
+    s_back = string(pwd);
+    obj_clean = onCleanup(@() clean_up(s_work, s_back, s_user, {sct_user.name}, c_user)); %#ok<NASGU>
     fid = fopen(s_file, "w");
-    fprintf(fid, "%s", s_text);
+    fprintf(fid, "%s", strjoin(sv_class, newline) + newline);
     fclose(fid);
-    rehash;
+    cd(s_work);
 
     % Run the commands as shown: the output of each, and the figures of the last two
     c_out = cell(numel(sv_cmd), 1);
@@ -172,7 +183,7 @@ function make_about_custom_controller(opt)
     rec.hold(14);
     for i = 1:n_cls
         h_num(i).Visible = "on";
-        type_editor_line(rec, h_cls(i), sv_class(i), 10);
+        type_editor_line(rec, h_cls(i), sv_class(i), 12);
         if i < n_cls
             h_num(i + 1).Visible = "on";
             h_cls(i + 1).String = code_tex(leading(sv_class(i + 1)), true, false);
@@ -185,8 +196,10 @@ function make_about_custom_controller(opt)
     for i = 1:numel(sv_cmd)
         cw.type(rec, sv_cmd(i), 4);
         cw.output(c_out{i});
-        if i == 1
+        if startsWith(sv_cmd(i), "GUILDA.update_keymap")
             rec.hold(24);
+        elseif startsWith(sv_cmd(i), "GUILDA.")     % setting, addpath: read before the keys scroll them away
+            rec.hold(12);
         elseif i < numel(sv_cmd) - 1
             rec.hold(6);
         end
@@ -232,10 +245,30 @@ function s_out = run_command(s_cmd)
 end
 
 
-function remove_class(s_file)
-% Delete the class file written for the recording and drop its key again.
-    if isfile(s_file)
-        delete(s_file);
+function clean_up(s_work, s_back, s_user, sv_name, c_text)
+% Leave the machine as it was: the user settings files of @GUILDA/user as they were
+% (sv_name with the texts c_text; files written since are deleted), the folders of s_work
+% off the path, s_work deleted, s_back the current folder, and the key map rebuilt.
+    cd(s_back);
+    for d = dir(fullfile(s_user, "*.json"))'
+        if ~ismember(d.name, sv_name)
+            delete(fullfile(s_user, d.name));
+        end
+    end
+    for k = 1:numel(sv_name)
+        fid = fopen(fullfile(s_user, sv_name{k}), "w");
+        fprintf(fid, "%s", c_text{k});
+        fclose(fid);
+    end
+    GUILDA.config([], [], "reset", true);
+    sv_path = split(string(path), pathsep);
+    [~, s_tail] = fileparts(s_work);       % pwd may show the folder as /private/var/...
+    sv_path = sv_path(contains(sv_path, filesep + s_tail));
+    if ~isempty(sv_path)
+        rmpath(sv_path{:});
+    end
+    if isfolder(s_work)
+        rmdir(s_work, "s");
     end
     rehash;
     evalc("GUILDA.update_keymap;");
