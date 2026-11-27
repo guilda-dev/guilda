@@ -72,7 +72,7 @@ classdef park < component.generator.abstract
 %   Wiley-IEEE Press, 2017, doi:
 %   [10.1002/9781119355755](https://doi.org/10.1002/9781119355755).
 % - P. Kundur, *Power System Stability and Control*. New York, NY, USA: McGraw-Hill, 1994,
-%   ISBN 0-07-035958-X.
+%   Sects. 3.4.9, 4.2, 5.1, ISBN 0-07-035958-X.
 % - 電気協同研究会 系統安定化専門委員会, 「電力系統の安定度」, 『電気協同研究』, vol. 34,
 %   no. 5, 1979.
 %

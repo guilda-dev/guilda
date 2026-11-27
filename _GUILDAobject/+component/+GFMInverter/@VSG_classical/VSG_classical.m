@@ -53,10 +53,6 @@ classdef VSG_classical < component.GFMInverter.abstract
 % where $I_0$ is the current of the classical model and $I$ the current injected into the bus.
 %
 % <@Citations>
-% - J. Koizumi, T. Nishino, and T. Ishizaki, "A necessary and sufficient condition for
-%   small-signal stability of lossy power systems with impedance-angle-based
-%   phase-compensated inverters," in *Proc. 65th IEEE Conf. Decision and Control (CDC)*,
-%   2026, to appear.
 % - M. Colombino, D. Groß, J.-S. Brouillon, and F. Dörfler, "Global phase and magnitude
 %   synchronization of coupled oscillators with application to the control of grid-forming
 %   power inverters," *IEEE Trans. Autom. Control*, vol. 64, no. 11, pp. 4496–4511, 2019,
