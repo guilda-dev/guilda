@@ -54,12 +54,18 @@ function sct = read_model_help(s_class)
     end
 
     % sections: a heading line "**Name**..." starts one; tags and See also end it
+    sm_map  = ["state variables","x"; "input signals","u"; "output signals","y"; ...
+               "parameters","para"; "equations","eq"; "equation","eq"];   % heading -> section kind
     sv_kind = strings(numel(sv_help),1);   % section of each line ("" outside the sections read)
     s_sec = "";
     for k = 1:numel(sv_help)
         tok = regexp(sv_help(k), "^\*\*([^*]+)\*\*", "tokens", "once");
         if ~isempty(tok)
-            s_sec = section_kind(tok{1});
+            i = find(sm_map(:,1) == lower(strtrim(string(tok{1}))), 1);
+            s_sec = "";
+            if ~isempty(i)
+                s_sec = sm_map(i,2);
+            end
             if s_sec == "eq"   % keep the note after the heading, e.g. "(transducer, amplifier)"
                 sv_help(k) = strtrim(regexprep(sv_help(k), "^\*\*[^*]+\*\*", ""));
                 sv_kind(k) = s_sec;
@@ -72,8 +78,11 @@ function sct = read_model_help(s_class)
     end
 
     % Equations: the lines of the section and its math blocks
-    lv_eq = sv_kind == "eq";
-    sct.Text = strip_blank(sv_help(lv_eq));
+    sv_eq = sv_help(sv_kind == "eq");
+    lv = strtrim(sv_eq) ~= "";   % without the blank lines at both ends
+    if any(lv)
+        sct.Text = sv_eq(find(lv,1):find(lv,1,"last"));
+    end
     l_math = false;
     s_block = strings(0,1);
     for s = sct.Text'
@@ -112,25 +121,3 @@ function sct = read_model_help(s_class)
     sct.Variables = table(sm(:,1), sm(:,2), sm(:,3), sm(:,4), 'VariableNames', ["Kind","Name","Unit","Description"]);
 end
 
-
-function s_kind = section_kind(s_head)
-    % Kind of a section from its heading ("" for a section that is not read)
-    s_head = lower(strtrim(string(s_head)));
-    sm_map = ["state variables","x"; "input signals","u"; "output signals","y"; ...
-              "parameters","para"; "equations","eq"; "equation","eq"];
-    i = find(sm_map(:,1) == s_head, 1);
-    s_kind = "";
-    if ~isempty(i)
-        s_kind = sm_map(i,2);
-    end
-end
-
-function sv = strip_blank(sv)
-    % Remove the blank lines at both ends
-    lv = strtrim(sv) ~= "";
-    if ~any(lv)
-        sv = strings(0,1);
-    else
-        sv = sv(find(lv,1):find(lv,1,"last"));
-    end
-end
