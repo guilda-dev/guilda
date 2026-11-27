@@ -31,11 +31,12 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
 % \right.
 % ```
 %
-% The output is `Vfield = Vfld`. Two non-windup limits freeze a state while it is out
-% of its range and the input drives it further out: `Vap` outside
-% `(Vap_min, Vap_max)`, and `Vfld` at or beyond `Vfld_max` or `Vfld_min` (a limit on
-% the field voltage). The logical parameter `Limiter` switches both limits: true (the
-% default) applies them, false ignores them (the same as all four limits at +-Inf).
+% The output is `Vfield = Vfld`. Two non-windup limits (IEEE Std 421.5-2016, Annex
+% E.3) freeze a state while it is at or beyond a limit and its derivative points
+% outward: `Vap` at `Vap_max` or `Vap_min`, and `Vfld` at `Vfld_max` or `Vfld_min` (a
+% limit on the field voltage). The logical parameter `Limiter` switches both limits:
+% true (the default) applies them, false ignores them (the same as all four limits at
+% +-Inf).
 %
 % The model is a simplified form of the Type DC1A model of IEEE Std 421.5-2016
 % (represented in that edition by Type DC1C, Clause 6.3). It leaves out:

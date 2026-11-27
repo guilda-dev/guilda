@@ -43,10 +43,11 @@ function dx = fcn_dx(t, x, V, u, param, omega0)
     Vcom = Vref + Vpss - Vtr - Vst;    
     % 増幅器
 
-    dx2 = 0;
-    if ~Limiter || Vap*Vcom<=0 || (Vap_min < Vap && Vap_max > Vap)
-        dx2 = -Vap + kap*Vcom;
-    end 
+    dx2 = -Vap + kap*Vcom;
+    % 増幅器出力の制限 (non-windup): 制限に達し、さらに外へ向かう間は止める
+    if Limiter && ((Vap >= Vap_max && dx2 >= 0) || (Vap <= Vap_min && dx2 <= 0))
+        dx2 = 0;
+    end
 
     % 励磁器
     dx3 = -( aex1 + aex2 * exp(bex*Vfld) ) * Vfld + Vap;

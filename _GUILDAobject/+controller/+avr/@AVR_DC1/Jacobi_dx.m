@@ -40,9 +40,11 @@ function [Axx,Bxv,Bxu] = Jacobi_dx(t,x,V,u,param,omega0)
 
     Axx(1,1) = -1;              
 
-    rv = 0;
-    if ~Limiter || Vap*Vcom<=0 || (Vap_min < Vap && Vap_max > Vap)
-        rv = 1;
+    % 増幅器出力の制限で止まっている間は行が 0 (fcn_dx と同じ条件)
+    dx2 = -Vap + kap*Vcom;
+    rv = 1;
+    if Limiter && ((Vap >= Vap_max && dx2 >= 0) || (Vap <= Vap_min && dx2 <= 0))
+        rv = 0;
     end
     
     Axx(2,[1,2,4]) = [-kap, -1, -kap] * rv;    
@@ -74,9 +76,5 @@ function [Axx,Bxv,Bxu] = Jacobi_dx(t,x,V,u,param,omega0)
 
     Bxu = zeros(nx,nu);
 
-    if Limiter
-        Bxu(2,[1,2]) = [kap,kap]*( tools.heaviside(Vap - Vap_min) - tools.heaviside(Vap - Vap_max) );
-    else
-        Bxu(2,[1,2]) = [kap,kap];
-    end
+    Bxu(2,[1,2]) = [kap,kap]*rv;
 end
