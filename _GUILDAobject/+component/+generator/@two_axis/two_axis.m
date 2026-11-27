@@ -57,6 +57,9 @@ classdef two_axis < component.generator.abstract
 %   Synchrophasor Measurement and Power System Toolbox*, 2nd ed. Hoboken, NJ, USA:
 %   Wiley-IEEE Press, 2017, Sect. 5.4, doi:
 %   [10.1002/9781119355755](https://doi.org/10.1002/9781119355755).
+% - F. Milano, *Power System Modelling and Scripting* (Power Systems). Berlin Heidelberg,
+%   Germany: Springer, 2010, Sect. 15.1.6, p. 334, doi:
+%   [10.1007/978-3-642-13669-6](https://doi.org/10.1007/978-3-642-13669-6).
 %
 % <@Examples>
 % ```matlab

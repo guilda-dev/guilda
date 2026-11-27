@@ -6,10 +6,11 @@ classdef VSG_classical < component.GFMInverter.abstract
 % the virtual reactances `Xd` and `Xq`. The current of that classical machine is rotated by
 % the angle `alpha` before it enters the bus. The swing equation uses the virtual power of
 % the classical current before the rotation, $\tilde{P} = \cos\alpha\,P - \sin\alpha\,Q$ with
-% $P + jQ$ the power supplied to the bus, as the phase-compensated VSG of Koizumi et al.:
-% with `alpha` equal to the impedance angle of lossy lines, the network seen in the
-% rotated frame is lossless. With `alpha = 0` the model is the classical generator. The
-% inverter internals and the inner control loops are not modeled.
+% $P + jQ$ the power supplied to the bus. When all the lines have the same ratio $R/X$ of
+% their impedance $R + jX$, the choice $\alpha = \arctan(R/X)$, the complement of the
+% impedance angle, makes the network seen in the rotated frame lossless. With `alpha = 0`
+% the model is the classical generator. The inverter internals and the inner control loops
+% are not modeled.
 %
 % **Dynamic model**
 % The model is a dynamical system with state $x$, input $u$ and output $y$, connected

@@ -29,6 +29,13 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
 % state is then the block output. A block with `td = 0` and `tn ~= 0` is improper and raises
 % an error at `initialize`.
 %
+% The model is a simplified form of the Type PSS1A model of IEEE Std 421.5-2016
+% (Clause 9.2) with the speed deviation as the only input. KS is `kpss`, T5 is `tWS`,
+% T1 to T4 are `tn1`, `td1`, `tn2`, `td2`, and VSTMAX, VSTMIN are `Vpss_max`, `Vpss_min`.
+% It leaves out:
+% - the transducer lag T6
+% - the second-order filter (A1, A2)
+%
 % <@Citations>
 % - 石崎孝幸 編著, 川口貴弘, 河辺賢一 著, 『電力系統のシステム制御工学
 %   ―システム数理とMATLABシミュレーション―』 (計測・制御セレクションシリーズ 4),
@@ -39,6 +46,9 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
 %   [10.1109/IEEESTD.2016.7553421](https://doi.org/10.1109/IEEESTD.2016.7553421).
 % - P. Kundur, *Power System Stability and Control*. New York, NY, USA: McGraw-Hill, 1994,
 %   Sect. 12.5, ISBN 0-07-035958-X.
+% - F. Milano, *Power System Modelling and Scripting* (Power Systems). Berlin Heidelberg,
+%   Germany: Springer, 2010, Sect. 16.3.3, pp. 371–372, doi:
+%   [10.1007/978-3-642-13669-6](https://doi.org/10.1007/978-3-642-13669-6).
 % - J. H. Chow, G. E. Boukarim, and A. Murdoch, "Power system stabilizers as undergraduate
 %   control design projects," *IEEE Trans. Power Syst.*, vol. 19, no. 1, pp. 144–151,
 %   2004, doi: [10.1109/TPWRS.2003.821003](https://doi.org/10.1109/TPWRS.2003.821003).

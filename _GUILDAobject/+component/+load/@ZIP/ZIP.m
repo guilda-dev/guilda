@@ -56,6 +56,9 @@ classdef ZIP < component.load.abstract
 % - 電気学会 電力・エネルギー部門, 「電力系統の標準モデル」,
 %   [https://www.iee.jp/pes/ele_systems/base_model](https://www.iee.jp/pes/ele_systems/base_model)
 %   (accessed 2026-11-25).
+% - F. Milano, *Power System Modelling and Scripting* (Power Systems). Berlin Heidelberg,
+%   Germany: Springer, 2010, Sect. 14.2, pp. 315–316, doi:
+%   [10.1007/978-3-642-13669-6](https://doi.org/10.1007/978-3-642-13669-6).
 %
 % <@Examples>
 % ```matlab

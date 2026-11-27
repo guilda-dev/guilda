@@ -37,6 +37,17 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
 % the field voltage). The logical parameter `Limiter` switches both limits: true (the
 % default) applies them, false ignores them (the same as all four limits at +-Inf).
 %
+% The model is a simplified form of the Type DC1A model of IEEE Std 421.5-2016
+% (represented in that edition by Type DC1C, Clause 6.3). It leaves out:
+% - the lead-lag block (TC, TB)
+% - the load compensation (RC, XC)
+% - the UEL, OEL and SCL inputs and their gates
+%
+% It adds the non-windup upper limit `Vfld_max` on the field voltage, which DC1A and DC1C
+% do not have (EFDmin of DC1C corresponds to `Vfld_min`). The exciter saturation is
+% SE(EFD) = `aex2`·exp(`bex`·EFD), with `aex1` in the role of KE, instead of the two-point
+% data E1, SE(E1), E2, SE(E2).
+%
 % <@Citations>
 % - 石崎孝幸 編著, 川口貴弘, 河辺賢一 著, 『電力系統のシステム制御工学
 %   ―システム数理とMATLABシミュレーション―』 (計測・制御セレクションシリーズ 4),
@@ -50,6 +61,9 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
 % - P. M. Anderson and A. A. Fouad, *Power System Control and Stability*, 2nd ed.
 %   Piscataway, NJ, USA: IEEE Press / Wiley-Interscience, 2003, doi:
 %   [10.1109/9780470545577](https://doi.org/10.1109/9780470545577).
+% - F. Milano, *Power System Modelling and Scripting* (Power Systems). Berlin Heidelberg,
+%   Germany: Springer, 2010, Sect. 16.2.1, pp. 363–364, doi:
+%   [10.1007/978-3-642-13669-6](https://doi.org/10.1007/978-3-642-13669-6).
 % - 電気学会 電力系統モデル標準化調査専門委員会, 「電力系統の標準モデル」,
 %   電気学会技術報告 第754号, 1999.
 % - 電気学会 電力・エネルギー部門, 「電力系統の標準モデル」,

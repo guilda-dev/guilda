@@ -16,7 +16,7 @@ function sct_hessian = get_hessian(obj, x, V, u)
 % `alpha = 0` all the blocks equal those of the classical generator, which are symmetric.
 % With `alpha` ≠ 0 the bus sees the rotated power $P + jQ = e^{-j\alpha}(\tilde{P} + j\tilde{Q})$:
 % $H_{vx}$, $H_{vv}$ are still the exact Jacobians, but $H_{vx} \ne H_{xv}^\top$ (the rotation
-% matches the angle of lossy lines in the energy function of the rotated frame, Koizumi et al.).
+% makes lines with $R/X = \tan\alpha$ lossless in the energy function's rotated frame).
 %
 % See also Component.get_hessian, component.generator.classical.get_hessian, get_linear_matrix
     arguments (Input)

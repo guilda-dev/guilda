@@ -31,6 +31,9 @@ classdef power < component.load.abstract
 %   ―システム数理とMATLABシミュレーション―』 (計測・制御セレクションシリーズ 4),
 %   計測自動制御学会 編, コロナ社, 2022, Sect. 2.4.1, ISBN 978-4-339-03384-7,
 %   [publisher page](https://www.coronasha.co.jp/np/isbn/9784339033847/).
+% - F. Milano, *Power System Modelling and Scripting* (Power Systems). Berlin Heidelberg,
+%   Germany: Springer, 2010, Sect. 10.3.1, pp. 257–259, doi:
+%   [10.1007/978-3-642-13669-6](https://doi.org/10.1007/978-3-642-13669-6).
 %
 % <@Examples>
 % ```matlab
