@@ -4,16 +4,7 @@ classdef (Sealed) Retrofit < LocalController
 % goes under the Static AVR of a generator (role "pss", like a PSS) and drives its
 % `Vpss` input, so that `Vfield = Vfd_ref + Vpss`. It observes all the states `x` of the
 % generator ("Xall") and holds a copy `hat_x` of them, driven by the generator model
-% with its inputs at the equilibrium:
-%
-% ```math
-% E\,\dot{\hat{x}} = f(x, V, u^*) - A_d\,(x - \hat{x}), \qquad
-% V_\mathrm{pss} = -K\,(x - \hat{x})
-% ```
-%
-% where `E dx/dt = f(x, V, u)` is the generator, `u* = [Pmech*; Vfield*]` its
-% equilibrium input, `A_d = df/dx` and `B = df/dVfield` at the equilibrium (`V` and
-% `u` fixed there), and `K = lqr(E\A_d, E\B, Q, R)`.
+% with its inputs at the equilibrium (see Equations below).
 %
 % Properties:
 %
@@ -58,14 +49,30 @@ classdef (Sealed) Retrofit < LocalController
 %   point is then not exactly an equilibrium of the controller: `E dhat_x/dt = f(x, V, u*)`
 %   is not 0 when the input of the generator there differs from `u*`.
 %
-% **State variables** $x$ (`sv_x`)
-% - `hat_<name>` for each state `<name>` of the generator: the compensator copy of it.
+% **Dynamic model**
+% The controller is a dynamical system with state $\hat{x}$, input $x$ (the states of the
+% generator) and output $V_\mathrm{pss}$.
 %
-% **Input signals** $u$ (`sv_u`)
-% - All the states of the generator ("Xall").
+% **State variables** $\hat{x}$ (`sv_x`)
+% - `hat_<name>`: Compensator copy of the state `<name>` of the generator, one for each of
+%   its states, in the order of its `sv_x`.
+%
+% **Input signals** $x$ (`sv_u`)
+% - `Xall`: All the states of the generator, in the order of its `sv_x`.
 %
 % **Output signals** $y$ (`sv_y`)
-% - `Vpss` [pu]: the `Vpss` input of the Static AVR.
+% - `Vpss` [pu]: Stabilizing signal, the `Vpss` input of the Static AVR.
+%
+% **Equations** ($E\dot{x} = f(x, V, u)$ is the generator, $u^*$ its equilibrium input;
+% $A_d = \partial f/\partial x$ and $B = \partial f/\partial V_\mathrm{field}$ at the
+% equilibrium, with $V$ and $u$ fixed there; $Q$ and $R$ are the properties `Q` and `R`)
+% ```math
+% E\,\dot{\hat{x}} = f(x, V, u^*) - A_d\,(x - \hat{x})
+% ```
+% with
+% ```math
+% V_\mathrm{pss} = -K\,(x - \hat{x}), \quad K = \mathrm{lqr}(E^{-1}A_d,\ E^{-1}B,\ Q,\ R)
+% ```
 %
 % <@Citations>
 % - 石崎孝幸 編著, 川口貴弘, 河辺賢一 著, 『電力系統のシステム制御工学
