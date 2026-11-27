@@ -3,12 +3,14 @@ function rmpath()
 % The root folder stays on the path: it holds @GUILDA, so GUILDA.addpath
 % can still be called afterwards from any current folder. The optional
 % folders _GUILDAverification and _GUILDAtextbook are removed too when they
-% exist or are on the path.
+% exist or are on the path. The folders of the setting Startup.ModelFolder are
+% removed with their subfolders on the path.
 % The log lines are printed in the Command Window while the setting
 % Startup.PrintPathLog is true (default).
 
     GUILDApath = GUILDA.pwd;
     l_print  = GUILDA.config("Startup","PrintPathLog");   % read while the folders are on the path
+    sv_model = GUILDA.config("Startup","ModelFolder");
     pathlist = fileread(fullfile(GUILDApath,"@GUILDA","config","ListPath.txt"));
     pathlist = string( strsplit(strtrim(pathlist)) );
 
@@ -34,6 +36,20 @@ function rmpath()
         end
         if l_print
             disp(s_msg)
+        end
+    end
+    % folders of the user, with their subfolders on the path
+    for s_folder = sv_model
+        sv_on = string(pathList);
+        sv_on = sv_on(sv_on == s_folder | startsWith(sv_on, s_folder + filesep));
+        if ~isempty(sv_on)
+            rmpath(sv_on{:})
+            s_msg = 'ok';
+        else
+            s_msg = 'already removed.';
+        end
+        if l_print
+            disp(['︎  >> rmpath: ', char(s_folder), ' ... ', s_msg])
         end
     end
 end

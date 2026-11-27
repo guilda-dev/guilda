@@ -3,7 +3,8 @@ function update_keymap(opt)
 %
 % Clears the cache of GUILDA.keymap, builds it again from the Constant `key` of the
 % Component, Branch, LocalController and GlobalController classes that
-% GUILDA.dictionary finds, and prints the keys. The methods that take a model key
+% GUILDA.dictionary finds (in the GUILDA folder and in the folders of the setting
+% Startup.ModelFolder), and prints the keys. The methods that take a model key
 % (Bus.add_component, Bus.replace_component, PowerNetwork.add_branch,
 % Component.add_local_controller, PowerNetwork.add_global_controller) validate and
 % dispatch the key through GUILDA.keymap, so a new or removed model class is used
@@ -12,7 +13,10 @@ function update_keymap(opt)
 % GUILDA calls it at startup (setting UpdateKeyMap of the Startup section: "disp" prints
 % the keys, "silent" does not, "none" skips it). Call it yourself after adding or
 % removing a model class or changing its key, to use the new keys without restarting
-% GUILDA.
+% GUILDA. A model class of your own may stay outside the GUILDA folder: put its folder
+% in ModelFolder, then run GUILDA.addpath (which puts the folder on the path) and
+% GUILDA.update_keymap. When two classes have the same key, the map keeps one of them
+% without a message.
 %
 % For developers, `Signature=true` also regenerates
 % `_GUILDAsystem/resources/functionSignatures.json`, the code suggestions of the methods
@@ -37,6 +41,9 @@ function update_keymap(opt)
 %
 % <@Examples>
 % ```matlab
+% GUILDA.update_keymap
+% GUILDA.setting("Startup", ModelFolder="/home/user/myModels")   % classes of your own
+% GUILDA.addpath
 % GUILDA.update_keymap
 % GUILDA.update_keymap(Signature=true)
 % ```

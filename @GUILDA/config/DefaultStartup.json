@@ -31,6 +31,11 @@
         ],
         "Description": "Update the model key map at startup: 'none' (do not update), 'silent' (update without printing) or 'disp' (update and print the keys)"
     },
+    "ModelFolder":{
+        "Value": [],
+        "Type": "string",
+        "Description": "Folders of your own model classes (components, branches, controllers) outside the GUILDA folder, as full paths. GUILDA.addpath (run at startup) adds each folder and its subfolders to the path, and GUILDA.dictionary and GUILDA.update_keymap register the keys of its classes; a package folder (+name) gives the package of its classes. After a change, run GUILDA.addpath and GUILDA.update_keymap, or start GUILDA again"
+    },
     "Tutorial":{
         "Value": true,
         "Type": "logical",

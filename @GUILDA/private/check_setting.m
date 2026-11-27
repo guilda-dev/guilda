@@ -11,7 +11,9 @@ function [val, l_ok, s_expect] = check_setting(sct_set, val)
 % - "select": text that is one of options, stored as a string. With FromLogical (the
 %   options for false and true), true, false, 1 or 0 is stored as that option.
 % - "string": text (a string array, a character vector or a cell array of character
-%   vectors), stored as a string row.
+%   vectors), stored as a string row. An empty list is stored as a 1-by-0 string; it is
+%   written as [] in a JSON file, which is read back as an empty double, so an empty
+%   numeric value is accepted as the empty list too.
 %
 % Valid (optional) is a condition on the stored value v, a MATLAB expression such as
 % "v > 0 || isnan(v)". get_config checks the values of the user files with it (an invalid
@@ -57,6 +59,9 @@ function [val, l_ok, s_expect] = check_setting(sct_set, val)
             if l_ok, val = string(val); end
         case "string"
             s_expect = "text (a string array, a character vector or a cell array of character vectors)";
+            if isnumeric(val) && isempty(val)
+                val = strings(1,0);
+            end
             l_ok = isstring(val) && ~any(ismissing(val)) || ischar(val) && (isrow(val) || isempty(val)) || iscellstr(val);
             if l_ok, val = reshape(string(val), 1, []); end
         otherwise

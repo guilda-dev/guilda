@@ -2,5 +2,6 @@
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
         <entry key="ClassNotLoaded">Class {0} could not be loaded and is not in the key list: {1}</entry>
+        <entry key="ModelFolderNotFound">The folder {0} of the setting Startup.ModelFolder does not exist and is skipped. Change the setting with GUILDA.setting("Startup", ModelFolder=...).</entry>
     </message>
 </rsccat>

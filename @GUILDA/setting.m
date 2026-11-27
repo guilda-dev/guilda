@@ -16,6 +16,11 @@ function setting(s_category, varargin)
 % window, so it stays after MATLAB restarts, and the next GUILDA.config call and
 % analysis use it. The same check applies to a value entered in the window.
 %
+% A change of a setting read at startup takes effect at the next start, or when the
+% function that reads it runs: e.g. ModelFolder (Startup), the folders of your own model
+% classes, is read by GUILDA.addpath and GUILDA.dictionary, so run GUILDA.addpath and
+% GUILDA.update_keymap after changing it. The setting itself does not change the path.
+%
 % A new version of GUILDA may reset the settings of a category to their defaults (INFO
 % at startup): the user settings of a category are kept only while the version of its
 % default file stays the same. A value of a user file that fails the check above (e.g.
@@ -26,6 +31,8 @@ function setting(s_category, varargin)
 % GUILDA.setting
 % GUILDA.setting("PowerFlowCalculation", Tolerance=1e-10, WhenFailed="ERROR")
 % GUILDA.config("PowerFlowCalculation", "Tolerance")
+% GUILDA.setting("Startup", ModelFolder=["/home/user/myModels", "/home/user/lab"])
+% GUILDA.setting("Startup", ModelFolder=strings(1,0))   % no folder
 % ```
 %
 % See also GUILDA.config
