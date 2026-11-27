@@ -77,7 +77,7 @@
 | `branch.pi` | `[c+y, -y; -y, c+y]` | 各端のシャント(全充電容量の半分) |
 | `branch.T` | `Y = 2y`, `b = c` として `[Y(Y+b), -Y²; -Y², (Y+b)Y]/(2Y+b)`(中点を縮約) | 中点のシャント(全充電容量) |
 | `branch.pi_transformer` | `r = tap·e^{jφ}` として `[(c+y)/tap², -y/conj(r); -y/r, c+y]` | 理想変圧器の先の pi 線路の各端 |
-| `branch.two_winding_transformer` | `ym = [c + y/tap², -y/tap; -y/tap, y]`, `E = diag(1, e^{jφ})`, `ym·E` | 送電端の母線側のシャント |
+| `branch.two_winding_transformer` | `ym = [c + y/tap², -y/tap; -y/tap, y]`, `E = diag(1, e^{jφ})`, `E'·ym·E`(fix/transformer-phase-shift で `ym·E` から修正) | 送電端の母線側のシャント |
 
 - `Branch` の抽象メソッドは `Ymat = get_admittance_matrix(obj)` で、`tab_parameter.dynamics`(R, X, C, tap, phase)だけを読みます。回線数のパラメータはありません。
 - `get_admittance_matrix()` は引数なしで、`PowerNetwork.get_admittance_matrix`、`Branch.struct`(`cm_Y`)、`cv_Iequilibrium`、`get_opf_condition`、潮流計算・OPF・連続潮流計算・線形化(`get_sys` の局所関数 `port`)、`GraphNetDiagram`、`tools.network_to_mpc` から呼ばれます。これらは変えません(既定の `"close"`)。
@@ -186,14 +186,14 @@ G1(p) = Dᴴ·diag( jpC/n + y/(n p), jqC/n + y/(n q) )·D
 6LG   = diag( (jpC + y/p)/tap²,        jqC + y/q )
 ```
 
-**two_winding_transformer**(送電端の母線側のシャント `c`、送電端のタップ、直列 y、今の位相の掛け方 `E = diag(1, e^{jφ})` を右から)
+**two_winding_transformer**(送電端の母線側のシャント `c`、送電端のタップ、直列 y、位相は `E = diag(1, e^{jφ})` で `E'·(…)·E`。複素比 tap·e^{jφ} は送電端で MATPOWER の SHIFT と同じ向き。fix/transformer-phase-shift で、以前の `(…)·E`(右からだけ)を修正しました)
 
-今の行列は `Y_close = (S + Dt·Y_line·Dt)·E`、`S = diag(c, 0)`、`Dt = diag(1/tap, 1)`、`Y_line = [y, -y; -y, y]` と書けます(今の `ym` と一致)。直列部分にシャントはないので、区間 ℓ の先を接地した駆動点は `y/(nℓ)` です。母線側のシャント `c/n` は地絡では残ります(理想変圧器より母線側にあるため)。開放では回線ごと外れます。
+行列は `Y_close = E'·(S + Dt·Y_line·Dt)·E`、`S = diag(c, 0)`、`Dt = diag(1/tap, 1)`、`Y_line = [y, -y; -y, y]` と書けます(今の `ym` と一致)。直列部分にシャントはないので、区間 ℓ の先を接地した駆動点は `y/(nℓ)` です。母線側のシャント `c/n` は地絡では残ります(理想変圧器より母線側にあるため)。開放では回線ごと外れます。
 
 ```
-G1(p) = ( diag(c/n, 0) + Dt·diag( y/(n p), y/(n q) )·Dt )·E
-      = diag( c/n + y/(n p tap²),  e^{jφ}·y/(n q) )
-6LG   = diag( c + y/(p tap²),       e^{jφ}·y/q )
+G1(p) = E'·( diag(c/n, 0) + Dt·diag( y/(n p), y/(n q) )·Dt )·E
+      = diag( c/n + y/(n p tap²),  y/(n q) )
+6LG   = diag( c + y/(p tap²),       y/q )
 ```
 
 - [事実] 今の `ym·E` は φ ≠ 0 で電力を保存しない形です(受電端の電流に位相が戻らない)。同梱の系統の φ はすべて 0 です。上の式は**今の形をそのまま拡張**し、`"close"` の一致と `"3open" = Y_close·(n-1)/n` を保ちます。位相の掛け方はこの作業では変えず、別の Issue として記録します [決定 Q5]。
@@ -567,7 +567,7 @@ s_tag = add_trip(obj, unit, time)
 | Q2 | 同じ種類・同じ対象の期間の重なり | **エラー**(`OverlappingEvents`)。接する期間は許す |
 | Q3 | `add_fault` のブランチで `Status`/`Point` を省いたとき | **必須(エラー)** |
 | Q4 | 解列した源の先の入力 | **接続表の 1 つの規則**: 源(GC、LC、観測される機器)が解列した入力は源がないものとして平衡値 `e` をとる(制御器をつながなかったときと同じ)。制御器ごとの規則は置かない。AVR の解列による界磁喪失は利用者が Vfd への `add_input` で与える。GC の観測の「0 を読む」動作はこの規則に置き換わる(§3.7) |
-| Q5 | `two_winding_transformer` の位相の掛け方 | **この作業では変えない**。別の Issue として記録する |
+| Q5 | `two_winding_transformer` の位相の掛け方 | **この作業では変えない**。別の Issue として記録する(その後 fix/transformer-phase-shift で `E'·ym·E` に修正済み) |
 | Q6 | 回線数の名前と置き場所 | `tab_parameter.dynamics` の **`circuit`**、`add_branch` の **`Circuit`**(既定 2) |
 | Q7 | 解列した LC の子の LC | **解列しない** |
 | Q8 | ブランチの検査と合成を書く場所 | **各クラスに書く**(新しいメンバーを足さない) |

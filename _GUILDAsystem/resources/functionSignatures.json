@@ -101,7 +101,7 @@
       {"name":"X","kind":"namevalue","type":["double","scalar"],"purpose":"[pu] Series reactance. Default: 1."},
       {"name":"C","kind":"namevalue","type":["double","scalar"],"purpose":"[pu] Shunt susceptance at each end (half of the line charging). Default: 0."},
       {"name":"Tap","kind":"namevalue","type":["double","scalar"],"purpose":"Off-nominal tap ratio of a transformer (the lines \"pi\" and \"T\" have none: NaN). Default: 1."},
-      {"name":"Phase","kind":"namevalue","type":["double","scalar"],"purpose":"[rad] Phase shift of a transformer (the lines \"pi\" and \"T\" have none: NaN). Default: 0/180*pi."},
+      {"name":"Phase","kind":"namevalue","type":["double","scalar"],"purpose":"[rad] Phase shift of a transformer: the angle of its complex ratio Tap*exp(1j*Phase) at the from bus, as MATPOWER's SHIFT (the lines \"pi\" and \"T\" have none: NaN). Default: 0/180*pi."},
       {"name":"Circuit","kind":"namevalue","type":["double","scalar"],"purpose":"Number of parallel circuits; R, X and C are for all of them together (one circuit: Circuit*R, Circuit*X, C/Circuit). Default: 2."},
       {"name":"Smax","kind":"namevalue","type":["double","scalar"],"purpose":"[pu] Limit of the apparent power at both ends (Inf: none). Default: inf."},
       {"name":"Imax","kind":"namevalue","type":["double","scalar"],"purpose":"[pu] Limit of the current at both ends (Inf: none). Default: inf."},
