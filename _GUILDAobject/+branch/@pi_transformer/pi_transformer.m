@@ -26,7 +26,8 @@ classdef pi_transformer < Branch
 % - `X` [pu]: Series reactance of all circuits together.
 % - `C` [pu]: Shunt susceptance at each end of the pi line of all circuits together.
 % - `tap` [pu]: Voltage magnitude ratio of the ideal transformer at the from end.
-% - `phase` [rad]: Phase shift of the ideal transformer at the from end.
+% - `phase` [rad]: Phase shift of the ideal transformer at the from end (the angle of the
+%   complex ratio tap*exp(j*phase) at the from bus, as MATPOWER's SHIFT).
 % - `circuit`: Number of parallel circuits (default 2).
 %
 % **Equations** ($V_\mathrm{from}$ and $V_\mathrm{to}$ are the complex voltages of the from and to

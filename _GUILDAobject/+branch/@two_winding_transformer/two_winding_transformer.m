@@ -2,7 +2,9 @@ classdef two_winding_transformer < Branch
 % Two-winding transformer with an off-nominal tap ratio and a phase shift.
 % The series impedance is `R + 1j*X`, the shunt admittance `1j*C` is at the
 % from end, `tap` [pu] is the voltage magnitude ratio and `phase` [rad] the
-% phase shift (set with "Tap" and "Phase" in PowerNetwork.add_branch).
+% phase shift (set with "Tap" and "Phase" in PowerNetwork.add_branch). The complex
+% ratio $\mathrm{tap}\,e^{j\,\mathrm{phase}}$ of the ideal transformer is at the from bus,
+% as MATPOWER's TAP and SHIFT (SHIFT in degrees, phase in rad).
 % Other values are in per unit on the network base.
 %
 % R, X and C are the values of all circuits together (tab_parameter.dynamics.circuit,
@@ -17,7 +19,8 @@ classdef two_winding_transformer < Branch
 % - `X` [pu]: Series reactance of all circuits together.
 % - `C` [pu]: Shunt susceptance at the from end of all circuits together.
 % - `tap` [pu]: Voltage magnitude ratio of the ideal transformer at the from end.
-% - `phase` [rad]: Phase shift of the ideal transformer at the from end.
+% - `phase` [rad]: Phase shift of the ideal transformer at the from end (the angle of the
+%   complex ratio tap*exp(j*phase) at the from bus, as MATPOWER's SHIFT).
 % - `circuit`: Number of parallel circuits (default 2).
 %
 % **Equations** ($V_\mathrm{from}$ and $V_\mathrm{to}$ are the complex voltages of the from and to
@@ -25,11 +28,13 @@ classdef two_winding_transformer < Branch
 % ends; state "close", the other states are in `get_admittance_matrix`)
 % ```math
 % \begin{bmatrix} I_\mathrm{from} \\ I_\mathrm{to} \end{bmatrix}
-% = \begin{bmatrix} jC + y/\mathrm{tap}^2 & -y\,e^{j\,\mathrm{phase}}/\mathrm{tap} \\ -y/\mathrm{tap} & y\,e^{j\,\mathrm{phase}} \end{bmatrix}
+% = \begin{bmatrix} jC + y/\mathrm{tap}^2 & -y\,e^{j\,\mathrm{phase}}/\mathrm{tap} \\ -y\,e^{-j\,\mathrm{phase}}/\mathrm{tap} & y \end{bmatrix}
 % \begin{bmatrix} V_\mathrm{from} \\ V_\mathrm{to} \end{bmatrix}, \quad
 % y = \frac{1}{R + jX}
 % ```
-% (the matrix with $\mathrm{phase} = 0$ times $\mathrm{diag}(1, e^{j\,\mathrm{phase}})$ from the right).
+% ($E^\mathsf{H} Y_0 E$ with $Y_0$ the matrix with $\mathrm{phase} = 0$ and
+% $E = \mathrm{diag}(1, e^{j\,\mathrm{phase}})$; the off-diagonal entries are
+% $-y/\overline{r}$ and $-y/r$ with $r = \mathrm{tap}\,e^{j\,\mathrm{phase}}$).
 %
 % <@Examples>
 % Add a transformer with tap 0.969 between buses 1 and 2 of a network:
