@@ -38,7 +38,7 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
 %   Studies*, IEEE Std 421.5-2016, 2016, Clause 9.2, Fig. 31, doi:
 %   [10.1109/IEEESTD.2016.7553421](https://doi.org/10.1109/IEEESTD.2016.7553421).
 % - P. Kundur, *Power System Stability and Control*. New York, NY, USA: McGraw-Hill, 1994,
-%   ISBN 0-07-035958-X.
+%   Sect. 12.5, ISBN 0-07-035958-X.
 % - J. H. Chow, G. E. Boukarim, and A. Murdoch, "Power system stabilizers as undergraduate
 %   control design projects," *IEEE Trans. Power Syst.*, vol. 19, no. 1, pp. 144–151,
 %   2004, doi: [10.1109/TPWRS.2003.821003](https://doi.org/10.1109/TPWRS.2003.821003).

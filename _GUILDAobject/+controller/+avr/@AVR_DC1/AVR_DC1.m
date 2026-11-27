@@ -46,7 +46,7 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
 %   Studies*, IEEE Std 421.5-2016, 2016, Clauses 6.2–6.3, Fig. 4, doi:
 %   [10.1109/IEEESTD.2016.7553421](https://doi.org/10.1109/IEEESTD.2016.7553421).
 % - P. Kundur, *Power System Stability and Control*. New York, NY, USA: McGraw-Hill, 1994,
-%   ISBN 0-07-035958-X.
+%   Sect. 8.6, ISBN 0-07-035958-X.
 % - P. M. Anderson and A. A. Fouad, *Power System Control and Stability*, 2nd ed.
 %   Piscataway, NJ, USA: IEEE Press / Wiley-Interscience, 2003, doi:
 %   [10.1109/9780470545577](https://doi.org/10.1109/9780470545577).
