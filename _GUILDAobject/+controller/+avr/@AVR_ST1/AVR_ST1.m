@@ -47,6 +47,18 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
 % defaults (`ttr = 0`, `tst = kst = 0`, no limits) the AVR is the first-order lag
 % `kap/(1 + tap*s)`.
 %
+% The model is a simplified form of the Type ST1A model of IEEE Std 421.5-2016
+% (represented in that edition by Type ST1C, Clause 8.3). It leaves out:
+% - the lead-lag blocks (TC, TB, TC1, TB1)
+% - the limits VImax, VImin on the voltage error
+% - the field-current limiter (KLR, ILR)
+% - the load compensation
+% - the UEL and OEL inputs
+%
+% The rate feedback (KF, TF: `kst`, `tst`) is taken from the amplifier output `Vap`,
+% before the output limits, while the standard takes it from EFD after them. The two agree
+% while the output limits are not active.
+%
 % <@Citations>
 % - 石崎孝幸 編著, 川口貴弘, 河辺賢一 著, 『電力系統のシステム制御工学
 %   ―システム数理とMATLABシミュレーション―』 (計測・制御セレクションシリーズ 4),

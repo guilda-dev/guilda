@@ -28,6 +28,11 @@ classdef Static < component.GFLInverter.abstract
 % I = \overline{\left(\frac{P_\mathrm{ref} + jQ_\mathrm{ref}}{V}\right)}
 % ```
 %
+% <@Citations>
+% - F. Milano, *Power System Modelling and Scripting* (Power Systems). Berlin Heidelberg,
+%   Germany: Springer, 2010, Sect. 10.2.3, p. 256, doi:
+%   [10.1007/978-3-642-13669-6](https://doi.org/10.1007/978-3-642-13669-6).
+%
 % <@Examples>
 % ```matlab
 % net = PowerNetwork();
