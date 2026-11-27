@@ -16,6 +16,7 @@ classdef GUILDA < handle
 % >> GUILDA.dictionary() : Search classes implemented in this software
 % >> GUILDA.keymap()    : Model keys of a category and the names of their classes
 % >> GUILDA.update_keymap(): Rebuild the model key map from the classes on the path
+% >> GUILDA.disp_equations(): Equations and variables of model classes, read from their help
 % >> GUILDA.launch_gui() : Start the GUILDA app (build, analyze and export a script; GUI launches)
 %
 % Major Folders within the @GUILDA Directory
@@ -114,6 +115,7 @@ classdef GUILDA < handle
         publish_doc()
         dic        = keymap(category)
         update_keymap(opt)
+        tab        = disp_equations(Key)
         h          = launch_gui(net)
     end
 end
