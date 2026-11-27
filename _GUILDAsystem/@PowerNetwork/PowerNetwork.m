@@ -40,7 +40,7 @@ classdef PowerNetwork < PowerSystemModel
 % - linearization and eigenvalue analysis (`get_sys`)
 % - network diagrams (`plot_diagram`, the black-and-white `plot_single_line_diagram`) and their layout (`get_layout`, `set_layout`), spring-mass pictures of the equilibrium
 %   (`plot_spring_model`), the signal connections of the controllers
-%   (`disp_connection`) and CSV / MATPOWER import and export
+%   (`disp_connection`, `plot_connection`) and CSV / MATPOWER import and export
 % - the check of the model functions of every component and local controller (`validate`)
 %
 % Each analysis runs a solver object stored in a `solver_*` property; a subclass of the
@@ -198,6 +198,7 @@ classdef PowerNetwork < PowerSystemModel
         G = plot_diagram(obj, opt)
         G = plot_single_line_diagram(obj, opt)
         G = plot_spring_model(obj, opt)
+        G = plot_connection(obj, opt)
 
         % Layout of the network diagrams (graph parameters of all elements)
         sct_layout = get_layout(obj)

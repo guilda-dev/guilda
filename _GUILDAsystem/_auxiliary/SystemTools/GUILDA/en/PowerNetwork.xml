@@ -21,6 +21,7 @@
         <entry key="GconRoute">The global controller ''{0}'' is connected: {1}.</entry>
         <entry key="GconNotFound">No global controller with the tag ''{0}'' was found in ''{1}''.</entry> 
         <entry key="DispConnectionOwner">Unknown Owner {0} for net.disp_connection: ''{1}'' has no bus, component or controller with these tags.&#xA;List the tags with net.disp_tree().</entry>
+        <entry key="PlotConnectionOwner">Unknown Owner {0} for net.plot_connection: ''{1}'' has no bus, component or controller with these tags.&#xA;List the tags with net.disp_tree().</entry>
         <entry key="InitializeEquilibriumOption">Unknown option ''{0}'' for net.initialize(Method="equilibrium"). Valid options: Method.</entry>
         <entry key="InitializePowerflowFailed">net.initialize(Method="powerflow") stopped: the power flow did not converge ({0}).&#xA;The network was not changed. Check tab_parameter.powerflow of the buses and components, or change the solver settings, e.g. net.initialize(MaxIteration=...) or the Method of the PowerFlowCalculation section of GUILDA.setting.</entry>
         <entry key="InitializeOPFFailed">net.initialize(Method="OPF") stopped: the AC optimal power flow was not solved ({0}).&#xA;The network was not changed. Relax the constraints (tab_parameter.operation of the buses, components and branches), change the solver settings (e.g. MaxIteration, Solver), or use net.initialize(Method="powerflow").</entry>
