@@ -131,6 +131,8 @@ GUILDA の IEEE68bus は、全 16 台を同じ静止励磁器 `Ka/(1 + s Te)`(`K
 
 既存の不整合 [事実、今回の範囲外]: `Jacobi_dx` の `Bxu(2,:)` は `heaviside(Vap - Vap_min) - heaviside(Vap - Vap_max)` だけで決まり、`Axx(2,:)` の条件(`Vap*Vcom <= 0` のときは動く)と一致しません。上下限の外で内側へ戻る点で、`Bxu` が 0 になります。平衡点は上下限の内側なので、線形化には影響しません。
 
+修正 (2026-11-27、`fix/avr-dc1-non-windup`) [事実]: `Vap` の凍結の条件を、`Vfld`・AVR_ST1・ガバナーと同じ標準の non-windup (IEEE Std 421.5-2016 Annex E.3 Fig. E.4、Kundur Fig. 8.35(b)) に直しました。`dx2 = -Vap + kap*Vcom` とし、`(Vap >= Vap_max && dx2 >= 0) || (Vap <= Vap_min && dx2 <= 0)` の間だけ 0 にします。`Jacobi_dx` の `Axx(2,:)` と `Bxu(2,:)` は同じ係数 `rv` を使います。旧条件では、上限で `0 < kap*Vcom < Vap_max` のときに `Vcom` の符号が変わるまで上限に張り付き、`Vap_min > 0` のときは `Vap` が下限の下へ抜けていました。テストは F63 に 3 節を加えました。
+
 ### 4.3 平衡点の検査のメッセージ
 
 `InvalidValueRange`(`_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/AVR_ST1.xml`、`AVR_DC1.xml`)は「Widen Vap_min and Vap_max, or change the operating point ...」です。これに「or set Limiter to false」を加えることを提案します(§8 の Q7)。I69 のテストは "Widen Vap_min and Vap_max" を含むことだけを確かめているので、文を足しても通ります。
