@@ -222,6 +222,8 @@ classdef LocalController < PowerSystemModel
         tab = get_variable_map(obj)
         % Energy-function Hessian (port "PI"; overridden by the classes that support it)
         sct_hessian = get_hessian(obj, x, V, u)
+        % Inputs and outputs of the model functions at a point
+        tab = disp_io(obj, x, V, u)
     end
     methods (Hidden)
         % Linearization (get_sys connects the blocks)
