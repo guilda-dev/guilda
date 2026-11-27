@@ -9,21 +9,13 @@ classdef Static < component.GFLInverter.abstract
 % **Dynamic model**
 % The model is a dynamical system with state $x$, input $u$ and output $y$, connected
 % to its bus through the bus voltage $V$ and the current $I$ it injects.
-%
-% **State variables** $x$ (`sv_x`)
-% - none
+% The model has no state, no output and no parameter.
 %
 % **Input signals** $u$ (`sv_u`; the ports driven by local controllers and events)
 % - `Pref` [pu]: active power injected into the bus (positive for generation).
 % - `Qref` [pu]: reactive power injected into the bus (positive for generation).
 %
-% **Output signals** $y$ (`sv_y`; read by local controllers)
-% - none
-%
-% **Parameters** (`sv_para`)
-% - none
-%
-% **Equation**
+% **Equations** ($V$ is the complex bus voltage and $I$ the complex current injected into the bus)
 % ```math
 % I = \overline{\left(\frac{P_\mathrm{ref} + jQ_\mathrm{ref}}{V}\right)}
 % ```

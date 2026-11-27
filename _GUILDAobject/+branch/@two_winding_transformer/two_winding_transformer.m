@@ -12,6 +12,25 @@ classdef two_winding_transformer < Branch
 % position on the series impedance after it. Common simulators place a transformer fault
 % on a terminal bus and only open a transformer; GUILDA also accepts the fault states.
 %
+% **Parameters** (the columns of `tab_parameter.dynamics`)
+% - `R` [pu]: Series resistance of all circuits together.
+% - `X` [pu]: Series reactance of all circuits together.
+% - `C` [pu]: Shunt susceptance at the from end of all circuits together.
+% - `tap` [pu]: Voltage magnitude ratio of the ideal transformer at the from end.
+% - `phase` [rad]: Phase shift of the ideal transformer at the from end.
+% - `circuit`: Number of parallel circuits (default 2).
+%
+% **Equations** ($V_\mathrm{from}$ and $V_\mathrm{to}$ are the complex voltages of the from and to
+% buses, $I_\mathrm{from}$ and $I_\mathrm{to}$ the complex currents injected into the branch at those
+% ends; state "close", the other states are in `get_admittance_matrix`)
+% ```math
+% \begin{bmatrix} I_\mathrm{from} \\ I_\mathrm{to} \end{bmatrix}
+% = \begin{bmatrix} jC + y/\mathrm{tap}^2 & -y\,e^{j\,\mathrm{phase}}/\mathrm{tap} \\ -y/\mathrm{tap} & y\,e^{j\,\mathrm{phase}} \end{bmatrix}
+% \begin{bmatrix} V_\mathrm{from} \\ V_\mathrm{to} \end{bmatrix}, \quad
+% y = \frac{1}{R + jX}
+% ```
+% (the matrix with $\mathrm{phase} = 0$ times $\mathrm{diag}(1, e^{j\,\mathrm{phase}})$ from the right).
+%
 % <@Examples>
 % Add a transformer with tap 0.969 between buses 1 and 2 of a network:
 %

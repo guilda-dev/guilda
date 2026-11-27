@@ -13,20 +13,19 @@ classdef ZIP < component.load.abstract
 % **Dynamic model**
 % The model is a dynamical system with state $x$, input $u$ and output $y$, connected
 % to its bus through the bus voltage $V$ and the current $I$ it injects.
-%
-% **State variables** $x$ (`sv_x`)
-% - none
+% The model has no state and no output.
 %
 % **Input signals** $u$ (`sv_u`; the ports driven by local controllers and events)
 % - `Pload` [pu]: active power injected into the bus at $|V| = 1$ pu (negative for consumption).
 % - `Qload` [pu]: reactive power injected into the bus at $|V| = 1$ pu (negative for consumption).
 %
-% **Output signals** $y$ (`sv_y`; read by local controllers)
-% - none
-%
 % **Parameters** (`sv_para`; the `parameter` argument of `Bus.add_component`)
-% - `kPZ`, `kPI`, `kPP`: shares of the constant-impedance, constant-current and constant-power parts of `Pload` (default 0, 1, 0).
-% - `kQZ`, `kQI`, `kQP`: the same for `Qload` (default 1, 0, 0).
+% - `kPZ`: Share of the constant-impedance part of `Pload` (default 0).
+% - `kPI`: Share of the constant-current part of `Pload` (default 1).
+% - `kPP`: Share of the constant-power part of `Pload` (default 0).
+% - `kQZ`: Share of the constant-impedance part of `Qload` (default 1).
+% - `kQI`: Share of the constant-current part of `Qload` (default 0).
+% - `kQP`: Share of the constant-power part of `Qload` (default 0).
 % - `VswitchP` [pu]: voltage below which the constant-power parts are constant impedance (default 0.7).
 % - `VswitchI` [pu]: voltage below which the constant-current parts are constant impedance (default 0.7).
 %
@@ -38,7 +37,7 @@ classdef ZIP < component.load.abstract
 % coefficient sum other than 1 gives a warning (the load then takes a power other than
 % `Pload`, `Qload` at 1 pu, but the power flow is still met).
 %
-% **Equation**
+% **Equations** ($V$ is the complex bus voltage and $I$ the complex current injected into the bus)
 % ```math
 % P = P_\mathrm{load}\, f_P(|V|), \quad Q = Q_\mathrm{load}\, f_Q(|V|), \quad
 % I = \overline{\left(\frac{P + jQ}{V}\right)}

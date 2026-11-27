@@ -2,13 +2,9 @@ classdef local_LQR < LocalController
 % State-feedback LQR controller of one component.
 % The controller observes all the state variables `x` of the component it is attached to
 % (the reserved input signal name "Xall") and drives the inputs `Input` of the component
-% (by name, e.g. "Vfield" [pu] or "Pmech" [pu]; all its inputs by default):
-%
-% ```
-% u = u* - K*(x - x*)
-% ```
-%
-% where `x*` and `u*` are the equilibrium of the component. It has no state of
+% (by name, e.g. "Vfield" [pu] or "Pmech" [pu]; all its inputs by default) with
+% `u = u* - K*(x - x*)`, where `x*` and `u*` are the equilibrium of the component (see
+% Equations below). It has no state of
 % its own. `net.initialize` computes the gain `K = lqr(A, B, Q, R)` from the
 % linear model of the component alone (`comp.get_linear_matrix`)
 % connected to an infinite bus of voltage `V0` [pu] through the admittance that
@@ -31,6 +27,35 @@ classdef local_LQR < LocalController
 %   component there, while `K`, `x*` and `u*` stay as designed by `net.initialize`. The
 %   point is then not exactly an equilibrium with the controller: its output
 %   `u* - K*(x - x*)` differs from the input of the component at the point.
+%
+% **Dynamic model**
+% The controller is a static map from its input $x$ (the states of the component) to its
+% output $u$ (the driven inputs of the component). It has no state and no parameter.
+%
+% **Input signals** $x$ (`sv_u`)
+% - `Xall`: All the states of the component, in the order of its `sv_x`.
+%
+% **Output signals** $u$ (`sv_y`; the inputs `Input` of the component)
+% - `<name>`: The input `<name>` of the component, one for each driven input, in the order
+%   of `Input` (by default all the inputs in the order of its `sv_u`; e.g. `Vfield` [pu],
+%   `Pmech` [pu]).
+%
+% **Equations** ($x^*$, $u^*$ and $V^*$ are the equilibrium of the component; $Q$, $R$ and
+% $V_0$ are the properties `Q`, `R` and `V0`)
+% ```math
+% u = u^* - K\,(x - x^*), \quad K = \mathrm{lqr}(A, B, Q, R)
+% ```
+% with the design model, the component $E\dot{x} = f(x, V, u)$, $I = g(x, V, u)$ linearized
+% at the equilibrium and connected to the infinite bus $V_0$ through $y_\infty$ (the bus
+% voltage $V$ and current $I$ as real 2-vectors, $y_\infty$ as the real 2-by-2 matrix of
+% the complex admittance)
+% ```math
+% A = E^{-1}\bigl(f_x + f_V M^{-1} g_x\bigr), \quad
+% B = E^{-1}\bigl(f_u + f_V M^{-1} g_u\bigr), \quad
+% M = y_\infty - g_V, \quad y_\infty = \frac{I^*}{V^* - V_0}
+% ```
+% where $f_x = \partial f/\partial x$ and so on, and $f_u$, $g_u$ take only the columns of
+% the driven inputs.
 %
 % <@Examples>
 % Attach LQR controllers to two generators and simulate a fault:

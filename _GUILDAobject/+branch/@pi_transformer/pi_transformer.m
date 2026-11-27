@@ -21,6 +21,24 @@ classdef pi_transformer < Branch
 %  ---+  +----+------------+---
 % ```
 %
+% **Parameters** (the columns of `tab_parameter.dynamics`)
+% - `R` [pu]: Series resistance of all circuits together.
+% - `X` [pu]: Series reactance of all circuits together.
+% - `C` [pu]: Shunt susceptance at each end of the pi line of all circuits together.
+% - `tap` [pu]: Voltage magnitude ratio of the ideal transformer at the from end.
+% - `phase` [rad]: Phase shift of the ideal transformer at the from end.
+% - `circuit`: Number of parallel circuits (default 2).
+%
+% **Equations** ($V_\mathrm{from}$ and $V_\mathrm{to}$ are the complex voltages of the from and to
+% buses, $I_\mathrm{from}$ and $I_\mathrm{to}$ the complex currents injected into the branch at those
+% ends; state "close", the other states are in `get_admittance_matrix`)
+% ```math
+% \begin{bmatrix} I_\mathrm{from} \\ I_\mathrm{to} \end{bmatrix}
+% = \begin{bmatrix} (jC + y)/\mathrm{tap}^2 & -y/\overline{r} \\ -y/r & jC + y \end{bmatrix}
+% \begin{bmatrix} V_\mathrm{from} \\ V_\mathrm{to} \end{bmatrix}, \quad
+% y = \frac{1}{R + jX}, \quad r = \mathrm{tap}\, e^{j\,\mathrm{phase}}
+% ```
+%
 % <@Examples>
 % Add a transformer with tap 0.978 between buses 1 and 2 of a network:
 %

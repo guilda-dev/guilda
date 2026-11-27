@@ -21,6 +21,25 @@ classdef T < Branch
 %  ----------------+----------------
 % ```
 %
+% **Parameters** (the columns of `tab_parameter.dynamics`)
+% - `R` [pu]: Series resistance of all circuits together.
+% - `X` [pu]: Series reactance of all circuits together.
+% - `C` [pu]: Shunt susceptance at the midpoint of all circuits together (the total line charging).
+% - `tap` [pu]: NaN (a line has no transformer).
+% - `phase` [rad]: NaN (a line has no transformer).
+% - `circuit`: Number of parallel circuits (default 2).
+%
+% **Equations** ($V_\mathrm{from}$ and $V_\mathrm{to}$ are the complex voltages of the from and to
+% buses, $I_\mathrm{from}$ and $I_\mathrm{to}$ the complex currents injected into the branch at those
+% ends; state "close", the other states are in `get_admittance_matrix`)
+% ```math
+% \begin{bmatrix} I_\mathrm{from} \\ I_\mathrm{to} \end{bmatrix}
+% = \frac{1}{2Y + jC}\begin{bmatrix} Y(Y + jC) & -Y^2 \\ -Y^2 & Y(Y + jC) \end{bmatrix}
+% \begin{bmatrix} V_\mathrm{from} \\ V_\mathrm{to} \end{bmatrix}, \quad
+% Y = \frac{2}{R + jX}
+% ```
+% (the midpoint node eliminated; $Y$ is the admittance of each half of the series impedance).
+%
 % <@Examples>
 % Add a T-model line between buses 1 and 2 of a network:
 %

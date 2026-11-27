@@ -21,6 +21,24 @@ classdef pi < Branch
 %  ---+--------------+---
 % ```
 %
+% **Parameters** (the columns of `tab_parameter.dynamics`)
+% - `R` [pu]: Series resistance of all circuits together.
+% - `X` [pu]: Series reactance of all circuits together.
+% - `C` [pu]: Shunt susceptance at each end of all circuits together (half of the total line charging).
+% - `tap` [pu]: NaN (a line has no transformer).
+% - `phase` [rad]: NaN (a line has no transformer).
+% - `circuit`: Number of parallel circuits (default 2).
+%
+% **Equations** ($V_\mathrm{from}$ and $V_\mathrm{to}$ are the complex voltages of the from and to
+% buses, $I_\mathrm{from}$ and $I_\mathrm{to}$ the complex currents injected into the branch at those
+% ends; state "close", the other states are in `get_admittance_matrix`)
+% ```math
+% \begin{bmatrix} I_\mathrm{from} \\ I_\mathrm{to} \end{bmatrix}
+% = \begin{bmatrix} jC + y & -y \\ -y & jC + y \end{bmatrix}
+% \begin{bmatrix} V_\mathrm{from} \\ V_\mathrm{to} \end{bmatrix}, \quad
+% y = \frac{1}{R + jX}
+% ```
+%
 % <@Examples>
 % Add a line between buses 1 and 2 of a network:
 %
