@@ -62,7 +62,8 @@ classdef IEEE68bus < PowerNetwork
 %
 % <@Citations>
 % - B. Pal and B. Chaudhuri, *Robust Control in Power Systems*. New York, NY, USA:
-%   Springer, 2005, doi: [10.1007/b136490](https://doi.org/10.1007/b136490).
+%   Springer, 2005, apps. A–B, pp. 171–178, doi:
+%   [10.1007/b136490](https://doi.org/10.1007/b136490).
 % - A. K. Singh and B. C. Pal, "IEEE PES Task Force on Benchmark Systems for Stability
 %   Controls: Report on the 68-bus, 16-machine, 5-area system," ver. 3.3, Tech. Rep.,
 %   2013, [https://cmte.ieee.org/pes-psdp/?p=331](https://cmte.ieee.org/pes-psdp/?p=331).

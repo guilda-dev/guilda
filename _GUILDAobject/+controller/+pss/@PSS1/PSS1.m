@@ -35,7 +35,7 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
 %   計測自動制御学会 編, コロナ社, 2022, Sect. 5.3.4, ISBN 978-4-339-03384-7,
 %   [publisher page](https://www.coronasha.co.jp/np/isbn/9784339033847/).
 % - *IEEE Recommended Practice for Excitation System Models for Power System Stability
-%   Studies*, IEEE Std 421.5-2016, 2016, doi:
+%   Studies*, IEEE Std 421.5-2016, 2016, Clause 9.2, Fig. 31, doi:
 %   [10.1109/IEEESTD.2016.7553421](https://doi.org/10.1109/IEEESTD.2016.7553421).
 % - P. Kundur, *Power System Stability and Control*. New York, NY, USA: McGraw-Hill, 1994,
 %   ISBN 0-07-035958-X.
