@@ -6,6 +6,18 @@ const updateLogData = [
     "content": "Three generator values of the IEEE 68-bus network were converted wrongly from the machine data of the source book (Pal and Chaudhuri, Table B.1) to the 100 MVA base, and now match the book: the d-axis synchronous reactance of generators 13 and 16 (200 MVA machines) is halved to 0.0148 and 0.0178, and the inertia of generators 14 and 15 is halved to 600. The power flow does not change, but the dynamics do: without AVRs and PSSs the unstable real eigenvalue is about +0.10 1/s instead of +0.13 1/s, and with them the network stays stable, with the largest real part of the eigenvalues (apart from the zero mode) at about -0.0052 1/s instead of -0.0051 1/s. Time responses of this network differ from earlier results."
   },
   {
+    "title": "AVR_DC1 amplifier limits no longer stick",
+    "date": "2026-11-27",
+    "type": "fix",
+    "content": "The amplifier output of the DC1 AVR (key avr-DC1) now follows the standard non-windup limit of IEEE Std 421.5-2016, Annex E.3: it is held only while it is at a limit and still moving outward. Before, it could stay at its upper limit after the input fell, and with a positive lower limit it could not recover. The linearization of this AVR now matches the same rule. The bundled networks never reach these limits, so their results do not change."
+  },
+  {
+    "title": "Correct admittance of phase-shifting transformers",
+    "date": "2026-11-27",
+    "type": "fix",
+    "content": "A two-winding transformer with a nonzero phase shift now gives the correct admittance matrix: the complex ratio of tap and phase is at the from bus, as the tap and shift of MATPOWER, and the diagonal used during a fault is also correct. Before, a lossless phase shifter did not conserve power, and converting such a network to a MATPOWER case failed. No bundled network has a phase shift, so their results do not change."
+  },
+  {
     "title": "Offsets of the states of controllers in a scenario",
     "date": "2026-11-26",
     "type": "feature",
