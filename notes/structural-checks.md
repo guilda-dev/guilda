@@ -103,5 +103,5 @@ R2026a で、変更前に具体クラスのコンストラクタを直接呼ん�
 ## 未確認・残りの事項
 
 - 利用者が自分で書くモデルクラスのコンストラクタを公開のままにすると、そのクラスは直接作れます。文書(`model-implementation.html`、`feature-model-building.html`、`class-design.html`)で `Access` の宣言を求めていますが、強制はしていません。
-- `_GUILDAobject/+controller/validate.m`(開発者用の記号計算のスクリプト)は `controller.avr.AVR_DC1("avr")` を直接作るため動きません。変更前から `set_odefcn(60)` の引数が合わず動かないスクリプトで、対象外としました。
+- `_GUILDAobject/+controller/validate.m`(開発者用のスクリプト。Toolbox は不要)は、2026-11-28 に現在の API に合わせて書き直し、R2026a で動くことを確かめました(`fix/controller-validate-nonwindup`。28 件すべて PASS、約 1 秒)。オブジェクトを作らず、静的メソッド `fcn_dx`・`fcn_y`・`Jacobi_dx`・`Jacobi_Y` を直接呼び、制限の領域ごとに 200 点で 2 つを確かめます。(1) `[fcn_dx; fcn_y]` が、その領域の規則をスクリプトの中で別に書いた式と一致し、止まる状態の行が厳密に 0 であること。(2) `[Jacobi_dx; Jacobi_Y]` が `[fcn_dx; fcn_y]` の中心差分(相対の許容 1e-6)と一致し、止まる行が厳密に 0 であること。対象は AVR_DC1(Vap と Vfld の non-windup 制限: 制限の内側、上限・下限で外へ向かう(止まる)・内へ戻る、Limiter=false)、AVR_ST1(Vap の non-windup 制限、tap=0 の静的な増幅器の飽和、出力の上限・下限・交差、Limiter=false)、PSS1(出力の飽和、tn1=td1=0 と tn2=0 のブロック)です。実行は `controller.validate`(パッケージの中のスクリプトなので `run` では呼べません)。記号計算(Symbolic Math Toolbox)は R2026a に入っていないため使わず、中心差分に替えました。期待の式を古い heaviside の規則に替えた写しでは、AVR_DC1 の上限・下限で外へ向かう 2 つの領域が FAIL になることも確かめました。
 - 保存した MAT ファイルから読み込んだ系統の外した物体は、読み込みのときにはもう系統にないので問題になりません。古い MAT ファイルに、親の外れた物体が単独で保存されている場合の読み込みは確かめていません。
