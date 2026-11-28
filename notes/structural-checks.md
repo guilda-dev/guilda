@@ -103,5 +103,5 @@ R2026a で、変更前に具体クラスのコンストラクタを直接呼ん�
 ## 未確認・残りの事項
 
 - 利用者が自分で書くモデルクラスのコンストラクタを公開のままにすると、そのクラスは直接作れます。文書(`model-implementation.html`、`feature-model-building.html`、`class-design.html`)で `Access` の宣言を求めていますが、強制はしていません。
-- `_GUILDAobject/+controller/validate.m`(開発者用の記号計算のスクリプト)は `controller.avr.AVR_DC1("avr")` を直接作るため動きません。変更前から `set_odefcn(60)` の引数が合わず動かないスクリプトで、対象外としました。
+- `_GUILDAobject/+controller/validate.m`(開発者用の記号計算のスクリプト。Symbolic Math Toolbox が必要)は、2026-11-28 に現在の API に合わせて書き直しました(`fix/controller-validate-nonwindup`)。オブジェクトを作らず、静的メソッド `fcn_dx`・`fcn_y`・`Jacobi_dx`・`Jacobi_Y` を直接呼び、制限のないモデルの記号式とそのヤコビアンを、各クラスが実装している規則で行を置き換えて比べます。対象は AVR_DC1(Vap と Vfld の non-windup 制限: 制限の内側、上限・下限で外へ向かう(止まる)・内へ戻る、Limiter=false)、AVR_ST1(Vap の non-windup 制限、tap=0 の静的な増幅器の飽和、出力の上限・下限・交差、Limiter=false)、PSS1(出力の飽和、tn1=td1=0 と tn2=0 のブロック)です。実行は `controller.validate`(パッケージの中のスクリプトなので `run` では呼べません)。R2026a(と R2026b)に Symbolic Math Toolbox が入っていないため、実行と負の確認(古い heaviside の規則で FAIL になること)はまだ確かめていません。
 - 保存した MAT ファイルから読み込んだ系統の外した物体は、読み込みのときにはもう系統にないので問題になりません。古い MAT ファイルに、親の外れた物体が単独で保存されている場合の読み込みは確かめていません。
