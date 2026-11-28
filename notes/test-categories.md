@@ -119,6 +119,7 @@ F7 の基準値の比較は 5 系統分が 1 回に減る。削除は 3 件 (934
 - F7 は開発ブランチ側で `Coordinate` → `Port` の改名 (`PortIsAnOptionOfGet_sys` など) が入った。
   基準値の比較 (`+helper/linearization_reference_check.m`) も `Port="PQ"` に変わっただけで、
   medium と large で比べる系統を分けた整理とは重ならない。`test_levels.m` の改名済みの行もそのまま。
+  (2026-11-28 に基準値と比べる側を作り直した: `linearization-connector.md` §26)
 - 新しいファイルの分類: `test_F52_result_gui` → gui、`test_F54_graph_layout` → graph、
   `test_F55_guilda_app` → gui。`test_categories.m` のヘッダーと model-implementation.html の対応表に
   `@DrawerResultGUI`, `@DrawerGUILDA`, `launch_gui` (gui)、`get_layout`, `set_layout`, `layout_*` (graph) を足した。

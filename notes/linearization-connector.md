@@ -359,7 +359,7 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 
 ### 11.2 基準値(Q11)[事実]
 
-- `_GUILDAdoc/developer/` の配置の規則(`folder-structure.html`)には、テストのデータファイルの置き場所の規定がありません。テストの補助が置かれている `+DebugScript/+helper/` に `linearization_reference.mat`(約 2.2 MB)を置き、作り方を `+DebugScript/archive/make_linearization_reference.m` に残しました(置き換えた後のコードでは動かないので archive。「参照のために残すコード」の規則)。規則に追記するかはコーディネータの判断です。
+- `_GUILDAdoc/developer/` の配置の規則(`folder-structure.html`)には、テストのデータファイルの置き場所の規定がありません。テストの補助が置かれている `+DebugScript/+helper/` に `linearization_reference.mat`(約 2.2 MB)を置き、作り方を `+DebugScript/archive/make_linearization_reference.m` に残しました(置き換えた後のコードでは動かないので archive。「参照のために残すコード」の規則)。規則に追記するかはコーディネータの判断です。2026-11-28 に今の API の作り方 `+helper/make_linearization_reference.m` に置き換え、基準値を作り直しました(§26)。
 - 中身: 同梱の 13 系統と GC 付きの 2 系統(Ishizaki6Bus、IEEE14bus に AVR_ST1 + PSS1 と agc-PI)、平衡点とずらした点(`rng(1)`)。網の `rm_*`、Kron(状態 150 以下はモデル、すべて固有値)、DAE(`theta&rho`)、機器(LC 付き V2I と I2V、機器単体)、母線(V2I と I2V)、LC、GC のモデル。基準のコミットは `de2a93f5`。
 - 比べるのは `DebugScript.helper.linearization_reference_check` で、名前の変化(機器と LC の電圧の入力、GC の入出力)は対応表で吸収します。F7 の "Linear models match the reference values"(5 系統、medium)と "Linear models of every bundled network match the reference values"(全系統、large)です。
 
@@ -402,7 +402,7 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
 - **`"rows"` 形式は変えていません。** `Equilibrium` は表の形だけで計算します。表の先頭の行を持つ `ResultLIN.tab_variable` と `ResultODE.tab_variable`(`simulate` は表の形を読む)にも `Equilibrium` 列が入ります。
 - **V2I の固定:** `get_sys` の `Port` オプション、`PortNotApplicable`、`NoI2V`、`l_port` の処理、6 つの `get_linear_port` の `s_port` 引数、`SolverLIN.solve` の外部電流の項、`ResultLIN` の I2V の分岐、`get_ss` の局所関数 `port_model`(代数変数の消去。V2I の層には代数変数がない)を削除しました。
 - **テスト:** F7 の I2V の節を「Bus models with a zero D」(D が 0 の母線も V2I のモデルを返す)にし、v3 の位置引数の節を削除し、節「Variable maps of the controllers and the Equilibrium column」(medium)を加えました。`test_levels.m` の名前を合わせました。`+helper/linearize_v3.m` は Kron と DAE の比較に使うので残し、`v3_ports` の I2V の分岐と引数だけを削除しました。`+helper/linearization_reference_check.m` から I2V の比較を削除しました。
-- **`linearization_reference.mat` は作り直していません。** I2V の項目は使わずに残します(作り方の `archive/make_linearization_reference.m` は置き換える前のコードでしか動かないため)。
+- **`linearization_reference.mat` は作り直していません。** I2V の項目は使わずに残します(作り方の `archive/make_linearization_reference.m` は置き換える前のコードでしか動かないため)。2026-11-28 に作り直しました(§26)。
 
 ### 12.3 選んだ点 [事実]
 
@@ -855,3 +855,54 @@ v3 の `Algorithm` と `NonUnit`(`v3_linearize_args`)の扱いは §9 Q2 です�
   - "∂P/∂θ"、"∂Q/∂ρ"
 - ラベルは LabelMode "user"(自前の文字)で、"value" は使っていないので、ラベルの重複はありません [事実]。
 - F112: 6 つの図のデータチップで、値の行が 1 つだけで、カラーバーの名前であることを確かめます。値を持たない母線(NaN)には GraphNetDiagram の値の行が出ないので、値を持つ最初の母線で確かめます。
+
+## 26. 基準値を今の API で作り直す(2026-11-28)
+
+ブランチは `test/f7-reference-generator` で、`refactor/design-alignment`(`df20105d`)から分けました。検証のコミットは `_GUILDAverification` の main(`213cd295`)の上に直線で積みました。
+
+### 26.1 変えたこと [事実]
+
+- 作り方を `+DebugScript/+helper/make_linearization_reference.m` にしました。今の API(`net.get_sys(Format="GUILDAorigin")`、`rm_*`、`tab_variable`、`get_ss("ODE")`、`get_ss("DAE", Port="PQ")`、各層の `get_sys(Format="struct")`、機器単体は `get_linear_matrix`)だけを使います。ずらした点は以前と同じく `rng(1)` で状態に `0.01*randn*max(1,|x|)` を足し、uc は `DebugScript.helper.point_with_inputs` で接続から求めます。
+- 系統の作り方を `+DebugScript/+helper/linearization_reference_net.m` にまとめ、作り方と比べる側(`linearization_reference_check`)の両方が使います。
+- 保存する中身は以前と同じ形です。使っていなかった I2V の項目と、GC の `InputSlot`・`OutputSlot`(名前の対応表)はなくしました。名前は今の名前(電圧の入力は母線の Label、GC の入出力は uc・yc の Label)で、機器単体は `get_linear_matrix` の出力(電流と y)をすべて持ちます。ファイルは約 1.7 MB です。
+- 基準値は今のモデルで作りました(ユーザーの判断。既定の Static の AVR と調速機、IEEJ の load-ZIP、IEEE39Bus の M = 2H、直した IEEE68bus の値、Ifield を含む)。`linearization_reference_check` の、基準値のあとの変更を戻す手順、Ifield を除く処理、名前の対応(`rename_v`、GC の対応表)、機器単体の出力の切り詰めは削除しました。状態・入力・出力の名前と並びは基準値と同じでなければなりません。
+- 以前の基準値(`de2a93f5` で作ったもの)と作り方 `archive/make_linearization_reference.m` は、検証のリポジトリの履歴に残っています。`.mat` は `213cd295` のものです(`git show 213cd295:+DebugScript/+helper/linearization_reference.mat`。`16808acc` で guilda から移してから変わっていません)。
+
+### 26.2 以前の基準値と同じになること [計測]
+
+新しい作り方を、以前の比べる側が戻していた条件(Static を外す、IEEJ を load-impedance に、IEEE39Bus の M = 2H/omega0、IEEE68bus の v2 の値)で実行し、以前の基準値と項目ごとに比べました。名前は対応させ、Ifield と機器単体の y の出力は新しい側だけにあるので除きました。値は相対差の最大(|新 - 旧| / max(1, |旧| の最大))です。
+
+| 項目 | 最大 | 場所 |
+|---|---|---|
+| 網 `rm_*` | 9.0e-16 | IEEE68bus、ずらした点 |
+| 網の点 | 3.1e-16 | IEEE9bus、平衡点 |
+| 網 ODE | 2.8e-14 | TEST31bus、ずらした点 |
+| 網 ODE の固有値 | 9.1e-12 | IEEE68bus、ずらした点 |
+| 網 DAE | 2.2e-17 | IEEE39Bus、平衡点 |
+| 母線 V2I、機器 V2I、機器単体 | 1.0e-15 | IEEE39Bus、平衡点 |
+| LC、GC | 0 | |
+
+- 系統と点ごとの最大は 1.6e-14〜9.1e-12 で、丸め誤差だけです。足りない名前はありません。
+
+### 26.3 今のモデルで変わったこと [計測]
+
+今のモデルの値を以前の基準値と比べ、違いをすべて原因に分けました。
+
+- **既定の Static の AVR と調速機(すべての系統)**: 状態を加えず(状態の数は同じ)、行列を変えません。IEEE14bus(3 種)、IEEE9bus、TEST31bus、Txt3Bus、IEEE14bus+GC はすべての項目で 0 か丸め誤差(固有値で 8.5e-12 以下)です。変わるのは、LC(`*CA1`・`*CG1`)が増えることと、機器・母線のモデルに名前(`Pmech_*CG1`、`Pmech_ref_*` など)が増えることだけです。
+- **Ifield**: 入力と出力が増えるだけで、値の差はありません。
+- **IEEE39Bus(M = 2H)**: E の omega の行が約 377 倍(例 0.2228 → 84、B039 は 2.65 → 1000)。40 個の固有値のうち 39 個が動き、以前は実数(約 -0.27)だった電気機械モードが 4〜8.8 rad/s で振動するモードになります。平衡点は同じです。
+- **IEEE68bus(Table B.1 の修正)**: 変わる機器は G13〜G16 だけです。B014・B015 の E の omega が 1200 → 600、Xd の変更で平衡点が変わる状態は `Vap_B013SG1CA1` と `Vap_B016SG1CA1` だけ(1.589 → 1.256、点の差 9.3e-3)です。112 個の固有値のうち 91 個が最大 1.22 動きます。母線の電圧は同じです。
+- **IEEJ の 4 系統(load-ZIP)**: 負荷が別のクラスです(以前の `B…LRX1` は入力 R、X、今の `B…LZIP1` は入力 Pload)。そのため名前で対応させられません。平衡点の V と状態は同じで、固有値は 109〜328 個が最大 1.1 動きます。
+- **確かめ**: IEEE39Bus、IEEE68bus、IEEJ の 4 系統を、今のモデルにその系統自身の変更だけを戻して(Static と Ifield は残して)作ると、以前の基準値と `rm_*` 4.5e-16 以下、点 3.6e-15 以下、固有値 6.2e-12 以下で一致します。
+- 原因の分からない違いはありません。
+
+### 26.4 テスト(MATLAB R2026a)[計測]
+
+- 作り直した基準値と比べる側の差はすべての項目で 0 です(同じコードで求めるため)。
+- F7 を large で: 66 件、PASS 66(基準値の 2 件 "Linear models match the reference values" と "Linear models of every bundled network match the reference values" を含む)。
+- 分類 linearize を small で: 60 件、PASS 60。
+- medium のすべて: 936 件、PASS 935 / FAIL 0 / SKIP 1(F4 の MATPOWER がパスにない)、1282 s。
+
+### 26.5 記録だけ(調べていません)
+
+- 今のモデルの IEEJ_WEST10 と IEEJ_WEST30 は、平衡点の ODE の固有値の実部の最大が少し正です(+1.1e-3 と +4.8e-3)。以前の基準値(load-impedance)では -5e-15 と +0.197 でした。ユーザーの指示で、今は調べず直しません。
